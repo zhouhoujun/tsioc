@@ -4229,3 +4229,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 保存后标签：dirty 时显示「未保存」。
 - **回归**：`workflow-designer.spec` 28 passing（新增「无变化保存跳过」「拖动只在结束时写 updatedAt」），`workflow-designer-ui.spec` 56 passing（新增「慢速输入合并为一次保存」「dirty 时不显示已保存」）；三个新断言在旧实现上均失败（已验证）。
 - **门禁**：activities 356 passing（`workflow-inbound` UDP 用例在满载下超时，单独重跑 4 passing，既有 flake）；microservices/admin 63 passing；tsc 0；`git diff --check` OK。`check-source-size` 仍报 `agents/agent-ui/web-console/web-console.ts` 603 行超限（并行未提交的 agent-ui 改动，未触碰）。
+
+## 2026-11-15 P1 输入合并（打字不再每键重建文档）
+- **问题**：inspector 文本字段每次 keystroke 就 `updateNode/updateNodeConfig` 提交整份文档并触发全画布属性重写；实测 66 节点时单键同步耗时 **37ms**（10 字/秒就占 37% 主线程）。另外 inspector 的 schema 缓存按 model 实例做 key，每次提交都会重建 schema 对象并让 dynamic-form 重新签名。
+- **修正**：
+  - 文本/JSON 编辑改为 **300ms burst**（`textChangeDelay`，code 仍是 160ms）；select/checkbox/color/number/list 等离散字段、失焦、切换节点、工具栏命令（含 Ctrl+S / Ctrl+Enter / 菜单）都会立刻 flush，命令不会读到过期文档；
+  - `formSchema` 缓存改为结构 key（`key:type:visible` + locale + suggestions 内容），值变化复用同一 schema 对象，`dynamic-form` 不再重建控件；
+  - 复用人格化的 `formBlur()` 作为统一 flush 入口（preview/designer 命令前置调用）。
+- **实测（真实 Chrome，workflow-admin）**：
+  - 66 节点单键同步代价 **37ms → 4.3ms**，一次 burst 提交约 28ms；
+  - 打字期间画布/文档不变，最后一次敲击后 ~300ms 更新节点标题；失焦立即提交（`burst-name` / `blurred` 断言通过）；
+  - 3 次击键只产生 1 个撤销步骤；保存/运行等命令会先 flush 草稿。
+- **回归**：`workflow-designer-ui.spec` 58 passing（新增「值编辑期间 schema 对象不变」「一次 burst 一次提交 + 一步撤销」；两条在旧实现上均失败，已验证）；activities 全量 **359 passing**；microservices/admin 63 passing；workflow-admin preview EXIT 0；`tsc` 0；designer 初始包 743.2 KiB / gzip **195.3 KiB**（< 200 KiB 预算）；`check-source-size` / `git diff --check` OK。

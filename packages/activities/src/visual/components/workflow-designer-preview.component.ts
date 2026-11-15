@@ -38,6 +38,7 @@ import {
     workflowNodeFrame
 } from '../workflow-view-models';
 import { WorkflowCanvasPointerPayload } from './workflow-canvas';
+import { WorkflowInspectorComponent } from './workflow-inspector';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 
 /**
@@ -66,7 +67,7 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
                     :pointerAction="handleCanvas" :panAction="handlePan"></workflow-canvas>
             </workspace-center>
             <workspace-right>
-                <workflow-inspector :model="inspectorModel" :locale="locale"
+                <workflow-inspector #inspector :model="inspectorModel" :locale="locale"
                     :changeAction="inspectorChange" :restoreAction="inspectorRestore"
                     :codeSuggestions="codeSuggestions"></workflow-inspector>
             </workspace-right>
@@ -150,6 +151,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     showJson = false;
     showLogs = false;
     @ViewChild('workspaceLayout', WorkspaceLayoutComponent) workspaceLayout?: WorkspaceLayoutComponent;
+    /** Inspector exposes a flush hook so commands never run on stale edits. */
+    @ViewChild('inspector') inspector?: WorkflowInspectorComponent;
     jsonText = '';
     jsonError = '';
     private selfRef?: WorkflowDesignerPreviewComponent;
@@ -774,6 +777,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
 
     readonly handleToolbarAction = (action: string): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        // A burst-delayed inspector edit is still pending; commands must see it.
+        self.inspector?.formBlur();
         switch (action) {
             case 'schedule':
                 self.toggleSchedule();

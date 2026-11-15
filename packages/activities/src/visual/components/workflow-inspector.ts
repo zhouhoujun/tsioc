@@ -63,6 +63,18 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
 }
 
 /**
+ * Structural key for the derived form schema: which fields exist, what type
+ * they are and whether they are visible. Values are excluded so typing reuses
+ * the same schema object instead of rebuilding every control.
+ */
+function schemaKey(model: WorkflowInspectorModel): string {
+    if (!model.hasSelection) {
+        return 'empty';
+    }
+    return model.fields.map(field => `${field.key}:${field.type}:${field.visible === false ? 0 : 1}`).join('|');
+}
+
+/**
  * Node inspector. The property surface is provided by the shared
  * `dynamic-form` component, so field rendering, conditional visibility,
  * validation and reset all come from the JSON-configurable form layer.
@@ -109,6 +121,13 @@ export class WorkflowInspectorComponent implements OnDestroy {
      * re-render the canvas/inspector, which makes large code fields feel laggy.
      */
     @Attribute() codeChangeDelay = 160;
+    /**
+     * Text/JSON edits are committed after this quiet period. Each commit
+     * re-binds every canvas node (style + layout, ~37ms at 66 nodes), so typing
+     * a name should write the document once per burst, not per keystroke.
+     * Blur, node switches, run/save and non-text fields still flush at once.
+     */
+    @Attribute() textChangeDelay = 300;
     @Attribute() changeAction?: (key: string, value: any, type: string, nodeId?: string) => void;
     @Attribute() restoreAction?: () => void;
     @Attribute() codeSuggestions: string[] = [];
@@ -126,11 +145,15 @@ export class WorkflowInspectorComponent implements OnDestroy {
      * stable identity across renders: building a fresh schema object made
      * `dynamic-form` re-normalize and re-sign its schema on every render after
      * a selection, which dominated the click latency.
+     *
+     * The key is structural (field shape, labels, options, constraints), not
+     * the model instance: editing a value must not rebuild the controls.
      */
     @NoReactive() private formSchemaCache?: {
-        model: WorkflowInspectorModel;
+        key: string;
         locale: string;
-        suggestions: string[];
+        /** Joined hint list; the host rebuilds the array on every commit. */
+        suggestions: string;
         schema: DynamicFormSchema;
     };
     @NoReactive() private formValueCache?: { model: WorkflowInspectorModel; value: Record<string, any> };
@@ -197,14 +220,13 @@ export class WorkflowInspectorComponent implements OnDestroy {
     get formSchema(): DynamicFormSchema {
         const model = this._model;
         const cache = this.formSchemaCache;
-        // Key on the model instance, not on the signature field: `set model`
-        // updates the signature before the model itself, so a signature-keyed
-        // cache could be filled from the previous model during that window.
-        if (cache && cache.model === model && cache.locale === this.locale && cache.suggestions === this.codeSuggestions) {
+        const key = schemaKey(model);
+        const suggestions = (this.codeSuggestions || []).join('\u0000');
+        if (cache && cache.key === key && cache.locale === this.locale && cache.suggestions === suggestions) {
             return cache.schema;
         }
         const schema = this.buildFormSchema();
-        this.formSchemaCache = { model, locale: this.locale, suggestions: this.codeSuggestions, schema };
+        this.formSchemaCache = { key, locale: this.locale, suggestions, schema };
         return schema;
     }
 
@@ -362,12 +384,13 @@ export class WorkflowInspectorComponent implements OnDestroy {
             return;
         }
         const type = this.changeType(change.field);
-        if (type === 'code') {
+        if (type === 'code' || type === 'text' || type === 'json') {
             this.queueChange(change.key, change.value, type);
             return;
         }
-        // Any non-code edit also closes the code edit burst so ordering stays
-        // intuitive (e.g. edit code, then immediately rename the node).
+        // Discrete edits (select/checkbox/color/number) apply immediately; they
+        // also close the text burst so ordering stays intuitive (e.g. edit a
+        // name, then immediately toggle the node).
         this.flushPendingChange();
         this.changeAction?.(change.key, change.value, type, this._model.nodeId);
     };
@@ -409,6 +432,9 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 return 'list';
             case 'code':
                 return 'code';
+            case 'color':
+                // Color pickers emit a value, not a typing burst.
+                return 'color';
             default:
                 return 'text';
         }
@@ -427,7 +453,9 @@ export class WorkflowInspectorComponent implements OnDestroy {
         if (this.pendingTimer !== undefined) {
             clearTimeout(this.pendingTimer);
         }
-        const delay = Math.max(0, Number(this.codeChangeDelay) || 0);
+        const delay = Math.max(0, Number(
+            type === 'code' ? this.codeChangeDelay : this.textChangeDelay
+        ) || 0);
         this.pendingTimer = setTimeout(() => this.flushPendingChange(), delay);
     }
 

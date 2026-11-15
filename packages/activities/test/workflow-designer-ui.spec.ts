@@ -245,7 +245,7 @@ describe('Workflow Designer UI', () => {
         const action = root.querySelector('.workflow-field[data-field-key="action"] input') as any;
         action.value = 'actions.custom';
         action.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
-        await flush();
+        await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config?.action === 'actions.custom');
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config?.action).toBe('actions.custom');
 
         (root.querySelector('.workflow-inspector-restore') as any).click();
@@ -296,7 +296,8 @@ describe('Workflow Designer UI', () => {
 
         input.value = 'Second task';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
-        await flush();
+        // Text edits are committed after a short burst, not per keystroke.
+        await waitFor(() => ref.instance.designer.nodes.find(node => node.id === second.id)?.name === 'Second task');
         expect(ref.instance.designer.nodes.find(node => node.id === second.id)?.name).toBe('Second task');
 
         ref.instance.designer.selectNode('task_1');
@@ -317,7 +318,7 @@ describe('Workflow Designer UI', () => {
         expect(input).toBeTruthy();
         input.value = 'Edited while panning';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
-        await flush();
+        await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === 'Edited while panning');
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('Edited while panning');
 
         ref.instance.designer.panBy(24, 12);
@@ -361,7 +362,7 @@ describe('Workflow Designer UI', () => {
 
         input.value = '重命名任务';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
-        await flush();
+        await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === '重命名任务');
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('重命名任务');
     });
 
@@ -378,7 +379,8 @@ describe('Workflow Designer UI', () => {
         icon.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         color.value = '#112233';
         color.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
-        await flush();
+        // The color is a discrete field: it flushes the pending icon text burst.
+        await waitFor(() => ref.instance.designer.nodes.find(item => item.id === 'task_1')?.style?.icon === '★');
 
         const node = ref.instance.designer.nodes.find(item => item.id === 'task_1');
         expect(node?.style?.icon).toBe('★');
@@ -607,7 +609,7 @@ describe('Workflow Designer UI', () => {
         expect(field).toBeTruthy();
         field.value = 'variables.name';
         field.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
-        await flush();
+        await waitFor(() => ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.[0]?.field === 'variables.name');
         expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.[0]?.field).toBe('variables.name');
 
         const action = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="action"] select.workflow-select') as any;
@@ -640,7 +642,7 @@ describe('Workflow Designer UI', () => {
         const valueInput = field.querySelector('.workflow-keyvalue-value') as any;
         valueInput.value = 'false';
         valueInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
-        await flush();
+        await waitFor(() => JSON.stringify(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config?.result) === '{"approved":false}');
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.config?.result).toEqual({ approved: false });
 
         (field.querySelector('.workflow-field-mode') as any).click();
@@ -1079,7 +1081,10 @@ describe('Workflow Designer UI', () => {
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         await flush();
 
-        await waitFor(() => ref.instance.saveState === 'saved', 2000);
+        // Text edits land after the burst delay; wait for the commit before
+        // waiting for the save, otherwise `saveState` is still the old value.
+        await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === 'Autosaved task');
+        await waitFor(() => ref.instance.saveState === 'saved', 3000);
         const saved = await store.get(ref.instance.designer.definition.id);
         expect(saved?.nodes.find(node => node.id === 'task_1')?.name).toBe('Autosaved task');
         expect(ref.instance.saveStateLabel).toContain('已保存');
@@ -1130,6 +1135,49 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.dirty).toBe(true);
         expect(ref.instance.saveStateLabel).toContain('未保存');
         expect(ref.instance.preview?.saveStateClass).toContain('is-dirty');
+    });
+
+    it('keeps the inspector schema stable while typing values', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        const inspector = (ref.instance.preview as any)?.inspector;
+        expect(inspector).toBeTruthy();
+        const before = inspector.formSchema;
+        expect(before.fields.length).toBeGreaterThan(0);
+
+        const input = root.querySelector('.workflow-inspector-name') as any;
+        input.value = 'Schema stable';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === 'Schema stable');
+        await flush();
+
+        // A value edit must reuse the schema object; a new one made
+        // `dynamic-form` re-sign and rebuild every control per keystroke.
+        expect(inspector.formSchema).toBe(before);
+    });
+
+    it('commits a typing burst once instead of once per keystroke', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        const inspector = (ref.instance.preview as any)?.inspector;
+        // Keep the burst window generous so the assertion is not timing-luck.
+        inspector.textChangeDelay = 800;
+        const before = ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name;
+
+        const input = root.querySelector('.workflow-inspector-name') as any;
+        for (const value of ['B', 'Bu', 'Bur']) {
+            input.value = value;
+            input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+            await new Promise(resolve => setTimeout(resolve, 60));
+        }
+        // Mid-burst the document is untouched: no canvas/inspector rebuild.
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe(before);
+
+        await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === 'Bur', 3000);
+        // One burst == one undo step.
+        ref.instance.designer.undo();
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe(before);
     });
 
     it('opens keyboard shortcuts and saves with Ctrl+S', async () => {

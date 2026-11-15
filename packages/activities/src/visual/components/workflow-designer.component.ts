@@ -623,6 +623,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     readonly toolbarAction = (action: string): void => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        // Toolbar menus and shortcuts can run while an inspector edit is still
+        // inside its burst delay; commit it before the command reads the document.
+        self.preview?.inspector?.formBlur();
         if (action.startsWith('language:')) {
             const locale = action.slice('language:'.length);
             if (locale === 'en' || locale === 'zh-CN') {
@@ -746,6 +749,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     readonly saveWorkflow = async (): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.preview?.inspector?.formBlur();
         self.clearAutosaveTimer();
         self.saveState = 'saving';
         try {
