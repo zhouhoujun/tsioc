@@ -54,6 +54,7 @@ export class DialogRoutesTest {
         const body = overlays[0].lines.join('\n');
         expect(body).toContain('[navigation]');
         expect(body).toContain('model');
+        expect(body).toContain('[select]');
         expect(buildAgentConsoleDialogRouteLines('model').join('\n')).not.toContain('[tools]');
     }
 
@@ -110,6 +111,7 @@ export class DialogRoutesTest {
         expect(title).toEqual('Dialog routes');
         expect(options.map(option => option.value)).toContain('theme');
         expect(options.find(option => option.value === 'theme')?.label).toContain('/theme');
+        expect(options.find(option => option.value === 'theme')?.description).toEqual('settings · select');
         expect(executed).toEqual('/theme');
         await handleDialogCommand(ctx, 'nope');
         expect(executed).toEqual('/theme');

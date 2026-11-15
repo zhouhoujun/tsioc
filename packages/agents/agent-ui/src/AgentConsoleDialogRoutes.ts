@@ -8,10 +8,14 @@
 export type AgentConsoleDialogGroup =
     | 'navigation' | 'model' | 'tools' | 'session' | 'extensions' | 'settings';
 
+export type AgentConsoleDialogKind = 'select' | 'panel' | 'wizard' | 'text';
+
 export interface AgentConsoleDialogRoute {
     id: string;
     path: string;
     group: AgentConsoleDialogGroup;
+    /** Surface the route opens, for catalogues and pickers. */
+    kind: AgentConsoleDialogKind;
     title: string;
     command: string;
     /** Extra deep-link names that resolve to this route. */
@@ -23,24 +27,24 @@ export const AGENT_CONSOLE_DIALOG_GROUP_ORDER: readonly AgentConsoleDialogGroup[
 ];
 
 export const AGENT_CONSOLE_DIALOG_ROUTES: readonly AgentConsoleDialogRoute[] = [
-    { id: 'help', path: '/help', group: 'navigation', title: 'Help', command: '/help' },
-    { id: 'sessions', path: '/sessions', group: 'navigation', title: 'Sessions', command: '/sessions', aliases: ['session-list', 'resume'] },
-    { id: 'projects', path: '/projects', group: 'navigation', title: 'Projects', command: '/projects' },
-    { id: 'threads', path: '/threads', group: 'navigation', title: 'Threads', command: '/threads' },
-    { id: 'model', path: '/model', group: 'model', title: 'Model', command: '/model', aliases: ['models'] },
-    { id: 'provider', path: '/provider', group: 'model', title: 'Provider', command: '/provider', aliases: ['providers'] },
-    { id: 'permissions', path: '/permissions', group: 'model', title: 'Permissions', command: '/permissions', aliases: ['security'] },
-    { id: 'settings', path: '/settings', group: 'settings', title: 'Settings', command: '/settings' },
-    { id: 'theme', path: '/theme', group: 'settings', title: 'Theme', command: '/theme', aliases: ['themes'] },
-    { id: 'tools', path: '/tools', group: 'tools', title: 'Tools', command: '/tools' },
-    { id: 'approvals', path: '/approvals', group: 'tools', title: 'Approvals', command: '/approvals', aliases: ['approve', 'deny'] },
-    { id: 'outputs', path: '/outputs', group: 'tools', title: 'Outputs', command: '/outputs' },
-    { id: 'mcp', path: '/mcp', group: 'tools', title: 'MCP', command: '/mcp' },
-    { id: 'skills', path: '/skills', group: 'extensions', title: 'Skills', command: '/skills' },
-    { id: 'plugins', path: '/plugins', group: 'extensions', title: 'Plugins', command: '/plugins' },
-    { id: 'apps', path: '/apps', group: 'extensions', title: 'Apps', command: '/apps' },
-    { id: 'ssh', path: '/ssh', group: 'extensions', title: 'SSH', command: '/ssh' },
-    { id: 'worktree', path: '/worktree', group: 'session', title: 'Worktrees', command: '/worktree', aliases: ['worktrees'] }
+    { id: 'help', path: '/help', kind: 'select', group: 'navigation', title: 'Help', command: '/help' },
+    { id: 'sessions', path: '/sessions', kind: 'panel', group: 'navigation', title: 'Sessions', command: '/sessions', aliases: ['session-list', 'resume'] },
+    { id: 'projects', path: '/projects', kind: 'panel', group: 'navigation', title: 'Projects', command: '/projects' },
+    { id: 'threads', path: '/threads', kind: 'panel', group: 'navigation', title: 'Threads', command: '/threads' },
+    { id: 'model', path: '/model', kind: 'select', group: 'model', title: 'Model', command: '/model', aliases: ['models'] },
+    { id: 'provider', path: '/provider', kind: 'wizard', group: 'model', title: 'Provider', command: '/provider', aliases: ['providers'] },
+    { id: 'permissions', path: '/permissions', kind: 'select', group: 'model', title: 'Permissions', command: '/permissions', aliases: ['security'] },
+    { id: 'settings', path: '/settings', kind: 'select', group: 'settings', title: 'Settings', command: '/settings' },
+    { id: 'theme', path: '/theme', kind: 'select', group: 'settings', title: 'Theme', command: '/theme', aliases: ['themes'] },
+    { id: 'tools', path: '/tools', kind: 'panel', group: 'tools', title: 'Tools', command: '/tools' },
+    { id: 'approvals', path: '/approvals', kind: 'panel', group: 'tools', title: 'Approvals', command: '/approvals', aliases: ['approve', 'deny'] },
+    { id: 'outputs', path: '/outputs', kind: 'panel', group: 'tools', title: 'Outputs', command: '/outputs' },
+    { id: 'mcp', path: '/mcp', kind: 'select', group: 'tools', title: 'MCP', command: '/mcp' },
+    { id: 'skills', path: '/skills', kind: 'select', group: 'extensions', title: 'Skills', command: '/skills' },
+    { id: 'plugins', path: '/plugins', kind: 'select', group: 'extensions', title: 'Plugins', command: '/plugins' },
+    { id: 'apps', path: '/apps', kind: 'select', group: 'extensions', title: 'Apps', command: '/apps' },
+    { id: 'ssh', path: '/ssh', kind: 'text', group: 'extensions', title: 'SSH', command: '/ssh' },
+    { id: 'worktree', path: '/worktree', kind: 'text', group: 'session', title: 'Worktrees', command: '/worktree', aliases: ['worktrees'] }
 ];
 
 export interface AgentConsoleDialogRouteGroup {
@@ -91,6 +95,6 @@ export function groupAgentConsoleDialogRoutes(group?: string): AgentConsoleDialo
 export function buildAgentConsoleDialogRouteLines(group?: string): string[] {
     return groupAgentConsoleDialogRoutes(group).flatMap(({ group: name, routes }) => [
         `[${name}]`,
-        ...routes.map(route => `${route.id}  ${route.title}  ${route.path}`)
+        ...routes.map(route => `${route.id}  ${route.title}  ${route.path}  [${route.kind}]`)
     ]);
 }

@@ -263,6 +263,7 @@
 - ✅ D3 壳语义：approval / question 面板补上共享 `dialog-panel` / `dialog-title` / `dialog-hint` / `dialog-close` 钩子（JSDOM 挂载测试），统一 modal 皮肤与关闭语义。
 - ✅ 真实 PTY：acceptance 场景 12 驱动 `/theme` → `sol` 过滤 → Backspace 恢复 → Esc 关闭，断言真实终端中的行过滤与关闭。
 - ✅ Web 滚轮：文本对话框打开时滚轮滚动对话框自身（不再滚动底层 transcript），JSDOM 挂载测试覆盖。
+- ✅ R1 路由分类：每条 route 声明 `kind`（select/panel/wizard/text），`/dialog` 选择器显示 `group · kind`，`/help dialogs` 目录追加 kind。
 - ✅ R1 交互式路由：`/dialog` 无参数时以选择对话框打开路由目录（可按 id/标题/路径键入过滤，Enter 直接执行对应命令）；`/help dialogs` 仍为只读文本目录。
 - ✅ R1 可发现性：`/help` 分组菜单新增 `Dialogs` 行（显示 route 数量）打开路由目录；Esc/✕ 返回分组列表（修复 Web 端 Esc 直接全部关闭）。
 - ✅ D2 问答优先：pending question 到达时取消已打开的选择/文本对话框（select promise 以 undefined 结束），让问题独占键盘与自定义答案输入。

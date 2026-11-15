@@ -15,7 +15,7 @@ export async function handleDialogCommand(ctx: CommandHandlerContext, args: stri
             routes.map(route => ({
                 label: `${route.title}  ${route.path}`,
                 value: route.id,
-                description: group
+                description: `${group} · ${route.kind}`
             })));
         const picked = await ctx.select(
             formatAgentUiNotice(ctx.translator, 'dialogRoutesTitle'),
