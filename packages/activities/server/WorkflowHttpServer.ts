@@ -66,6 +66,7 @@ export const WORKFLOW_DEFINITION_STORE = token<WorkflowDefinitionStore>('WORKFLO
 export const WORKFLOW_EXECUTION_STORE = token<WorkflowExecutionStore>('WORKFLOW_EXECUTION_STORE');
 export const WORKFLOW_EXECUTION_LIMIT = token<number>('WORKFLOW_EXECUTION_LIMIT');
 export const WORKFLOW_VERSION_STORE = token<WorkflowVersionStore>('WORKFLOW_VERSION_STORE');
+export const WORKFLOW_EXECUTION_BYTES = token<number>('WORKFLOW_EXECUTION_BYTES');
 
 /** Plugin catalog API: installed plugins plus bundled/available manifests. */
 @Controller('/api/plugins')
@@ -116,6 +117,7 @@ export class WorkflowHttpController {
         @Inject(WORKFLOW_DEFINITION_STORE) private store: WorkflowDefinitionStore,
         @Inject(WORKFLOW_EXECUTION_STORE) private history: WorkflowExecutionStore,
         @Inject(WORKFLOW_EXECUTION_LIMIT) private historyLimit: number,
+        @Inject(WORKFLOW_EXECUTION_BYTES) private historyBytes: number,
         @Inject(WORKFLOW_VERSION_STORE) private versions: WorkflowVersionStore,
         private execution: VisualWorkflowService
     ) { }
@@ -385,6 +387,10 @@ export class WorkflowHttpController {
         try {
             await this.history.save(snapshot);
             await this.history.prune(snapshot.workflowId, Math.max(1, Number(this.historyLimit) || 200));
+            // Count caps do not bound databases where one run carries large payloads.
+            if (typeof this.history.pruneBytes === 'function') {
+                await this.history.pruneBytes(snapshot.workflowId, Math.max(0, Number(this.historyBytes) || 0));
+            }
         } catch {
             // History persistence must never fail the workflow response.
         }
@@ -474,6 +480,8 @@ export interface WorkflowHttpServerOptions {
     versionHistoryLimit?: number;
     /** Snapshots kept per workflow (default 200). */
     executionHistoryLimit?: number;
+    /** Bytes kept per workflow across its snapshots (default 5 MB, 0 disables). */
+    executionHistoryBytes?: number;
     /** SQLite database path when `store` is not supplied. */
     databaseFile?: string;
     /** Programmatic plugins installed when the server starts. */
@@ -575,6 +583,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             { provide: WORKFLOW_DEFINITION_STORE, useValue: store },
             { provide: WORKFLOW_EXECUTION_STORE, useValue: executionStore },
             { provide: WORKFLOW_EXECUTION_LIMIT, useValue: options.executionHistoryLimit ?? 200 },
+            { provide: WORKFLOW_EXECUTION_BYTES, useValue: options.executionHistoryBytes ?? 5_000_000 },
             { provide: WORKFLOW_VERSION_STORE, useValue: versionStore },
             ...(options.providers || []),
             WorkflowPluginCatalog,

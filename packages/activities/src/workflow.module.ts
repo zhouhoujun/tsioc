@@ -35,6 +35,7 @@ import {
     WorkflowRunHistoryComponent,
     WorkflowRunLogComponent,
     WorkflowLibraryComponent,
+    WorkflowVersionPanelComponent,
     WorkflowDesignerComponent,
     WorkflowDesignerPreviewComponent,
     WorkflowManagementMenuComponent
@@ -113,6 +114,7 @@ import {
         WorkflowRunHistoryComponent,
         WorkflowRunLogComponent,
         WorkflowLibraryComponent,
+        WorkflowVersionPanelComponent,
         WorkflowDesignerPreviewComponent,
         WorkflowManagementMenuComponent,
         WorkflowDesignerComponent
@@ -172,6 +174,7 @@ import {
         WorkflowRunHistoryComponent,
         WorkflowRunLogComponent,
         WorkflowLibraryComponent,
+        WorkflowVersionPanelComponent,
         WorkflowDesignerPreviewComponent,
         WorkflowManagementMenuComponent,
         WorkflowDesignerComponent,

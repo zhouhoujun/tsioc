@@ -13,6 +13,8 @@ import { VisualWorkflowDefinition, WorkflowToolbarModel } from '../types';
 import {
     WorkflowDefinitionStore,
     WorkflowDefinitionSummary,
+    WorkflowRelease,
+    WorkflowVersionSummary,
     createDefaultWorkflowDefinitionStore
 } from '../workflow-store';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
@@ -60,6 +62,9 @@ interface WorkflowDocumentTab {
             :saveAction="saveWorkflow" :saveAsAction="saveWorkflowAs"
             :openAction="loadWorkflow" :removeAction="deleteWorkflow"
             :closeAction="closeLibrary"></workflow-library>
+        <workflow-version-panel :items="versionItems" :release="versionRelease"
+            :visible="showVersions" :locale="locale" :error="versionError"
+            :restoreAction="restoreVersion" :closeAction="closeVersions"></workflow-version-panel>
         <div class="workflow-rename" v-if="showRename">
             <div class="workflow-rename-panel">
                 <div class="workflow-rename-head">
@@ -121,6 +126,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
     renameError = '';
     libraryError = '';
     libraryItems: WorkflowDefinitionSummary[] = [];
+    showVersions = false;
+    versionItems: WorkflowVersionSummary[] = [];
+    versionRelease: WorkflowRelease | undefined = undefined;
+    versionError = '';
     /** Set in onInit to the reactive component proxy (arrow callbacks capture the raw instance). */
     private selfRef?: WorkflowDesignerComponent;
     @NoReactive() private autosaveTimer?: any;
@@ -652,6 +661,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.publishWorkflow();
             return;
         }
+        if (action === 'versions') {
+            void self.openVersions();
+            return;
+        }
         if (action === 'open-library') {
             void self.openLibrary();
             return;
@@ -871,6 +884,56 @@ export class WorkflowDesignerComponent implements OnDestroy {
             await self.refreshLibrary();
         } catch (error) {
             self.libraryError = (error as Error).message;
+        }
+    };
+
+    /** Open the version history overlay for the active document. */
+    readonly openVersions = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showVersions = true;
+        self.versionError = '';
+        const store = self.store;
+        if (typeof store?.listVersions !== 'function') {
+            self.versionItems = [];
+            self.versionRelease = undefined;
+            self.versionError = self.t('versionUnsupported', 'This host does not keep version history');
+            return;
+        }
+        try {
+            const list = await store.listVersions(self.designer.definition.id);
+            self.versionItems = list.items || [];
+            self.versionRelease = list.release;
+        } catch (error) {
+            self.versionItems = [];
+            self.versionError = (error as Error).message;
+        }
+    };
+
+    readonly closeVersions = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showVersions = false;
+    };
+
+    /** Copy a snapshot back into the editable draft (the release pointer stays). */
+    readonly restoreVersion = async (version: number): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const store = self.store;
+        if (typeof store?.restoreVersion !== 'function') {
+            return;
+        }
+        try {
+            const definition = await store.restoreVersion(self.designer.definition.id, version);
+            if (!definition) {
+                self.versionError = self.t('versionMissing', 'Version not found');
+                return;
+            }
+            self.designer.load(definition);
+            self.versionError = '';
+            self.showVersions = false;
+            self.saveState = self.designer.dirty ? 'dirty' : 'saved';
+            self.syncActiveTabId();
+        } catch (error) {
+            self.versionError = (error as Error).message;
         }
     };
 

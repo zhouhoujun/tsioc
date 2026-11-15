@@ -21,6 +21,12 @@ export interface WorkflowExecutionStore {
     list(workflowId?: string, limit?: number): Promise<WorkflowExecutionSnapshot[]>;
     /** Keep only the newest `keep` snapshots for one workflow. */
     prune(workflowId: string, keep: number): Promise<void>;
+    /**
+     * Keep one workflow under `maxBytes`, dropping the oldest runs first while
+     * always retaining the newest snapshot. Bounds databases where single runs
+     * carry large payloads.
+     */
+    pruneBytes?(workflowId: string, maxBytes: number): Promise<void>;
     /** Drop the history of a deleted workflow. */
     removeWorkflow(workflowId: string): Promise<void>;
     /** Drop all execution history. */
@@ -67,6 +73,22 @@ export class InMemoryWorkflowExecutionStore implements WorkflowExecutionStore {
             Array.from(this.snapshots.values()).filter(item => item.workflowId === workflowId)
         );
         history.slice(limit).forEach(item => this.snapshots.delete(item.executionId));
+    }
+
+    async pruneBytes(workflowId: string, maxBytes: number): Promise<void> {
+        const limit = Math.max(0, Number(maxBytes) || 0);
+        if (!limit) {
+            return;
+        }
+        const history = sorted(
+            Array.from(this.snapshots.values()).filter(item => item.workflowId === workflowId)
+        );
+        let total = history.reduce((sum, item) => sum + JSON.stringify(item).length, 0);
+        for (let index = history.length - 1; index > 0 && total > limit; index--) {
+            const snapshot = history[index];
+            total -= JSON.stringify(snapshot).length;
+            this.snapshots.delete(snapshot.executionId);
+        }
     }
 
     async removeWorkflow(workflowId: string): Promise<void> {
@@ -171,6 +193,30 @@ export class SqliteWorkflowExecutionStore implements WorkflowExecutionStore {
                 )
             `)
             .run(workflowId, workflowId, limit);
+    }
+
+    async pruneBytes(workflowId: string, maxBytes: number): Promise<void> {
+        const limit = Math.max(0, Number(maxBytes) || 0);
+        if (!limit) {
+            return;
+        }
+        const rows = this.database()
+            .prepare(`
+                SELECT execution_id, LENGTH(snapshot) AS size
+                  FROM workflow_executions
+                 WHERE workflow_id = ?
+                 ORDER BY start_time DESC
+            `)
+            .all(workflowId) as unknown as Array<{ execution_id: string; size: number }>;
+        let total = rows.reduce((sum, row) => sum + (Number(row.size) || 0), 0);
+        const drop: string[] = [];
+        // Walk oldest-first and keep at least the newest snapshot.
+        for (let index = rows.length - 1; index > 0 && total > limit; index--) {
+            total -= Number(rows[index].size) || 0;
+            drop.push(rows[index].execution_id);
+        }
+        const remove = this.database().prepare('DELETE FROM workflow_executions WHERE execution_id = ?');
+        drop.forEach(executionId => remove.run(executionId));
     }
 
     async removeWorkflow(workflowId: string): Promise<void> {

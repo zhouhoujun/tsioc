@@ -1692,6 +1692,104 @@ workflow-canvas {
     color: #dc2626;
 }
 
+.workflow-version-panel {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: min(560px, calc(100vw - 36px));
+    max-height: min(460px, calc(100vh - 80px));
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.22);
+    padding: 12px;
+    z-index: 31;
+}
+
+.workflow-version-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.workflow-version-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.workflow-version-release {
+    font-size: 10px;
+    font-weight: 700;
+    color: #047857;
+    background: #d1fae5;
+    border-radius: 999px;
+    padding: 1px 8px;
+}
+
+.workflow-version-list {
+    overflow: auto;
+    min-height: 0;
+}
+
+.workflow-version-empty {
+    font-size: 12px;
+    color: #94a3b8;
+    padding: 10px 2px;
+}
+
+.workflow-version-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 2px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.workflow-version-row.is-published .workflow-version-name {
+    color: #047857;
+}
+
+.workflow-version-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #475569;
+    background: #e2e8f0;
+    border-radius: 6px;
+    padding: 1px 6px;
+}
+
+.workflow-version-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.workflow-version-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.workflow-version-meta {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.workflow-version-error {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #dc2626;
+}
+
+
 /* Themes */
 .workflow-designer[data-theme="dark"] {
     --wf-theme-bg: #0b1220;
@@ -1894,6 +1992,9 @@ workflow-canvas {
 .workflow-designer[data-theme="dark"] .workflow-library-panel,
 .workflow-designer[data-theme="solarized"] .workflow-library-panel,
 .workflow-designer[data-theme="high-contrast"] .workflow-library-panel,
+.workflow-designer[data-theme="dark"] .workflow-version-panel,
+.workflow-designer[data-theme="solarized"] .workflow-version-panel,
+.workflow-designer[data-theme="high-contrast"] .workflow-version-panel,
 .workflow-designer[data-theme="dark"] .workflow-json-panel,
 .workflow-designer[data-theme="solarized"] .workflow-json-panel,
 .workflow-designer[data-theme="high-contrast"] .workflow-json-panel {
@@ -1964,6 +2065,12 @@ workflow-canvas {
 .workflow-designer[data-theme="dark"] .workflow-library-row-name,
 .workflow-designer[data-theme="solarized"] .workflow-library-row-name,
 .workflow-designer[data-theme="high-contrast"] .workflow-library-row-name,
+.workflow-designer[data-theme="dark"] .workflow-version-title,
+.workflow-designer[data-theme="solarized"] .workflow-version-title,
+.workflow-designer[data-theme="high-contrast"] .workflow-version-title,
+.workflow-designer[data-theme="dark"] .workflow-version-name,
+.workflow-designer[data-theme="solarized"] .workflow-version-name,
+.workflow-designer[data-theme="high-contrast"] .workflow-version-name,
 .workflow-designer[data-theme="dark"] .workflow-node-title,
 .workflow-designer[data-theme="solarized"] .workflow-node-title,
 .workflow-designer[data-theme="high-contrast"] .workflow-node-title {
@@ -2006,6 +2113,12 @@ workflow-canvas {
 .workflow-designer[data-theme="dark"] .workflow-library-row-meta,
 .workflow-designer[data-theme="solarized"] .workflow-library-row-meta,
 .workflow-designer[data-theme="high-contrast"] .workflow-library-row-meta,
+.workflow-designer[data-theme="dark"] .workflow-version-empty,
+.workflow-designer[data-theme="solarized"] .workflow-version-empty,
+.workflow-designer[data-theme="high-contrast"] .workflow-version-empty,
+.workflow-designer[data-theme="dark"] .workflow-version-meta,
+.workflow-designer[data-theme="solarized"] .workflow-version-meta,
+.workflow-designer[data-theme="high-contrast"] .workflow-version-meta,
 .workflow-designer[data-theme="dark"] .workflow-node-type,
 .workflow-designer[data-theme="solarized"] .workflow-node-type,
 .workflow-designer[data-theme="high-contrast"] .workflow-node-type,
@@ -2226,7 +2339,10 @@ workflow-canvas {
 
 .workflow-designer[data-theme="dark"] .workflow-library-row,
 .workflow-designer[data-theme="solarized"] .workflow-library-row,
-.workflow-designer[data-theme="high-contrast"] .workflow-library-row {
+.workflow-designer[data-theme="high-contrast"] .workflow-library-row,
+.workflow-designer[data-theme="dark"] .workflow-version-row,
+.workflow-designer[data-theme="solarized"] .workflow-version-row,
+.workflow-designer[data-theme="high-contrast"] .workflow-version-row {
     border-color: var(--wf-theme-border);
 }
 

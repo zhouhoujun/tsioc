@@ -59,6 +59,59 @@ describe('Workflow execution store', () => {
         expect((await store.list()).length).toBe(0);
     });
 
+    it('bounds history by bytes and always keeps the newest run', async () => {
+        const store = new InMemoryWorkflowExecutionStore();
+        const big = (id: string, order: number) => {
+            const item = snapshot(id, 'bytes', order * 100);
+            item.logs = [{
+                id: 'log_1',
+                timestamp: 1,
+                level: 'info',
+                event: 'log',
+                message: 'x'.repeat(400)
+            }];
+            return item;
+        };
+        for (let index = 1; index <= 5; index++) {
+            await store.save(big(`e${index}`, index));
+        }
+        const all = await store.list('bytes', 50);
+        expect(all.length).toBe(5);
+        const newest = JSON.stringify(all[0]).length;
+        await store.pruneBytes('bytes', newest * 2 + 10);
+
+        const after = await store.list('bytes', 50);
+        expect(after.length).toBe(2);
+        expect(after[0].executionId).toBe('e5');
+        expect(after[0].executionId).toBe(all[0].executionId);
+        const total = after.reduce((sum, item) => sum + JSON.stringify(item).length, 0);
+        expect(total).toBeLessThanOrEqual(newest * 2 + 10);
+    });
+
+    (isSqliteAvailable() ? it : it.skip)('trims persisted history to a byte budget', async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-exec-bytes-'));
+        const file = path.join(dir, 'workflows.db');
+        try {
+            const store = new SqliteWorkflowExecutionStore({ file });
+            for (let index = 1; index <= 4; index++) {
+                const item = snapshot(`b${index}`, 'bytes', index * 100);
+                item.logs = [{ id: 'l', timestamp: 1, level: 'info', event: 'log', message: 'y'.repeat(600) }];
+                await store.save(item);
+            }
+            const all = await store.list('bytes', 50);
+            expect(all.length).toBe(4);
+            const newest = JSON.stringify(all[0]).length;
+            await store.pruneBytes('bytes', newest + 50);
+
+            const after = await store.list('bytes', 50);
+            expect(after.length).toBe(1);
+            expect(after[0].executionId).toBe('b4');
+            store.close();
+        } finally {
+            fs.rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
     (isSqliteAvailable() ? it : it.skip)('persists snapshots beside workflow definitions', async () => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-exec-store-'));
         const file = path.join(dir, 'workflows.db');

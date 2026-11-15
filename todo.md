@@ -4250,3 +4250,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **实测（真实 Chrome，workflow-admin）**：自动保存后版本数 **0**；Ctrl+S 产生 v1（save）；菜单发布产生 v2（publish）且 release 指向 v2、状态栏显示 `Published v2`；发布后继续编辑草稿，版本数与 release 均不变。HTTP 侧另有断言：循环依赖草稿可保存但发布返回 400，且此时 `/run` 仍执行已发布版本成功；restore v1 回填草稿；删除工作流后版本与 release 清空。
 - **回归**：activities **367 passing**（新增 version store 4、HTTP 1、designer 2、UI 1）；microservices/admin 63；components/common 79；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK。
 - **预算**：设计器初始包 748.1 KiB / gzip **196.4 KiB**。因版本/发布能力新增约 1.1 KB gzip，`packages/workflow-admin/build.ts` 的 gzip 预算由 200 KB 调整为 **205 KB**（raw 预算 780 KB 不变，注释说明原因）。
+
+## 2026-11-15 版本面板 + 执行历史字节预算
+- **版本面板**：新增 `workflow-version-panel`（81 行，纯展示 + 两个回调），设计器菜单增加「版本历史」；列出 `vN / 名称 / kind（已保存·已发布）/ 时间`，当前发布版本高亮并显示 `vN` 徽标；点击「恢复」把该版本回填草稿（发布指针不变），面板关闭、状态与 tab 同步。浅色 + dark/solarized/high-contrast 主题样式齐全，文案中英双语。
+- **实测（真实 Chrome，workflow-admin + SQLite）**：Ctrl+S 产生 v1（Saved），菜单发布产生 v2（Published，release=v2），打开版本面板可见两行且 v2 高亮、徽标 `v2`；点击 v1 的「恢复」后节点名回到 `version one`，面板隐藏，无 console 错误。
+- **执行历史字节预算**：`WorkflowExecutionStore.pruneBytes?(workflowId, maxBytes)`（内存 + SQLite 实现），`WorkflowHttpServer` 新增 `executionHistoryBytes`（默认 5 MB，0 关闭）并在每次落库后与条数上限一起生效；从最旧开始删除、**始终保留最新一次**；删除工作流/清空历史行为不变。
+- **回归**：activities **370 passing**（新增 version panel UI 1、字节预算 2）；microservices/admin 63；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK；设计器初始包 754.9 KiB / gzip 197.4 KiB（< 205 KB 预算）。

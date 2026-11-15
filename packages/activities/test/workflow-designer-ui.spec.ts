@@ -1047,6 +1047,40 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.saveStateLabel).toContain('已保存');
     });
 
+    it('lists saved and published versions and restores one into the draft', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        ref.instance.store = store;
+
+        ref.instance.designer.renameNode('task_1', 'first version');
+        await store.saveVersion(ref.instance.designer.definition);
+        ref.instance.designer.renameNode('task_1', 'second version');
+        await store.publish(ref.instance.designer.definition);
+        await flush();
+
+        const trigger = root.querySelector('.workflow-global-bar .menu-bar-trigger') as any;
+        trigger.click();
+        await flush();
+        const versions = root.querySelector('.workflow-global-bar [data-menu-id="versions"]') as any;
+        expect(versions).toBeTruthy();
+        versions.click();
+        await flush();
+
+        const panel = root.querySelector('.workflow-version-panel') as any;
+        expect(panel).toBeTruthy();
+        await waitFor(() => panel.querySelectorAll('.workflow-version-row').length === 2);
+        const rows = Array.from(panel.querySelectorAll('.workflow-version-row')) as any[];
+        expect(rows.length).toBe(2);
+        expect(rows[0].classList.contains('is-published')).toBe(true);
+        expect(rows[0].textContent).toContain('v2');
+        expect(panel.querySelector('.workflow-version-release')?.textContent).toContain('v2');
+
+        const restore = rows[1].querySelector('button') as any;
+        restore.click();
+        await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === 'first version');
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('first version');
+        expect((root.querySelector('.workflow-version-panel') as any).hasAttribute('hidden')).toBe(true);
+    });
+
     it('debounces code edits so typing does not rebuild the workflow per keystroke', async () => {
         const node = ref.instance.designer.addNode('function', { x: 120, y: 120 });
         expect(node).toBeTruthy();
