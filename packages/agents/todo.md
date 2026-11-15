@@ -254,7 +254,11 @@
 - ✅ Web dialog region 改为 composer 上方浮层（去掉全屏 scrim/居中 modal）；footer 高度实测写入 `--agent-web-footer-height`。
 - ✅ `DomOverlayAnchors` 下沉到 `components/html`，agent-ui 只提供选择器/变量名。
 - ✅ 修复 dialog host 包装导致 `margin:auto` 失效的问题：text-overlay/select 卡片重新水平居中。
-- 待办：按 D1–D6/R 继续（审计矩阵、Dialog Stack、Route Registry、键盘/尺寸统一、按组迁移）。
+- ✅ 命令对话框互斥：打开 select/text/tools/sessions/approvals/jobs/tasks/toolRuns/review/outputs 会关闭其他 transient 面板。
+- ✅ `/outputs`、which-key、health 改为 composer 上方浮层（不再渲染到输入区下方）。
+- ✅ `/permissions` 能力报告使用专属 `Permissions` 对话框；`/help` 详情 Esc/✕ 返回分组。
+- ✅ R1 路由表：`id/path/group/title/command/aliases` + `/dialog [id|path|group|alias|prefix]`、`/help dialogs` 目录、Web `?dialog=` 深链（按 route 命令派发，不写入 `/dialog` 包装行）。
+- 待办：按 D1–D6/R 继续（Dialog Stack 收口 approval/question、route kind/priority/size/load 元数据、键盘/尺寸统一、逻辑懒加载、palette 分组）。
 
 #### D1 — 对话框审计矩阵
 
@@ -299,7 +303,7 @@
   - Web 当前是单文件 IIFE bundle；真实按需加载需 `build-web.ts` 改 `format: 'esm'` + `splitting: true`，输出 `web/dist/chunks/*`，PWA 预缓存 shell、chunk 走 network-first。
   - 若必须保留单文件分发，则先用“逻辑懒加载”（defer 初始化/注册），但不得宣称网络按需。
   - TUI 用 `import()` 缓存模块；hover/选中 palette 项时预加载。
-- 深链：Web `?dialog=model`、TUI `/dialog model`（内部路由），与命令共享同一 route id。
+- 深链：Web `?dialog=model`、TUI `/dialog model`（内部路由），与命令共享同一 route id。**（已实现：Web 在 mount 时按 route 派发命令，未知 route 走 toast；TUI `/dialog` 经命令分发器执行。`?dialog=` 只接受 id/path/alias/唯一前缀。）**
 - 验收：route 清单完整性；lazy load 只执行一次；chunk 失败可重试；`/help` 分组由 route 生成；TUI/Web 一致；真实 PTY + Chrome。
 
 ### 遗留观察（收尾时必须确认）

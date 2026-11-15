@@ -58,3 +58,4 @@ export * from './AgentConsoleDetailPanels';
 export * from './AgentConsoleSessionTabsSource';
 export * from './AgentConsoleSessionTabClose';
 export * from './AgentConsoleHostNotice';
+export * from './AgentConsoleDialogRoutes';

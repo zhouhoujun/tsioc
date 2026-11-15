@@ -1,5 +1,6 @@
 import { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { buildAgentConsoleHelpGroups, buildAgentConsoleHelpLines } from './AgentConsoleHelpView';
+import { buildAgentConsoleDialogRouteLines } from './AgentConsoleDialogRoutes';
 import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel } from './agent-ui.i18n';
 
 /**
@@ -36,6 +37,17 @@ export async function runHelpCommand(ctx: CommandHandlerContext, args: string): 
         return true;
     }
     const group = query.toLowerCase();
+    // Dialog routes are a separate catalogue (`/dialog <id>`); expose it from
+    // the read-only help surface so the routing layer is discoverable.
+    if (group === 'dialog' || group === 'dialogs' || group === 'routes') {
+        const lines = buildAgentConsoleDialogRouteLines();
+        ctx.state.openTextOverlay(
+            formatAgentUiNotice(ctx.translator, 'dialogRoutesTitle'),
+            lines,
+            Math.min(24, lines.length)
+        );
+        return true;
+    }
     const groupOption = buildAgentConsoleHelpGroups(describe, count =>
         formatAgentUiNotice(ctx.translator, 'helpGroupCount', { count }))
         .find(item => item.value === `group:${group}`);

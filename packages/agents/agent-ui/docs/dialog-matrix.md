@@ -35,7 +35,10 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 - Command-outputs / which-key / health panels are anchored above the composer instead of rendering below the input.
 - Text/select cards are centred inside the anchored overlay.
 
-- ✅ R1 route catalog: `/dialog [id|path|group]` lists and dispatches dialog routes; pending questions keep the focus stack (Esc restores the panel underneath).
+- ✅ R1 route catalog: `/dialog [id|path|group|alias|prefix]` lists and dispatches dialog routes; pending questions keep the focus stack (Esc restores the panel underneath).
+- ✅ R1 discoverability: `/help dialogs` opens the route catalogue grouped by category, sharing the same builder as `/dialog`.
+- ✅ R1 deep link: web `?dialog=<route>` resolves through the route table and dispatches the route's own command (transcript records `/theme`, not `/dialog theme`); unknown routes show a toast instead of an empty dialog.
+- Remaining R work: `kind`/`priority`/`size`/`hidden`/`load()` route metadata, palette grouping, logical lazy loading (true chunks need ESM web build), route-level failure retry.
 
 ## Root causes
 

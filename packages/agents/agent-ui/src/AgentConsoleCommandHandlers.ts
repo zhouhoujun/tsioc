@@ -43,25 +43,6 @@ function canonicalArgsOf(meta: { parsedArgs?: AgentConsoleParsedCommandArguments
     return meta.parsedArgs ? meta.parsedArgs.resolved.join(' ') : raw;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function parseTrendTokens(args: string, sep = ' '): { sessionId?: string; bucketSize?: number; maxBuckets?: number } {
-    const tokens = args.split(sep).filter(Boolean);
-    let sessionId: string | undefined;
-    let bucketSize: number | undefined;
-    let maxBuckets: number | undefined;
-    for (const token of tokens) {
-        if (/^\d+d$/.test(token)) {
-            bucketSize = parseInt(token, 10) * 86400000;
-        } else if (/^\d+$/.test(token) && !sessionId) {
-            sessionId = token;
-        } else if (/^\d+$/.test(token) && sessionId && !maxBuckets) {
-            maxBuckets = parseInt(token, 10);
-        }
-    }
-    return { sessionId, bucketSize, maxBuckets };
-}
-
 // ── Handler functions ────────────────────────────────────────────────────────
 
 async function handleModel(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {

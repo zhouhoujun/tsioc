@@ -1,0 +1,118 @@
+/**
+ * `?dialog=<route>` deep links: the browser must open the same dialog the
+ * terminal `/dialog <route>` command opens, and must not invent a dialog for
+ * an unknown route.
+ */
+import expect = require('expect');
+import { Suite, Test, Before, After } from '@tsdi/unit';
+import { JSDOM } from 'jsdom';
+
+import { AgentConsoleSessionState } from '../src';
+import { mountAgentWebConsole } from '../web-console';
+import { FakeAgentGateway } from '../harness/FakeAgentGateway';
+
+async function waitUntil(predicate: () => boolean, timeoutMs = 8000, intervalMs = 25): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+        if (predicate()) {
+            return;
+        }
+        if (Date.now() >= deadline) {
+            throw new Error(`waitUntil timed out after ${timeoutMs}ms`);
+        }
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+}
+
+@Suite('dialog deep links (web)')
+export class DialogDeepLinkTest {
+    dom!: JSDOM;
+
+    @Before()
+    async setupDom() {
+        this.dom = new JSDOM('<!DOCTYPE html><html><body><div id="agent-console"></div></body></html>', {
+            runScripts: 'dangerously',
+            resources: 'usable',
+            url: 'http://localhost:3100/?dialog=help'
+        });
+        (this.dom.window as unknown as { process: unknown }).process = {
+            env: {},
+            cwd: () => '/',
+            platform: 'browser',
+            version: '',
+            versions: {},
+            nextTick: (fn: () => void) => setTimeout(fn, 0),
+            on: () => undefined,
+            argv: []
+        };
+        (globalThis as unknown as { document: Document }).document = this.dom.window.document;
+    }
+
+    @After()
+    async teardownDom() {
+        delete (globalThis as unknown as { document?: Document }).document;
+        if (global.gc) global.gc();
+    }
+
+    @Test('?dialog=help opens the help route and not the /dialog wrapper')
+    async deepLinkOpensRoute() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const state = new AgentConsoleSessionState();
+        const mountedPromise = mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state,
+            pwa: false,
+            workspace: '',
+            dialog: 'help'
+        });
+        try {
+            await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .select-list'));
+            const dialog = this.dom.window.document.querySelector('#agent-console .select-list') as HTMLElement;
+            expect(!!dialog).toBe(true);
+            expect(dialog.textContent || '').toContain('Help');
+            expect(this.dom.window.document.querySelectorAll('#agent-console .select-option').length).toBeGreaterThan(2);
+            const transcript = this.dom.window.document.querySelector('#agent-console .console-messages-panel')?.textContent || '';
+            expect(transcript).toContain('/help');
+            expect(transcript).not.toContain('/dialog');
+        } finally {
+            gateway.dispose();
+            const mounted = await mountedPromise.catch(() => null);
+            if (mounted) {
+                await mounted.dispose();
+            }
+        }
+    }
+
+    @Test('?dialog=<unknown> reports a toast instead of opening an empty dialog')
+    async deepLinkUnknownRoute() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const state = new AgentConsoleSessionState();
+        const mountedPromise = mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state,
+            pwa: false,
+            workspace: '',
+            dialog: 'definitely-not-a-route'
+        });
+        try {
+            await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .console-toast'));
+            const toast = this.dom.window.document.querySelector('#agent-console .console-toast')?.textContent || '';
+            expect(toast).toContain('definitely-not-a-route');
+            // The template always renders an empty select shell; a real dialog
+            // would have selectable rows in it.
+            expect(this.dom.window.document.querySelectorAll('#agent-console .select-option').length).toEqual(0);
+        } finally {
+            gateway.dispose();
+            const mounted = await mountedPromise.catch(() => null);
+            if (mounted) {
+                await mounted.dispose();
+            }
+        }
+    }
+}

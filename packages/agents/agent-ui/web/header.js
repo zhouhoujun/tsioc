@@ -59,6 +59,7 @@
             baseUrl: (window.__TSDI_AGENT_WEB_BASE_URL__ || window.location.origin || '').replace(/\/+$/, ''),
             token: token,
             sessionId: params.get('session') || undefined,
+            dialog: params.get('dialog') || undefined,
             pwa: true
         };
     }
@@ -169,6 +170,8 @@
     function sessionUrl(sessionId) {
         var params = new URLSearchParams(window.location.search);
         params.set('session', sessionId);
+        // A session switch should not reopen the dialog from the previous deep link.
+        params.delete('dialog');
         return window.location.pathname + '?' + params.toString();
     }
 

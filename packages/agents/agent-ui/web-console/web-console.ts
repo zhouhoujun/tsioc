@@ -31,6 +31,7 @@ import {
     sanitizeAgentConsoleSettings
 } from '@tsdi/agent-ui';
 import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
+import { openAgentConsoleDialogDeepLink } from './dialog-deeplink';
 import { keepTranscriptSelection } from './selection-anchor';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -206,6 +207,8 @@ export interface AgentWebConsoleOptions {
     token?: string;
     /** Initial session id */
     sessionId?: string;
+    /** Dialog route id opened on mount (`?dialog=model`). */
+    dialog?: string;
     /** Workspace label shown in the console */
     workspace?: string;
     /** DOM container to mount the console into */
@@ -541,6 +544,19 @@ export async function mountAgentWebConsole(
     indicator.addEventListener('click', onIndicatorClick);
     // Observe content growth from the initial render, not only after the first wheel.
     resolveFollower();
+
+    // Deep link: `?dialog=model` opens the same dialog as `/dialog model`.
+    if (config.dialog) {
+        const instance = rootRef?.instance as unknown as {
+            handleCommand?: (command: string) => Promise<boolean>;
+        } | undefined;
+        openAgentConsoleDialogDeepLink({
+            dialog: config.dialog,
+            translator: state.translator,
+            handleCommand: command => instance?.handleCommand?.(command) ?? Promise.resolve(false),
+            notify: message => toastService.show(message, { durationMs: 4000 })
+        });
+    }
 
     return {
         ctx,
