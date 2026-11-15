@@ -4206,3 +4206,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 输入 `con` 后按 **Enter**，编辑器必须得到 `con\n`，不得被补全替换成 `const`；
   - 输入 `con` 后按 **Tab**，必须接受补全得到 `const`。
 - **验证**：preview EXIT 0，`enterNewline=true`、`tabAccepts=true`、`hintEnv/hintAction=true`、`bottomExpanded=true`，无 console 错误。
+
+## 2026-11-15 输入中标识符不再误报未定义
+- **问题**：输入 `con` 时补全尚未完成，语义检查立即显示 `△ "con"未定义`，干扰补全体验。
+- **修正**：`analyzeFunctionCode` 新增 `AnalysisOptions.cursorOffset/knownNames`；当光标的标识符是已知补全名（`context`、`const`、`continue` 等）的前缀时，暂不报未定义；输入 `conatct` 等非前缀仍正常告警。`code-editor-runtime` 从 suggestions + JS 关键字收集 knownNames。
+- **验证**：
+  - `workflow-code-editor.spec` 6 passing（新增 `con` 不告警、`conatct` 告警断言）；
+  - workflow-admin preview：`partialClean=true`、`semanticUndefined=true`、`enterNewline=true`、`tabAccepts=true`，EXIT 0；
+  - activities 353、microservices/admin 63；`tsc` 0；`check-source-size`/`git diff --check` OK。

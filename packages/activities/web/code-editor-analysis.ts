@@ -285,9 +285,17 @@ function collectUnreachable(
     eachAstChild(node, child => collectUnreachable(child, text, prefixLength, translator, output));
 }
 
+export interface AnalysisOptions {
+    /** Cursor offset used to suppress warnings for the word being typed. */
+    cursorOffset?: number;
+    /** Completion names that a partial identifier may still become. */
+    knownNames?: readonly string[];
+}
+
 export async function analyzeFunctionCode(
     text: string,
-    translator?: Translator
+    translator?: Translator,
+    options?: AnalysisOptions
 ): Promise<CodeDiagnostic[]> {
     const parsed = await parseFunctionSource(text);
     if (parsed.error) {
@@ -326,6 +334,13 @@ export async function analyzeFunctionCode(
         const identifier = reference?.identifier;
         const name = identifier?.name;
         if (!name || FUNCTION_GLOBALS.has(name) || reportedUndefined.has(name)) {
+            continue;
+        }
+        // While the user is still typing an identifier, do not flag a prefix
+        // of a known completion (`con` -> `const`/`context`) as undefined.
+        if (options?.cursorOffset != null
+            && identifier.end >= options.cursorOffset
+            && (options.knownNames || []).some(known => known.startsWith(name) && known !== name)) {
             continue;
         }
         reportedUndefined.add(name);

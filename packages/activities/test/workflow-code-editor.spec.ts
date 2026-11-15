@@ -50,6 +50,19 @@ describe('Workflow function code editor', () => {
 
         const unreachable = await analyzeFunctionCode('return 1;\nconsole.log("never");');
         expect(unreachable.some(item => item.severity === 'warning' && item.message.includes('Unreachable'))).toBe(true);
+
+        // A partial identifier at the cursor is a completion candidate, not a
+        // typo yet; once it stops being a prefix, the warning returns.
+        const partial = await analyzeFunctionCode('con', undefined, {
+            cursorOffset: 3,
+            knownNames: ['const', 'context']
+        });
+        expect(partial).toEqual([]);
+        const typo = await analyzeFunctionCode('conatct', undefined, {
+            cursorOffset: 7,
+            knownNames: ['const', 'context']
+        });
+        expect(typo.some(item => item.message.includes('conatct'))).toBe(true);
     });
 
     it('warns about duplicate JSON object keys', async () => {

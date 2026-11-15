@@ -142,9 +142,9 @@ export async function findJsonSyntaxError(text: string) {
     return analysis.findJsonSyntaxError(text);
 }
 
-export async function analyzeFunctionCode(text: string, translator?: Translator) {
+export async function analyzeFunctionCode(text: string, translator?: Translator, options?: any) {
     const analysis = await import('./code-editor-analysis');
-    return analysis.analyzeFunctionCode(text, translator);
+    return analysis.analyzeFunctionCode(text, translator, options);
 }
 
 export async function analyzeJsonCode(text: string, translator?: Translator) {
@@ -283,6 +283,7 @@ export class WorkflowCodeMirrorDirective implements OnDestroy {
     protected diagnosticsTimer?: ReturnType<typeof setTimeout>;
     protected diagnosticsRun = 0;
     protected diagnostics: CodeDiagnostic[] = [];
+    protected completionNames: string[] = [];
     protected syncing = false;
     protected destroyed = false;
     protected lintApi?: any;
@@ -331,6 +332,7 @@ export class WorkflowCodeMirrorDirective implements OnDestroy {
         this.statusHint = editorHintFor(language, this.translator);
         this.lintApi = runtime.lint;
         this.completionRuntime = runtime.completion.createCompletionRuntime(runtime.autocomplete);
+        this.completionNames = runtime.completion.collectCompletionNames(suggestions);
         this.textarea = element;
         this.previousDisplay = element.style.display;
         const initialValue = decodeValue(element.getAttribute('data-code-value')) || element.value || '';
@@ -506,7 +508,10 @@ export class WorkflowCodeMirrorDirective implements OnDestroy {
         const text = view.state.doc.toString();
         const diagnostics = this.language === 'json'
             ? await analyzeJsonCode(text, this.translator)
-            : await analyzeFunctionCode(text, this.translator);
+            : await analyzeFunctionCode(text, this.translator, {
+                cursorOffset: view.state.selection.main.head,
+                knownNames: this.completionNames
+            });
         if (this.destroyed || run !== this.diagnosticsRun || this.view !== view) {
             return;
         }

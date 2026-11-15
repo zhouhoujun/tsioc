@@ -12,6 +12,25 @@ export interface CompletionRuntime {
     dispose(): void;
 }
 
+const COMPLETION_KEYWORDS = [
+    'const', 'continue', 'class', 'catch', 'case', 'constructor',
+    'function', 'finally', 'for', 'if', 'else', 'return', 'switch',
+    'throw', 'try', 'typeof', 'undefined', 'while', 'await', 'async',
+    'false', 'true', 'null', 'new', 'this', 'super', 'yield'
+];
+
+/**
+ * Names used while typing an identifier. `analyzeFunctionCode` consults this
+ * list to avoid flagging a partial word such as `con` before completion runs.
+ */
+export function collectCompletionNames(suggestions: string[]): string[] {
+    const names = new Set<string>(['context', 'input', 'msg', ...COMPLETION_KEYWORDS]);
+    suggestions.forEach(path => {
+        String(path || '').split('.').filter(Boolean).forEach(part => names.add(part));
+    });
+    return Array.from(names);
+}
+
 export function buildCompletionScope(suggestions: string[]): Record<string, any> {
     const root: Record<string, any> = {};
     suggestions.forEach(path => {
