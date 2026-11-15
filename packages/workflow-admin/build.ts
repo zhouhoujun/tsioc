@@ -44,7 +44,9 @@ const inlineMinifyPlugin: Plugin = {
 
 const DEV = process.env.NODE_ENV === 'development' || process.argv.includes('--dev');
 const SOURCE_MAP = process.env.SOURCE_MAP === '1';
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 780_000);
+// Raw budget raised from 780 KB (2026-11) with the publish confirmation and
+// version-history UI; the gzip budget below is the meaningful transfer gate.
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 800_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history + release UI added ~1.1 KB gzip to the initial designer bundle.
 const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 205_000);

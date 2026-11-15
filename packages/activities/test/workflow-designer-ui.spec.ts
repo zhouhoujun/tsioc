@@ -1038,6 +1038,12 @@ describe('Workflow Designer UI', () => {
         publish.click();
         await flush();
 
+        // Publishing changes what production entry points run: it asks first.
+        const dialog = root.querySelector('.workflow-publish') as any;
+        expect(dialog).toBeTruthy();
+        expect(dialog.textContent).toContain('发布工作流');
+        expect(dialog.textContent).toContain('6 个节点');
+        (dialog.querySelector('.workflow-publish-confirm') as any).click();
         await waitFor(() => ref.instance.saveState === 'saved');
         const versions = await store.listVersions(ref.instance.designer.definition.id);
         expect(versions.items.length).toBe(1);
@@ -1045,6 +1051,40 @@ describe('Workflow Designer UI', () => {
         expect(versions.release?.version).toBe(versions.items[0].version);
         expect(ref.instance.designer.message).toBe('workflow.message.published');
         expect(ref.instance.saveStateLabel).toContain('已保存');
+    });
+
+    it('cancels publishing without recording a release', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        ref.instance.store = store;
+        ref.instance.designer.renameNode('task_1', 'draft only');
+        await flush();
+
+        (root.querySelector('.workflow-global-bar .menu-bar-trigger') as any).click();
+        await flush();
+        (root.querySelector('.workflow-global-bar [data-menu-id="publish"]') as any).click();
+        await flush();
+        const dialog = root.querySelector('.workflow-publish') as any;
+        expect(dialog).toBeTruthy();
+        dialog.querySelector('.workflow-publish-close').click();
+        await flush();
+        expect(root.querySelector('.workflow-publish')).toBeFalsy();
+
+        const versions = await store.listVersions(ref.instance.designer.definition.id);
+        expect(versions.items.length).toBe(0);
+        expect(versions.release).toBeFalsy();
+        expect(ref.instance.showPublish).toBe(false);
+
+        // Escape dismisses the dialog and keeps the document untouched.
+        await ref.instance.openPublish();
+        await flush();
+        expect(root.querySelector('.workflow-publish')).toBeTruthy();
+        const name = ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name;
+        doc.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe(name);
+        doc.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await flush();
+        expect(root.querySelector('.workflow-publish')).toBeFalsy();
     });
 
     it('lists saved and published versions and restores one into the draft', async () => {

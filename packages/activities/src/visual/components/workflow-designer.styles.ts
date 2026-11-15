@@ -436,6 +436,78 @@ export const WORKFLOW_DESIGNER_CSS = `
     gap: 8px;
 }
 
+.workflow-publish {
+    position: fixed;
+    inset: 0;
+    z-index: 72;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wf-theme-overlay, rgba(15, 23, 42, 0.42));
+    color: var(--wf-theme-text, #0f172a);
+    padding: 24px;
+}
+
+.workflow-publish-panel {
+    width: min(420px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--wf-theme-surface, #ffffff);
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 24px 60px var(--wf-theme-shadow, rgba(15, 23, 42, 0.28));
+}
+
+.workflow-publish-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.workflow-publish-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-publish-close {
+    padding: 2px 7px;
+    line-height: 1;
+}
+
+.workflow-publish-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-publish-meta {
+    font-size: 11px;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-publish-hint {
+    font-size: 11px;
+    color: var(--wf-theme-muted, #64748b);
+    line-height: 1.5;
+}
+
+.workflow-publish-error {
+    font-size: 11px;
+    color: var(--wf-theme-danger, #dc2626);
+}
+
+.workflow-publish-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 2px;
+}
+
 .workflow-menu {
     margin-left: auto;
 }

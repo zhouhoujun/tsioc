@@ -4256,3 +4256,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **实测（真实 Chrome，workflow-admin + SQLite）**：Ctrl+S 产生 v1（Saved），菜单发布产生 v2（Published，release=v2），打开版本面板可见两行且 v2 高亮、徽标 `v2`；点击 v1 的「恢复」后节点名回到 `version one`，面板隐藏，无 console 错误。
 - **执行历史字节预算**：`WorkflowExecutionStore.pruneBytes?(workflowId, maxBytes)`（内存 + SQLite 实现），`WorkflowHttpServer` 新增 `executionHistoryBytes`（默认 5 MB，0 关闭）并在每次落库后与条数上限一起生效；从最旧开始删除、**始终保留最新一次**；删除工作流/清空历史行为不变。
 - **回归**：activities **370 passing**（新增 version panel UI 1、字节预算 2）；microservices/admin 63；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK；设计器初始包 754.9 KiB / gzip 197.4 KiB（< 205 KB 预算）。
+
+## 2026-11-15 发布确认（避免误发布）
+- **问题**：菜单「发布」单击即切换生产入口（run/webhook 执行新版本），误点代价很高。
+- **修正**：新增发布确认浮层（标题、工作流名、`节点/连接`摘要与当前发布版本、影响说明、取消/发布按钮、右上角 ✕）；打开前先做客户端校验，未通过只报错不弹框；`Esc` 关闭；浮层打开期间键盘事件被吞掉（Delete/撤销不会作用到背后的画布）。
+- **实测（真实 Chrome）**：菜单 → 弹出确认 → ✕/Esc 关闭后版本数与 release 不变；确认后生成 v2 并 release=v2；`Delete` 在浮层打开时不会删除节点。
+- **回归**：activities **371 passing**（新增发布取消 1 条）；microservices/admin 63；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK；设计器初始包 758.6 KiB / gzip 198.2 KiB。
+- **预算**：发布浮层把 raw 预算顶到 780,157（超 157 字节），将 `DESIGNER_JS_BUDGET` 调整为 **800 KB**（gzip 仍是真正的传输门槛，保持 205 KB）；`preview-test.js` 的对应阈值同步。

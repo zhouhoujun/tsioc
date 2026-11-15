@@ -62,6 +62,24 @@ interface WorkflowDocumentTab {
             :saveAction="saveWorkflow" :saveAsAction="saveWorkflowAs"
             :openAction="loadWorkflow" :removeAction="deleteWorkflow"
             :closeAction="closeLibrary"></workflow-library>
+        <div class="workflow-publish" v-if="showPublish">
+            <div class="workflow-publish-panel">
+                <div class="workflow-publish-head">
+                    <span class="workflow-publish-title">{{publishTitle}}</span>
+                    <button class="workflow-btn workflow-publish-close" type="button"
+                        [aria-label]="cancelLabel" [title]="cancelLabel" @click="cancelPublish">✕</button>
+                </div>
+                <div class="workflow-publish-name">{{designer.definition.name}}</div>
+                <div class="workflow-publish-meta">{{publishMeta}}</div>
+                <div class="workflow-publish-hint">{{publishHint}}</div>
+                <div class="workflow-publish-error" v-if="publishError">{{publishError}}</div>
+                <div class="workflow-publish-actions">
+                    <button class="workflow-btn" type="button" @click="cancelPublish">{{cancelLabel}}</button>
+                    <button class="workflow-btn workflow-btn-primary workflow-publish-confirm" type="button"
+                        @click="confirmPublish">{{publishConfirmLabel}}</button>
+                </div>
+            </div>
+        </div>
         <workflow-version-panel :items="versionItems" :release="versionRelease"
             :visible="showVersions" :locale="locale" :error="versionError"
             :restoreAction="restoreVersion" :closeAction="closeVersions"></workflow-version-panel>
@@ -127,6 +145,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     libraryError = '';
     libraryItems: WorkflowDefinitionSummary[] = [];
     showVersions = false;
+    showPublish = false;
+    publishError = '';
     versionItems: WorkflowVersionSummary[] = [];
     versionRelease: WorkflowRelease | undefined = undefined;
     versionError = '';
@@ -602,6 +622,23 @@ export class WorkflowDesignerComponent implements OnDestroy {
         const tag = String(target?.tagName || '').toLowerCase();
         const editing = tag === 'input' || tag === 'textarea' || tag === 'select' || !!target?.isContentEditable;
 
+        // Modal overlays own the keyboard: only their own dismiss keys apply, so
+        // Delete/undo never mutate the canvas behind a confirmation dialog.
+        if (self.showPublish) {
+            if (key === 'Escape') {
+                event.preventDefault();
+                self.cancelPublish();
+            }
+            return;
+        }
+        if (self.showVersions) {
+            if (key === 'Escape') {
+                event.preventDefault();
+                self.closeVersions();
+            }
+            return;
+        }
+
         if (meta && (key === 's' || key === 'S')) {
             event.preventDefault();
             void self.saveWorkflow();
@@ -658,7 +695,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
             return;
         }
         if (action === 'publish') {
-            void self.publishWorkflow();
+            void self.openPublish();
             return;
         }
         if (action === 'versions') {
@@ -884,6 +921,70 @@ export class WorkflowDesignerComponent implements OnDestroy {
             await self.refreshLibrary();
         } catch (error) {
             self.libraryError = (error as Error).message;
+        }
+    };
+
+    get publishTitle(): string { return this.t('publishTitle', 'Publish workflow'); }
+    get publishConfirmLabel(): string { return this.t('publish', 'Publish'); }
+    get publishHint(): string {
+        return this.t(
+            'publishHint',
+            'Run and webhook entry points will execute this version. Later draft edits stay unpublished.'
+        );
+    }
+    get publishMeta(): string {
+        const definition = this.designer.definition;
+        const nodes = definition.nodes?.length || 0;
+        const connections = definition.connections?.length || 0;
+        const base = this.isZh
+            ? `${nodes} 个节点 · ${connections} 条连接`
+            : `${nodes} nodes · ${connections} connections`;
+        const release = this.versionRelease;
+        if (!release) {
+            return base;
+        }
+        return this.isZh
+            ? `${base} · 当前发布 v${release.version}`
+            : `${base} · currently v${release.version}`;
+    }
+
+    /**
+     * Ask before publishing: it changes what production entry points execute,
+     * so a mis-click must not be enough.
+     */
+    readonly openPublish = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.preview?.inspector?.formBlur();
+        const validation = self.designer.validate();
+        if (!validation.valid) {
+            self.designer.error = validation.errors.join('; ');
+            return;
+        }
+        self.publishError = '';
+        try {
+            const store = self.store;
+            if (typeof store?.listVersions === 'function') {
+                const list = await store.listVersions(self.designer.definition.id, 1);
+                self.versionRelease = list.release;
+            }
+        } catch {
+            // Release info is advisory; the publish request validates again.
+        }
+        self.showPublish = true;
+    };
+
+    readonly cancelPublish = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showPublish = false;
+        self.publishError = '';
+    };
+
+    readonly confirmPublish = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showPublish = false;
+        await self.publishWorkflow();
+        if (self.saveState === 'error') {
+            self.publishError = self.libraryError || self.designer.error || '';
         }
     };
 
