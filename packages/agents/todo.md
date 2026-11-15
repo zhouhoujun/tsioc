@@ -249,6 +249,13 @@
 
 > 对照 opencode `DialogProvider/DialogSelect` 栈、Claude Code 统一选择器 shell、Codex ratatui popup：当前 console 命令对话框的问题不是单个组件，而是入口、状态、键盘、尺寸、关闭、样式各自为政。目标是用一套 Dialog Stack + Route Registry 收口。
 
+#### 进度（2026-11）
+
+- ✅ Web dialog region 改为 composer 上方浮层（去掉全屏 scrim/居中 modal）；footer 高度实测写入 `--agent-web-footer-height`。
+- ✅ `DomOverlayAnchors` 下沉到 `components/html`，agent-ui 只提供选择器/变量名。
+- ✅ 修复 dialog host 包装导致 `margin:auto` 失效的问题：text-overlay/select 卡片重新水平居中。
+- 待办：按 D1–D6/R 继续（审计矩阵、Dialog Stack、Route Registry、键盘/尺寸统一、按组迁移）。
+
 #### D1 — 对话框审计矩阵
 
 - 逐项记录 `/help`、`/sessions`、`/model`、`/provider`、`/settings`、`/theme`、`/tools`、`/approvals`、`/outputs`、`/mcp`、`/skills`、`/plugins`、`/apps`、`/ssh`、`/worktree`、`/` 菜单、@mention、pending question。

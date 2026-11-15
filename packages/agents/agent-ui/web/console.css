@@ -448,6 +448,24 @@ body {
     overflow: auto;
 }
 
+/* The dialog component host wrapper is width:auto by default, so `margin:auto`
+   on the inner card could not centre it; make the host full-width flex. */
+#agent-console .agent-console > [renderregion="dialog"] > * {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    pointer-events: none;
+}
+
+#agent-console .agent-console > [renderregion="dialog"] agent-console-text-overlay-panel > .console-panel,
+#agent-console .agent-console > [renderregion="dialog"] dialog-panel > .console-panel,
+#agent-console .agent-console > [renderregion="dialog"] agent-console-pending-question-panel > .console-panel,
+#agent-console .agent-console > [renderregion="dialog"] agent-console-approvals-panel > .console-panel {
+    margin: 0;
+    pointer-events: auto;
+}
+
 /* The dialog/menu panel is wrapped in the component host element, so the
    direct-child `pointer-events: auto` above never reaches it. Without this
    the whole card is click-through and its ✕ cannot be pressed. */
