@@ -44,6 +44,7 @@ export const AGENT_CONSOLE_DIALOG_ROUTES: readonly AgentConsoleDialogRoute[] = [
     { id: 'plugins', path: '/plugins', kind: 'select', group: 'extensions', title: 'Plugins', command: '/plugins' },
     { id: 'apps', path: '/apps', kind: 'select', group: 'extensions', title: 'Apps', command: '/apps' },
     { id: 'ssh', path: '/ssh', kind: 'text', group: 'extensions', title: 'SSH', command: '/ssh' },
+    { id: 'inbox', path: '/inbox', kind: 'select', group: 'session', title: 'Inbox', command: '/inbox', aliases: ['attention'] },
     { id: 'work', path: '/work', kind: 'select', group: 'session', title: 'Work', command: '/work', aliases: ['workers'] },
     { id: 'worktree', path: '/worktree', kind: 'text', group: 'session', title: 'Worktrees', command: '/worktree', aliases: ['worktrees'] }
 ];

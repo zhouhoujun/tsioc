@@ -59,6 +59,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/unpin', description: 'unpin the current session', group: 'session' },
     { name: '/sections', description: 'session sections: /sections [<label> to create]', group: 'session', hidden: true, args: [{ name: 'label', variadic: true }] },
     { name: '/threads', description: 'browse session threads: /threads [<id>]', group: 'session' },
+    { name: '/inbox', description: 'review approvals, questions and failed work across sessions', group: 'session' },
     { name: '/work', description: 'open the delegated work tree: sessions and background tasks', group: 'session' },
     { name: '/threadplan', description: 'thread plan todos', group: 'session', hidden: true },
     { name: '/threadreview', description: 'thread coding task review', group: 'session', hidden: true },

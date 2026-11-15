@@ -328,6 +328,7 @@
 > 完整分析、竞品对比与设计见 `packages/agents/agent-ui/docs/agent-management-plan.md`。
 
 - **现状判断**：单会话工作台成熟（timeline/approval/question/jobs/review/dialog routes/双端验证），但缺统一 agent 管理面；运行态数据（session roles/threads、delegation edges、background/scheduled tasks、coding-task checkpoints、archetype profiles）已具备，主要缺 UI 与跨会话聚合。
+- **P0 进展（2026-11）**：`/inbox` 待办中心（approval/question/failed background task/failed|blocked coding task/queued prompt 聚合；按严重度+类型排序；Enter 跳转所属会话并聚焦审批；空态 toast；route `inbox`）。
 - **P0 进展（2026-11）**：`/work` 工作树（delegation tree + background tasks → 可导航行；状态符号、层级缩进、Enter 打开所属会话、任务行同样跳转）；route `work`（session group, select）。
 - **P0 进展（2026-11）**：`/agents` 选择器（当前标记、mode/model/description、type-to-filter、Enter 切换、`/agents <name>` 直切）+ composer meta 行 `agent <name>` 徽标（不进入 prompt；plan 徽标保持原语义）+ `session.archetype.list` RPC + 启动/切会话/重载恢复 activeArchetype；`/archetype` 保留别名。
 - **P0 看得见**：扩展 `AgentArchetype` 为 AgentProfile（mode/model/effort/permissions/skills/display/source）；`/agents` 选择器 + composer `agent:` 徽标 + Shift+Tab 循环；`AgentConsoleWorkGraph` 投影 sessions/delegation/background tasks/scheduled jobs → `/work` 只读树；Inbox v1（approval/question/failed/blocked/idle-report/queued）跨 tab 跳转；Web sidebar v0（Agents/Sessions/Work/Inbox）。

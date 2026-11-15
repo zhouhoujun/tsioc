@@ -44,6 +44,8 @@ export interface CommandHandlerContext {
         readonly reviewFileAnnotations: Record<string, any>;
         readonly consoleOptions: { selectHint?: string };
         readonly commandHints: string[];
+        readonly pendingQuestionQueue: Array<Record<string, any>>;
+        readonly queuedPromptCount: number;
 
         // setters
         setInput(value: string, cursor?: number): void;
@@ -234,6 +236,8 @@ export function buildCommandHandlerState(state: AgentConsoleSessionState): Comma
         get messages() { return state.messages; },
         get tools() { return state.tools; },
         get toolRuns() { return state.toolRuns; },
+        get pendingQuestionQueue() { return state.pendingQuestionQueue as any[]; },
+        get queuedPromptCount() { return state.queuedPromptCount; },
         get pendingAttachments() { return state.pendingAttachments; },
         get notice() { return state.notice; },
         get input() { return state.input; },

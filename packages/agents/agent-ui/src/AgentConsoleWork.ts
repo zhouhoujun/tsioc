@@ -1,4 +1,5 @@
 import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
+import type { CommandHandlerContext } from './AgentConsoleCommandHandlers';
 import type { AgentConsoleSelectOption, AgentConsoleSessionState } from './AgentConsoleSessionState';
 
 export interface AgentConsoleWorkSession {
@@ -189,4 +190,16 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost): Promise<vo
     if (row) {
         await host.openSession(row.sessionId);
     }
+}
+
+/** Command-context adapter for `/work`. */
+export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHost {
+    return {
+        translator: ctx.translator,
+        state: ctx.state as any,
+        sessionService: ctx.sessionService as any,
+        notify: (message: string) => ctx.notify(message),
+        openSession: (sessionId?: string) => ctx.openSession(sessionId),
+        select: (title, options, index, hint) => ctx.select(title, options, index, hint)
+    };
 }

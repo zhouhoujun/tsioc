@@ -30,7 +30,8 @@ import { handleProjects, handleSearch, handleSections, handleThreads, handleThre
 import { handleReview } from './AgentConsoleReviewCommands';
 import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
 import { handleDialogCommand } from './AgentConsoleDialogCommands';
-import { runWorkCommandView } from './AgentConsoleWork';
+import { runWorkCommandView, workCommandHost } from './AgentConsoleWork';
+import { runInboxCommandView, inboxCommandHost } from './AgentConsoleInbox';
 import { handleCompact, handleCompactions, handleDelegation, handleDiagnostics, handleHarness, handleQuality } from './AgentConsoleDiagnosticsCommands';
 // ── Command handler type ─────────────────────────────────────────────────────
 
@@ -123,14 +124,8 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/ssh': (ctx, args, meta) => ctx.runSshCommand(canonicalArgsOf(meta, args)).then(() => true),
     '/jobs': (ctx, args, meta) => ctx.openScheduledJobsDashboard(canonicalArgsOf(meta, args)),
     '/tasks': (ctx, args, meta) => ctx.openCodingTaskInspector(canonicalArgsOf(meta, args)),
-    '/work': (ctx) => runWorkCommandView({
-        translator: ctx.translator,
-        state: ctx.state as any,
-        sessionService: ctx.sessionService as any,
-        notify: (message: string) => ctx.notify(message),
-        openSession: (sessionId?: string) => ctx.openSession(sessionId),
-        select: (title, options, index, hint) => ctx.select(title, options, index, hint)
-    }).then(() => true),
+    '/inbox': (ctx) => runInboxCommandView(inboxCommandHost(ctx)).then(() => true),
+    '/work': (ctx) => runWorkCommandView(workCommandHost(ctx)).then(() => true),
     '/threadplan': handleThreadplan,
     '/threadreview': (ctx, _args) => guardDelegateNoArgs(ctx, '', { command: '/threadreview', matches: [] }, () => ctx.openThreadCodingTaskReviewSelector()),
     '/review': handleReview,
