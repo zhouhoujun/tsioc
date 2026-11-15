@@ -90,35 +90,58 @@ export class DialogDeepLinkTest {
         }
     }
 
-    @Test('escape from a web text dialog restores its parent dialog')
-    async escapeRestoresParent() {
+    @Test('the wheel scrolls an open text dialog instead of the transcript')
+    async wheelScrollsTextDialog() {
         const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
-        const state = new AgentConsoleSessionState();
-        const mountedPromise = mountAgentWebConsole({
+        const mounted = await mountAgentWebConsole({
             baseUrl: gateway.clientBaseUrl,
             sessionId: 'session-A',
             fetchImpl: gateway.createFetchImpl(),
             mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
-            state,
+            state: new AgentConsoleSessionState(),
             pwa: false,
             workspace: ''
         });
         try {
-            await waitUntil(() => !!this.dom.window.document.querySelector('textarea.agent-input'));
+            openTextOverlay(mounted.state, 'Routes', Array.from({ length: 40 }, (_value, index) => `line ${index + 1}`), 10);
+            const mount = this.dom.window.document.getElementById('agent-console') as HTMLElement;
+            await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .dialog-line'));
+            mount.dispatchEvent(new this.dom.window.WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true }));
+            await waitUntil(() => (mounted.state.textOverlay?.scroll || 0) > 0);
+            expect(mounted.state.textOverlay?.scroll).toEqual(1);
+            mount.dispatchEvent(new this.dom.window.WheelEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true }));
+            await waitUntil(() => mounted.state.textOverlay?.scroll === 0);
+            expect(mounted.state.textOverlay?.scroll).toEqual(0);
+        } finally {
+            await mounted.dispose();
+            gateway.dispose();
+        }
+    }
+
+    @Test('escape from a web text dialog restores its parent dialog')
+    async escapeRestoresParent() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const mounted = await mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state: new AgentConsoleSessionState(),
+            pwa: false,
+            workspace: ''
+        });
+        try {
             let restored = 0;
-            openTextOverlay(state, 'Help · Core', ['/help'], 10, () => { restored += 1; });
+            openTextOverlay(mounted.state, 'Help · Core', ['/help'], 10, () => { restored += 1; });
             await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .dialog-line'));
             const area = this.dom.window.document.querySelector('textarea.agent-input') as HTMLTextAreaElement;
             area.dispatchEvent(new this.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
             await waitUntil(() => restored > 0);
             expect(restored).toEqual(1);
-            expect(state.textOverlay).toEqual(null);
+            expect(mounted.state.textOverlay).toEqual(null);
         } finally {
+            await mounted.dispose();
             gateway.dispose();
-            const mounted = await mountedPromise.catch(() => null);
-            if (mounted) {
-                await mounted.dispose();
-            }
         }
     }
 

@@ -33,6 +33,7 @@ import {
 import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
 import { openAgentConsoleDialogDeepLink } from './dialog-deeplink';
 import { focusWebConsoleComposer } from './focus-composer';
+import { routeAgentConsoleWheel } from './wheel-routing';
 import { keepTranscriptSelection } from './selection-anchor';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -524,20 +525,11 @@ export async function mountAgentWebConsole(
         }
         return follower;
     };
-    const onWheel = (event: WheelEvent): void => {
-        if (state.messageLayout !== 'viewport' || event.deltaY === 0) {
-            return;
-        }
-        const activeFollower = resolveFollower();
-        if (!activeFollower) {
-            return;
-        }
-        activeFollower.wheel(event.deltaY);
-        if (event.deltaY < 0 && activeFollower.atTop) {
-            requestOlderMessages();
-        }
-        event.preventDefault();
-    };
+    const onWheel = (event: WheelEvent): void => routeAgentConsoleWheel(event, {
+        getState: () => state,
+        resolveFollower,
+        requestOlderMessages
+    });
     const onIndicatorClick = (): void => {
         follower?.resumeFollow();
     };
