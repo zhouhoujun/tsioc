@@ -195,6 +195,26 @@ function startDesignerServer(port) {
         const hintAction = actionHints.includes('loadInput');
         await page.keyboard.press('Escape');
 
+        // Enter inserts a newline even while the completion popup is open;
+        // Tab is the explicit accept key.
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('con');
+        await page.waitForTimeout(500);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(120);
+        const enterNewline = await page.evaluate(() => {
+            const value = document.querySelector('.workflow-field[data-field-key="code"] textarea')?.value || '';
+            return value.includes('con\n') && !value.includes('const');
+        });
+        await page.keyboard.press('Control+A');
+        await page.keyboard.type('con');
+        await page.waitForTimeout(500);
+        await page.keyboard.press('Tab');
+        await page.waitForTimeout(120);
+        const tabAccepts = await page.evaluate(() =>
+            (document.querySelector('.workflow-field[data-field-key="code"] textarea')?.value || '') === 'const'
+        );
+
         // Syntax errors must surface without hovering the tiny gutter marker:
         // the status row below the editor turns into `⚠ … (line:col)`.
         await page.locator('.workflow-field[data-field-key="code"] .cm-editor').click();
@@ -625,10 +645,10 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, bottomExpanded, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, bottomExpanded, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > 780_000 || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
-            || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded
+            || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !enterNewline || !tabAccepts
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
             || paletteFiltered < 1 || paletteFiltered >= 54 || paletteRestored !== 54

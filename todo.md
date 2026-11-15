@@ -4200,3 +4200,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - activities workflow-designer UI 54 passing（新增 bottom 默认 hidden、状态栏在 workspace-bottom 之外、点击 Logs 后 bottom 展开的断言）；
   - workflow-admin preview EXIT 0：`before.bottomHidden=true`、`statusbarOutsideBottom=true`、`statusbarVisible=true`、点击 Logs 后 `bottomExpanded=true`、日志 27 行；
   - microservices/admin 63 passing；`tsc` 0；`check-source-size`/`git diff --check` OK。
+
+## 2026-11-15 CM6 补全交互回归
+- **回归**：workflow-admin preview 新增真实键盘断言：
+  - 输入 `con` 后按 **Enter**，编辑器必须得到 `con\n`，不得被补全替换成 `const`；
+  - 输入 `con` 后按 **Tab**，必须接受补全得到 `const`。
+- **验证**：preview EXIT 0，`enterNewline=true`、`tabAccepts=true`、`hintEnv/hintAction=true`、`bottomExpanded=true`，无 console 错误。
