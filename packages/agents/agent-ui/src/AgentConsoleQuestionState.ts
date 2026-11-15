@@ -1,3 +1,4 @@
+import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type {
     AgentConsolePendingQuestion,
     AgentConsoleSessionState
@@ -13,6 +14,9 @@ export function setPendingQuestion(state: AgentConsoleSessionState, question: Ag
         state.syncDerivedInputFocus();
         return;
     }
+    // A pending question outranks background panels; dismiss them without
+    // touching the question queue itself.
+    dismissBackgroundPanels(state);
     const existingIndex = state.pendingQuestionQueue.findIndex(item => item.questionId === question.questionId);
     if (existingIndex >= 0) {
         const existing = state.pendingQuestionQueue[existingIndex];
