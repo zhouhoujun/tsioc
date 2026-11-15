@@ -32,6 +32,7 @@ import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
 import { handleDialogCommand } from './AgentConsoleDialogCommands';
 import { runWorkCommandView, workCommandHost } from './AgentConsoleWork';
 import { runInboxCommandView, inboxCommandHost } from './AgentConsoleInbox';
+import { runRewindCommandView, rewindCommandHost } from './AgentConsoleRewind';
 import { handleCompact, handleCompactions, handleDelegation, handleDiagnostics, handleHarness, handleQuality } from './AgentConsoleDiagnosticsCommands';
 // ── Command handler type ─────────────────────────────────────────────────────
 
@@ -112,6 +113,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/goal': (ctx, args, meta) => ctx.runGoalCommand(canonicalArgsOf(meta, args)).then(() => true),
     '/dialog': (ctx, args) => handleDialogCommand(ctx, args),
     '/worktree': (ctx, args) => runWorktreeCommand(ctx, args),
+    '/rewind': (ctx) => runRewindCommandView(rewindCommandHost(ctx)).then(() => true),
     '/undo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/undo', matches: [] }, () => ctx.runUndoCommand().then(() => true)),
     '/redo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/redo', matches: [] }, () => ctx.runRedoCommand().then(() => true)),
     '/export': (ctx, args, meta) => ctx.runExportCommand(canonicalArgsOf(meta, args)),

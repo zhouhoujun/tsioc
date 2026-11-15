@@ -199,6 +199,7 @@ export class AppRpcServer {
                         'session.delegation_mode.get',
                         'session.undo_file',
                         'session.redo_file',
+                        'session.file_snapshot.list',
                         'session.set_title',
                         'session.set_pinned',
                         'session.set_archived',
@@ -367,6 +368,8 @@ export class AppRpcServer {
                 return this.setSessionDelegationMode(params, context);
             case 'session.delegation_mode.get':
                 return this.getSessionDelegationMode(params, context);
+            case 'session.file_snapshot.list':
+                return this.listFileSnapshots(params, context);
             case 'session.undo_file':
                 return this.undoFile(params, context);
             case 'session.redo_file':
@@ -1245,6 +1248,19 @@ export class AppRpcServer {
         const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, mode: this.runtime.getSessionDelegationMode(sessionId) };
+    }
+
+    private async listFileSnapshots(params: any, context: AppRpcRequestContext): Promise<any> {
+        const sessionId = requireSessionId(params);
+        await this.ensureSessionAccess(sessionId, context);
+        const snapshots = this.runtime.listFileSnapshots(sessionId).map(snapshot => ({
+            filePath: snapshot.filePath,
+            timestamp: snapshot.timestamp,
+            toolName: snapshot.toolName,
+            toolCallId: snapshot.toolCallId,
+            files: (snapshot.files || []).map(part => part.filePath)
+        }));
+        return { sessionId, snapshots };
     }
 
     private async undoFile(params: any, context: AppRpcRequestContext): Promise<any> {

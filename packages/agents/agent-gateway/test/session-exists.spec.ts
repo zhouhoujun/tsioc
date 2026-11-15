@@ -77,3 +77,35 @@ export class AgentProfileCatalogueTest {
         expect(result.profiles[1].model).toEqual('deepseek-v4');
     }
 }
+
+@Suite('file snapshot list RPC')
+export class FileSnapshotListTest {
+    @Test('session.file_snapshot.list returns metadata without contents')
+    async listsFileSnapshots() {
+        const runtime = {
+            listFileSnapshots: () => [{
+                filePath: 'src/a.ts',
+                before: 'old',
+                after: 'new',
+                timestamp: 5,
+                toolName: 'write',
+                files: [{ filePath: 'src/a.ts', before: 'old', after: 'new' }]
+            }]
+        };
+        const server = new AppRpcServer(
+            runtime as any,
+            new RandomUuidGenerator(),
+            { has: async () => true } as any,
+            {} as any,
+            {} as any,
+            { authorize: async () => 'anonymous' } as any,
+            { track: () => undefined } as any,
+            {} as any
+        );
+        const result = await (server as any).dispatch('session.file_snapshot.list', { sessionId: 's1' }, {});
+        expect(result.snapshots.length).toEqual(1);
+        expect(result.snapshots[0].filePath).toEqual('src/a.ts');
+        expect(result.snapshots[0].before).toBeUndefined();
+        expect(result.snapshots[0].files).toEqual(['src/a.ts']);
+    }
+}

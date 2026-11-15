@@ -37,6 +37,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/settings', description: 'unified settings dialog: general, keybinds, providers', group: 'core' },
     { name: '/yolo', description: 'toggle auto-approve mode: /yolo [on|off]', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off'] }] },
     { name: '/feedback', description: 'packaging diagnostics for feedback reports', group: 'core', hidden: true },
+    { name: '/rewind', description: 'list captured file changes and undo back to before one', group: 'session' },
     { name: '/undo', description: 'revert the last file change', group: 'core' },
     { name: '/redo', description: 're-apply the last undone file change', group: 'core' },
     { name: '/copy', description: 'copy reply: /copy [input|workspace|session|model], ctrl+x shift+c copies the draft', group: 'core', hidden: true, args: [{ name: 'target', type: 'enum', values: ['input', 'workspace', 'session', 'model'] }] },

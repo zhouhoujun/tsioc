@@ -98,6 +98,12 @@ export interface CommandHandlerContext {
 
     // ── session management ──
     readonly sessionService: AgentConsoleSessionService | null | undefined;
+    readonly appRpc?: { request(method: string, params?: any, context?: any): Promise<any> } | null;
+    readonly runtime?: {
+        listFileSnapshots?(sessionId: string): Array<Record<string, any>>;
+        undoFileChange?(sessionId: string): Promise<Record<string, any> | null>;
+    } | null;
+    rpcRequestContext?(): any;
     openSession(sessionId?: string, options?: { persistCurrentHistory?: boolean; fresh?: boolean; missing?: boolean; scoped?: boolean }): Promise<void>;
     refreshSessions(): Promise<void>;
     refreshCurrentSections(): Promise<void>;
