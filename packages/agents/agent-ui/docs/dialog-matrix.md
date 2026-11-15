@@ -1,0 +1,45 @@
+# agent-ui Dialog Audit Matrix (D1)
+
+Status: baseline audit before the Dialog Stack / Route Registry migration.
+Columns: entry -> current shell -> close/keys -> search/paging -> layout -> known issue.
+
+## Command dialogs
+
+| Entry | Current shell | Close / keys | Search / paging | Layout | Known issue |
+|---|---|---|---|---|---|
+| `/help` | `ctx.select` -> `openTextOverlay` | Esc/q/✕; arrows, PgUp/PgDn, Home/End on text | group list; text scroll | select above composer; text card centered | closing text does not return to the group list |
+| `/model` | `openSelectMenu` | Esc/q/✕; arrows/Enter/digits | provider/model lists, nested menus | select card above composer | nested menu Esc returns one level; no type-to-filter |
+| `/provider` | select wizard + text | Esc/q/✕ | provider/auth/model steps | select card | async validation state can leave a stale menu |
+| `/sessions` | select/list panel | Esc/q/✕ | input filter (in dialog) | select card | empty/async result can render a 0x0 menu |
+| `/settings` | select + forms | Esc/q/✕ | section list | select card | form fields use custom shell, not DialogFrame |
+| `/theme` | select | Esc/q/✕ | list | select card | no preview row |
+| `/tools` | select/text | Esc/q/✕ | tool list | select card | no-arg vs arg paths differ |
+| `/approvals` | custom approvals panel | `a/d/A/y`, arrows, Esc/✕ | list | custom panel | separate shell from DialogFrame |
+| `/outputs` | command-output panel | arrows/Enter/Esc/✕ | filter mode | panel | close semantics differ from select |
+| `/mcp` | select/text | Esc/q/✕ | server/tool lists | select card | nested async menu |
+| `/skills` | select/text | Esc/q/✕ | list/search | select card | loader/permission state not in route |
+| `/plugins` | select/text | Esc/q/✕ | list | select card | same |
+| `/apps` | select/text | Esc/q/✕ | list | select card | same |
+| `/ssh` | select/text | Esc/q/✕ | list | select card | same |
+| `/permissions` | select + text | Esc/q/✕ | level list | select card | security-level copy mixed with dialog hints |
+| `/worktree` | none (notify) | - | - | - | no dialog at all |
+| `/` menu | suggestion select | Esc/Tab/Enter | prefix filter | composer-attached | title/hint intentionally absent |
+| @mention | suggestion select | Esc/Tab/Enter | file filter | composer-attached | shares suggestion shell |
+| approval prompt | custom panel | `a/d/A/y`, Esc/✕ | list | custom panel | not on Dialog Stack |
+| pending question | custom panel | digits/Enter/Esc/✕ | options | custom panel | not on Dialog Stack |
+
+## Root causes
+
+1. Two state families (`selectMenu` with parent chain; `textOverlay`/approval/question singletons) have no common stack.
+2. `DialogComponent`, `SelectComponent`, approval/question/text panels each own title/close/hint/scroll.
+3. Web `index.html` previously carried inline dialog colors; now removed, but `console.css` still mixes base chrome and business skin.
+4. Key handling is split between `AgentConsoleOverlayController`, focus layers and component `@keydown`.
+5. `/help` text overlay does not restore its parent group menu.
+
+## Target contract (D2–D4)
+
+- One `AgentConsoleDialogStack` for select/text/confirm/approval/question.
+- One shell: title, ✕, body, footer hint, max height, scroll window (`1-12/N`).
+- Keys: Esc closes top; ↑↓, PgUp/PgDn, Home/End, Enter, Tab, digits, type filter.
+- Layout: composer-attached above footer in both renderers; free dialogs centered horizontally, bottom-aligned.
+- Route registry (`R1`) drives group/title/loader/permissions; no per-command duplicate metadata.
