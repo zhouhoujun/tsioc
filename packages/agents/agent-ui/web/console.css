@@ -543,556 +543,6 @@ body {
 }
 
 #agent-console .console-new-messages {
-    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
-}
-
-#agent-console .web-code-head button:hover {
-    background: var(--agent-web-hover);
-    border-color: var(--agent-web-accent);
-    color: var(--agent-web-accent);
-}
-
-#agent-console .console-new-messages:hover {
-    border-color: var(--agent-web-accent);
-    color: var(--agent-web-accent);
-}
-
-#agent-console tab-bar .tab:focus-visible,
-#agent-console tab-bar .tab-new:focus-visible,
-#agent-console .web-code-head button:focus-visible {
-    outline: 2px solid var(--agent-web-accent);
-    outline-offset: 2px;
-}
-
-#agent-console [renderregion="transcript"] > .console-panel {
-    padding: 6px 2px 28px;
-    scrollbar-color: #334155 transparent;
-}
-
-#agent-console .message-status,
-#agent-console .message-meta { color: var(--agent-web-muted); }
-#agent-console .message-role { color: var(--agent-web-muted); }
-#agent-console .message-template-thought .message-role { color: var(--agent-web-code-accent); font-weight: 600; }
-#agent-console .message-body,
-#agent-console .message-prefix { color: inherit; }
-#agent-console .message-token.tone-accent,
-#agent-console .message-token.tone-link { color: var(--agent-web-code-accent); }
-#agent-console .message-token.tone-muted,
-#agent-console .message-token.tone-syntax-comment { color: var(--agent-web-muted); }
-#agent-console .message-token.tone-strong,
-#agent-console .message-token.tone-heading,
-#agent-console .message-token.tone-code,
-#agent-console .message-token.tone-inline-code,
-#agent-console .message-token.tone-syntax-property,
-#agent-console .message-token.tone-syntax-variable { color: var(--agent-web-text); }
-#agent-console .message-token.tone-inline-code {
-    background: var(--agent-web-inline-code-bg);
-    border-radius: 4px;
-    padding: 1px 4px;
-}
-#agent-console .message-token.tone-emphasis,
-#agent-console .message-token.tone-quote,
-#agent-console .message-token.tone-syntax-attribute { color: var(--agent-web-accent); font-style: italic; }
-#agent-console .message-token.tone-strike { color: var(--agent-web-muted); text-decoration: line-through; }
-#agent-console .message-token.tone-syntax-keyword { color: var(--agent-web-danger); }
-#agent-console .message-token.tone-syntax-string,
-#agent-console .message-token.tone-syntax-number,
-#agent-console .message-token.tone-syntax-constant { color: #7ee787; }
-#agent-console .message-token.tone-syntax-type,
-#agent-console .message-token.tone-syntax-tag,
-#agent-console .message-token.tone-syntax-function { color: var(--agent-web-code-accent); }
-
-#agent-console v-container {
-    display: contents;
-}
-
-/* The shared templates are written for the terminal grid; the DOM renderer
-   keeps their structural whitespace. Collapse it for prose while code/table
-   lines keep their own white-space rules. */
-#agent-console .message-line,
-#agent-console .message-body,
-#agent-console .message-content,
-#agent-console agent-console-routed-tokens {
-    white-space: normal;
-}
-
-#agent-console .message-status:empty,
-#agent-console .message-meta:empty {
-    display: none;
-}
-
-#agent-console .is-hidden {
-    display: none !important;
-}
-
-#agent-console .message-markdown {
-    margin: 8px 0;
-}
-
-/* The terminal model carries paragraph/block breaks as blank lines. Collapsing
-   their height removed every gap, so keep one line of vertical rhythm. */
-#agent-console .message-markdown .message-line {
-    min-height: 1.65em;
-}
-
-/* User input is the visual anchor: one soft card per turn. */
-#agent-console .message-template-user {
-    margin: 12px 0 6px;
-    padding: 7px 12px !important;
-    border: 1px solid var(--agent-web-border);
-    border-radius: 8px;
-    background: var(--agent-web-panel-raised) !important;
-    color: var(--agent-web-user-text) !important;
-    font-family: var(--agent-web-sans);
-    font-size: 13.5px;
-    line-height: 1.5;
-}
-
-#agent-console .message-template-user .message-line {
-    padding: 0 !important;
-    text-indent: 0 !important;
-}
-
-/* Assistant prose uses a readable web face; code/commands stay monospace. */
-#agent-console .message-template-assistant {
-    margin: 4px 0 16px;
-    padding-left: 0 !important;
-    color: var(--agent-web-text);
-    font-family: var(--agent-web-sans);
-    font-size: 14px;
-    line-height: 1.65;
-}
-
-#agent-console .message-template-assistant[data-block-padded="true"] {
-    padding-block: 1em;
-}
-
-#agent-console .message-template-assistant[data-block-padded="true"][data-spacer-before="true"] {
-    padding-block-start: 0;
-}
-
-#agent-console .message-template-assistant .message-line {
-    padding-left: 0;
-    text-indent: 0;
-}
-
-#agent-console .message-template-assistant .message-line[data-tone="heading"] {
-    padding: 0.7em 0 0.3em;
-    font-size: 15.5px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-}
-
-#agent-console .message-template-assistant .message-line[data-tone="heading"]:first-child {
-    padding-top: 0.2em;
-}
-
-#agent-console .message-template-assistant .message-token {
-    font-family: inherit;
-}
-
-#agent-console .message-template-assistant .message-token.tone-code,
-#agent-console .message-template-assistant .message-token.tone-inline-code {
-    font-family: var(--agent-web-mono);
-}
-
-#agent-console .message-template-assistant .message-line[data-status-kind="success"] .message-status { color: var(--agent-theme-status-idle-value-color, #6fa37a); }
-#agent-console .message-template-assistant .message-line[data-status-kind="error"] .message-status,
-#agent-console .message-template-assistant .message-line[data-status-kind="failed"] .message-status { color: var(--agent-theme-status-error-value-color, #cf9893); }
-#agent-console .message-template-assistant .message-line[data-status-kind="running"] .message-status { color: var(--agent-web-accent); }
-#agent-console .message-template-assistant .message-prefix { color: var(--agent-web-code-accent); }
-
-#agent-console .message-template-assistant .message-line[data-indent="1"] { padding-left: 1ch; text-indent: -1ch; }
-#agent-console .message-template-assistant .message-line[data-indent="2"] { padding-left: 2ch; text-indent: -2ch; }
-#agent-console .message-template-assistant .message-line[data-indent="3"] { padding-left: 3ch; text-indent: -3ch; }
-#agent-console .message-template-assistant .message-line[data-indent="4"] { padding-left: 4ch; text-indent: -4ch; }
-#agent-console .message-template-assistant .message-line[data-indent="5"] { padding-left: 5ch; text-indent: -5ch; }
-#agent-console .message-template-assistant .message-line[data-indent="6"] { padding-left: 6ch; text-indent: -6ch; }
-#agent-console .message-template-assistant .message-line[data-indent="7"] { padding-left: 7ch; text-indent: -7ch; }
-#agent-console .message-template-assistant .message-line[data-indent="8"] { padding-left: 8ch; text-indent: -8ch; }
-#agent-console .message-template-assistant .message-line[data-indent="9"] { padding-left: 9ch; text-indent: -9ch; }
-#agent-console .message-template-assistant .message-line[data-indent="10"] { padding-left: 10ch; text-indent: -10ch; }
-#agent-console .message-template-assistant .message-line[data-indent="11"] { padding-left: 11ch; text-indent: -11ch; }
-#agent-console .message-template-assistant .message-line[data-indent="12"] { padding-left: 12ch; text-indent: -12ch; }
-#agent-console .message-template-assistant .message-line[data-indent="13"] { padding-left: 13ch; text-indent: -13ch; }
-#agent-console .message-template-assistant .message-line[data-indent="14"] { padding-left: 14ch; text-indent: -14ch; }
-#agent-console .message-template-assistant .message-line[data-indent="15"] { padding-left: 15ch; text-indent: -15ch; }
-#agent-console .message-template-assistant .message-line[data-indent="16"] { padding-left: 16ch; text-indent: -16ch; }
-
-#agent-console .message-template-assistant .message-line[data-code="true"] {
-    padding: 1px 10px !important;
-    border-left: 2px solid var(--agent-web-code-border);
-    background: var(--agent-web-code-bg);
-    color: var(--agent-web-code-text);
-    font-family: var(--agent-web-mono);
-    font-size: 12.5px;
-    line-height: 1.55;
-    white-space: normal !important;
-}
-
-#agent-console .message-template-assistant .message-line[data-table="true"] {
-    padding: 0 8px !important;
-    background: var(--agent-web-code-bg);
-    color: var(--agent-web-tool-text);
-    font-family: var(--agent-web-mono);
-    font-size: 11.5px;
-    line-height: 1.35;
-    white-space: normal !important;
-    overflow-x: auto;
-}
-
-#agent-console .message-template-assistant .message-line[data-table="true"] .message-token {
-    white-space: pre !important;
-}
-
-/* Native DOM table/code surfaces. TUI keeps the grid/plain-code lines. */
-#agent-console .markdown-table {
-    margin: 10px 0;
-    overflow-x: auto;
-    border: 1px solid var(--agent-web-border);
-    border-radius: 10px;
-}
-
-#agent-console .markdown-table v-container {
-    display: contents;
-}
-
-#agent-console .markdown-row {
-    display: flex;
-    align-items: stretch;
-    border-bottom: 1px solid var(--agent-web-row-border);
-    font-family: var(--agent-web-sans);
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-#agent-console .markdown-row:last-child {
-    border-bottom: 0;
-}
-
-#agent-console .markdown-head {
-    background: var(--agent-web-table-head);
-    color: var(--agent-web-table-head-text);
-    font-weight: 600;
-}
-
-#agent-console .markdown-cell {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 8px 12px;
-    border-right: 1px solid var(--agent-web-row-border);
-    overflow-wrap: anywhere;
-    vertical-align: top;
-}
-
-#agent-console .markdown-cell:last-child {
-    border-right: 0;
-}
-
-#agent-console .markdown-cell.align-left { text-align: left; }
-#agent-console .markdown-cell.align-center { text-align: center; }
-#agent-console .markdown-cell.align-right { text-align: right; }
-
-#agent-console .markdown-token[data-tone="strong"] { font-weight: 600; }
-#agent-console .markdown-token[data-tone="heading"] { color: var(--agent-web-user-text); font-weight: 600; }
-#agent-console .markdown-token[data-tone="emphasis"] { font-style: italic; }
-#agent-console .markdown-token[data-tone="strike"] { text-decoration: line-through; }
-#agent-console .markdown-token[data-tone="link"] { color: var(--agent-web-link); text-decoration: underline; }
-#agent-console .markdown-token[data-tone="muted"] { color: var(--agent-web-code-muted); }
-#agent-console .markdown-token[data-tone="inline-code"] {
-    padding: 1px 4px;
-    border-radius: 4px;
-    background: var(--agent-web-inline-code-bg);
-    color: var(--agent-web-inline-code-text);
-    font-family: var(--agent-web-mono);
-    font-size: 0.92em;
-}
-
-#agent-console .web-code-block {
-    margin: 10px 0;
-    overflow: hidden;
-    border: 1px solid var(--agent-web-code-border);
-    border-radius: 10px;
-    background: var(--agent-web-code-bg);
-}
-
-#agent-console .web-code-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 10px;
-    border-bottom: 1px solid var(--agent-web-row-border);
-    background: var(--agent-web-code-head);
-    color: var(--agent-web-code-muted);
-    font-family: var(--agent-web-mono);
-    font-size: 11px;
-}
-
-#agent-console .web-code-head button {
-    border: 1px solid var(--agent-web-code-border);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--agent-web-code-accent);
-    padding: 2px 8px;
-    font: inherit;
-    cursor: pointer;
-}
-
-#agent-console .web-code-block v-container {
-    display: contents;
-}
-
-#agent-console .web-code-block pre {
-    margin: 0;
-    padding: 10px 12px;
-    overflow-x: auto;
-    color: var(--agent-web-code-text);
-    font-family: var(--agent-web-mono);
-    font-size: 12.5px;
-    line-height: 1.55;
-    white-space: pre;
-}
-
-#agent-console .web-code-block code {
-    font-family: inherit;
-}
-
-#agent-console .web-code-block pre {
-    counter-reset: code-line;
-}
-
-#agent-console .markdown-code-line {
-    position: relative;
-    display: block;
-    min-height: 1.55em;
-    padding-left: 4ch;
-}
-
-#agent-console .markdown-code-line::before {
-    position: absolute;
-    left: 0;
-    width: 3ch;
-    color: var(--agent-web-code-muted);
-    content: counter(code-line);
-    counter-increment: code-line;
-    text-align: right;
-    user-select: none;
-}
-
-#agent-console .markdown-code-token {
-    white-space: pre;
-}
-
-#agent-console .markdown-code-token[data-tone="syntax-keyword"] { color: #ff7b72; }
-#agent-console .markdown-code-token[data-tone="syntax-string"] { color: #a5d6ff; }
-#agent-console .markdown-code-token[data-tone="syntax-number"] { color: #79c0ff; }
-#agent-console .markdown-code-token[data-tone="syntax-comment"] { color: #8b949e; font-style: italic; }
-#agent-console .markdown-code-token[data-tone="syntax-property"] { color: #d2a8ff; }
-#agent-console .markdown-code-token[data-tone="syntax-type"] { color: #ffa657; }
-#agent-console .markdown-code-token[data-tone="syntax-constant"] { color: #79c0ff; }
-#agent-console .markdown-code-token[data-tone="syntax-variable"] { color: #ffa657; }
-#agent-console .markdown-code-token[data-tone="syntax-tag"] { color: #7ee787; }
-#agent-console .markdown-code-token[data-tone="syntax-attribute"] { color: #79c0ff; }
-#agent-console .markdown-code-token[data-tone="syntax-function"] { color: #d2a8ff; }
-
-/* Welcome card: centred wordmark on an empty transcript. */
-#agent-console .console-panel.console-brand-panel {
-    width: min(520px, calc(100% - 32px));
-    box-sizing: border-box;
-    flex: 0 0 auto !important;
-    height: auto !important;
-    min-height: 0;
-    overflow: visible;
-    margin: 40px auto 24px;
-    padding: 22px 32px;
-    border: 1px solid var(--agent-web-border);
-    border-radius: 12px;
-    background: var(--agent-web-panel-raised);
-    text-align: center;
-    font-family: var(--agent-web-mono);
-}
-
-#agent-console .console-brand-panel .brand-line {
-    display: block;
-    white-space: pre-wrap;
-    line-height: 1.65;
-}
-
-#agent-console .console-brand-panel .brand-line[data-role="rule"],
-#agent-console .console-brand-panel .brand-line[data-role="meta"] {
-    color: var(--agent-web-muted);
-}
-
-#agent-console .console-brand-panel .brand-line[data-role="title"] {
-    color: var(--agent-web-accent);
-    font-weight: 600;
-}
-
-/* Reasoning is an auxiliary track: compact and subdued. */
-#agent-console .message-template-thought {
-    margin: 6px 0;
-    color: var(--agent-web-muted);
-    font-family: var(--agent-web-sans);
-    font-size: 12px;
-    line-height: 1.5;
-}
-
-#agent-console .message-template-thought .message-line {
-    padding: 2px 0 2px 8px;
-    border-left: 2px solid var(--agent-web-thought-border);
-}
-
-/* Tool activity is scannable as a compact mono card, not a second prose row. */
-#agent-console .message-template-tool,
-#agent-console .message-template-command {
-    margin: 6px 0;
-    padding: 6px 10px !important;
-    border: 1px solid var(--agent-web-row-border);
-    border-radius: 8px;
-    background: var(--agent-web-tool-bg) !important;
-    color: var(--agent-web-tool-text) !important;
-    font-family: var(--agent-web-mono);
-    font-size: 12px;
-    line-height: 1.55;
-}
-
-#agent-console .message-template-tool .message-line,
-#agent-console .message-template-command .message-line {
-    padding: 0 !important;
-    text-indent: 0 !important;
-}
-
-#agent-console .message-template-error {
-    margin: 6px 0;
-    padding: 4px 10px !important;
-    border: 1px solid rgba(224, 122, 122, 0.3);
-    border-radius: 6px;
-    background: rgba(224, 122, 122, 0.06) !important;
-    color: var(--agent-web-danger) !important;
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-#agent-console .message-template-plan {
-    margin: 8px 0;
-    padding: 8px 12px !important;
-    border: 1px solid var(--agent-web-border);
-    border-radius: 10px;
-    background: var(--agent-web-panel) !important;
-}
-
-/* Composer: one floating, rounded input surface. */
-#agent-console .console-input-panel {
-    padding-top: 8px;
-}
-
-#agent-console .console-input-panel .input-shell {
-    background: var(--agent-web-panel) !important;
-    border: 1px solid var(--agent-web-border) !important;
-    border-radius: 14px !important;
-    padding: 10px 14px 10px 36px !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
-}
-
-#agent-console .console-input-panel .input-shell::before {
-    top: 10px;
-    left: 14px;
-    color: var(--agent-web-accent);
-    font-family: var(--agent-web-mono);
-    font-weight: 700;
-}
-
-#agent-console textarea.agent-input {
-    color: var(--agent-web-text);
-    font-family: var(--agent-web-sans) !important;
-    font-size: 14px !important;
-    line-height: 1.55 !important;
-    min-height: 1.55em;
-}
-
-#agent-console textarea.agent-input::placeholder {
-    color: #6f8094;
-}
-
-#agent-console .console-input-panel .input-meta {
-    padding: 6px 2px 0;
-    color: var(--agent-web-muted);
-    font-family: var(--agent-web-sans);
-    font-size: 11px;
-}
-
-/* Floating menus read as centered web cards: full border, real shadow and a
-   header row with the close affordance on the right. The terminal keeps the
-   composer-attached band; the browser has room for the open card. */
-#agent-console [renderregion="menu"] > .console-panel,
-#agent-console [renderregion="dialog"] > .console-panel,
-#agent-console dialog-panel > .console-panel,
-#agent-console agent-console-pending-question-panel .console-panel.list-panel,
-#agent-console agent-console-approvals-panel .console-panel.list-panel,
-#agent-console agent-console-select-panel .console-panel.select-list,
-#agent-console agent-console-text-overlay-panel > .console-panel {
-    position: relative;
-    width: fit-content;
-    min-width: min(360px, 100%);
-    max-width: min(720px, 100%);
-    margin: 12px auto;
-    border: 1px solid var(--agent-web-border) !important;
-    border-radius: 12px !important;
-    background: var(--agent-web-panel) !important;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
-    padding: 12px 16px 14px !important;
-    font-family: var(--agent-web-sans);
-    font-size: 13px;
-    line-height: 1.6;
-    max-height: 60vh;
-    overflow: auto;
-}
-
-#agent-console dialog-panel > .console-panel > .dialog-close,
-#agent-console agent-console-text-overlay-panel .dialog-close,
-#agent-console agent-console-pending-question-panel .dialog-close,
-#agent-console agent-console-approvals-panel .dialog-close,
-#agent-console agent-console-select-panel .dialog-close {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    min-height: 20px;
-    padding: 0 4px;
-    margin: 0;
-    color: var(--agent-web-muted);
-    line-height: 1;
-}
-
-#agent-console dialog-panel > .console-panel > .dialog-title,
-#agent-console agent-console-text-overlay-panel > .console-panel > .dialog-title {
-    padding: 0 28px 8px 0;
-    margin-bottom: 8px;
-    border-bottom: 1px solid var(--agent-web-border);
-    color: var(--agent-web-strong);
-    font-weight: 600;
-    font-size: 13.5px;
-}
-
-#agent-console dialog-panel > .console-panel > .dialog-line {
-    color: var(--agent-web-text);
-    padding: 1px 0;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-}
-
-#agent-console dialog-panel > .console-panel > .dialog-hint {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid var(--agent-web-border);
-    color: var(--agent-web-muted);
-    font-size: 11.5px;
-}
-
-#agent-console .console-new-messages {
     position: fixed;
     right: max(24px, env(safe-area-inset-right, 0px));
     left: auto;
@@ -1101,27 +551,50 @@ body {
     z-index: 20;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    width: auto;
-    height: auto;
-    padding: 4px 10px;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
     border: 1px solid var(--agent-web-border);
-    border-radius: 4px;
+    border-radius: 50%;
     background: var(--agent-web-panel-raised);
     color: var(--agent-web-code-accent);
     font-family: var(--agent-web-sans);
-    font-size: 12.5px;
-    line-height: 1.25;
-    white-space: nowrap;
+    font-size: 16px;
+    line-height: 1;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
 }
 
-/* Same down-arrow affordance as the terminal viewport notice; the label keeps
-   its full text (count + jump wording) and is never reduced to an icon. */
+/* Icon-only circle; the full label appears on hover/focus. */
 #agent-console .console-new-messages::before {
     content: '↓';
     font-weight: 700;
+}
+
+#agent-console .console-new-messages::after {
+    content: attr(data-label);
+    position: absolute;
+    right: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 3px 8px;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 4px;
+    background: var(--agent-web-panel-raised);
+    color: var(--agent-web-strong);
+    font-size: 11.5px;
+    font-weight: 400;
+    line-height: 1.3;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+}
+
+#agent-console .console-new-messages:hover::after,
+#agent-console .console-new-messages:focus-visible::after {
+    opacity: 1;
 }
 
 @media (max-width: 640px) {
@@ -1138,6 +611,8 @@ body {
     #agent-console .console-new-messages {
         right: max(12px, env(safe-area-inset-right, 0px));
         bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+        width: 40px;
+        height: 40px;
     }
 
     #agent-console .message-template-user {

@@ -147,9 +147,14 @@ export class DomTranscriptFollower {
             const label = count > 0
                 ? `${this.labels.newMessages.replace('{count}', String(count))} · ${this.labels.jumpToBottom}`
                 : this.labels.jumpToBottom;
-            this.indicator.textContent = label;
+            // Icon-only surface: the label is exposed on hover/focus and to
+            // assistive technology instead of stretching the button.
+            this.indicator.textContent = '';
+            this.indicator.setAttribute('data-label', label);
             this.indicator.setAttribute('aria-label', label);
             this.indicator.setAttribute('title', label);
+        } else {
+            this.indicator.removeAttribute('data-label');
         }
     }
 }
