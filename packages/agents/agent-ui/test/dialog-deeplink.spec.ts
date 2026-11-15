@@ -309,6 +309,10 @@ export class DialogDeepLinkTest {
             press('d');
             await waitUntil(() => decisions.length === 2);
             expect(decisions[1]).toEqual('deny:req-1');
+            // Esc on a focused approval rejects it (never cancels the turn).
+            press('Escape');
+            await waitUntil(() => decisions.length === 3);
+            expect(decisions[2]).toEqual('deny:req-1');
             expect(mounted.state.input).toEqual('');
         } finally {
             await mounted.dispose();
