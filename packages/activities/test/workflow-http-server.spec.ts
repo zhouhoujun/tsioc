@@ -137,6 +137,98 @@ describe('Workflow HTTP microservice', () => {
         expect(after.status).toBe(404);
     });
 
+    it('versions explicit saves, publishes a release and runs the released graph', async () => {
+        const published = {
+            id: 'versioned',
+            name: 'Published graph',
+            nodes: [
+                { id: 'start_1', name: 'Start', type: 'start' as const, position: { x: 0, y: 0 } },
+                { id: 'end_1', name: 'End', type: 'end' as const, position: { x: 200, y: 0 } }
+            ],
+            connections: [{
+                id: 'c1',
+                sourceNodeId: 'start_1',
+                sourcePort: 'out',
+                targetNodeId: 'end_1',
+                targetPort: 'in'
+            }]
+        };
+        const json = { 'content-type': 'application/json' };
+
+        const saved = await request(`${base}/api/workflows/versioned/save`, {
+            method: 'POST', headers: json, body: JSON.stringify(published)
+        });
+        expect(saved.status).toBe(200);
+        expect(saved.body.version.version).toBe(1);
+        expect(saved.body.version.kind).toBe('save');
+
+        // Autosave (PUT) only rewrites the draft; it must not grow the history.
+        await request(`${base}/api/workflows/versioned`, {
+            method: 'PUT', headers: json,
+            body: JSON.stringify({ ...published, name: 'Draft rename' })
+        });
+        const afterDraft = await request(`${base}/api/workflows/versioned/versions`);
+        expect(afterDraft.body.items.length).toBe(1);
+        expect(afterDraft.body.release).toBeFalsy();
+
+        const publish = await request(`${base}/api/workflows/versioned/publish`, {
+            method: 'POST', headers: json,
+            body: JSON.stringify({ ...published, name: 'Draft rename' })
+        });
+        expect(publish.status).toBe(200);
+        expect(publish.body.release.version).toBe(2);
+        expect(publish.body.version.kind).toBe('publish');
+
+        const listed = await request(`${base}/api/workflows/versioned/versions`);
+        expect(listed.body.items.map((item: any) => item.version)).toEqual([2, 1]);
+        expect(listed.body.release.version).toBe(2);
+
+        const v1 = await request(`${base}/api/workflows/versioned/versions/1`);
+        expect(v1.status).toBe(200);
+        expect(v1.body.definition.name).toBe('Published graph');
+
+        // Editing the draft afterwards must not change what entry points run.
+        // A cyclic draft is accepted as a draft but cannot be executed or published.
+        const unrunnable = {
+            ...published,
+            name: 'Half-built draft',
+            connections: [
+                ...published.connections,
+                { id: 'c2', sourceNodeId: 'end_1', sourcePort: 'out', targetNodeId: 'start_1', targetPort: 'in' }
+            ]
+        };
+        const draftPut = await request(`${base}/api/workflows/versioned`, {
+            method: 'PUT', headers: json, body: JSON.stringify(unrunnable)
+        });
+        expect(draftPut.status).toBe(200);
+
+        const run = await request(`${base}/api/workflows/versioned/run`, {
+            method: 'POST', headers: json, body: JSON.stringify({ context: {} })
+        });
+        expect(run.status).toBe(200);
+        expect(run.body.success).toBe(true);
+
+        // Publishing the broken draft must fail with a readable error.
+        const failedPublish = await request(`${base}/api/workflows/versioned/publish`, {
+            method: 'POST', headers: json, body: JSON.stringify(unrunnable)
+        });
+        expect(failedPublish.status).toBe(400);
+
+        const restored = await request(`${base}/api/workflows/versioned/versions/1/restore`, {
+            method: 'POST', headers: json, body: '{}'
+        });
+        expect(restored.status).toBe(200);
+        expect(restored.body.definition.name).toBe('Published graph');
+        const draft = await request(`${base}/api/workflows/versioned`);
+        expect(draft.body.name).toBe('Published graph');
+
+        const removed = await request(`${base}/api/workflows/versioned`, { method: 'DELETE' });
+        expect(removed.status).toBe(200);
+        const clearedVersions = await request(`${base}/api/workflows/versioned/versions`);
+        expect(clearedVersions.body.items.length).toBe(0);
+        expect(clearedVersions.body.release).toBeFalsy();
+    });
+
     it('runs workflows from real webhook requests', async () => {
         const definition = {
             id: 'webhook-demo',

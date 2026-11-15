@@ -648,6 +648,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.saveWorkflow();
             return;
         }
+        if (action === 'publish') {
+            void self.publishWorkflow();
+            return;
+        }
         if (action === 'open-library') {
             void self.openLibrary();
             return;
@@ -753,7 +757,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
         self.clearAutosaveTimer();
         self.saveState = 'saving';
         try {
-            await self.designer.saveTo(self.store);
+            // Explicit saves record a version when the store supports it;
+            // autosave keeps writing the draft only.
+            await self.designer.saveTo(self.store, { version: true });
             const active = self.activeTab();
             if (active) {
                 active.persisted = true;
@@ -764,6 +770,36 @@ export class WorkflowDesignerComponent implements OnDestroy {
             self.unsavedSince = undefined;
             self.saveState = self.designer.dirty ? 'dirty' : 'saved';
             await self.refreshLibrary();
+        } catch (error) {
+            self.saveState = 'error';
+            self.libraryError = (error as Error).message;
+        }
+    };
+
+    /**
+     * Publish the active document. Run and webhook entry points execute the
+     * released version from then on; the draft keeps autosaving.
+     */
+    readonly publishWorkflow = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.preview?.inspector?.formBlur();
+        self.clearAutosaveTimer();
+        self.saveState = 'saving';
+        try {
+            const release = await self.designer.publishTo(self.store);
+            if (!release) {
+                self.saveState = self.designer.dirty ? 'dirty' : 'saved';
+                return;
+            }
+            const active = self.activeTab();
+            if (active) {
+                active.persisted = true;
+            }
+            self.syncActiveTabId();
+            self.libraryError = '';
+            self.lastAutosaveAt = Date.now();
+            self.unsavedSince = undefined;
+            self.saveState = self.designer.dirty ? 'dirty' : 'saved';
         } catch (error) {
             self.saveState = 'error';
             self.libraryError = (error as Error).message;

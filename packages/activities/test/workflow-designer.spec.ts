@@ -346,6 +346,43 @@ describe('Visual Workflow Designer', () => {
                 .toBe('Changed task');
         });
 
+        it('records a version on explicit save and publishes a release', async () => {
+            const local = new WorkflowDesigner({ registry, service });
+            const store = new InMemoryWorkflowDefinitionStore();
+
+            // Draft autosave alone must not create versions.
+            await local.saveTo(store);
+            expect(await store.listVersions(local.definition.id)).toEqual({ items: [], release: undefined });
+
+            local.renameNode('task_1', 'Versioned task');
+            await local.saveTo(store, { version: true });
+            const saved = await store.listVersions(local.definition.id);
+            expect(saved.items.length).toBe(1);
+            expect(saved.items[0].kind).toBe('save');
+            expect(local.dirty).toBe(false);
+
+            const release = await local.publishTo(store);
+            expect(release?.version).toBe(1);
+            expect(release?.version).toBe(1);
+            const published = await store.listVersions(local.definition.id);
+            expect(published.release?.version).toBe(1);
+            expect(published.items[0].kind).toBe('publish');
+            expect(local.dirty).toBe(false);
+            expect(local.message).toBe('workflow.message.published');
+        });
+
+        it('refuses to publish a graph that does not validate', async () => {
+            const local = new WorkflowDesigner({ registry, service });
+            const store = new InMemoryWorkflowDefinitionStore();
+            const node = local.addNode('function', { x: 40, y: 40 })!;
+            local.updateNodeConfig(node.id, { code: '' });
+
+            const release = await local.publishTo(store);
+            expect(release).toBeUndefined();
+            expect(local.error).toContain('Code');
+            expect((await store.listVersions(local.definition.id)).release).toBeFalsy();
+        });
+
         it('stamps updatedAt once per drag instead of on every pointer move', async () => {
             const local = new WorkflowDesigner({ registry, service });
             const before = local.definition.metadata?.updatedAt;

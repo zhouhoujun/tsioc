@@ -21,6 +21,7 @@ import { VisualWorkflowService } from './VisualWorkflowService';
 import {
     WorkflowDefinitionStore,
     WorkflowDefinitionSummary,
+    WorkflowRelease,
     WorkflowStoreSaveOptions
 } from './workflow-store';
 
@@ -808,7 +809,25 @@ export class WorkflowDesigner {
             this.setMessage('workflow.message.saved', { name: definition.name });
             return summary;
         }
-        const summary = await store.save(definition);
+        // Explicit saves record an immutable version; autosave only rewrites the
+        // draft so it does not grow the history on every pause.
+        const versioned = !options.as && options.version === true && typeof store.saveVersion === 'function';
+        let summary: WorkflowDefinitionSummary;
+        let versionNumber: number | undefined;
+        if (versioned) {
+            const version = await store.saveVersion!(definition);
+            versionNumber = version.version;
+            summary = {
+                id: definition.id,
+                name: definition.name,
+                description: definition.description,
+                nodeCount: definition.nodes?.length || 0,
+                connectionCount: definition.connections?.length || 0,
+                updatedAt: version.createdAt
+            };
+        } else {
+            summary = await store.save(definition);
+        }
         // Persisting is asynchronous and autosave can overlap user edits. Never
         // clobber the document with the pre-request snapshot; only adopt it when
         // the definition is unchanged, otherwise keep the newer edits dirty.
@@ -828,10 +847,39 @@ export class WorkflowDesigner {
         this.savedSnapshot = savedSnapshot;
         this.savedSummary = summary;
         this.dirty = !unchanged;
-        this.setMessage(options.as ? 'workflow.message.savedAs' : 'workflow.message.saved', {
-            name: definition.name
-        });
+        this.setMessage(
+            options.as
+                ? 'workflow.message.savedAs'
+                : versionNumber ? 'workflow.message.versionSaved' : 'workflow.message.saved',
+            { name: definition.name, version: versionNumber }
+        );
         return summary;
+    }
+
+    /**
+     * Publish the open document: record an immutable version and point run and
+     * webhook entry points at it. Later draft edits stay unpublished.
+     */
+    async publishTo(
+        store: WorkflowDefinitionStore,
+        options: { publishedBy?: string } = {}
+    ): Promise<WorkflowRelease | undefined> {
+        if (typeof store.publish !== 'function') {
+            this.setError('workflow.error.publishUnsupported');
+            return undefined;
+        }
+        const validation = this.validate();
+        if (!validation.valid) {
+            this.setError(validation.errors.join('; '));
+            return undefined;
+        }
+        const result = await store.publish(this.definition, options);
+        this.savedSnapshot = JSON.stringify(this.definition);
+        this.savedSummary = undefined;
+        this.dirty = false;
+        this.setError('');
+        this.setMessage('workflow.message.published', { version: result.release.version });
+        return result.release;
     }
 
     /** Summary shape returned when a no-op save skips the store round trip. */

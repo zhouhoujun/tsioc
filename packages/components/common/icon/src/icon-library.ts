@@ -102,6 +102,13 @@ export const ICON_LIBRARY: Record<string, IconDefinition> = {
             'M3 12.8h10'
         ]
     },
+    publish: {
+        glyph: '↑',
+        paths: [
+            'M8 10.6V3.2M4.8 6.4 8 3.2l3.2 3.2',
+            'M3 12.8h10'
+        ]
+    },
     library: {
         glyph: '▤',
         strokeWidth: 1.4,

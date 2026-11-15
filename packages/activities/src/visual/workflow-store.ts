@@ -13,6 +13,39 @@ export interface WorkflowDefinitionSummary {
     updatedAt?: string;
 }
 
+export type WorkflowVersionKind = 'save' | 'publish';
+
+/** Immutable snapshot recorded by an explicit save or by publishing. */
+export interface WorkflowVersionSummary {
+    workflowId: string;
+    version: number;
+    kind: WorkflowVersionKind;
+    contentHash: string;
+    createdAt: string;
+    createdBy?: string;
+    name?: string;
+    nodeCount?: number;
+    connectionCount?: number;
+}
+
+/** Pointer to the version that run/webhook entry points execute. */
+export interface WorkflowRelease {
+    workflowId: string;
+    version: number;
+    publishedAt: string;
+    publishedBy?: string;
+}
+
+export interface WorkflowVersionList {
+    items: WorkflowVersionSummary[];
+    release?: WorkflowRelease;
+}
+
+export interface WorkflowPublishResult {
+    version: WorkflowVersionSummary;
+    release: WorkflowRelease;
+}
+
 /**
  * Minimal persistence contract for visual definitions. The editor only needs
  * list/get/save/remove; hosts can back it with memory, localStorage, a database
@@ -30,12 +63,24 @@ export interface WorkflowDefinitionStore {
      */
     listExecutions?(workflowId: string, limit?: number): Promise<WorkflowExecutionSnapshot[]>;
     getExecution?(executionId: string): Promise<WorkflowExecutionSnapshot | undefined>;
+    /**
+     * Optional version/release support. Draft autosave keeps using `save`;
+     * explicit saves record a version, and publishing points run/webhook entry
+     * points at an immutable snapshot. Hosts may omit these methods.
+     */
+    saveVersion?(definition: VisualWorkflowDefinition, options?: { createdBy?: string }): Promise<WorkflowVersionSummary>;
+    publish?(definition: VisualWorkflowDefinition, options?: { publishedBy?: string }): Promise<WorkflowPublishResult>;
+    listVersions?(workflowId: string, limit?: number): Promise<WorkflowVersionList>;
+    getVersion?(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined>;
+    restoreVersion?(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined>;
 }
 
 export interface WorkflowStoreSaveOptions {
     /** Save as a new document instead of overwriting the current id. */
     as?: boolean;
     name?: string;
+    /** Record an immutable version in addition to updating the draft. */
+    version?: boolean;
 }
 
 function summarize(definition: VisualWorkflowDefinition): WorkflowDefinitionSummary {
@@ -53,6 +98,17 @@ function clone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value));
 }
 
+/** Stable, dependency-free content hash used by the in-memory/local stores. */
+export function workflowContentHash(definition: VisualWorkflowDefinition): string {
+    const text = JSON.stringify(definition);
+    let hash = 0x811c9dc5;
+    for (let index = 0; index < text.length; index++) {
+        hash ^= text.charCodeAt(index);
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return `${hash.toString(16).padStart(8, '0')}-${text.length.toString(16)}`;
+}
+
 /**
  * Process-local store. Useful for tests, SSR sessions and hosts that persist
  * elsewhere.
@@ -60,6 +116,8 @@ function clone<T>(value: T): T {
 export class InMemoryWorkflowDefinitionStore implements WorkflowDefinitionStore {
     [noReact] = true;
     private readonly definitions = new Map<string, VisualWorkflowDefinition>();
+    private readonly versions = new Map<string, Array<{ summary: WorkflowVersionSummary; definition: VisualWorkflowDefinition }>>();
+    private readonly releases = new Map<string, WorkflowRelease>();
 
     async list(): Promise<WorkflowDefinitionSummary[]> {
         return Array.from(this.definitions.values())
@@ -85,11 +143,112 @@ export class InMemoryWorkflowDefinitionStore implements WorkflowDefinitionStore 
     }
 
     async remove(id: string): Promise<boolean> {
-        return this.definitions.delete(id);
+        const removed = this.definitions.delete(id);
+        this.versions.delete(id);
+        this.releases.delete(id);
+        return removed;
     }
 
     async clear(): Promise<void> {
         this.definitions.clear();
+        this.versions.clear();
+        this.releases.clear();
+    }
+
+    async saveVersion(
+        definition: VisualWorkflowDefinition,
+        options: { createdBy?: string } = {}
+    ): Promise<WorkflowVersionSummary> {
+        const saved = await this.save(definition);
+        const summary = await this.appendVersion(saved, definition, 'save', options.createdBy);
+        return summary;
+    }
+
+    async publish(
+        definition: VisualWorkflowDefinition,
+        options: { publishedBy?: string } = {}
+    ): Promise<WorkflowPublishResult> {
+        const saved = await this.save(definition);
+        const version = await this.appendVersion(saved, definition, 'publish', options.publishedBy);
+        const release = await this.setRelease(saved.id, version.version, options.publishedBy);
+        return { version, release };
+    }
+
+    async listVersions(workflowId: string, limit = 50): Promise<WorkflowVersionList> {
+        const items = (this.versions.get(workflowId) || [])
+            .map(entry => entry.summary)
+            .sort((a, b) => b.version - a.version)
+            .slice(0, Math.max(1, limit));
+        return { items, release: this.releases.get(workflowId) };
+    }
+
+    async getVersion(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined> {
+        const entry = (this.versions.get(workflowId) || []).find(item => item.summary.version === version);
+        return entry ? clone(entry.definition) : undefined;
+    }
+
+    async restoreVersion(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined> {
+        const definition = await this.getVersion(workflowId, version);
+        if (!definition) {
+            return undefined;
+        }
+        await this.save(definition);
+        return definition;
+    }
+
+    private async appendVersion(
+        summary: WorkflowDefinitionSummary,
+        definition: VisualWorkflowDefinition,
+        kind: WorkflowVersionKind,
+        author?: string
+    ): Promise<WorkflowVersionSummary> {
+        const list = this.versions.get(summary.id) || [];
+        const hash = workflowContentHash(definition);
+        const latest = list[list.length - 1];
+        // Identical content does not need another row; publishing promotes the
+        // existing snapshot instead of duplicating it.
+        if (latest && latest.summary.contentHash === hash) {
+            if (kind === 'publish' && latest.summary.kind !== 'publish') {
+                latest.summary = { ...latest.summary, kind: 'publish' };
+            }
+            return clone(latest.summary);
+        }
+        const version: WorkflowVersionSummary = {
+            workflowId: summary.id,
+            version: (latest?.summary.version || 0) + 1,
+            kind,
+            contentHash: hash,
+            createdAt: new Date().toISOString(),
+            createdBy: author,
+            name: summary.name,
+            nodeCount: summary.nodeCount,
+            connectionCount: summary.connectionCount
+        };
+        list.push({ summary: version, definition: clone(definition) });
+        // Bound the draft-save history; published snapshots are never pruned.
+        const saves = list.filter(entry => entry.summary.kind === 'save');
+        const keep = 20;
+        const keepList = saves.length > keep
+            ? new Set(saves.slice(saves.length - keep).map(entry => entry.summary.version))
+            : undefined;
+        this.versions.set(
+            summary.id,
+            keepList
+                ? list.filter(entry => entry.summary.kind !== 'save' || keepList.has(entry.summary.version))
+                : list
+        );
+        return clone(version);
+    }
+
+    private async setRelease(workflowId: string, version: number, author?: string): Promise<WorkflowRelease> {
+        const release: WorkflowRelease = {
+            workflowId,
+            version,
+            publishedAt: new Date().toISOString(),
+            publishedBy: author
+        };
+        this.releases.set(workflowId, release);
+        return clone(release);
     }
 }
 
@@ -284,6 +443,70 @@ export class HttpWorkflowDefinitionStore implements WorkflowDefinitionStore {
             return undefined;
         }
         return result.ok ? result.body as WorkflowExecutionSnapshot : undefined;
+    }
+
+    async saveVersion(
+        definition: VisualWorkflowDefinition,
+        options: { createdBy?: string } = {}
+    ): Promise<WorkflowVersionSummary> {
+        const body = options.createdBy ? { ...definition, createdBy: options.createdBy } : definition;
+        const result = await this.request(
+            `workflows/${encodeURIComponent(definition.id)}/save`,
+            { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }
+        );
+        if (!result.ok) {
+            throw new Error(`Failed to save workflow version ${definition.id}: HTTP ${result.status}`);
+        }
+        return result.body?.version as WorkflowVersionSummary;
+    }
+
+    async publish(
+        definition: VisualWorkflowDefinition,
+        options: { publishedBy?: string } = {}
+    ): Promise<WorkflowPublishResult> {
+        const body = options.publishedBy ? { ...definition, publishedBy: options.publishedBy } : definition;
+        const result = await this.request(
+            `workflows/${encodeURIComponent(definition.id)}/publish`,
+            { method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json' } }
+        );
+        if (!result.ok) {
+            const message = result.body?.error || result.body?.message || `HTTP ${result.status}`;
+            throw new Error(`Failed to publish workflow ${definition.id}: ${message}`);
+        }
+        return {
+            version: result.body?.version as WorkflowVersionSummary,
+            release: result.body?.release as WorkflowRelease
+        };
+    }
+
+    async listVersions(workflowId: string, limit = 50): Promise<WorkflowVersionList> {
+        const result = await this.request(
+            `workflows/${encodeURIComponent(workflowId)}/versions?limit=${Math.max(1, limit)}`,
+            { method: 'GET' }
+        );
+        if (!result.ok) {
+            return { items: [] };
+        }
+        return {
+            items: Array.isArray(result.body?.items) ? result.body.items : [],
+            release: result.body?.release
+        };
+    }
+
+    async getVersion(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined> {
+        const result = await this.request(
+            `workflows/${encodeURIComponent(workflowId)}/versions/${Math.max(1, version)}`,
+            { method: 'GET' }
+        );
+        return result.ok ? result.body?.definition || result.body : undefined;
+    }
+
+    async restoreVersion(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined> {
+        const result = await this.request(
+            `workflows/${encodeURIComponent(workflowId)}/versions/${Math.max(1, version)}/restore`,
+            { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' } }
+        );
+        return result.ok ? result.body?.definition : undefined;
     }
 
     protected async request(path: string, init: RequestInit): Promise<HttpResult> {

@@ -101,6 +101,7 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     saveStateDirty: 'Unsaved changes',
                     saveStateSaving: 'Saving…',
                     saveStateError: 'Save failed',
+                    publish: 'Publish',
                     searchNodes: 'Search nodes…',
                     noMatches: 'No matching nodes',
                     save: 'Save',
@@ -146,6 +147,8 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     layout: 'Auto layout applied',
                     duplicated: 'Duplicated {name}',
                     saved: 'Saved "{name}"',
+                    versionSaved: 'Saved v{version}',
+                    published: 'Published v{version}',
                     savedAs: 'Saved "{name}" as a new workflow',
                     completed: 'Workflow completed',
                     failed: 'Workflow failed',
@@ -165,7 +168,8 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     running: 'Workflow is already running',
                     invalidDocument: 'Invalid workflow document',
                     notFound: 'Workflow not found: {id}',
-                    noCheckpoint: 'No checkpoint is available to resume'
+                    noCheckpoint: 'No checkpoint is available to resume',
+                    publishUnsupported: 'This host cannot publish workflows'
                 },
                 node: {
                     start: { label: 'Start', description: 'Entry point of the workflow' },
@@ -404,6 +408,7 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     saveStateDirty: '有未保存修改',
                     saveStateSaving: '保存中…',
                     saveStateError: '保存失败',
+                    publish: '发布',
                     searchNodes: '搜索节点…',
                     noMatches: '没有匹配的节点',
                     save: '保存',
@@ -449,6 +454,8 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     layout: '已自动布局',
                     duplicated: '已复制「{name}」',
                     saved: '已保存「{name}」',
+                    versionSaved: '已保存 v{version}',
+                    published: '已发布 v{version}',
                     savedAs: '已另存为「{name}」',
                     completed: '工作流已完成',
                     failed: '工作流失败',
@@ -468,7 +475,8 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     running: '工作流已在运行',
                     invalidDocument: '无效的工作流文档',
                     notFound: '未找到工作流：{id}',
-                    noCheckpoint: '没有可恢复的检查点'
+                    noCheckpoint: '没有可恢复的检查点',
+                    publishUnsupported: '当前宿主不支持发布工作流'
                 },
                 node: {
                     start: { label: '开始', description: '工作流入口' },

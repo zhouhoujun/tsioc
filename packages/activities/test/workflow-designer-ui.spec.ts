@@ -1024,6 +1024,29 @@ describe('Workflow Designer UI', () => {
         expect(popup.hasAttribute('hidden')).toBe(true);
     });
 
+    it('publishes the active workflow from the menu and records a release', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        ref.instance.store = store;
+        ref.instance.designer.renameNode('task_1', 'Publish me');
+        await flush();
+
+        const trigger = root.querySelector('.workflow-global-bar .menu-bar-trigger') as any;
+        trigger.click();
+        await flush();
+        const publish = root.querySelector('.workflow-global-bar [data-menu-id="publish"]') as any;
+        expect(publish).toBeTruthy();
+        publish.click();
+        await flush();
+
+        await waitFor(() => ref.instance.saveState === 'saved');
+        const versions = await store.listVersions(ref.instance.designer.definition.id);
+        expect(versions.items.length).toBe(1);
+        expect(versions.items[0].kind).toBe('publish');
+        expect(versions.release?.version).toBe(versions.items[0].version);
+        expect(ref.instance.designer.message).toBe('workflow.message.published');
+        expect(ref.instance.saveStateLabel).toContain('已保存');
+    });
+
     it('debounces code edits so typing does not rebuild the workflow per keystroke', async () => {
         const node = ref.instance.designer.addNode('function', { x: 120, y: 120 });
         expect(node).toBeTruthy();
@@ -1088,6 +1111,8 @@ describe('Workflow Designer UI', () => {
         const saved = await store.get(ref.instance.designer.definition.id);
         expect(saved?.nodes.find(node => node.id === 'task_1')?.name).toBe('Autosaved task');
         expect(ref.instance.saveStateLabel).toContain('已保存');
+        // Autosave only rewrites the draft; versions belong to explicit saves.
+        expect((await store.listVersions(ref.instance.designer.definition.id)).items.length).toBe(0);
     });
 
     it('coalesces a slow typing burst into a single autosave', async () => {
@@ -1195,9 +1220,17 @@ describe('Workflow Designer UI', () => {
         ref.instance.store = store;
         ref.instance.designer.renameNode('task_1', 'Keyboard save');
         key('s', { ctrlKey: true });
-        await new Promise(resolve => setTimeout(resolve, 30));
-        const saved = await store.get(ref.instance.designer.definition.id);
+        const workflowId = ref.instance.designer.definition.id;
+        let versions = await store.listVersions(workflowId);
+        for (let attempt = 0; attempt < 40 && versions.items.length === 0; attempt++) {
+            await flush();
+            versions = await store.listVersions(workflowId);
+        }
+        const saved = await store.get(workflowId);
         expect(saved?.nodes.find(node => node.id === 'task_1')?.name).toBe('Keyboard save');
+        // An explicit save also records an immutable version.
+        expect(versions.items.length).toBe(1);
+        expect(versions.items[0].kind).toBe('save');
     });
 
     it('zooms with Ctrl+wheel and pans with a plain wheel', async () => {

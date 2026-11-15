@@ -42,6 +42,7 @@ import {
     WorkflowExecutionSnapshot,
     InMemoryWorkflowDefinitionStore,
     createDefaultWorkflowDefinitionStore,
+    validateVisualWorkflow,
     validateVisualWorkflowDraft
 } from '../src/visual';
 import { toWorkflowExecutionSnapshot, VisualWorkflowService } from '../src/visual/VisualWorkflowService';
@@ -55,10 +56,16 @@ import {
     SqliteWorkflowExecutionStore,
     WorkflowExecutionStore
 } from './WorkflowExecutionStore';
+import {
+    InMemoryWorkflowVersionStore,
+    SqliteWorkflowVersionStore,
+    WorkflowVersionStore
+} from './WorkflowVersionStore';
 
 export const WORKFLOW_DEFINITION_STORE = token<WorkflowDefinitionStore>('WORKFLOW_DEFINITION_STORE');
 export const WORKFLOW_EXECUTION_STORE = token<WorkflowExecutionStore>('WORKFLOW_EXECUTION_STORE');
 export const WORKFLOW_EXECUTION_LIMIT = token<number>('WORKFLOW_EXECUTION_LIMIT');
+export const WORKFLOW_VERSION_STORE = token<WorkflowVersionStore>('WORKFLOW_VERSION_STORE');
 
 /** Plugin catalog API: installed plugins plus bundled/available manifests. */
 @Controller('/api/plugins')
@@ -109,6 +116,7 @@ export class WorkflowHttpController {
         @Inject(WORKFLOW_DEFINITION_STORE) private store: WorkflowDefinitionStore,
         @Inject(WORKFLOW_EXECUTION_STORE) private history: WorkflowExecutionStore,
         @Inject(WORKFLOW_EXECUTION_LIMIT) private historyLimit: number,
+        @Inject(WORKFLOW_VERSION_STORE) private versions: WorkflowVersionStore,
         private execution: VisualWorkflowService
     ) { }
 
@@ -142,6 +150,92 @@ export class WorkflowHttpController {
         return { summary, definition };
     }
 
+    /** Explicit save: record an immutable version of the current document. */
+    @Post('/:id/save')
+    async saveVersion(@RequestPath('id') id: string, @RequestBody() body: VisualWorkflowDefinition) {
+        const definition = this.definitionFrom(id, body);
+        const validation = validateVisualWorkflowDraft(definition);
+        if (!validation.valid) {
+            throw new BadRequestException(validation.errors.join('; '));
+        }
+        const summary = await this.store.save(definition);
+        const version = await this.versions.append(definition, {
+            kind: 'save',
+            createdBy: (body as any)?.createdBy
+        });
+        return { summary, version };
+    }
+
+    /**
+     * Publish: validate the whole graph, record an immutable version and point
+     * run/webhook entry points at it. Later draft edits stay unpublished.
+     */
+    @Post('/:id/publish')
+    async publish(@RequestPath('id') id: string, @RequestBody() body: VisualWorkflowDefinition) {
+        const definition = this.definitionFrom(id, body);
+        const validation = validateVisualWorkflow(definition);
+        if (!validation.valid) {
+            throw new BadRequestException(validation.errors.join('; '));
+        }
+        const summary = await this.store.save(definition);
+        const version = await this.versions.append(definition, {
+            kind: 'publish',
+            createdBy: (body as any)?.publishedBy
+        });
+        const release = await this.versions.publish(id, version.version, (body as any)?.publishedBy);
+        return { summary, version, release };
+    }
+
+    @Get('/:id/versions')
+    async listVersions(@RequestPath('id') id: string) {
+        return this.versions.list(id, 50);
+    }
+
+    @Get('/:id/versions/:version')
+    async getVersion(@RequestPath('id') id: string, @RequestPath('version') version: string) {
+        const definition = await this.versions.get(id, Number(version));
+        if (!definition) {
+            throw new NotFoundException(`Workflow version not found: ${id} v${version}`);
+        }
+        return { definition, version: Number(version) };
+    }
+
+    /** Copy a historical version back into the editable draft. */
+    @Post('/:id/versions/:version/restore')
+    async restoreVersion(@RequestPath('id') id: string, @RequestPath('version') version: string) {
+        const definition = await this.versions.get(id, Number(version));
+        if (!definition) {
+            throw new NotFoundException(`Workflow version not found: ${id} v${version}`);
+        }
+        const summary = await this.store.save(definition);
+        return { summary, definition };
+    }
+
+    /** Normalize a request body into a definition bound to the route id. */
+    private definitionFrom(id: string, body: VisualWorkflowDefinition): VisualWorkflowDefinition {
+        if (!body || typeof body !== 'object') {
+            throw new BadRequestException('Workflow definition body is required');
+        }
+        const { createdBy, publishedBy, ...definition } = body as any;
+        return { ...definition, id };
+    }
+
+    /** Entry points run the published version when one exists, else the draft. */
+    private async definitionToRun(id: string): Promise<VisualWorkflowDefinition> {
+        const release = await this.versions.release(id);
+        if (release) {
+            const released = await this.versions.get(id, release.version);
+            if (released) {
+                return released;
+            }
+        }
+        const draft = await this.store.get(id);
+        if (!draft) {
+            throw new NotFoundException(`Workflow not found: ${id}`);
+        }
+        return draft;
+    }
+
     @Delete('/:id')
     async remove(@RequestPath('id') id: string) {
         const removed = await this.store.remove(id);
@@ -149,6 +243,7 @@ export class WorkflowHttpController {
             throw new NotFoundException(`Workflow not found: ${id}`);
         }
         await this.history.removeWorkflow(id);
+        await this.versions.removeWorkflow(id);
         return { removed: true };
     }
 
@@ -156,6 +251,7 @@ export class WorkflowHttpController {
     async clear() {
         await this.store.clear();
         await this.history.clear();
+        await this.versions.clear();
         return { cleared: true };
     }
 
@@ -164,10 +260,7 @@ export class WorkflowHttpController {
         @RequestPath('id') id: string,
         @RequestBody() body: { context?: Record<string, any>; timeout?: number } = {}
     ) {
-        const definition = await this.store.get(id);
-        if (!definition) {
-            throw new NotFoundException(`Workflow not found: ${id}`);
-        }
+        const definition = await this.definitionToRun(id);
         const timeout = Math.max(0, Number(body?.timeout) || 0);
         const result = await this.execution.execute(definition, body?.context || {}, {
             timeout: timeout || undefined
@@ -230,10 +323,7 @@ export class WorkflowHttpController {
     }
 
     private async runHook(id: string, adapter: StatusMessageAdapter, pathOverride?: string) {
-        const definition = await this.store.get(id);
-        if (!definition) {
-            throw new NotFoundException(`Workflow not found: ${id}`);
-        }
+        const definition = await this.definitionToRun(id);
         const request = (adapter as any).request || {};
         const query = (adapter.read('query') as Record<string, any>) || {};
         const headers = (adapter.read('headers') as Record<string, any>) || {};
@@ -276,10 +366,7 @@ export class WorkflowHttpController {
         @RequestPath('id') id: string,
         @RequestBody() body: { context?: Record<string, any>; checkpoint: any }
     ) {
-        const definition = await this.store.get(id);
-        if (!definition) {
-            throw new NotFoundException(`Workflow not found: ${id}`);
-        }
+        const definition = await this.definitionToRun(id);
         if (!body?.checkpoint) {
             throw new BadRequestException('checkpoint is required');
         }
@@ -381,6 +468,10 @@ export interface WorkflowHttpServerOptions {
     store?: WorkflowDefinitionStore;
     /** Execution history store; defaults to SQLite next to the definition store. */
     executionStore?: WorkflowExecutionStore;
+    /** Version/release store; defaults to SQLite next to the definition store. */
+    versionStore?: WorkflowVersionStore;
+    /** Draft-save versions kept per workflow (default 20; published ones persist). */
+    versionHistoryLimit?: number;
     /** Snapshots kept per workflow (default 200). */
     executionHistoryLimit?: number;
     /** SQLite database path when `store` is not supplied. */
@@ -419,6 +510,23 @@ function createServerExecutionStore(options: WorkflowHttpServerOptions): Workflo
     return new InMemoryWorkflowExecutionStore();
 }
 
+function createServerVersionStore(options: WorkflowHttpServerOptions): WorkflowVersionStore {
+    if (options.versionStore) {
+        return options.versionStore;
+    }
+    const keepSaves = options.versionHistoryLimit;
+    if (options.store instanceof SqliteWorkflowDefinitionStore) {
+        return new SqliteWorkflowVersionStore({ file: options.store.databaseFile, keepSaves });
+    }
+    if (options.store) {
+        return new InMemoryWorkflowVersionStore();
+    }
+    if (options.databaseFile || isSqliteAvailable()) {
+        return new SqliteWorkflowVersionStore({ file: options.databaseFile, keepSaves });
+    }
+    return new InMemoryWorkflowVersionStore();
+}
+
 function createServerWorkflowStore(options: WorkflowHttpServerOptions): WorkflowDefinitionStore {
     if (options.store) {
         return options.store;
@@ -437,6 +545,7 @@ function createServerWorkflowStore(options: WorkflowHttpServerOptions): Workflow
 export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}): Type<any> {
     const store = createServerWorkflowStore(options);
     const executionStore = createServerExecutionStore(options);
+    const versionStore = createServerVersionStore(options);
     const features: any[] = [
         provideService(
             useRouter(),
@@ -466,6 +575,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             { provide: WORKFLOW_DEFINITION_STORE, useValue: store },
             { provide: WORKFLOW_EXECUTION_STORE, useValue: executionStore },
             { provide: WORKFLOW_EXECUTION_LIMIT, useValue: options.executionHistoryLimit ?? 200 },
+            { provide: WORKFLOW_VERSION_STORE, useValue: versionStore },
             ...(options.providers || []),
             WorkflowPluginCatalog,
             ...features,
@@ -507,3 +617,4 @@ export async function startWorkflowHttpServer(options: WorkflowHttpServerOptions
 }
 
 export { InMemoryWorkflowDefinitionStore, SqliteWorkflowDefinitionStore };
+export { InMemoryWorkflowVersionStore, SqliteWorkflowVersionStore, WorkflowVersionStore };

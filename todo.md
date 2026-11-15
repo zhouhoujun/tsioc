@@ -4241,3 +4241,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 打字期间画布/文档不变，最后一次敲击后 ~300ms 更新节点标题；失焦立即提交（`burst-name` / `blurred` 断言通过）；
   - 3 次击键只产生 1 个撤销步骤；保存/运行等命令会先 flush 草稿。
 - **回归**：`workflow-designer-ui.spec` 58 passing（新增「值编辑期间 schema 对象不变」「一次 burst 一次提交 + 一步撤销」；两条在旧实现上均失败，已验证）；activities 全量 **359 passing**；microservices/admin 63 passing；workflow-admin preview EXIT 0；`tsc` 0；designer 初始包 743.2 KiB / gzip **195.3 KiB**（< 200 KiB 预算）；`check-source-size` / `git diff --check` OK。
+
+## 2026-11-15 P2 草稿 / 显式保存 / 发布（版本与发布指针）
+- **模型**：`workflows` 仍是可变草稿（自动保存只写它）；显式保存写入 `workflow_versions`（不可变、按 SHA-256 去重），发布把 `workflow_releases` 指针指向某版本；运行入口（`/run`、webhook、`/resume`）优先执行已发布版本，从未发布时回退草稿——不改变既有行为。
+- **存储**：新增 `workflow_versions` / `workflow_releases` 两张表（`CREATE TABLE IF NOT EXISTS`，与工作流同库，不重写 `workflows`）；保留策略为「全部发布版本 + 最近 20 个保存版本」，内容相同不新增行；删除/清空工作流同时清理版本。
+- **API**：`POST /api/workflows/:id/save`（写入版本）、`POST /api/workflows/:id/publish`（完整校验 + 版本 + 发布指针）、`GET /api/workflows/:id/versions`、`GET /api/workflows/:id/versions/:v`、`POST /api/workflows/:id/versions/:v/restore`。
+- **客户端**：`WorkflowDefinitionStore` 新增可选 `saveVersion/publish/listVersions/getVersion/restoreVersion`（内存与 HTTP 实现）；Ctrl+S 走 `version:true`（记录版本），自动保存仍只写草稿；`publishTo` 先做客户端校验；管理菜单新增「发布」，状态栏显示「已发布 vN」；中英文案齐全。
+- **实测（真实 Chrome，workflow-admin）**：自动保存后版本数 **0**；Ctrl+S 产生 v1（save）；菜单发布产生 v2（publish）且 release 指向 v2、状态栏显示 `Published v2`；发布后继续编辑草稿，版本数与 release 均不变。HTTP 侧另有断言：循环依赖草稿可保存但发布返回 400，且此时 `/run` 仍执行已发布版本成功；restore v1 回填草稿；删除工作流后版本与 release 清空。
+- **回归**：activities **367 passing**（新增 version store 4、HTTP 1、designer 2、UI 1）；microservices/admin 63；components/common 79；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK。
+- **预算**：设计器初始包 748.1 KiB / gzip **196.4 KiB**。因版本/发布能力新增约 1.1 KB gzip，`packages/workflow-admin/build.ts` 的 gzip 预算由 200 KB 调整为 **205 KB**（raw 预算 780 KB 不变，注释说明原因）。

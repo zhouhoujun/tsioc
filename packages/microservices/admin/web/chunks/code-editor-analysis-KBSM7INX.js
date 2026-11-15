@@ -1,4 +1,4 @@
-import{c as N}from"./chunk-774JJX5T.js";import"./chunk-WAC3UO6H.js";import"./chunk-7SZRL6FY.js";var h;function w(){return h||(h=import("./acorn-5RIJ6RI2.js")),h}var g;function F(){return g||(g=import("./lib-UWHOY4QW.js")),g}var S=`(async () => {
+import{c as N}from"./chunk-RGRHFW3U.js";import"./chunk-WAC3UO6H.js";import"./chunk-7SZRL6FY.js";var h;function w(){return h||(h=import("./acorn-5RIJ6RI2.js")),h}var g;function F(){return g||(g=import("./lib-UWHOY4QW.js")),g}var S=`(async () => {
 `;async function k(e){let t;try{t=await w()}catch{return{}}try{return{ast:t.parse(`${S}${e}
 })`,{ecmaVersion:"latest",sourceType:"script",ranges:!0})}}catch(n){let r=Number(n?.pos),i=Number.isFinite(r)?Math.max(0,r-S.length):0,o=e.slice(0,i).split(`
 `);return{error:{line:Math.max(0,o.length-1),ch:o[o.length-1]?.length||0,message:String(n?.message||n).replace(/\s*\(\d+:\d+\)$/,"")}}}}async function O(e){return(await k(e)).error}function d(e,t){let r=e.slice(0,Math.max(0,t)).split(`
