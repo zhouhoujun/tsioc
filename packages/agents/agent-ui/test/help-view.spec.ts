@@ -18,7 +18,7 @@ export class HelpViewTest {
         expect(groups.find(group => group.value === 'group:core')).toBeTruthy();
         // The route catalogue rides next to command groups with its own count.
         expect(groups[groups.length - 1].label).toEqual('Dialogs');
-        expect(groups[groups.length - 1].description).toEqual('18 commands');
+        expect(groups[groups.length - 1].description).toEqual('19 commands');
     }
 
     @Test('capitalizes a raw lowercase group translation')

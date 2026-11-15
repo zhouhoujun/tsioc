@@ -230,6 +230,7 @@ interface SessionCheckpoint {
 - `session.archetype.list` RPC（gateway）返回 profile 元数据；不可用时回退 runtime `listArchetypes()`。
 - composer **meta 行**增加 `agent <name>` 徽标（不塞进 prompt，保持 plan/vim/queued 徽标现状）；session 打开/切换/重载通过 `session.archetype.get` 恢复。
 - 验证：JSDOM/单测 + 真实 Chrome（`/agents` 选择 plan 后徽标更新，刷新后保持 `agent plan`）。
+- `/work` 工作树首片：纯投影 `buildWorkRows`（delegation tree + background tasks + session 元数据），层级缩进/状态符号/任务行；Enter 打开所属会话；无树时显示当前会话；route `work` 已登记（dialog 目录自动收录）。真实 Chrome：`/work` 显示当前会话行与 `running` 状态。
 
 
 1. **Agents 面（TUI + Web）**
