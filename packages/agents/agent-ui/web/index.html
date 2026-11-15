@@ -127,7 +127,7 @@
         /* Composer and status line sit on the terminal background. */
         #agent-console .console-input-panel .input-shell {
             position: relative;
-            background: #1b2128 !important;
+            background: var(--agent-web-panel) !important;
             padding: 0.5em 1ch 0.5em 3ch !important;
         }
         /* The terminal textarea's prompt attribute is not rendered by HTML;
@@ -137,7 +137,7 @@
             position: absolute;
             left: 1ch;
             top: 0.5em;
-            color: #6e7681;
+            color: var(--agent-web-muted);
             pointer-events: none;
         }
         #agent-console textarea.agent-input {
@@ -146,7 +146,7 @@
             box-sizing: border-box;
             display: block;
             background: transparent;
-            color: #c9d1d9;
+            color: var(--agent-web-text);
             border: 0;
             border-radius: 0;
             padding: 0;
@@ -210,22 +210,6 @@
         #agent-console .agent-console.has-transcript > agent-console-brand-panel,
         #agent-console .agent-console.has-transcript .console-brand-panel {
             display: none !important;
-        }
-        /* Menus/dialogs keep the terminal overlay box, anchored above the
-           composer in normal flow (header -> transcript -> overlay -> footer). */
-        #agent-console agent-console-pending-question-panel > .console-panel,
-        #agent-console agent-console-approvals-panel > .console-panel,
-        #agent-console agent-console-select-panel > .console-panel,
-        #agent-console agent-console-text-overlay-panel > .console-panel,
-        #agent-console agent-console-command-outputs-panel > .console-panel,
-        #agent-console agent-console-which-key-panel > .console-panel,
-        #agent-console agent-console-health-popover > .console-panel,
-        #agent-console [renderregion="menu"] > .console-panel,
-        #agent-console [renderregion="dialog"] > .console-panel {
-            background: #1b2128 !important;
-            border: 1px solid #30363d !important;
-            border-bottom: 0 !important;
-            padding: 0 1ch !important;
         }
         /* The tab strip matches the terminal: plain labels, one active color. */
         #agent-console common-tab-bar[header] {

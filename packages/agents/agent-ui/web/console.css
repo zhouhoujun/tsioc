@@ -422,24 +422,29 @@ body {
 /* Dialogs and menus are different surfaces. A dialog is a modal overlay
    centred over the console canvas; a menu stays anchored above the composer
    as a composer-attached floating panel. */
+/* Dialogs share the terminal layout: a floating panel anchored above the
+   composer (not a full-screen centred modal). The footer height is measured by
+   the browser adapter so the panel never covers the input area. */
 #agent-console .agent-console > [renderregion="dialog"] {
     position: fixed;
-    inset: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: calc(var(--agent-web-footer-height, 96px) + 8px);
     z-index: 70;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    padding: 24px;
+    padding: 0 24px;
     pointer-events: none;
-    /* A real modal scrim: without it the overlay reads as fully transparent. */
-    background: rgba(7, 12, 20, 0.55);
-    backdrop-filter: blur(2px);
+    background: none;
+    backdrop-filter: none;
 }
 
 #agent-console .agent-console > [renderregion="dialog"] > .console-panel {
     pointer-events: auto;
-    margin: 0;
-    max-height: min(80vh, 720px);
+    margin: 0 auto;
+    max-height: calc(100vh - var(--agent-web-footer-height, 96px) - 120px);
     overflow: auto;
 }
 

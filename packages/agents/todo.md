@@ -245,6 +245,56 @@
 - 按 turn-loop / model-request / tool-orchestration / verification / compaction / hooks 拆 `DefaultAgentRuntime`；按路由拆 `AppRpcServer`；同提交下调 baseline。
 - 工具/技能/MCP 懒加载；TUI 首屏目标 < 2s；agent-ui 测试分片，目标 < 8min。
 
+### D 系列 — agent-ui 对话框系统化 + 路由（待实施，先方案）
+
+> 对照 opencode `DialogProvider/DialogSelect` 栈、Claude Code 统一选择器 shell、Codex ratatui popup：当前 console 命令对话框的问题不是单个组件，而是入口、状态、键盘、尺寸、关闭、样式各自为政。目标是用一套 Dialog Stack + Route Registry 收口。
+
+#### D1 — 对话框审计矩阵
+
+- 逐项记录 `/help`、`/sessions`、`/model`、`/provider`、`/settings`、`/theme`、`/tools`、`/approvals`、`/outputs`、`/mcp`、`/skills`、`/plugins`、`/apps`、`/ssh`、`/worktree`、`/` 菜单、@mention、pending question。
+- 字段：入口、当前 shell、标题、✕、Esc、搜索、分页、resize、TUI/Web 差异、失败点。
+- 产出 `docs/dialog-matrix.md`；不改行为。
+
+#### D2 — Dialog Stack
+
+- 新增 `AgentConsoleDialogStack`：`open/close/closeTop/replace`、`priority`、`modal`、`owner`、`onClose`。
+- 迁移 `selectMenu` / `textOverlay` / `pendingQuestion` / `pendingApprovals` / `commandOutputs`；Esc 只关闭栈顶，审批/问答优先。
+- 禁止新增独立浮层布尔 flag；所有命令经 stack 打开。
+
+#### D3 — 统一 Dialog Shell
+
+- 抽出 `AgentConsoleDialogFrame`，`DialogComponent`、`SelectComponent`、text overlay、approval/question 共用 title/✕/body/footer/hint。
+- 统一宽度策略（`fit` / `fill`）、最大高度、滚动窗口、`1-12/N` 位置提示、CJK 宽度。
+- 统一关闭语义：✕ = Esc = `closeTop()`。
+
+#### D4 — 布局与键盘
+
+- `AgentConsoleDialogLayout`：TUI 与 Web 都锚定 composer 上方；TUI 底边对齐输入区、超高向上增长；Web 绝对定位到输入区上方，不居中。
+- `AgentConsoleDialogKeyRouter`：↑↓、PgUp/PgDn、Home/End、Enter、Tab、数字、字符搜索；浏览器保持 textarea 焦点。
+- resize 重算高度/窗口；不占 footer、不压缩 transcript。
+
+#### D5 — 共享 skin
+
+- 统一 TUI `console.scss` 与 Web `console.css` 的 dialog/select/option/hint/close 变量与语义类。
+- 清理 `web/index.html` 等 inline 覆盖；hover/focus/✕ 红色行为与 tab-bar 对齐。
+
+#### D6 — 命令迁移
+
+- 按组迁移：导航（sessions/help/projects/threads）→ 模型（model/provider/thinking/settings）→ 工具/审批（tools/approvals/outputs/mcp）→ 扩展（skills/plugins/apps/ssh/worktree）→ 输入（`/`、@mention、history）。
+- 每组独立提交 + TUI PTY / Chrome 回归。
+
+#### R 系列 — Dialog Route Registry（与 D 系列配套）
+
+- `AgentConsoleDialogRoute`：`id`、`path`（如 `/model`）、`group`（navigation/model/tools/session/extensions/settings）、`kind`（dialog/panel/confirm）、`priority`、`modal`、`size`、`hidden`、`disabledReason`、`load()`。
+- `AGENT_CONSOLE_DIALOG_ROUTES` 作为**唯一清单**：命令定义只引用 `dialog: '<routeId>'`，不再重复描述标题/分组/加载逻辑。
+- 路由职责：分类（`/help` 分组、palette 分组）、打开（`router.open(id, args)` 入栈）、懒加载（`load()` 缓存 + 预加载）、失败回退（统一错误 dialog + retry）。
+- 懒加载策略：
+  - Web 当前是单文件 IIFE bundle；真实按需加载需 `build-web.ts` 改 `format: 'esm'` + `splitting: true`，输出 `web/dist/chunks/*`，PWA 预缓存 shell、chunk 走 network-first。
+  - 若必须保留单文件分发，则先用“逻辑懒加载”（defer 初始化/注册），但不得宣称网络按需。
+  - TUI 用 `import()` 缓存模块；hover/选中 palette 项时预加载。
+- 深链：Web `?dialog=model`、TUI `/dialog model`（内部路由），与命令共享同一 route id。
+- 验收：route 清单完整性；lazy load 只执行一次；chunk 失败可重试；`/help` 分组由 route 生成；TUI/Web 一致；真实 PTY + Chrome。
+
 ### 遗留观察（收尾时必须确认）
 
 - 视窗模式 layout 持久化与 alternate-screen 退出语义需持续由真实 PTY 覆盖（归入 U5）；`/close` 退出后命令窗口提示与历史保留需一并复验。

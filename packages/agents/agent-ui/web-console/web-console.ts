@@ -452,6 +452,24 @@ export async function mountAgentWebConsole(
         doc.documentElement?.setAttribute('data-agent-theme', name);
     };
     syncTheme();
+
+    // Dialogs are anchored above the composer; measure the real footer height
+    // (multi-line drafts, hints and status rows) instead of guessing a px value.
+    const footer = (root?.querySelector?.('[renderregion="footer"]') as HTMLElement | null)
+        ?? (root?.querySelector?.('.console-input-panel') as HTMLElement | null);
+    const syncFooterHeight = (): void => {
+        const rect = footer?.getBoundingClientRect();
+        if (rect && rect.height > 0) {
+            mount.style.setProperty('--agent-web-footer-height', `${Math.ceil(rect.height)}px`);
+        }
+    };
+    syncFooterHeight();
+    const FooterResizeObserver = (doc.defaultView as any)?.ResizeObserver;
+    const footerObserver = FooterResizeObserver && footer ? new FooterResizeObserver(() => syncFooterHeight()) : null;
+    footerObserver?.observe(footer);
+    doc.defaultView?.addEventListener?.('resize', syncFooterHeight);
+    (doc.defaultView as any)?.visualViewport?.addEventListener?.('resize', syncFooterHeight);
+
     if (root && MutationObserverCtor) {
         themeObserver = new MutationObserverCtor(() => syncTheme());
         themeObserver.observe(root, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
@@ -570,6 +588,9 @@ export async function mountAgentWebConsole(
             resizeObserver?.disconnect();
             doc.defaultView?.removeEventListener?.('resize', positionIndicator);
             (doc.defaultView as any)?.visualViewport?.removeEventListener?.('resize', positionIndicator);
+            footerObserver?.disconnect();
+            doc.defaultView?.removeEventListener?.('resize', syncFooterHeight);
+            (doc.defaultView as any)?.visualViewport?.removeEventListener?.('resize', syncFooterHeight);
             selectionKeeper.dispose();
             toastService.clear();
             follower?.detach();
