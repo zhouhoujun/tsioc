@@ -489,7 +489,21 @@ export async function mountAgentWebConsole(
         if (element !== followerElement) {
             follower?.detach();
             followerElement = element;
-            follower = new DomTranscriptFollower(element, indicator, { onReachTop: requestOlderMessages });
+            const translate = (key: string, fallback: string, params?: any): string => {
+                try {
+                    return state.translator?.translate(key, params) || fallback;
+                } catch {
+                    return fallback;
+                }
+            };
+            const stripArrow = (value: string): string => value.replace(/^↓\s*/, '');
+            follower = new DomTranscriptFollower(element, indicator, {
+                labels: {
+                    newMessages: stripArrow(translate('agent.message.newBelow', '{count} new', { count: '{count}' })),
+                    jumpToBottom: stripArrow(translate('agent.message.jumpToBottom', 'Jump to bottom'))
+                },
+                onReachTop: requestOlderMessages
+            });
             follower.attach();
         }
         return follower;

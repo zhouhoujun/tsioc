@@ -26,20 +26,18 @@ export class DomTranscriptFollowerTest {
         expect(follower.following).toEqual(false);
         // A manual scroll-up alone must expose a way back to the bottom.
         expect(indicator.style.display).not.toEqual('none');
-        expect(indicator.getAttribute('aria-label')).toEqual('jump to bottom');
-        expect(indicator.getAttribute('data-count')).toEqual('0');
+        expect(indicator.textContent).toEqual('jump to bottom');
 
         // Content grows while scrolled away: count rises and the indicator shows.
         stubMetrics(transcript, 1200, 100);
         follower.onContentGrew();
         expect(follower.newItemCount).toEqual(1);
         expect(indicator.style.display).not.toEqual('none');
-        expect(indicator.getAttribute('aria-label')).toContain('1 new messages');
+        expect(indicator.textContent).toContain('1 new messages');
 
         follower.onContentGrew();
         expect(follower.newItemCount).toEqual(2);
-        expect(indicator.getAttribute('aria-label')).toContain('2 new messages');
-        expect(indicator.getAttribute('data-count')).toEqual('2');
+        expect(indicator.textContent).toContain('2 new messages');
 
         follower.resumeFollow();
         expect(follower.following).toEqual(true);

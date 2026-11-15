@@ -1095,46 +1095,33 @@ body {
 #agent-console .console-new-messages {
     position: fixed;
     right: max(24px, env(safe-area-inset-right, 0px));
+    left: auto;
     bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 88px));
+    transform: none;
     z-index: 20;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    padding: 0;
+    gap: 4px;
+    width: auto;
+    height: auto;
+    padding: 4px 10px;
     border: 1px solid var(--agent-web-border);
-    border-radius: 50%;
+    border-radius: 4px;
     background: var(--agent-web-panel-raised);
     color: var(--agent-web-code-accent);
     font-family: var(--agent-web-sans);
-    font-size: 16px;
-    line-height: 1;
+    font-size: 12.5px;
+    line-height: 1.25;
+    white-space: nowrap;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
 }
 
-/* Compact icon button: down arrow plus an optional unread badge. */
+/* Same down-arrow affordance as the terminal viewport notice; the label keeps
+   its full text (count + jump wording) and is never reduced to an icon. */
 #agent-console .console-new-messages::before {
     content: '↓';
     font-weight: 700;
-}
-
-#agent-console .console-new-messages[data-count]:not([data-count="0"])::after {
-    content: attr(data-count);
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 999px;
-    background: var(--agent-web-accent);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 16px;
-    text-align: center;
 }
 
 @media (max-width: 640px) {
@@ -1151,8 +1138,6 @@ body {
     #agent-console .console-new-messages {
         right: max(12px, env(safe-area-inset-right, 0px));
         bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 72px));
-        width: 40px;
-        height: 40px;
     }
 
     #agent-console .message-template-user {
