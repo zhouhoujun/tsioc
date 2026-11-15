@@ -4,8 +4,7 @@ import { Injectable } from '@tsdi/ioc';
 import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
 import { ToastService } from '@tsdi/components/common/toast';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
-import { WebOverlayAnchors } from './overlay-anchors';
+import { DomOverlayAnchors, DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
@@ -481,7 +480,16 @@ export async function mountAgentWebConsole(
     indicator.style.display = 'none';
     indicator.setAttribute('aria-live', 'polite');
     mount.appendChild(indicator);
-    const overlayAnchors = new WebOverlayAnchors({ doc, mount, root, indicator });
+    const overlayAnchors = new DomOverlayAnchors({
+        document: doc,
+        container: mount,
+        footer: (root?.querySelector?.('[renderregion="footer"]') as HTMLElement | null)
+            ?? (root?.querySelector?.('.console-input-panel') as HTMLElement | null),
+        composer: (root?.querySelector?.('.input-shell') as HTMLElement | null)
+            ?? (root?.querySelector?.('textarea.agent-input') as HTMLElement | null),
+        indicator,
+        footerVariable: '--agent-web-footer-height'
+    });
     overlayAnchors.attach();
 
     let followerElement: HTMLElement | null = null;
