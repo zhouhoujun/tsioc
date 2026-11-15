@@ -118,6 +118,38 @@ export class DialogDeepLinkTest {
         }
     }
 
+    @Test('the wheel moves a blocking select dialog selection')
+    async wheelMovesDialogSelection() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const mounted = await mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state: new AgentConsoleSessionState(),
+            pwa: false,
+            workspace: ''
+        });
+        try {
+            mounted.state.openSelectMenu('Theme', [
+                { label: 'dark', value: 'dark' },
+                { label: 'light', value: 'light' },
+                { label: 'solarized', value: 'solarized' }
+            ]);
+            await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .select-option'));
+            const mount = this.dom.window.document.getElementById('agent-console') as HTMLElement;
+            mount.dispatchEvent(new this.dom.window.WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true }));
+            await waitUntil(() => mounted.state.selectMenu?.selectedIndex === 1);
+            expect(mounted.state.selectMenu?.selectedIndex).toEqual(1);
+            mount.dispatchEvent(new this.dom.window.WheelEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true }));
+            await waitUntil(() => mounted.state.selectMenu?.selectedIndex === 0);
+            expect(mounted.state.selectMenu?.selectedIndex).toEqual(0);
+        } finally {
+            await mounted.dispose();
+            gateway.dispose();
+        }
+    }
+
     @Test('escape from a web text dialog restores its parent dialog')
     async escapeRestoresParent() {
         const gateway = new FakeAgentGateway({ sessionId: 'session-A' });

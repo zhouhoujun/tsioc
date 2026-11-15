@@ -262,6 +262,7 @@
 - ✅ D6 输出对话框：`/worktree list` 使用带标题的 `Worktrees` 文本对话框（空列表仍为 toast），不再落到通用 `notice`。
 - ✅ D3 壳语义：approval / question 面板补上共享 `dialog-panel` / `dialog-title` / `dialog-hint` / `dialog-close` 钩子（JSDOM 挂载测试），统一 modal 皮肤与关闭语义。
 - ✅ 真实 PTY：acceptance 场景 12 驱动 `/theme` → `sol` 过滤 → Backspace 恢复 → Esc 关闭，断言真实终端中的行过滤与关闭。
+- ✅ Web 滚轮（选择框）：阻塞式选择对话框用滚轮移动选中项，不再滚动底层 transcript。
 - ✅ Web 滚轮：文本对话框打开时滚轮滚动对话框自身（不再滚动底层 transcript），JSDOM 挂载测试覆盖。
 - ✅ R1 路由分类：每条 route 声明 `kind`（select/panel/wizard/text），`/dialog` 选择器显示 `group · kind`，`/help dialogs` 目录追加 kind。
 - ✅ R1 交互式路由：`/dialog` 无参数时以选择对话框打开路由目录（可按 id/标题/路径键入过滤，Enter 直接执行对应命令）；`/help dialogs` 仍为只读文本目录。

@@ -1,4 +1,4 @@
-import type { AgentConsoleSessionState } from '@tsdi/agent-ui';
+import { isAgentConsoleSuggestionMenu, type AgentConsoleSessionState } from '@tsdi/agent-ui';
 
 export interface AgentConsoleWheelHost {
     getState(): AgentConsoleSessionState;
@@ -9,9 +9,9 @@ export interface AgentConsoleWheelHost {
 /**
  * Route a wheel event by the active surface.
  *
- * A long text dialog owns the wheel while open (its own page scrolls); the
- * transcript must not lose the reader's place underneath it. Otherwise the
- * viewport transcript follower scrolls history.
+ * A long text dialog owns the wheel while open (its own page scrolls); a
+ * blocking select dialog moves its selection. Otherwise the viewport
+ * transcript follower scrolls history — never the dialog underneath.
  */
 export function routeAgentConsoleWheel(event: WheelEvent, host: AgentConsoleWheelHost): void {
     if (event.deltaY === 0) {
@@ -20,6 +20,12 @@ export function routeAgentConsoleWheel(event: WheelEvent, host: AgentConsoleWhee
     const state = host.getState();
     if (state.textOverlay) {
         state.scrollTextOverlay(event.deltaY > 0 ? 1 : -1);
+        event.preventDefault();
+        return;
+    }
+    const menu = state.selectMenu;
+    if (menu && !isAgentConsoleSuggestionMenu(menu)) {
+        state.moveSelectMenu(event.deltaY > 0 ? 1 : -1);
         event.preventDefault();
         return;
     }
