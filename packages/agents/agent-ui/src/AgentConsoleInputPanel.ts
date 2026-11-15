@@ -308,6 +308,27 @@ export class AgentConsoleInputPanelComponent {
                 return;
             }
         }
+        // A pending question owns Enter and (with an empty draft) the number
+        // keys in the browser too: Enter answers the custom draft or the
+        // highlighted option, digits pick a numbered option. Without this the
+        // default textarea handling started a chat turn instead of answering.
+        if (this.state?.pendingQuestion) {
+            if (this.isEnterKey(event) && !event.shiftKey) {
+                event.preventDefault?.();
+                if (this.state.input.trim()) {
+                    await this.state.submitPendingQuestionInput();
+                } else {
+                    await this.state.choosePendingQuestion(this.state.pendingQuestionSelectedIndex);
+                }
+                return;
+            }
+            if (!event.ctrlKey && !event.metaKey && !event.altKey
+                && !this.state.input && /^[1-9]$/.test(key)) {
+                event.preventDefault?.();
+                await this.state.choosePendingQuestion(Number(key) - 1);
+                return;
+            }
+        }
         if ((key === 'ArrowUp' || key === 'ArrowDown') && !this.state?.selectMenu) {
             const handled = this.state?.inputHistoryController.navigate(key === 'ArrowUp' ? -1 : 1);
             if (handled) {

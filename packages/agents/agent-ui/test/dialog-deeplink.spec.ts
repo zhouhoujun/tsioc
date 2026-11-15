@@ -225,6 +225,53 @@ export class DialogDeepLinkTest {
         }
     }
 
+    @Test('pending questions answer via digits and Enter in the browser')
+    async questionAnswerKeys() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const mounted = await mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state: new AgentConsoleSessionState(),
+            pwa: false,
+            workspace: ''
+        });
+        try {
+            const answers: any[] = [];
+            mounted.state.questionAction = async input => { answers.push(input); };
+            const ask = (id: string) => mounted.state.setPendingQuestion({
+                questionId: id,
+                sessionId: mounted.state.sessionId,
+                question: 'pick',
+                options: ['alpha', 'beta'],
+                severity: 'low',
+                createdAt: 1,
+                updatedAt: 1,
+                status: 'pending'
+            });
+            ask('q1');
+            await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .question-panel'));
+            const area = this.dom.window.document.querySelector('textarea.agent-input') as HTMLTextAreaElement;
+            area.focus();
+            area.dispatchEvent(new this.dom.window.KeyboardEvent('keydown', { key: '2', bubbles: true, cancelable: true }));
+            await waitUntil(() => answers.length === 1);
+            expect(answers[0].answer).toEqual('beta');
+
+            ask('q2');
+            await waitUntil(() => mounted.state.pendingQuestion?.questionId === 'q2');
+            area.value = 'custom answer';
+            area.dispatchEvent(new this.dom.window.Event('input', { bubbles: true }));
+            await waitUntil(() => mounted.state.input === 'custom answer');
+            area.dispatchEvent(new this.dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+            await waitUntil(() => answers.length === 2);
+            expect(answers[1].answer).toEqual('custom answer');
+        } finally {
+            await mounted.dispose();
+            gateway.dispose();
+        }
+    }
+
     @Test('?dialog=<unknown> reports a toast instead of opening an empty dialog')
     async deepLinkUnknownRoute() {
         const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
