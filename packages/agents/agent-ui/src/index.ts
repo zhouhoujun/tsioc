@@ -51,6 +51,7 @@ export type { AgentUiTranslator } from './agent-ui.i18n';
 export * from './AgentConsoleComponent';
 export * from './AgentConsoleSessionState';
 export * from './AgentConsoleSessionService';
+export { resolveSessionProjectKey } from './AgentConsoleProjectProjection';
 export * from './AgentConsoleEventBridge';
 export * from './AgentConsoleRemoteEventBridge';
 export * from './AgentConsolePanels';

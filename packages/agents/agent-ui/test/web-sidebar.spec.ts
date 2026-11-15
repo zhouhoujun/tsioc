@@ -88,3 +88,166 @@ export class WebAgentSidebarTest {
         expect(fixture.dom.window.document.body.hasAttribute('data-agent-sidebar')).toEqual(false);
     }
 }
+
+function createFinderFixture(): {
+    dom: JSDOM;
+    mount: HTMLElement;
+    state: AgentConsoleSessionState;
+    navigated: string[];
+    commands: string[];
+} {
+    const dom = new JSDOM('<!DOCTYPE html><html><body><div id="mount"><tab-bar></tab-bar><div class="input-meta"></div></div></body></html>', {
+        url: 'http://localhost:3100/?session=root'
+    });
+    const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+    state.configure({ sessionId: 'root', workspace: '' });
+    const now = Date.now();
+    state.setSessions([
+        { id: 'root', current: true, title: 'Main session', projectKey: 'workspace:/repo/alpha', projectLabel: 'alpha', updatedAt: now - 60_000 } as any,
+        { id: 'other', current: false, title: 'Reviewer', projectKey: 'workspace:/repo/beta', projectLabel: 'beta', updatedAt: now - 3_600_000 } as any,
+        { id: 'ancient', current: false, title: 'Ancient work', projectKey: 'workspace:/repo/beta', projectLabel: 'beta', updatedAt: now - 10 * 24 * 60 * 60 * 1000 } as any
+    ]);
+    return {
+        dom,
+        mount: dom.window.document.getElementById('mount') as HTMLElement,
+        state,
+        navigated: [],
+        commands: []
+    };
+}
+
+@Suite('web agent sidebar finders')
+export class WebAgentSidebarFinderTest {
+    @Test('session finder filters live, opens the first match and clears with Escape')
+    async sessionSearch() {
+        const fixture = createFinderFixture();
+        const sidebar = createWebSidebar({
+            document: fixture.dom.window.document,
+            mount: fixture.mount,
+            state: fixture.state,
+            runCommand: command => { fixture.commands.push(command); },
+            navigate: sessionId => { fixture.navigated.push(sessionId); }
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const input = sidebar.element.querySelector('.agent-web-sidebar-input.is-session-search') as HTMLInputElement;
+        expect(input).toBeTruthy();
+        const sessionRows = (): HTMLElement[] =>
+            Array.from(sidebar.element.querySelectorAll('.is-session')) as HTMLElement[];
+        const groups = (): string[] =>
+            Array.from(sidebar.element.querySelectorAll('.agent-web-sidebar-group')).map(node => node.textContent || '');
+        expect(sessionRows().length).toEqual(3);
+        expect(groups().length).toEqual(2);
+        expect(groups()[0]).toEqual('Today');
+        expect(groups()[1]).toEqual('Older');
+
+        input.value = 'review';
+        input.dispatchEvent(new fixture.dom.window.Event('input', { bubbles: true }));
+        expect(sessionRows().length).toEqual(1);
+        expect(sessionRows()[0].textContent).toContain('Reviewer');
+        expect(sidebar.element.querySelector('.is-search-all')).toBeNull();
+
+        input.dispatchEvent(new fixture.dom.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(fixture.navigated).toEqual(['other']);
+
+        input.dispatchEvent(new fixture.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        expect(input.value).toEqual('');
+        expect(sessionRows().length).toEqual(3);
+
+        sidebar.focusSessionSearch();
+        expect(fixture.dom.window.document.activeElement).toBe(input);
+
+        input.value = 'zzz';
+        input.dispatchEvent(new fixture.dom.window.Event('input', { bubbles: true }));
+        expect(sessionRows().length).toEqual(0);
+        const searchAll = sidebar.element.querySelector('.is-search-all') as HTMLElement;
+        expect(searchAll.textContent).toContain('Search all messages for "zzz"');
+        searchAll.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        expect(fixture.commands).toEqual(['/search zzz']);
+
+        sidebar.dispose();
+    }
+
+    @Test('project finder filters projects and scopes the session list')
+    async projectFilter() {
+        const fixture = createFinderFixture();
+        const sidebar = createWebSidebar({
+            document: fixture.dom.window.document,
+            mount: fixture.mount,
+            state: fixture.state,
+            runCommand: command => { fixture.commands.push(command); },
+            navigate: sessionId => { fixture.navigated.push(sessionId); }
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const toggle = sidebar.element.querySelector('.agent-web-sidebar-project-toggle') as HTMLElement;
+        const panel = sidebar.element.querySelector('.agent-web-sidebar-project-panel') as HTMLElement;
+        const projectInput = sidebar.element.querySelector('.agent-web-sidebar-input.is-project') as HTMLInputElement;
+        expect(toggle.textContent).toContain('All projects');
+        expect(panel.hidden).toEqual(true);
+
+        toggle.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        expect(panel.hidden).toEqual(false);
+        expect(toggle.getAttribute('aria-expanded')).toEqual('true');
+        const projectRows = (): HTMLElement[] =>
+            Array.from(sidebar.element.querySelectorAll('.agent-web-sidebar-row.is-project-row')) as HTMLElement[];
+        expect(projectRows().length).toEqual(3);
+
+        projectInput.value = 'bet';
+        projectInput.dispatchEvent(new fixture.dom.window.Event('input', { bubbles: true }));
+        expect(projectRows().map(row => row.querySelector('.agent-web-sidebar-main')?.textContent))
+            .toEqual(['All projects', 'beta']);
+
+        (projectRows()[1] as HTMLElement).dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(projectInput.value).toEqual('bet');
+        const sessionRows = (): HTMLElement[] =>
+            Array.from(sidebar.element.querySelectorAll('.is-session')) as HTMLElement[];
+        expect(sessionRows().length).toEqual(2);
+        expect(toggle.textContent).toContain('beta');
+        expect(toggle.classList.contains('is-filtered')).toEqual(true);
+
+        sidebar.setProjectFilter('');
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(toggle.textContent).toContain('All projects');
+        expect(sessionRows().length).toEqual(3);
+
+        toggle.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        projectInput.value = '';
+        projectInput.dispatchEvent(new fixture.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        expect(panel.hidden).toEqual(true);
+
+        sidebar.dispose();
+    }
+
+    @Test('footer routes settings and the session header creates a new session')
+    async settingsAndNewSession() {
+        const fixture = createFinderFixture();
+        const sidebar = createWebSidebar({
+            document: fixture.dom.window.document,
+            mount: fixture.mount,
+            state: fixture.state,
+            runCommand: command => { fixture.commands.push(command); },
+            navigate: sessionId => { fixture.navigated.push(sessionId); }
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const actions = Array.from(sidebar.element.querySelectorAll('.agent-web-sidebar-action')) as HTMLElement[];
+        expect(actions.map(action => action.querySelector('.agent-web-sidebar-action-label')?.textContent))
+            .toEqual(['Work', 'Inbox', 'Settings']);
+        actions[2].dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        expect(fixture.commands).toEqual(['/settings']);
+
+        const add = sidebar.element.querySelector('.agent-web-sidebar-add') as HTMLElement;
+        expect(add.getAttribute('aria-label')).toEqual('New session');
+        add.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        expect(fixture.commands).toEqual(['/settings', '/new']);
+
+        sidebar.dispose();
+    }
+}

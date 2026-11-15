@@ -159,6 +159,11 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
     overflow-y: auto;
 }
 
+/* The session list owns the leftover height so the footer actions stay put. */
+.agent-web-sidebar-section.is-sessions .agent-web-sidebar-list {
+    flex: 1 1 auto;
+}
+
 .agent-web-sidebar-row {
     display: flex;
     align-items: center;
@@ -205,6 +210,171 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
     height: 6px;
     border-radius: 50%;
     background: var(--agent-web-accent);
+}
+
+.agent-web-sidebar-label-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 4px 2px;
+}
+
+.agent-web-sidebar-label-row .agent-web-sidebar-label {
+    padding: 0;
+}
+
+.agent-web-sidebar-count {
+    color: var(--agent-web-muted);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.agent-web-sidebar-label-row .agent-web-sidebar-count {
+    margin-left: auto;
+}
+
+.agent-web-sidebar-add {
+    appearance: none;
+    border: 1px solid var(--agent-web-border);
+    background: var(--agent-web-panel-raised);
+    color: var(--agent-web-muted);
+    border-radius: 4px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.agent-web-sidebar-add:hover {
+    background: var(--agent-web-hover);
+    color: var(--agent-web-strong);
+}
+
+/* Project finder: the sidebar keeps one project scope at a time. */
+.agent-web-sidebar-project-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    appearance: none;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 4px;
+    background: var(--agent-web-panel-raised);
+    color: var(--agent-web-strong);
+    font: inherit;
+    text-align: left;
+    padding: 5px 7px;
+    cursor: pointer;
+}
+
+.agent-web-sidebar-project-toggle:hover {
+    background: var(--agent-web-hover);
+}
+
+.agent-web-sidebar-project-toggle.is-filtered {
+    border-color: var(--agent-web-accent);
+}
+
+.agent-web-sidebar-project-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agent-web-sidebar-chevron {
+    flex: 0 0 auto;
+    color: var(--agent-web-muted);
+    font-size: 10px;
+    transition: transform 120ms ease;
+}
+
+.agent-web-sidebar-project-toggle[aria-expanded="true"] .agent-web-sidebar-chevron {
+    transform: rotate(180deg);
+}
+
+.agent-web-sidebar-project-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0 2px;
+}
+
+.agent-web-sidebar-project-panel[hidden] {
+    display: none;
+}
+
+.agent-web-sidebar-project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+/* Shared finder input (sessions and projects). */
+.agent-web-sidebar-input {
+    width: 100%;
+    box-sizing: border-box;
+    appearance: none;
+    border: 1px solid var(--agent-web-border);
+    border-radius: 4px;
+    background: var(--agent-web-panel-raised);
+    color: var(--agent-web-text);
+    font: inherit;
+    font-size: 12px;
+    padding: 3px 6px;
+    outline: none;
+}
+
+.agent-web-sidebar-input:focus {
+    border-color: var(--agent-web-accent);
+}
+
+.agent-web-sidebar-input::placeholder {
+    color: var(--agent-web-muted);
+}
+
+.agent-web-sidebar-input::-webkit-search-cancel-button {
+    filter: grayscale(1) opacity(0.6);
+}
+
+.agent-web-sidebar-group {
+    color: var(--agent-web-muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 6px 2px;
+}
+
+.agent-web-sidebar-tag {
+    flex: 0 1 auto;
+    max-width: 38%;
+    color: var(--agent-web-muted);
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agent-web-sidebar-row.is-active {
+    background: var(--agent-web-hover);
+    box-shadow: inset 0 0 0 1px var(--agent-web-accent);
+}
+
+.agent-web-sidebar-row.is-search-all {
+    color: var(--agent-web-accent);
+    font-size: 11px;
+}
+
+.agent-web-sidebar-empty {
+    color: var(--agent-web-muted);
+    font-size: 11px;
+    padding: 6px;
 }
 
 .agent-web-sidebar-actions {

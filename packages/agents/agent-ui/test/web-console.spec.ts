@@ -273,6 +273,53 @@ export class AgentWebConsoleTest {
         }
     }
 
+    @Test('⌘K / Ctrl+K focuses the sidebar session finder')
+    async finderShortcutFocusesSidebar() {
+        const doc = this.dom.window.document;
+        const container = doc.createElement('div');
+        doc.body.appendChild(container);
+        const previousDocument = (globalThis as any).document;
+        (globalThis as any).document = doc;
+        const fetchImpl = (async (url: string) => {
+            if (String(url).includes('/api/events')) {
+                return new Response('event: connected\ndata: {}\n\n', {
+                    status: 200,
+                    headers: { 'Content-Type': 'text/event-stream' }
+                });
+            }
+            return new Response(JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                result: { sessionId: 'w1', id: 'w1', messages: [], sections: [], items: [], todos: [], steps: [] }
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }) as any;
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        let mounted: any;
+        try {
+            mounted = await mountAgentWebConsole({
+                baseUrl: 'http://localhost:3100',
+                sessionId: 'w1',
+                fetchImpl,
+                mount: container,
+                state,
+                pwa: false,
+                reconnectDelayMs: 100_000
+            });
+            const finder = doc.querySelector('.agent-web-sidebar-input.is-session-search') as HTMLInputElement | null;
+            expect(finder).toBeTruthy();
+            // A collapsed sidebar cannot take focus: the shortcut reopens it.
+            doc.body.setAttribute('data-agent-sidebar', 'closed');
+            const shortcut = new this.dom.window.KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true });
+            doc.dispatchEvent(shortcut);
+            expect(shortcut.defaultPrevented).toEqual(true);
+            expect(doc.body.getAttribute('data-agent-sidebar')).toEqual('open');
+            expect(doc.activeElement).toBe(finder);
+        } finally {
+            (globalThis as any).document = previousDocument;
+            await mounted?.dispose?.();
+        }
+    }
+
     @Test('renders console component into the DOM')
     async rendersIntoDom() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as any;

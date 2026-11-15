@@ -61,7 +61,10 @@ host.state.onReviewAnnotationsPersist = (cache: any) => host.saveReviewAnnotatio
         const freshStartup = !explicitSessionId
             && (host.options.bootstrapTurn?.enabled === false || !!host.startupWorkspace);
         if (!freshStartup) {
-            await host.bootstrapStateFromAppRpc();
+            // Ask for the session we were told to resume, not for whatever the
+            // host considers current: a gateway without a bootstrap session
+            // would otherwise mint a fresh empty session on every mount.
+            await host.bootstrapStateFromAppRpc(explicitSessionId || undefined);
         }
         await host.initializeInputHistory();
         // No explicit session means a fresh conversation. Resuming the state
