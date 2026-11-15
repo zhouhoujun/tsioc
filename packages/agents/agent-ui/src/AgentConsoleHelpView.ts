@@ -4,6 +4,7 @@ import {
     AgentConsoleCommandDefinition,
     formatAgentConsoleCommandArgumentTemplate
 } from './AgentConsoleCommandRegistry';
+import { AGENT_CONSOLE_DIALOG_ROUTES } from './AgentConsoleDialogRoutes';
 
 export interface AgentConsoleHelpLineOptions {
     /** Optional filter; matches command names, descriptions and subcommands. */
@@ -49,7 +50,7 @@ export function buildAgentConsoleHelpGroups(
     describe?: (key: string, fallback: string) => string,
     countLabel: (count: number) => string = count => `${count} commands`
 ): AgentConsoleHelpGroupOption[] {
-    return AGENT_CONSOLE_COMMAND_GROUP_ORDER.flatMap(group => {
+    const groups = AGENT_CONSOLE_COMMAND_GROUP_ORDER.flatMap(group => {
         const defs = AGENT_CONSOLE_COMMAND_DEFINITIONS.filter(def => def.group === group && !def.hidden);
         return defs.length
             ? [{
@@ -59,6 +60,14 @@ export function buildAgentConsoleHelpGroups(
             }]
             : [];
     });
+    // Dialog routes are a separate catalogue; expose them from the same menu so
+    // the routing layer is discoverable next to command groups.
+    groups.push({
+        label: (describe ? describe('agent.panel.select.dialogs', 'Dialogs') : 'Dialogs') || 'Dialogs',
+        value: 'routes:all',
+        description: countLabel(AGENT_CONSOLE_DIALOG_ROUTES.length)
+    });
+    return groups;
 }
 
 /**

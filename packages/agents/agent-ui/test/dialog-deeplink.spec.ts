@@ -8,6 +8,7 @@ import { Suite, Test, Before, After } from '@tsdi/unit';
 import { JSDOM } from 'jsdom';
 
 import { AgentConsoleSessionState } from '../src';
+import { openTextOverlay } from '../src/AgentConsoleOverlayState';
 import { mountAgentWebConsole } from '../web-console';
 import { FakeAgentGateway } from '../harness/FakeAgentGateway';
 
@@ -80,6 +81,38 @@ export class DialogDeepLinkTest {
             // Desktop focus lands on the composer so the deep-linked dialog is
             // immediately keyboard-operable.
             expect(this.dom.window.document.activeElement?.tagName).toEqual('TEXTAREA');
+        } finally {
+            gateway.dispose();
+            const mounted = await mountedPromise.catch(() => null);
+            if (mounted) {
+                await mounted.dispose();
+            }
+        }
+    }
+
+    @Test('escape from a web text dialog restores its parent dialog')
+    async escapeRestoresParent() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const state = new AgentConsoleSessionState();
+        const mountedPromise = mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state,
+            pwa: false,
+            workspace: ''
+        });
+        try {
+            await waitUntil(() => !!this.dom.window.document.querySelector('textarea.agent-input'));
+            let restored = 0;
+            openTextOverlay(state, 'Help · Core', ['/help'], 10, () => { restored += 1; });
+            await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .dialog-line'));
+            const area = this.dom.window.document.querySelector('textarea.agent-input') as HTMLTextAreaElement;
+            area.dispatchEvent(new this.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+            await waitUntil(() => restored > 0);
+            expect(restored).toEqual(1);
+            expect(state.textOverlay).toEqual(null);
         } finally {
             gateway.dispose();
             const mounted = await mountedPromise.catch(() => null);

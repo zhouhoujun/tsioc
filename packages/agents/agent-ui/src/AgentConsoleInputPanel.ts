@@ -293,7 +293,9 @@ export class AgentConsoleInputPanelComponent {
         if (this.state?.textOverlay) {
             if (this.isEscapeKey(event)) {
                 event.preventDefault?.();
-                this.state.closeTextOverlay();
+                // Esc restores the parent dialog (e.g. /help group list after
+                // the route catalogue), matching the TUI focus layer.
+                this.state.closeTextOverlay(true);
                 return;
             }
             const normalized = key.toLowerCase().replace(/^arrow/, '');

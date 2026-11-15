@@ -20,6 +20,7 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         sectionsTitle: 'Sections'
     },
     select: {
+        dialogs: 'Dialogs',
         help: 'Help',
         approve: 'Approve',
         deny: 'Deny',

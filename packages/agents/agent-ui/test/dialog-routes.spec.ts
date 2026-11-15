@@ -73,6 +73,21 @@ export class DialogRoutesTest {
         expect(notices.join(' ')).toContain('definitely-not-a-route');
     }
 
+    @Test('/help group menu opens the dialog route catalogue')
+    async helpGroupMenu() {
+        const overlays: Array<{ title: string; lines: string[] }> = [];
+        const ctx: any = {
+            translator: null,
+            notify: () => undefined,
+            select: async () => 'routes:all',
+            state: { openTextOverlay: (title: string, lines: string[]) => { overlays.push({ title, lines }); } }
+        };
+        await runHelpCommand(ctx, '');
+        expect(overlays.length).toEqual(1);
+        expect(overlays[0].title).toEqual('Dialog routes');
+        expect(overlays[0].lines.join('\n')).toContain('[tools]');
+    }
+
     @Test('dispatches a route and lists the catalog')
     async dispatches() {
         let executed = '';

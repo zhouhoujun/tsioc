@@ -24,13 +24,25 @@ export async function runHelpCommand(ctx: CommandHandlerContext, args: string): 
             void openGroups();
         });
     }
+    function openRouteCatalogue(fromGroupList: boolean): void {
+        const lines = buildAgentConsoleDialogRouteLines();
+        ctx.state.openTextOverlay(
+            formatAgentUiNotice(ctx.translator, 'dialogRoutesTitle'),
+            lines,
+            Math.min(24, lines.length),
+            fromGroupList ? () => { void openGroups(); } : undefined
+        );
+    }
     async function openGroups(): Promise<void> {
         const groups = buildGroups();
         const selected = await ctx.select(title, groups, 0, formatAgentUiNotice(ctx.translator, 'helpGroupHint'));
         const picked = groups.find(group => group.value === selected);
-        if (picked) {
-            openGroup(picked.value.replace(/^group:/, ''), picked.label);
+        if (!picked) return;
+        if (picked.value === 'routes:all') {
+            openRouteCatalogue(true);
+            return;
         }
+        openGroup(picked.value.replace(/^group:/, ''), picked.label);
     }
     if (!query) {
         await openGroups();
@@ -40,12 +52,7 @@ export async function runHelpCommand(ctx: CommandHandlerContext, args: string): 
     // Dialog routes are a separate catalogue (`/dialog <id>`); expose it from
     // the read-only help surface so the routing layer is discoverable.
     if (group === 'dialog' || group === 'dialogs' || group === 'routes') {
-        const lines = buildAgentConsoleDialogRouteLines();
-        ctx.state.openTextOverlay(
-            formatAgentUiNotice(ctx.translator, 'dialogRoutesTitle'),
-            lines,
-            Math.min(24, lines.length)
-        );
+        openRouteCatalogue(false);
         return true;
     }
     const groupOption = buildAgentConsoleHelpGroups(describe, count =>

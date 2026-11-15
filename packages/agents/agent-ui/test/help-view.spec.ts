@@ -13,9 +13,12 @@ export class HelpViewTest {
         const groups = buildAgentConsoleHelpGroups(undefined, count => `${count} commands`);
         const expected = AGENT_CONSOLE_COMMAND_GROUP_ORDER.filter(group =>
             AGENT_CONSOLE_COMMAND_DEFINITIONS.some(def => def.group === group && !def.hidden));
-        expect(groups.map(group => group.value)).toEqual(expected.map(group => `group:${group}`));
+        expect(groups.map(group => group.value)).toEqual([...expected.map(group => `group:${group}`), 'routes:all']);
         expect(groups.every(group => /^\d+ commands$/.test(group.description))).toEqual(true);
         expect(groups.find(group => group.value === 'group:core')).toBeTruthy();
+        // The route catalogue rides next to command groups with its own count.
+        expect(groups[groups.length - 1].label).toEqual('Dialogs');
+        expect(groups[groups.length - 1].description).toEqual('18 commands');
     }
 
     @Test('capitalizes a raw lowercase group translation')

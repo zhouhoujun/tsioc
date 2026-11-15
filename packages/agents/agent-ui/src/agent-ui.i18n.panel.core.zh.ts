@@ -20,6 +20,7 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         sectionsTitle: '分区'
     },
     select: {
+        dialogs: '对话框',
         help: '帮助',
         approve: '批准',
         deny: '拒绝',
