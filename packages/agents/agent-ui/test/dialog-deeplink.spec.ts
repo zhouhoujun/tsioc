@@ -145,6 +145,54 @@ export class DialogDeepLinkTest {
         }
     }
 
+    @Test('approval and question panels share the dialog shell semantics')
+    async modalShellClasses() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const mounted = await mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state: new AgentConsoleSessionState(),
+            pwa: false,
+            workspace: ''
+        });
+        try {
+            mounted.state.setPendingApprovals([{
+                id: 'req-12345678',
+                sessionId: mounted.state.sessionId,
+                toolName: 'terminal',
+                input: {},
+                createdAt: Date.now()
+            } as any]);
+            mounted.state.setApprovalsFocused(true);
+            await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .console-approvals-panel'));
+            const approval = this.dom.window.document.querySelector('#agent-console .console-approvals-panel') as HTMLElement;
+            expect(approval.classList.contains('dialog-panel')).toEqual(true);
+            expect(!!approval.querySelector('.dialog-close')).toEqual(true);
+            expect(approval.querySelector('.approval-title')?.classList.contains('dialog-title')).toEqual(true);
+            expect(approval.querySelector('.approval-actions')?.classList.contains('dialog-hint')).toEqual(true);
+
+            mounted.state.setPendingQuestion({
+                questionId: 'q1',
+                sessionId: mounted.state.sessionId,
+                question: 'choose',
+                options: ['a'],
+                severity: 'low',
+                createdAt: 1,
+                updatedAt: 1,
+                status: 'pending'
+            });
+            await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .question-panel'));
+            const question = this.dom.window.document.querySelector('#agent-console .question-panel') as HTMLElement;
+            expect(question.classList.contains('dialog-panel')).toEqual(true);
+            expect(!!question.querySelector('.dialog-close')).toEqual(true);
+        } finally {
+            await mounted.dispose();
+            gateway.dispose();
+        }
+    }
+
     @Test('?dialog=<unknown> reports a toast instead of opening an empty dialog')
     async deepLinkUnknownRoute() {
         const gateway = new FakeAgentGateway({ sessionId: 'session-A' });

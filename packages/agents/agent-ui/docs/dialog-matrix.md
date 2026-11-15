@@ -36,6 +36,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 - Text/select cards are centred inside the anchored overlay.
 
 - ✅ R1 route catalog: `/dialog [id|path|group|alias|prefix]` lists and dispatches dialog routes; pending questions keep the focus stack (Esc restores the panel underneath).
+- ✅ D3 shell semantics: approval and question panels carry the shared `dialog-panel` / `dialog-title` / `dialog-hint` / `dialog-close` hooks (JSDOM mount test), so one skin can target every modal.
 - ✅ Real PTY: acceptance scenario 12 drives `/theme` → type `sol` → Backspace → Esc, asserting the filtered rows and closed dialog in a real terminal.
 - ✅ Web wheel: an open text dialog owns the wheel (scrolls its own page) instead of scrolling the transcript underneath; covered by a JSDOM mount test.
 - ✅ R1 interactive routes: `/dialog` without arguments opens the route catalogue as a select dialog (type-to-filter on id/title/path, Enter dispatches the route's command); `/help dialogs` keeps the read-only text view.
