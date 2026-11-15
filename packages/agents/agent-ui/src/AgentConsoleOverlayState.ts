@@ -8,7 +8,7 @@ export function setNotice(state: AgentConsoleSessionState, message: string): voi
         state.notice = message;
     }
 
-export function openTextOverlay(state: AgentConsoleSessionState, title: string, lines: string[], visibleLines?: number): void {
+export function openTextOverlay(state: AgentConsoleSessionState, title: string, lines: string[], visibleLines?: number, back?: () => void): void {
         const content = (Array.isArray(lines) ? lines : []).map(line => String(line ?? ''));
         if (!content.length) {
             return;
@@ -23,15 +23,21 @@ export function openTextOverlay(state: AgentConsoleSessionState, title: string, 
             ? Math.min(requested, pageLimit)
             : (cap > 0 ? pageLimit : undefined);
         state.textOverlay = { title: String(title || ''), lines: content, scroll: 0, ...(page ? { visibleLines: page } : {}) };
+        state.textOverlayBack = back;
         state.syncDerivedInputFocus();
     }
 
-export function closeTextOverlay(state: AgentConsoleSessionState): void {
+export function closeTextOverlay(state: AgentConsoleSessionState, restoreParent = false): void {
         if (!state.textOverlay) {
             return;
         }
+        const back = state.textOverlayBack;
         state.textOverlay = null;
+        state.textOverlayBack = undefined;
         state.syncDerivedInputFocus();
+        if (restoreParent) {
+            back?.();
+        }
     }
 
 export function hasTextOverlayFocus(state: AgentConsoleSessionState): boolean {

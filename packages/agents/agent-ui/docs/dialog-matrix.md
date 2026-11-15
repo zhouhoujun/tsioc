@@ -7,7 +7,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 
 | Entry | Current shell | Close / keys | Search / paging | Layout | Known issue |
 |---|---|---|---|---|---|
-| `/help` | `ctx.select` -> `openTextOverlay` | Esc/q/✕; arrows, PgUp/PgDn, Home/End on text | group list; text scroll | select above composer; text card centered | closing text does not return to the group list |
+| `/help` | `ctx.select` -> `openTextOverlay` | Esc/q/✕; arrows, PgUp/PgDn, Home/End on text | group list; text scroll | select above composer; text card centered | fixed: closing text returns to the group list |
 | `/model` | `openSelectMenu` | Esc/q/✕; arrows/Enter/digits | provider/model lists, nested menus | select card above composer | nested menu Esc returns one level; no type-to-filter |
 | `/provider` | select wizard + text | Esc/q/✕ | provider/auth/model steps | select card | async validation state can leave a stale menu |
 | `/sessions` | select/list panel | Esc/q/✕ | input filter (in dialog) | select card | empty/async result can render a 0x0 menu |

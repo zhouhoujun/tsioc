@@ -32,8 +32,8 @@ export abstract class AgentConsoleSessionOverlayHost extends AgentConsoleSession
 
     setNotice(message: string): void { setNoticeInState(this.self(), message); }
     setToasts(entries: readonly ToastEntry[]): void { this.self().toasts = Array.isArray(entries) ? [...entries] : []; }
-    openTextOverlay(title: string, lines: string[], visibleLines?: number): void { openTextOverlayInState(this.self(), title, lines, visibleLines); }
-    closeTextOverlay(): void { closeTextOverlayInState(this.self()); }
+    openTextOverlay(title: string, lines: string[], visibleLines?: number, back?: () => void): void { openTextOverlayInState(this.self(), title, lines, visibleLines, back); }
+    closeTextOverlay(restoreParent = false): void { closeTextOverlayInState(this.self(), restoreParent); }
     hasTextOverlayFocus(): boolean { return hasTextOverlayFocusInState(this.self()); }
     pushCommandOutput(command: string, text: string, kind: AgentConsoleCommandOutputEntry['kind'] = 'result'): string { return pushCommandOutputInState(this.self(), command, text, kind); }
     persistCommandOutput(entry: AgentConsoleCommandOutputEntry): Promise<void> { return persistCommandOutputInState(this.self(), entry); }

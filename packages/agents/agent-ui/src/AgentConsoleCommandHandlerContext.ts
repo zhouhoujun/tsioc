@@ -57,7 +57,7 @@ export interface CommandHandlerContext {
         closeMessageDetail(): void;
         closeReview(): void;
         closeGitSnapshotDetail(): void;
-        openTextOverlay(kind: string, lines: string[], visibleLines?: number): void;
+        openTextOverlay(kind: string, lines: string[], visibleLines?: number, back?: () => void): void;
         toggleCommandOutputs(): void;
         setPendingApprovals(pending: AgentConsoleApprovalRequest[]): void;
         getReviewAnnotationSummary(): string[];
@@ -261,7 +261,7 @@ export function buildCommandHandlerState(state: AgentConsoleSessionState): Comma
         closeMessageDetail: () => state.closeMessageDetail(),
         closeReview: () => state.closeReview(),
         closeGitSnapshotDetail: () => state.closeGitSnapshotDetail(),
-        openTextOverlay: (k, l, v) => state.openTextOverlay(k, l, v),
+        openTextOverlay: (k, l, v, b) => state.openTextOverlay(k, l, v, b),
         toggleCommandOutputs: () => state.toggleCommandOutputs(),
         setPendingApprovals: (p) => state.setPendingApprovals(p),
         getReviewAnnotationSummary: () => state.getReviewAnnotationSummary(),

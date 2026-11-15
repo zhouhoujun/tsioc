@@ -86,7 +86,7 @@ export class AgentConsoleTextOverlayPanelComponent {
 
     get shellStyle() { return this.state.hasTextOverlayFocus() ? this.activeThemeStyles.dialogShell : {}; } get closeStyle() { return DIALOG_CLOSE_STYLE; }
 
-    closeOverlay(): void { this.state.closeTextOverlay(); }
+    closeOverlay(): void { this.state.closeTextOverlay(true); }
 
     get accentStyle() {
         return this.activeThemeStyles.toolRunsAccent;

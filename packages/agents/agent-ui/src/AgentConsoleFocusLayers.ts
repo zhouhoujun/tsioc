@@ -51,7 +51,7 @@ export abstract class AgentConsoleFocusLayers extends AgentConsoleFocusTranscrip
     async dismiss(transcriptNavigation: AgentConsoleTranscriptNavigationController): Promise<boolean> {
         const state = this.state;
         if (state.commandOutputsOpen) { state.closeCommandOutputs(); return true; }
-        if (state.textOverlay) { state.closeTextOverlay(); return true; }
+        if (state.textOverlay) { state.closeTextOverlay(true); return true; }
         if (state.selectMenu) { await state.cancelSelectMenu(); return true; }
         if (state.gitSnapshotOpen) { state.closeGitSnapshotDetail(); return true; }
         if (state.reviewOpen && this.reviewCommandMode) { this.endReviewCommand(); return true; }

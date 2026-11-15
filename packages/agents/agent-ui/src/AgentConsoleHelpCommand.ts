@@ -14,18 +14,25 @@ export async function runHelpCommand(ctx: CommandHandlerContext, args: string): 
         return value && value !== key ? value : fallback;
     };
     const title = panelLabel(ctx.translator, 'select', 'help', 'Help');
-    const openGroup = (group: string, label: string) => {
+    const buildGroups = () => buildAgentConsoleHelpGroups(describe, count =>
+        formatAgentUiNotice(ctx.translator, 'helpGroupCount', { count }));
+    function openGroup(group: string, label: string): void {
         const lines = buildAgentConsoleHelpLines({ group, describe });
-        ctx.state.openTextOverlay(`${title} · ${label}`, lines, Math.min(24, lines.length));
-    };
-    if (!query) {
-        const groups = buildAgentConsoleHelpGroups(describe, count =>
-            formatAgentUiNotice(ctx.translator, 'helpGroupCount', { count }));
+        // Esc/✕ returns to the group list, matching the other stacked dialogs.
+        ctx.state.openTextOverlay(`${title} · ${label}`, lines, Math.min(24, lines.length), () => {
+            void openGroups();
+        });
+    }
+    async function openGroups(): Promise<void> {
+        const groups = buildGroups();
         const selected = await ctx.select(title, groups, 0, formatAgentUiNotice(ctx.translator, 'helpGroupHint'));
         const picked = groups.find(group => group.value === selected);
         if (picked) {
             openGroup(picked.value.replace(/^group:/, ''), picked.label);
         }
+    }
+    if (!query) {
+        await openGroups();
         return true;
     }
     const group = query.toLowerCase();
