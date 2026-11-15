@@ -5,6 +5,7 @@ import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/
 import { ToastService } from '@tsdi/components/common/toast';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
+import { WebOverlayAnchors } from './overlay-anchors';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
@@ -453,23 +454,6 @@ export async function mountAgentWebConsole(
     };
     syncTheme();
 
-    // Dialogs are anchored above the composer; measure the real footer height
-    // (multi-line drafts, hints and status rows) instead of guessing a px value.
-    const footer = (root?.querySelector?.('[renderregion="footer"]') as HTMLElement | null)
-        ?? (root?.querySelector?.('.console-input-panel') as HTMLElement | null);
-    const syncFooterHeight = (): void => {
-        const rect = footer?.getBoundingClientRect();
-        if (rect && rect.height > 0) {
-            mount.style.setProperty('--agent-web-footer-height', `${Math.ceil(rect.height)}px`);
-        }
-    };
-    syncFooterHeight();
-    const FooterResizeObserver = (doc.defaultView as any)?.ResizeObserver;
-    const footerObserver = FooterResizeObserver && footer ? new FooterResizeObserver(() => syncFooterHeight()) : null;
-    footerObserver?.observe(footer);
-    doc.defaultView?.addEventListener?.('resize', syncFooterHeight);
-    (doc.defaultView as any)?.visualViewport?.addEventListener?.('resize', syncFooterHeight);
-
     if (root && MutationObserverCtor) {
         themeObserver = new MutationObserverCtor(() => syncTheme());
         themeObserver.observe(root, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
@@ -497,6 +481,8 @@ export async function mountAgentWebConsole(
     indicator.style.display = 'none';
     indicator.setAttribute('aria-live', 'polite');
     mount.appendChild(indicator);
+    const overlayAnchors = new WebOverlayAnchors({ doc, mount, root, indicator });
+    overlayAnchors.attach();
 
     let followerElement: HTMLElement | null = null;
     const resolveFollower = (): DomTranscriptFollower | null => {
@@ -548,36 +534,6 @@ export async function mountAgentWebConsole(
     // Observe content growth from the initial render, not only after the first wheel.
     resolveFollower();
 
-    // Anchor the affordance to the composer's top-right edge rather than the
-    // viewport, so a centered/narrow console column keeps it against the input.
-    const composerElement = (): HTMLElement | null => {
-        return (root?.querySelector?.('.input-shell') as HTMLElement | null)
-            ?? (root?.querySelector?.('textarea.agent-input') as HTMLElement | null)
-            ?? null;
-    };
-    const positionIndicator = (): void => {
-        const composer = composerElement();
-        if (!composer) {
-            return;
-        }
-        const rect = composer.getBoundingClientRect();
-        const viewport = doc.documentElement;
-        indicator.style.right = `${Math.max(8, viewport.clientWidth - rect.right)}px`;
-        indicator.style.bottom = `${Math.max(8, viewport.clientHeight - rect.top + 8)}px`;
-    };
-    positionIndicator();
-    const resizeObserver = typeof (doc.defaultView as any)?.ResizeObserver === 'function'
-        ? new (doc.defaultView as any).ResizeObserver(() => positionIndicator())
-        : null;
-    if (resizeObserver) {
-        const composer = composerElement();
-        if (composer) {
-            resizeObserver.observe(composer);
-        }
-    }
-    doc.defaultView?.addEventListener?.('resize', positionIndicator);
-    (doc.defaultView as any)?.visualViewport?.addEventListener?.('resize', positionIndicator);
-
     return {
         ctx,
         state,
@@ -585,12 +541,7 @@ export async function mountAgentWebConsole(
             mount.removeEventListener('wheel', onWheel);
             mount.removeEventListener('contextmenu', onContextMenu);
             indicator.removeEventListener('click', onIndicatorClick);
-            resizeObserver?.disconnect();
-            doc.defaultView?.removeEventListener?.('resize', positionIndicator);
-            (doc.defaultView as any)?.visualViewport?.removeEventListener?.('resize', positionIndicator);
-            footerObserver?.disconnect();
-            doc.defaultView?.removeEventListener?.('resize', syncFooterHeight);
-            (doc.defaultView as any)?.visualViewport?.removeEventListener?.('resize', syncFooterHeight);
+            overlayAnchors.dispose();
             selectionKeeper.dispose();
             toastService.clear();
             follower?.detach();
