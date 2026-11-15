@@ -111,6 +111,59 @@ export class WorkTreeTest {
         expect(opened).toEqual(['child-a']);
     }
 
+    @Test('/work spawn starts a background worker with an optional profile')
+    async spawns() {
+        const state = createState();
+        const notices: string[] = [];
+        const spawned: Array<{ goal: string; profile?: string }> = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: null,
+            notify: (message: string) => notices.push(message),
+            openSession: async () => undefined,
+            spawnWorker: async (goal: string, profile?: string) => {
+                spawned.push({ goal, profile });
+                return { taskId: 'task-9', sessionId: 'child-9' };
+            }
+        };
+        await runWorkCommandView(host, 'spawn --profile plan refactor auth');
+        expect(spawned).toEqual([{ goal: 'refactor auth', profile: 'plan' }]);
+        expect(notices[0]).toContain('task-9');
+        await runWorkCommandView(host, 'spawn');
+        expect(notices[1]).toContain('Usage: /work spawn');
+    }
+
+    @Test('failed task rows can be retried with the same goal')
+    async retries() {
+        const state = createState();
+        const spawned: string[] = [];
+        const responses: Array<string | undefined> = ['task:t9:root', 'retry'];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: {
+                getDelegationTree: async () => ({ sessionId: 'root', status: 'running', children: [] }),
+                listAllBackgroundTasks: async () => [
+                    { id: 't9', sessionId: 'root', status: 'failed', goal: 'fix flaky test', startedAt: 1 }
+                ]
+            },
+            notify: () => undefined,
+            openSession: async () => undefined,
+            select: async () => responses.shift(),
+            spawnWorker: async (goal: string) => { spawned.push(goal); return { taskId: 'task-10' }; }
+        };
+        await runWorkCommandView(host);
+        expect(spawned).toEqual(['fix flaky test']);
+        // Healthy tasks do not offer retry; selecting open only navigates.
+        responses.push('task:t9:root', 'open');
+        host.sessionService.listAllBackgroundTasks = async () => [
+            { id: 't9', sessionId: 'root', status: 'completed', goal: 'done', startedAt: 1 }
+        ];
+        await runWorkCommandView(host);
+        expect(spawned).toEqual(['fix flaky test']);
+    }
+
     @Test('/work reports an empty tree instead of opening an empty menu')
     async emptyTree() {
         const state = createState();

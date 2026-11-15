@@ -127,6 +127,8 @@ export interface AgentConsoleWorkHost {
     select?(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
     /** Cancel one background task (task-row action). */
     cancelTask?(taskId: string): Promise<boolean>;
+    /** Spawn a background worker (spawn/retry actions). */
+    spawnWorker?(goal: string, profile?: string): Promise<{ taskId?: string; sessionId?: string; error?: string }>;
 }
 
 function workStatusLabel(status: string, translator?: AgentUiTranslator | null): string {
@@ -156,7 +158,26 @@ function workStatusLabel(status: string, translator?: AgentUiTranslator | null):
  * `/work` — one screen for the current session tree and its background work.
  * Enter opens the owning session; task rows also open their owning session.
  */
-export async function runWorkCommandView(host: AgentConsoleWorkHost): Promise<void> {
+export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''): Promise<void> {
+    const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+    if (tokens[0]?.toLowerCase() === 'spawn') {
+        const rest = tokens.slice(1);
+        const profileIndex = rest.findIndex(token => token === '--profile' || token === '-p');
+        const profile = profileIndex >= 0 ? rest[profileIndex + 1] : undefined;
+        const goal = rest.filter((_token, index) => profileIndex < 0 || (index !== profileIndex && index !== profileIndex + 1)).join(' ').trim();
+        if (!goal) {
+            host.notify(formatAgentUiNotice(host.translator, 'workSpawnUsage'));
+            return;
+        }
+        const result = await host.spawnWorker?.(goal, profile);
+        host.notify(result && !result.error
+            ? formatAgentUiNotice(host.translator, 'workSpawned', {
+                task: result.taskId || result.sessionId || '',
+                profile: profile || 'build'
+            })
+            : formatAgentUiNotice(host.translator, 'workSpawnFailed', { error: result?.error || '' }));
+        return;
+    }
     if (!host.sessionService) {
         host.notify(formatAgentUiNotice(host.translator, 'workUnavailable'));
         return;
@@ -191,18 +212,34 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost): Promise<vo
     const row = rows.find(item => item.value === picked);
     if (!row) return;
     if (row.value.startsWith('task:')) {
+        const actions: AgentConsoleSelectOption[] = [
+            { label: formatAgentUiNotice(host.translator, 'workOpenSession'), value: 'open' },
+            { label: formatAgentUiNotice(host.translator, 'workCancelTask'), value: 'cancel' }
+        ];
+        if (row.status === 'failed') {
+            actions.push({ label: formatAgentUiNotice(host.translator, 'workRetryTask'), value: 'retry' });
+        }
         const action = host.select
             ? await host.select(
                 formatAgentUiNotice(host.translator, 'workTaskTitle'),
-                [
-                    { label: formatAgentUiNotice(host.translator, 'workOpenSession'), value: 'open' },
-                    { label: formatAgentUiNotice(host.translator, 'workCancelTask'), value: 'cancel' }
-                ],
+                actions,
                 0,
                 formatAgentUiNotice(host.translator, 'workHint')
             )
             : 'open';
         if (!action) return;
+        if (action === 'retry') {
+            const goal = String(row.detail || '').trim();
+            if (!goal) {
+                host.notify(formatAgentUiNotice(host.translator, 'workSpawnUsage'));
+                return;
+            }
+            const result = await host.spawnWorker?.(goal);
+            host.notify(result && !result.error
+                ? formatAgentUiNotice(host.translator, 'workSpawned', { task: result.taskId || result.sessionId || '', profile: 'build' })
+                : formatAgentUiNotice(host.translator, 'workSpawnFailed', { error: result?.error || '' }));
+            return;
+        }
         if (action === 'cancel') {
             const taskId = row.value.split(':')[1];
             const cancelled = await host.cancelTask?.(taskId);
@@ -225,6 +262,26 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
         cancelTask: async (taskId: string) => {
             const result = await ctx.sessionService?.cancelBackgroundTasks?.([taskId]);
             return !!(result && Array.isArray(result.cancelled) && result.cancelled.includes(taskId));
+        },
+        spawnWorker: async (goal: string, profile?: string) => {
+            try {
+                await ctx.activateTool?.('spawn_agent');
+                const output = await ctx.invokeTool?.('spawn_agent', {
+                    goal,
+                    background: true,
+                    ...(profile ? { archetype: profile } : {})
+                });
+                const parsed = typeof output === 'string' && output.trim().startsWith('{')
+                    ? (() => { try { return JSON.parse(output); } catch { return undefined; } })()
+                    : output;
+                return {
+                    taskId: parsed?.taskId ? String(parsed.taskId) : undefined,
+                    sessionId: parsed?.sessionId ? String(parsed.sessionId) : undefined,
+                    error: parsed?.error ? String(parsed.error) : undefined
+                };
+            } catch (error) {
+                return { error: error instanceof Error ? error.message : String(error) };
+            }
         }
     };
 }

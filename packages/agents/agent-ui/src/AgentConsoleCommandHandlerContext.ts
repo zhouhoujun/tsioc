@@ -18,6 +18,9 @@ export interface CommandHandlerContext {
     readonly transcriptNavigationController: { setFocused(focused: boolean): void };
     /** Execute another slash command through the console dispatcher. */
     executeCommand?(command: string): Promise<boolean>;
+    /** Tool ports used by management actions (spawn worker / cancel task). */
+    activateTool?(name: string): Promise<boolean>;
+    invokeTool?(name: string, input: any): Promise<any>;
     // ── state access ──
     readonly state: {
         readonly sessionId: string;

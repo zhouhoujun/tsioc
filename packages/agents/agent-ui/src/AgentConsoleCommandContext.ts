@@ -17,6 +17,8 @@ export function buildCommandContext(self: any, abortSignal?: AbortSignal): Comma
             isTurnInProgress: () => self.isTurnInProgress(),
             notifyBusyState: () => self.notifyBusyState(),
             sessionService: self.sessionService,
+            activateTool: (name: string) => self.activateToolForSession(name, self.state.sessionId),
+            invokeTool: (name: string, input: any) => self.invokeTool(name, input),
             openSession: (id) => self.openSession(id),
             refreshSessions: () => self.refreshSessions(),
             refreshCurrentSections: () => self.refreshCurrentSections(),

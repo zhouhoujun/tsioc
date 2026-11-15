@@ -125,7 +125,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/jobs': (ctx, args, meta) => ctx.openScheduledJobsDashboard(canonicalArgsOf(meta, args)),
     '/tasks': (ctx, args, meta) => ctx.openCodingTaskInspector(canonicalArgsOf(meta, args)),
     '/inbox': (ctx) => runInboxCommandView(inboxCommandHost(ctx)).then(() => true),
-    '/work': (ctx) => runWorkCommandView(workCommandHost(ctx)).then(() => true),
+    '/work': (ctx, args) => runWorkCommandView(workCommandHost(ctx), args).then(() => true),
     '/threadplan': handleThreadplan,
     '/threadreview': (ctx, _args) => guardDelegateNoArgs(ctx, '', { command: '/threadreview', matches: [] }, () => ctx.openThreadCodingTaskReviewSelector()),
     '/review': handleReview,
