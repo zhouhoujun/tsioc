@@ -681,6 +681,38 @@ def scenario_interrupt_and_reactive_render(pid: int, fd: int, screen: Screen) ->
     return True
 
 
+def scenario_dialog_filter(pid: int, fd: int, screen: Screen) -> bool:
+    """Type-to-filter owns a dialog in the real TUI: /theme -> sol -> Esc."""
+    mark = len(bytes(screen.raw))
+    send(fd, b'/theme')
+    send(fd, b'\r')
+    if not wait_for(fd, screen, ['solarized', 'high-contrast'], timeout=20, on_sight=True,
+                    tail_from=mark):
+        print('[FAIL] scenario 12: theme menu did not open')
+        return False
+    send(fd, b'sol')
+    if not wait_for(fd, screen, [re.escape('Theme · sol')], timeout=20, on_sight=True,
+                    tail_from=mark):
+        print('[FAIL] scenario 12: filtered title missing')
+        return False
+    view = screen.screen_view()
+    if 'solarized' not in view or 'high-contrast' in view:
+        print('[FAIL] scenario 12: filter did not narrow the option rows')
+        return False
+    send(fd, b'\x7f\x7f\x7f')
+    if not wait_for(fd, screen, ['high-contrast'], timeout=20, on_sight=True, tail_from=mark):
+        print('[FAIL] scenario 12: backspace did not restore the rows')
+        return False
+    send(fd, b'\x1b')
+    time.sleep(0.6)
+    drain(fd, screen)
+    if 'solarized' in screen.screen_view():
+        print('[FAIL] scenario 12: Esc did not close the dialog')
+        return False
+    print('[PASS] scenario 12: dialog type-to-filter')
+    return True
+
+
 def scenario_theme_width_matrix(pid: int, fd: int, screen: Screen) -> bool:
     """Verify dark/light themes at real 80/120-column PTY dimensions."""
     theme_colors = {
@@ -1125,6 +1157,8 @@ def main() -> int:
             results.append(('9-tool-row-identity-v88', scenario_tool_row_identity_v88(pid, fd, screen)))
         elif SCENARIO == 'narration-separation-v84':
             results.append(('10-narration-separation-v84', scenario_narration_separation_v84(pid, fd, screen)))
+        elif SCENARIO == 'dialog-filter':
+            results.append(('12-dialog-filter', scenario_dialog_filter(pid, fd, screen)))
         else:
             results.append(('1-tail-visibility', scenario_tail_visibility(pid, fd, screen)))
             results.append(('2-keymap-overlay', scenario_keymap_overlay(pid, fd, screen)))
@@ -1134,6 +1168,7 @@ def main() -> int:
             results.append(('5-command-outputs', scenario_command_outputs(pid, fd, screen)))
             results.append(('6-slash-command', scenario_slash_command_p282(pid, fd, screen)))
             results.append(('7-interrupt-reactive', scenario_interrupt_and_reactive_render(pid, fd, screen)))
+            results.append(('12-dialog-filter', scenario_dialog_filter(pid, fd, screen)))
             results.append(('8-theme-width-matrix', scenario_theme_width_matrix(pid, fd, screen)))
             # Last: it spawns its own zh-CN agent, so it must not pollute the
             # primary scenarios' request script / transcript state above.

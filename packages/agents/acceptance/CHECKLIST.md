@@ -75,6 +75,7 @@ FAKE_SCENARIO=plan-lifecycle python3 packages/agents/acceptance/run_acceptance.p
 - [ ] 场景 3：勾选翻转**由数据变化驱动**（无定时器轮询痕迹）；pending→completed 颜色/删除线符合主题
 - [ ] 全场景运行期间状态栏（statusline）与终端标题随运行状态更新
 - [x] `Ctrl+C` / `Esc` 中断慢速流式回复后界面恢复干净、可继续输入（场景 7 自动验收）
+- [x] 场景 12：`/theme` 对话框键入 `sol` 仅保留 solarized，Backspace 逐步恢复全部主题，`Esc` 关闭（自动验收）
 
 ### P304 Timeline 截图矩阵
 
