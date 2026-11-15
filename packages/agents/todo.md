@@ -323,6 +323,17 @@
 - 深链：Web `?dialog=model`、TUI `/dialog model`（内部路由），与命令共享同一 route id。**（已实现：Web 在 mount 时按 route 派发命令，未知 route 走 toast；TUI `/dialog` 经命令分发器执行。`?dialog=` 只接受 id/path/alias/唯一前缀。）**
 - 验收：route 清单完整性；lazy load 只执行一次；chunk 失败可重试；`/help` 分组由 route 生成；TUI/Web 一致；真实 PTY + Chrome。
 
+### AG 系列 — Agent Management System（2026-11 方案）
+
+> 完整分析、竞品对比与设计见 `packages/agents/agent-ui/docs/agent-management-plan.md`。
+
+- **现状判断**：单会话工作台成熟（timeline/approval/question/jobs/review/dialog routes/双端验证），但缺统一 agent 管理面；运行态数据（session roles/threads、delegation edges、background/scheduled tasks、coding-task checkpoints、archetype profiles）已具备，主要缺 UI 与跨会话聚合。
+- **P0 看得见**：扩展 `AgentArchetype` 为 AgentProfile（mode/model/effort/permissions/skills/display/source）；`/agents` 选择器 + composer `agent:` 徽标 + Shift+Tab 循环；`AgentConsoleWorkGraph` 投影 sessions/delegation/background tasks/scheduled jobs → `/work` 只读树；Inbox v1（approval/question/failed/blocked/idle-report/queued）跨 tab 跳转；Web sidebar v0（Agents/Sessions/Work/Inbox）。
+- **P1 管得住**：background worker spawn/attach/cancel/retry + worktree 选项 + idle report（`task_budget`/`level_limit` 默认关闭）；Permissions v2（有序 `{action,resource,effect}`、last-match-wins、per-session mode、durable allow 可审阅/撤销、deny 不可覆盖、解释行）；session checkpoints + `/rewind` + Esc Esc。
+- **P2 协同**：队列/steer 管理面；cross-session messaging / agent teams（opt-in）；Remote Agent Center（serve/attach 聚合，先只读）；verbosity low/medium/high + 活动行折叠；artifacts。
+- **护栏**：新逻辑落在 `AgentConsoleAgentCenter*`/`AgentConsoleInbox*`/`AgentConsoleWorkGraph`，不进 Component；TUI/Web 共享状态与投影；事件驱动、禁止轮询；旧库迁移可回滚、不删数据；每阶段全量 gate + PTY + Chrome。
+- **验收**：profile 切换持久化/attach 恢复；Work/Inbox 跨 tab 状态正确；permissions 求值表单测；checkpoint 恢复可回滚；sidebar 深链 `?agent=`/`?view=` 可分享；`source-size` 基线不升。
+
 ### 遗留观察（收尾时必须确认）
 
 - 视窗模式 layout 持久化与 alternate-screen 退出语义需持续由真实 PTY 覆盖（归入 U5）；`/close` 退出后命令窗口提示与历史保留需一并复验。
