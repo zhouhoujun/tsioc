@@ -334,6 +334,7 @@
 - **P0 进展（2026-11）**：`/work` 工作树（delegation tree + background tasks → 可导航行；状态符号、层级缩进、Enter 打开所属会话、任务行同样跳转）；route `work`（session group, select）。
 - **P0 进展（2026-11）**：`/agents` 选择器（当前标记、mode/model/description、type-to-filter、Enter 切换、`/agents <name>` 直切）+ composer meta 行 `agent <name>` 徽标（不进入 prompt；plan 徽标保持原语义）+ `session.archetype.list` RPC + 启动/切会话/重载恢复 activeArchetype；`/archetype` 保留别名。
 - **P0 看得见**：扩展 `AgentArchetype` 为 AgentProfile（mode/model/effort/permissions/skills/display/source）；`/agents` 选择器 + composer `agent:` 徽标 + Shift+Tab 循环；`AgentConsoleWorkGraph` 投影 sessions/delegation/background tasks/scheduled jobs → `/work` 只读树；Inbox v1（approval/question/failed/blocked/idle-report/queued）跨 tab 跳转；Web sidebar v0（Agents/Sessions/Work/Inbox）。
+- **P1 进展（2026-11）**：`/work` 任务行动作菜单（打开会话 / 取消后台任务），取消经 `background_task.cancel`；spawn/retry 仍需后端 worker RPC。
 - **P1 管得住**：background worker spawn/attach/cancel/retry + worktree 选项 + idle report（`task_budget`/`level_limit` 默认关闭）；Permissions v2（有序 `{action,resource,effect}`、last-match-wins、per-session mode、durable allow 可审阅/撤销、deny 不可覆盖、解释行）；session checkpoints + `/rewind` + Esc Esc。
 - **P2 协同**：队列/steer 管理面；cross-session messaging / agent teams（opt-in）；Remote Agent Center（serve/attach 聚合，先只读）；verbosity low/medium/high + 活动行折叠；artifacts。
 - **护栏**：新逻辑落在 `AgentConsoleAgentCenter*`/`AgentConsoleInbox*`/`AgentConsoleWorkGraph`，不进 Component；TUI/Web 共享状态与投影；事件驱动、禁止轮询；旧库迁移可回滚、不删数据；每阶段全量 gate + PTY + Chrome。

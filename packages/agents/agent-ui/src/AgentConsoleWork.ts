@@ -125,6 +125,8 @@ export interface AgentConsoleWorkHost {
     openSession(sessionId?: string): Promise<void> | void;
     /** Command-context select port; falls back to the state method for hosts. */
     select?(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
+    /** Cancel one background task (task-row action). */
+    cancelTask?(taskId: string): Promise<boolean>;
 }
 
 function workStatusLabel(status: string, translator?: AgentUiTranslator | null): string {
@@ -187,9 +189,28 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost): Promise<vo
         : await host.state.selectAsync(title, options, 0, hint);
     if (!picked) return;
     const row = rows.find(item => item.value === picked);
-    if (row) {
-        await host.openSession(row.sessionId);
+    if (!row) return;
+    if (row.value.startsWith('task:')) {
+        const action = host.select
+            ? await host.select(
+                formatAgentUiNotice(host.translator, 'workTaskTitle'),
+                [
+                    { label: formatAgentUiNotice(host.translator, 'workOpenSession'), value: 'open' },
+                    { label: formatAgentUiNotice(host.translator, 'workCancelTask'), value: 'cancel' }
+                ],
+                0,
+                formatAgentUiNotice(host.translator, 'workHint')
+            )
+            : 'open';
+        if (!action) return;
+        if (action === 'cancel') {
+            const taskId = row.value.split(':')[1];
+            const cancelled = await host.cancelTask?.(taskId);
+            host.notify(formatAgentUiNotice(host.translator, cancelled ? 'workTaskCancelled' : 'workTaskCancelFailed'));
+            return;
+        }
     }
+    await host.openSession(row.sessionId);
 }
 
 /** Command-context adapter for `/work`. */
@@ -200,6 +221,10 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
         sessionService: ctx.sessionService as any,
         notify: (message: string) => ctx.notify(message),
         openSession: (sessionId?: string) => ctx.openSession(sessionId),
-        select: (title, options, index, hint) => ctx.select(title, options, index, hint)
+        select: (title, options, index, hint) => ctx.select(title, options, index, hint),
+        cancelTask: async (taskId: string) => {
+            const result = await ctx.sessionService?.cancelBackgroundTasks?.([taskId]);
+            return !!(result && Array.isArray(result.cancelled) && result.cancelled.includes(taskId));
+        }
     };
 }

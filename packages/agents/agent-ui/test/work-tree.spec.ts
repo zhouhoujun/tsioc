@@ -76,6 +76,41 @@ export class WorkTreeTest {
         expect(opened).toEqual(['child-a', 'child-a']);
     }
 
+    @Test('task rows offer open, cancel and dismiss actions')
+    async taskActions() {
+        const state = createState();
+        const opened: string[] = [];
+        const cancelled: string[] = [];
+        const notices: string[] = [];
+        const responses: Array<string | undefined> = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: {
+                getDelegationTree: async () => TREE,
+                listAllBackgroundTasks: async () => TASKS
+            },
+            notify: (message: string) => notices.push(message),
+            openSession: async (sessionId?: string) => { opened.push(sessionId || ''); },
+            select: async () => responses.shift(),
+            cancelTask: async (taskId: string) => { cancelled.push(taskId); return true; }
+        };
+
+        responses.push('task:t1:child-a', 'cancel');
+        await runWorkCommandView(host);
+        expect(cancelled).toEqual(['t1']);
+        expect(opened).toEqual([]);
+        expect(notices[0]).toContain('cancelled');
+
+        responses.push('task:t1:child-a', undefined);
+        await runWorkCommandView(host);
+        expect(opened).toEqual([]);
+
+        responses.push('task:t1:child-a', 'open');
+        await runWorkCommandView(host);
+        expect(opened).toEqual(['child-a']);
+    }
+
     @Test('/work reports an empty tree instead of opening an empty menu')
     async emptyTree() {
         const state = createState();
