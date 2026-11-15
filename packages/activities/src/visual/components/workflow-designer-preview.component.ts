@@ -355,7 +355,17 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     };
 
     get saveStateClass(): string {
-        return `workflow-save-state is-${this.saveState || 'saved'}`;
+        return `workflow-save-state is-${this.effectiveSaveState}`;
+    }
+
+    /**
+     * The designer is the source of truth. Programmatic edits (plugins, draft
+     * restore, host RPCs) can dirty the document without a toolbar action, and
+     * showing "Saved" then would be wrong.
+     */
+    private get effectiveSaveState(): 'saved' | 'dirty' | 'saving' | 'error' {
+        const state = this.saveState || 'saved';
+        return state === 'saved' && this.designer?.dirty ? 'dirty' : state;
     }
 
     get visibleActions(): string[] {
@@ -367,7 +377,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     get saveStateLabel(): string {
-        switch (this.saveState) {
+        switch (this.effectiveSaveState) {
             case 'saving':
                 return this.t('saveStateSaving', 'Saving…');
             case 'dirty':

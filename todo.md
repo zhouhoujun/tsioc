@@ -4214,3 +4214,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `workflow-code-editor.spec` 6 passing（新增 `con` 不告警、`conatct` 告警断言）；
   - workflow-admin preview：`partialClean=true`、`semanticUndefined=true`、`enterNewline=true`、`tabAccepts=true`，EXIT 0；
   - activities 353、microservices/admin 63；`tsc` 0；`check-source-size`/`git diff --check` OK。
+
+## 2026-11-15 P0 保存优化（减少无谓保存与重渲染）
+- **问题**（实测）：慢速输入 10 字符（700ms/键）触发 **11 次整文档 PUT**；一次保存 = 一次全量重渲染（100 节点本地 350ms–2s，其中仅把 normalize 后的 definition 赋回去就 227ms）；`applyDefinition` 每次调用都改写 `metadata.updatedAt`（拖动时每 pointermove 一次）；`saveState` 在程序化修改后仍显示「已保存」。
+- **修正**：
+  - `saveTo` 不再无条件 `normalize` 并回写 `definition`（内容未变时保持对象身份 → 不广播 → 不重渲染）；新增 `savedSnapshot` 无变化闸门：内容与上次保存一致时直接返回，不写库；
+  - `applyDefinition` 不再写 `updatedAt`（改由 `commit` 各 mutator / `endNodeDrag` / `renameWorkflow` 写一次）；
+  - 自动保存改为「安静 1200ms + 距上次保存至少 3000ms + 最长积压 15000ms」，慢速输入合并为一次写入；`saveWorkflow`/`saveWorkflowAs`/`saveTab` 同步重置计时；
+  - `saveState` 标签以 `designer.dirty` 为准（程序化修改不会再显示「已保存」）；`emitTabs` 仅在该文档首次持久化时触发。
+- **实测（真实 Chrome，workflow-admin）**：
+  - 慢速输入 8–10 字符：PUT **11 → 1**；输入期间 p95 帧 24.6ms → 17.2ms；
+  - 100 节点无改动 Ctrl+S：**0 次写库**（无变化保存 7.6–32ms，原来 ~400ms）；
+  - 有改动 Ctrl+S：1 次写库；
+  - 保存后标签：dirty 时显示「未保存」。
+- **回归**：`workflow-designer.spec` 28 passing（新增「无变化保存跳过」「拖动只在结束时写 updatedAt」），`workflow-designer-ui.spec` 56 passing（新增「慢速输入合并为一次保存」「dirty 时不显示已保存」）；三个新断言在旧实现上均失败（已验证）。
+- **门禁**：activities 356 passing（`workflow-inbound` UDP 用例在满载下超时，单独重跑 4 passing，既有 flake）；microservices/admin 63 passing；tsc 0；`git diff --check` OK。`check-source-size` 仍报 `agents/agent-ui/web-console/web-console.ts` 603 行超限（并行未提交的 agent-ui 改动，未触碰）。

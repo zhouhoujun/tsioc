@@ -93,7 +93,15 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @Attribute() store: WorkflowDefinitionStore = createDefaultWorkflowDefinitionStore();
     /** Persist edits automatically after `autosaveDelay` ms of quiet. */
     @Attribute() autosave = false;
-    @Attribute() autosaveDelay = 800;
+    @Attribute() autosaveDelay = 1200;
+    /**
+     * Minimum gap between two autosaves. Editing keeps resetting the quiet
+     * timer, so without a floor a slow typist would write the whole document
+     * once per character.
+     */
+    @Attribute() autosaveMinInterval = 3000;
+    /** Longest an edit may stay unsaved while the user keeps typing. */
+    @Attribute() autosaveMaxDelay = 15000;
     /** Host hook invoked whenever the open document tabs change. */
     @Attribute() tabChangeAction?: (state: { openIds: string[]; activeId?: string }) => void;
 
@@ -117,6 +125,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     private selfRef?: WorkflowDesignerComponent;
     @NoReactive() private autosaveTimer?: any;
     @NoReactive() private autosaveInFlight = false;
+    @NoReactive() private lastAutosaveAt = 0;
+    @NoReactive() private unsavedSince?: number;
     @NoReactive() private keyHandler?: (event: any) => void;
     @NoReactive() private documentRef?: any;
 
@@ -428,7 +438,11 @@ export class WorkflowDesignerComponent implements OnDestroy {
         tab.persisted = true;
         self.syncTabId(tab);
         self.emitTabs();
-        self.saveState = 'saved';
+        if (tab === self.activeTab()) {
+            self.lastAutosaveAt = Date.now();
+            self.unsavedSince = undefined;
+            self.saveState = self.designer.dirty ? 'dirty' : 'saved';
+        }
     }
 
     private syncActiveTabId(): void {
@@ -507,11 +521,26 @@ export class WorkflowDesignerComponent implements OnDestroy {
         if (!self.autosave) {
             return;
         }
+        const now = Date.now();
+        if (self.unsavedSince === undefined) {
+            self.unsavedSince = now;
+        }
+        const quiet = Math.max(0, Number(self.autosaveDelay) || 0);
+        const minInterval = Math.max(0, Number(self.autosaveMinInterval) || 0);
+        const maxDelay = Math.max(quiet, Number(self.autosaveMaxDelay) || quiet);
+        const sinceSave = self.lastAutosaveAt ? now - self.lastAutosaveAt : minInterval;
+        const sinceFirstEdit = now - self.unsavedSince;
+        // Wait for quiet, but never sooner than `autosaveMinInterval` after the
+        // previous write; keep the backlog bounded by `autosaveMaxDelay`.
+        const delay = Math.min(
+            Math.max(quiet, minInterval - sinceSave),
+            Math.max(0, maxDelay - sinceFirstEdit)
+        );
         self.clearAutosaveTimer();
         self.autosaveTimer = setTimeout(() => {
             self.autosaveTimer = undefined;
             void self.performAutosave();
-        }, Math.max(0, Number(self.autosaveDelay) || 0));
+        }, delay);
     };
 
     private async performAutosave(): Promise<void> {
@@ -520,14 +549,20 @@ export class WorkflowDesignerComponent implements OnDestroy {
             return;
         }
         self.autosaveInFlight = true;
+        self.lastAutosaveAt = Date.now();
         self.saveState = 'saving';
         try {
             await self.designer.saveTo(self.store);
+            self.unsavedSince = undefined;
             const active = self.activeTab();
+            const wasPersisted = !!active?.persisted;
             if (active) {
                 active.persisted = true;
             }
-            self.emitTabs();
+            // The tab list only changes when a document is first persisted.
+            if (!wasPersisted) {
+                self.emitTabs();
+            }
             self.libraryError = '';
             self.saveState = self.designer.dirty ? 'dirty' : 'saved';
         } catch (error) {
@@ -721,7 +756,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
             }
             self.syncActiveTabId();
             self.libraryError = '';
-            self.saveState = 'saved';
+            self.lastAutosaveAt = Date.now();
+            self.unsavedSince = undefined;
+            self.saveState = self.designer.dirty ? 'dirty' : 'saved';
             await self.refreshLibrary();
         } catch (error) {
             self.saveState = 'error';
@@ -744,7 +781,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
             }
             self.syncActiveTabId();
             self.libraryError = '';
-            self.saveState = 'saved';
+            self.lastAutosaveAt = Date.now();
+            self.unsavedSince = undefined;
+            self.saveState = self.designer.dirty ? 'dirty' : 'saved';
             await self.refreshLibrary();
         } catch (error) {
             self.saveState = 'error';

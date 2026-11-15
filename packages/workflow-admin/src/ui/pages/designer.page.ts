@@ -28,7 +28,9 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
         }
         designer.store = new HttpWorkflowDefinitionStore({ baseUrl: '/api' });
         designer.autosave = true;
-        designer.autosaveDelay = 600;
+        designer.autosaveDelay = 1200;
+        designer.autosaveMinInterval = 3000;
+        designer.autosaveMaxDelay = 15000;
 
         const tabsKey = 'workflow-designer-open-tabs';
         // Keep the initial `#/workflows` landing URL stable; deep links are only

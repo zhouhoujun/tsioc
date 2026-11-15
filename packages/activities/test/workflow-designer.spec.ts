@@ -305,6 +305,62 @@ describe('Visual Workflow Designer', () => {
             expect(copy.name).toBe('Copy');
             expect((await local.listSaved(store)).length).toBe(2);
         });
+
+        it('skips a save when the document is unchanged', async () => {
+            const local = new WorkflowDesigner({ registry, service });
+            const store = new InMemoryWorkflowDefinitionStore();
+            let writes = 0;
+            const counting = {
+                list: () => store.list(),
+                get: (id: string) => store.get(id),
+                remove: (id: string) => store.remove(id),
+                clear: () => store.clear(),
+                save: (definition: any) => {
+                    writes += 1;
+                    return store.save(definition);
+                }
+            };
+
+            const beforeFirstSave = local.definition;
+            await local.saveTo(counting);
+            expect(writes).toBe(1);
+            // A successful save must not re-materialize the document; replacing
+            // it broadcast every binding and re-rendered the whole canvas.
+            expect(local.definition).toBe(beforeFirstSave);
+            const savedDefinition = local.definition;
+
+            // A no-op save (Ctrl+S on an untouched document, or an autosave that
+            // raced a manual save) must not hit the store, and must not replace
+            // the definition object: replacing it re-rendered the whole canvas.
+            local.dirty = true;
+            await local.saveTo(counting);
+            expect(writes).toBe(1);
+            expect(local.definition).toBe(savedDefinition);
+            expect(local.dirty).toBe(false);
+
+            // Real edits still persist.
+            local.renameNode('task_1', 'Changed task');
+            await local.saveTo(counting);
+            expect(writes).toBe(2);
+            expect((await store.get(savedDefinition.id))?.nodes.find(node => node.id === 'task_1')?.name)
+                .toBe('Changed task');
+        });
+
+        it('stamps updatedAt once per drag instead of on every pointer move', async () => {
+            const local = new WorkflowDesigner({ registry, service });
+            const before = local.definition.metadata?.updatedAt;
+            await new Promise(resolve => setTimeout(resolve, 5));
+
+            local.beginNodeDrag('task_1', { x: 40, y: 40 });
+            local.dragNodeTo({ x: 120, y: 140 });
+            local.dragNodeTo({ x: 220, y: 240 });
+            expect(local.definition.metadata?.updatedAt).toBe(before);
+            expect(local.dirty).toBe(false);
+
+            local.endNodeDrag();
+            expect(local.dirty).toBe(true);
+            expect(local.definition.metadata?.updatedAt).not.toBe(before);
+        });
     });
 
     describe('Editing helpers', () => {        it('duplicates the selected node with a new id and offset', () => {

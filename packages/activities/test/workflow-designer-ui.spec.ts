@@ -1085,6 +1085,53 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.saveStateLabel).toContain('已保存');
     });
 
+    it('coalesces a slow typing burst into a single autosave', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        let writes = 0;
+        ref.instance.store = {
+            list: () => store.list(),
+            get: (id: string) => store.get(id),
+            remove: (id: string) => store.remove(id),
+            clear: () => store.clear(),
+            save: (definition: any) => {
+                writes += 1;
+                return store.save(definition);
+            }
+        } as any;
+        ref.instance.autosave = true;
+        ref.instance.autosaveDelay = 5;
+        ref.instance.autosaveMinInterval = 250;
+        ref.instance.autosaveMaxDelay = 4000;
+
+        ref.instance.designer.renameNode('task_1', 'First edit');
+        ref.instance.scheduleAutosave();
+        await waitFor(() => writes === 1, 2000);
+        expect(writes).toBe(1);
+
+        // Typing slowly (one edit every ~50ms) used to write the whole document
+        // once per keystroke; the minimum interval must hold the writes back.
+        for (let index = 0; index < 3; index++) {
+            ref.instance.designer.renameNode('task_1', `Slow edit ${index}`);
+            ref.instance.scheduleAutosave();
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        expect(writes).toBe(1);
+
+        await waitFor(() => writes === 2, 3000);
+        expect(writes).toBe(2);
+        expect((await store.get(ref.instance.designer.definition.id))?.nodes
+            .find(node => node.id === 'task_1')?.name).toBe('Slow edit 2');
+    });
+
+    it('never reports a saved state while the document is dirty', async () => {
+        ref.instance.saveState = 'saved';
+        ref.instance.designer.renameNode('task_1', 'Unsaved rename');
+        await flush();
+        expect(ref.instance.designer.dirty).toBe(true);
+        expect(ref.instance.saveStateLabel).toContain('未保存');
+        expect(ref.instance.preview?.saveStateClass).toContain('is-dirty');
+    });
+
     it('opens keyboard shortcuts and saves with Ctrl+S', async () => {
         const key = (value: string, options: any = {}) => doc.dispatchEvent(
             new (doc.defaultView as any).KeyboardEvent('keydown', { key: value, bubbles: true, ...options })

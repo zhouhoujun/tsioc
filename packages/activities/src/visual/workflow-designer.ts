@@ -168,6 +168,13 @@ export class WorkflowDesigner {
     private redoStack: VisualWorkflowDefinition[] = [];
     private dragStartSnapshot?: VisualWorkflowDefinition;
     private activeExecutionId?: string;
+    /**
+     * Serialized document as of the last successful save (or load). Saving is
+     * skipped when the document is byte-identical, which keeps `Ctrl+S` and
+     * overlapping autosaves from writing the same payload twice.
+     */
+    private savedSnapshot?: string;
+    private savedSummary?: WorkflowDefinitionSummary;
 
     constructor(options: WorkflowDesignerOptions = {}) {
         this.registry = options.registry || new WorkflowNodeRegistry();
@@ -344,7 +351,11 @@ export class WorkflowDesigner {
         if (!next || next === this.definition.name) {
             return false;
         }
-        this.commit(current => ({ ...current, name: next }));
+        this.commit(current => ({
+            ...current,
+            name: next,
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
         this.setMessage('workflow.message.renamed', { name: next });
         return true;
     }
@@ -510,6 +521,13 @@ export class WorkflowDesigner {
         if (moved && this.dragStartSnapshot) {
             this.pushHistory(this.dragStartSnapshot);
             this.redoStack = [];
+            // Drag moves update the document in place while the pointer moves;
+            // stamp the timestamp once the gesture is committed instead of on
+            // every pointermove (which forced a full canvas re-render).
+            this.definition = {
+                ...this.definition,
+                metadata: { ...(this.definition.metadata || {}), updatedAt: new Date().toISOString() }
+            };
             this.dirty = true;
         }
         this.drag = undefined;
@@ -755,6 +773,8 @@ export class WorkflowDesigner {
         this.execution = undefined;
         this.checkpoint = undefined;
         this.dirty = false;
+        this.savedSnapshot = JSON.stringify(this.definition);
+        this.savedSummary = undefined;
         this.setError(validation.valid ? '' : validation.errors.join('; '));
         this.setMessage('workflow.message.loaded');
         return true;
@@ -778,24 +798,52 @@ export class WorkflowDesigner {
             };
         }
         const savedSnapshot = JSON.stringify(definition);
+        // Nothing changed since the last successful save (for example `Ctrl+S`
+        // on an untouched document, or an autosave that raced a manual save).
+        // Skipping the write also skips the round trip and the store's rewrite
+        // of the whole document.
+        if (!options.as && this.savedSnapshot === savedSnapshot) {
+            this.dirty = false;
+            const summary = this.savedSummary || this.summarizeSaved(definition);
+            this.setMessage('workflow.message.saved', { name: definition.name });
+            return summary;
+        }
         const summary = await store.save(definition);
         // Persisting is asynchronous and autosave can overlap user edits. Never
         // clobber the document with the pre-request snapshot; only adopt it when
         // the definition is unchanged, otherwise keep the newer edits dirty.
         const current = this.definition;
-        const unchanged = current === definition || JSON.stringify(current) === savedSnapshot;
+        let unchanged = current === definition;
+        if (!unchanged && (options.name || options.as)) {
+            // Rename/save-as always sends a copy, so identity says nothing;
+            // compare content once (user-initiated, not on the autosave path).
+            unchanged = JSON.stringify(current) === savedSnapshot;
+        }
         if (unchanged) {
             this.definition = definition;
         } else if (options.as) {
             // Save-as must still switch the open document to its new id/name.
             this.definition = { ...current, id: definition.id, name: definition.name };
         }
-        this.definition = this.normalize(this.definition);
+        this.savedSnapshot = savedSnapshot;
+        this.savedSummary = summary;
         this.dirty = !unchanged;
         this.setMessage(options.as ? 'workflow.message.savedAs' : 'workflow.message.saved', {
             name: definition.name
         });
         return summary;
+    }
+
+    /** Summary shape returned when a no-op save skips the store round trip. */
+    private summarizeSaved(definition: VisualWorkflowDefinition): WorkflowDefinitionSummary {
+        return {
+            id: definition.id,
+            name: definition.name,
+            description: definition.description,
+            nodeCount: definition.nodes?.length || 0,
+            connectionCount: definition.connections?.length || 0,
+            updatedAt: definition.metadata?.updatedAt || new Date().toISOString()
+        };
     }
 
     async openFrom(store: WorkflowDefinitionStore, id: string): Promise<boolean> {
@@ -829,6 +877,7 @@ export class WorkflowDesigner {
 
     markSaved(): void {
         this.dirty = false;
+        this.savedSnapshot = JSON.stringify(this.definition);
     }
 
     // ---------------------------------------------------------------------
@@ -974,10 +1023,11 @@ export class WorkflowDesigner {
     }
 
     private applyDefinition(definition: VisualWorkflowDefinition): void {
-        this.definition = {
-            ...definition,
-            metadata: { ...(definition.metadata || {}), updatedAt: new Date().toISOString() }
-        };
+        // No metadata stamping here: this runs for transient projections such as
+        // pointermove drags. Replacing the definition object (or its metadata)
+        // on every move re-triggered every canvas binding; commits stamp
+        // `updatedAt` themselves.
+        this.definition = definition;
     }
 
     private pushHistory(definition: VisualWorkflowDefinition): void {
