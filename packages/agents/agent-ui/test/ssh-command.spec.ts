@@ -109,11 +109,13 @@ export class SshConsoleCommandTest {
         const { state, component } = createSshConsole(manager);
 
         await (component as any).handleCommand('/ssh');
-        expect(state.notice).toContain('web · root@example.com:22 · connected');
-        expect(state.notice).toContain('db · deploy@db.internal:2222 · disconnected');
+        expect(state.textOverlay?.title).toEqual('SSH hosts');
+        const lines = state.textOverlay?.lines.join('\n') || '';
+        expect(lines).toContain('web · root@example.com:22 · connected');
+        expect(lines).toContain('db · deploy@db.internal:2222 · disconnected');
 
         await (component as any).handleCommand('/ssh list');
-        expect(state.notice).toContain('web · root@example.com:22 · connected');
+        expect(state.textOverlay?.lines.join('\n')).toContain('web · root@example.com:22 · connected');
     }
 
     @Test('ssh list command reports when no hosts are configured')

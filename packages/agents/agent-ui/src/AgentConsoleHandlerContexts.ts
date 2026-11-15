@@ -137,7 +137,8 @@ export function sshHost(self: any): AgentConsoleSshHost {
             get sshShell() { return self.sshShell; },
             set sshShell(value) { self.sshShell = value; },
             surface: self.surfaceAccessor,
-            notify: (message, duration) => self.notify(message, duration)
+            notify: (message, duration) => self.notify(message, duration),
+            openDialog: (title, lines) => self.state.openTextOverlay(title, lines, Math.min(24, lines.length))
         };
     }
 

@@ -8,6 +8,7 @@ function metaFor(command: string) {
 
 function createCtx(summary: string[], report: string[], stateOverrides: Record<string, any> = {}) {
     const notices: string[] = [];
+    const overlays: Array<{ title: string; lines: string[] }> = [];
     const outputs: Array<{ command: string; text: string }> = [];
     const ctx: any = {
         isTurnInProgress: () => false,
@@ -21,10 +22,11 @@ function createCtx(summary: string[], report: string[], stateOverrides: Record<s
             reviewFileSections: [],
             reviewFileAnnotations: {},
             computeFileRiskScore: () => ({ score: 1, level: 'low' }),
+            openTextOverlay: (title: string, lines: string[]) => overlays.push({ title, lines }),
             ...stateOverrides
         }
     };
-    return { ctx, notices, outputs };
+    return { ctx, notices, overlays, outputs };
 }
 
 @Suite('/review multi-line output stays readable')
@@ -32,14 +34,16 @@ export class ReviewMultiLineOutputTest {
 
     @Test('/review summary is emitted as one block, not a series of single-line notices')
     async summaryIsOneBlock() {
-        const { ctx, notices, outputs } = createCtx(
+        const { ctx, notices, overlays, outputs } = createCtx(
             ['File Annotations: 1 approved, 1 rejected', '  ✓ src/a.ts', '  ✗ src/b.ts'],
             []
         );
         await COMMAND_HANDLERS['/review'](ctx, 'summary', metaFor('/review'));
         expect(outputs).toEqual([]);
-        expect(notices.length).toEqual(1);
-        expect(notices[0].split('\n')).toEqual([
+        expect(notices).toEqual([]);
+        expect(overlays.length).toEqual(1);
+        expect(overlays[0].title).toEqual('Review summary');
+        expect(overlays[0].lines).toEqual([
             'File Annotations: 1 approved, 1 rejected',
             '  ✓ src/a.ts',
             '  ✗ src/b.ts'
@@ -48,16 +52,18 @@ export class ReviewMultiLineOutputTest {
 
     @Test('/review export is emitted as one block so the report is not truncated')
     async exportIsOneBlock() {
-        const { ctx, notices, outputs } = createCtx([], ['# Review Report', 'Task: t1', 'Status: completed']);
+        const { ctx, notices, overlays, outputs } = createCtx([], ['# Review Report', 'Task: t1', 'Status: completed']);
         await COMMAND_HANDLERS['/review'](ctx, 'export', metaFor('/review'));
         expect(outputs).toEqual([]);
-        expect(notices.length).toEqual(1);
-        expect(notices[0].split('\n').length).toEqual(3);
+        expect(notices).toEqual([]);
+        expect(overlays.length).toEqual(1);
+        expect(overlays[0].title).toEqual('Review export');
+        expect(overlays[0].lines.length).toEqual(3);
     }
 
     @Test('/review risk emits the whole table at once')
     async riskTableIsOneBlock() {
-        const { ctx, notices } = createCtx([], [], {
+        const { ctx, notices, overlays } = createCtx([], [], {
             reviewFileSections: [
                 { path: 'src/a.ts', additions: 3, deletions: 1 },
                 { path: 'src/b.ts', additions: 0, deletions: 7 }
@@ -65,9 +71,11 @@ export class ReviewMultiLineOutputTest {
             computeFileRiskScore: (section: any) => ({ score: section.path.endsWith('a.ts') ? 4 : 9, level: section.path.endsWith('a.ts') ? 'medium' : 'high' })
         });
         await COMMAND_HANDLERS['/review'](ctx, 'risk', metaFor('/review'));
-        expect(notices.length).toEqual(1);
-        expect(notices[0]).toContain('src/a.ts');
-        expect(notices[0]).toContain('src/b.ts');
+        expect(notices).toEqual([]);
+        expect(overlays.length).toEqual(1);
+        expect(overlays[0].title).toEqual('Review risk');
+        expect(overlays[0].lines.join('\n')).toContain('src/a.ts');
+        expect(overlays[0].lines.join('\n')).toContain('src/b.ts');
     }
 
     @Test('review run list emits every run summary in one block')

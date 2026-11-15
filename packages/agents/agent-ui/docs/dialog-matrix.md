@@ -15,12 +15,13 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 | `/theme` | select | Esc/q/✕; type-to-filter | list | select card | no preview row |
 | `/tools` | select/text | Esc/q/✕ | tool list | select card | no-arg vs arg paths differ |
 | `/approvals` | custom approvals panel | `a/d/A/y`, arrows, Esc/✕ | list | custom panel | separate shell from DialogFrame |
+| `/review` | text dialog | Esc/q/✕ | scroll | text card | fixed: summary/export/risk use titled `Review …` dialogs |
 | `/outputs` | command-output panel | arrows/Enter/Esc/✕ | filter mode | panel | close semantics differ from select |
 | `/mcp` | select/text | Esc/q/✕ | server/tool lists | select card | nested async menu |
 | `/skills` | select/text | Esc/q/✕ | list/search | select card | loader/permission state not in route |
 | `/plugins` | select/text | Esc/q/✕ | list | select card | same |
 | `/apps` | select/text | Esc/q/✕ | list | select card | same |
-| `/ssh` | select/text | Esc/q/✕ | list | select card | same |
+| `/ssh` | text dialog (list) | Esc/q/✕ | - | text card | fixed: host list opens a titled `SSH hosts` dialog; connect/forward stay toasts |
 | `/permissions` | select + text | Esc/q/✕ | level list | select card | fixed: capability report uses a dedicated `Permissions` dialog |
 | `/worktree` | text dialog (list) | Esc/q/✕ | - | text card | fixed: `list` opens a titled `Worktrees` dialog instead of a generic notice |
 | `/` menu | suggestion select | Esc/Tab/Enter | prefix filter | composer-attached | title/hint intentionally absent |

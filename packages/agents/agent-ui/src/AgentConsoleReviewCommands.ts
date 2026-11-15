@@ -1,6 +1,14 @@
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { formatAgentUiNotice } from './agent-ui.i18n';
 
+function openReviewDialog(ctx: CommandHandlerContext, titleKey: string, lines: string[]): void {
+    ctx.state.openTextOverlay(
+        formatAgentUiNotice(ctx.translator, titleKey),
+        lines,
+        Math.min(24, lines.length)
+    );
+}
+
 export async function handleReview(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     if (ctx.isTurnInProgress()) {
         ctx.notifyBusyState();
@@ -11,8 +19,7 @@ export async function handleReview(ctx: CommandHandlerContext, args: string, _re
         const canAnnotate = !!ctx.state.reviewOpen && ctx.state.reviewFileSections.length > 0;
         const notifyReviewClosed = () => ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewOpenFirst'));
         if (arg === 'summary') {
-            const lines = ctx.state.getReviewAnnotationSummary();
-            ctx.notify(lines.join('\n'));
+            openReviewDialog(ctx, 'reviewSummaryTitle', ctx.state.getReviewAnnotationSummary());
             return true;
         }
         if (arg === 'approve-all') {
@@ -39,7 +46,7 @@ export async function handleReview(ctx: CommandHandlerContext, args: string, _re
                 ctx.notify(formatAgentUiNotice(ctx.translator, 'reviewDataExport'));
                 return true;
             }
-            ctx.notify(report.join('\n'));
+            openReviewDialog(ctx, 'reviewExportTitle', report);
             return true;
         }
         if (arg === 'risk') {
@@ -54,7 +61,7 @@ export async function handleReview(ctx: CommandHandlerContext, args: string, _re
                 const marker = annot ? (annot.status === 'approved' ? ' ✓' : ' ✗') : '';
                 return formatAgentUiNotice(ctx.translator, 'riskTableRow', { score: String(risk.score).padStart(2, ' '), riskLevel: risk.level.padEnd(8, ' '), path: section.path, additions: section.additions, deletions: section.deletions, marker, comment: annot?.comment ? ` - ${annot.comment}` : '' });
             });
-            ctx.notify(riskLines.join('\n'));
+            openReviewDialog(ctx, 'reviewRiskTitle', riskLines);
             return true;
         }
         if (arg.startsWith('approve')) {

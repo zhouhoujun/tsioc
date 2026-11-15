@@ -18,6 +18,8 @@ export interface AgentConsoleSshHost {
     sshShell: any;
     surface?: AgentConsoleSshTerminalSurface | null;
     notify(message: string, duration?: number): void;
+    /** Titled read-only dialog for multi-line listings. */
+    openDialog?(title: string, lines: string[]): void;
 }
 
 interface SshShellStreamLike {
@@ -34,7 +36,12 @@ interface SshClientLike {
     shell(options: { term: string; cols: number; rows: number }): Promise<SshShellSessionLike>;
 }
 
-export function listSshHosts(sshManager: any, notify: (message: string) => void, translator?: AgentUiTranslator | null): void {
+export function listSshHosts(
+    sshManager: any,
+    notify: (message: string) => void,
+    translator?: AgentUiTranslator | null,
+    openDialog?: (title: string, lines: string[]) => void
+): void {
     if (!sshManager) {
         notify(formatAgentUiNotice(translator, 'sshNotConfigured'));
         return;
@@ -47,6 +54,10 @@ export function listSshHosts(sshManager: any, notify: (message: string) => void,
     const lines = infos.map((info: any) =>
         `${info.id} · ${info.username}@${info.host}:${info.port} · ${info.connected ? formatAgentUiNotice(translator, 'sshHostConnected') : formatAgentUiNotice(translator, 'sshHostDisconnected')}`
     );
+    if (openDialog) {
+        openDialog(formatAgentUiNotice(translator, 'sshHostsTitle'), lines);
+        return;
+    }
     notify(lines.join('\n'));
 }
 
@@ -113,7 +124,8 @@ export async function runSshCommand(host: AgentConsoleSshHost, args: string): Pr
         return;
     }
     if (action === 'list' || action === 'ls') {
-        listSshHosts(host.sshManager, (message: string) => host.notify(message), host.translator);
+        listSshHosts(host.sshManager, (message: string) => host.notify(message), host.translator,
+            host.openDialog && ((title, lines) => host.openDialog!(title, lines)));
         return;
     }
     if (action === 'connect') {
