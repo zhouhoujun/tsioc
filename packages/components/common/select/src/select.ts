@@ -58,6 +58,10 @@ export class SelectComponent {
     @Attribute() fitContent = false;
     @Attribute() maxWidth = 88;
     @Attribute() minWidth = 28;
+    /** Unfiltered title used for width (live filter text must not resize the card). */
+    @Attribute() widthTitle = '';
+    /** Unfiltered options used for width; a filtered `options` list may be shorter. */
+    @Attribute() widthOptions?: SelectOption[];
     @Attribute() selectAction?: (value: string) => void;
     @Attribute() closeAction?: () => void;
     @Attribute() keydownAction?: (event: KeyboardEvent) => void;
@@ -70,12 +74,13 @@ export class SelectComponent {
     protected resolveContentWidth(): number {
         const max = Math.max(24, Math.min(88, Number(this.maxWidth) || 88));
         const min = Math.max(24, Math.min(max, Number(this.minWidth) || 28));
+        const widthOptions = this.widthOptions?.length ? this.widthOptions : (this.options || []);
         const longest = Math.max(
             0,
-            getDisplayWidth(String(this.title || '')),
+            getDisplayWidth(String(this.widthTitle || this.title || '')),
             getDisplayWidth(String(this.hint || '')),
             getDisplayWidth(String(this.meta || '')),
-            ...(this.options || []).map((option, index) =>
+            ...widthOptions.map((option, index) =>
                 getDisplayWidth(`${index + 1}. ${option?.label ?? ''}`)
                 + (option?.description ? 2 + getDisplayWidth(String(option.description)) : 0))
         );

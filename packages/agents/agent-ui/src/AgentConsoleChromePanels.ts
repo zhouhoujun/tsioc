@@ -209,6 +209,8 @@ export class AgentConsoleActivityPanelComponent {
     template: `
         <select-list
             :options="menuOptions"
+            :widthTitle="menuWidthTitle"
+            :widthOptions="menuWidthOptions"
             :selectedIndex="menuSelectedIndex"
             :visibleCount="visibleOptionCount"
             :title="menuTitleText"
@@ -261,6 +263,17 @@ export class AgentConsoleSelectPanelComponent {
     get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
 
     async closeMenu(): Promise<void> { await this.state.cancelSelectMenu(); }
+
+    /** Unfiltered width inputs: typing a filter must not resize the card. */
+    get menuWidthTitle(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.title || ''); }
+
+    get menuWidthOptions(): Array<{ label: string; value: string; description?: string }> {
+        return (this.menu?.allOptions || this.menu?.options || []).map(option => ({
+            label: option.label,
+            value: option.value,
+            description: option.description || ''
+        }));
+    }
 
     get menuOptions(): Array<{ label: string; value: string; description?: string }> {
         return (this.menu?.options || []).map(option => ({

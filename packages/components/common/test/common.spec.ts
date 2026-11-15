@@ -133,6 +133,26 @@ export class ComponentUtilitiesTest {
         expect(key).toEqual('Escape');
     }
 
+    @Test('select width uses the unfiltered title and options')
+    selectWidthIgnoresFilteredView() {
+        const select = new SelectComponent();
+        select.fitContent = true;
+        select.title = 'Theme · sol';
+        select.widthTitle = 'Theme';
+        select.options = [{ label: 'solarized', value: 'solarized' }];
+        select.widthOptions = [
+            { label: 'dark', value: 'dark' },
+            { label: 'high-contrast-theme', value: 'high-contrast-theme' }
+        ];
+        expect(select.widthClass).toEqual('dialog-w-34');
+
+        // Same dialog without a filter: identical width, so typing never shifts it.
+        select.title = 'Theme';
+        select.options = (select.widthOptions || []).slice();
+        select.widthOptions = undefined;
+        expect(select.widthClass).toEqual('dialog-w-34');
+    }
+
     @Test('browser rows window the options and dispatch the chosen value')
     browserRows() {
         const select = new SelectComponent();
