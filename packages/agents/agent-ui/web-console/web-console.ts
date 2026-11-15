@@ -34,6 +34,7 @@ import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
 import { openAgentConsoleDialogDeepLink } from './dialog-deeplink';
 import { focusWebConsoleComposer } from './focus-composer';
 import { routeAgentConsoleWheel } from './wheel-routing';
+import { routeAgentConsoleHistoryKey } from './history-keys';
 import { keepTranscriptSelection } from './selection-anchor';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -533,7 +534,13 @@ export async function mountAgentWebConsole(
     const onIndicatorClick = (): void => {
         follower?.resumeFollow();
     };
+    const onKeyDown = (event: KeyboardEvent): void => routeAgentConsoleHistoryKey(event, {
+        getState: () => state,
+        resolveFollower,
+        requestOlderMessages
+    });
     mount.addEventListener('wheel', onWheel, { passive: false });
+    mount.addEventListener('keydown', onKeyDown);
     indicator.addEventListener('click', onIndicatorClick);
     // Observe content growth from the initial render, not only after the first wheel.
     resolveFollower();
@@ -558,6 +565,7 @@ export async function mountAgentWebConsole(
         state,
         dispose: async () => {
             mount.removeEventListener('wheel', onWheel);
+            mount.removeEventListener('keydown', onKeyDown);
             mount.removeEventListener('contextmenu', onContextMenu);
             indicator.removeEventListener('click', onIndicatorClick);
             overlayAnchors.dispose();

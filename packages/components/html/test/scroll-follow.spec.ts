@@ -46,6 +46,22 @@ export class DomTranscriptFollowerTest {
         expect(indicator.style.display).toEqual('none');
     }
 
+    @Test('page keys scroll about one viewport of history')
+    pageScrollsViewport() {
+        const dom = new JSDOM('<!DOCTYPE html><body><div id="t"></div><button id="i"></button></body>');
+        const transcript = dom.window.document.getElementById('t') as HTMLElement;
+        stubMetrics(transcript, 1000, 100);
+        const follower = new DomTranscriptFollower(transcript, dom.window.document.getElementById('i') as HTMLElement);
+        follower.attach();
+        expect(follower.following).toEqual(true);
+        expect(follower.page(-1)).toEqual(true);
+        expect(transcript.scrollTop).toEqual(810);
+        expect(follower.following).toEqual(false);
+        expect(follower.page(1)).toEqual(true);
+        expect(transcript.scrollTop).toEqual(900);
+        expect(follower.following).toEqual(true);
+    }
+
     @Test('requests an older page at the top and preserves the scroll row on prepend')
     paginationTopAndPrepend() {
         const dom = new JSDOM('<!DOCTYPE html><body><div id="t"></div><button id="i"></button></body>');

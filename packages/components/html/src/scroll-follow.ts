@@ -89,6 +89,15 @@ export class DomTranscriptFollower {
         return moved;
     }
 
+    /** Page-scroll history by ~one viewport (PageUp/PageDown). */
+    page(direction: 1 | -1): boolean {
+        const height = Number(this.transcript.clientHeight) || 0;
+        if (!height) {
+            return false;
+        }
+        return this.wheel(direction * Math.max(1, Math.floor(height * 0.9)));
+    }
+
     /** Preserve the reading row when an older page is prepended. */
     notifyPrepend(): void {
         this.prependPending = true;

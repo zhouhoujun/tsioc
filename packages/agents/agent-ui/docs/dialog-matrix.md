@@ -39,6 +39,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 - ✅ R1 route catalog: `/dialog [id|path|group|alias|prefix]` lists and dispatches dialog routes; pending questions keep the focus stack (Esc restores the panel underneath).
 - ✅ D3 shell semantics: approval and question panels carry the shared `dialog-panel` / `dialog-title` / `dialog-hint` / `dialog-close` hooks (JSDOM mount test), so one skin can target every modal.
 - ✅ Real PTY: acceptance scenario 12 drives `/theme` → type `sol` → Backspace → Esc, asserting the filtered rows and closed dialog in a real terminal.
+- ✅ Web PageUp/PageDown: pages the viewport history (one viewport per press) unless a dialog/focused panel or a non-empty draft owns the key; no browser page jump behind the console.
 - ✅ Web wheel (select): a blocking select dialog moves its selection with the wheel instead of scrolling the transcript.
 - ✅ Web wheel: an open text dialog owns the wheel (scrolls its own page) instead of scrolling the transcript underneath; covered by a JSDOM mount test.
 - ✅ R1 route kind: every route declares `select` / `panel` / `wizard` / `text`; `/dialog` shows `group · kind` and `/help dialogs` appends the kind, so the catalogue classifies dialogs, not just commands.

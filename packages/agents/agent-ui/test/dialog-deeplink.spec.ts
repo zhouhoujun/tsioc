@@ -320,6 +320,40 @@ export class DialogDeepLinkTest {
         }
     }
 
+    @Test('PageUp pages the transcript unless a panel or draft owns it')
+    async pageKeysOwnership() {
+        const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
+        const mounted = await mountAgentWebConsole({
+            baseUrl: gateway.clientBaseUrl,
+            sessionId: 'session-A',
+            fetchImpl: gateway.createFetchImpl(),
+            mount: this.dom.window.document.getElementById('agent-console') as HTMLElement,
+            state: new AgentConsoleSessionState(),
+            pwa: false,
+            workspace: ''
+        });
+        try {
+            const area = this.dom.window.document.querySelector('textarea.agent-input') as HTMLTextAreaElement;
+            const press = (key: string) => {
+                const event = new this.dom.window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+                area.dispatchEvent(event);
+                return event;
+            };
+            expect(press('PageUp').defaultPrevented).toEqual(true);
+
+            mounted.state.setInput('draft', 5);
+            expect(press('PageUp').defaultPrevented).toEqual(false);
+            mounted.state.setInput('', 0);
+
+            mounted.state.reviewOpen = true;
+            mounted.state.focusLayers.sync();
+            expect(press('PageUp').defaultPrevented).toEqual(false);
+        } finally {
+            await mounted.dispose();
+            gateway.dispose();
+        }
+    }
+
     @Test('?dialog=<unknown> reports a toast instead of opening an empty dialog')
     async deepLinkUnknownRoute() {
         const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
