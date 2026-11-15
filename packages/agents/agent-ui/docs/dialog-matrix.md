@@ -38,6 +38,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 - ✅ R1 route catalog: `/dialog [id|path|group|alias|prefix]` lists and dispatches dialog routes; pending questions keep the focus stack (Esc restores the panel underneath).
 - ✅ R1 discoverability: `/help dialogs` opens the route catalogue grouped by category, sharing the same builder as `/dialog`.
 - ✅ D4 type-to-filter: blocking select dialogs (`/model`, `/theme`, `/provider`, `/settings`, `/tools`, `/mcp`, `/skills`, `/plugins`, `/apps`, `/ssh`, `/help` groups) accept typed text as a live filter; the title shows `· <filter>`, Backspace edits it, digits keep numbered selection only while the filter is empty, and suggestion (`/`, `@`) menus keep filtering the composer. TUI filters through the shared focus layer; web routes textarea keys into the same layer.
+- ✅ D2 question priority: an incoming pending question cancels an open select/text dialog (its select promise resolves `undefined`) so the turn's question owns the keyboard and custom-answer input.
 - ✅ D4 no layout shift: filtered select cards keep the unfiltered title/option width (shared `select-list` width inputs), so typing never resizes or re-centres the dialog.
 - ✅ Web focus: the composer is focused after mount on fine pointers, so `?dialog=` deep links are keyboard-operable without clicking; touch/coarse pointers keep the on-screen keyboard closed.
 - ✅ D4 palette/dialog keys: Esc on the command palette now closes it in one press (its parent chain was its own query history, not a nested dialog).

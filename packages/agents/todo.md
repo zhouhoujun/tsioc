@@ -258,6 +258,7 @@
 - ✅ `/outputs`、which-key、health 改为 composer 上方浮层（不再渲染到输入区下方）。
 - ✅ `/permissions` 能力报告使用专属 `Permissions` 对话框；`/help` 详情 Esc/✕ 返回分组。
 - ✅ D4 选择对话框 type-to-filter：`/model`、`/theme`、`/provider`、`/settings`、`/tools`、`/mcp`、`/skills`、`/plugins`、`/apps`、`/ssh`、`/help` 分组支持键入过滤；标题显示 `· <filter>`，Backspace 逐字删除，过滤为空时数字仍为序号选择，`/` 与 `@` suggestion 菜单不受影响；零匹配时 Enter 不关闭对话框。TUI 走共享 focus layer，Web 把 textarea 按键接到同一层。
+- ✅ D2 问答优先：pending question 到达时取消已打开的选择/文本对话框（select promise 以 undefined 结束），让问题独占键盘与自定义答案输入。
 - ✅ D4 过滤不抖动：选择卡片宽度按未过滤的标题/选项计算（`select-list` 的 `widthTitle`/`widthOptions`），键入过滤时卡片不缩放、不重新居中。
 - ✅ Web 初始焦点：细指针设备挂载后聚焦 composer（`?dialog=` 深链可直接键入过滤，无需先点击）；粗指针/触屏不聚焦，避免弹出软键盘。
 - ✅ D4 palette Esc：命令面板按 Esc 一次关闭（其 parent 链是查询历史而非嵌套对话框，之前需要逐字符回退）。

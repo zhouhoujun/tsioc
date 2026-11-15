@@ -13,6 +13,13 @@ export function setPendingQuestion(state: AgentConsoleSessionState, question: Ag
         state.syncDerivedInputFocus();
         return;
     }
+    // A pending question is modal: a lower command dialog must not keep the
+    // keyboard (or steal the custom-answer input) while the turn waits. The
+    // select promise resolves undefined so its async opener can unwind.
+    if (state.selectMenu) {
+        void state.cancelSelectMenu();
+    }
+    state.closeTextOverlay();
     const existingIndex = state.pendingQuestionQueue.findIndex(item => item.questionId === question.questionId);
     if (existingIndex >= 0) {
         const existing = state.pendingQuestionQueue[existingIndex];

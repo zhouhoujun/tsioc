@@ -1,7 +1,9 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { dismissBackgroundPanels } from '../src/AgentConsoleDialogExclusivity';
+import { InMemoryCommandExecutionControl } from '@tsdi/agent';
 import { openTextOverlay } from '../src/AgentConsoleOverlayState';
+import { AgentConsoleSessionState } from '../src';
 
 function fakeState(): any {
     return {
@@ -51,5 +53,23 @@ export class DialogExclusivityTest {
         expect(state.sessionsFocused).toEqual(false);
         expect(state.textOverlay).toEqual(null);
         expect(state.textOverlayBack).toBeUndefined();
+    }
+
+    @Test('a pending question dismisses an open select or text dialog')
+    async questionOutranksDialogs() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        let resolved: string | undefined | null = null;
+        state.openSelectMenu('Model', [{ label: 'a', value: 'a' }, { label: 'b', value: 'b' }]);
+        state.selectMenuAction = async value => { resolved = value; };
+        openTextOverlay(state, 'Permissions', ['line']);
+        state.setPendingQuestion({
+            questionId: 'q1', sessionId: state.sessionId, question: 'choose', options: ['a'],
+            severity: 'low', createdAt: 1, updatedAt: 1, status: 'pending'
+        });
+        expect(state.selectMenu).toBeUndefined();
+        expect(state.textOverlay).toEqual(null);
+        expect(state.pendingQuestion?.questionId).toEqual('q1');
+        await Promise.resolve();
+        expect(resolved).toEqual(undefined);
     }
 }
