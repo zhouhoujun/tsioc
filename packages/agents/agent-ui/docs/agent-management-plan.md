@@ -233,6 +233,7 @@ interface SessionCheckpoint {
 - `/work` 工作树首片：纯投影 `buildWorkRows`（delegation tree + background tasks + session 元数据），层级缩进/状态符号/任务行；Enter 打开所属会话；无树时显示当前会话；route `work` 已登记（dialog 目录自动收录）。真实 Chrome：`/work` 显示当前会话行与 `running` 状态。
 - `/inbox` 首片：从 `approval.list`（跨会话）、`pendingQuestionQueue`、失败后台任务、失败/阻塞 coding task、排队 prompt 派生 `InboxItem[]`；严重度排序；Enter 打开所属会话并对审批聚焦；空态 toast；route `inbox` 已登记。单测覆盖派生/跳转/空态；真实 Chrome 验证空态文案。
 - Web sidebar v0：左侧 `Agent center`（Agents 当前 profile、Sessions 最近列表、Work/Inbox 按钮）；桌面 ≥1080px 常驻并让 console 右移，窄屏为抽屉；«/» 折叠展开；tab 条与 agent meta 变化触发微任务刷新（无定时器）。真实 Chrome：console x 从 270（开）到 150（收），Inbox 按钮打开待办。
+- 注意力徽标：meta 行 `! N`（当前会话 approvals + questions + queued，`v-show` 零值隐藏）；sidebar Work/Inbox 显示跨会话计数（`approval.list` + 失败/运行中后台任务 + 当前问答/排队），在挂载、tab 变化、窗口重新可见与命令执行后刷新（无轮询）。
 
 
 1. **Agents 面（TUI + Web）**

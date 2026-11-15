@@ -7,6 +7,8 @@ export interface AgentConsoleWebSidebarHost {
     state: AgentConsoleSessionState;
     runCommand(command: string): Promise<boolean> | void;
     navigate(sessionId: string): void;
+    /** Optional cross-session attention counters (approvals/failed tasks/...). */
+    loadCounts?(): Promise<{ work: number; inbox: number }>;
 }
 
 export interface AgentConsoleWebSidebarHandle {
@@ -74,15 +76,43 @@ export function createWebSidebar(host: AgentConsoleWebSidebarHost): AgentConsole
 
     const actions = doc.createElement('div');
     actions.className = 'agent-web-sidebar-actions';
-    const action = (command: string, key: string, fallback: string): HTMLButtonElement => {
+    const action = (command: string, key: string, fallback: string): { button: HTMLButtonElement; count: HTMLElement } => {
         const button = doc.createElement('button');
         button.type = 'button';
         button.className = 'agent-web-sidebar-action';
-        button.textContent = label(key, fallback);
-        button.addEventListener('click', () => { void host.runCommand(command); });
-        return button;
+        const name = doc.createElement('span');
+        name.className = 'agent-web-sidebar-action-label';
+        name.textContent = label(key, fallback);
+        const count = doc.createElement('span');
+        count.className = 'agent-web-sidebar-count';
+        count.hidden = true;
+        button.append(name, count);
+        button.addEventListener('click', () => {
+            void Promise.resolve(host.runCommand(command)).then(() => refreshCounts());
+        });
+        return { button, count };
     };
-    actions.append(action('/work', 'work', 'Work'), action('/inbox', 'inbox', 'Inbox'));
+    const workAction = action('/work', 'work', 'Work');
+    const inboxAction = action('/inbox', 'inbox', 'Inbox');
+    actions.append(workAction.button, inboxAction.button);
+    const renderCounts = (counts: { work: number; inbox: number }): void => {
+        workAction.count.textContent = counts.work > 0 ? String(counts.work) : '';
+        workAction.count.hidden = counts.work <= 0;
+        inboxAction.count.textContent = counts.inbox > 0 ? String(counts.inbox) : '';
+        inboxAction.count.hidden = counts.inbox <= 0;
+    };
+    let countsPending = false;
+    const refreshCounts = (): void => {
+        if (!host.loadCounts || countsPending) return;
+        countsPending = true;
+        void Promise.resolve(host.loadCounts())
+            .then(counts => renderCounts({
+                work: Math.max(0, Number(counts?.work) || 0),
+                inbox: Math.max(0, Number(counts?.inbox) || 0)
+            }))
+            .catch(() => undefined)
+            .finally(() => { countsPending = false; });
+    };
 
     element.append(head, agentSection, sessionSection, actions);
 
@@ -102,6 +132,10 @@ export function createWebSidebar(host: AgentConsoleWebSidebarHost): AgentConsole
     toggle.addEventListener('click', () => setOpen(true));
     const onWideChange = (event: MediaQueryListEvent): void => setOpen(event.matches);
     wide?.addEventListener?.('change', onWideChange);
+    const onVisibility = (): void => {
+        if (!doc.hidden) refreshCounts();
+    };
+    doc.addEventListener?.('visibilitychange', onVisibility);
 
     let pending = false;
     const refresh = (): void => {
@@ -138,7 +172,7 @@ export function createWebSidebar(host: AgentConsoleWebSidebarHost): AgentConsole
     if (Observer) {
         const tabBar = host.mount.querySelector('tab-bar');
         if (tabBar) {
-            tabObserver = new Observer(() => refresh());
+            tabObserver = new Observer(() => { refresh(); refreshCounts(); });
             tabObserver.observe(tabBar, { childList: true, subtree: true, characterData: true });
         }
         const meta = host.mount.querySelector('.input-meta');
@@ -149,6 +183,7 @@ export function createWebSidebar(host: AgentConsoleWebSidebarHost): AgentConsole
     }
 
     refresh();
+    refreshCounts();
     doc.body?.appendChild(element);
     doc.body?.appendChild(toggle);
 
@@ -160,6 +195,7 @@ export function createWebSidebar(host: AgentConsoleWebSidebarHost): AgentConsole
             tabObserver?.disconnect();
             agentObserver?.disconnect();
             wide?.removeEventListener?.('change', onWideChange);
+            doc.removeEventListener?.('visibilitychange', onVisibility);
             element.remove();
             toggle.remove();
             doc.body?.removeAttribute('data-agent-sidebar');

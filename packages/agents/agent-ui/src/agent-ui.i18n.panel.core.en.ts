@@ -244,6 +244,7 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         statusUnknown: 'unknown'
     },
     input: {
+        attentionBadge: '! {count}',
         agentBadge: 'agent {name}',
         planNudge: 'Planning intent detected · use /plan',
         planBadge: 'plan',

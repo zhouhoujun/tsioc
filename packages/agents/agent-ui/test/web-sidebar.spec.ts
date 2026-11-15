@@ -11,6 +11,7 @@ function createFixture(): {
     state: AgentConsoleSessionState;
     navigated: string[];
     commands: string[];
+    countLoads: number;
 } {
     const dom = new JSDOM('<!DOCTYPE html><html><body><div id="mount"><tab-bar></tab-bar><div class="input-meta"></div></div></body></html>', {
         url: 'http://localhost:3100/?session=root'
@@ -27,7 +28,8 @@ function createFixture(): {
         mount: dom.window.document.getElementById('mount') as HTMLElement,
         state,
         navigated: [],
-        commands: []
+        commands: [],
+        countLoads: 0
     };
 }
 
@@ -41,7 +43,11 @@ export class WebAgentSidebarTest {
             mount: fixture.mount,
             state: fixture.state,
             runCommand: command => { fixture.commands.push(command); },
-            navigate: sessionId => { fixture.navigated.push(sessionId); }
+            navigate: sessionId => { fixture.navigated.push(sessionId); },
+            loadCounts: async () => {
+                fixture.countLoads += 1;
+                return { work: 2, inbox: 3 };
+            }
         });
         await Promise.resolve();
         await Promise.resolve();
@@ -59,9 +65,16 @@ export class WebAgentSidebarTest {
         (sidebar.element.querySelector('.is-agent') as HTMLElement)
             .dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
         expect(fixture.commands).toEqual(['/agents']);
-        (sidebar.element.querySelector('.agent-web-sidebar-action') as HTMLElement)
-            .dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 0));
+        const actionButtons = Array.from(sidebar.element.querySelectorAll('.agent-web-sidebar-action')) as HTMLElement[];
+        expect(actionButtons[0].querySelector('.agent-web-sidebar-count')?.textContent).toEqual('2');
+        expect(actionButtons[1].querySelector('.agent-web-sidebar-count')?.textContent).toEqual('3');
+        expect(fixture.countLoads).toEqual(1);
+
+        actionButtons[0].dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
         expect(fixture.commands).toEqual(['/agents', '/work']);
+        await new Promise(resolve => setTimeout(resolve, 0));
+        expect(fixture.countLoads).toEqual(2);
 
         (sidebar.element.querySelector('.agent-web-sidebar-collapse') as HTMLElement)
             .dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));

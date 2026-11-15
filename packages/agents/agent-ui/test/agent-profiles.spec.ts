@@ -72,6 +72,22 @@ export class AgentProfilesTest {
         expect(panel.agentBadgeLabel).toEqual('agent plan');
     }
 
+    @Test('meta rail shows the current attention count without touching the prompt')
+    attentionBadge() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.configure({ sessionId: 'session-1', workspace: '' });
+        state.inputPrompt = '>';
+        state.setPendingApprovals([{ id: 'a1', sessionId: 'session-1', toolName: 'terminal', input: {}, createdAt: 1 } as any]);
+        state.setPendingQuestion({
+            questionId: 'q1', sessionId: 'session-1', question: 'pick', options: ['a'],
+            severity: 'low', createdAt: 1, updatedAt: 1, status: 'pending'
+        });
+        state.setQueuedPromptCount(1);
+        const panel = new AgentConsoleInputPanelComponent(state);
+        expect(panel.attentionBadgeLabel).toEqual('! 3');
+        expect(panel.inputPrompt).toEqual('> · 1 queued');
+    }
+
     @Test('no-argument /agents opens the picker and switches the selection')
     async picker() {
         const host = createHost();

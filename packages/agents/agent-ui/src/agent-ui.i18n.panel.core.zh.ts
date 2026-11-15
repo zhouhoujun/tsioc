@@ -244,6 +244,7 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         statusUnknown: '未知'
     },
     input: {
+        attentionBadge: '! {count}',
         agentBadge: '代理 {name}',
         planNudge: '检测到规划意图 · 使用 /plan',
         planBadge: '计划',

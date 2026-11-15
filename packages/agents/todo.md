@@ -328,6 +328,7 @@
 > 完整分析、竞品对比与设计见 `packages/agents/agent-ui/docs/agent-management-plan.md`。
 
 - **现状判断**：单会话工作台成熟（timeline/approval/question/jobs/review/dialog routes/双端验证），但缺统一 agent 管理面；运行态数据（session roles/threads、delegation edges、background/scheduled tasks、coding-task checkpoints、archetype profiles）已具备，主要缺 UI 与跨会话聚合。
+- **P0 进展（2026-11）**：注意力徽标（当前会话 meta `! N` = approvals + questions + queued；sidebar Work/Inbox 跨会话计数，事件驱动刷新）。
 - **P0 进展（2026-11）**：Web sidebar v0（Agents/Sessions/Work/Inbox；当前 profile 与会话列表、点击切换/跳转、Work/Inbox 打开对应对话框；桌面 ≥1080px 常驻并把 console 右移，窄屏抽屉 + 折叠/展开按钮；事件驱动刷新，无轮询）。
 - **P0 进展（2026-11）**：`/inbox` 待办中心（approval/question/failed background task/failed|blocked coding task/queued prompt 聚合；按严重度+类型排序；Enter 跳转所属会话并聚焦审批；空态 toast；route `inbox`）。
 - **P0 进展（2026-11）**：`/work` 工作树（delegation tree + background tasks → 可导航行；状态符号、层级缩进、Enter 打开所属会话、任务行同样跳转）；route `work`（session group, select）。

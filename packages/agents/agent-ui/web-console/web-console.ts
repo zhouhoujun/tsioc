@@ -37,6 +37,7 @@ import { routeAgentConsoleWheel } from './wheel-routing';
 import { routeAgentConsoleHistoryKey } from './history-keys';
 import { bindContextMenuCopy } from './clipboard';
 import { createWebSidebar } from './sidebar';
+import { loadAgentConsoleAttentionCounts } from './counts';
 import { keepTranscriptSelection } from './selection-anchor';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -537,7 +538,13 @@ export async function mountAgentWebConsole(
             params.set('session', sessionId);
             params.delete('dialog');
             view.location.href = `${view.location.pathname}?${params.toString()}`;
-        }
+        },
+        loadCounts: () => loadAgentConsoleAttentionCounts({
+            request: (method, params) => rpc.request(method, params),
+            sessionId: () => state.sessionId,
+            pendingQuestions: () => state.pendingQuestionQueue?.length || 0,
+            queuedPrompts: () => Number(state.queuedPromptCount) || 0
+        })
     });
 
     // Deep link: `?dialog=model` opens the same dialog as `/dialog model`.

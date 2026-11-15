@@ -87,7 +87,7 @@ export * from './AgentConsoleResourcePanels';
                 <label class="wizard-hint" v-show="wizardHintLabel">{{wizardHintLabel}}</label>
             </div>
         </div>
-        <label class="input-meta"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens<span v-show="agentBadgeLabel"> · {{agentBadgeLabel}}</span><span v-show="inputBadgeLabel">{{inputBadgeLabel}}</span></label>
+        <label class="input-meta"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens<span v-show="agentBadgeLabel"> · {{agentBadgeLabel}}</span><span v-show="inputBadgeLabel">{{inputBadgeLabel}}</span><span v-show="attentionBadgeLabel" class="input-attention"> · {{attentionBadgeLabel}}</span></label>
     </div>
     `
 })
@@ -148,6 +148,15 @@ export class AgentConsoleInputPanelComponent {
 
     get inputPromptBase(): string { return this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || ''; }
     get inputBadgeLabel(): string { const badges = formatAgentConsoleInputBadges(this.state, this.translator); return badges.length ? ` · ${badges.join(' · ')}` : ''; }
+
+    /** Current-session attention count (approvals + questions + queue). */
+    get attentionBadgeLabel(): string {
+        const state = this.state;
+        const count = (state?.pendingApprovals?.length || 0)
+            + (state?.pendingQuestionQueue?.length || 0)
+            + (Number(state?.queuedPromptCount) || 0);
+        return count > 0 ? panelLabel(this.translator, 'input', 'attentionBadge', '! {count}', { count }) : '';
+    }
 
     /** Active agent profile in the meta rail (never inside the prompt). */
     get agentBadgeLabel(): string {

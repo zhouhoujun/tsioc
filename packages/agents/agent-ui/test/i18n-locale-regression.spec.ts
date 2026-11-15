@@ -186,7 +186,8 @@ export class AgentUiLocaleRegressionTest {
             'esc',
             'tasks.esc',
             'quality.recordTitle',
-            'harness.profileRow'
+            'harness.profileRow',
+            'input.attentionBadge'
         ]);
         const pairs: Array<[string, any, any]> = [
             ['panel', AGENT_UI_PANEL_EN, AGENT_UI_PANEL_ZH],
