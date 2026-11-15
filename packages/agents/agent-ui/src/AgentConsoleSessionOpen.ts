@@ -332,7 +332,10 @@ function scheduleOpenedSessionRefresh(
 export async function restoreSessionModes(
     host: {
         appRpc?: { request(method: string, params?: any, context?: any): Promise<any> } | null;
-        runtime: { isPlanMode(sessionId: string): boolean };
+        runtime: {
+            isPlanMode(sessionId: string): boolean;
+            getSessionArchetype?(sessionId: string): string;
+        };
         state: AgentConsoleSessionState;
         rpcRequestContext?(): any;
     },
@@ -351,6 +354,18 @@ export async function restoreSessionModes(
             planMode = host.runtime.isPlanMode(sessionId);
         }
         host.state.setPlanMode(planMode);
+        let archetype = host.runtime.getSessionArchetype?.(sessionId) || 'build';
+        if (host.appRpc) {
+            const result = await host.appRpc.request(
+                'session.archetype.get',
+                { sessionId },
+                host.rpcRequestContext?.()
+            ).catch(() => null);
+            if (result?.archetype) {
+                archetype = String(result.archetype);
+            }
+        }
+        host.state.setActiveArchetype(archetype);
     } catch {
         // runtime may not support plan mode queries — leave current value
     }

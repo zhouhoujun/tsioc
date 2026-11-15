@@ -99,6 +99,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/provider': handleProvider,
     '/init': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runInitCommand(a).then(() => true)),
     '/plan': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runPlanCommand(a).then(() => true)),
+    '/agents': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runArchetypeCommand(a).then(() => true)),
     '/archetype': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runArchetypeCommand(a).then(() => true)),
     '/vim': (ctx, args, meta) => ctx.runVimCommand(canonicalArgsOf(meta, args)).then(() => true),
     '/keymap': (ctx, args, meta) => ctx.runKeymapCommand(canonicalArgsOf(meta, args)).then(() => true),

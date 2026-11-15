@@ -66,6 +66,8 @@ export const AGENT_UI_NOTICE_ZH_PART3: NestedMessages = {
   reviewSummaryTitle: '评审摘要',
   reviewExportTitle: '评审导出',
   reviewRiskTitle: '评审风险',
+  agentsTitle: '代理',
+  agentsHint: '回车 切换 · esc 取消',
   worktreesTitle: '工作树',
   permissionsTitle: '权限',
   securityLevelCurrent: '安全级别：{level}',

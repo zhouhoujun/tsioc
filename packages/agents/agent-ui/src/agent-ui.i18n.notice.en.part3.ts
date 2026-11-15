@@ -66,6 +66,8 @@ export const AGENT_UI_NOTICE_EN_PART3: NestedMessages = {
   reviewSummaryTitle: 'Review summary',
   reviewExportTitle: 'Review export',
   reviewRiskTitle: 'Review risk',
+  agentsTitle: 'Agents',
+  agentsHint: 'enter switch · esc cancel',
   worktreesTitle: 'Worktrees',
   permissionsTitle: 'Permissions',
   securityLevelCurrent: 'security level: {level}',

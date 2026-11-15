@@ -87,7 +87,7 @@ export * from './AgentConsoleResourcePanels';
                 <label class="wizard-hint" v-show="wizardHintLabel">{{wizardHintLabel}}</label>
             </div>
         </div>
-        <label class="input-meta"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens<span v-show="inputBadgeLabel">{{inputBadgeLabel}}</span></label>
+        <label class="input-meta"><span v-show="metaPrefixLabel">{{metaPrefixLabel}} · </span>{{totalTokens | number-format}} tokens<span v-show="agentBadgeLabel"> · {{agentBadgeLabel}}</span><span v-show="inputBadgeLabel">{{inputBadgeLabel}}</span></label>
     </div>
     `
 })
@@ -148,6 +148,12 @@ export class AgentConsoleInputPanelComponent {
 
     get inputPromptBase(): string { return this.state?.inputPrompt || this.state?.consoleOptions?.inputPrompt || ''; }
     get inputBadgeLabel(): string { const badges = formatAgentConsoleInputBadges(this.state, this.translator); return badges.length ? ` · ${badges.join(' · ')}` : ''; }
+
+    /** Active agent profile in the meta rail (never inside the prompt). */
+    get agentBadgeLabel(): string {
+        const name = String(this.state?.activeArchetype || '').trim();
+        return name ? panelLabel(this.translator, 'input', 'agentBadge', 'agent {name}', { name }) : '';
+    }
     get inputPrompt(): string { return `${this.inputPromptBase}${this.inputBadgeLabel}`; }
 
     get inputPlaceholderLabel(): string {

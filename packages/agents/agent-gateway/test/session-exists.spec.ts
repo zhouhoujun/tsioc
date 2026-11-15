@@ -50,3 +50,30 @@ export class SessionExistsTest {
         expect(thrown).toBeTruthy();
     }
 }
+
+@Suite('agent profile catalogue RPC')
+export class AgentProfileCatalogueTest {
+    @Test('session.archetype.list returns profile metadata')
+    async listsProfiles() {
+        const runtime = {
+            listAgentProfiles: () => [
+                { name: 'build', mode: 'primary', description: 'Full execution' },
+                { name: 'review', mode: 'primary', readOnly: true, model: 'deepseek-v4' }
+            ]
+        };
+        const server = new AppRpcServer(
+            runtime as any,
+            new RandomUuidGenerator(),
+            { has: async () => true } as any,
+            {} as any,
+            {} as any,
+            { authorize: async () => 'anonymous' } as any,
+            { track: () => undefined } as any,
+            {} as any
+        );
+        const result = await (server as any).dispatch('session.archetype.list', {}, {});
+        expect(result.profiles.map((profile: any) => profile.name)).toEqual(['build', 'review']);
+        expect(result.profiles[1].readOnly).toEqual(true);
+        expect(result.profiles[1].model).toEqual('deepseek-v4');
+    }
+}

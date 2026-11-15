@@ -17,6 +17,7 @@ import { runCdCommandView } from './AgentConsoleCdCommand';
 import { keymapCommandHost, policyCommandHost, rpcCommandHost } from './AgentConsoleHostFactories';
 import type { AgentConsoleKeymapContext } from './AgentConsoleKeymap';
 import type { AgentConsoleSshHost } from './AgentConsoleSshCommands';
+import { runAgentsCommandView, type AgentProfileHost } from './AgentConsoleAgentProfiles';
 
 /** Session policy, keymap, SSH and workspace navigation commands. */
 export abstract class AgentConsolePolicyHost extends AgentConsoleModelHost {
@@ -43,24 +44,15 @@ export abstract class AgentConsolePolicyHost extends AgentConsoleModelHost {
     }
 
     protected async runArchetypeCommand(args: string): Promise<void> {
-        const sessionId = this.state.sessionId;
-        const name = String(args || '').trim().toLowerCase();
-        try {
-            if (!name) {
-                const current = this.runtime.getSessionArchetype(sessionId);
-                const available = this.runtime.listArchetypes().join(', ');
-                this.notify(formatAgentUiNotice(this.translator, 'sessionArchetypeAvailable', { current: current, available: available }));
-                return;
-            }
-            if (this.appRpc) {
-                await this.appRpc.request('session.archetype.set', { sessionId, archetype: name }, this.rpcRequestContext());
-            } else {
-                this.runtime.setSessionArchetype(sessionId, name);
-            }
-            this.notify(formatAgentUiNotice(this.translator, 'sessionSwitchedArchetype', { sessionId: sessionId, name: name }));
-        } catch (error) {
-            this.notify(formatAgentUiNotice(this.translator, 'failedSetArchetype', { error: error instanceof Error ? error.message : String(error) }));
-        }
+        const host: AgentProfileHost = {
+            translator: this.translator,
+            state: this.state,
+            appRpc: this.appRpc,
+            runtime: this.runtime,
+            notify: (message: string) => this.notify(message),
+            rpcRequestContext: () => this.rpcRequestContext()
+        };
+        return runAgentsCommandView(host, args);
     }
 
     protected async runDelegationModeCommand(args: string): Promise<void> {

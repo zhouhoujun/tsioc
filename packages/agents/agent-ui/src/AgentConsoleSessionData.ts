@@ -94,6 +94,7 @@ export class AgentConsoleSessionData {
     modelProfile = '';
     oneShotModelProfile = '';
     planMode = false;
+    activeArchetype = 'build';
     yoloMode = false; securityLevel: import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel | '' = ''; worktreeCommand?: (request: import('./AgentConsoleWorktreeCommands').AgentConsoleWorktreeRequest) => Promise<import('./AgentConsoleWorktreeCommands').AgentConsoleWorktreeResult>; textOverlayBack?: () => void; restartAction?: (sessionId: string) => void; pairAction?: () => Promise<{ url?: string; urls?: string[]; qr?: string; code?: string; expiresAt?: number } | null>;
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];

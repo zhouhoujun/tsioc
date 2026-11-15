@@ -225,6 +225,13 @@ interface SessionCheckpoint {
 
 **目标**：不改运行时语义，先把 profile 与运行态聚合展示出来。
 
+**已完成（2026-11 首片）**
+- `AgentProfile` 视图：`/agents`（route 可后续登记）列出 build/plan/review 与自定义 archetype（mode/model/description、当前 `●` 标记），Enter 切换；`/agents <name>` 直切；`/archetype` 保留别名。
+- `session.archetype.list` RPC（gateway）返回 profile 元数据；不可用时回退 runtime `listArchetypes()`。
+- composer **meta 行**增加 `agent <name>` 徽标（不塞进 prompt，保持 plan/vim/queued 徽标现状）；session 打开/切换/重载通过 `session.archetype.get` 恢复。
+- 验证：JSDOM/单测 + 真实 Chrome（`/agents` 选择 plan 后徽标更新，刷新后保持 `agent plan`）。
+
+
 1. **Agents 面（TUI + Web）**
    - 扩展 archetype 为 AgentProfile（新增可选字段，向后兼容）。
    - `/agents` 选择器（dialog route `agents`，kind=select）：列表显示 name/mode/model/permissions 摘要/来源；Enter 切换当前 session；`d` 设为默认；`/agents <id>` 直接切换。

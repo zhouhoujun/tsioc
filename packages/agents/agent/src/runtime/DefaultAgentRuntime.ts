@@ -2136,6 +2136,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return listArchetypes(this.options.archetypes).map(archetype => archetype.name);
     }
 
+    listAgentProfiles(): AgentArchetype[] {
+        return listArchetypes(this.options.archetypes);
+    }
+
     protected resolveArchetypeConfig(sessionId: string): AgentArchetype | undefined {
         return resolveArchetype(this.options.archetypes, this.getSessionArchetype(sessionId));
     }

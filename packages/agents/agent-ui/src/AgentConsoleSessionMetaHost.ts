@@ -160,5 +160,6 @@ export abstract class AgentConsoleSessionMetaHost extends AgentConsoleSessionInp
     }
 
     setPlanMode(enabled: boolean): void { this.planMode = enabled; }
+    setActiveArchetype(name: string): void { this.activeArchetype = String(name || '').trim() || 'build'; }
     setYoloMode(enabled: boolean): void { this.yoloMode = enabled; }
 }

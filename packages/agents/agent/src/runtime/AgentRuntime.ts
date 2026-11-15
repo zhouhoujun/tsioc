@@ -9,6 +9,7 @@ import { StreamChunk } from '../model/StreamChunk';
 import { SynthesisOptions, SynthesisReport } from '../context/AgentContextManager';
 import { FileSnapshot } from '../harness/FileSnapshotStore';
 import type { AgentModelOptions } from '../model/ModelProviderOptions';
+import { AgentArchetype, listArchetypes } from '../archetype/AgentArchetype';
 
 export interface CancelTurnResult {
     cancelled: boolean;
@@ -237,6 +238,14 @@ export abstract class AgentRuntime {
      */
     listArchetypes(): string[] {
         return ['build', 'plan', 'review'];
+    }
+
+    /**
+     * Full agent profile definitions (built-ins plus configured archetypes).
+     * Override in runtimes that own a configured archetype pool.
+     */
+    listAgentProfiles(): AgentArchetype[] {
+        return listArchetypes();
     }
 
     /**

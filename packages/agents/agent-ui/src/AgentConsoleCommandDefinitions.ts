@@ -40,7 +40,8 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/undo', description: 'revert the last file change', group: 'core' },
     { name: '/redo', description: 're-apply the last undone file change', group: 'core' },
     { name: '/copy', description: 'copy reply: /copy [input|workspace|session|model], ctrl+x shift+c copies the draft', group: 'core', hidden: true, args: [{ name: 'target', type: 'enum', values: ['input', 'workspace', 'session', 'model'] }] },
-    { name: '/archetype', description: 'switch session archetype: /archetype [build|plan|review|name]', group: 'core', args: [{ name: 'name' }] },
+    { name: '/agents', description: 'choose or switch the session agent profile', group: 'core', args: [{ name: 'name' }] },
+    { name: '/archetype', description: 'alias for /agents: switch the session agent profile', group: 'core', args: [{ name: 'name' }] },
     { name: '/plan', description: 'toggle read-only plan mode (write tools denied)', group: 'core', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', '1', '0', 'true', 'false'] }] },
 
     { name: '/sessions', description: 'browse or search sessions (type to filter)', group: 'session' },

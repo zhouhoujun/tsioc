@@ -234,6 +234,7 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         statusUnknown: 'unknown'
     },
     input: {
+        agentBadge: 'agent {name}',
         planNudge: 'Planning intent detected · use /plan',
         planBadge: 'plan',
         yoloBadge: 'auto-approve',

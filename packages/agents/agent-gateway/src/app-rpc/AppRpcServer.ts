@@ -192,6 +192,7 @@ export class AppRpcServer {
                         'session.plan_mode.get',
                         'session.archetype.set',
                         'session.archetype.get',
+                        'session.archetype.list',
                         'session.sandbox_mode.set',
                         'session.sandbox_mode.get', 'settings.ui.set', 'settings.ui.get', 'settings.store.get', 'settings.store.set',
                         'session.delegation_mode.set',
@@ -354,6 +355,8 @@ export class AppRpcServer {
                 return this.setSessionArchetype(params, context);
             case 'session.archetype.get':
                 return this.getSessionArchetype(params, context);
+            case 'session.archetype.list':
+                return this.listSessionArchetypes();
             case 'session.sandbox_mode.set':
                 return this.setSessionSandboxMode(params, context);
             case 'session.sandbox_mode.get':
@@ -1182,6 +1185,20 @@ export class AppRpcServer {
         const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
         return { sessionId, enabled: this.runtime.isPlanMode(sessionId) };
+    }
+
+    private listSessionArchetypes() {
+        const profiles = (this.runtime as any).listAgentProfiles?.() || [];
+        return {
+            profiles: profiles.map((profile: any) => ({
+                name: String(profile?.name || ''),
+                description: profile?.description ? String(profile.description) : undefined,
+                mode: profile?.mode ? String(profile.mode) : undefined,
+                model: profile?.model ? String(profile.model) : undefined,
+                readOnly: profile?.readOnly === true,
+                permissions: profile?.permissions || undefined
+            })).filter((profile: any) => !!profile.name)
+        };
     }
 
     private async setSessionArchetype(params: any, context: AppRpcRequestContext): Promise<any> {

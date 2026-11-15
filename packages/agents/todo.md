@@ -328,6 +328,7 @@
 > 完整分析、竞品对比与设计见 `packages/agents/agent-ui/docs/agent-management-plan.md`。
 
 - **现状判断**：单会话工作台成熟（timeline/approval/question/jobs/review/dialog routes/双端验证），但缺统一 agent 管理面；运行态数据（session roles/threads、delegation edges、background/scheduled tasks、coding-task checkpoints、archetype profiles）已具备，主要缺 UI 与跨会话聚合。
+- **P0 进展（2026-11）**：`/agents` 选择器（当前标记、mode/model/description、type-to-filter、Enter 切换、`/agents <name>` 直切）+ composer meta 行 `agent <name>` 徽标（不进入 prompt；plan 徽标保持原语义）+ `session.archetype.list` RPC + 启动/切会话/重载恢复 activeArchetype；`/archetype` 保留别名。
 - **P0 看得见**：扩展 `AgentArchetype` 为 AgentProfile（mode/model/effort/permissions/skills/display/source）；`/agents` 选择器 + composer `agent:` 徽标 + Shift+Tab 循环；`AgentConsoleWorkGraph` 投影 sessions/delegation/background tasks/scheduled jobs → `/work` 只读树；Inbox v1（approval/question/failed/blocked/idle-report/queued）跨 tab 跳转；Web sidebar v0（Agents/Sessions/Work/Inbox）。
 - **P1 管得住**：background worker spawn/attach/cancel/retry + worktree 选项 + idle report（`task_budget`/`level_limit` 默认关闭）；Permissions v2（有序 `{action,resource,effect}`、last-match-wins、per-session mode、durable allow 可审阅/撤销、deny 不可覆盖、解释行）；session checkpoints + `/rewind` + Esc Esc。
 - **P2 协同**：队列/steer 管理面；cross-session messaging / agent teams（opt-in）；Remote Agent Center（serve/attach 聚合，先只读）；verbosity low/medium/high + 活动行折叠；artifacts。
