@@ -2,7 +2,7 @@ import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlers';
 import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 
-export type AgentConsoleInboxKind = 'approval' | 'question' | 'task' | 'coding-task' | 'queued';
+export type AgentConsoleInboxKind = 'approval' | 'question' | 'task' | 'coding-task' | 'idle-report' | 'queued';
 
 export interface AgentConsoleInboxItem {
     id: string;
@@ -22,6 +22,8 @@ export interface AgentConsoleInboxInput {
     backgroundTasks?: Array<Record<string, any>>;
     codingTasks?: Array<Record<string, any>>;
     queuedPromptCount?: number;
+    /** Clock for the recent idle-report window (tests inject it). */
+    now?: number;
 }
 
 const KIND_ORDER: Record<AgentConsoleInboxKind, number> = {
@@ -29,7 +31,8 @@ const KIND_ORDER: Record<AgentConsoleInboxKind, number> = {
     question: 1,
     task: 2,
     'coding-task': 3,
-    queued: 4
+    'idle-report': 4,
+    queued: 5
 };
 const SEVERITY_ORDER: Record<string, number> = { error: 0, warn: 1, info: 2 };
 
@@ -69,16 +72,31 @@ export function buildInboxItems(input: AgentConsoleInboxInput): AgentConsoleInbo
             severity: question?.severity === 'high' ? 'error' : 'warn'
         });
     }
+    const now = Number(input.now) || Date.now();
+    const idleWindowMs = 15 * 60 * 1000;
     for (const task of input.backgroundTasks || []) {
         const status = String(task?.status || '').toLowerCase();
-        if (status !== 'failed') continue;
+        if (status === 'failed') {
+            items.push({
+                id: `task:${String(task?.id || '')}`,
+                kind: 'task',
+                sessionId: String(task?.sessionId || input.currentSessionId),
+                title: String(task?.goal || ''),
+                detail: String(task?.error || ''),
+                severity: 'error'
+            });
+            continue;
+        }
+        if (status !== 'completed') continue;
+        const finishedAt = Number(task?.finishedAt || task?.updatedAt || 0);
+        if (!finishedAt || now - finishedAt > idleWindowMs) continue;
         items.push({
-            id: `task:${String(task?.id || '')}`,
-            kind: 'task',
+            id: `idle-report:${String(task?.id || '')}`,
+            kind: 'idle-report',
             sessionId: String(task?.sessionId || input.currentSessionId),
             title: String(task?.goal || ''),
-            detail: String(task?.error || ''),
-            severity: 'error'
+            detail: String(task?.result?.summary || task?.result?.report || task?.result?.output || ''),
+            severity: 'info'
         });
     }
     for (const task of input.codingTasks || []) {
@@ -156,6 +174,7 @@ export async function runInboxCommandView(host: AgentConsoleInboxHost): Promise<
             question: ['inboxKindQuestion', 'question'],
             task: ['inboxKindTask', 'task'],
             'coding-task': ['inboxKindTask', 'task'],
+            'idle-report': ['inboxKindReport', 'report'],
             queued: ['inboxKindQueued', 'queued']
         };
         const [key, fallback] = map[kind];

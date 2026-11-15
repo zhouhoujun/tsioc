@@ -36,6 +36,24 @@ export class InboxTest {
         expect(items[4].title).toEqual('2');
     }
 
+    @Test('recent completed workers surface as idle reports, old ones do not')
+    idleReports() {
+        const now = 1_000_000;
+        const items = buildInboxItems({
+            currentSessionId: 'root',
+            now,
+            backgroundTasks: [
+                { id: 'recent', sessionId: 'root', status: 'completed', goal: 'scan', finishedAt: now - 60_000, result: { summary: 'found 3 issues' } },
+                { id: 'old', sessionId: 'root', status: 'completed', goal: 'old scan', finishedAt: now - 60 * 60_000 },
+                { id: 'running', sessionId: 'root', status: 'running', goal: 'busy' }
+            ]
+        });
+        expect(items.map(item => item.kind)).toEqual(['idle-report']);
+        expect(items[0].id).toEqual('idle-report:recent');
+        expect(items[0].severity).toEqual('info');
+        expect(items[0].detail).toEqual('found 3 issues');
+    }
+
     @Test('/inbox jumps to the owning session and focuses its approval')
     async opensApproval() {
         const state = createState();

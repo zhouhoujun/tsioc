@@ -77,6 +77,7 @@ export const AGENT_UI_NOTICE_EN_PART3: NestedMessages = {
   inboxKindApproval: 'approval',
   inboxKindQuestion: 'question',
   inboxKindTask: 'task',
+  inboxKindReport: 'report',
   inboxKindQueued: 'queued',
   workTaskTitle: 'Background task',
   workOpenSession: 'Open session',

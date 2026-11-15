@@ -77,6 +77,7 @@ export const AGENT_UI_NOTICE_ZH_PART3: NestedMessages = {
   inboxKindApproval: '审批',
   inboxKindQuestion: '问答',
   inboxKindTask: '任务',
+  inboxKindReport: '报告',
   inboxKindQueued: '排队',
   workTaskTitle: '后台任务',
   workOpenSession: '打开会话',
