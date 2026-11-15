@@ -62,6 +62,7 @@ export const AGENT_UI_NOTICE_EN_PART3: NestedMessages = {
   dialogRoutesTitle: 'Dialog routes',
   dialogRoutesHint: 'enter open · esc close',
   dialogRouteUnknown: 'Unknown dialog route: {route}',
+  worktreesTitle: 'Worktrees',
   permissionsTitle: 'Permissions',
   securityLevelCurrent: 'security level: {level}',
   helpGroupHint: 'up/down move   enter open group   esc close',

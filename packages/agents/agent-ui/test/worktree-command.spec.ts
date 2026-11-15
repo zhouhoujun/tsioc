@@ -4,11 +4,16 @@ import { parseWorktreeArgs, runWorktreeCommand } from '../src/AgentConsoleWorktr
 
 function context(result: any): any {
     const notices: string[] = [];
+    const overlays: Array<{ title: string; lines: string[] }> = [];
     return {
         notices,
+        overlays,
         translator: null,
         notify: (message: string) => notices.push(message),
-        state: { worktreeCommand: async () => result }
+        state: {
+            worktreeCommand: async () => result,
+            openTextOverlay: (title: string, lines: string[]) => overlays.push({ title, lines })
+        }
     };
 }
 
@@ -30,7 +35,8 @@ export class WorktreeCommandTest {
 
         const listed = context({ action: 'list', items: [{ path: '/ws/.worktrees/a', branch: 'tsdi/a' }] });
         await runWorktreeCommand(listed, 'list');
-        expect(listed.notices[0]).toContain('tsdi/a');
+        expect(listed.overlays[0].title).toEqual('Worktrees');
+        expect(listed.overlays[0].lines.join('\n')).toContain('tsdi/a');
 
         const merged = context({ action: 'merge' });
         await runWorktreeCommand(merged, 'merge a');

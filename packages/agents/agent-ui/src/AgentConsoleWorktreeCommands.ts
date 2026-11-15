@@ -43,7 +43,13 @@ export async function runWorktreeCommand(ctx: CommandHandlerContext, args: strin
             if (!result.items?.length) {
                 ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeListEmpty'));
             } else {
-                ctx.notify(result.items.map(item => `${item.path}${item.branch ? `  [${item.branch}]` : ''}`).join('\n'));
+                const lines = result.items.map(item => `${item.path}${item.branch ? `  [${item.branch}]` : ''}`);
+                // A worktree list is a read-only dialog, not a generic notice.
+                ctx.state.openTextOverlay(
+                    formatAgentUiNotice(ctx.translator, 'worktreesTitle'),
+                    lines,
+                    Math.min(24, lines.length)
+                );
             }
         } else if (result.action === 'create') {
             ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeCreated', { path: result.path ?? '', branch: result.branch ?? '' }));

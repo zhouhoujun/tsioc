@@ -22,7 +22,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 | `/apps` | select/text | Esc/q/✕ | list | select card | same |
 | `/ssh` | select/text | Esc/q/✕ | list | select card | same |
 | `/permissions` | select + text | Esc/q/✕ | level list | select card | fixed: capability report uses a dedicated `Permissions` dialog |
-| `/worktree` | none (notify) | - | - | - | no dialog at all |
+| `/worktree` | text dialog (list) | Esc/q/✕ | - | text card | fixed: `list` opens a titled `Worktrees` dialog instead of a generic notice |
 | `/` menu | suggestion select | Esc/Tab/Enter | prefix filter | composer-attached | title/hint intentionally absent |
 | @mention | suggestion select | Esc/Tab/Enter | file filter | composer-attached | shares suggestion shell |
 | approval prompt | custom panel | `a/d/A/y`, Esc/✕ | list | custom panel | not on Dialog Stack |

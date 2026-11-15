@@ -62,6 +62,7 @@ export const AGENT_UI_NOTICE_ZH_PART3: NestedMessages = {
   dialogRoutesTitle: '对话框路由',
   dialogRoutesHint: '回车 打开 · esc 关闭',
   dialogRouteUnknown: '未知对话框路由：{route}',
+  worktreesTitle: '工作树',
   permissionsTitle: '权限',
   securityLevelCurrent: '安全级别：{level}',
   helpGroupHint: '上/下 移动   回车 打开分组   esc 关闭',
