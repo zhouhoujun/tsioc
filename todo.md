@@ -4191,3 +4191,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - microservices/admin 真实 Chrome：同样的自动补全、lint、select 正常；
   - preview EXIT 0；activities 353（全量重跑通过；此前一次 `ForEachActivity` 并行计时用例在 115ms > 100ms 阈值失败，单 spec 重跑 56ms 通过，为既有 timing 波动）；microservices/admin 63；
   - initial 740.4 KiB（gzip 194.3），lazy 774.1 KiB（gzip 259.7），budget 通过；`tsc` 0；`check-source-size`/`git diff --check` OK。
+
+## 2026-11-15 状态栏独立底部与 bottom layout 默认折叠
+- **布局**：`workflow-statusbar` 从 `workspace-bottom` 移出，作为 `workflow-designer-preview` 的固定底部行；`workspace-layout` 的 `bottomCollapsed` 默认 `true`。
+- **菜单动作联动**：`toggle-logs`（工具栏 Logs / 全局菜单 Logs）打开时调用 `workspaceLayout.expandPane('bottom')`，自动展开底部布局并显示执行日志；关闭日志不清空底部，可继续查看运行历史。
+- **实现细节**：`onAfterViewInit` 显式 `collapsePane('bottom')`，避免属性绑定初始化顺序导致首次渲染展开；`@ViewChild('workspaceLayout')` 用于菜单动作展开。
+- **验证**：
+  - activities workflow-designer UI 54 passing（新增 bottom 默认 hidden、状态栏在 workspace-bottom 之外、点击 Logs 后 bottom 展开的断言）；
+  - workflow-admin preview EXIT 0：`before.bottomHidden=true`、`statusbarOutsideBottom=true`、`statusbarVisible=true`、点击 Logs 后 `bottomExpanded=true`、日志 27 行；
+  - microservices/admin 63 passing；`tsc` 0；`check-source-size`/`git diff --check` OK。

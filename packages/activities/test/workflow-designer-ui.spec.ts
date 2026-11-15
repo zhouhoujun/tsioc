@@ -61,7 +61,9 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workspace-layout-left workflow-palette')).toBeTruthy();
         expect(root.querySelector('.workspace-layout-center workflow-canvas')).toBeTruthy();
         expect(root.querySelector('.workspace-layout-right workflow-inspector')).toBeTruthy();
-        expect(root.querySelector('.workspace-layout-bottom .workflow-statusbar')).toBeTruthy();
+        expect(root.querySelector('.workspace-layout-bottom .workflow-statusbar')).toBeFalsy();
+        expect(root.querySelector('.workflow-statusbar')?.parentElement?.className).toContain('workflow-designer-preview');
+        expect(root.querySelector('.workspace-layout-bottom')?.hasAttribute('hidden')).toBe(true);
         expect(root.querySelectorAll('.workspace-pane').length).toBe(4);
         expect(root.querySelectorAll('.workspace-splitter').length).toBe(3);
     });
@@ -895,6 +897,7 @@ describe('Workflow Designer UI', () => {
         expect(result.success).toBe(true);
         ref.instance.toolbarAction('toggle-logs');
         await flush();
+        expect(root.querySelector('.workspace-layout-bottom')?.hasAttribute('hidden')).toBe(false);
         const rows = root.querySelectorAll('.workflow-run-log-row');
         expect(rows.length).toBeGreaterThan(0);
         expect(root.querySelector('.workflow-run-log').textContent).toContain('task_1');

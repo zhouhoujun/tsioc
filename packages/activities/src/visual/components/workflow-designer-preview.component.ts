@@ -1,4 +1,4 @@
-import { AfterViewInit, Attribute, Component, ElementRef, NoReactive, OnDestroy, noReact } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, ElementRef, NoReactive, OnDestroy, ViewChild, noReact } from '@tsdi/components';
 import {
     markElementRefRaw,
 } from '@tsdi/components/common';
@@ -11,6 +11,7 @@ import {
 import { installTabBarStyles } from '@tsdi/components/common/tab-bar';
 import {
     installWorkspaceLayoutStyles,
+    WorkspaceLayoutComponent
 } from '@tsdi/components/common/layout';
 import { applyThemeToDocument, isThemeName, ThemeName } from '@tsdi/components/common';
 import { DOCUMENT } from '@tsdi/common';
@@ -55,7 +56,7 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             :theme="themeName" :themeChangeAction="themeSelectAction"
             :scheduleToggleAction="toggleSchedule"
             :hiddenActions="hiddenActions"></workflow-toolbar>
-        <workspace-layout class="workflow-workspace">
+        <workspace-layout #workspaceLayout class="workflow-workspace" [bottomCollapsed]="true">
             <workspace-left>
                 <workflow-palette :groups="paletteGroups" :locale="locale"
                     :addAction="addFromPalette" :dragStartAction="paletteDragStart"></workflow-palette>
@@ -72,20 +73,20 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             <workspace-bottom>
                 <workflow-run-history v-if="showRunHistory" :items="runHistory" :locale="locale"
                     :selectAction="selectRun"></workflow-run-history>
-                <div class="workflow-statusbar" v-if="showStatusbar">
-                    <span class="workflow-status-message">{{statusModel.message}}</span>
-                    <span class="workflow-status-error" v-if="statusModel.error">{{statusModel.error}}</span>
-                    <span class="workflow-status-spacer"></span>
-                    <span class="workflow-save-state" [class]="saveStateClass">{{saveStateLabel}}</span>
-                    <span class="workflow-status-selected">{{statusModel.selectedLabel}}</span>
-                    <span>{{statusModel.nodeCount}} {{nodeWord}}</span>
-                    <span>{{statusModel.executionLabel}}</span>
-                    <span>{{statusModel.zoomLabel}}</span>
-                </div>
                 <workflow-run-log v-if="showRunLogs" :items="runLogs" :visible="showLogs" :locale="locale"
                     :closeAction="closeLogs"></workflow-run-log>
             </workspace-bottom>
         </workspace-layout>
+        <div class="workflow-statusbar" v-if="showStatusbar">
+            <span class="workflow-status-message">{{statusModel.message}}</span>
+            <span class="workflow-status-error" v-if="statusModel.error">{{statusModel.error}}</span>
+            <span class="workflow-status-spacer"></span>
+            <span class="workflow-save-state" [class]="saveStateClass">{{saveStateLabel}}</span>
+            <span class="workflow-status-selected">{{statusModel.selectedLabel}}</span>
+            <span>{{statusModel.nodeCount}} {{nodeWord}}</span>
+            <span>{{statusModel.executionLabel}}</span>
+            <span>{{statusModel.zoomLabel}}</span>
+        </div>
         <div class="workflow-node-menu-backdrop" v-if="showNodeMenu" @mousedown="closeNodeMenu"
             @contextmenu="closeNodeMenu"></div>
         <div class="workflow-node-menu" v-if="showNodeMenu" [style]="nodeMenuStyle">
@@ -148,6 +149,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     nodeMenuY = 0;
     showJson = false;
     showLogs = false;
+    @ViewChild('workspaceLayout', WorkspaceLayoutComponent) workspaceLayout?: WorkspaceLayoutComponent;
     jsonText = '';
     jsonError = '';
     private selfRef?: WorkflowDesignerPreviewComponent;
@@ -229,6 +231,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             const doc = this.documentRef || (globalThis as { document?: Document }).document;
             applyThemeToDocument(doc, this.themeName);
         }
+        // The bottom pane is a secondary surface: keep it collapsed until a
+        // menu action (Logs) explicitly reveals it.
+        this.workspaceLayout?.collapsePane?.('bottom');
     }
 
     onInit(): void {
@@ -751,6 +756,12 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         self.notifyChange();
     };
 
+    /** Expand the bottom pane when a menu action needs to show its content. */
+    protected expandBottomPane(): void {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.workspaceLayout?.expandPane?.('bottom');
+    }
+
     readonly handleToolbarAction = (action: string): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
         switch (action) {
@@ -792,6 +803,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 break;
             case 'toggle-logs':
                 self.showLogs = !self.showLogs;
+                if (self.showLogs) {
+                    self.expandBottomPane();
+                }
                 break;
             case 'save':
                 self.hostAction?.('save');

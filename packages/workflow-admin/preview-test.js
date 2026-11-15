@@ -108,7 +108,10 @@ function startDesignerServer(port) {
                 status: document.querySelector('.workflow-toolbar-status')?.textContent,
                 edgeVisible: !!box && (box.width > 0 || box.height > 0),
                 edgeNamespace: edge?.namespaceURI,
-                panesScrollable: paneOverflow.every(value => value === 'auto' || value === 'scroll')
+                panesScrollable: paneOverflow.every(value => value === 'auto' || value === 'scroll'),
+                bottomHidden: document.querySelector('.workspace-layout-bottom')?.hasAttribute('hidden') === true,
+                statusbarOutsideBottom: !document.querySelector('.workspace-layout-bottom .workflow-statusbar'),
+                statusbarVisible: !!document.querySelector('.workflow-statusbar')
             };
         });
         const initialJsBytes = await page.evaluate(() => performance.getEntriesByType('resource')
@@ -434,6 +437,9 @@ function startDesignerServer(port) {
         await page.locator('.workflow-toolbar .workflow-btn', { hasText: 'Logs' }).first().click();
         await page.waitForSelector('.workflow-run-log-row', { timeout: 5000 });
         const logs = await page.locator('.workflow-run-log-row').count();
+        const bottomExpanded = await page.evaluate(() =>
+            !document.querySelector('.workspace-layout-bottom')?.hasAttribute('hidden')
+        );
 
         const after = await page.evaluate(() => ({
             completed: document.querySelector('.workflow-toolbar-status')?.textContent,
@@ -619,10 +625,10 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, bottomExpanded, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > 780_000 || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
-            || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20
+            || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
             || paletteFiltered < 1 || paletteFiltered >= 54 || paletteRestored !== 54
