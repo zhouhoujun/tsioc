@@ -59,6 +59,7 @@ export const AGENT_UI_NOTICE_ZH_PART3: NestedMessages = {
   securityLevelFull: '完全访问 — 不询问且无沙箱；请谨慎使用。',
   securityLevelUsage: '用法：/permissions level [read-only|ask|auto|full]',
   securityLevelSet: '安全级别：{level}',
+  permissionsTitle: '权限',
   securityLevelCurrent: '安全级别：{level}',
   helpGroupHint: '上/下 移动   回车 打开分组   esc 关闭',
   helpGroupCount: '{count} 个命令',

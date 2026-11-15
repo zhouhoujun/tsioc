@@ -21,7 +21,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 | `/plugins` | select/text | Esc/q/✕ | list | select card | same |
 | `/apps` | select/text | Esc/q/✕ | list | select card | same |
 | `/ssh` | select/text | Esc/q/✕ | list | select card | same |
-| `/permissions` | select + text | Esc/q/✕ | level list | select card | security-level copy mixed with dialog hints |
+| `/permissions` | select + text | Esc/q/✕ | level list | select card | fixed: capability report uses a dedicated `Permissions` dialog |
 | `/worktree` | none (notify) | - | - | - | no dialog at all |
 | `/` menu | suggestion select | Esc/Tab/Enter | prefix filter | composer-attached | title/hint intentionally absent |
 | @mention | suggestion select | Esc/Tab/Enter | file filter | composer-attached | shares suggestion shell |

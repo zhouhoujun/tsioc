@@ -59,6 +59,7 @@ export const AGENT_UI_NOTICE_EN_PART3: NestedMessages = {
   securityLevelFull: 'Full Access — no approvals and no sandbox; use with care.',
   securityLevelUsage: 'Usage: /permissions level [read-only|ask|auto|full]',
   securityLevelSet: 'Security level: {level}',
+  permissionsTitle: 'Permissions',
   securityLevelCurrent: 'security level: {level}',
   helpGroupHint: 'up/down move   enter open group   esc close',
   helpGroupCount: '{count} commands',

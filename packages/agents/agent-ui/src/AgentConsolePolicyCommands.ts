@@ -189,7 +189,13 @@ export async function showSandboxCapabilities(host: PolicyCommandHost): Promise<
     if (proxy?.required) {
         lines.push(formatAgentUiNotice(host.translator, proxy.http || proxy.https ? 'sandboxProxyConfigured' : 'sandboxProxyMissing'));
     }
-    host.notify(lines.join('\n'));
+    // A multi-line capability report is a read-only dialog, not a generic notice.
+    const overlay = (host.state as any).openTextOverlay;
+    if (typeof overlay === 'function') {
+        overlay.call(host.state, formatAgentUiNotice(host.translator, 'permissionsTitle'), lines, Math.min(24, lines.length));
+    } else {
+        host.notify(lines.join('\n'));
+    }
 }
 
 export async function runGoalCommand(host: PolicyCommandHost, args: string): Promise<void> {
