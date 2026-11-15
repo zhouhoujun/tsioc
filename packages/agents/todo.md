@@ -334,6 +334,7 @@
 - **P0 进展（2026-11）**：`/work` 工作树（delegation tree + background tasks → 可导航行；状态符号、层级缩进、Enter 打开所属会话、任务行同样跳转）；route `work`（session group, select）。
 - **P0 进展（2026-11）**：`/agents` 选择器（当前标记、mode/model/description、type-to-filter、Enter 切换、`/agents <name>` 直切）+ composer meta 行 `agent <name>` 徽标（不进入 prompt；plan 徽标保持原语义）+ `session.archetype.list` RPC + 启动/切会话/重载恢复 activeArchetype；`/archetype` 保留别名。
 - **P0 看得见**：扩展 `AgentArchetype` 为 AgentProfile（mode/model/effort/permissions/skills/display/source）；`/agents` 选择器 + composer `agent:` 徽标 + Shift+Tab 循环；`AgentConsoleWorkGraph` 投影 sessions/delegation/background tasks/scheduled jobs → `/work` 只读树；Inbox v1（approval/question/failed/blocked/idle-report/queued）跨 tab 跳转；Web sidebar v0（Agents/Sessions/Work/Inbox）。
+- **P1 进展（2026-11）**：`/permissions inspect [tool]` 权限解释（profile/level/sandbox/plan/readOnly/allow/deny/writePaths + 工具判定与原因）；纯函数求值器 `explainAgentConsolePermission`（deny > readOnly > allow-list > level > default）。
 - **P1 进展（2026-11）**：`/rewind` 检查点列表（`session.file_snapshot.list` 元数据，不含文件内容）+ 选择后按深度调用 `session.undo_file` 回退；`/redo` 语义不变；route `rewind`。
 - **P1 进展（2026-11）**：`/work spawn [--profile <name>] <goal>`（经 `spawn_agent` 后台 worker；`tools.activate` + `tools.invoke`），失败任务行提供 Retry；`/work` 接收 spawn 参数。
 - **P1 进展（2026-11）**：`/work` 任务行动作菜单（打开会话 / 取消后台任务），取消经 `background_task.cancel`；spawn/retry 仍需后端 worker RPC。

@@ -1,5 +1,6 @@
 import { AgentDelegationMode, SandboxMode, describeSandboxCapabilities, detectSandboxExecTool } from '@tsdi/agent';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { explainAgentConsolePermission } from './AgentConsolePermissionInspector';
 
 export type AgentConsoleSecurityLevel = 'read-only' | 'ask' | 'auto' | 'full';
 
@@ -114,10 +115,86 @@ export async function runDelegationModeCommand(host: PolicyCommandHost, args: st
     }
 }
 
+async function showPermissionInspector(host: PolicyCommandHost, tool?: string): Promise<void> {
+    const state = host.state;
+    const sessionId = String(state.sessionId || '');
+    let profile: any;
+    if (host.appRpc) {
+        const result = await host.appRpc.request('session.archetype.list', {}, host.rpcRequestContext()).catch(() => null);
+        const profiles = Array.isArray(result?.profiles) ? result.profiles : [];
+        const active = state.activeArchetype || host.runtime?.getSessionArchetype?.(sessionId) || 'build';
+        profile = profiles.find((item: any) => item?.name === active);
+    }
+    if (!profile) {
+        const profiles = host.runtime?.listAgentProfiles?.() || [];
+        const active = state.activeArchetype || host.runtime?.getSessionArchetype?.(sessionId) || 'build';
+        profile = profiles.find((item: any) => item?.name === active);
+    }
+    const level = normalizeSecurityLevel(state.securityLevel) || (state.yoloMode ? 'auto' : 'ask');
+    const sandbox = await host.getSessionSandboxMode(sessionId).catch(() => 'default');
+    const permissions = profile?.permissions || {};
+    const writePaths = Array.isArray(permissions.writePaths) ? permissions.writePaths.join(', ') : '';
+    const allow = Array.isArray(permissions.allow) ? permissions.allow.join(', ') : '';
+    const deny = Array.isArray(permissions.deny) ? permissions.deny.join(', ') : '';
+    const lines = [
+        formatAgentUiNotice(host.translator, 'permissionProfileLine', {
+            profile: profile?.name || state.activeArchetype || 'build',
+            mode: profile?.mode || 'primary'
+        }),
+        formatAgentUiNotice(host.translator, 'permissionLevelLine', { level: securityLevelText(host.translator, level) }),
+        formatAgentUiNotice(host.translator, 'permissionSandboxLine', { sandbox }),
+        formatAgentUiNotice(host.translator, 'permissionPlanLine', {
+            value: formatAgentUiNotice(host.translator, state.planMode ? 'permissionOn' : 'permissionOff')
+        }),
+        formatAgentUiNotice(host.translator, 'permissionReadOnlyLine', {
+            value: formatAgentUiNotice(host.translator, profile?.readOnly ? 'permissionOn' : 'permissionOff')
+        }),
+        formatAgentUiNotice(host.translator, 'permissionAllowLine', { value: allow || '-' }),
+        formatAgentUiNotice(host.translator, 'permissionDenyLine', { value: deny || '-' }),
+        formatAgentUiNotice(host.translator, 'permissionWritePathsLine', { value: writePaths || '-' })
+    ];
+    const target = String(tool || '').trim();
+    if (target) {
+        const decision = explainAgentConsolePermission(target, {
+            level,
+            planMode: state.planMode,
+            readOnly: profile?.readOnly === true,
+            allow: permissions.allow,
+            deny: permissions.deny,
+            writePaths: permissions.writePaths
+        });
+        const reasonKey = decision.reason === 'deny-rule'
+            ? 'permissionReasonDeny'
+            : decision.reason === 'read-only'
+                ? 'permissionReasonReadOnly'
+                : decision.reason === 'allow-list'
+                    ? 'permissionReasonAllowList'
+                    : decision.reason === 'level'
+                        ? 'permissionReasonLevel'
+                        : 'permissionReasonDefault';
+        lines.push(formatAgentUiNotice(host.translator, 'permissionDecisionLine', {
+            tool: target,
+            effect: decision.effect.toUpperCase()
+        }));
+        lines.push(formatAgentUiNotice(host.translator, 'permissionReasonLine', {
+            reason: formatAgentUiNotice(host.translator, reasonKey, { pattern: decision.pattern || '' })
+        }));
+    }
+    host.state.openTextOverlay(
+        formatAgentUiNotice(host.translator, 'permissionsTitle'),
+        lines,
+        Math.min(24, lines.length)
+    );
+}
+
 export async function runPermissionsCommand(host: PolicyCommandHost, args: string): Promise<void> {
     const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
     if (!tokens.length || tokens[0].toLowerCase() === 'status') {
         await showSandboxCapabilities(host);
+        return;
+    }
+    if (tokens[0].toLowerCase() === 'inspect' || tokens[0].toLowerCase() === 'rules') {
+        await showPermissionInspector(host, tokens[1]);
         return;
     }
     const area = tokens[0].toLowerCase();
