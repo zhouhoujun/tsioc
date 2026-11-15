@@ -4179,3 +4179,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 深色 `--wf-theme-grid` 改为 `rgba(148, 163, 184, 0.18)`，solarized 改为 `rgba(147, 161, 161, 0.18)`，high-contrast 改为 `rgba(255, 255, 255, 0.28)`；
   - 移除 `.workflow-canvas` 在深色主题中的 `background-image` 网格，只保留 `background-color`，避免双层点阵。
 - **验证**：真实 Chrome 深色主题 computed style：`.workflow-canvas-grid` 为 `rgba(148, 163, 184, 0.18)`，`.workflow-canvas` 为 `background-image: none`；workflow-admin preview EXIT 0，无 console 错误。
+
+## 2026-11-15 CM6 自动补全可靠性修正
+- **问题**：CM6 迁移后默认 `activateOnTyping` 依赖语言 source 的时序，部分宿主/输入场景下补全弹窗不出现；且分析器代码仍在 initial bundle，gzip 预算逼近 200 KB。
+- **修正**：
+  - `autocompletion({ activateOnTyping:false, defaultKeymap:false })`，由 `code-editor-runtime` 显式调度：输入 `.`/`?.` 立即弹补全，标识符输入后 160ms 弹补全，Ctrl+Space 仍可手动触发；Enter 始终换行、Tab 接受补全。
+  - 语义分析（acorn + eslint-scope + JSON 重复键）拆到 lazy `code-editor-analysis.ts`，`code-editor.ts` 保留同名异步 wrapper，公开 API 与测试不变。
+  - 补全调度器拆到 lazy `code-editor-runtime.ts`，initial 不再携带分析/交互实现。
+- **验证**：
+  - workflow-admin 真实 Chrome：`con` 自动弹出 `const/context/continue/...`，Tab 接受、Enter 换行；`context.` / `context.actions.` 补全正常；语义诊断与 JSON 校验正常；
+  - microservices/admin 真实 Chrome：同样的自动补全、lint、select 正常；
+  - preview EXIT 0；activities 353（全量重跑通过；此前一次 `ForEachActivity` 并行计时用例在 115ms > 100ms 阈值失败，单 spec 重跑 56ms 通过，为既有 timing 波动）；microservices/admin 63；
+  - initial 740.4 KiB（gzip 194.3），lazy 774.1 KiB（gzip 259.7），budget 通过；`tsc` 0；`check-source-size`/`git diff --check` OK。
