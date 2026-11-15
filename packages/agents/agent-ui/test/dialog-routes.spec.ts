@@ -88,21 +88,30 @@ export class DialogRoutesTest {
         expect(overlays[0].lines.join('\n')).toContain('[tools]');
     }
 
-    @Test('dispatches a route and lists the catalog')
+    @Test('dispatches a route and opens the picker without arguments')
     async dispatches() {
         let executed = '';
-        let overlay: any;
+        let options: any[] = [];
+        let title = '';
         const ctx: any = {
             translator: null,
             notify: () => undefined,
             executeCommand: async (command: string) => { executed = command; return true; },
-            state: { openTextOverlay: (_title: string, lines: string[]) => { overlay = lines; } }
+            select: async (menuTitle: string, items: any[]) => {
+                title = menuTitle;
+                options = items;
+                return 'theme';
+            },
+            state: {}
         };
         await handleDialogCommand(ctx, 'model');
         expect(executed).toEqual('/model');
         await handleDialogCommand(ctx, '');
-        expect(overlay.some((line: string) => line.includes('model'))).toEqual(true);
+        expect(title).toEqual('Dialog routes');
+        expect(options.map(option => option.value)).toContain('theme');
+        expect(options.find(option => option.value === 'theme')?.label).toContain('/theme');
+        expect(executed).toEqual('/theme');
         await handleDialogCommand(ctx, 'nope');
-        expect(executed).toEqual('/model');
+        expect(executed).toEqual('/theme');
     }
 }
