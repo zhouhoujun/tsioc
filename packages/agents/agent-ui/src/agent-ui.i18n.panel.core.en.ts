@@ -19,6 +19,16 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         threadsTitle: 'Threads',
         sectionsTitle: 'Sections'
     },
+    sidebar: {
+        title: 'Agent center',
+        agents: 'Agents',
+        sessions: 'Sessions',
+        work: 'Work',
+        inbox: 'Inbox',
+        switchAgent: 'switch',
+        collapse: 'Collapse sidebar',
+        expand: 'Open sidebar'
+    },
     select: {
         dialogs: 'Dialogs',
         help: 'Help',

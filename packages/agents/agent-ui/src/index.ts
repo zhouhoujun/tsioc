@@ -46,7 +46,7 @@ export * from './AgentConsoleModelHandlers';
 export * from './AgentConsoleEditModeHandlers';
 export * from './console-ports';
 export * from './agent-ui.module';
-export { formatAgentUiNotice, formatAgentUiNoticeFromContext } from './agent-ui.i18n';
+export { formatAgentUiNotice, formatAgentUiNoticeFromContext, formatAgentPanelLabel } from './agent-ui.i18n';
 export type { AgentUiTranslator } from './agent-ui.i18n';
 export * from './AgentConsoleComponent';
 export * from './AgentConsoleSessionState';

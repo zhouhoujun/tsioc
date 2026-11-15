@@ -19,6 +19,16 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         threadsTitle: '线程',
         sectionsTitle: '分区'
     },
+    sidebar: {
+        title: '代理中心',
+        agents: '代理',
+        sessions: '会话',
+        work: '工作',
+        inbox: '待办',
+        switchAgent: '切换',
+        collapse: '收起侧栏',
+        expand: '展开侧栏'
+    },
     select: {
         dialogs: '对话框',
         help: '帮助',

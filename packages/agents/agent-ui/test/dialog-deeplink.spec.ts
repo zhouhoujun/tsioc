@@ -81,6 +81,9 @@ export class DialogDeepLinkTest {
             // Desktop focus lands on the composer so the deep-linked dialog is
             // immediately keyboard-operable.
             expect(this.dom.window.document.activeElement?.tagName).toEqual('TEXTAREA');
+            // The sidebar is mounted navigation chrome and must clean up with the console.
+            expect(!!this.dom.window.document.querySelector('.agent-web-sidebar')).toEqual(true);
+            expect(!!this.dom.window.document.querySelector('.agent-web-sidebar-toggle')).toEqual(true);
         } finally {
             gateway.dispose();
             const mounted = await mountedPromise.catch(() => null);

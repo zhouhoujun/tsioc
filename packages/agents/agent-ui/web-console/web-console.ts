@@ -35,6 +35,8 @@ import { openAgentConsoleDialogDeepLink } from './dialog-deeplink';
 import { focusWebConsoleComposer } from './focus-composer';
 import { routeAgentConsoleWheel } from './wheel-routing';
 import { routeAgentConsoleHistoryKey } from './history-keys';
+import { bindContextMenuCopy } from './clipboard';
+import { createWebSidebar } from './sidebar';
 import { keepTranscriptSelection } from './selection-anchor';
 
 const CONSOLE_SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -400,36 +402,12 @@ export async function mountAgentWebConsole(
     // so the browser and terminal share one transient-feedback surface.
     const toastService = ctx.get(ToastService);
 
-    const copySelection = (): string => {
-        const selection = doc.defaultView?.getSelection?.()?.toString()?.trim() || '';
-        return selection;
-    };
-    const onContextMenu = (event: MouseEvent): void => {
-        const text = copySelection();
-        if (!text) {
-            return;
-        }
-        event.preventDefault();
-        const clipboard = doc.defaultView?.navigator?.clipboard;
-        const zh = String(rawState.translator?.currentLocale || '').toLowerCase().startsWith('zh');
-        const copied = zh ? '已复制' : 'Copied';
-        const done = (): void => { toastService.show(copied, { tone: 'success', durationMs: 1800 }); };
-        if (clipboard?.writeText) {
-            void clipboard.writeText(text).then(done).catch(done);
-            return;
-        }
-        // Last-resort copy path for browsers without the async clipboard API.
-        const area = doc.createElement('textarea');
-        area.value = text;
-        area.setAttribute('readonly', '');
-        area.className = 'console-clipboard-fallback';
-        doc.body.appendChild(area);
-        area.select();
-        try { doc.execCommand('copy'); } catch { /* ignore */ }
-        area.remove();
-        done();
-    };
-    mount.addEventListener('contextmenu', onContextMenu);
+    const disposeContextMenu = bindContextMenuCopy({
+        document: doc,
+        mount,
+        toast: toastService,
+        isZh: () => String(rawState.translator?.currentLocale || '').toLowerCase().startsWith('zh')
+    });
 
     const transcriptPanel = resolveMessagesPanel();
     const selectionKeeper = transcriptPanel
@@ -547,6 +525,21 @@ export async function mountAgentWebConsole(
 
     focusWebConsoleComposer(doc, root);
 
+    const sidebar = createWebSidebar({
+        document: doc,
+        mount,
+        state,
+        runCommand: command => (rootRef?.instance as unknown as { handleCommand?: (value: string) => Promise<boolean> } | undefined)?.handleCommand?.(command) ?? Promise.resolve(false),
+        navigate: sessionId => {
+            const view = doc.defaultView;
+            if (!view) return;
+            const params = new URLSearchParams(view.location.search);
+            params.set('session', sessionId);
+            params.delete('dialog');
+            view.location.href = `${view.location.pathname}?${params.toString()}`;
+        }
+    });
+
     // Deep link: `?dialog=model` opens the same dialog as `/dialog model`.
     if (config.dialog) {
         const instance = rootRef?.instance as unknown as {
@@ -566,7 +559,8 @@ export async function mountAgentWebConsole(
         dispose: async () => {
             mount.removeEventListener('wheel', onWheel);
             mount.removeEventListener('keydown', onKeyDown);
-            mount.removeEventListener('contextmenu', onContextMenu);
+            disposeContextMenu();
+            sidebar.dispose();
             indicator.removeEventListener('click', onIndicatorClick);
             overlayAnchors.dispose();
             selectionKeeper.dispose();
