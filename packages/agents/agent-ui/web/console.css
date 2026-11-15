@@ -1094,10 +1094,12 @@ body {
 
 #agent-console .console-new-messages {
     position: fixed;
-    left: 50%;
+    right: max(24px, env(safe-area-inset-right, 0px));
     bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 88px));
-    transform: translateX(-50%);
     z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 6px 14px;
     border: 1px solid var(--agent-web-border);
     border-radius: 999px;
@@ -1109,6 +1111,13 @@ body {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
 }
 
+/* Same downward affordance as the terminal strip: icon first, label second. */
+#agent-console .console-new-messages::before {
+    content: '↓';
+    font-weight: 700;
+    line-height: 1;
+}
+
 @media (max-width: 640px) {
     html,
     body {
@@ -1118,6 +1127,11 @@ body {
     #agent-console {
         padding-left: max(10px, env(safe-area-inset-left));
         padding-right: max(10px, env(safe-area-inset-right));
+    }
+
+    #agent-console .console-new-messages {
+        right: max(12px, env(safe-area-inset-right, 0px));
+        bottom: max(72px, calc(env(safe-area-inset-bottom, 0px) + 72px));
     }
 
     #agent-console .message-template-user {
