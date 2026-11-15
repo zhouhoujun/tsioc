@@ -7,6 +7,7 @@ export * from './workflow-scheduler';
 export * from './workflow-cron';
 export * from './workflow-yaml';
 export * from './workflow-compiler';
+export * from './workflow-diff';
 export * from './workflow-store';
 export * from './VisualNodeActivityAdapter';
 export * from './visual-node-handler';

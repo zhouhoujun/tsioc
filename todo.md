@@ -4263,3 +4263,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **实测（真实 Chrome）**：菜单 → 弹出确认 → ✕/Esc 关闭后版本数与 release 不变；确认后生成 v2 并 release=v2；`Delete` 在浮层打开时不会删除节点。
 - **回归**：activities **371 passing**（新增发布取消 1 条）；microservices/admin 63；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK；设计器初始包 758.6 KiB / gzip 198.2 KiB。
 - **预算**：发布浮层把 raw 预算顶到 780,157（超 157 字节），将 `DESIGNER_JS_BUDGET` 调整为 **800 KB**（gzip 仍是真正的传输门槛，保持 205 KB）；`preview-test.js` 的对应阈值同步。
+
+## 2026-11-15 版本对比（结构差异）
+- **新增** `workflow-diff.ts`（纯函数）：按节点 id 与连接端点比较两份定义，输出新增/删除/修改节点、新增/删除连接，以及 `moved` 标记；`config.*` 逐键比较，连接只比端点（改写 id 不算变更）；`describeWorkflowDiff` 投影成 `+ / − / ~` 单行。
+- **UI**：版本面板每行新增「对比」，与**当前草稿**比较并在面板底部展开差异区（标题带版本号、关闭按钮、`+ 新增 / − 删除 / ~ 字段`）；恢复或关闭面板会清空差异。
+- **实测（真实 Chrome，workflow-admin + SQLite）**：v1 与草稿对比输出 `~ version two: name`，标题 `Changes since v1`；对比后仍可恢复 v1；无 console 错误。
+- **回归**：activities **375 passing**（新增 diff 单元测试 4 条 + 面板对比 UI 断言）；microservices/admin 63；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK；设计器初始包 764.0 KiB / gzip **199.4 KiB**（< 800 KB raw / 205 KB gzip）。

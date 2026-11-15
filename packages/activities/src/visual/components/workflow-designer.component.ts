@@ -10,6 +10,7 @@ import { WorkflowNodeRegistry } from '../node-registry';
 import { VisualWorkflowService } from '../VisualWorkflowService';
 import { createBlankWorkflowDefinition, createDefaultWorkflowDefinition, WorkflowDesigner } from '../workflow-designer';
 import { VisualWorkflowDefinition, WorkflowToolbarModel } from '../types';
+import { diffWorkflowDefinitions, WorkflowDiffResult } from '../workflow-diff';
 import {
     WorkflowDefinitionStore,
     WorkflowDefinitionSummary,
@@ -82,7 +83,9 @@ interface WorkflowDocumentTab {
         </div>
         <workflow-version-panel :items="versionItems" :release="versionRelease"
             :visible="showVersions" :locale="locale" :error="versionError"
-            :restoreAction="restoreVersion" :closeAction="closeVersions"></workflow-version-panel>
+            :diff="versionDiff" :diffVersion="versionDiffVersion"
+            :restoreAction="restoreVersion" :compareAction="compareVersion"
+            :closeDiffAction="closeVersionDiff" :closeAction="closeVersions"></workflow-version-panel>
         <div class="workflow-rename" v-if="showRename">
             <div class="workflow-rename-panel">
                 <div class="workflow-rename-head">
@@ -149,6 +152,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     publishError = '';
     versionItems: WorkflowVersionSummary[] = [];
     versionRelease: WorkflowRelease | undefined = undefined;
+    versionDiff: WorkflowDiffResult | undefined = undefined;
+    versionDiffVersion: number | undefined = undefined;
     versionError = '';
     /** Set in onInit to the reactive component proxy (arrow callbacks capture the raw instance). */
     private selfRef?: WorkflowDesignerComponent;
@@ -1013,6 +1018,35 @@ export class WorkflowDesignerComponent implements OnDestroy {
     readonly closeVersions = (): void => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         self.showVersions = false;
+        self.versionDiff = undefined;
+        self.versionDiffVersion = undefined;
+    };
+
+    /** Compare a snapshot with the current draft and show the structural diff. */
+    readonly compareVersion = async (version: number): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const store = self.store;
+        if (typeof store?.getVersion !== 'function') {
+            return;
+        }
+        try {
+            const snapshot = await store.getVersion(self.designer.definition.id, version);
+            if (!snapshot) {
+                self.versionError = self.t('versionMissing', 'Version not found');
+                return;
+            }
+            self.versionError = '';
+            self.versionDiffVersion = version;
+            self.versionDiff = diffWorkflowDefinitions(snapshot, self.designer.definition);
+        } catch (error) {
+            self.versionError = (error as Error).message;
+        }
+    };
+
+    readonly closeVersionDiff = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.versionDiff = undefined;
+        self.versionDiffVersion = undefined;
     };
 
     /** Copy a snapshot back into the editable draft (the release pointer stays). */
@@ -1031,6 +1065,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
             self.designer.load(definition);
             self.versionError = '';
             self.showVersions = false;
+            self.versionDiff = undefined;
+            self.versionDiffVersion = undefined;
             self.saveState = self.designer.dirty ? 'dirty' : 'saved';
             self.syncActiveTabId();
         } catch (error) {

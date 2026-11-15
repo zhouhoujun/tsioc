@@ -3,6 +3,7 @@ import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
 import { WorkflowRelease, WorkflowVersionSummary } from '../workflow-store';
+import { describeWorkflowDiff, WorkflowDiffResult } from '../workflow-diff';
 
 /**
  * Version history overlay. Lists immutable snapshots recorded by explicit saves
@@ -28,7 +29,20 @@ import { WorkflowRelease, WorkflowVersionSummary } from '../workflow-store';
                     <span class="workflow-version-name">{{item.name || item.workflowId}}</span>
                     <span class="workflow-version-meta">{{kindLabel(item)}} · {{item.createdAt}}</span>
                 </span>
+                <button class="workflow-btn" type="button" @click="compare(item)">{{compareLabel}}</button>
                 <button class="workflow-btn" type="button" @click="restore(item)">{{restoreLabel}}</button>
+            </div>
+        </div>
+        <div class="workflow-version-diff" v-if="diff">
+            <div class="workflow-version-diff-head">
+                <span class="workflow-version-diff-title">{{diffTitle}}</span>
+                <span class="workflow-status-spacer"></span>
+                <button class="workflow-btn" type="button" @click="clearDiff">{{closeLabel}}</button>
+            </div>
+            <div class="workflow-version-diff-empty" v-if="diffLines.length === 0">{{diffEmptyLabel}}</div>
+            <div class="workflow-version-diff-row" v-for="line in diffLines" [class]="'is-' + line.kind">
+                <span class="workflow-version-diff-mark">{{lineMark(line.kind)}}</span>
+                <span class="workflow-version-diff-text">{{line.text}}</span>
             </div>
         </div>
         <div class="workflow-version-error" v-if="error">{{error}}</div>
@@ -40,7 +54,12 @@ export class WorkflowVersionPanelComponent {
     @Attribute() visible = false;
     @Attribute() locale = 'zh-CN';
     @Attribute() error = '';
+    /** Diff of the selected version against the current draft. */
+    @Attribute() diff?: WorkflowDiffResult;
+    @Attribute() diffVersion?: number;
     @Attribute() restoreAction?: (version: number) => void;
+    @Attribute() compareAction?: (version: number) => void;
+    @Attribute() closeDiffAction?: () => void;
     @Attribute() closeAction?: () => void;
 
     constructor(@Optional() private readonly translator?: Translator) { }
@@ -57,6 +76,28 @@ export class WorkflowVersionPanelComponent {
     get emptyLabel(): string { return this.t('versionsEmpty', 'No versions yet. Save with Ctrl+S to record one.'); }
     get restoreLabel(): string { return this.t('versionRestore', 'Restore'); }
     get closeLabel(): string { return this.t('close', 'Close'); }
+    get compareLabel(): string { return this.t('versionCompare', 'Compare'); }
+    get diffEmptyLabel(): string { return this.t('versionDiffEmpty', 'No differences from the draft.'); }
+
+    get diffTitle(): string {
+        return `${this.t('versionDiffTitle', 'Changes since')} v${this.diffVersion ?? ''}`;
+    }
+
+    get diffLines(): Array<{ kind: 'added' | 'removed' | 'changed'; text: string }> {
+        return this.diff ? describeWorkflowDiff(this.diff) : [];
+    }
+
+    lineMark(kind: 'added' | 'removed' | 'changed'): string {
+        return kind === 'added' ? '+' : kind === 'removed' ? '−' : '~';
+    }
+
+    compare(item: WorkflowVersionSummary): void {
+        this.compareAction?.(item.version);
+    }
+
+    clearDiff(): void {
+        this.closeDiffAction?.();
+    }
 
     kindLabel(item: WorkflowVersionSummary): string {
         return item.kind === 'publish'

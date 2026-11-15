@@ -1114,7 +1114,15 @@ describe('Workflow Designer UI', () => {
         expect(rows[0].textContent).toContain('v2');
         expect(panel.querySelector('.workflow-version-release')?.textContent).toContain('v2');
 
-        const restore = rows[1].querySelector('button') as any;
+        // Comparing a snapshot with the draft shows the structural diff.
+        (rows[1].querySelectorAll('button')[0] as any).click();
+        await waitFor(() => !!root.querySelector('.workflow-version-diff'));
+        const diff = root.querySelector('.workflow-version-diff') as any;
+        expect(diff.textContent).toContain('与当前草稿的差异');
+        expect(diff.textContent).toContain('name');
+        expect(diff.querySelectorAll('.workflow-version-diff-row').length).toBeGreaterThan(0);
+
+        const restore = rows[1].querySelectorAll('button')[1] as any;
         restore.click();
         await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === 'first version');
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('first version');
