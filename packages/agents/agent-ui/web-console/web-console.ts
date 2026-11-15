@@ -530,6 +530,36 @@ export async function mountAgentWebConsole(
     // Observe content growth from the initial render, not only after the first wheel.
     resolveFollower();
 
+    // Anchor the affordance to the composer's top-right edge rather than the
+    // viewport, so a centered/narrow console column keeps it against the input.
+    const composerElement = (): HTMLElement | null => {
+        return (root?.querySelector?.('.input-shell') as HTMLElement | null)
+            ?? (root?.querySelector?.('textarea.agent-input') as HTMLElement | null)
+            ?? null;
+    };
+    const positionIndicator = (): void => {
+        const composer = composerElement();
+        if (!composer) {
+            return;
+        }
+        const rect = composer.getBoundingClientRect();
+        const viewport = doc.documentElement;
+        indicator.style.right = `${Math.max(8, viewport.clientWidth - rect.right)}px`;
+        indicator.style.bottom = `${Math.max(8, viewport.clientHeight - rect.top + 8)}px`;
+    };
+    positionIndicator();
+    const resizeObserver = typeof (doc.defaultView as any)?.ResizeObserver === 'function'
+        ? new (doc.defaultView as any).ResizeObserver(() => positionIndicator())
+        : null;
+    if (resizeObserver) {
+        const composer = composerElement();
+        if (composer) {
+            resizeObserver.observe(composer);
+        }
+    }
+    doc.defaultView?.addEventListener?.('resize', positionIndicator);
+    (doc.defaultView as any)?.visualViewport?.addEventListener?.('resize', positionIndicator);
+
     return {
         ctx,
         state,
@@ -537,6 +567,9 @@ export async function mountAgentWebConsole(
             mount.removeEventListener('wheel', onWheel);
             mount.removeEventListener('contextmenu', onContextMenu);
             indicator.removeEventListener('click', onIndicatorClick);
+            resizeObserver?.disconnect();
+            doc.defaultView?.removeEventListener?.('resize', positionIndicator);
+            (doc.defaultView as any)?.visualViewport?.removeEventListener?.('resize', positionIndicator);
             selectionKeeper.dispose();
             toastService.clear();
             follower?.detach();
