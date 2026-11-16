@@ -603,9 +603,12 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'array',
                 options: [
                     { label: 'Branch results array', value: 'array' },
-                    { label: 'Merged object', value: 'merge' }
+                    { label: 'Merged object', value: 'merge' },
+                    { label: 'Keys object', value: 'key' }
                 ]
             }),
+            configField({ key: 'keyField', label: 'Key field', type: 'text', defaultValue: 'key', placeholder: 'key', visibleWhen: { key: 'mode', equals: 'key' }, description: 'Branch result property used as the object key.' }),
+            configField({ key: 'valueField', label: 'Value field', type: 'text', placeholder: 'value', visibleWhen: { key: 'mode', equals: 'key' }, description: 'Branch result property stored under each key. Empty stores the whole branch result.' }),
             configField({ key: 'resultField', label: 'Result field', type: 'text', defaultValue: 'joined', placeholder: 'joined' }),
             configField({ key: 'ignoreEmpty', label: 'Skip empty branches', type: 'boolean', defaultValue: true })
         ],

@@ -1434,12 +1434,31 @@ export async function executeVisualNode(
                 .filter(input => !ignoreEmpty || (input.result?.data !== undefined && input.result?.data !== null))
                 .map(input => input.result?.data);
             const target = String(config.resultField || 'joined');
-            const value = String(config.mode || 'array') === 'merge'
-                ? values.reduce((merged: Record<string, any>, item) =>
+            const mode = String(config.mode || 'array');
+            let value: any;
+            if (mode === 'merge') {
+                value = values.reduce((merged: Record<string, any>, item) =>
                     item && typeof item === 'object' && !Array.isArray(item)
                         ? { ...merged, ...item }
-                        : merged, {})
-                : values;
+                        : merged, {});
+            } else if (mode === 'key') {
+                const keyPath = String(config.keyField || 'key');
+                const valuePath = String(config.valueField || '').trim();
+                const keyed: Record<string, any> = {};
+                values.forEach(item => {
+                    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                        return;
+                    }
+                    const key = resolveFrom(item, keyPath);
+                    if (key === undefined || key === null || key === '') {
+                        return;
+                    }
+                    keyed[String(key)] = valuePath ? resolveFrom(item, valuePath) : item;
+                });
+                value = keyed;
+            } else {
+                value = values;
+            }
             return {
                 success: true,
                 data: { nodeId: node.id, joined: true, branches: values.length, results: values, [target]: value }

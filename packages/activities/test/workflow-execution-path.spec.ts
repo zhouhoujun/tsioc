@@ -425,6 +425,39 @@ describe('Visual Workflow Execution Path', () => {
         expect(snapshot.nodeStates.join_p.result?.data?.branches).toBe(2);
     });
 
+    it('keys join branch results by a property', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_k' }),
+            registry.createNode('parallel', { x: 200, y: 0 }, { id: 'parallel_k' }),
+            registry.createNode('task', { x: 400, y: -80 }, { id: 'task_a', config: { result: { key: 'a', value: 1 } } }),
+            registry.createNode('task', { x: 400, y: 80 }, { id: 'task_b', config: { result: { key: 'b', value: 2 } } }),
+            registry.createNode('join', { x: 600, y: 0 }, { id: 'join_k', config: { mode: 'key', keyField: 'key', valueField: 'value', resultField: 'keyed' } }),
+            registry.createNode('end', { x: 800, y: 0 }, { id: 'end_k' })
+        ];
+        const edge = (id: string, source: string, target: string) => ({
+            id, sourceNodeId: source, sourcePort: 'out', targetNodeId: target, targetPort: 'in'
+        });
+        const definition = {
+            id: 'join-key-test',
+            name: 'Join key test',
+            nodes,
+            connections: [
+                edge('k1', 'start_k', 'parallel_k'),
+                edge('k2', 'parallel_k', 'task_a'),
+                edge('k3', 'parallel_k', 'task_b'),
+                edge('k4', 'task_a', 'join_k'),
+                edge('k5', 'task_b', 'join_k'),
+                edge('k6', 'join_k', 'end_k')
+            ]
+        };
+        const result = await service.execute(definition, {});
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.join_k.result?.data?.keyed).toEqual({
+            a: 1,
+            b: 2
+        });
+    });
+
     it('merges join branch objects when the join mode is merge', async () => {
         const nodes = [
             registry.createNode('start', { x: 0, y: 0 }, { id: 'start_m' }),

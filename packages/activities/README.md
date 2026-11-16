@@ -643,7 +643,8 @@ Features:
 - `link` nodes connect distant wire segments: a `link out` named `shared`
   reaches every matching `link in` node, which then continues its own branch,
 - `join` node waits for all parallel branches, then exposes their results as
-  an array or a merged object (`resultField`), skipping empty branches by default,
+  an array, a merged object, or a keyed object (`keyField`/`valueField`),
+  skipping empty branches by default,
 - `trycatch` guards its downstream branch: any failure is routed to the `error`
   port with `error`, `errorMessage`, `failedNodeId` and `failedResult` context,
   while the recovery branch is skipped when the guarded chain succeeds,

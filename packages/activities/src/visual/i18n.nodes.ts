@@ -335,7 +335,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "join": {
                 "mode": "Mode",
                 "resultField": "Result field",
-                "ignoreEmpty": "Skip empty branches"
+                "ignoreEmpty": "Skip empty branches",
+                "keyField": "Key field",
+                "valueField": "Value field"
             },
             "loop": {
                 "iterations": "Iterations",
@@ -713,7 +715,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "parallel": {},
             "join": {
-                "resultField": "joined"
+                "resultField": "joined",
+                "keyField": "key",
+                "valueField": "value"
             },
             "loop": {
                 "workflow": "workflows.child"
@@ -957,7 +961,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "join": {
                 "mode": "Collect branch results as an array or merge their data objects.",
                 "resultField": "Context field that receives the joined value.",
-                "ignoreEmpty": "Leave branches without result data out of the joined value."
+                "ignoreEmpty": "Leave branches without result data out of the joined value.",
+                "keyField": "Branch result property used as the object key.",
+                "valueField": "Branch result property stored under each key. Empty stores the whole branch result."
             },
             "loop": {
                 "iterations": "Number of times to run the sub-workflow.",
@@ -1337,7 +1343,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "in": "Link in",
             "rate": "Rate limit",
             "drop": "Drop",
-            "queue": "Queue"
+            "queue": "Queue",
+            "key": "Keys object"
         }
     },
     "zh-CN": {
@@ -1669,7 +1676,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "join": {
                 "mode": "模式",
                 "resultField": "结果字段",
-                "ignoreEmpty": "跳过空分支"
+                "ignoreEmpty": "跳过空分支",
+                "keyField": "键字段",
+                "valueField": "值字段"
             },
             "loop": {
                 "iterations": "迭代次数",
@@ -2047,7 +2056,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "parallel": {},
             "join": {
-                "resultField": "joined"
+                "resultField": "joined",
+                "keyField": "key",
+                "valueField": "value"
             },
             "loop": {
                 "workflow": "workflows.child"
@@ -2275,7 +2286,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "join": {
                 "mode": "把分支结果收集为数组，或合并各分支的数据对象。",
                 "resultField": "接收合并结果的上下文字段。",
-                "ignoreEmpty": "不把没有结果数据的分支计入合并结果。"
+                "ignoreEmpty": "不把没有结果数据的分支计入合并结果。",
+                "keyField": "作为对象键的分支结果属性。",
+                "valueField": "每个键下保存的分支结果属性；留空保存整个分支结果。"
             },
             "loop": {
                 "iterations": "子工作流执行次数。",
@@ -2655,7 +2668,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "in": "Link in",
             "rate": "限流",
             "drop": "丢弃",
-            "queue": "排队"
+            "queue": "排队",
+            "key": "按键聚合"
         }
     }
 };
