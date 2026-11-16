@@ -456,6 +456,23 @@ export class GatewayAdminState {
         }
     }
 
+    readonly exportSloAlerts = (): void => {
+        const self = this.selfRef ?? this;
+        const data = JSON.stringify(self.diagnostics?.alerts ?? [], null, 2);
+        const doc = (self.documentRef ?? (globalThis as { document?: Document }).document) as Document | undefined;
+        const createUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
+        if (doc && createUrl && typeof Blob !== 'undefined') {
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = doc.createElement('a');
+            link.href = url;
+            link.download = 'gateway-slo-alerts.json';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        self.status = self.t('status.sloExported');
+    };
+
     get routeSloRows() {
         return [...(this.diagnostics?.routes ?? [])]
             .sort((a, b) => b.requests - a.requests)
