@@ -96,7 +96,10 @@ async function runScenario(dom: JSDOM, scenario: GatewayScenario, viewport?: Gat
         mount: dom.window.document.getElementById('agent-console') as HTMLElement,
         state,
         pwa: false,
-        workspace: ''
+        workspace: '',
+        // The gate asserts every seeded row and CJK line renders; pin the
+        // per-step transcript instead of the default activity aggregation.
+        consoleOptions: { activityVerbosity: 'high' }
     });
     try {
         const initialSeeds: Record<string, [number, number, number]> = {

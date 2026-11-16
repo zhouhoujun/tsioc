@@ -148,7 +148,11 @@ async function runScenario(scenario: GatewayScenario): Promise<ScenarioRunResult
                             ...defaultAgentOptions.ui,
                             console: {
                                 ...(defaultAgentOptions.ui?.console || {}),
-                                workspace: ''
+                                workspace: '',
+                                // The gate asserts every seeded row and CJK line
+                                // renders; pin the per-step transcript instead of
+                                // the default activity aggregation.
+                                activityVerbosity: 'high'
                             }
                         },
                         // An explicit bootstrapTurn keeps onInit's openSession on

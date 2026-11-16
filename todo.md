@@ -4350,3 +4350,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **避免削弱 gate**：`mountAgentWebConsole` 新增 `consoleOptions`（`Partial<AgentConsoleOptions>`）宿主选项，合并进 `AGENT_OPTIONS.ui.console`；p285 first-screen gate 显式固定 `activityVerbosity: 'high'`，继续验证每条 seed 行与 CJK 行都渲染，而不再依赖全局默认值。
 - **验证**：完整 agent-ui **2137 passing / 0 failed，wall 114.6s（<2min）**；新增默认值断言（默认 medium 且 2 步 run 折叠）。
 - **兼容**：`high` 仍可用；timeline 模式不参与聚合；scrollback 与 viewport 同一投影。
+
+## 2026-11-16 DOM/TUI gate 在默认 medium 下固定逐步骤视图
+- 默认 activity medium 后，真实 `dom-gate`/`tui-gate` 的 `rowCount`/CJK 等待超时（聚合把 seed 行折叠）。
+- 修复：`run-dom-gate.ts` 的 `mountAgentWebConsole` 传 `consoleOptions: { activityVerbosity: 'high' }`；`run-tui-gate.ts` 在 `AGENT_OPTIONS.ui.console` 固定 `activityVerbosity: 'high'`。
+- 结果：dom-gate、dom-gate-matrix、tui-gate、gate-regression 全部 PASS；gate 继续验证每条 seed 行与 CJK，不受默认详细度影响。
