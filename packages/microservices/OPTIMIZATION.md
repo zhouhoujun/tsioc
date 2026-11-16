@@ -322,6 +322,11 @@
 - Admin SLO Alerts 支持 JSON / CSV 导出（key/timestamp/iso/errorRate/p95/阈值）。
 - CSV 做引号转义，文件名 gateway-slo-alerts.csv。
 
+第五十八批（tracing feature 组合）：
+
+- 验证 `useFeatures({ extraFeatures: [useTracing(...)] })` 可装配 tracing interceptor。
+- 保持 @tsdi/service 不反向依赖 @tsdi/tracing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

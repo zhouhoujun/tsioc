@@ -4298,3 +4298,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第五十七批（2026-11-16）：
   - Admin SLO Alerts CSV 导出。
   - 回归：admin 63。
+- 微服务框架第五十八批（2026-11-16）：
+  - tracing 通过 service extraFeatures 组合验证。
+  - 回归：tracing 45。
