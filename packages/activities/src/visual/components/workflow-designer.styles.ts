@@ -479,6 +479,36 @@ export const WORKFLOW_DESIGNER_CSS = `
     line-height: 1;
 }
 
+.workflow-group-settings-panel {
+    width: min(380px, 100%);
+}
+
+.workflow-group-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-group-field input[type="text"] {
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    background: var(--wf-theme-surface, #ffffff);
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-group-field input[type="color"] {
+    width: 64px;
+    height: 28px;
+    padding: 1px;
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 6px;
+    background: var(--wf-theme-surface, #ffffff);
+}
+
 .workflow-plugins-panel {
     width: min(560px, 100%);
     max-height: min(560px, 82vh);

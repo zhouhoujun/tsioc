@@ -596,6 +596,7 @@ Features:
   together and groups persist with the workflow definition,
 - frames can be collapsed with the `▾` control: member nodes and their internal
   edges are hidden while the frame (and its wiring) stays in place,
+- double-click a frame title to rename it or pick a frame color,
 - `Enabled` in the inspector (or the node right-click menu) disables a node
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,

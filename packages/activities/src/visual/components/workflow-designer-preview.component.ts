@@ -100,6 +100,32 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             <span>{{statusModel.zoomLabel}}</span>
         </div>
         <div class="workflow-selection-box" v-if="selectionBox" [style]="selectionBoxStyle"></div>
+        <div class="workflow-publish workflow-group-settings" v-if="showGroupSettings">
+            <div class="workflow-publish-panel workflow-group-settings-panel">
+                <div class="workflow-publish-head">
+                    <span class="workflow-publish-title">{{groupSettingsTitle}}</span>
+                    <button class="workflow-btn workflow-publish-close" type="button"
+                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeGroupSettings">✕</button>
+                </div>
+                <label class="workflow-group-field">
+                    <span>{{groupNameLabel}}</span>
+                    <input class="workflow-group-name-input" type="text"
+                        [value]="groupSettingsName" @input="groupNameInput"
+                        @keydown="groupSettingsKey" />
+                </label>
+                <label class="workflow-group-field">
+                    <span>{{groupColorLabel}}</span>
+                    <input class="workflow-group-color-input" type="color"
+                        [value]="groupSettingsColor" @input="groupColorInput" />
+                </label>
+                <div class="workflow-publish-error" v-if="groupSettingsError">{{groupSettingsError}}</div>
+                <div class="workflow-publish-actions">
+                    <button class="workflow-btn" type="button" @click="closeGroupSettings">{{cancelLabel}}</button>
+                    <button class="workflow-btn workflow-btn-primary workflow-group-save" type="button"
+                        @click="saveGroupSettings">{{saveLabel}}</button>
+                </div>
+            </div>
+        </div>
         <div class="workflow-node-menu-backdrop" v-if="showNodeMenu" @mousedown="closeNodeMenu"
             @contextmenu="closeNodeMenu"></div>
         <div class="workflow-node-menu" v-if="showNodeMenu" [style]="nodeMenuStyle">
@@ -162,6 +188,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     showShortcuts = false;
     showNodeMenu = false;
     selectionBox: { x: number; y: number; width: number; height: number } | undefined = undefined;
+    showGroupSettings = false;
+    groupSettingsId = '';
+    groupSettingsName = '';
+    groupSettingsColor = '#60a5fa';
+    groupSettingsError = '';
     nodeMenuId = '';
     nodeMenuX = 0;
     nodeMenuY = 0;
@@ -370,6 +401,59 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         } else {
             self.designer.alignSelection(action as WorkflowAlignMode);
         }
+        self.notifyChange();
+    };
+
+    get groupSettingsTitle(): string { return this.t('groupSettings', 'Group settings'); }
+    get groupNameLabel(): string { return this.t('groupName', 'Group name'); }
+    get groupColorLabel(): string { return this.t('groupColor', 'Color'); }
+    get cancelLabel(): string { return this.t('cancel', 'Cancel'); }
+    get saveLabel(): string { return this.t('save', 'Save'); }
+
+    readonly closeGroupSettings = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.showGroupSettings = false;
+        self.groupSettingsError = '';
+        self.notifyChange();
+    };
+
+    readonly groupNameInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.groupSettingsName = String(event?.target?.value ?? '');
+        self.groupSettingsError = '';
+    };
+
+    readonly groupColorInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.groupSettingsColor = String(event?.target?.value ?? '#60a5fa');
+    };
+
+    readonly groupSettingsKey = (event: any): void => {
+        const key = String(event?.key || '');
+        if (key === 'Enter') {
+            event?.preventDefault?.();
+            this.saveGroupSettings();
+        } else if (key === 'Escape') {
+            event?.preventDefault?.();
+            this.closeGroupSettings();
+        }
+    };
+
+    readonly saveGroupSettings = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        if (!self.designer || !self.groupSettingsId) {
+            return;
+        }
+        const saved = self.designer.updateGroup(self.groupSettingsId, {
+            name: self.groupSettingsName,
+            color: self.groupSettingsColor
+        });
+        if (!saved) {
+            self.groupSettingsError = self.t('groupNameRequired', 'Enter a group name');
+            return;
+        }
+        self.showGroupSettings = false;
+        self.groupSettingsError = '';
         self.notifyChange();
     };
 
@@ -1361,6 +1445,19 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                     designer.toggleGroupCollapsed(payload.groupId);
                 }
                 break;
+            case 'group-rename': {
+                const group = (designer.definition.groups || [])
+                    .find(item => item.id === payload.groupId);
+                if (group) {
+                    self.groupSettingsId = group.id;
+                    self.groupSettingsName = group.name;
+                    self.groupSettingsColor = group.color || '#60a5fa';
+                    self.groupSettingsError = '';
+                    self.showGroupSettings = true;
+                    self.notifyChange();
+                }
+                break;
+            }
             case 'edge-click':
                 if (payload.connectionId) {
                     designer.selectConnection(payload.connectionId);

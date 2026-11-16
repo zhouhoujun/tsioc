@@ -1111,6 +1111,37 @@ export class WorkflowDesigner {
         return this.setGroupCollapsed(groupId);
     }
 
+    /** Update a frame's name/color. Empty names are rejected. */
+    updateGroup(groupId: string, patch: { name?: string; color?: string }): boolean {
+        const group = this.groups.find(item => item.id === groupId);
+        if (!group) {
+            return false;
+        }
+        const name = patch.name === undefined ? group.name : String(patch.name).trim();
+        if (!name) {
+            return false;
+        }
+        const color = patch.color === undefined ? group.color : String(patch.color).trim();
+        this.commit(current => ({
+            ...current,
+            groups: (current.groups || []).map(item =>
+                item.id === groupId
+                    ? { ...item, name, color: color || item.color }
+                    : item
+            ),
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        return true;
+    }
+
+    renameGroup(groupId: string, name: string): boolean {
+        return this.updateGroup(groupId, { name });
+    }
+
+    setGroupColor(groupId: string, color: string): boolean {
+        return this.updateGroup(groupId, { color });
+    }
+
     /** Remove a frame while keeping its nodes on the canvas. */
     removeGroup(groupId: string): boolean {
         const group = this.groups.find(item => item.id === groupId);

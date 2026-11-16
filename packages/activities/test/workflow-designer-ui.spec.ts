@@ -629,6 +629,37 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelectorAll('.workflow-canvas-nodes .workflow-node').length).toBe(before);
     });
 
+    it('renames and recolors a group from its settings dialog', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        ref.instance.designer.selectNodes(['task_1', 'task_2']);
+        await flush();
+        canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'g', ctrlKey: true, bubbles: true
+        }));
+        await flush();
+
+        const title = root.querySelector('.workflow-group-title') as any;
+        title.dispatchEvent(new (doc.defaultView as any).MouseEvent('dblclick', { bubbles: true }));
+        await flush();
+        expect(root.querySelector('.workflow-group-settings')).toBeTruthy();
+
+        const nameInput = root.querySelector('.workflow-group-name-input') as any;
+        nameInput.value = 'Review';
+        nameInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        const colorInput = root.querySelector('.workflow-group-color-input') as any;
+        colorInput.value = '#ef4444';
+        colorInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        (root.querySelector('.workflow-group-save') as any).click();
+        await flush();
+
+        const group = ref.instance.designer.groups[0];
+        expect(group.name).toBe('Review');
+        expect(group.color).toBe('#ef4444');
+        expect(root.querySelector('.workflow-group-title')?.textContent).toContain('Review');
+        expect((root.querySelector('.workflow-group') as any).getAttribute('style')).toContain('#ef4444');
+        expect(root.querySelector('.workflow-group-settings')).toBeFalsy();
+    });
+
     it('inserts a dropped node on an existing wire', async () => {
         const beforeNodes = ref.instance.designer.nodes.length;
         const beforeConnections = ref.instance.designer.connections.length;

@@ -475,6 +475,18 @@ describe('Visual Workflow Designer', () => {
             expect(local.validate().valid).toBe(false);
         });
 
+        it('renames and recolors groups', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            local.selectNodes(['task_1', 'task_2']);
+            const group = local.groupSelection()!;
+            expect(local.renameGroup(group.id, 'Review')).toBe(true);
+            expect(local.groups[0].name).toBe('Review');
+            expect(local.renameGroup(group.id, '  ')).toBe(false);
+            expect(local.groups[0].name).toBe('Review');
+            expect(local.setGroupColor(group.id, '#ef4444')).toBe(true);
+            expect(local.groups[0].color).toBe('#ef4444');
+        });
+
         it('collapses groups without deleting their nodes', () => {
             const local = new WorkflowDesigner({ registry, service });
             local.selectNodes(['task_1', 'task_2']);
