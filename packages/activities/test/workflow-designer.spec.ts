@@ -32,6 +32,9 @@ describe('Visual Workflow Designer', () => {
             const url = registry.get('http-request')?.fields?.find(field => field.key === 'url');
             expect(url?.type).toBe('url');
             expect(url?.required).toBe(true);
+            expect(url?.typed).toBe(true);
+            expect(registry.get('condition')?.fields?.find(field => field.key === 'field')?.typed).toBe(true);
+            expect(registry.get('filter')?.fields?.find(field => field.key === 'path')?.typed).toBe(true);
 
             const delayKeys = registry.get('delay')?.fields?.map(field => field.key);
             expect(delayKeys).toEqual(['mode', 'delay', 'randomMin', 'randomMax']);

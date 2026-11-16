@@ -79,6 +79,15 @@ describe('Workflow message envelope and scopes', () => {
         expect(nodes?.function_1.result?.data?.msg?.payload).toEqual({ n: 5 });
     });
 
+    it('uses typed message paths in condition nodes', async () => {
+        const definition = chain([
+            { type: 'inject', config: { payload: { approved: true } } },
+            { type: 'condition', config: { field: 'msg.payload.approved', operator: 'truthy' } }
+        ]);
+        const result = await service.execute(definition, {});
+        expect(result.data?.executionState?.nodeStates.condition_1.result?.data?.condition).toBe(true);
+    });
+
     it('resolves typed value references from msg/flow/global/env', () => {
         const context: any = {
             msg: { payload: { user: { name: 'Ada' } }, topic: 'users' },

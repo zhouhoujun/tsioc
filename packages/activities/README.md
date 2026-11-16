@@ -803,7 +803,9 @@ conditional visibility and validation rules.
 Fields marked `typed` show a literal/`msg`/`flow`/`global`/`env` selector. The
 stored value becomes `msg.payload.endpoint`-style reference text and reference
 values skip URL/format validation; literal values keep the normal validation.
-HTTP request URL/body fields opt in by default.
+HTTP request URL/body plus the value-path fields of condition, switch, router,
+log/debug, JSON/CSV/HTML/XML/YAML, RBE, statistics, split, map/filter/sort and
+batch opt in by default.
 
 ### Workflow plugins
 

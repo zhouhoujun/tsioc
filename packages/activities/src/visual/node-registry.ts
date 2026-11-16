@@ -204,7 +204,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('false', 'false', 'output', 'False')
         ],
         fields: [
-            configField({ key: 'field', label: 'Field', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'input.approved', description: 'Path to the value to test.',}),
+            configField({ key: 'field', label: 'Field', type: 'text', typed: true, required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'input.approved', description: 'Path to the value to test.',}),
             configField({
                 key: 'operator',
                 label: 'Operator',
@@ -221,7 +221,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'less or equal', value: 'lte' }
                 ]
             }),
-            configField({ key: 'value', label: 'Compare with', type: 'text', placeholder: 'true', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+            configField({ key: 'value', label: 'Compare with', type: 'text', typed: true, placeholder: 'true', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
         ],
         defaultConfig: { operator: 'truthy' }
     },
@@ -243,7 +243,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'field', label: 'Value path', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'result.status', description: 'Context value compared against each rule.' }),
+            configField({ key: 'field', label: 'Value path', type: 'text', typed: true, required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'result.status', description: 'Context value compared against each rule.' }),
             configField({
                 key: 'rules',
                 label: 'Rules',
@@ -333,7 +333,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
         fields: [
-            configField({ key: 'field', label: 'HTML field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
+            configField({ key: 'field', label: 'HTML field', type: 'text', typed: true, defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
             configField({ key: 'tag', label: 'Tag', type: 'text', pattern: '^[A-Za-z][A-Za-z0-9-]*$', placeholder: 'h1', group: 'Options', description: 'Only extract content from this HTML tag. Leave empty for the whole document.' }),
             configField({
                 key: 'mode',
@@ -372,7 +372,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Stringify', value: 'stringify' }
                 ]
             }),
-            configField({ key: 'field', label: 'XML field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
+            configField({ key: 'field', label: 'XML field', type: 'text', typed: true, defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
             configField({ key: 'target', label: 'Target field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
             configField({ key: 'attributes', label: 'Include attributes', type: 'boolean', defaultValue: true, group: 'Options', description: 'Include XML attributes as @attrs in the parsed result.', visibleWhen: { key: 'mode', equals: 'parse' } }),
             configField({ key: 'text', label: 'Include text', type: 'boolean', defaultValue: true, group: 'Options', description: 'Include element text as #text in the parsed result.', visibleWhen: { key: 'mode', equals: 'parse' } }),
@@ -429,7 +429,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Stringify', value: 'stringify' }
                 ]
             }),
-            configField({ key: 'field', label: 'Value path', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
+            configField({ key: 'field', label: 'Value path', type: 'text', typed: true, defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
             configField({ key: 'target', label: 'Write result to', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' })
         ],
         defaultConfig: { mode: 'parse', field: 'value', target: 'value' }
@@ -445,8 +445,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
-            configField({ key: 'field', label: 'Array path', type: 'text', placeholder: 'items', description: 'Context path to the array to filter.' }),
-            configField({ key: 'path', label: 'Item path', type: 'text', placeholder: 'value', description: 'Property compared between consecutive items.', visibleWhen: { key: 'mode', equals: 'value' } }),
+            configField({ key: 'field', label: 'Array path', type: 'text', typed: true, placeholder: 'items', description: 'Context path to the array to filter.' }),
+            configField({ key: 'path', label: 'Item path', type: 'text', typed: true, placeholder: 'value', description: 'Property compared between consecutive items.', visibleWhen: { key: 'mode', equals: 'value' } }),
             configField({
                 key: 'mode',
                 label: 'Report',
@@ -471,7 +471,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Output'), port('error', 'error', 'output', 'Error')],
         fields: [
-            configField({ key: 'field', label: 'Value path', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context path of the number to map.' }),
+            configField({ key: 'field', label: 'Value path', type: 'text', typed: true, defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context path of the number to map.' }),
             configField({ key: 'inMin', label: 'Input minimum', type: 'number', defaultValue: 0, group: 'Input range' }),
             configField({ key: 'inMax', label: 'Input maximum', type: 'number', defaultValue: 100, group: 'Input range' }),
             configField({ key: 'outMin', label: 'Output minimum', type: 'number', defaultValue: 0, group: 'Output range' }),
@@ -500,7 +500,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'field', label: 'Value path', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'result.status', description: 'Context value compared against each rule.' }),
+            configField({ key: 'field', label: 'Value path', type: 'text', typed: true, required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'result.status', description: 'Context value compared against each rule.' }),
             configField({
                 key: 'rules',
                 label: 'Rules',
@@ -673,7 +673,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         fields: [
             configField({ key: 'statusCode', label: 'Status code', type: 'number', defaultValue: 200, min: 100, max: 599, step: 1 }),
             configField({ key: 'headers', label: 'Headers', type: 'json', defaultValue: {}, placeholder: '{ "x-flow": "done" }' }),
-            configField({ key: 'body', label: 'Body path', type: 'text', defaultValue: 'payload', placeholder: 'payload', description: 'Context path used as the response body.' })
+            configField({ key: 'body', label: 'Body path', type: 'text', typed: true, defaultValue: 'payload', placeholder: 'payload', description: 'Context path used as the response body.' })
         ],
         defaultConfig: { statusCode: 200, headers: {}, body: 'payload' }
     },
@@ -787,7 +787,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
             configField({ key: 'message', label: 'Message', type: 'text', defaultValue: 'Workflow step completed', placeholder: 'Workflow step completed', description: 'Message written to the execution log when no field is set.',}),
-            configField({ key: 'field', label: 'Message property', type: 'text', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Optional context path; logs that value instead of the fixed message.',}),
+            configField({ key: 'field', label: 'Message property', type: 'text', typed: true, pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Optional context path; logs that value instead of the fixed message.',}),
             configField({ key: 'complete', label: 'Complete message', type: 'boolean', defaultValue: false, description: 'Log the complete workflow context instead of one property.',}),
             configField({
                 key: 'level',
@@ -815,7 +815,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [],
         fields: [
             configField({ key: 'active', label: 'Enabled', type: 'boolean', defaultValue: true, group: 'Options', description: 'Turn off to keep the node but skip its output.' }),
-            configField({ key: 'field', label: 'Output property', type: 'text', pattern: VALUE_PATH_PATTERN, placeholder: 'payload', description: 'Context path to print instead of the complete message.' }),
+            configField({ key: 'field', label: 'Output property', type: 'text', typed: true, pattern: VALUE_PATH_PATTERN, placeholder: 'payload', description: 'Context path to print instead of the complete message.' }),
             configField({ key: 'complete', label: 'Complete message', type: 'boolean', defaultValue: false, description: 'Print the complete workflow context.' }),
             configField({
                 key: 'level',
@@ -964,7 +964,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Stringify', value: 'stringify' }
                 ]
             }),
-            configField({ key: 'field', label: 'Field', type: 'text', placeholder: 'value', description: 'Path to the value to parse or stringify.',}),
+            configField({ key: 'field', label: 'Field', type: 'text', typed: true, placeholder: 'value', description: 'Path to the value to parse or stringify.',}),
             configField({ key: 'pretty', label: 'Pretty print', type: 'boolean', defaultValue: false, visibleWhen: { key: 'mode', equals: 'stringify' } })
         ],
         defaultConfig: { mode: 'parse' }
@@ -993,7 +993,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Stringify', value: 'stringify' }
                 ]
             }),
-            configField({ key: 'field', label: 'Field', type: 'text', placeholder: 'value', description: 'Path to the CSV text or array.',}),
+            configField({ key: 'field', label: 'Field', type: 'text', typed: true, placeholder: 'value', description: 'Path to the CSV text or array.',}),
             configField({ key: 'delimiter', label: 'Delimiter', type: 'text', defaultValue: ',', placeholder: ',', description: 'Single character used between columns.',}),
             configField({ key: 'header', label: 'First row is header', type: 'boolean', defaultValue: true, visibleWhen: { key: 'mode', equals: 'parse' } }),
             configField({ key: 'columns', label: 'Columns', type: 'text', placeholder: 'name, age', group: 'Options', description: 'Optional comma-separated columns to keep when parsing or stringifying.' })
@@ -1049,8 +1049,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Result')],
         fields: [
-            configField({ key: 'field', label: 'Array field', type: 'text', placeholder: 'items', description: 'Path to the array to aggregate.',}),
-            configField({ key: 'path', label: 'Item path', type: 'text', placeholder: 'value', description: 'Numeric property of each item.',}),
+            configField({ key: 'field', label: 'Array field', type: 'text', typed: true, placeholder: 'items', description: 'Path to the array to aggregate.',}),
+            configField({ key: 'path', label: 'Item path', type: 'text', typed: true, placeholder: 'value', description: 'Numeric property of each item.',}),
             configField({
                 key: 'operation',
                 label: 'Operation',
@@ -1160,7 +1160,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
-            configField({ key: 'field', label: 'Field', type: 'text', placeholder: 'items', description: 'Text or array to split.',}),
+            configField({ key: 'field', label: 'Field', type: 'text', typed: true, placeholder: 'items', description: 'Text or array to split.',}),
             configField({ key: 'delimiter', label: 'Delimiter', type: 'text', defaultValue: ',', placeholder: ',', description: 'Separator used when splitting text.',})
         ],
         defaultConfig: { delimiter: ',' }
@@ -1176,8 +1176,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
-            configField({ key: 'field', label: 'Array field', type: 'text', placeholder: 'items' }),
-            configField({ key: 'path', label: 'Item path', type: 'text', defaultValue: '', placeholder: 'value', description: 'e.g. value or user.name',})
+            configField({ key: 'field', label: 'Array field', type: 'text', typed: true, placeholder: 'items' }),
+            configField({ key: 'path', label: 'Item path', type: 'text', typed: true, defaultValue: '', placeholder: 'value', description: 'e.g. value or user.name',})
         ],
         defaultConfig: {}
     },
@@ -1192,8 +1192,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
-            configField({ key: 'field', label: 'Array field', type: 'text', placeholder: 'items' }),
-            configField({ key: 'path', label: 'Item path', type: 'text', defaultValue: '' }),
+            configField({ key: 'field', label: 'Array field', type: 'text', typed: true, placeholder: 'items' }),
+            configField({ key: 'path', label: 'Item path', type: 'text', typed: true, defaultValue: '' }),
             configField({
                 key: 'operator',
                 label: 'Operator',
@@ -1210,7 +1210,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'less or equal', value: 'lte' }
                 ]
             }),
-            configField({ key: 'value', label: 'Compare with', type: 'text', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+            configField({ key: 'value', label: 'Compare with', type: 'text', typed: true, visibleWhen: { key: 'operator', notEquals: 'truthy' } })
         ],
         defaultConfig: { operator: 'truthy' }
     },
@@ -1225,8 +1225,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
-            configField({ key: 'field', label: 'Array field', type: 'text', placeholder: 'items' }),
-            configField({ key: 'path', label: 'Sort path', type: 'text', placeholder: 'value', description: 'Property of each item used for ordering.',}),
+            configField({ key: 'field', label: 'Array field', type: 'text', typed: true, placeholder: 'items' }),
+            configField({ key: 'path', label: 'Sort path', type: 'text', typed: true, placeholder: 'value', description: 'Property of each item used for ordering.',}),
             configField({
                 key: 'order',
                 label: 'Order',
@@ -1269,7 +1269,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [port('in', 'in', 'input', 'Input')],
         outputs: [port('out', 'out', 'output', 'Batches')],
         fields: [
-            configField({ key: 'field', label: 'Array field', type: 'text', placeholder: 'items' }),
+            configField({ key: 'field', label: 'Array field', type: 'text', typed: true, placeholder: 'items' }),
             configField({ key: 'size', label: 'Batch size', type: 'number', defaultValue: 10, min: 1, step: 1, description: 'Items per batch.',})
         ],
         defaultConfig: { size: 10 }
