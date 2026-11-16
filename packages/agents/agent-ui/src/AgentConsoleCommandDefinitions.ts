@@ -100,7 +100,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     // Review owns an extensible subcommand grammar, so keep its tail variadic.
     { name: '/review', description: 'coding task review', group: 'review', args: [{ name: 'command', variadic: true }] },
     { name: '/dialog', description: 'open a dialog route: /dialog [id|path|group]', group: 'system', hidden: true, args: [{ name: 'route', variadic: true }] },
-    { name: '/worktree', description: 'managed worktrees: /worktree [create] <name> | list | enter <name> | merge <name> | remove <name> [--force]', group: 'review', args: [{ name: 'args', variadic: true }] },
+    { name: '/worktree', description: 'managed worktrees: /worktree [create] <name> | list | enter [name] | merge <name> | remove <name> [--force]', group: 'review', args: [{ name: 'args', variadic: true }] },
     { name: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]', group: 'review', args: [{ name: 'pathOrFlag', variadic: true }] },
     { name: '/approvals', description: 'approvals', group: 'review' },
     {

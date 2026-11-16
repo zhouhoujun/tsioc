@@ -861,6 +861,24 @@ export class VmSubmitTest {
         expect(cd.length).toEqual(1);
     }
 
+    @Test('/worktree enter without a name selects a worktree')
+    async worktreeEnterSelectsWorkspace() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.worktreeCommand = async (request: any) => request.action === 'list'
+            ? { action: 'list', items: [{ path: '/w/.worktrees/feature', branch: 'wt/feature' }] }
+            : { action: request.action };
+        const cd: string[] = [];
+        (component as any).runCdCommand = async (args: string) => { cd.push(args); };
+        let offered: any[] = [];
+        (component as any).select = async (_title: string, options: any[]) => { offered = options; return options[0]?.value; };
+
+        await (component as any).handleCommand('/worktree enter');
+        expect(offered.map(option => option.value)).toEqual(['/w/.worktrees/feature']);
+        expect(cd).toEqual(['/w/.worktrees/feature']);
+        expect(state.notice).toContain('Entered worktree feature');
+    }
+
     @Test('unsetting escape disables the configured interrupt binding but Esc still interrupts a running turn')
     async unsettingEscapeDisablesInterrupt() {
         const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());

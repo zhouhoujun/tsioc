@@ -38,7 +38,7 @@ export async function runWorktreeCommand(ctx: CommandHandlerContext, args: strin
         return true;
     }
     const request = parseWorktreeArgs(args);
-    if (request.action !== 'list' && !request.name) {
+    if (request.action !== 'list' && request.action !== 'enter' && !request.name) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeUsage'));
         return true;
     }
@@ -47,21 +47,43 @@ export async function runWorktreeCommand(ctx: CommandHandlerContext, args: strin
             // Resolve the managed worktree through the same list the user sees,
             // then reuse /cd so validation, history and workspace state agree.
             const list = await ctx.state.worktreeCommand({ action: 'list' });
-            const target = (list.items || []).find(item =>
-                item.path === request.name
-                || worktreeBaseName(item.path) === request.name
-                || item.branch === request.name
-            );
-            if (!target) {
-                ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeNotFound', { name: request.name ?? '' }));
+            const items = list.items || [];
+            let targetPath = '';
+            if (request.name) {
+                const target = items.find(item =>
+                    item.path === request.name
+                    || worktreeBaseName(item.path) === request.name
+                    || item.branch === request.name
+                );
+                if (target) {
+                    targetPath = target.path;
+                }
+            } else if (items.length) {
+                targetPath = await ctx.select(
+                    formatAgentUiNotice(ctx.translator, 'worktreeEnterTitle'),
+                    items.map(item => ({
+                        label: `${worktreeBaseName(item.path)}${item.branch ? `  [${item.branch}]` : ''}`,
+                        value: item.path,
+                        description: item.path
+                    })),
+                    0,
+                    formatAgentUiNotice(ctx.translator, 'worktreeSelectHint')
+                ) || '';
+            }
+            if (!targetPath) {
+                if (!items.length) {
+                    ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeListEmpty'));
+                } else if (request.name) {
+                    ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeNotFound', { name: request.name }));
+                }
                 return true;
             }
             if (ctx.runCdCommand) {
-                await ctx.runCdCommand(target.path);
+                await ctx.runCdCommand(targetPath);
             }
             ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeEntered', {
-                name: request.name ?? worktreeBaseName(target.path),
-                path: target.path
+                name: request.name ?? worktreeBaseName(targetPath),
+                path: targetPath
             }));
             return true;
         }
