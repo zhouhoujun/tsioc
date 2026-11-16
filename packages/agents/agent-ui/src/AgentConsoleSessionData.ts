@@ -267,7 +267,7 @@ export class AgentConsoleSessionData {
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
     selectMenu?: AgentConsoleSelectMenu;
-    pendingApprovals: AgentConsoleApprovalRequest[] = []; modelUnavailableAction?: (failure: any) => void | Promise<void>; scrollTranscriptAction?: (rows: number) => boolean;
+    pendingApprovals: AgentConsoleApprovalRequest[] = []; modelUnavailableAction?: (failure: any) => void | Promise<void>; scrollTranscriptAction?: (rows: number) => boolean; revealMessageAction?: (messageId: string) => boolean;
     submitAction?: () => Promise<void>;
     escapeAction?: () => boolean | Promise<boolean>;
     queueDraftAction?: () => boolean | Promise<boolean>;

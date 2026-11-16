@@ -87,6 +87,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/statusline', description: 'status bar fields: list / set field1,field2 / unset field', group: 'display', args: [{ name: 'verb', type: 'enum', values: ['list', 'set', 'unset'] }, { name: 'fields', variadic: true }] },
 
     { name: '/editor', description: 'edit the draft in an external editor (Ctrl+G)', group: 'input', args: [{ name: 'initial', variadic: true }] },
+    { name: '/activity', description: 'jump to the latest tools/reasoning/plan/diff/errors/final answer in the transcript', group: 'session', aliases: ['/jump'], args: [{ name: 'kind', type: 'enum', values: ['tools', 'reasoning', 'plan', 'diff', 'errors', 'answer'] }] },
     { name: '/queue', description: 'queued follow-up prompts: /queue [list|clear|remove <n>|edit <n>] (Tab while a turn is running)', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['list', 'clear', 'remove', 'edit'] }, { name: 'index' }] },
     { name: '/stash', description: 'named draft stash: ctrl+x shift+s push, /stash [list|pop <name>|rm <name>]', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['list', 'push', 'save', 'pop', 'restore', 'rm', 'drop', 'delete'] }, { name: 'name', variadic: true }] },
     { name: '/voice', description: 'voice session status/start/stop/cancel', group: 'input', args: [{ name: 'verb', type: 'enum', values: ['start', 'stop', 'cancel', 'status'] }] },

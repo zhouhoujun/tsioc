@@ -4437,3 +4437,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 创建后可直接 `/worktree enter <name>` 开始在该工作树里工作；未找到时给出明确提示。
 - 命令描述、补全/usage、en/zh 文案（`worktreeEntered` / `worktreeNotFound`）同步；i18n 计数 691 → 693。
 - 测试：vm-submit 新增 enter 匹配/未找到/不重复切目录用例，45 passing。
+
+## 2026-11-16 Activity 分类跳转（/activity，别名 /jump）
+- `/activity [tools|reasoning|plan|diff|errors|answer]`：从 displayMessages 末尾找到对应类别的最新一行，聚焦转录、选中并 reveal；无参数时用选择器展示分类（可点击的 activity tabs 语义）。排除当前 `/activity` 自身的 command echo，避免跳到命令回显。
+- 新增 `revealMessageAction`（bootstrap 接到真实 messages panel + surface，失败时下一微任务重试一次），命令经 `CommandHandlerContext.runActivityCommand` 分发。
+- en/zh 文案、命令定义/别名与补全同步；测试覆盖六类跳转、选择器、缺失类别、reveal 回调，以及真实 `/activity tools` 分发。

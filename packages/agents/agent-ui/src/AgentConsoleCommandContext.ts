@@ -4,6 +4,7 @@ import { buildCommandHandlerState } from './AgentConsoleCommandHandlerContext';
 import { runReloadCommandView } from './AgentConsoleReloadCommand';
 import { applySecurityLevel } from './AgentConsolePolicyCommands';
 import { policyCommandHost } from './AgentConsoleHostFactories';
+import { runActivityJumpCommand } from './AgentConsoleActivityJumpCommands';
 
 export function buildCommandContext(self: any, abortSignal?: AbortSignal): CommandHandlerContext {        return {
             abortSignal,
@@ -58,6 +59,7 @@ export function buildCommandContext(self: any, abortSignal?: AbortSignal): Comma
             runRawModeCommand: (a) => self.runRawModeCommand(a),
             runStashCommand: (a) => self.runStashCommand(a),
             runQueueCommand: (a) => self.runQueueCommand(a),
+            runActivityCommand: (a) => runActivityJumpCommand(self, a),
             runStatuslineCommand: (a) => self.runStatuslineCommand(a),
             runHooksCommand: () => self.runHooksCommand(),
             runMemoriesCommand: (a) => self.runMemoriesCommand(a),

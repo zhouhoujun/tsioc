@@ -5,6 +5,8 @@ import { applySecurityLevel } from './AgentConsolePolicyCommands';
 import { policyCommandHost } from './AgentConsoleHostFactories';
 import { promptModelUnavailable } from './AgentConsoleModelAvailability';
 import { applyPersistedModelProfile } from './AgentConsoleSettingsStore';
+import { revealAgentConsoleMessage } from './AgentConsoleTranscriptLayout';
+import { AgentConsoleMessagesPanelComponent } from './AgentConsolePanels';
 
 /** Composition-root bootstrap boundary; all members are supplied by AgentConsoleComponent. */
 export interface AgentConsoleBootstrapHost {
@@ -31,7 +33,19 @@ export async function bootstrapConsole(host: AgentConsoleBootstrapHost): Promise
         host.state.recoverSelectedScheduledTaskAction = host.recoverSelectedScheduledTaskActionHandler;
         host.state.activateSelectedToolAction = host.activateSelectedToolActionHandler;
         host.state.revertGitSnapshotFromDetailAction = () => host.revertGitSnapshotFromDetail();
-        host.state.resolveApprovalAction = host.resolveApprovalActionHandler; host.state.modelUnavailableAction = (failure: any) => promptModelUnavailable(host.modelCtx(), failure); host.state.scrollTranscriptAction = (rows: number) => host.surfaceAccessor?.scrollViewport?.(rows) ?? false; host.state.sessionTabsAction = { select: (id: string) => void host.openSession(id, { background: true }), create: () => void host.openSession(), close: (id: string) => { void closeAgentConsoleSessionTab({ state: host.state, translator: host.translator, isTurnInProgress: () => host.isTurnInProgress(), notifyBusyState: (message: string) => host.notifyBusyState(message), openSession: sessionId => host.openSession(sessionId, { background: true }) }, id).then(() => host.sessionUiState.forget(id)); } };
+        host.state.resolveApprovalAction = host.resolveApprovalActionHandler; host.state.modelUnavailableAction = (failure: any) => promptModelUnavailable(host.modelCtx(), failure); host.state.scrollTranscriptAction = (rows: number) => host.surfaceAccessor?.scrollViewport?.(rows) ?? false;
+        host.state.revealMessageAction = (messageId: string) => {
+            const attempt = () => revealAgentConsoleMessage(
+                host.componentRef?.hostView?.query?.(AgentConsoleMessagesPanelComponent)?.instance,
+                host.surfaceAccessor,
+                () => host.state.syncTranscriptFollowing(),
+                messageId
+            );
+            if (!attempt()) {
+                Promise.resolve().then(attempt);
+            }
+            return true;
+        }; host.state.sessionTabsAction = { select: (id: string) => void host.openSession(id, { background: true }), create: () => void host.openSession(), close: (id: string) => { void closeAgentConsoleSessionTab({ state: host.state, translator: host.translator, isTurnInProgress: () => host.isTurnInProgress(), notifyBusyState: (message: string) => host.notifyBusyState(message), openSession: sessionId => host.openSession(sessionId, { background: true }) }, id).then(() => host.sessionUiState.forget(id)); } };
         host.state.approvalAlwaysAllowAction = async (requestId: string) => { (host.resolvedApprovalManager as any)?.setAutoApprove?.(true); await host.resolveApprovalActionHandler('approve', requestId); host.notify(formatAgentUiNotice(host.translator, 'approvalAlwaysAllowed')); };
         host.state.globalKeyInputAction = (key: string, modifiers: any) => host.handleBrowserGlobalKeyInput(key, modifiers);
 host.state.onReviewAnnotationsPersist = (cache: any) => host.saveReviewAnnotationsCacheToDisk(cache);
@@ -137,7 +151,7 @@ export function disposeConsole(host: AgentConsoleBootstrapHost): void {
         host.state.cancelSelectedScheduledTaskAction = undefined;
         host.state.recoverSelectedScheduledTaskAction = undefined;
         host.state.activateSelectedToolAction = undefined;
-        host.state.resolveApprovalAction = undefined; host.state.approvalAlwaysAllowAction = undefined; host.state.modelUnavailableAction = undefined; host.state.scrollTranscriptAction = undefined; host.state.sessionTabsAction = undefined;
+        host.state.resolveApprovalAction = undefined; host.state.approvalAlwaysAllowAction = undefined; host.state.modelUnavailableAction = undefined; host.state.scrollTranscriptAction = undefined; host.state.revealMessageAction = undefined; host.state.sessionTabsAction = undefined;
         host.state.globalKeyInputAction = undefined;
         void host.persistInputHistory(); void host.persistSettings({ lastSessionId: host.state.sessionId, openSessionIds: host.state.openSessionIds });
         const shell = host.sshShell;

@@ -879,6 +879,25 @@ export class VmSubmitTest {
         expect(state.notice).toContain('Entered worktree feature');
     }
 
+    @Test('/activity jumps to the latest matching transcript row')
+    async activityCommandJumpsToCategory() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setMessages([
+            { id: 'u1', role: 'user', content: 'hello', createdAt: 1 },
+            { id: 'tool1', role: 'assistant', content: 'read file', createdAt: 2, metadata: { uiKind: 'event', uiEventType: 'tool_end', status: 'completed' } },
+            { id: 'a1', role: 'assistant', content: 'done', createdAt: 3 }
+        ] as any);
+        const revealed: string[] = [];
+        state.revealMessageAction = (id: string) => { revealed.push(id); return true; };
+
+        await (component as any).handleCommand('/activity tools');
+        expect(state.selectedMessageId).toEqual('tool1');
+        expect(state.messagesFocused).toEqual(true);
+        expect(revealed).toEqual(['tool1']);
+        expect(state.notice).toContain('Jumped to latest Tools');
+    }
+
     @Test('unsetting escape disables the configured interrupt binding but Esc still interrupts a running turn')
     async unsettingEscapeDisablesInterrupt() {
         const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
