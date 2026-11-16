@@ -578,6 +578,8 @@ describe('Visual Workflow Designer', () => {
             const source = new WorkflowDesigner({ registry, service });
             const target = new WorkflowDesigner({ registry, service });
             source.selectNodes(['task_1', 'condition_1', 'task_2']);
+            source.groupSelection('Copied');
+            source.selectNodes(['task_1', 'condition_1', 'task_2']);
             expect(source.copySelection()).toBe(3);
 
             const pasted = target.pasteClipboard();
@@ -588,9 +590,24 @@ describe('Visual Workflow Designer', () => {
             expect(new Set(pasted.map(node => node.id)).size).toBe(3);
             expect(target.selectionCount).toBe(3);
             expect(target.nodes.filter(node => pasted.includes(node)).length).toBe(3);
+            expect(target.groups.length).toBe(1);
+            expect(target.groups[0].name).toBe('Copied');
+            expect(target.groups[0].nodeIds.sort()).toEqual(pasted.map(node => node.id).sort());
 
             target.undo();
             expect(target.nodes.length).toBe(6);
+            expect(target.groups.length).toBe(0);
+        });
+
+        it('duplicates frames along with their selected nodes', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            local.selectNodes(['task_1', 'task_2']);
+            local.groupSelection('Review');
+            local.selectNodes(['task_1', 'task_2']);
+            local.duplicateSelection();
+            expect(local.groups.length).toBe(2);
+            expect(local.groups[1].name).toBe('Review');
+            expect(local.groups[1].nodeIds.sort()).toEqual(local.selectedNodeIds.sort());
         });
 
         it('cuts nodes and pastes them back with new ids', () => {

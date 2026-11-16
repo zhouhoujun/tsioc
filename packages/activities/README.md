@@ -588,7 +588,8 @@ Features:
   selection,
 - `Ctrl+C` / `Ctrl+X` / `Ctrl+V` copy, cut and paste nodes (with internal
   connections) within and across open workflow tabs; pasted nodes get fresh ids
-  and singleton nodes already present are skipped,
+  and singleton nodes already present are skipped; frames whose members are all
+  selected are copied/duplicated with their nodes,
 - multi-selection shows an alignment bar over the canvas: align left/center/
   right/top/middle/bottom and distribute horizontally/vertically,
 - `Ctrl+G` wraps the selection in a named group frame (`Ctrl+Shift+G` or the
