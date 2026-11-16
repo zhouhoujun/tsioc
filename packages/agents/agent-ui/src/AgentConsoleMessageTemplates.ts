@@ -4,6 +4,7 @@ import { TranslatorService } from '@tsdi/i18n';
 import type { AgentConsoleRenderedMessageItem, AgentConsoleRenderedLine } from './AgentConsoleMessageRenderers';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { getDisplayWidth, sliceByDisplayWidth } from './AgentConsoleTextWidth';
+import { styleTextToObject } from './AgentConsoleTheme';
 
 const ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
@@ -410,7 +411,18 @@ export class AgentConsoleToolTemplate extends AgentConsoleMessageTemplateBase {
 export class AgentConsoleActivityTemplate extends AgentConsoleMessageTemplateBase {
     override get templateClass(): string { return 'message-template-tool'; }
     override get lines(): AgentConsoleRenderedLine[] {
-        return (this.item?.lines || []).map(line => ({ ...line, toggleMode: 'inline' as const }));
+        const lines = this.item?.lines || [];
+        // The projection emits one line when folded and summary + one line per
+        // step when expanded; use the Thought-style +/− disclosure marker so
+        // the row reads as expandable instead of an ordinary finished tool.
+        const expanded = lines.length > 1;
+        const muted = styleTextToObject(this.state?.theme?.statusLabel);
+        return lines.map((line, index) => ({
+            ...line,
+            status: index === 0 ? (expanded ? '−' : '+') : line.status,
+            statusStyle: index === 0 ? muted : line.statusStyle,
+            toggleMode: 'inline' as const
+        }));
     }
 }
 

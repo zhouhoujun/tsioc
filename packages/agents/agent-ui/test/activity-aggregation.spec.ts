@@ -209,12 +209,15 @@ export class AgentConsoleActivityRenderingTest {
             const lines = surface.lastRenderedLines.map(plain);
             const activityLine = lines.find(line => line.includes('Activity') && line.includes('3 steps'));
             expect(!!activityLine).toEqual(true);
+            // Thought-style disclosure marker: + folded, − expanded.
+            expect(activityLine!.includes('+')).toEqual(true);
             expect(lines.some(line => /\bread\b/.test(line) && line.includes('output'))).toEqual(false);
 
             state.setMessageExpanded('__activity__t1', true);
             await settle();
             surface.render();
             const expanded = surface.lastRenderedLines.map(plain);
+            expect(expanded.some(line => line.includes('−') && line.includes('Activity'))).toEqual(true);
             expect(expanded.some(line => line.includes('read'))).toEqual(true);
             expect(expanded.some(line => line.includes('grep'))).toEqual(true);
             expect(expanded.some(line => line.includes('edit'))).toEqual(true);
