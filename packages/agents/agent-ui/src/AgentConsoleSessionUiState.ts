@@ -179,7 +179,8 @@ export class AgentConsoleSessionUiState {
             // any slow refresh query; the refresh only replaces rows that
             // actually changed, so revisiting a tab does not blank and rebuild
             // the transcript.
-            this.applyCachedView(targetId, cached, applyComposer);
+            // Paint the target tab's last frame before any state write so the
+            // switch is visible immediately even if the reactive pass is slow.
             const accessor = this.resolveHost().surfaceAccessor;
             const size = accessor?.getTerminalSize?.();
             const columns = Number((size as any)?.columns ?? (size as any)?.cols ?? 0);
@@ -190,6 +191,7 @@ export class AgentConsoleSessionUiState {
             if (frameMatches) {
                 accessor?.paintCachedFrame?.(cached.renderedLines!);
             }
+            this.applyCachedView(targetId, cached, applyComposer);
             for (let turn = 0; turn < 4; turn += 1) {
                 await Promise.resolve();
             }
