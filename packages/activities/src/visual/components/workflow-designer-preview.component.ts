@@ -38,6 +38,8 @@ import {
     buildWorkflowRunHistory,
     buildWorkflowStatusModel,
     buildWorkflowToolbarModel,
+    WORKFLOW_PORT_SPACING,
+    WORKFLOW_PORT_START,
     workflowNodeFrame
 } from '../workflow-view-models';
 import { WorkflowCanvasPointerPayload } from './workflow-canvas';
@@ -1064,6 +1066,55 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return { width: rect.width, height: rect.height };
     }
 
+    /** Nearest edge under a world point, used to insert nodes on wires. */
+    private connectionAt(point: { x: number; y: number }, maxDistance: number) {
+        let nearest: { id: string } | undefined;
+        let nearestDistance = maxDistance;
+        for (const connection of this.designer.connections) {
+            const source = this.designer.nodes.find(node => node.id === connection.sourceNodeId);
+            const target = this.designer.nodes.find(node => node.id === connection.targetNodeId);
+            if (!source || !target) {
+                continue;
+            }
+            const sourceFrame = workflowNodeFrame(source);
+            const outputIndex = Math.max(0, (source.outputs || [])
+                .findIndex(port => port.id === connection.sourcePort));
+            const inputIndex = Math.max(0, (target.inputs || [])
+                .findIndex(port => port.id === connection.targetPort));
+            const start = {
+                x: source.position.x + sourceFrame.width,
+                y: source.position.y + WORKFLOW_PORT_START + outputIndex * WORKFLOW_PORT_SPACING - 5
+            };
+            const end = {
+                x: target.position.x,
+                y: target.position.y + WORKFLOW_PORT_START + inputIndex * WORKFLOW_PORT_SPACING - 5
+            };
+            const distance = this.pointToSegment(point, start, end);
+            if (distance <= nearestDistance) {
+                nearestDistance = distance;
+                nearest = connection;
+            }
+        }
+        return nearest;
+    }
+
+    private pointToSegment(
+        point: { x: number; y: number },
+        start: { x: number; y: number },
+        end: { x: number; y: number }
+    ): number {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const length = dx * dx + dy * dy;
+        if (!length) {
+            return Math.hypot(point.x - start.x, point.y - start.y);
+        }
+        const t = Math.max(0, Math.min(1,
+            ((point.x - start.x) * dx + (point.y - start.y) * dy) / length
+        ));
+        return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
+    }
+
     private canvasRect(): { left: number; top: number; width: number; height: number } | undefined {
         const host = this.elementRef?.nativeElement as any;
         const document = (globalThis as { document?: Document }).document;
@@ -1359,10 +1410,18 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                             outputs: definition.outputs || []
                         } as any)
                         : { width: 184, height: 64 };
-                    designer.addNode(type as any, {
+                    const position = {
                         x: Math.round(payload.world.x - frame.width / 2),
                         y: Math.round(payload.world.y - frame.height / 2)
-                    });
+                    };
+                    const connection = definition?.inputs?.length && definition?.outputs?.length
+                        ? this.connectionAt(payload.world, 24)
+                        : undefined;
+                    if (connection) {
+                        designer.spliceNode(type as any, position, connection.id);
+                    } else {
+                        designer.addNode(type as any, position);
+                    }
                 }
                 break;
             }

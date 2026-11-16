@@ -350,6 +350,74 @@ export class WorkflowDesigner {
         return node;
     }
 
+    /**
+     * Insert a new node on an existing wire: source → new node → target.
+     * The replacement is one undoable edit.
+     */
+    spliceNode(
+        type: IVisualWorkflowNode['type'],
+        position: NodePosition,
+        connectionId: string
+    ): IVisualWorkflowNode | undefined {
+        const definition = this.registry.get(type);
+        if (!definition || definition.singleton) {
+            return undefined;
+        }
+        const connection = this.definition.connections.find(item => item.id === connectionId);
+        if (!connection) {
+            return undefined;
+        }
+        if (!(definition.inputs || []).length || !(definition.outputs || []).length) {
+            return undefined;
+        }
+        const node = this.registry.createNode(type, {
+            x: Math.round(position.x),
+            y: Math.round(position.y)
+        }, {
+            id: this.nextNodeId(type)
+        });
+        const used = new Set(this.definition.connections.map(item => item.id));
+        const nextConnectionId = (): string => {
+            let index = 1;
+            while (used.has(`conn_${index}`)) {
+                index += 1;
+            }
+            const id = `conn_${index}`;
+            used.add(id);
+            return id;
+        };
+        const connections: NodeConnection[] = [];
+        this.definition.connections.forEach(item => {
+            if (item.id !== connectionId) {
+                connections.push(item);
+                return;
+            }
+            connections.push({
+                id: nextConnectionId(),
+                sourceNodeId: connection.sourceNodeId,
+                sourcePort: connection.sourcePort,
+                targetNodeId: node.id,
+                targetPort: (node.inputs || [])[0]?.id || 'in'
+            });
+            connections.push({
+                id: nextConnectionId(),
+                sourceNodeId: node.id,
+                sourcePort: (node.outputs || [])[0]?.id || 'out',
+                targetNodeId: connection.targetNodeId,
+                targetPort: connection.targetPort
+            });
+        });
+        this.commit(current => ({
+            ...current,
+            nodes: [...current.nodes, node],
+            connections,
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        this.selection = { nodeId: node.id, nodeIds: [node.id] };
+        this.setMessage('workflow.message.inserted', { name: node.name });
+        return node;
+    }
+
     removeNode(nodeId: string): boolean {
         if (!this.definition.nodes.some(node => node.id === nodeId)) {
             return false;

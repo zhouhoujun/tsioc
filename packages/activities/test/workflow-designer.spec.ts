@@ -463,6 +463,28 @@ describe('Visual Workflow Designer', () => {
             expect(local.nodes.length).toBe(7);
         });
 
+        it('inserts a node on an existing wire', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            expect(local.nodes.length).toBe(6);
+            expect(local.connections.length).toBe(6);
+
+            const inserted = local.spliceNode('log', { x: 520, y: 240 }, 'conn_2');
+            expect(inserted).toBeDefined();
+            expect(local.nodes.length).toBe(7);
+            expect(local.connections.length).toBe(7);
+            expect(local.connections.some(connection => connection.id === 'conn_2')).toBe(false);
+
+            const incoming = local.connections.find(connection => connection.targetNodeId === inserted!.id);
+            const outgoing = local.connections.find(connection => connection.sourceNodeId === inserted!.id);
+            expect(incoming?.sourceNodeId).toBe('task_1');
+            expect(outgoing?.targetNodeId).toBe('condition_1');
+
+            local.undo();
+            expect(local.nodes.length).toBe(6);
+            expect(local.connections.length).toBe(6);
+            expect(local.connections.some(connection => connection.id === 'conn_2')).toBe(true);
+        });
+
         it('groups, moves and ungroups node frames', () => {
             const local = new WorkflowDesigner({ registry, service });
             local.selectNodes(['task_1', 'task_2']);

@@ -565,6 +565,29 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.selectionCount).toBe(0);
     });
 
+    it('inserts a dropped node on an existing wire', async () => {
+        const beforeNodes = ref.instance.designer.nodes.length;
+        const beforeConnections = ref.instance.designer.connections.length;
+        // conn_2 runs from task_1's output (330+184, 263) to condition_1's input (590, 263).
+        ref.instance.handleCanvas({ type: 'drop', nodeType: 'log', world: { x: 552, y: 263 } } as any);
+        await flush();
+
+        expect(ref.instance.designer.nodes.length).toBe(beforeNodes + 1);
+        expect(ref.instance.designer.connections.length).toBe(beforeConnections + 1);
+        const inserted = ref.instance.designer.nodes.find(node => node.type === 'log')!;
+        expect(ref.instance.designer.connections.some(connection =>
+            connection.sourceNodeId === inserted.id && connection.targetNodeId === 'condition_1'
+        )).toBe(true);
+        expect(ref.instance.designer.connections.some(connection =>
+            connection.sourceNodeId === 'task_1' && connection.targetNodeId === inserted.id
+        )).toBe(true);
+
+        ref.instance.handleCanvas({ type: 'drop', nodeType: 'log', world: { x: 1200, y: 640 } } as any);
+        await flush();
+        expect(ref.instance.designer.nodes.length).toBe(beforeNodes + 2);
+        expect(ref.instance.designer.connections.length).toBe(beforeConnections + 1);
+    });
+
     it('creates, moves and removes node groups', async () => {
         const canvas = root.querySelector('.workflow-canvas') as any;
         const keydown = (key: string, shiftKey = false) => canvas.dispatchEvent(
