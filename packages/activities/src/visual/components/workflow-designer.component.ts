@@ -198,6 +198,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @NoReactive() private unsavedSince?: number;
     @NoReactive() private keyHandler?: (event: any) => void;
     @NoReactive() private documentRef?: any;
+    @NoReactive() private actionBusUnsubscribe?: () => void;
 
     readonly registry: WorkflowNodeRegistry;
     private readonly service?: VisualWorkflowService;
@@ -236,7 +237,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     onInit(): void {
         this.selfRef = this;
-        WORKFLOW_ACTION_BUS.subscribe((action: string) => this.toolbarAction(action));
+        this.actionBusUnsubscribe = WORKFLOW_ACTION_BUS.subscribe(
+            (action: string) => this.toolbarAction(action)
+        );
         const document = (globalThis as { document?: Document }).document;
         if (document?.addEventListener) {
             this.menuClickHandler = (event: any) => {
@@ -266,6 +269,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     onDestroy(): void {
         this.clearAutosaveTimer();
+        this.actionBusUnsubscribe?.();
+        this.actionBusUnsubscribe = undefined;
         const rootDocument = (globalThis as { document?: Document }).document;
         if (this.menuClickHandler && rootDocument?.removeEventListener) {
             rootDocument.removeEventListener('click', this.menuClickHandler, true);

@@ -21,6 +21,11 @@ export class WorkflowActionBus {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
     }
+
+    /** Active listener count (diagnostics and leak tests). */
+    get size(): number {
+        return this.listeners.size;
+    }
 }
 
 /** Shared singleton action channel. */

@@ -1064,7 +1064,8 @@ The package includes comprehensive unit tests with **108 test cases** covering a
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (re-spawns ts-node with a 4 GB heap; override with
+# ACTIVITIES_TEST_HEAP_MB when tuning the UI suite)
 cd packages/activities
 npm test
 

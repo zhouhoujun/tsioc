@@ -47,6 +47,12 @@ describe('Workflow Designer UI', () => {
     });
 
     afterEach(async () => {
+        // Release the JSDOM window (timers/listeners) before dropping the app.
+        try {
+            (doc?.defaultView as any)?.close?.();
+        } catch {
+            // already closed
+        }
         await ctx?.close();
     });
 
@@ -1246,6 +1252,12 @@ describe('Workflow Designer UI', () => {
         (root.querySelector('.workflow-plugins .workflow-publish-close') as any).click();
         await flush();
         expect(root.querySelector('.workflow-plugins')).toBeFalsy();
+    });
+
+    it('releases the shared action bus subscription on destroy', async () => {
+        const before = WORKFLOW_ACTION_BUS.size;
+        (ref.instance as any).onDestroy();
+        expect(WORKFLOW_ACTION_BUS.size).toBe(before - 1);
     });
 
     it('saves and reopens definitions through the workflow library', async () => {
