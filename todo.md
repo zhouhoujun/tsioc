@@ -4381,3 +4381,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 修复：`switchSession` 新增 `coalesceCached`（`AgentConsoleComponent.openSession` 在 `background:true` 时传入）。渲染批在 `applyCachedView` 之前开启，restore 之后关闭；后台刷新在定时器中、批已结束，不会冻结输入。
 - 实测（4 tabs × 200 messages）：**renders/switch 2 → 1**，单帧渲染 ~142ms；即时 flush 从 ~2 帧降到 1 帧。非后台/首次访问保持原路径。
 - 验证：tab 隔离/宿主/activity/html/console-renderer 144 passing；full gate 全绿。
+
+## 2026-11-16 tab 切换性能预算进入测试
+- 新增 `tab-switch-budget.spec.ts`（真实 component + TuiTerminalSurface，4 tabs × 60 messages）：
+  - 断言每个 `background:true` 切 tab **最多 1 次 `renderToTuiLayout`**（锁定缓存应用+restore 合并为一帧的成果）。
+  - 缓存 tab 在 flush 前已绘制自己的帧（`lastRenderedLines` 含目标会话内容）。
+  - 打印 p50/p95 作为观察值（本次 p50 112ms / p95 138ms，60 条消息），不做机器相关的硬阈值以免抖动。
+- 该 spec 进入 agent-ui 全量测试与 gate，后续窗口化/状态重构若让切 tab 重新变成多帧会被立即拦下。
