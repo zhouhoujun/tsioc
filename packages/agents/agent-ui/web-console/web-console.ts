@@ -25,6 +25,7 @@ import {
     RpcCommandOutputStore,
     VscodeIdeBridge,
 } from '@tsdi/agent-ui';
+import type { AgentConsoleOptions } from '@tsdi/agent-ui';
 import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
 import { openAgentConsoleDialogDeepLink } from './dialog-deeplink';
 import { focusWebConsoleComposer } from './focus-composer';
@@ -92,6 +93,12 @@ export interface AgentWebConsoleOptions {
     pwa?: boolean;
     /** Service worker URL, relative to the hosting page by default. */
     serviceWorkerUrl?: string;
+    /**
+     * Pin transcript/display options for this mount (e.g. a gate that must see
+     * every seeded row). The web host's fixed console defaults still win for
+     * workspace/statusline; everything else is merged under them.
+     */
+    consoleOptions?: Partial<AgentConsoleOptions>;
 }
 
 export interface AgentWebConsoleServiceWorkerHost {
@@ -200,6 +207,7 @@ export async function mountAgentWebConsole(
                         title: 'TSDI Agent Web Console',
                         console: {
                             ...(defaultAgentOptions.ui?.console || {}),
+                            ...(config.consoleOptions || {}),
                             workspace: config.workspace,
                             // Match the terminal host's compact footer; the
                             // statusline stays opt-in on both platforms.

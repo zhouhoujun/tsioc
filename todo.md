@@ -4344,3 +4344,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 结论：默认 medium 在功能上可行，但需要改写这两个 gate 的首屏/CJK 断言（它们验证的是“每条 seed 行都渲染”）。按 AGENTS「改变已有用户功能需先说明并确认取舍」，暂保持默认 `high`（opt-in）。
 - 若确认翻默认：`AgentConsoleStateTypes.ts` 一行改为 `medium`，并把 p285 两个场景改为验证 Activity 行 + 展开后的 CJK（或给 mount 增加显式 consoleOptions 以固定 gate 详细度）。
 - 本轮顺带把 `console-renderer` 的 85 行 system question 用例降为 40 行（断言同步），保持“长问题不折叠”的验证。
+
+## 2026-11-16 Activity 聚合改为默认 medium（保留 gate 覆盖）
+- **默认翻转为 `medium`**：长会话默认把连续已完成 tool/command/event 步骤折叠为可展开的 Activity 行；running/失败/错误/最终回答仍逐条显示。`/display activity high` 可恢复逐步骤显示。
+- **避免削弱 gate**：`mountAgentWebConsole` 新增 `consoleOptions`（`Partial<AgentConsoleOptions>`）宿主选项，合并进 `AGENT_OPTIONS.ui.console`；p285 first-screen gate 显式固定 `activityVerbosity: 'high'`，继续验证每条 seed 行与 CJK 行都渲染，而不再依赖全局默认值。
+- **验证**：完整 agent-ui **2137 passing / 0 failed，wall 114.6s（<2min）**；新增默认值断言（默认 medium 且 2 步 run 折叠）。
+- **兼容**：`high` 仍可用；timeline 模式不参与聚合；scrollback 与 viewport 同一投影。

@@ -50,6 +50,14 @@ export class AgentConsoleActivityAggregationTest {
         return state;
     }
 
+    @Test('default verbosity collapses finished step runs')
+    defaultVerbosityAggregates() {
+        const state = new AgentConsoleSessionState();
+        expect(state.activityVerbosity).toEqual('medium');
+        state.messages = [userMessage('u'), toolEvent('t1', 'read'), toolEvent('t2', 'grep'), assistantMessage('a')];
+        expect(state.displayMessages.map(message => message.id)).toEqual(['u', '__activity__t1', 'a']);
+    }
+
     @Test('high verbosity keeps every step row')
     highVerbosityKeepsSteps() {
         const messages = [userMessage('u'), toolEvent('t1', 'read'), toolEvent('t2', 'grep'), assistantMessage('a')];

@@ -408,7 +408,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messageLayout: 'viewport',
     messageDetailVisibleLines: 6,
     auxiliaryPreviewLines: DEFAULT_RENDER_POLICY.auxiliaryPreviewLines,
-    activityVerbosity: 'high',
+    activityVerbosity: 'medium',
     reasoningPreviewLines: DEFAULT_RENDER_POLICY.reasoningPreviewLines,
     questionTailVisibleLines: DEFAULT_RENDER_POLICY.questionTailVisibleLines,
     messageSelectionPageSize: 6,
