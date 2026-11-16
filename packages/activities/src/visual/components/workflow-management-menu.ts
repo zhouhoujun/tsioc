@@ -99,6 +99,7 @@ export class WorkflowManagementMenuComponent {
                     { id: 'save', label: t('save', 'Save'), shortcut: 'Ctrl+S' },
                     { id: 'publish', label: t('publish', 'Publish'), icon: 'publish' },
                     { id: 'versions', label: t('versions', 'Versions'), icon: 'history' },
+                    { id: 'plugins', label: t('plugins', 'Plugins') },
                     { id: 'rename', label: t('rename', 'Rename workflow'), icon: 'rename' },
                     { id: 'open-library', label: t('library', 'Workflows') },
                     { id: 'toggle-json', label: t('jsonMenu', 'Import / Export JSON') }

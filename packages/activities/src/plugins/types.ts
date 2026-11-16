@@ -15,6 +15,13 @@ export interface WorkflowPluginManifest {
     nodes: WorkflowPluginNodeManifest[];
 }
 
+/** Host bridge used by the designer palette manager. */
+export interface WorkflowPluginManager {
+    list(): Promise<{ installed: WorkflowPluginManifest[]; available: WorkflowPluginManifest[] }>;
+    install(id: string): Promise<{ installed: boolean; plugin?: WorkflowPluginManifest }>;
+    uninstall(id: string): Promise<boolean>;
+}
+
 /** A service owned by a plugin. `dispose` runs when the plugin is uninstalled. */
 export interface WorkflowPluginService {
     dispose?(): void | Promise<void>;

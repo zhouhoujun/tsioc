@@ -543,7 +543,9 @@ Features:
 - opened workflows are independent document tabs; `+` creates a blank workflow,
   each tab keeps its own canvas/selection/history, and the host can restore the
   persisted open-tab set on startup,
-- palette to drag generic node components onto the canvas (or click to add),
+- palette to drag generic node components onto the canvas (or click to add);
+  `Menu → Plugins` (when the host provides a plugin manager) lists bundled and
+  installed plugins and installs/uninstalls them without reloading the designer,
 - theme switching: light / dark / solarized / high-contrast from the application
   menu's `Theme` submenu (shared `ThemeService`); layout panes, borders,
   scrollbars and node cards follow the active theme,

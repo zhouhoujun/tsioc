@@ -21,6 +21,7 @@ import {
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 import { WorkflowDesignerPreviewComponent } from './workflow-designer-preview.component';
 import { WORKFLOW_ACTION_BUS } from '../workflow-action-bus';
+import { WorkflowPluginManager, WorkflowPluginManifest, WorkflowPluginNodeManifest } from '../../plugins/types';
 
 interface WorkflowDocumentTab {
     id: string;
@@ -87,6 +88,33 @@ interface WorkflowDocumentTab {
             :restoreAction="restoreVersion" :compareAction="compareVersion"
             :releaseAction="releaseVersion"
             :closeDiffAction="closeVersionDiff" :closeAction="closeVersions"></workflow-version-panel>
+        <div class="workflow-publish workflow-plugins" v-if="showPlugins">
+            <div class="workflow-publish-panel workflow-plugins-panel">
+                <div class="workflow-publish-head">
+                    <span class="workflow-publish-title">{{pluginsTitle}}</span>
+                    <button class="workflow-btn workflow-publish-close" type="button"
+                        [aria-label]="closePluginsLabel" [title]="closePluginsLabel" @click="closePlugins">✕</button>
+                </div>
+                <div class="workflow-plugins-error" v-if="pluginError">{{pluginError}}</div>
+                <div class="workflow-plugins-list" v-if="pluginItems.length">
+                    <div class="workflow-plugin-row" v-for="item in pluginItems" data-plugin-id="{{item.id}}">
+                        <div class="workflow-plugin-main">
+                            <span class="workflow-plugin-title">{{item.name}}</span>
+                            <span class="workflow-plugin-version" v-if="item.version">v{{item.version}}</span>
+                            <span class="workflow-plugin-installed" v-if="item.installed">{{pluginInstalledLabel}}</span>
+                            <div class="workflow-plugin-description" v-if="item.description">{{item.description}}</div>
+                            <div class="workflow-plugin-nodes">{{pluginNodeCount(item)}}</div>
+                        </div>
+                        <button class="workflow-btn" type="button"
+                            [disabled]="pluginBusyId === item.id"
+                            @click="togglePlugin(item)">
+                            {{item.installed ? pluginUninstallLabel : pluginInstallLabel}}
+                        </button>
+                    </div>
+                </div>
+                <div class="workflow-plugins-empty" v-else>{{pluginsEmptyLabel}}</div>
+            </div>
+        </div>
         <div class="workflow-rename" v-if="showRename">
             <div class="workflow-rename-panel">
                 <div class="workflow-rename-head">
@@ -118,6 +146,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @Attribute() runContext: ActivityContext = {};
     @Attribute() autoRun = false;
     @Attribute() store: WorkflowDefinitionStore = createDefaultWorkflowDefinitionStore();
+    /** Optional palette-manager bridge; hosts without it keep the static palette. */
+    @Attribute() pluginManager?: WorkflowPluginManager;
     /** Persist edits automatically after `autosaveDelay` ms of quiet. */
     @Attribute() autosave = false;
     @Attribute() autosaveDelay = 1200;
@@ -151,6 +181,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
     showVersions = false;
     showPublish = false;
     publishError = '';
+    showPlugins = false;
+    pluginItems: Array<WorkflowPluginManifest & { installed: boolean }> = [];
+    pluginError = '';
+    pluginBusyId = '';
     versionItems: WorkflowVersionSummary[] = [];
     versionRelease: WorkflowRelease | undefined = undefined;
     versionDiff: WorkflowDiffResult | undefined = undefined;
@@ -533,8 +567,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     get renameConfirmLabel(): string { return this.t('renameConfirm', 'Rename'); }
     get cancelLabel(): string { return this.t('cancel', 'Cancel'); }
 
-    private t(key: string, fallback: string): string {
-        return translateWorkflow(this.translator, this.localeValue, `workflow.ui.${key}`, fallback);
+    private t(key: string, fallback: string, params?: Record<string, any>): string {
+        return translateWorkflow(this.translator, this.localeValue, `workflow.ui.${key}`, fallback, params);
     }
 
     readonly clearAutosaveTimer = (): void => {
@@ -716,6 +750,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.openLibrary();
             return;
         }
+        if (action === 'plugins') {
+            void self.openPlugins();
+            return;
+        }
         self.preview?.handleToolbarAction(action);
     };
 
@@ -756,6 +794,119 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
         self.showLibrary = true;
     };
+
+    get pluginsTitle(): string { return this.t('pluginsTitle', 'Workflow plugins'); }
+    get closePluginsLabel(): string { return this.t('close', 'Close'); }
+    get pluginInstallLabel(): string { return this.t('pluginInstall', 'Install'); }
+    get pluginUninstallLabel(): string { return this.t('pluginUninstall', 'Uninstall'); }
+    get pluginInstalledLabel(): string { return this.t('pluginInstalled', 'Installed'); }
+    get pluginsEmptyLabel(): string { return this.t('pluginsEmpty', 'No plugins are available on this host.'); }
+
+    pluginNodeCount(item: WorkflowPluginManifest): string {
+        return this.t('pluginNodeCount', '{count} nodes', { count: item.nodes?.length || 0 });
+    }
+
+    readonly openPlugins = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showPlugins = true;
+        self.pluginError = '';
+        await self.refreshPlugins();
+    };
+
+    readonly closePlugins = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showPlugins = false;
+        self.pluginError = '';
+    };
+
+    private async refreshPlugins(): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.pluginManager) {
+            self.pluginItems = [];
+            self.pluginError = self.t(
+                'pluginHostMissing',
+                'This host does not expose a plugin manager.'
+            );
+            return;
+        }
+        try {
+            const list = await self.pluginManager.list();
+            const installed = new Set((list.installed || []).map(plugin => plugin.id));
+            const merged = new Map<string, WorkflowPluginManifest & { installed: boolean }>();
+            (list.available || []).forEach(plugin => {
+                merged.set(plugin.id, { ...plugin, installed: installed.has(plugin.id) });
+            });
+            (list.installed || []).forEach(plugin => {
+                merged.set(plugin.id, { ...plugin, installed: true });
+            });
+            self.pluginItems = Array.from(merged.values())
+                .sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
+        } catch (error) {
+            self.pluginError = (error as Error).message;
+        }
+    }
+
+    readonly togglePlugin = (item: WorkflowPluginManifest & { installed: boolean }): void => {
+        if (!item) {
+            return;
+        }
+        if (item.installed) {
+            void this.uninstallPlugin(item.id);
+        } else {
+            void this.installPlugin(item.id);
+        }
+    };
+
+    readonly installPlugin = async (id: string): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.pluginManager || !id) {
+            return;
+        }
+        self.pluginBusyId = id;
+        self.pluginError = '';
+        try {
+            const result = await self.pluginManager.install(id);
+            if (result.plugin) {
+                self.registerPluginNodes(result.plugin);
+            }
+            await self.refreshPlugins();
+        } catch (error) {
+            self.pluginError = (error as Error).message;
+        } finally {
+            self.pluginBusyId = '';
+        }
+    };
+
+    readonly uninstallPlugin = async (id: string): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.pluginManager || !id) {
+            return;
+        }
+        const item = self.pluginItems.find(plugin => plugin.id === id);
+        self.pluginBusyId = id;
+        self.pluginError = '';
+        try {
+            await self.pluginManager.uninstall(id);
+            if (item) {
+                self.unregisterPluginNodes(item);
+            }
+            await self.refreshPlugins();
+        } catch (error) {
+            self.pluginError = (error as Error).message;
+        } finally {
+            self.pluginBusyId = '';
+        }
+    };
+
+    private registerPluginNodes(plugin: WorkflowPluginManifest): void {
+        const registry = this.designer?.registry || this.registry;
+        (plugin.nodes || []).forEach(node => registry.register(node as any));
+    }
+
+    private unregisterPluginNodes(plugin: WorkflowPluginManifest): void {
+        const registry = this.designer?.registry || this.registry;
+        (plugin.nodes || []).forEach(node => registry.unregister(node.type));
+    }
 
     /** Open the rename overlay for the active workflow document. */
     readonly openRename = (): void => {

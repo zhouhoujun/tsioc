@@ -27,6 +27,15 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
             return;
         }
         designer.store = new HttpWorkflowDefinitionStore({ baseUrl: '/api' });
+        designer.pluginManager = {
+            list: async () => firstValue(this.http.get('/api/plugins')) as any,
+            install: async (id: string) => firstValue(
+                this.http.post(`/api/plugins/${encodeURIComponent(id)}/install`, {})
+            ) as any,
+            uninstall: async (id: string) => firstValue(
+                this.http.delete(`/api/plugins/${encodeURIComponent(id)}`)
+            ) as any
+        };
         designer.autosave = true;
         designer.autosaveDelay = 1200;
         designer.autosaveMinInterval = 3000;

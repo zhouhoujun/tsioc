@@ -1037,6 +1037,66 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-debug-item')?.textContent).toContain('读取输入');
     });
 
+    it('installs and uninstalls plugins from the palette manager', async () => {
+        const manifest = {
+            id: 'demo',
+            name: 'Demo plugin',
+            version: '1.0.0',
+            description: 'Adds a demo node',
+            nodes: [{
+                type: 'demo-node',
+                label: 'Demo node',
+                category: 'action',
+                icon: 'D',
+                color: '#0f766e',
+                textColor: '#ffffff',
+                inputs: [{ id: 'in', name: 'in', type: 'input' }],
+                outputs: [{ id: 'out', name: 'out', type: 'output' }],
+                fields: []
+            }]
+        };
+        let installed = false;
+        ref.instance.pluginManager = {
+            list: async () => ({
+                installed: installed ? [manifest] : [],
+                available: [manifest]
+            }),
+            install: async () => {
+                installed = true;
+                return { installed: true, plugin: manifest };
+            },
+            uninstall: async () => {
+                installed = false;
+                return true;
+            }
+        } as any;
+
+        expect(root.querySelector('.workflow-global-bar [data-menu-id="plugins"]')).toBeTruthy();
+        ref.instance.toolbarAction('plugins');
+        await flush();
+        expect(root.querySelector('.workflow-plugins')).toBeTruthy();
+        await waitFor(() => !!root.querySelector('.workflow-plugin-row[data-plugin-id="demo"]'));
+
+        let row = root.querySelector('.workflow-plugin-row[data-plugin-id="demo"]') as any;
+        expect(row.textContent).toContain('Demo plugin');
+        expect(row.textContent).toContain('1 个节点');
+
+        (row.querySelector('.workflow-btn') as any).click();
+        await waitFor(() => ref.instance.designer.registry.has('demo-node'));
+        expect(ref.instance.designer.registry.has('demo-node')).toBe(true);
+
+        await waitFor(() => String(root.querySelector('.workflow-plugin-row[data-plugin-id="demo"]')?.textContent || '').includes('已安装'));
+        row = root.querySelector('.workflow-plugin-row[data-plugin-id="demo"]') as any;
+        expect(row.textContent).toContain('已安装');
+        (row.querySelector('.workflow-btn') as any).click();
+        await waitFor(() => !ref.instance.designer.registry.has('demo-node'));
+        expect(ref.instance.designer.registry.has('demo-node')).toBe(false);
+
+        (root.querySelector('.workflow-plugins .workflow-publish-close') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-plugins')).toBeFalsy();
+    });
+
     it('saves and reopens definitions through the workflow library', async () => {
         ref.instance.store = new InMemoryWorkflowDefinitionStore();
         await ref.instance.saveWorkflow();
