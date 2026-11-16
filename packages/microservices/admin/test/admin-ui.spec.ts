@@ -319,6 +319,9 @@ describe('Microservice admin UI', () => {
         (root.querySelector('.ga-export-slo') as HTMLElement).click();
         await flush();
         expect(root.querySelector('.ga-status')?.textContent).toContain('SLO alerts exported');
+        (root.querySelector('.ga-export-slo-csv') as HTMLElement).click();
+        await flush();
+        expect(root.querySelector('.ga-status')?.textContent).toContain('SLO alerts exported');
     });
 
     it('renders a vector icon inside every sidebar navigation button', async () => {

@@ -4295,3 +4295,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第五十六批（2026-11-16）：
   - agents-gate publish-dry-run stage（PUBLISH_DRY_RUN_PACKAGES）。
   - gateway 实测 PASS；未设置时 SKIP。
+- 微服务框架第五十七批（2026-11-16）：
+  - Admin SLO Alerts CSV 导出。
+  - 回归：admin 63。

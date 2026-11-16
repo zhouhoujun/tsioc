@@ -473,6 +473,36 @@ export class GatewayAdminState {
         self.status = self.t('status.sloExported');
     };
 
+    readonly exportSloAlertsCsv = (): void => {
+        const self = this.selfRef ?? this;
+        const alerts = self.diagnostics?.alerts ?? [];
+        const header = ['key', 'timestamp', 'isoTime', 'errorRate', 'p95Ms', 'errorRateThreshold', 'p95ThresholdMs'];
+        const rows = alerts.map(alert => [
+            alert.key,
+            String(alert.timestamp),
+            new Date(alert.timestamp).toISOString(),
+            String(alert.errorRate),
+            String(alert.p95Ms),
+            alert.errorRateThreshold == null ? '' : String(alert.errorRateThreshold),
+            alert.p95ThresholdMs == null ? '' : String(alert.p95ThresholdMs)
+        ]);
+        const csv = [header, ...rows]
+            .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+        const doc = (self.documentRef ?? (globalThis as { document?: Document }).document) as Document | undefined;
+        const createUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
+        if (doc && createUrl && typeof Blob !== 'undefined') {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = doc.createElement('a');
+            link.href = url;
+            link.download = 'gateway-slo-alerts.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+        self.status = self.t('status.sloExported');
+    };
+
     get routeSloRows() {
         return [...(this.diagnostics?.routes ?? [])]
             .sort((a, b) => b.requests - a.requests)

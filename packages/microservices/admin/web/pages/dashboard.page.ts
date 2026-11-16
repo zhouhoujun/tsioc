@@ -115,6 +115,7 @@ import { GatewayAdminState } from '../admin.state';
                         <p>{{state.t('card.sloAlertsDesc')}}</p>
                     </div>
                     <button class="ga-link-btn ga-export-slo" type="button" @click="state.exportSloAlerts">{{state.t('slo.export')}}</button>
+                    <button class="ga-link-btn ga-export-slo-csv" type="button" @click="state.exportSloAlertsCsv">{{state.t('slo.exportCsv')}}</button>
                 </div>
                 <div class="ga-compact-list">
                     <div class="ga-compact-row ga-slo-alert-row" v-for="alert in state.recentSloAlerts">

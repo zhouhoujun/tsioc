@@ -317,6 +317,11 @@
 - `agents-gate.sh` 新增 `publish-dry-run` stage，读取 `PUBLISH_DRY_RUN_PACKAGES`。
 - 未设置时显式 SKIP；设置后执行逐包 build → pack → npm publish --dry-run。
 
+第五十七批（SLO CSV）：
+
+- Admin SLO Alerts 支持 JSON / CSV 导出（key/timestamp/iso/errorRate/p95/阈值）。
+- CSV 做引号转义，文件名 gateway-slo-alerts.csv。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
