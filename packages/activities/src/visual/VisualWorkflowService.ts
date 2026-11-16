@@ -101,6 +101,7 @@ export function toWorkflowExecutionSnapshot(state: WorkflowExecutionState): Work
 export class VisualWorkflowService {
     private readonly executions = new Map<string, WorkflowExecutionState>();
     private readonly globalContext: Record<string, any> = {};
+    private readonly nodeRuntime = new Map<string, Record<string, any>>();
     private readonly registry: WorkflowNodeRegistry;
     private readonly pathInterceptor = new VisualExecutionPathInterceptor();
     private readonly policyInterceptor = new WorkflowNodePolicyInterceptor();
@@ -360,6 +361,16 @@ export class VisualWorkflowService {
      * Expose installed plugin services (and keep caller-provided services).
      * Task/function nodes can resolve them from `context.services`.
      */
+    private nodeState(workflowId: string, nodeId: string): Record<string, any> {
+        const key = `${workflowId}:${nodeId}`;
+        let state = this.nodeRuntime.get(key);
+        if (!state) {
+            state = {};
+            this.nodeRuntime.set(key, state);
+        }
+        return state;
+    }
+
     /** Shared `global` scope exposed to every execution of this service. */
     getGlobalContext(): Record<string, any> {
         return this.globalContext;
@@ -608,6 +619,7 @@ export class VisualWorkflowService {
                 options,
                 extras: {
                     cancelled: () => state.status === 'cancelled' || this.isCancelled(state),
+                    nodeState: this.nodeState(state.workflowId, node.id),
                     incoming: node.type === 'join'
                         ? (plan.incoming.get(node.id) || []).map(connection => ({
                             connectionId: connection.id,
@@ -691,6 +703,13 @@ export class VisualWorkflowService {
         // or message reached the execution context.
         if ((node.type === 'http-in' || node.type === 'tcp-in' || node.type === 'udp-in' || node.type === 'websocket-in')
             && result.data?.matched !== true) {
+            (plan.outgoing.get(node.id) || [])
+                .forEach(connection => this.markEdgeSkipped(state, connection.id, options));
+            return result;
+        }
+
+        // Rate-limited nodes drop the message without failing the workflow.
+        if (result.success && result.data?.dropped === true) {
             (plan.outgoing.get(node.id) || [])
                 .forEach(connection => this.markEdgeSkipped(state, connection.id, options));
             return result;

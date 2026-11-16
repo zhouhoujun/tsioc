@@ -34,6 +34,8 @@ async function pause(ms: number, cancelled?: () => boolean): Promise<boolean> {
 export interface VisualNodeExecutionExtras {
     /** True once the run has been cancelled or timed out. */
     cancelled?: () => boolean;
+    /** Mutable per-node runtime state (rate limits, timers). */
+    nodeState?: Record<string, any>;
     incoming?: Array<{
         connectionId: string;
         sourcePort?: string;
@@ -668,6 +670,55 @@ export async function executeVisualNode(
             };
         case 'delay': {
             const mode = String(config.mode || 'fixed');
+            if (mode === 'rate') {
+                const limit = Math.max(1, Number(config.rateCount) || 1);
+                const windowMs = Math.max(0, Number(config.rateWindow) || 0);
+                const state = extras?.nodeState || {};
+                const stamps: number[] = Array.isArray(state.rateStamps) ? state.rateStamps : [];
+                const now = Date.now();
+                let recent = stamps
+                    .filter(stamp => windowMs <= 0 || now - stamp < windowMs)
+                    .sort((a, b) => a - b);
+                if (recent.length >= limit) {
+                    const action = String(config.rateAction || 'drop');
+                    if (action === 'queue' && windowMs > 0) {
+                        const wait = Math.max(0, recent[0] + windowMs - now);
+                        if (!(await pause(wait, extras?.cancelled))) {
+                            return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id } };
+                        }
+                        const after = Date.now();
+                        recent = recent.filter(stamp => windowMs <= 0 || after - stamp < windowMs);
+                    }
+                    if (recent.length >= limit) {
+                        if (action === 'queue') {
+                            // A concurrent waiter filled the last slot; queue this message too.
+                            const wait = Math.max(0, (recent[0] + windowMs) - Date.now());
+                            if (!(await pause(wait, extras?.cancelled))) {
+                                return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id } };
+                            }
+                            recent = recent.filter(stamp => windowMs <= 0 || Date.now() - stamp < windowMs);
+                        }
+                        if (recent.length >= limit) {
+                            state.rateStamps = recent;
+                            return {
+                                success: true,
+                                data: { nodeId: node.id, dropped: true, rateLimited: true, mode: 'rate' }
+                            };
+                        }
+                    }
+                }
+                recent.push(Date.now());
+                state.rateStamps = recent;
+                return {
+                    success: true,
+                    data: {
+                        nodeId: node.id,
+                        delayed: 0,
+                        mode: 'rate',
+                        rateRemaining: Math.max(0, limit - recent.length)
+                    }
+                };
+            }
             const unit = String(config.unit || 'ms');
             const factor = unit === 's' ? 1000 : unit === 'min' ? 60000 : 1;
             let delay = Math.max(0, Number(config.delay ?? config.duration ?? 0) || 0) * factor;

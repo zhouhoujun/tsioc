@@ -637,6 +637,9 @@ Features:
   HTTP/microservice via `HttpWorkflowDefinitionStore`),
 - `trigger` waits its delay, sends the first payload, and can send a second
   payload after `secondDelay`; the downstream branch runs once per message,
+- `delay` supports fixed, random and **rate limit** modes; the rate limit uses a
+  sliding window with `drop` or `queue` for excess messages and keeps state per
+  workflow/node across executions,
 - `link` nodes connect distant wire segments: a `link out` named `shared`
   reaches every matching `link in` node, which then continues its own branch,
 - `join` node waits for all parallel branches, then exposes their results as

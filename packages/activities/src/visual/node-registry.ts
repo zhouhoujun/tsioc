@@ -766,12 +766,27 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'fixed',
                 options: [
                     { label: 'Fixed delay', value: 'fixed' },
-                    { label: 'Random delay', value: 'random' }
+                    { label: 'Random delay', value: 'random' },
+                    { label: 'Rate limit', value: 'rate' }
                 ],
                 group: 'Delay',}),
             configField({ key: 'delay', label: 'Delay', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', visibleWhen: { key: 'mode', equals: 'fixed' }, description: 'Pause before continuing.',}),
             configField({ key: 'randomMin', label: 'Minimum', type: 'number', defaultValue: 100, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', visibleWhen: { key: 'mode', equals: 'random' } }),
-            configField({ key: 'randomMax', label: 'Maximum', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', visibleWhen: { key: 'mode', equals: 'random' } })
+            configField({ key: 'randomMax', label: 'Maximum', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', visibleWhen: { key: 'mode', equals: 'random' } }),
+            configField({ key: 'rateCount', label: 'Messages per window', type: 'number', defaultValue: 1, min: 1, max: 10000, step: 1, group: 'Delay', visibleWhen: { key: 'mode', equals: 'rate' }, description: 'How many messages may pass inside the rate window.' }),
+            configField({ key: 'rateWindow', label: 'Rate window', type: 'number', defaultValue: 1000, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', visibleWhen: { key: 'mode', equals: 'rate' } }),
+            configField({
+                key: 'rateAction',
+                label: 'Excess messages',
+                type: 'select',
+                defaultValue: 'drop',
+                options: [
+                    { label: 'Drop', value: 'drop' },
+                    { label: 'Queue', value: 'queue' }
+                ],
+                group: 'Delay',
+                visibleWhen: { key: 'mode', equals: 'rate' }
+            })
         ],
         defaultConfig: { mode: 'fixed', delay: 500 }
     },

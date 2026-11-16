@@ -354,7 +354,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "delay": "Delay",
                 "randomMin": "Minimum",
                 "randomMax": "Maximum",
-                "unit": "Unit"
+                "unit": "Unit",
+                "rateCount": "Messages per window",
+                "rateWindow": "Rate window",
+                "rateAction": "Excess messages"
             },
             "log": {
                 "message": "Static message",
@@ -973,7 +976,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mode": "fixed waits a set time; random picks a value in the range",
                 "randomMin": "minimum random delay",
                 "randomMax": "maximum random delay",
-                "unit": "unit used by the delay values"
+                "unit": "unit used by the delay values",
+                "rateCount": "How many messages may pass inside the rate window.",
+                "rateWindow": "Sliding window used to count messages.",
+                "rateAction": "Drop excess messages or queue them until the window frees up."
             },
             "log": {
                 "message": "text written when no value path is set",
@@ -1328,7 +1334,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "value": "On value change",
             "ANY": "Any method",
             "out": "Link out",
-            "in": "Link in"
+            "in": "Link in",
+            "rate": "Rate limit",
+            "drop": "Drop",
+            "queue": "Queue"
         }
     },
     "zh-CN": {
@@ -1679,7 +1688,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "delay": "延迟",
                 "randomMin": "最小值",
                 "randomMax": "最大值",
-                "unit": "单位"
+                "unit": "单位",
+                "rateCount": "窗口内消息数",
+                "rateWindow": "限流窗口",
+                "rateAction": "超出消息处理"
             },
             "log": {
                 "message": "固定消息",
@@ -2282,7 +2294,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mode": "固定延迟或区间内随机延迟。",
                 "randomMin": "随机延迟的最小时间。",
                 "randomMax": "随机延迟的最大时间。",
-                "unit": "延迟时间的单位。"
+                "unit": "延迟时间的单位。",
+                "rateCount": "限流窗口内允许通过的消息数量。",
+                "rateWindow": "统计消息数量的滑动窗口。",
+                "rateAction": "丢弃超出消息，或排队等待窗口释放。"
             },
             "log": {
                 "message": "未设置取值路径时写入的文本。",
@@ -2637,7 +2652,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "DELETE": "DELETE",
             "ANY": "任意方法",
             "out": "Link out",
-            "in": "Link in"
+            "in": "Link in",
+            "rate": "限流",
+            "drop": "丢弃",
+            "queue": "排队"
         }
     }
 };

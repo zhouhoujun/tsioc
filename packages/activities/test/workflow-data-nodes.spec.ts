@@ -495,6 +495,58 @@ describe('Workflow data & trigger nodes', () => {
         ]);
     });
 
+    it('rate-limits delay nodes across executions', async () => {
+        let calls = 0;
+        const context = {
+            actions: {
+                record: () => {
+                    calls += 1;
+                    return { calls };
+                }
+            }
+        };
+        const definition = chain([
+            { type: 'inject', config: { payload: { value: 1 } } },
+            { type: 'delay', config: { mode: 'rate', rateCount: 1, rateWindow: 60000, rateAction: 'drop' } },
+            { type: 'task', config: { action: 'record' } }
+        ]);
+
+        const first = await service.execute(definition, context);
+        expect(first.success).toBe(true);
+        expect(calls).toBe(1);
+        expect(first.data?.executionState?.nodeStates.delay_1.result?.data?.mode).toBe('rate');
+
+        const second = await service.execute(definition, context);
+        const snapshot = second.data?.executionState;
+        expect(calls).toBe(1);
+        expect(snapshot.nodeStates.delay_1.result?.data?.dropped).toBe(true);
+        expect(snapshot.nodeStates.task_2.status).toBe('skipped');
+    });
+
+    it('queues rate-limited messages until the window opens', async () => {
+        let calls = 0;
+        const context = {
+            actions: {
+                record: () => {
+                    calls += 1;
+                    return { calls };
+                }
+            }
+        };
+        const definition = chain([
+            { type: 'inject', config: { payload: {} } },
+            { type: 'delay', config: { mode: 'rate', rateCount: 1, rateWindow: 80, rateAction: 'queue' } },
+            { type: 'task', config: { action: 'record' } }
+        ]);
+        await service.execute(definition, context);
+        const started = Date.now();
+        const second = await service.execute(definition, context);
+        const elapsed = Date.now() - started;
+        expect(second.success).toBe(true);
+        expect(calls).toBe(2);
+        expect(elapsed).toBeGreaterThanOrEqual(60);
+    });
+
     it('emits a second trigger message and runs the branch again', async () => {
         const messages: Array<{ step: any; emission: number }> = [];
         const result = await service.execute(chain([
