@@ -4431,3 +4431,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 命令定义、补全枚举、en/zh 文案（`queueRemoved` / `queueEditLoaded` / `queueEntryMissing`）与 usage 同步更新。
 - 测试：`vm-submit` 新增 remove/edit/越界用例；i18n lockstep 计数同步（688 → 691）。
 - 注：上一 HEAD（285fc8f9e）的 agent-ui 全量 **2148 passing**、build:web 成功。
+
+## 2026-11-16 P1 worktree：enter <name> 直接进入工作树
+- `/worktree` 增加 `enter <name>`：先走 `list` 解析被管理工作树（匹配路径、目录名或分支），再复用 `/cd` 的 workspace 切换（目录校验、输入历史持久化/恢复）。
+- 创建后可直接 `/worktree enter <name>` 开始在该工作树里工作；未找到时给出明确提示。
+- 命令描述、补全/usage、en/zh 文案（`worktreeEntered` / `worktreeNotFound`）同步；i18n 计数 691 → 693。
+- 测试：vm-submit 新增 enter 匹配/未找到/不重复切目录用例，45 passing。
