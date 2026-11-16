@@ -473,9 +473,8 @@ export class GatewayAdminState {
         self.status = self.t('status.sloExported');
     };
 
-    readonly exportSloAlertsCsv = (): void => {
-        const self = this.selfRef ?? this;
-        const alerts = self.diagnostics?.alerts ?? [];
+    sloAlertsCsv(): string {
+        const alerts = this.selfRef?.diagnostics?.alerts ?? this.diagnostics?.alerts ?? [];
         const header = ['key', 'timestamp', 'isoTime', 'errorRate', 'p95Ms', 'errorRateThreshold', 'p95ThresholdMs'];
         const rows = alerts.map(alert => [
             alert.key,
@@ -486,9 +485,14 @@ export class GatewayAdminState {
             alert.errorRateThreshold == null ? '' : String(alert.errorRateThreshold),
             alert.p95ThresholdMs == null ? '' : String(alert.p95ThresholdMs)
         ]);
-        const csv = [header, ...rows]
+        return [header, ...rows]
             .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
             .join('\n');
+    }
+
+    readonly exportSloAlertsCsv = (): void => {
+        const self = this.selfRef ?? this;
+        const csv = self.sloAlertsCsv();
         const doc = (self.documentRef ?? (globalThis as { document?: Document }).document) as Document | undefined;
         const createUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
         if (doc && createUrl && typeof Blob !== 'undefined') {
