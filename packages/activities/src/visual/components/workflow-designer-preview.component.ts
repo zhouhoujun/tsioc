@@ -424,6 +424,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             { action: this.t('undo', 'Undo'), keys: 'Ctrl+Z' },
             { action: this.t('redo', 'Redo'), keys: 'Ctrl+Y' },
             { action: this.t('duplicate', 'Duplicate'), keys: 'Ctrl+D' },
+            { action: this.t('copy', 'Copy'), keys: 'Ctrl+C' },
+            { action: this.t('cut', 'Cut'), keys: 'Ctrl+X' },
+            { action: this.t('paste', 'Paste'), keys: 'Ctrl+V' },
             { action: this.t('toggleNode', 'Enable/disable node'), keys: 'Ctrl+E' },
             { action: this.t('boxSelect', 'Box select'), keys: 'Shift+drag' },
             { action: this.t('delete', 'Delete'), keys: 'Delete' },
@@ -1392,6 +1395,18 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             }
             this.designer.cancelConnection();
             this.designer.endNodeDrag();
+            return;
+        }
+        if ((payload.ctrlKey || payload.metaKey) && (key === 'c' || key === 'C')) {
+            this.designer.copySelection();
+            return;
+        }
+        if ((payload.ctrlKey || payload.metaKey) && (key === 'x' || key === 'X')) {
+            this.designer.cutSelection();
+            return;
+        }
+        if ((payload.ctrlKey || payload.metaKey) && (key === 'v' || key === 'V')) {
+            this.designer.pasteClipboard();
             return;
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'e' || key === 'E')) {

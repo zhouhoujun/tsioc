@@ -463,6 +463,46 @@ describe('Visual Workflow Designer', () => {
             expect(local.nodes.length).toBe(7);
         });
 
+        it('copies, cuts and pastes selections across documents', () => {
+            const source = new WorkflowDesigner({ registry, service });
+            const target = new WorkflowDesigner({ registry, service });
+            source.selectNodes(['task_1', 'condition_1', 'task_2']);
+            expect(source.copySelection()).toBe(3);
+
+            const pasted = target.pasteClipboard();
+            expect(pasted.length).toBe(3);
+            expect(target.nodes.length).toBe(9);
+            // Only connections with both endpoints in the selection are copied.
+            expect(target.connections.length).toBe(8);
+            expect(new Set(pasted.map(node => node.id)).size).toBe(3);
+            expect(target.selectionCount).toBe(3);
+            expect(target.nodes.filter(node => pasted.includes(node)).length).toBe(3);
+
+            target.undo();
+            expect(target.nodes.length).toBe(6);
+        });
+
+        it('cuts nodes and pastes them back with new ids', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            local.selectNodes(['task_1', 'task_2']);
+            expect(local.cutSelection()).toBe(2);
+            expect(local.nodes.some(node => node.id === 'task_1')).toBe(false);
+
+            const pasted = local.pasteClipboard();
+            expect(pasted.length).toBe(2);
+            expect(local.nodes.length).toBe(6);
+            expect(pasted.every(node => local.nodes.includes(node))).toBe(true);
+            expect(new Set(pasted.map(node => node.id)).size).toBe(2);
+        });
+
+        it('skips singleton nodes that already exist when pasting', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            local.selectNode('start_1');
+            local.copySelection();
+            expect(local.pasteClipboard()).toEqual([]);
+            expect(local.nodes.length).toBe(6);
+        });
+
         it('applies auto layout and can undo it', () => {
             const local = new WorkflowDesigner({ registry, service });
             const before = local.nodes.find(node => node.id === 'end_1')!.position;

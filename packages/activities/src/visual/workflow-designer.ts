@@ -29,6 +29,55 @@ const HISTORY_LIMIT = 100;
 const MIN_ZOOM = 0.35;
 const MAX_ZOOM = 2.5;
 
+/** Nodes and internal connections copied from the canvas. */
+export interface WorkflowClipboardSnapshot {
+    nodes: IVisualWorkflowNode[];
+    connections: NodeConnection[];
+    sourceWorkflowId: string;
+    /** Cascading paste offset counter; reset on every copy. */
+    pastes: number;
+}
+
+let workflowClipboard: WorkflowClipboardSnapshot | undefined;
+
+export function getWorkflowClipboard(): WorkflowClipboardSnapshot | undefined {
+    return workflowClipboard;
+}
+
+export function clearWorkflowClipboard(): void {
+    workflowClipboard = undefined;
+}
+
+/** Clone plain config/style values while keeping functions/objects by reference. */
+function cloneWorkflowValue<T>(value: T): T {
+    if (Array.isArray(value)) {
+        return value.map(item => cloneWorkflowValue(item)) as unknown as T;
+    }
+    if (value && typeof value === 'object') {
+        const proto = Object.getPrototypeOf(value);
+        if (proto === Object.prototype || proto === null) {
+            const copy: Record<string, any> = {};
+            Object.keys(value as Record<string, any>).forEach(key => {
+                copy[key] = cloneWorkflowValue((value as Record<string, any>)[key]);
+            });
+            return copy as T;
+        }
+    }
+    return value;
+}
+
+function cloneClipboardNode(node: IVisualWorkflowNode): IVisualWorkflowNode {
+    return {
+        ...node,
+        position: { ...node.position },
+        dimension: node.dimension ? { ...node.dimension } : undefined,
+        inputs: node.inputs?.map(port => ({ ...port })),
+        outputs: node.outputs?.map(port => ({ ...port })),
+        config: cloneWorkflowValue(node.config || {}),
+        style: node.style ? cloneWorkflowValue(node.style) : undefined
+    };
+}
+
 export interface WorkflowDesignerRunOptions extends WorkflowExecutionOptions {
     context?: ActivityContext;
 }
@@ -818,6 +867,122 @@ export class WorkflowDesigner {
     /**
      * Duplicate the selected node with a new id and a small offset.
      */
+    /** Copy the selected nodes and the connections between them. */
+    copySelection(): number {
+        const nodes = this.selectedNodes;
+        if (!nodes.length) {
+            return 0;
+        }
+        const ids = new Set(nodes.map(node => node.id));
+        workflowClipboard = {
+            nodes: nodes.map(cloneClipboardNode),
+            connections: this.definition.connections
+                .filter(connection => ids.has(connection.sourceNodeId) && ids.has(connection.targetNodeId))
+                .map(connection => ({ ...connection })),
+            sourceWorkflowId: this.definition.id,
+            pastes: 0
+        };
+        this.setMessage('workflow.message.copied', { count: nodes.length });
+        return nodes.length;
+    }
+
+    cutSelection(): number {
+        const count = this.copySelection();
+        if (!count) {
+            return 0;
+        }
+        this.deleteSelection();
+        this.setMessage('workflow.message.cut', { count });
+        return count;
+    }
+
+    /** Paste the shared clipboard into this document, remapping ids. */
+    pasteClipboard(): IVisualWorkflowNode[] {
+        const clip = workflowClipboard;
+        if (!clip?.nodes.length) {
+            return [];
+        }
+        clip.pastes += 1;
+        const offset = this.gridSize * 2 * clip.pastes;
+        const usedNodes = new Set(this.definition.nodes.map(node => node.id));
+        const usedConnections = new Set(this.definition.connections.map(connection => connection.id));
+        const nextNodeId = (type: string): string => {
+            let index = 1;
+            while (usedNodes.has(`${type}_${index}`)) {
+                index += 1;
+            }
+            const id = `${type}_${index}`;
+            usedNodes.add(id);
+            return id;
+        };
+        const nextConnectionId = (): string => {
+            let index = 1;
+            while (usedConnections.has(`conn_${index}`)) {
+                index += 1;
+            }
+            const id = `conn_${index}`;
+            usedConnections.add(id);
+            return id;
+        };
+
+        const existingTypes = new Set(this.definition.nodes.map(node => node.type));
+        const idMap = new Map<string, string>();
+        const pasted = clip.nodes
+            .filter(node => {
+                const definition = this.registry.get(node.type);
+                if (definition?.singleton && existingTypes.has(node.type)) {
+                    return false;
+                }
+                existingTypes.add(node.type);
+                return true;
+            })
+            .map(node => {
+                const created = this.registry.createNode(
+                    node.type,
+                    { x: node.position.x + offset, y: node.position.y + offset },
+                    {
+                        id: nextNodeId(node.type),
+                        name: node.name,
+                        config: cloneWorkflowValue(node.config || {})
+                    }
+                );
+                created.description = node.description;
+                created.style = node.style ? cloneWorkflowValue(node.style) : undefined;
+                created.disabled = node.disabled === true;
+                created.dimension = node.dimension ? { ...node.dimension } : undefined;
+                created.inputs = node.inputs?.map(port => ({ ...port }));
+                created.outputs = node.outputs?.map(port => ({ ...port }));
+                idMap.set(node.id, created.id);
+                return created;
+            });
+
+        if (!pasted.length) {
+            return [];
+        }
+
+        const pastedConnections = clip.connections
+            .filter(connection => idMap.has(connection.sourceNodeId) && idMap.has(connection.targetNodeId))
+            .map(connection => ({
+                ...connection,
+                id: nextConnectionId(),
+                sourceNodeId: idMap.get(connection.sourceNodeId)!,
+                targetNodeId: idMap.get(connection.targetNodeId)!
+            }));
+
+        this.commit(current => ({
+            ...current,
+            nodes: [...current.nodes, ...pasted],
+            connections: [...current.connections, ...pastedConnections],
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        this.selection = {
+            nodeId: pasted[pasted.length - 1].id,
+            nodeIds: pasted.map(node => node.id)
+        };
+        this.setMessage('workflow.message.pasted', { count: pasted.length });
+        return pasted;
+    }
+
     duplicateSelection(): IVisualWorkflowNode | undefined {
         const roots = this.selectedNodes;
         if (!roots.length) {

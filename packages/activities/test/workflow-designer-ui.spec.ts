@@ -503,6 +503,33 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-node-menu')).toBeFalsy();
     });
 
+    it('copies and pastes nodes with Ctrl+C, Ctrl+X and Ctrl+V', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        const before = ref.instance.designer.nodes.length;
+
+        const shortcut = (key: string) => canvas.dispatchEvent(
+            new (doc.defaultView as any).KeyboardEvent('keydown', {
+                key, ctrlKey: true, bubbles: true
+            })
+        );
+
+        shortcut('c');
+        shortcut('v');
+        await flush();
+        expect(ref.instance.designer.nodes.length).toBe(before + 1);
+        expect(ref.instance.designer.selectedNode?.id).not.toBe('task_1');
+
+        shortcut('x');
+        await flush();
+        expect(ref.instance.designer.nodes.length).toBe(before);
+
+        shortcut('v');
+        await flush();
+        expect(ref.instance.designer.nodes.length).toBe(before + 1);
+    });
+
     it('selects multiple nodes with shift-click and applies bulk operations', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();
