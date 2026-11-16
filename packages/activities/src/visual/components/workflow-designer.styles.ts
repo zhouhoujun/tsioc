@@ -599,6 +599,10 @@ workflow-designer-preview {
     min-height: 0;
 }
 
+.workflow-designer workspace-center {
+    position: relative;
+}
+
 .workflow-designer workspace-left,
 .workflow-designer workspace-center,
 .workflow-designer workspace-right,
@@ -778,6 +782,52 @@ workflow-canvas {
 .workflow-canvas-content {
     position: relative;
     transform-origin: 0 0;
+}
+
+.workflow-align-bar {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 7;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14);
+}
+
+.workflow-align-button {
+    width: 26px;
+    height: 24px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.workflow-align-button:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.workflow-designer[data-theme="dark"] .workflow-align-bar,
+.workflow-designer[data-theme="solarized"] .workflow-align-bar,
+.workflow-designer[data-theme="high-contrast"] .workflow-align-bar {
+    background: var(--wf-theme-surface, #0b1220);
+    border-color: var(--wf-theme-border, #1e293b);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-align-button,
+.workflow-designer[data-theme="solarized"] .workflow-align-button,
+.workflow-designer[data-theme="high-contrast"] .workflow-align-button {
+    color: var(--wf-theme-text, #e2e8f0);
 }
 
 .workflow-selection-box {

@@ -565,6 +565,26 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.selectionCount).toBe(0);
     });
 
+    it('shows an alignment bar for multi-selection and aligns nodes', async () => {
+        ref.instance.designer.selectNodes(['task_1', 'task_2', 'task_3']);
+        await flush();
+
+        const bar = root.querySelector('.workflow-align-bar') as any;
+        expect(bar).toBeTruthy();
+        expect(bar.querySelectorAll('.workflow-align-button').length).toBe(8);
+
+        (bar.querySelector('[data-align="left"]') as any).click();
+        await flush();
+        const positions = ['task_1', 'task_2', 'task_3'].map(id =>
+            ref.instance.designer.nodes.find(node => node.id === id)!.position.x
+        );
+        expect(new Set(positions).size).toBe(1);
+
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+        expect(root.querySelector('.workflow-align-bar')).toBeFalsy();
+    });
+
     it('box-selects nodes with shift+drag', async () => {
         const canvas = root.querySelector('.workflow-canvas') as any;
         canvas.dispatchEvent(new (doc.defaultView as any).MouseEvent('mousedown', {

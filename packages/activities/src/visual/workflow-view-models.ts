@@ -19,11 +19,20 @@ import { localize, WorkflowLocale, WorkflowNodeRegistry } from './node-registry'
 import { WorkflowDesigner } from './workflow-designer';
 import { Translator } from '@tsdi/i18n';
 import { resolveWorkflowText, translateWorkflow } from './i18n';
+import {
+    WORKFLOW_NODE_WIDTH,
+    WORKFLOW_PORT_SPACING,
+    WORKFLOW_PORT_START,
+    workflowNodeFrame
+} from './workflow-geometry';
 
-export const WORKFLOW_NODE_WIDTH = 184;
-export const WORKFLOW_NODE_HEADER_HEIGHT = 34;
-export const WORKFLOW_PORT_SPACING = 20;
-export const WORKFLOW_PORT_START = 48;
+export {
+    WORKFLOW_NODE_WIDTH,
+    WORKFLOW_NODE_HEADER_HEIGHT,
+    WORKFLOW_PORT_SPACING,
+    WORKFLOW_PORT_START,
+    workflowNodeFrame
+} from './workflow-geometry';
 
 const STATUS_LABELS: Record<NodeExecutionStatus, string> = {
     idle: 'Idle',
@@ -68,16 +77,6 @@ function executionStatusLabel(
         `workflow.status.${key}`,
         fallback[key] || fallback.idle
     );
-}
-
-export function workflowNodeFrame(node: IVisualWorkflowNode): { width: number; height: number } {
-    const width = node.dimension?.width || WORKFLOW_NODE_WIDTH;
-    const portCount = Math.max(node.inputs?.length || 0, node.outputs?.length || 0, 1);
-    const height = Math.max(
-        node.dimension?.height || 64,
-        WORKFLOW_PORT_START + portCount * WORKFLOW_PORT_SPACING + 10
-    );
-    return { width, height };
 }
 
 function nodeGeometry(node: IVisualWorkflowNode): {

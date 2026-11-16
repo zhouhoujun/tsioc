@@ -563,6 +563,8 @@ Features:
 - `Ctrl+C` / `Ctrl+X` / `Ctrl+V` copy, cut and paste nodes (with internal
   connections) within and across open workflow tabs; pasted nodes get fresh ids
   and singleton nodes already present are skipped,
+- multi-selection shows an alignment bar over the canvas: align left/center/
+  right/top/middle/bottom and distribute horizontally/vertically,
 - `Enabled` in the inspector (or the node right-click menu) disables a node
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,

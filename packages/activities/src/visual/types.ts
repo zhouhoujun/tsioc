@@ -728,6 +728,10 @@ export interface WorkflowPaletteGroup {
  * 设计器选择状态
  * Designer selection.
  */
+/** Horizontal/vertical alignment applied to a node selection. */
+export type WorkflowAlignMode = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
+export type WorkflowDistributeMode = 'horizontal' | 'vertical';
+
 export interface WorkflowSelection {
     /** Primary selected node (inspector/status focus). */
     nodeId?: string;

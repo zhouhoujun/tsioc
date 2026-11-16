@@ -9,12 +9,15 @@ import {
     WorkflowConnectionDraft,
     WorkflowExecutionEvent,
     WorkflowExecutionOptions,
+    WorkflowAlignMode,
+    WorkflowDistributeMode,
     WorkflowExecutionSnapshot,
     WorkflowNodeDragState,
     WorkflowSelection
 } from './types';
 import { WorkflowNodeRegistry, WorkflowLocale } from './node-registry';
 import { hasCycle, validateVisualWorkflow } from './workflow-runtime';
+import { workflowNodeFrame } from './workflow-geometry';
 import { validateWorkflowConfigs } from './workflow-config-validation';
 import { compileVisualWorkflow, CompiledWorkflow, layoutVisualWorkflow } from './workflow-compiler';
 import { VisualWorkflowService } from './VisualWorkflowService';
@@ -867,6 +870,96 @@ export class WorkflowDesigner {
     /**
      * Duplicate the selected node with a new id and a small offset.
      */
+    /** Align every selected node to the selection bounds. */
+    alignSelection(mode: WorkflowAlignMode): boolean {
+        const nodes = this.selectedNodes;
+        if (nodes.length < 2) {
+            return false;
+        }
+        const frames = nodes.map(node => ({ node, ...workflowNodeFrame(node) }));
+        const minX = Math.min(...frames.map(frame => frame.node.position.x));
+        const maxX = Math.max(...frames.map(frame => frame.node.position.x + frame.width));
+        const minY = Math.min(...frames.map(frame => frame.node.position.y));
+        const maxY = Math.max(...frames.map(frame => frame.node.position.y + frame.height));
+        const positions = new Map<string, NodePosition>();
+        frames.forEach(frame => {
+            const { node, width, height } = frame;
+            let { x, y } = node.position;
+            switch (mode) {
+                case 'left':
+                    x = minX;
+                    break;
+                case 'center':
+                    x = Math.round((minX + maxX) / 2 - width / 2);
+                    break;
+                case 'right':
+                    x = maxX - width;
+                    break;
+                case 'top':
+                    y = minY;
+                    break;
+                case 'middle':
+                    y = Math.round((minY + maxY) / 2 - height / 2);
+                    break;
+                case 'bottom':
+                    y = maxY - height;
+                    break;
+            }
+            positions.set(node.id, { x, y });
+        });
+        this.commit(current => ({
+            ...current,
+            nodes: current.nodes.map(node =>
+                positions.has(node.id) ? { ...node, position: positions.get(node.id)! } : node
+            ),
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        this.setMessage('workflow.message.aligned');
+        return true;
+    }
+
+    /** Space three or more selected nodes evenly between the outer two. */
+    distributeSelection(axis: WorkflowDistributeMode): boolean {
+        const nodes = this.selectedNodes;
+        if (nodes.length < 3) {
+            return false;
+        }
+        const horizontal = axis === 'horizontal';
+        const frames = nodes
+            .map(node => ({ node, ...workflowNodeFrame(node) }))
+            .sort((a, b) => horizontal
+                ? a.node.position.x - b.node.position.x
+                : a.node.position.y - b.node.position.y
+            );
+        const start = horizontal
+            ? frames[0].node.position.x
+            : frames[0].node.position.y;
+        const last = frames[frames.length - 1];
+        const end = horizontal
+            ? last.node.position.x + last.width
+            : last.node.position.y + last.height;
+        const total = frames.reduce((sum, frame) => sum + (horizontal ? frame.width : frame.height), 0);
+        const gap = (end - start - total) / (frames.length - 1);
+        let cursor = start;
+        const positions = new Map<string, NodePosition>();
+        frames.forEach(frame => {
+            positions.set(frame.node.id, horizontal
+                ? { x: Math.round(cursor), y: frame.node.position.y }
+                : { x: frame.node.position.x, y: Math.round(cursor) }
+            );
+            cursor += (horizontal ? frame.width : frame.height) + gap;
+        });
+        this.commit(current => ({
+            ...current,
+            nodes: current.nodes.map(node =>
+                positions.has(node.id) ? { ...node, position: positions.get(node.id)! } : node
+            ),
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        this.setMessage('workflow.message.distributed');
+        return true;
+    }
+
     /** Copy the selected nodes and the connections between them. */
     copySelection(): number {
         const nodes = this.selectedNodes;

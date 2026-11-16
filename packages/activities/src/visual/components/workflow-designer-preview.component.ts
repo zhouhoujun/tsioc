@@ -24,6 +24,8 @@ import { WorkflowDesigner } from '../workflow-designer';
 import {
     NodePosition,
     VisualWorkflowDefinition,
+    WorkflowAlignMode,
+    WorkflowDistributeMode,
     WorkflowPaletteItem,
     WorkflowPaletteGroup
 } from '../types';
@@ -63,6 +65,12 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
                     :addAction="addFromPalette" :dragStartAction="paletteDragStart"></workflow-palette>
             </workspace-left>
             <workspace-center>
+                <div class="workflow-align-bar" v-if="alignBarVisible">
+                    <button type="button" class="workflow-align-button"
+                        v-for="item in alignActions" data-align="{{item.action}}"
+                        [title]="item.label" [aria-label]="item.label"
+                        @click="alignAction(item.action)">{{item.glyph}}</button>
+                </div>
                 <workflow-canvas :model="canvasModel" :locale="locale"
                     :pointerAction="handleCanvas" :panAction="handlePan"></workflow-canvas>
             </workspace-center>
@@ -320,6 +328,36 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     get nodeMenuStyle(): string {
         return `left:${this.nodeMenuX}px;top:${this.nodeMenuY}px`;
     }
+
+    get alignBarVisible(): boolean {
+        return (this.designer?.selectedNodeIds.length || 0) > 1;
+    }
+
+    get alignActions(): Array<{ action: string; glyph: string; label: string }> {
+        return [
+            { action: 'left', glyph: '⇤', label: this.t('alignLeft', 'Align left') },
+            { action: 'center', glyph: '↔', label: this.t('alignCenter', 'Align center') },
+            { action: 'right', glyph: '⇥', label: this.t('alignRight', 'Align right') },
+            { action: 'top', glyph: '⇡', label: this.t('alignTop', 'Align top') },
+            { action: 'middle', glyph: '↕', label: this.t('alignMiddle', 'Align middle') },
+            { action: 'bottom', glyph: '⇣', label: this.t('alignBottom', 'Align bottom') },
+            { action: 'distribute-horizontal', glyph: '⇹', label: this.t('distributeHorizontal', 'Distribute horizontally') },
+            { action: 'distribute-vertical', glyph: '⇳', label: this.t('distributeVertical', 'Distribute vertically') }
+        ];
+    }
+
+    readonly alignAction = (action: string): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        if (!self.designer) {
+            return;
+        }
+        if (action.startsWith('distribute-')) {
+            self.designer.distributeSelection(action.slice('distribute-'.length) as WorkflowDistributeMode);
+        } else {
+            self.designer.alignSelection(action as WorkflowAlignMode);
+        }
+        self.notifyChange();
+    };
 
     get selectionBoxStyle(): string {
         const box = this.selectionBox;
