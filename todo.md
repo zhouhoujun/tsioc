@@ -4360,3 +4360,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 默认 activity medium 后，`9-tool-row-identity-v88` 失败：它验证同一条 assistant 消息里的两个 `read_file` 调用各自成行并各自完成，而聚合会把已完成的两步折叠成 Activity。
 - 修复：场景开始时真实执行 `/display activity high`（等待 “Activity verbosity: high” 提示），再执行并行读文件；既保住该回归的语义，也顺带在真实 PTY 里覆盖新命令。
 - 结果：`RUN_PTY=1 pty-acceptance` PASS（含场景 1/2/3/9/10/5/6/7/12/8/11）。
+
+## 2026-11-16 P0-1 第一步：per-session pane store
+- 新增 `AgentConsoleSessionPaneStore`：每个 session 一个稳定 pane 记录（id / snapshot / version），提供 `ensure/get/list/activate/snapshot/putSnapshot/bump/forget/clear`。
+- `AgentConsoleSessionUiState` 的快照从内部 `Map` 迁到该 store：capture 写入并 bump version；restore 读取；switchSession 激活目标 pane；`paneStore` getter 暴露给宿主与后续 pane 渲染。
+- **无行为变化**：仍是单 live state + 缓存帧；全套 tab 隔离/草稿/滚动测试与 parity 全绿。新增 store 单测与 “visited tab owns a pane record” 集成断言。
+- 下一步（P0-1 第二步）：消息面板按 session 渲染多个 pane，active pane 绑定 live state，inactive pane 绑定冻结 view；切换只切可见性，节点树与 click targets 保持存活。

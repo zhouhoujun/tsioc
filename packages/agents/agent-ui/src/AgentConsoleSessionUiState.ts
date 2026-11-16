@@ -3,6 +3,7 @@ import { batchReactiveUpdates } from '@tsdi/components';
 import type { AgentConsolePendingAttachment, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsolePlanTodoItem } from './AgentConsoleStateTypes';
 import type { ConsoleTerminalSurfaceAccessor } from './console-ports';
+import { AgentConsoleSessionPaneStore } from './AgentConsoleSessionPaneStore';
 
 /** Everything a session tab owns in the TUI, captured when leaving it. */
 export interface AgentConsoleSessionUiSnapshot {
@@ -70,11 +71,18 @@ export function applyAgentConsoleSessionComposer(
  * approvals, tools) is reloaded per session by the session-open path.
  */
 export class AgentConsoleSessionUiState {
-    protected readonly snapshots = new Map<string, AgentConsoleSessionUiSnapshot>();
+    /** Per-session pane records (snapshot + version); the keep-alive seam. */
+    protected readonly panes: AgentConsoleSessionPaneStore;
     /** State proxy captured from the owning component method (reactive writes). */
     protected boundState?: AgentConsoleSessionState;
 
-    constructor(protected readonly host: () => AgentConsoleSessionUiStateHost) {
+    constructor(protected readonly host: () => AgentConsoleSessionUiStateHost, panes?: AgentConsoleSessionPaneStore) {
+        this.panes = panes || new AgentConsoleSessionPaneStore();
+    }
+
+    /** Per-session pane records, shared with the console host. */
+    get paneStore(): AgentConsoleSessionPaneStore {
+        return this.panes;
     }
 
     /**
@@ -99,7 +107,7 @@ export class AgentConsoleSessionUiState {
         }
         const { state, surfaceAccessor } = this.resolveHost();
         const offset = surfaceAccessor?.getViewportScrollOffset?.();
-        this.snapshots.set(id, {
+        this.panes.putSnapshot(id, {
             scrollOffset: typeof offset === 'number' && Number.isFinite(offset) ? Math.max(0, Math.floor(offset)) : 0,
             scrollFollowing: surfaceAccessor?.isViewportFollowing?.() !== false,
             newCount: state.messagesNewCount,
@@ -138,7 +146,7 @@ export class AgentConsoleSessionUiState {
             return;
         }
         const { state, surfaceAccessor } = this.resolveHost();
-        const saved = this.snapshots.get(id);
+        const saved = this.panes.snapshot(id);
         this.restoreComposer(state, saved, applyComposer);
         // The composer value is restored outside any DOM dirty origin; cached
         // panel layouts would otherwise repaint the previous placeholder/value.
@@ -148,10 +156,7 @@ export class AgentConsoleSessionUiState {
     }
 
     forget(sessionId?: string): void {
-        const id = String(sessionId || '').trim();
-        if (id) {
-            this.snapshots.delete(id);
-        }
+        this.panes.forget(sessionId);
     }
 
     /**
@@ -170,7 +175,8 @@ export class AgentConsoleSessionUiState {
         const previousSessionId = currentSessionId();
         this.capture(previousSessionId);
         const targetId = String(targetSessionId || '').trim();
-        const cached = targetId ? this.snapshots.get(targetId) : undefined;
+        this.panes.activate(targetId || previousSessionId);
+        const cached = targetId ? this.panes.snapshot(targetId) : undefined;
         const showingCached = !!cached?.messages;
         if (cached?.messages) {
             // Hide/show semantics: paint the target tab's cached view before
@@ -206,6 +212,7 @@ export class AgentConsoleSessionUiState {
             await open(cached);
         } finally {
             const targetSessionId = currentSessionId();
+            this.panes.activate(targetSessionId || targetId);
             // Startup (no previous tab) must not restore: the session-open path
             // already cleared the composer, and an early keystroke must not be
             // wiped by the first frame. For a real tab switch, restore inside the

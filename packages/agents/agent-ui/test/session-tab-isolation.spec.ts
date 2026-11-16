@@ -213,6 +213,36 @@ export class AgentConsoleSessionTabIsolationTest {
         }
     }
 
+    @Test('each visited tab owns a pane record with its own snapshot')
+    async paneStoreTracksVisitedTabs() {
+        const harness = await this.createHarness(this.baseService({
+            'session-a': messages('alpha', 6),
+            'session-b': messages('beta', 6)
+        }));
+        const { instance, state } = harness;
+        try {
+            await instance.openSession('session-a');
+            await settle();
+            harness.surface.render();
+            state.setInput('draft alpha', 11);
+
+            await instance.openSession('session-b');
+            await settle();
+
+            const panes = instance.sessionUiState.paneStore;
+            expect(panes.activeId).toEqual('session-b');
+            // The startup session (created before the first open) also owns a
+            // pane record; assert the visited tabs are present.
+            expect(panes.list().map((pane: any) => pane.id)).toEqual(expect.arrayContaining(['session-a', 'session-b']));
+            expect(panes.snapshot('session-a')?.input).toEqual('draft alpha');
+            expect(panes.get('session-a')?.version).toBeGreaterThan(0);
+        } finally {
+            harness.surface.destroy();
+            (instance as any).sessionUiState.forget('session-a');
+            (instance as any).sessionUiState.forget('session-b');
+        }
+    }
+
     @Test('a returning tab restores its own composer draft')
     async returningTabRestoresComposerDraft() {
         const harness = await this.createHarness(this.baseService({
