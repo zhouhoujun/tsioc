@@ -70,7 +70,10 @@ export function replaceStreamingAssistantMessage(state: AgentConsoleMessageState
         current.splice(targetIndex, 1);
         current.push(replacement);
     }
-    state.setMessages(current);
+    // Part of the live turn: keep the chunk usage and command executions. A
+    // plain setMessages would recompute usage from message metadata, wiping the
+    // streamed usage when the assistant row itself carries none.
+    state.setMessages(current, true);
 }
 
 export interface AgentConsoleMessageCollectionState extends AgentConsoleMessageState {

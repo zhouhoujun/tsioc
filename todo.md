@@ -4448,3 +4448,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `forceStreamingAssistantMessageFlush` 在 `done`、`tool_call`、`finalizeStreamingAssistantRow` 强制 trailing flush，保证最后一段文字不丢；session 已切换或销毁时跳过，后台内容仍由既有 buffer/restore 处理。
 - 调度/强制/flush 三函数抽到 `AgentConsoleStreamFlush.ts`，控制器保持 source-size 预算。
 - 验证：turn-stream-narration、tool-row-identity、turn-complete-title、p403/p406、workspace-propagation、vm-submit、activity-jump 共 72 passing。
+
+## 2026-11-16 流式 usage 回归修复
+- 按帧合并后，`replaceStreamingAssistantMessage` 在 finalize 时用普通 `setMessages` 会从消息 metadata 重算 token usage；assistant 行本身可能不带 usage，导致流式 chunk 的用量被清 0（vm-diagnostics 回归）。
+- 修复：该函数属于同一次 live turn，改用 `setMessages(current, true)`，保留 chunk usage 与 command executions。
+- 验证：vm-diagnostics + turn-stream-narration 53 passing。
