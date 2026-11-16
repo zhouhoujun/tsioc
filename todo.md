@@ -4407,3 +4407,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `shouldWindowTranscript` 被多个 getter 在同一帧重复调用，每次都扫描隐藏消息找旧错误；改为按 `(messages, limit, layout, following, focused, detailOpen)` 缓存判定。抽到 `AgentConsoleTranscriptWindow.ts`，同时把 600 行的消息面板压回预算内。
 - `normalizedConversationContent` 在 conversation mainline 去重中对每条消息重复拼 content+parts；改为按消息对象缓存（同样的 streaming/partial/running 可变消息不缓存）。
 - 说明：这两项是热路径复用，单次 token 的墙钟仍由单 live state 的响应式扇出主导（~170ms/token，1000 条历史）；进一步需要 per-session state/窄订阅，而不是再抠投影。
+
+## 2026-11-16 流式消息更新合并 effect
+- `setMessagesInState` 一次更新会写 messages、commandExecutionMessages、tokenUsage、selection、following、newCount 等多个字段；每次写入都会同步跑该 key 的读者绑定。
+- 用 `batchReactiveUpdates` 包住整个投影更新，合并为一轮 effect（与 applyCachedView/restore 已在用的机制一致）。
+- 实测（1000 条历史，20 次 token 更新）：p50 **~170ms → 101–146ms**，p95 ~204ms → 135–171ms（约 −20~35%）。
+- 关键子集 160 passing（turn-stream、renderer、window、activity、tab 隔离、console-renderer）；source-size OK。

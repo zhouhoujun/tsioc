@@ -1,3 +1,4 @@
+import { batchReactiveUpdates } from '@tsdi/components';
 import { resolveTokenUsageFromMessages, resolveUsagePayload } from './AgentConsoleTokenUsageState';
 import { trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
 import type { AgentMessage } from '@tsdi/agent';
@@ -88,6 +89,13 @@ export interface AgentConsoleMessageCollectionState extends AgentConsoleMessageS
 }
 
 export function setMessagesInState(state: AgentConsoleMessageCollectionState, messages: AgentMessage[], preserveCommandExecutionMessages = false): void {
+    // One streaming update writes messages, selection, following, usage and the
+    // command-execution list. Coalesce those writes into a single effect pass
+    // instead of re-running every affected binding per field.
+    batchReactiveUpdates(() => setMessagesProjection(state, messages, preserveCommandExecutionMessages));
+}
+
+function setMessagesProjection(state: AgentConsoleMessageCollectionState, messages: AgentMessage[], preserveCommandExecutionMessages: boolean): void {
     const previousCount = state.messages.length;
     state.messages = messages.filter(message => {
         if (!message || typeof message.content !== 'string') return false;
