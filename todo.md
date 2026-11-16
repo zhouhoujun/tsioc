@@ -4396,3 +4396,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 实测（4 tabs × 1000 messages）：**renders/switch 1.00，render 28.7ms/switch，sync p50 52ms / p95 106ms**；visible 40 / total 1000。相比未窗口化单帧 ~142ms（200 条）显著下降。
 - 新增 `transcript-window.spec.ts`：尾部窗口、上翻全量、旧错误禁用窗口、scrollback/0 关闭。
 - 完整 agent-ui：**2148 passing**；tsc、source-size、diff-check 通过。
+
+## 2026-11-16 流式投影：按消息对象缓存纯展示结果
+- 长会话每个 token 都会重跑 mainline 投影（多次 `presentAgentConsoleSessionContent`）。新增 WeakMap<message, presentation> 缓存；消息按不可变快照处理。
+- **可变消息不缓存**：`metadata.streaming/partial` 或 `status=running` 的流式行会被 runtime 原地修改，缓存会读到旧内容，因此这些消息始终重新计算。
+- 实测（1000 条消息，30 次 token 投影）：p50 **65ms → 51ms**，p95 **94ms → 69ms**（约 −22%）。
+- 验证：完整 agent-ui **2148 passing**；tsc、source-size、diff-check 通过。

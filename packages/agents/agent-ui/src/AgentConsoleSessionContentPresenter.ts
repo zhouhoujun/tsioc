@@ -17,7 +17,34 @@ export interface AgentConsoleSessionContentPresentation {
     defaultExpanded: boolean;
 }
 
+/**
+ * Pure presentation of one message, cached by message object.
+ *
+ * Streaming re-projects the whole transcript for every token; the unchanged
+ * messages keep the same object identity, so repeated mainline/presenter passes
+ * reuse this result instead of re-deriving it. Messages are treated as
+ * immutable snapshots (a changed message arrives as a new object).
+ */
+const presentationCache = new WeakMap<object, AgentConsoleSessionContentPresentation>();
+
 export function presentAgentConsoleSessionContent(message: AgentMessage): AgentConsoleSessionContentPresentation {
+    const metadata: any = (message as any)?.metadata || {};
+    const mutable = metadata.streaming === true
+        || metadata.partial === true
+        || String(metadata.status || '').trim().toLowerCase() === 'running';
+    if (!mutable && message && typeof message === 'object') {
+        const cached = presentationCache.get(message);
+        if (cached) {
+            return cached;
+        }
+        const presentation = computeAgentConsoleSessionContent(message);
+        presentationCache.set(message, presentation);
+        return presentation;
+    }
+    return computeAgentConsoleSessionContent(message);
+}
+
+function computeAgentConsoleSessionContent(message: AgentMessage): AgentConsoleSessionContentPresentation {
     const metadata = message?.metadata || {};
     const uiKind = String(metadata.uiKind || '').trim();
     const eventType = String(metadata.uiEventType || '').trim();
