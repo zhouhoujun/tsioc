@@ -33,6 +33,7 @@ import {
     buildWorkflowCanvasModel,
     buildWorkflowCanvasViewport,
     buildWorkflowInspectorModel,
+    buildWorkflowDebugItems,
     buildWorkflowPalette,
     buildWorkflowRunHistory,
     buildWorkflowStatusModel,
@@ -82,8 +83,8 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             <workspace-bottom>
                 <workflow-run-history v-if="showRunHistory" :items="runHistory" :locale="locale"
                     :selectAction="selectRun" :clearAction="clearRunHistory"></workflow-run-history>
-                <workflow-run-log v-if="showRunLogs" :items="runLogs" :visible="showLogs" :locale="locale"
-                    :closeAction="closeLogs"></workflow-run-log>
+                <workflow-run-log v-if="showRunLogs" :items="runLogs" :debugItems="debugItems"
+                    :visible="showLogs" :locale="locale" :closeAction="closeLogs"></workflow-run-log>
             </workspace-bottom>
         </workspace-layout>
         <div class="workflow-statusbar" v-if="showStatusbar">
@@ -196,6 +197,12 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         locale: string;
         revision: number;
         model: ReturnType<typeof buildWorkflowInspectorModel>;
+    };
+    @NoReactive() private debugItemsCache?: {
+        execution: any;
+        locale: string;
+        revision: number;
+        items: ReturnType<typeof buildWorkflowDebugItems>;
     };
     @NoReactive() private runHistoryCache?: {
         history: any;
@@ -608,6 +615,19 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         const model = buildWorkflowStatusModel(this.designer, this.localeValue, this.translator);
         this.statusModelCache = { key, model };
         return model;
+    }
+
+    get debugItems() {
+        const execution = this.designer.execution;
+        const locale = this.localeValue;
+        const revision = this.registry.revision;
+        const cache = this.debugItemsCache;
+        if (cache && cache.execution === execution && cache.locale === locale && cache.revision === revision) {
+            return cache.items;
+        }
+        const items = buildWorkflowDebugItems(this.designer, this.registry, locale, this.translator);
+        this.debugItemsCache = { execution, locale, revision, items };
+        return items;
     }
 
     get runHistory() {

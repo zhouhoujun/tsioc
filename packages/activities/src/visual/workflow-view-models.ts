@@ -8,6 +8,7 @@ import {
     WorkflowCanvasNodeView,
     WorkflowCanvasPortView,
     WorkflowInspectorFieldView,
+    WorkflowDebugItem,
     WorkflowInspectorModel,
     WorkflowNodeDefinition,
     WorkflowPaletteGroup,
@@ -628,6 +629,43 @@ export function buildWorkflowInspectorModel(
         resultText,
         errorText: execution?.error || ''
     };
+}
+
+/** Per-node outputs of the selected execution for the debug panel. */
+export function buildWorkflowDebugItems(
+    designer: WorkflowDesigner,
+    registry: WorkflowNodeRegistry,
+    locale: WorkflowLocale = 'zh-CN',
+    translator?: Translator
+): WorkflowDebugItem[] {
+    const states = designer.execution?.nodeStates;
+    if (!states) {
+        return [];
+    }
+    return designer.nodes
+        .filter(node => {
+            const status = states[node.id]?.status;
+            return status === 'success' || status === 'failed' || status === 'cancelled';
+        })
+        .map(node => {
+            const state = states[node.id];
+            let resultText = '';
+            try {
+                resultText = JSON.stringify(state.result?.data ?? state.result ?? null, null, 2);
+            } catch {
+                resultText = String(state.result?.data ?? '');
+            }
+            return {
+                nodeId: node.id,
+                name: node.name,
+                typeLabel: registry.nodeLabel(node.type, locale, translator),
+                status: state.status,
+                statusLabel: nodeStatusLabel(state.status, locale, translator),
+                durationLabel: formatDuration(state.startedAt, state.finishedAt),
+                resultText,
+                errorText: state.error || ''
+            };
+        });
 }
 
 export function buildWorkflowToolbarModel(

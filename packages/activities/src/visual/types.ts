@@ -900,6 +900,18 @@ export interface WorkflowInspectorFieldView {
  * 检查器模型
  * Inspector view model.
  */
+/** Structured per-node output shown in the debug panel. */
+export interface WorkflowDebugItem {
+    nodeId: string;
+    name: string;
+    typeLabel: string;
+    status: NodeExecutionStatus;
+    statusLabel: string;
+    durationLabel: string;
+    resultText: string;
+    errorText: string;
+}
+
 export interface WorkflowInspectorModel {
     hasSelection: boolean;
     nodeId: string;

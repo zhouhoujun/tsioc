@@ -1013,6 +1013,30 @@ describe('Workflow Designer UI', () => {
         expect(logPanel.hasAttribute('hidden') || logPanel.classList.contains('is-hidden')).toBe(true);
     });
 
+    it('inspects per-node messages in the debug panel', async () => {
+        const result = await ref.instance.designer.run({ context: { approved: true } });
+        expect(result.success).toBe(true);
+        ref.instance.toolbarAction('toggle-logs');
+        await flush();
+
+        (root.querySelector('.workflow-run-log-tab[data-mode="messages"]') as any).click();
+        await flush();
+        const items = root.querySelectorAll('.workflow-debug-item');
+        expect(items.length).toBeGreaterThan(0);
+
+        (items[0].querySelector('.workflow-debug-summary') as any).click();
+        await flush();
+        const payload = root.querySelector('.workflow-debug-item .workflow-debug-payload');
+        expect(payload?.textContent).toContain('nodeId');
+
+        const search = root.querySelector('.workflow-debug-search') as any;
+        search.value = '读取输入';
+        search.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(root.querySelectorAll('.workflow-debug-item').length).toBe(1);
+        expect(root.querySelector('.workflow-debug-item')?.textContent).toContain('读取输入');
+    });
+
     it('saves and reopens definitions through the workflow library', async () => {
         ref.instance.store = new InMemoryWorkflowDefinitionStore();
         await ref.instance.saveWorkflow();

@@ -598,7 +598,8 @@ Features:
 - run history chips replay retained execution snapshots on the canvas; when the
   store implements `listExecutions` (for example `HttpWorkflowDefinitionStore`),
   opening a saved workflow also loads its persisted runs from the server,
-- execution log panel with per-node start/end events and durations,
+- execution panel with per-node start/end log entries plus a searchable
+  **Messages** tab that expands each node's structured output and errors,
 - workflow library: save, save-as-copy, open and delete definitions through
   `WorkflowDefinitionStore` (localStorage in browsers, in-memory in Node/TUI,
   HTTP/microservice via `HttpWorkflowDefinitionStore`),
