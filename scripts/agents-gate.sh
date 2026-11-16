@@ -232,6 +232,23 @@ run_package_publish() {
     fi
 }
 
+# run_publish_dry_run
+run_publish_dry_run() {
+    local id="publish-dry-run" label="microservice publish dry-run"
+    local packages="${PUBLISH_DRY_RUN_PACKAGES:-}"
+    local log="$LOG_DIR/$id.log"
+    if [ -z "$packages" ]; then
+        stage_skip "$id" "$label (set PUBLISH_DRY_RUN_PACKAGES=gateway,... to run)"
+        return
+    fi
+    if node "$ROOT_DIR/scripts/publish-dry-run.mjs" "--packages=$packages" >"$log" 2>&1; then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label"
+        tail -60 "$log" >&2
+    fi
+}
+
 # run_diff_check
 run_diff_check() {
     local log="$LOG_DIR/diff-check.log"
@@ -285,6 +302,7 @@ run_stage() {
         source-size)      run_source_size ;;
         package-deps)     run_package_deps ;;
         package-publish)  run_package_publish ;;
+        publish-dry-run)  run_publish_dry_run ;;
         diff-check)       run_diff_check ;;
         *)
             echo "[GATE-UNKNOWN] $1" >&2
@@ -298,7 +316,7 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             components components-common components-console components-html
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
             build-agent-ui-web dom-gate tui-gate gate-regression
-            pty-acceptance diff-check source-size package-deps package-publish"
+            pty-acceptance diff-check source-size package-deps package-publish publish-dry-run"
 
 if [ "$#" -gt 0 ]; then
     STAGES="$*"

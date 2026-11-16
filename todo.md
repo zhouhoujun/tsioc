@@ -4292,3 +4292,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第五十五批（2026-11-13）：
   - gRPC bidiStream Observable 输入 + 取消 teardown 验证。
   - 回归：grpc 28。
+- 微服务框架第五十六批（2026-11-16）：
+  - agents-gate publish-dry-run stage（PUBLISH_DRY_RUN_PACKAGES）。
+  - gateway 实测 PASS；未设置时 SKIP。

@@ -312,6 +312,11 @@
 - `bidiStream` 支持 Observable 输入与 unsubscribe 取消。
 - 服务端 bidi handler teardown 在客户端取消时执行，停止 AsyncIterable 消费。
 
+第五十六批（发布门禁）：
+
+- `agents-gate.sh` 新增 `publish-dry-run` stage，读取 `PUBLISH_DRY_RUN_PACKAGES`。
+- 未设置时显式 SKIP；设置后执行逐包 build → pack → npm publish --dry-run。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
