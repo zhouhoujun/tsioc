@@ -4289,3 +4289,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - gRPC clientStream 支持 Observable 输入与取消。
   - 服务端 end/cancelled 顺序竞态处理。
   - 回归：grpc 27。
+- 微服务框架第五十五批（2026-11-13）：
+  - gRPC bidiStream Observable 输入 + 取消 teardown 验证。
+  - 回归：grpc 28。

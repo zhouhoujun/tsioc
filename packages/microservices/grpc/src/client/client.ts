@@ -68,7 +68,7 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
      */
     bidiStream<T = any>(
         pattern: Pattern,
-        values: any[],
+        values: any[] | Observable<any>,
         options: { headers?: Record<string, string>; timeout?: number } = {}
     ): Observable<T> {
         return defer(() => this.connect()).pipe(
@@ -130,7 +130,7 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
                         }
                     };
                 }
-                writeStreamValues(call, values ?? []);
+                writeStreamValues(call, (values as any[]) ?? []);
                 return () => {
                     try {
                         call.cancel?.();

@@ -307,6 +307,11 @@
 - 服务端在 `end` 后延后一拍检查 `cancelled`，避免 grpc-js 的 end→cancelled 顺序导致误执行 handler。
 - 新增取消不触发 handler 的 E2E。
 
+第五十五批（gRPC bidi 取消）：
+
+- `bidiStream` 支持 Observable 输入与 unsubscribe 取消。
+- 服务端 bidi handler teardown 在客户端取消时执行，停止 AsyncIterable 消费。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

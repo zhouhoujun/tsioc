@@ -18,6 +18,7 @@ const PROTO_PATH = path.resolve(__dirname, 'fixtures/greeter.proto');
 class GreeterController {
     static cancelled = 0;
     static uploads = 0;
+    static chatCancelled = 0;
 
     @Handle('/grpc.test.Greeter/Watch', Transport.gRPC)
     watch(@Payload('name') name: string) {
@@ -45,12 +46,22 @@ class GreeterController {
     @Handle('/grpc.test.Greeter/Chat', Transport.gRPC)
     chat(@Payload('stream') stream: AsyncIterable<any>) {
         return new Observable<any>(subscriber => {
+            let cancelled = false;
             (async () => {
                 for await (const item of stream) {
+                    if (cancelled) {
+                        return;
+                    }
                     subscriber.next({ message: item?.name });
                 }
-                subscriber.complete();
+                if (!cancelled) {
+                    subscriber.complete();
+                }
             })().catch(error => subscriber.error(error));
+            return () => {
+                cancelled = true;
+                GreeterController.chatCancelled += 1;
+            };
         });
     }
 
@@ -197,6 +208,25 @@ describe('gRPC unary RPC', () => {
         subscription.unsubscribe();
         await new Promise(resolve => setTimeout(resolve, 50));
         expect(GreeterController.cancelled).toBeGreaterThan(before);
+    });
+
+    it('cancels a bidi stream fed by an Observable input', async () => {
+        const client = clientCtx.get(GrpcClient);
+        const before = GreeterController.chatCancelled;
+        const values = new Subject<any>();
+        const received: any[] = [];
+        const subscription = client.bidiStream<any>(
+            { service: 'Greeter', method: 'Chat' } as any,
+            values
+        ).subscribe(value => received.push(value));
+
+        await new Promise(resolve => setTimeout(resolve, 20));
+        values.next({ name: 'first' });
+        await new Promise(resolve => setTimeout(resolve, 20));
+        subscription.unsubscribe();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(received.map(value => value.message)).toContain('first');
+        expect(GreeterController.chatCancelled).toBeGreaterThan(before);
     });
 
     it('propagates metadata to the handler', async () => {
