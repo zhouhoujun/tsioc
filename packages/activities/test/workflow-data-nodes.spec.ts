@@ -185,6 +185,39 @@ describe('Workflow data & trigger nodes', () => {
         expect(states.debug_3.result?.data?.message).toBe('7');
     });
 
+    it('resolves sub-workflows by id through the host resolver', async () => {
+        const child: VisualWorkflowDefinition = {
+            id: 'child-flow',
+            name: 'Child flow',
+            nodes: [
+                registry.createNode('function', { x: 0, y: 0 }, {
+                    id: 'child_fn',
+                    config: { code: 'global.childRuns = (global.childRuns || 0) + 1; return {};' }
+                })
+            ],
+            connections: []
+        };
+        service.setDefinitionResolver(id => id === 'child-flow' ? child : undefined);
+
+        const subprocess = await service.execute(chain([
+            { type: 'subprocess', config: { workflow: 'child-flow' } }
+        ]), {});
+        expect(subprocess.success).toBe(true);
+        expect(service.getGlobalContext().childRuns).toBe(1);
+
+        const loop = await service.execute(chain([
+            { type: 'loop', config: { workflow: 'child-flow', iterations: 2 } }
+        ]), {});
+        expect(loop.success).toBe(true);
+        expect(service.getGlobalContext().childRuns).toBe(3);
+
+        const missing = await service.execute(chain([
+            { type: 'subprocess', config: { workflow: 'missing-flow' } }
+        ]), {});
+        expect(missing.success).toBe(false);
+        expect(String(missing.error?.message || '')).toContain('not found');
+    });
+
     it('runs a sub-workflow repeatedly with the loop node', async () => {
         const state = { count: 0 };
         const child: VisualWorkflowDefinition = {

@@ -102,6 +102,7 @@ export class VisualWorkflowService {
     private readonly executions = new Map<string, WorkflowExecutionState>();
     private readonly globalContext: Record<string, any> = {};
     private readonly nodeRuntime = new Map<string, Record<string, any>>();
+    private definitionResolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
     private readonly registry: WorkflowNodeRegistry;
     private readonly pathInterceptor = new VisualExecutionPathInterceptor();
     private readonly policyInterceptor = new WorkflowNodePolicyInterceptor();
@@ -196,6 +197,7 @@ export class VisualWorkflowService {
             }
 
             const host: VisualNodeRuntimeHost = {
+                resolveDefinition: (id) => this.definitionResolver?.(id),
                 executeDefinition: (subDefinition, subContext) =>
                     this.execute(subDefinition, subContext, {
                         ...options,
@@ -369,6 +371,13 @@ export class VisualWorkflowService {
             this.nodeRuntime.set(key, state);
         }
         return state;
+    }
+
+    /** Host store/library lookup used by sub-workflow/loop nodes. */
+    setDefinitionResolver(
+        resolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined
+    ): void {
+        this.definitionResolver = resolver;
     }
 
     /**

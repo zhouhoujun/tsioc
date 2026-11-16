@@ -471,7 +471,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "Timeout"
             },
             "subprocess": {
-                "workflow": "Sub-workflow source"
+                "workflow": "Workflow id or JSON"
             },
             "comment": {
                 "text": "Text"
@@ -720,7 +720,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "valueField": "value"
             },
             "loop": {
-                "workflow": "workflows.child"
+                "workflow": "workflow_id"
             },
             "trigger": {
                 "payload": "{ \"ok\": true }",
@@ -800,7 +800,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "overlap": "0"
             },
             "trycatch": {},
-            "subprocess": {},
+            "subprocess": {
+                "workflow": "workflow_id"
+            },
             "comment": {
                 "text": "Canvas note"
             },
@@ -968,7 +970,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "loop": {
                 "iterations": "Number of times to run the sub-workflow.",
                 "delay": "Wait between sub-workflow runs.",
-                "workflow": "Context path that holds the workflow definition to repeat."
+                "workflow": "Workflow id, context path, or inline JSON definition to repeat."
             },
             "trigger": {
                 "delay": "time to wait before emitting the payload",
@@ -1096,7 +1098,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "route to the timeout port after this delay"
             },
             "subprocess": {
-                "workflow": "Context path that holds the workflow definition to run."
+                "workflow": "Stored workflow id, context path, or inline definition JSON."
             },
             "comment": {},
             "custom": {
@@ -1812,7 +1814,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超时"
             },
             "subprocess": {
-                "workflow": "子流程来源"
+                "workflow": "工作流 ID 或 JSON"
             },
             "comment": {
                 "text": "文本"
@@ -2061,7 +2063,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "valueField": "value"
             },
             "loop": {
-                "workflow": "workflows.child"
+                "workflow": "workflow_id"
             },
             "trigger": {
                 "payload": "{ \"ok\": true }",
@@ -2141,7 +2143,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "overlap": "0"
             },
             "trycatch": {},
-            "subprocess": {},
+            "subprocess": {
+                "workflow": "workflow_id"
+            },
             "comment": {
                 "text": "Canvas note"
             },
@@ -2293,7 +2297,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "loop": {
                 "iterations": "子工作流执行次数。",
                 "delay": "两次子流程执行之间的等待时间。",
-                "workflow": "保存要重复执行的工作流定义的上下文路径。"
+                "workflow": "要重复执行的工作流 ID、上下文路径或内联 JSON 定义。"
             },
             "trigger": {
                 "delay": "发送数据前的等待时间。",
@@ -2421,7 +2425,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超过该时间后进入超时端口。"
             },
             "subprocess": {
-                "workflow": "保存工作流定义的上下文路径。"
+                "workflow": "已保存的工作流 ID、上下文路径或内联定义 JSON。"
             },
             "comment": {},
             "custom": {

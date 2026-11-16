@@ -539,6 +539,43 @@ describe('Workflow HTTP microservice', () => {
         }
     });
 
+    it('runs stored sub-workflows by id through the HTTP API', async () => {
+        await request(`${base}/api/workflows/child-http`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                id: 'child-http',
+                name: 'Child',
+                nodes: [{ id: 'child_task', name: 'Child', type: 'task', position: { x: 0, y: 0 } }],
+                connections: []
+            })
+        });
+        await request(`${base}/api/workflows/parent-http`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                id: 'parent-http',
+                name: 'Parent',
+                nodes: [{
+                    id: 'subprocess_1', name: 'Sub', type: 'subprocess',
+                    position: { x: 0, y: 0 }, config: { workflow: 'child-http' }
+                }],
+                connections: []
+            })
+        });
+        const run = await request(`${base}/api/workflows/parent-http/run`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ context: {} })
+        });
+        expect(run.status).toBe(200);
+        expect(run.body.success).toBe(true);
+        expect(run.body.executionState.nodeStates.subprocess_1.result?.data?.subprocess).toBeTruthy();
+
+        await request(`${base}/api/workflows/parent-http`, { method: 'DELETE' });
+        await request(`${base}/api/workflows/child-http`, { method: 'DELETE' });
+    });
+
     it('exposes per-node runtime state through the HTTP API', async () => {
         const definition = {
             id: 'runtime-demo',

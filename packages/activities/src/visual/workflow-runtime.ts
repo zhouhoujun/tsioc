@@ -54,6 +54,8 @@ export interface VisualNodeRuntimeHost {
      * `undefined` means no plugin executor handles this node type.
      */
     executeNode?(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult | undefined> | ActivityResult | undefined;
+    /** Resolve a referenced sub-workflow by id (host store/library). */
+    resolveDefinition?(id: string): Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
 }
 
 /**
@@ -632,6 +634,27 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
     }
 }
 
+async function resolveSubWorkflow(
+    source: any,
+    context: ActivityContext,
+    host?: VisualNodeRuntimeHost
+): Promise<VisualWorkflowDefinition | undefined> {
+    let definition = resolveWorkflowValue(source, context);
+    if (!definition) {
+        definition = coerceJson(source);
+    }
+    if (typeof definition === 'string') {
+        const key = definition;
+        definition = (context as any).workflows?.[key] || (context as any)[key];
+        if (!definition && host?.resolveDefinition) {
+            definition = await host.resolveDefinition(key);
+        }
+    }
+    return definition && typeof definition === 'object'
+        ? definition as VisualWorkflowDefinition
+        : undefined;
+}
+
 /**
  * Execute one visual node. The runtime keeps node semantics platform-neutral so
  * the same definition runs from the browser editor, the terminal and a server.
@@ -734,13 +757,7 @@ export async function executeVisualNode(
         }
         case 'loop': {
             const iterations = Math.max(0, Math.min(10000, Number(config.iterations ?? 1) || 0));
-            let definition = resolveWorkflowValue(config.workflow, context);
-            if (!definition) {
-                definition = coerceJson(config.workflow);
-            }
-            if (typeof definition === 'string') {
-                definition = (context as any).workflows?.[definition] || (context as any)[definition];
-            }
+            const definition = await resolveSubWorkflow(config.workflow, context, host);
             if (!definition || !host?.executeDefinition) {
                 return {
                     success: false,
@@ -1467,22 +1484,24 @@ export async function executeVisualNode(
         case 'trycatch':
             return { success: true, data: { nodeId: node.id, guarded: true } };
         case 'subprocess': {
-            let definition = resolveWorkflowValue(config.workflow, context);
-            if (!definition) {
-                definition = coerceJson(config.workflow);
-            }
-            if (typeof definition === 'string') {
-                definition = (context as any).workflows?.[definition] || (context as any)[definition];
-            }
+            const source = config.workflow;
+            const definition = await resolveSubWorkflow(source, context, host);
             if (definition && host?.executeDefinition) {
-                const result = await host.executeDefinition(definition as VisualWorkflowDefinition, context);
+                const result = await host.executeDefinition(definition, context);
                 return {
                     success: result.success,
                     data: { nodeId: node.id, subprocess: result.data },
                     error: result.error
                 };
             }
-            return { success: true, data: { nodeId: node.id, skipped: true, reason: 'No sub workflow configured' } };
+            if (source === undefined || source === null || source === '') {
+                return { success: true, data: { nodeId: node.id, skipped: true, reason: 'No sub workflow configured' } };
+            }
+            return {
+                success: false,
+                error: new Error(`Sub-workflow not found: ${String(source)}. Configure a workflow id, a context path, or inline definition.`),
+                data: { nodeId: node.id }
+            };
         }
         case 'custom':
         default:

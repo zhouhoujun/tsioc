@@ -237,6 +237,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     onInit(): void {
         this.selfRef = this;
+        this.service?.setDefinitionResolver?.(id => this.store.get(id));
         this.actionBusUnsubscribe = WORKFLOW_ACTION_BUS.subscribe(
             (action: string) => this.toolbarAction(action)
         );

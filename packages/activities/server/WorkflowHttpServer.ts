@@ -130,7 +130,9 @@ export class WorkflowHttpController {
         @Inject(WORKFLOW_VERSION_STORE) private versions: WorkflowVersionStore,
         @Inject(WORKFLOW_EXECUTION_POLICY) private policy: WorkflowExecutionPolicy,
         private execution: VisualWorkflowService
-    ) { }
+    ) {
+        this.execution.setDefinitionResolver(id => this.store.get(id));
+    }
 
     private executionContext(context: Record<string, any> = {}): Record<string, any> {
         const merged = { ...(context || {}) };
