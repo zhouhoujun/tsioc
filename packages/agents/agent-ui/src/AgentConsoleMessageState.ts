@@ -119,18 +119,37 @@ function setMessagesProjection(state: AgentConsoleMessageCollectionState, messag
             state.tokenUsage = nextUsage;
         }
     }
-    const displayMessages = state.displayMessages;
-    if (!displayMessages.length) {
+    const shouldFollowLatest = !state.messagesFocused && !state.messageDetailOpen;
+    // While the assistant row streams, it is the followed row. Selecting it
+    // directly avoids projecting the whole transcript on every token; the full
+    // display projection still runs on completion (streaming=false) and when
+    // the last row may be filtered (synthetic/tool-call-only/focused).
+    const lastRaw: any = state.messages[state.messages.length - 1];
+    const lastRawKind = String(lastRaw?.metadata?.uiKind || '');
+    const lastRawSelectable = !!lastRaw?.id
+        && lastRaw?.metadata?.streaming === true
+        && String(lastRaw.content || '').trim().length > 0
+        && lastRawKind !== 'plan-todo'
+        && lastRawKind !== 'file-change'
+        && lastRawKind !== 'command-execution'
+        && !lastRawKind.startsWith('timeline');
+    if (!state.messages.length) {
         state.selectedMessageId = '';
         state.messageDetailOpen = false;
         state.messageDetailScroll = 0;
         state.messageDetailColumnScroll = 0;
+    } else if (shouldFollowLatest && lastRawSelectable) {
+        if (state.selectedMessageId !== lastRaw.id) {
+            state.selectedMessageId = lastRaw.id;
+            state.messageDetailScroll = 0;
+            state.messageDetailColumnScroll = 0;
+        }
     } else {
+        const displayMessages = state.displayMessages;
         const selectable = displayMessages.filter(m =>
             m.id !== '__plan_todo_inline__' && m.id !== '__file_change_inline__' && m.id !== '__timeline_plan_boundary__'
                 && m.metadata?.uiKind !== 'command-execution'
         );
-        const shouldFollowLatest = !state.messagesFocused && !state.messageDetailOpen;
         if (shouldFollowLatest || !state.selectedMessageId || !selectable.some(item => item.id === state.selectedMessageId)) {
             state.selectedMessageId = selectable.length ? selectable[selectable.length - 1].id : '';
             state.messageDetailScroll = 0;

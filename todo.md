@@ -4419,3 +4419,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 改为：空数组不重复赋值；tokenUsage 三项（prompt/completion/total）相等时保留原对象。
 - 实测（1000 条历史，20 次 token，稳定轮次）：p50 **~72–77ms**、p95 **~89–120ms**（此前 101–146 / 135–171）。
 - 关键子集 55 passing；tsc、source-size 通过。
+
+## 2026-11-16 流式 token：跳过每帧整段投影来更新选中项
+- `setMessagesInState` 每个 token 都会为“跟随最新选中”调用 `state.displayMessages`（整段投影）。
+- 流式行本身是当前跟随行且 `streaming=true` 时，直接选它，不再投影；完成（`streaming=false`）、聚焦、详情或末行可能被过滤时仍走完整 display 投影，保证最终回答/合成行的选中语义不变。
+- 实测（1000 条历史，20 次 token，稳定轮次）：p50 **~51–58ms**、p95 **~66–91ms**（此前 72–77 / 89–120）。
+- 关键子集 174 passing（turn-stream、renderer、window、activity、tab 隔离、console-renderer、edit-message）；tsc、source-size 通过。
