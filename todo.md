@@ -4442,3 +4442,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `/activity [tools|reasoning|plan|diff|errors|answer]`：从 displayMessages 末尾找到对应类别的最新一行，聚焦转录、选中并 reveal；无参数时用选择器展示分类（可点击的 activity tabs 语义）。排除当前 `/activity` 自身的 command echo，避免跳到命令回显。
 - 新增 `revealMessageAction`（bootstrap 接到真实 messages panel + surface，失败时下一微任务重试一次），命令经 `CommandHandlerContext.runActivityCommand` 分发。
 - en/zh 文案、命令定义/别名与补全同步；测试覆盖六类跳转、选择器、缺失类别、reveal 回调，以及真实 `/activity tools` 分发。
+
+## 2026-11-16 流式按帧合并（文字出现时序变化）
+- `scheduleStreamingAssistantMessageFlush` 不再每个 text chunk 同步 flush：保留 `streamMessageText` 累积，按 rAF（浏览器）或 ~33ms timer（TUI）合并一次行更新；timer 在 Node 下 unref。
+- `forceStreamingAssistantMessageFlush` 在 `done`、`tool_call`、`finalizeStreamingAssistantRow` 强制 trailing flush，保证最后一段文字不丢；session 已切换或销毁时跳过，后台内容仍由既有 buffer/restore 处理。
+- 调度/强制/flush 三函数抽到 `AgentConsoleStreamFlush.ts`，控制器保持 source-size 预算。
+- 验证：turn-stream-narration、tool-row-identity、turn-complete-title、p403/p406、workspace-propagation、vm-submit、activity-jump 共 72 passing。

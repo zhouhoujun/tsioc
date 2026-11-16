@@ -7,6 +7,11 @@ import {
     resolveToolEventKey
 } from './AgentConsoleStreamHelpers';
 import { AgentConsoleMessageState, findStreamingAssistantMessageIndex, replaceStreamingAssistantMessage } from './AgentConsoleMessageState';
+import {
+    flushStreamingAssistantMessage,
+    forceStreamingAssistantMessageFlush,
+    scheduleStreamingAssistantMessageFlush
+} from './AgentConsoleStreamFlush';
 import { consumeStreamEventChunkView, normalizeUiEventStatus, qualifyTurnUiEventKey } from './AgentConsoleStreamEventProjection';
 import { bufferBackgroundTurnChunk, clearStreamingMessageState } from './AgentConsoleTurnBackground';
 import { appendReasoningText, resolveReasoningFallbackLabel, settleReasoningRow } from './AgentConsoleTurnReasoning';
@@ -46,6 +51,12 @@ export interface AgentConsoleTurnStreamHost {
     executeTurn(input: string, message?: AgentTurnMessageInput, profile?: string): Promise<unknown>;
 }
 
+export {
+    flushStreamingAssistantMessage,
+    forceStreamingAssistantMessageFlush,
+    scheduleStreamingAssistantMessageFlush
+} from './AgentConsoleStreamFlush';
+
 /**
  * Scratch state shared across the flush cluster of one streaming turn.
  * Owned by the host component so it survives the per-chunk host objects.
@@ -56,6 +67,11 @@ export interface AgentConsoleTurnStreamState {
     /** Assistant row tracked by the turn (used to re-attach after a tab switch). */
     assistantMessage?: AgentMessage;
     streamMessageText: string;
+    /** Coalesced streaming flush (one row update per animation frame / ~33ms). */
+    flushPending?: boolean;
+    flushTimer?: any;
+    flushRaf?: boolean;
+    flushMessage?: AgentMessage;
     /**
      * Interim narrations already sealed into their own rows. Once this is > 0 the
      * streaming row is a moving placeholder: re-appended while it has text, dropped
@@ -118,6 +134,7 @@ export function consumeStreamChunkView(
         return;
     }
     if (chunk?.type === 'tool_call') {
+        forceStreamingAssistantMessageFlush(host, state);
         sealStreamedNarration(host, state, assistantMessage);
         // The next reasoning phase is a new thought: never let the row freeze on
         // the previous phase's opening line.
@@ -150,6 +167,7 @@ export function consumeStreamChunkView(
         return;
     }
     if (chunk?.type === 'done' && chunk.message) {
+        forceStreamingAssistantMessageFlush(host, state);
         assistantMessage.content = chunk.message.content || assistantMessage.content;
         assistantMessage.metadata = {
             ...(chunk.message.metadata || {}),
@@ -164,75 +182,6 @@ export function consumeStreamChunkView(
  * Consumes one streamed event chunk (approval/compensation/context/turn
  * diagnostics plus generic tool/state lifecycle rows).
  */
-export function scheduleStreamingAssistantMessageFlush(
-    host: AgentConsoleTurnStreamHost,
-    state: AgentConsoleTurnStreamState,
-    message: AgentMessage
-): void {
-    state.streamMessageText = message.content || '';
-    if (!host.destroyed) {
-        flushStreamingAssistantMessage(host, state, message);
-    }
-}
-
-/**
- * Projects the accumulated streaming text onto the tracked assistant message
- * row. Short-circuits when the row already carries the same text.
- */
-export function flushStreamingAssistantMessage(
-    host: AgentConsoleTurnStreamHost,
-    state: AgentConsoleTurnStreamState,
-    message?: AgentMessage
-): void {
-    if (host.destroyed) {
-        state.streamMessageText = '';
-        return;
-    }
-    const text = state.streamMessageText;
-    const current = host.state.messages.slice();
-    const targetIndex = findStreamingAssistantMessageIndex(current, message);
-    if (!text.trim() && state.sealedNarrationCount > 0) {
-        if (targetIndex >= 0) {
-            current.splice(targetIndex, 1);
-            host.state.setMessages(current, true);
-        }
-        return;
-    }
-    if (targetIndex >= 0) {
-        const currentMessage = current[targetIndex];
-        if (String(currentMessage.content || '') === text
-            && currentMessage.metadata?.streaming === true) {
-            return;
-        }
-        const updated: AgentMessage = {
-            ...(message || currentMessage),
-            content: text,
-            metadata: {
-                ...(message?.metadata || currentMessage.metadata || {}),
-                streaming: true
-            }
-        };
-        if (targetIndex === current.length - 1) {
-            current[targetIndex] = updated;
-        } else {
-            current.splice(targetIndex, 1);
-            current.push(updated);
-        }
-    } else if (message && text.trim()) {
-        current.push({
-            ...message,
-            content: text,
-            metadata: {
-                ...(message.metadata || {}),
-                streaming: true
-            }
-        });
-    } else {
-        return;
-    }
-    host.state.setMessages(current, true);
-}
-
 /**
  * Reattach the live partial answer after switching back to a session whose turn
  * kept running in the background.
@@ -308,6 +257,7 @@ function finalizeStreamingAssistantRow(
     if (host.destroyed === true) {
         return;
     }
+    forceStreamingAssistantMessageFlush(host, state);
     const text = String(message.content || '');
     state.streamMessageText = text;
     if (!text.trim() && state.sealedNarrationCount > 0) {
