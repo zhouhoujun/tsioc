@@ -7,6 +7,16 @@ import {
 import { GatewayRuntime } from '../src/gateway.runtime';
 
 describe('GatewayConfigService', () => {
+    function expectThrowsType(fn: () => void, type: new (...args: any[]) => Error) {
+        let thrown: unknown;
+        try {
+            fn();
+        } catch (err) {
+            thrown = err;
+        }
+        expect(thrown).toBeInstanceOf(type);
+    }
+
     function create() {
         const runtime = new GatewayRuntime();
         const service = new GatewayConfigService(runtime, { routes: [] });
@@ -45,12 +55,12 @@ describe('GatewayConfigService', () => {
         service.apply({ routes: [{ path: '/ok', service: 's' }] });
         const before = runtime.getRoutes([]);
 
-        expect(() => service.apply({
+        expectThrowsType(() => service.apply({
             routes: [
                 { path: 'bad', service: 's' },
                 { path: '/ok', service: 's' }
             ]
-        })).toThrow(GatewayConfigValidationError);
+        }), GatewayConfigValidationError);
         expect(service.getVersion()).toBe(1);
         expect(runtime.getRoutes([])).toEqual(before);
     });
@@ -80,10 +90,10 @@ describe('GatewayConfigService', () => {
         const { service } = create();
         service.apply({ routes: [{ path: '/a', service: 's' }] });
 
-        expect(() => service.apply(
+        expectThrowsType(() => service.apply(
             { routes: [{ path: '/b', service: 's' }] },
             { expectedVersion: 0 }
-        )).toThrow(GatewayConfigVersionError);
+        ), GatewayConfigVersionError);
         expect(service.getVersion()).toBe(1);
 
         const result = service.apply(

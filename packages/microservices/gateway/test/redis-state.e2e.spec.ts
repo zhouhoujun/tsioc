@@ -13,7 +13,7 @@ import { useGateway } from '../src/provider';
 
 const describeRedis = process.env.TSIO_TEST_REDIS === '1'
     ? describe
-    : ((_name: string, _fn: () => void) => undefined) as typeof describe;
+    : ((_name: string, _fn: () => void) => undefined) as unknown as typeof describe;
 
 describeRedis('RedisGatewayStateStore (real Redis)', () => {
     const prefix = `tsdi:test:${process.pid}:${Date.now().toString(36)}:`;

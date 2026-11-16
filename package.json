@@ -5,6 +5,7 @@
   "scripts": {
     "publish:prepare": "node scripts/prepare-package-publish.mjs",
     "publish:dry-run": "node scripts/publish-dry-run.mjs",
+    "bench": "ts-node -r tsconfig-paths/register packages/microservices/benchmarks/run.ts",
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
     "build": "ts-node -r tsconfig-paths/register taskfile.ts"

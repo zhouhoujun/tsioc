@@ -29,6 +29,8 @@
 #            tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
+#            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-http
+#            ms-brokers ms-tsc ms-bench
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -252,6 +254,86 @@ run_publish_dry_run() {
     fi
 }
 
+# run_ms_group <id> <label> <pkg-dir>...
+#
+# Runs each microservice package's unit suite. Every package log is kept in
+# $LOG_DIR so a failure can be triaged; one failing package fails the stage.
+run_ms_group() {
+    local id="$1" label="$2"
+    shift 2
+    if [ "$#" -eq 0 ]; then
+        stage_skip "$id" "$label (no packages)"
+        return
+    fi
+    local failed="" dir name log
+    for dir in "$@"; do
+        name="${dir##*/}"
+        log="$LOG_DIR/$id-$name.log"
+        if ! (cd "$ROOT_DIR/$dir" && npm run test >"$log" 2>&1); then
+            failed="$failed $name"
+            echo "--- $id/$name tail (last 30 lines) ---" >&2
+            tail -30 "$log" >&2
+        fi
+    done
+    if [ -z "$failed" ]; then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label (failed:${failed})"
+    fi
+}
+
+# run_ms_brokers — broker suites need real middleware (Docker). Opt-in only, and
+# reported as an explicit SKIP when the profile is not enabled (never fake pass).
+run_ms_brokers() {
+    local id="ms-brokers" label="microservice broker suites (amqp/kafka/mqtt/nats/redis)"
+    if [ "${MS_BROKER_PROFILE:-0}" != "1" ]; then
+        stage_skip "$id" "$label (opt-in; set MS_BROKER_PROFILE=1 with middleware running)"
+        return
+    fi
+    run_ms_group "$id" "$label" \
+        packages/microservices/amqp \
+        packages/microservices/kafka \
+        packages/microservices/mqtt \
+        packages/microservices/nats \
+        packages/microservices/redis
+}
+
+# run_ms_tsc — tsc --noEmit for every package that declares a tsconfig.
+run_ms_tsc() {
+    local id="ms-tsc" label="microservice tsc --noEmit"
+    local failed="" dir name log
+    for dir in "$ROOT_DIR"/packages/microservices/*/; do
+        dir="${dir%/}"
+        name="${dir##*/}"
+        [ -f "$dir/tsconfig.json" ] || continue
+        log="$LOG_DIR/$id-$name.log"
+        if ! (cd "$dir" && npx tsc --noEmit >"$log" 2>&1); then
+            failed="$failed $name"
+            echo "--- $id/$name tail (last 30 lines) ---" >&2
+            tail -30 "$log" >&2
+        fi
+    done
+    if [ -z "$failed" ]; then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label (failed:${failed})"
+    fi
+}
+
+# run_ms_bench — benchmark smoke. Only proves the harness runs and emits JSON;
+# absolute numbers are never gated (host-dependent). Regression comparison stays
+# a manual/CI-optional step against the committed baseline.
+run_ms_bench() {
+    local id="ms-bench" label="microservice benchmark harness smoke"
+    local log="$LOG_DIR/$id.log"
+    if npm run bench -- --routes 100,1000 --samples 200 --json "$LOG_DIR/ms-bench.json" >"$log" 2>&1; then
+        stage_pass "$id" "$label"
+    else
+        stage_fail "$id" "$label"
+        tail -40 "$log" >&2
+    fi
+}
+
 # run_diff_check
 run_diff_check() {
     local log="$LOG_DIR/diff-check.log"
@@ -306,6 +388,32 @@ run_stage() {
         package-deps)     run_package_deps ;;
         package-publish)  run_package_publish ;;
         publish-dry-run)  run_publish_dry_run ;;
+        ms-core)          run_ms_group ms-core '@tsdi microservice core tests (common/transport/service/client)' \
+                              packages/common \
+                              packages/microservices/transport \
+                              packages/microservices/service \
+                              packages/microservices/client ;;
+        ms-observe)       run_ms_group ms-observe '@tsdi microservice observability tests (config/health/metrics/tracing)' \
+                              packages/microservices/config \
+                              packages/microservices/health \
+                              packages/microservices/metrics \
+                              packages/microservices/tracing ;;
+        ms-discovery)     run_ms_group ms-discovery '@tsdi microservice discovery tests' packages/microservices/discovery ;;
+        ms-protocols)     run_ms_group ms-protocols '@tsdi microservice protocol tests (contract/mime/swagger/mcp/grpc/tcp/udp/ws/coap)' \
+                              packages/microservices/contract \
+                              packages/microservices/mime \
+                              packages/microservices/swagger \
+                              packages/microservices/mcp \
+                              packages/microservices/grpc \
+                              packages/microservices/tcp \
+                              packages/microservices/udp \
+                              packages/microservices/ws \
+                              packages/microservices/coap ;;
+        ms-gateway)       run_ms_group ms-gateway '@tsdi/gateway unit tests' packages/microservices/gateway ;;
+        ms-http)          run_ms_group ms-http '@tsdi/http-microservice unit tests' packages/microservices/http ;;
+        ms-brokers)       run_ms_brokers ;;
+        ms-tsc)           run_ms_tsc ;;
+        ms-bench)         run_ms_bench ;;
         diff-check)       run_diff_check ;;
         *)
             echo "[GATE-UNKNOWN] $1" >&2
@@ -319,7 +427,10 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             components components-common components-console components-html
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
             build-agent-ui-web dom-gate tui-gate gate-regression
-            pty-acceptance diff-check source-size package-deps package-publish publish-dry-run"
+            pty-acceptance diff-check source-size
+            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-http
+            ms-brokers ms-tsc ms-bench
+            package-deps package-publish publish-dry-run"
 
 if [ "$#" -gt 0 ]; then
     STAGES="$*"

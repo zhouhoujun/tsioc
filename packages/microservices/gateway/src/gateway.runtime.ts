@@ -93,6 +93,7 @@ export interface GatewayRouteSnapshot {
     p99Ms: number;
     alert: boolean;
     violations: number;
+    alerts: GatewaySloAlert[];
 }
 
 export interface GatewayRuntimeSnapshot {
@@ -117,6 +118,7 @@ export class GatewayRuntime {
     private bulkheads = new Map<string, BulkheadState>();
     private routeStats = new Map<string, RouteStats>();
     private sloAlerts: GatewaySloAlert[] = [];
+    private configRevisionValue = 0;
 
     constructor(
         @Optional() @Inject(GatewayStateStore) private readonly store?: GatewayStateStore | null,
@@ -266,6 +268,15 @@ export class GatewayRuntime {
 
     setDynamicOptions(options: Partial<GatewayOptions>): void {
         this.dynamicOptions = options ?? {};
+        this.configRevisionValue += 1;
+    }
+
+    /**
+     * Monotonic config revision. Incremented on every dynamic option swap so
+     * derived structures (compiled route table) can be rebuilt atomically.
+     */
+    get configRevision(): number {
+        return this.configRevisionValue;
     }
 
     /**

@@ -371,7 +371,7 @@ describe('HTTP Microservice', () => {
 
             try {
                 await lastValueFrom(backend(new HttpRequest('/pool', null, { method: 'GET' }), context));
-                const agent = captured?.agent as http.Agent;
+                const agent = captured?.agent as http.Agent & { keepAlive?: boolean };
                 expect(agent).toBeInstanceOf(http.Agent);
                 expect(agent.keepAlive).toBe(true);
                 expect(agent.maxSockets).toBe(2);

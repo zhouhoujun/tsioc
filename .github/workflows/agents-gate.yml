@@ -2,7 +2,7 @@ name: agents-gate
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, '7.tui']
   pull_request:
 
 jobs:

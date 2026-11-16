@@ -105,7 +105,7 @@ describe('contract client', () => {
     });
 
     it('throws for missing path parameters', async () => {
-        const api = createContractClient<UserApi>(sampleContract(), { request: async () => ({}) });
+        const api = createContractClient<UserApi>(sampleContract(), { request: async () => ({}) as any });
         await expect(api.getUser({} as any)).rejects.toBeInstanceOf(ContractRequestError);
     });
 
