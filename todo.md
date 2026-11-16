@@ -4332,3 +4332,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - `console-renderer` 的 stream 无窗口用例：300 → 120 条消息（断言同步更新）；仍验证 scrollback 不裁剪。fresh-surface 用例 80 → 20 条，**2.1s → 0.6s**。
   - `html-console` 默认展开用例：system 90 行 → 40 行（断言 line 40）；仍验证 viewport 全量展开、不折叠。
 - **验证**：agents gate 10/10 PASS（agent-ui 2136 passing）；无断言语义删减，仅调整与数据量绑定的索引/计数。
+
+## 2026-11-16 测试分片实验（已回退）与深度链测试健壮性
+- **尝试**：新增 `unit-shard.ts`，按 spec 文件大小做 LPT 负载均衡，2/4 进程并行跑 `unit.ts` 分片。
+- **实测否决**：2 分片 wall 216s（单进程同一环境 104–161s），重 spec 集中于单分片 + JSDOM 内存/GC 争用，未获得收益；按 AGENTS「未经实测提升的改动不得保留」回退 sharding 与 unit.ts/package.json 改动。
+- **顺带发现的真实问题**：分片改变执行顺序后，`dialog-deeplink` 的 `mountAgentWebConsole` 在 `finally` 才挂 `.catch`，bootstrap 的 `model.activate` 拒绝会先成为 unhandled rejection 并杀掉进程（单进程下只是时序侥幸）。已改为同步 `.catch(() => null)`，并保留 `await mountedPromise` 的清理逻辑。
+- **保留**：超大 fixture 收敛（前一条提交）与本次 unhandled rejection 修复。

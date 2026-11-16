@@ -59,6 +59,9 @@ export class DialogDeepLinkTest {
     async deepLinkOpensRoute() {
         const gateway = new FakeAgentGateway({ sessionId: 'session-A' });
         const state = new AgentConsoleSessionState();
+        // Attach the handler synchronously: bootstrap may reject before the
+        // finally block awaits, which would otherwise surface as an unhandled
+        // rejection (visible when specs run in a different order/shard).
         const mountedPromise = mountAgentWebConsole({
             baseUrl: gateway.clientBaseUrl,
             sessionId: 'session-A',
@@ -68,7 +71,7 @@ export class DialogDeepLinkTest {
             pwa: false,
             workspace: '',
             dialog: 'help'
-        });
+        }).catch(() => null);
         try {
             await waitUntil(() => !!this.dom.window.document.querySelector('#agent-console .select-list'));
             const dialog = this.dom.window.document.querySelector('#agent-console .select-list') as HTMLElement;
@@ -86,7 +89,7 @@ export class DialogDeepLinkTest {
             expect(!!this.dom.window.document.querySelector('.agent-web-sidebar-toggle')).toEqual(true);
         } finally {
             gateway.dispose();
-            const mounted = await mountedPromise.catch(() => null);
+            const mounted = await mountedPromise;
             if (mounted) {
                 await mounted.dispose();
             }
