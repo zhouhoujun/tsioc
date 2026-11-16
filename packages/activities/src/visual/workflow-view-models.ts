@@ -8,6 +8,7 @@ import {
     WorkflowCanvasNodeView,
     WorkflowCanvasPortView,
     WorkflowInspectorFieldView,
+    WorkflowCanvasGroupView,
     WorkflowDebugItem,
     WorkflowInspectorModel,
     WorkflowNodeDefinition,
@@ -365,10 +366,12 @@ export function buildWorkflowCanvasModel(
     });
 
     const draft = buildCanvasDraft(designer, nodeId => geometry.get(nodeId));
+    const groupViews = buildCanvasGroups(designer);
     const maxX = nodeViews.reduce((value, node) => Math.max(value, node.x + node.width), 0);
     const maxY = nodeViews.reduce((value, node) => Math.max(value, node.y + node.height), 0);
     return {
         nodes: nodeViews,
+        groups: groupViews,
         edges: edgeViews,
         draft,
         connecting: !!designer.connectionDraft,
@@ -394,6 +397,7 @@ export function buildWorkflowCanvasViewport(
 ): WorkflowCanvasModel {
     return {
         nodes: previous.nodes,
+        groups: previous.groups,
         edges: previous.edges,
         // Only wire dragging needs a source node lookup; pan/zoom stays O(1).
         draft: buildCanvasDraft(designer, nodeId => previous.nodes.find(node => node.id === nodeId)),
@@ -405,6 +409,46 @@ export function buildWorkflowCanvasViewport(
         pan: { ...designer.pan },
         gridStyle: canvasGridStyle(designer)
     };
+}
+
+function buildCanvasGroups(designer: WorkflowDesigner): WorkflowCanvasGroupView[] {
+    const groups = designer.definition.groups || [];
+    const views: WorkflowCanvasGroupView[] = [];
+    for (const group of groups) {
+        const nodes = designer.nodes.filter(node => (group.nodeIds || []).includes(node.id));
+        if (!nodes.length) {
+            continue;
+        }
+        const frames = nodes.map(node => ({ node, ...workflowNodeFrame(node) }));
+        const padding = 22;
+        const header = 30;
+        const minX = Math.min(...frames.map(frame => frame.node.position.x)) - padding;
+        const minY = Math.min(...frames.map(frame => frame.node.position.y)) - padding - header;
+        const maxX = Math.max(...frames.map(frame => frame.node.position.x + frame.width)) + padding;
+        const maxY = Math.max(...frames.map(frame => frame.node.position.y + frame.height)) + padding;
+        const color = group.color || '#60a5fa';
+        views.push({
+            id: group.id,
+            name: group.name || group.id,
+            x: minX,
+            y: minY,
+            width: Math.max(120, maxX - minX),
+            height: Math.max(80, maxY - minY),
+            color,
+            attrs: {
+                class: 'workflow-group',
+                'data-group-id': group.id,
+                style: [
+                    `left:${minX}px`,
+                    `top:${minY}px`,
+                    `width:${Math.max(120, maxX - minX)}px`,
+                    `height:${Math.max(80, maxY - minY)}px`,
+                    `--wf-group-color:${color}`
+                ].join(';')
+            }
+        });
+    }
+    return views;
 }
 
 function buildCanvasDraft(

@@ -15,6 +15,7 @@ describe('Workflow canvas coordinates', () => {
         };
         canvas.model = {
             nodes: [],
+            groups: [],
             edges: [],
             width: 1200,
             height: 720,

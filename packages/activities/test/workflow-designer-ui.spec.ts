@@ -565,6 +565,53 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.selectionCount).toBe(0);
     });
 
+    it('creates, moves and removes node groups', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        const keydown = (key: string, shiftKey = false) => canvas.dispatchEvent(
+            new (doc.defaultView as any).KeyboardEvent('keydown', {
+                key, ctrlKey: true, shiftKey, bubbles: true
+            })
+        );
+
+        ref.instance.designer.selectNodes(['task_1', 'task_2']);
+        await flush();
+        keydown('g');
+        await flush();
+
+        let group = root.querySelector('.workflow-group[data-group-id]') as any;
+        expect(group).toBeTruthy();
+        expect(group.textContent).toContain('Group 1');
+
+        const beforeTask2 = ref.instance.designer.nodes.find(node => node.id === 'task_2')!.position.x;
+        const title = group.querySelector('.workflow-group-title') as any;
+        title.dispatchEvent(new (doc.defaultView as any).MouseEvent('mousedown', {
+            bubbles: true, clientX: 100, clientY: 100
+        }));
+        canvas.dispatchEvent(new (doc.defaultView as any).MouseEvent('mousemove', {
+            bubbles: true, clientX: 140, clientY: 130
+        }));
+        canvas.dispatchEvent(new (doc.defaultView as any).MouseEvent('mouseup', {
+            bubbles: true, clientX: 140, clientY: 130
+        }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_2')!.position.x)
+            .toBeGreaterThan(beforeTask2);
+
+        keydown('G', true);
+        await flush();
+        expect(root.querySelector('.workflow-group')).toBeFalsy();
+        expect(ref.instance.designer.nodes.some(node => node.id === 'task_1')).toBe(true);
+
+        ref.instance.designer.selectNodes(['task_1', 'task_2']);
+        keydown('g');
+        await flush();
+        group = root.querySelector('.workflow-group[data-group-id]') as any;
+        (group.querySelector('.workflow-group-remove') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-group')).toBeFalsy();
+        expect(ref.instance.designer.nodes.some(node => node.id === 'task_2')).toBe(true);
+    });
+
     it('shows an alignment bar for multi-selection and aligns nodes', async () => {
         ref.instance.designer.selectNodes(['task_1', 'task_2', 'task_3']);
         await flush();

@@ -102,6 +102,10 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             @contextmenu="closeNodeMenu"></div>
         <div class="workflow-node-menu" v-if="showNodeMenu" [style]="nodeMenuStyle">
             <button type="button" class="workflow-node-menu-item" @click="toggleMenuNode">{{nodeMenuToggleLabel}}</button>
+            <button type="button" class="workflow-node-menu-item" v-if="selectionCount > 1"
+                @click="groupMenuSelection">{{groupSelectionLabel}}</button>
+            <button type="button" class="workflow-node-menu-item" v-if="canUngroupSelection"
+                @click="ungroupMenuSelection">{{ungroupLabel}}</button>
             <button type="button" class="workflow-node-menu-item" @click="duplicateMenuNode">{{duplicateLabel}}</button>
             <button type="button" class="workflow-node-menu-item is-danger" @click="deleteMenuNode">{{deleteLabel}}</button>
         </div>
@@ -175,6 +179,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         nodes: any;
         connections: any;
         selectionNode: string;
+        selectionIds: string;
         selectionConnection: string;
         execution: any;
         draft: any;
@@ -366,6 +371,42 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         self.notifyChange();
     };
 
+    get selectionCount(): number {
+        return this.designer?.selectedNodeIds.length || 0;
+    }
+
+    get canUngroupSelection(): boolean {
+        const selected = new Set(this.designer?.selectedNodeIds || []);
+        return (this.designer?.definition.groups || [])
+            .some(group => group.nodeIds.some(id => selected.has(id)));
+    }
+
+    get groupSelectionLabel(): string {
+        return this.t('groupSelection', 'Group selection');
+    }
+
+    get ungroupLabel(): string {
+        return this.t('ungroup', 'Ungroup');
+    }
+
+    readonly groupMenuSelection = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        if (self.designer) {
+            self.designer.groupSelection();
+        }
+        self.showNodeMenu = false;
+        self.notifyChange();
+    };
+
+    readonly ungroupMenuSelection = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        if (self.designer) {
+            self.designer.ungroupSelection();
+        }
+        self.showNodeMenu = false;
+        self.notifyChange();
+    };
+
     get selectionBoxStyle(): string {
         const box = this.selectionBox;
         if (!box) {
@@ -474,6 +515,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             { action: this.t('paste', 'Paste'), keys: 'Ctrl+V' },
             { action: this.t('toggleNode', 'Enable/disable node'), keys: 'Ctrl+E' },
             { action: this.t('boxSelect', 'Box select'), keys: 'Shift+drag' },
+            { action: this.t('groupSelection', 'Group selection'), keys: 'Ctrl+G' },
+            { action: this.t('ungroup', 'Ungroup'), keys: 'Ctrl+Shift+G' },
             { action: this.t('delete', 'Delete'), keys: 'Delete' },
             { action: this.t('zoomPan', 'Zoom / pan'), keys: 'Ctrl+Wheel / Wheel' },
             { action: this.t('shortcuts', 'Keyboard shortcuts'), keys: '?' }
@@ -512,6 +555,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         const connections = definition?.connections;
         const selection = designer.selection;
         const selectionNode = selection?.nodeId || '';
+        const selectionIds = (designer.selectedNodeIds || []).join(',');
         const selectionConnection = selection?.connectionId || '';
         const execution = designer.execution;
         const draft = designer.connectionDraft;
@@ -529,6 +573,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             && cache.nodes === nodes
             && cache.connections === connections
             && cache.selectionNode === selectionNode
+            && cache.selectionIds === selectionIds
             && cache.selectionConnection === selectionConnection
             && cache.execution === execution
             && cache.draft === draft
@@ -546,6 +591,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             && cache.nodes === nodes
             && cache.connections === connections
             && cache.selectionNode === selectionNode
+            && cache.selectionIds === selectionIds
             && cache.selectionConnection === selectionConnection
             && cache.execution === execution
             && cache.locale === locale
@@ -558,6 +604,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             nodes,
             connections,
             selectionNode,
+            selectionIds,
             selectionConnection,
             execution,
             draft,
@@ -1247,6 +1294,20 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 }
                 break;
             }
+            case 'group-down': {
+                const group = (designer.definition.groups || [])
+                    .find(item => item.id === payload.groupId);
+                if (group?.nodeIds?.length && payload.world) {
+                    designer.selectNodes(group.nodeIds);
+                    designer.beginNodeDrag(group.nodeIds[0], payload.world);
+                }
+                break;
+            }
+            case 'group-remove':
+                if (payload.groupId) {
+                    designer.removeGroup(payload.groupId);
+                }
+                break;
             case 'edge-click':
                 if (payload.connectionId) {
                     designer.selectConnection(payload.connectionId);
@@ -1465,6 +1526,14 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'v' || key === 'V')) {
             this.designer.pasteClipboard();
+            return;
+        }
+        if ((payload.ctrlKey || payload.metaKey) && (key === 'g' || key === 'G')) {
+            if (payload.shiftKey) {
+                this.designer.ungroupSelection();
+            } else {
+                this.designer.groupSelection();
+            }
             return;
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'e' || key === 'E')) {

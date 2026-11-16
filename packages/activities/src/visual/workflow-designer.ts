@@ -7,6 +7,7 @@ import {
     NodePosition,
     VisualWorkflowDefinition,
     WorkflowConnectionDraft,
+    WorkflowGroup,
     WorkflowExecutionEvent,
     WorkflowExecutionOptions,
     WorkflowAlignMode,
@@ -275,6 +276,10 @@ export class WorkflowDesigner {
         return this.selectedNodeIds.length;
     }
 
+    get groups(): WorkflowGroup[] {
+        return this.definition.groups || [];
+    }
+
     get selectedConnection(): NodeConnection | undefined {
         if (!this.selection.connectionId) {
             return undefined;
@@ -355,6 +360,16 @@ export class WorkflowDesigner {
             connections: current.connections.filter(connection =>
                 connection.sourceNodeId !== nodeId && connection.targetNodeId !== nodeId
             ),
+            ...(current.groups
+                ? {
+                    groups: current.groups
+                        .map(group => ({
+                            ...group,
+                            nodeIds: group.nodeIds.filter(id => id !== nodeId)
+                        }))
+                        .filter(group => group.nodeIds.length)
+                }
+                : {}),
             metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
         }));
         const remaining = this.selectedNodeIds.filter(id => id !== nodeId);
@@ -519,6 +534,16 @@ export class WorkflowDesigner {
                 connections: current.connections.filter(connection =>
                     !ids.has(connection.sourceNodeId) && !ids.has(connection.targetNodeId)
                 ),
+                ...(current.groups
+                    ? {
+                        groups: current.groups
+                            .map(group => ({
+                                ...group,
+                                nodeIds: group.nodeIds.filter(id => !ids.has(id))
+                            }))
+                            .filter(group => group.nodeIds.length)
+                    }
+                    : {}),
                 metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
             }));
             this.selection = {};
@@ -957,6 +982,70 @@ export class WorkflowDesigner {
             metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
         }));
         this.setMessage('workflow.message.distributed');
+        return true;
+    }
+
+    /** Wrap the current node selection in a named frame. */
+    groupSelection(name?: string): WorkflowGroup | undefined {
+        const nodeIds = this.selectedNodeIds;
+        if (!nodeIds.length) {
+            return undefined;
+        }
+        const existing = this.groups;
+        const used = new Set(existing.map(group => group.id));
+        let index = 1;
+        while (used.has(`group_${index}`)) {
+            index += 1;
+        }
+        const group: WorkflowGroup = {
+            id: `group_${index}`,
+            name: String(name || '').trim() || `Group ${existing.length + 1}`,
+            nodeIds: [...nodeIds],
+            color: '#60a5fa'
+        };
+        this.commit(current => ({
+            ...current,
+            groups: [...(current.groups || []), group],
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        this.setMessage('workflow.message.grouped', { name: group.name });
+        return group;
+    }
+
+    /** Remove a frame while keeping its nodes on the canvas. */
+    removeGroup(groupId: string): boolean {
+        const group = this.groups.find(item => item.id === groupId);
+        if (!group) {
+            return false;
+        }
+        this.commit(current => ({
+            ...current,
+            groups: (current.groups || []).filter(item => item.id !== groupId),
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        this.setMessage('workflow.message.ungrouped', { name: group.name });
+        return true;
+    }
+
+    /** Remove every frame that contains one of the selected nodes. */
+    ungroupSelection(): boolean {
+        const selected = new Set(this.selectedNodeIds);
+        if (!selected.size) {
+            return false;
+        }
+        const groups = this.groups;
+        const remaining = groups.filter(group => !(group.nodeIds || []).some(id => selected.has(id)));
+        if (remaining.length === groups.length) {
+            return false;
+        }
+        this.commit(current => ({
+            ...current,
+            groups: (current.groups || []).filter(group =>
+                !(group.nodeIds || []).some(id => selected.has(id))
+            ),
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        this.setMessage('workflow.message.ungrouped', { name: '' });
         return true;
     }
 
@@ -1493,12 +1582,22 @@ export class WorkflowDesigner {
             sourcePort: connection.sourcePort || 'out',
             targetPort: connection.targetPort || 'in'
         }));
+        const nodeIds = new Set(nodes.map(node => node.id));
+        const groups = (definition.groups || [])
+            .map(group => ({
+                ...group,
+                id: group.id || nowId('group'),
+                name: group.name || group.id || 'Group',
+                nodeIds: (group.nodeIds || []).filter(id => nodeIds.has(id))
+            }))
+            .filter(group => group.nodeIds.length);
         return {
             ...definition,
             id: definition.id || nowId('workflow'),
             name: definition.name || 'Unnamed Workflow',
             nodes,
-            connections
+            connections,
+            ...(definition.groups || groups.length ? { groups } : {})
         };
     }
 

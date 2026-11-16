@@ -567,6 +567,9 @@ Features:
   and singleton nodes already present are skipped,
 - multi-selection shows an alignment bar over the canvas: align left/center/
   right/top/middle/bottom and distribute horizontally/vertically,
+- `Ctrl+G` wraps the selection in a named group frame (`Ctrl+Shift+G` or the
+  frame's `✕` removes it); dragging the frame title moves all member nodes
+  together and groups persist with the workflow definition,
 - `Enabled` in the inspector (or the node right-click menu) disables a node
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
@@ -595,8 +598,8 @@ Features:
   Save failed state in the toolbar; manual save and autosave share the same store,
 - global keyboard shortcuts (`Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
   `Ctrl+D` duplicate, `Ctrl+E` enable/disable, `Shift`+drag box select,
-  `Ctrl+C/X/V` copy/cut/paste, `?`/`F1` shortcut sheet) and an empty-canvas
-  onboarding hint,
+  `Ctrl+C/X/V` copy/cut/paste, `Ctrl+G` group, `?`/`F1` shortcut sheet) and
+  an empty-canvas onboarding hint,
 - run history chips replay retained execution snapshots on the canvas; when the
   store implements `listExecutions` (for example `HttpWorkflowDefinitionStore`),
   opening a saved workflow also loads its persisted runs from the server,

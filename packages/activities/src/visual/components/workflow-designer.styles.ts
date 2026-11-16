@@ -854,6 +854,50 @@ workflow-canvas {
     transform-origin: 0 0;
 }
 
+.workflow-group {
+    position: absolute;
+    z-index: 0;
+    box-sizing: border-box;
+    border: 1px dashed var(--wf-group-color, #60a5fa);
+    border-radius: 12px;
+    background: rgba(96, 165, 250, 0.06);
+    pointer-events: none;
+}
+
+.workflow-group-title {
+    position: absolute;
+    top: 7px;
+    left: 12px;
+    max-width: calc(100% - 48px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--wf-group-color, #60a5fa);
+    cursor: grab;
+    pointer-events: auto;
+    user-select: none;
+}
+
+.workflow-group-remove {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1;
+    padding: 2px 4px;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.workflow-group-remove:hover {
+    color: #b91c1c;
+}
+
 .workflow-align-bar {
     position: absolute;
     top: 8px;

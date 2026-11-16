@@ -333,6 +333,11 @@ export interface VisualWorkflowDefinition {
      */
     connections: NodeConnection[];
     /**
+     * 画布分组（框选组）
+     * Optional canvas groups (frames) referencing nodes.
+     */
+    groups?: WorkflowGroup[];
+    /**
      * 工作流元数据
      * Workflow metadata
      */
@@ -504,6 +509,7 @@ export interface WorkflowExecutionLogEntry {
     event: string;
     message: string;
     nodeId?: string;
+    groupId?: string;
     connectionId?: string;
 }
 
@@ -732,6 +738,14 @@ export interface WorkflowPaletteGroup {
 export type WorkflowAlignMode = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
 export type WorkflowDistributeMode = 'horizontal' | 'vertical';
 
+/** Named frame grouping nodes on the canvas. */
+export interface WorkflowGroup {
+    id: string;
+    name: string;
+    nodeIds: string[];
+    color?: string;
+}
+
 export interface WorkflowSelection {
     /** Primary selected node (inspector/status focus). */
     nodeId?: string;
@@ -834,8 +848,20 @@ export interface WorkflowCanvasEdgeView {
  * 画布渲染模型
  * Canvas render model consumed by renderer-neutral canvas components.
  */
+export interface WorkflowCanvasGroupView {
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    color: string;
+    attrs: Record<string, string>;
+}
+
 export interface WorkflowCanvasModel {
     nodes: WorkflowCanvasNodeView[];
+    groups: WorkflowCanvasGroupView[];
     edges: WorkflowCanvasEdgeView[];
     draft?: {
         d: string;

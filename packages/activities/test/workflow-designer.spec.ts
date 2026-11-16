@@ -463,28 +463,55 @@ describe('Visual Workflow Designer', () => {
             expect(local.nodes.length).toBe(7);
         });
 
+        it('groups, moves and ungroups node frames', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            local.selectNodes(['task_1', 'task_2']);
+            const group = local.groupSelection('Review');
+            expect(group).toBeDefined();
+            expect(local.groups.length).toBe(1);
+            expect(local.groups[0].nodeIds.sort()).toEqual(['task_1', 'task_2']);
+
+            const first = { ...local.nodes.find(node => node.id === 'task_1')!.position };
+            expect(local.beginNodeDrag('task_1', { x: first.x + 5, y: first.y + 5 })).toBe(true);
+            local.dragNodeTo({ x: first.x + 45, y: first.y + 25 });
+            local.endNodeDrag();
+            expect(local.nodes.find(node => node.id === 'task_2')!.position.x).toBeGreaterThan(850);
+
+            local.selectNodes(['task_1', 'task_2']);
+            expect(local.ungroupSelection()).toBe(true);
+            expect(local.groups.length).toBe(0);
+            expect(local.nodes.some(node => node.id === 'task_1')).toBe(true);
+
+            local.groupSelection();
+            local.removeNode('task_1');
+            expect(local.groups[0].nodeIds).toEqual(['task_2']);
+            local.removeNode('task_2');
+            expect(local.groups.length).toBe(0);
+        });
+
         it('aligns and distributes the selected nodes', () => {
-            designer.selectNodes(['task_1', 'task_2', 'task_3']);
-            expect(designer.alignSelection('left')).toBe(true);
+            const local = new WorkflowDesigner({ registry, service });
+            local.selectNodes(['task_1', 'task_2', 'task_3']);
+            expect(local.alignSelection('left')).toBe(true);
             const xs = ['task_1', 'task_2', 'task_3'].map(id =>
-                designer.nodes.find(node => node.id === id)!.position.x
+                local.nodes.find(node => node.id === id)!.position.x
             );
             expect(new Set(xs).size).toBe(1);
-            designer.undo();
+            local.undo();
 
-            designer.moveNode('task_1', { x: 100, y: 400 });
-            designer.moveNode('task_2', { x: 300, y: 400 });
-            designer.moveNode('task_3', { x: 600, y: 400 });
-            designer.selectNodes(['task_1', 'task_2', 'task_3']);
-            expect(designer.distributeSelection('horizontal')).toBe(true);
+            local.moveNode('task_1', { x: 100, y: 400 });
+            local.moveNode('task_2', { x: 300, y: 400 });
+            local.moveNode('task_3', { x: 600, y: 400 });
+            local.selectNodes(['task_1', 'task_2', 'task_3']);
+            expect(local.distributeSelection('horizontal')).toBe(true);
             const distributed = ['task_1', 'task_2', 'task_3'].map(id =>
-                designer.nodes.find(node => node.id === id)!.position.x
+                local.nodes.find(node => node.id === id)!.position.x
             );
             expect(distributed[0]).toBe(100);
             expect(distributed[2]).toBe(600);
             expect(distributed[1] - distributed[0]).toBe(distributed[2] - distributed[1]);
-            designer.undo();
-            expect(designer.nodes.find(node => node.id === 'task_2')!.position.x).toBe(300);
+            local.undo();
+            expect(local.nodes.find(node => node.id === 'task_2')!.position.x).toBe(300);
         });
 
         it('copies, cuts and pastes selections across documents', () => {

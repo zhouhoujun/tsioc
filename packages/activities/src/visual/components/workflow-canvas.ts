@@ -13,6 +13,8 @@ export type WorkflowCanvasPointerType =
     | 'node-down'
     | 'node-up'
     | 'node-context'
+    | 'group-down'
+    | 'group-remove'
     | 'box-select-start'
     | 'box-select-move'
     | 'box-select'
@@ -30,6 +32,7 @@ export interface WorkflowCanvasPointerPayload {
     clientX?: number;
     clientY?: number;
     nodeId?: string;
+    groupId?: string;
     connectionId?: string;
     portId?: string;
     portType?: 'input' | 'output' | 'both';
@@ -46,6 +49,7 @@ export interface WorkflowCanvasPointerPayload {
 
 const EMPTY_CANVAS: WorkflowCanvasModel = {
     nodes: [],
+    groups: [],
     edges: [],
     width: 1200,
     height: 720,
@@ -78,6 +82,12 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
         <div class="workflow-canvas-grid" [style]="canvasStyle"></div>
         <div class="workflow-canvas-empty" v-if="!model.nodes.length">{{emptyHint}}</div>
         <div class="workflow-canvas-content" [style]="contentStyle">
+            <div class="workflow-group" v-for="group in model.groups" v-bind="group.attrs"
+                 @mousedown="groupDown($event, group)">
+                <span class="workflow-group-title">{{group.name}}</span>
+                <button class="workflow-group-remove" type="button" title="{{group.name}}"
+                    @mousedown="stopGroupRemove($event)" @click="groupRemove($event, group)">✕</button>
+            </div>
             <svg class="workflow-canvas-edges" v-bind="svgAttrs">
                 <defs>
                     <marker id="wf-arrow-idle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="workflow-arrow-idle"/></marker>
@@ -328,6 +338,29 @@ export class WorkflowCanvasComponent implements AfterViewInit {
     edgeClick(event: any, edge: { id: string }): void {
         this.stop(event);
         this.emit({ type: 'edge-click', event, connectionId: edge.id });
+    }
+
+    groupDown(event: any, group: { id: string }): void {
+        this.stop(event);
+        event?.preventDefault?.();
+        this.panStart = undefined;
+        this.emit({
+            type: 'group-down',
+            event,
+            groupId: group.id,
+            world: this.worldFromEvent(event)
+        });
+    }
+
+    stopGroupRemove(event: any): void {
+        this.stop(event);
+        event?.preventDefault?.();
+    }
+
+    groupRemove(event: any, group: { id: string }): void {
+        this.stop(event);
+        event?.preventDefault?.();
+        this.emit({ type: 'group-remove', event, groupId: group.id });
     }
 
     edgeDown(event: any): void {
