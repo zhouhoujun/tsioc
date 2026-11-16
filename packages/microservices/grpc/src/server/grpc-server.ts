@@ -296,8 +296,8 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         call.on('cancelled', () => { cancelled = true; });
         call.on('end', async () => {
             // grpc-js may emit `end` before `cancelled` when the client aborts
-            // a stream; give the cancellation event one tick to arrive.
-            await new Promise(resolve => setTimeout(resolve, 0));
+            // a stream; give the cancellation event a short grace period.
+            await new Promise(resolve => setTimeout(resolve, 5));
             if (cancelled || (call as any).cancelled === true) {
                 return;
             }

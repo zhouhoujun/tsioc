@@ -328,6 +328,11 @@
 - gate 支持 `PUBLISH_DRY_RUN_SHARD`，便于 CI 并行分片构建/发布校验。
 - Admin bundle 已按当前 code-editor 版本重建。
 
+第六十二批（真实 Broker 验证）：
+
+- Docker 环境实测 Kafka 73、NATS 54、AMQP 55、MQTT 81、Redis 73 passing。
+- gRPC client-stream cancel 竞态增加 5ms 取消宽限，连续 3 次回归稳定。
+
 第五十八批（tracing feature 组合）：
 
 - 验证 `useFeatures({ extraFeatures: [useTracing(...)] })` 可装配 tracing interceptor。

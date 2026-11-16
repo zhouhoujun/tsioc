@@ -4304,3 +4304,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第六十一批（2026-11-16）：
   - publish-dry-run --shard/--list；gate PUBLISH_DRY_RUN_SHARD。
   - admin bundle 重建提交（含 code-editor）。
+- 微服务框架第六十二批（2026-11-16）：
+  - Kafka/NATS/AMQP/MQTT/Redis 真实 Docker E2E 全部通过。
+  - gRPC client-stream cancel 5ms 宽限，连续 3 次稳定。
