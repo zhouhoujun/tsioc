@@ -396,6 +396,16 @@ export class WorkflowHttpController {
         };
     }
 
+    /** Per-node runtime state (rate-limit windows, queues) for diagnostics. */
+    @Get('/:id/runtime')
+    async runtime(@RequestPath('id') id: string) {
+        const definition = await this.store.get(id);
+        if (!definition) {
+            throw new NotFoundException(`Workflow not found: ${id}`);
+        }
+        return this.execution.getNodeRuntimeState(id);
+    }
+
     @Post('/:id/resume')
     async resume(
         @RequestPath('id') id: string,

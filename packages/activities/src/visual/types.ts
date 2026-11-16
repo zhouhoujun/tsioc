@@ -962,6 +962,8 @@ export interface WorkflowDebugItem {
     durationLabel: string;
     resultText: string;
     errorText: string;
+    /** Cross-run node state such as rate-limit timestamps. */
+    stateText: string;
 }
 
 export interface WorkflowInspectorModel {

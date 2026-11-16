@@ -521,6 +521,9 @@ describe('Workflow data & trigger nodes', () => {
         expect(calls).toBe(1);
         expect(snapshot.nodeStates.delay_1.result?.data?.dropped).toBe(true);
         expect(snapshot.nodeStates.task_2.status).toBe('skipped');
+        const runtime = service.getNodeRuntimeState(definition.id);
+        expect(Array.isArray(runtime.delay_1?.rateStamps)).toBe(true);
+        expect(service.getNodeRuntimeState('other-workflow')).toEqual({});
     });
 
     it('queues rate-limited messages until the window opens', async () => {

@@ -371,6 +371,28 @@ export class VisualWorkflowService {
         return state;
     }
 
+    /**
+     * Snapshot of mutable per-node runtime state (rate-limit windows, queues).
+     * State is scoped by workflow so diagnostics never leak across documents.
+     */
+    getNodeRuntimeState(workflowId?: string): Record<string, Record<string, any>> {
+        const result: Record<string, Record<string, any>> = {};
+        for (const [key, value] of this.nodeRuntime) {
+            const separator = key.indexOf(':');
+            const owner = separator < 0 ? '' : key.slice(0, separator);
+            const nodeId = separator < 0 ? key : key.slice(separator + 1);
+            if (workflowId && owner !== workflowId) {
+                continue;
+            }
+            try {
+                result[nodeId] = JSON.parse(JSON.stringify(value));
+            } catch {
+                result[nodeId] = { ...value };
+            }
+        }
+        return result;
+    }
+
     /** Shared `global` scope exposed to every execution of this service. */
     getGlobalContext(): Record<string, any> {
         return this.globalContext;

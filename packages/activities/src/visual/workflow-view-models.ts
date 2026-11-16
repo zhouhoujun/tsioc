@@ -704,6 +704,12 @@ export function buildWorkflowDebugItems(
     if (!states) {
         return [];
     }
+    let runtimeStates: Record<string, Record<string, any>> = {};
+    try {
+        runtimeStates = designer.service?.getNodeRuntimeState(designer.definition.id) || {};
+    } catch {
+        runtimeStates = {};
+    }
     return designer.nodes
         .filter(node => {
             const status = states[node.id]?.status;
@@ -725,7 +731,10 @@ export function buildWorkflowDebugItems(
                 statusLabel: nodeStatusLabel(state.status, locale, translator),
                 durationLabel: formatDuration(state.startedAt, state.finishedAt),
                 resultText,
-                errorText: state.error || ''
+                errorText: state.error || '',
+                stateText: runtimeStates[node.id] && Object.keys(runtimeStates[node.id]).length
+                    ? JSON.stringify(runtimeStates[node.id], null, 2)
+                    : ''
             };
         });
 }

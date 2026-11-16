@@ -1924,6 +1924,19 @@ workflow-canvas {
     overflow-wrap: anywhere;
 }
 
+.workflow-debug-state {
+    padding: 0 10px 8px;
+}
+
+.workflow-debug-state-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 3px;
+}
+
 .workflow-debug-error {
     padding: 0 10px 8px;
     color: #b91c1c;

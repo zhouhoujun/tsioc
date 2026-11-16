@@ -539,6 +539,35 @@ describe('Workflow HTTP microservice', () => {
         }
     });
 
+    it('exposes per-node runtime state through the HTTP API', async () => {
+        const definition = {
+            id: 'runtime-demo',
+            name: 'Runtime demo',
+            nodes: [{
+                id: 'rate_delay', name: 'Rate', type: 'delay' as const,
+                position: { x: 0, y: 0 },
+                config: { mode: 'rate', rateCount: 1, rateWindow: 60000, rateAction: 'drop' }
+            }],
+            connections: []
+        };
+        await request(`${base}/api/workflows/runtime-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        await request(`${base}/api/workflows/runtime-demo/run`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+        await request(`${base}/api/workflows/runtime-demo/run`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+
+        const runtime = await request(`${base}/api/workflows/runtime-demo/runtime`);
+        expect(runtime.status).toBe(200);
+        expect(Array.isArray(runtime.body.rate_delay?.rateStamps)).toBe(true);
+
+        const missing = await request(`${base}/api/workflows/missing/runtime`);
+        expect(missing.status).toBe(404);
+
+        await request(`${base}/api/workflows/runtime-demo`, { method: 'DELETE' });
+    });
+
     it('lists, installs and uninstalls workflow plugins', async () => {
         const catalog = await request(`${base}/api/plugins`);
         expect(catalog.status).toBe(200);

@@ -45,6 +45,10 @@ import { WorkflowDebugItem, WorkflowExecutionLogEntry } from '../types';
                 </button>
                 <pre class="workflow-debug-payload" v-if="isExpanded(item.nodeId)">{{item.resultText}}</pre>
                 <div class="workflow-debug-error" v-if="isExpanded(item.nodeId) && item.errorText">{{item.errorText}}</div>
+                <div class="workflow-debug-state" v-if="isExpanded(item.nodeId) && item.stateText">
+                    <div class="workflow-debug-state-title">{{runtimeStateLabel}}</div>
+                    <pre class="workflow-debug-payload">{{item.stateText}}</pre>
+                </div>
             </div>
         </div>
     </div>`
@@ -93,6 +97,10 @@ export class WorkflowRunLogComponent {
 
     get noMessagesLabel(): string {
         return this.t('noMessages', 'No node outputs for this run.');
+    }
+
+    get runtimeStateLabel(): string {
+        return this.t('runtimeState', 'Runtime state');
     }
 
     get closeLabel(): string {
