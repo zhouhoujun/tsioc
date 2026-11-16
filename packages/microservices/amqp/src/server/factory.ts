@@ -38,6 +38,7 @@ const useAmqpMessage = () => useBrokerMessageTransfer<any, Record<string, any>>(
             url,
             topic,
             method,
+            headers: msg.properties?.headers,
             body,
             payload: body,
             replyTo: msg.properties.replyTo,
@@ -98,7 +99,7 @@ const useAmqpMessage = () => useBrokerMessageTransfer<any, Record<string, any>>(
         afterError: (_error, context) => {
             const requestData = context.get(REQUEST) as Record<string, any>;
             if (requestData?.msg) {
-                context.getInjector().get(AmqpServer).channel?.nack(requestData.msg, false, false);
+                context.getInjector().get(AmqpServer)?.handleFailure(requestData.msg);
             }
         }
     }

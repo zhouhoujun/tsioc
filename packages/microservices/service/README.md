@@ -33,6 +33,9 @@ All features are registered via `provideService(...)`:
 | `useAuth()` | Enable security (bearer/JWT) |
 | `useInterceptors()` | Register request interceptors |
 | `useGuards()` | Register authorization guards |
+| `useRegistration()` | Register/deregister with service discovery |
+| `useHealth()` | Report health to discovery |
+| `useGracefulShutdown()` | Readiness drain + graceful shutdown |
 
 ```ts
 provideService(
@@ -67,3 +70,54 @@ class MyController {
 ## MessageValueReader
 
 The default `ServiceMessageValueReader` (registered via `provideService`) reads scoped parameter values through the transport's `MessageAdapter`. Custom readers can be registered by implementing the abstract `MessageValueReader` class from `@tsdi/core`.
+
+## Lifecycle and graceful shutdown
+
+`provideService(useFeatures())` enables registration, health and graceful
+shutdown by default. Startup order is `listen → register → health`; if any step
+fails the service rolls back (`health stop → deregister → onShutdown`) and the
+original error is rethrown.
+
+`close()` runs `readiness DRAINING → health DOWN → deregister → grace period →
+in-flight drain → onShutdown → handler destroy`. Each step is attempted even if
+an earlier one fails; the first error is rethrown at the end.
+
+```ts
+provideService(
+  useRouter(),
+  useGracefulShutdown({
+    waitDuration: 5000,      // let the registry/LB observe DOWN first
+    drainTimeoutMs: 15000,   // deadline for in-flight requests (overrides timeout)
+    enabled: true
+  }),
+  useHttpTransport({ listenOpts: { port: 3000 }, asDefault: true })
+)
+```
+
+- `InFlightTracker` + `InFlightInterceptor` are registered by the feature; the
+  tracker counts real subscriptions, so streaming responses are drained too.
+- `ReadinessStateService` (`STARTING|UP|DRAINING|DOWN`) is provided by
+  `provideService`; `HealthController` returns `503` with
+  `components.lifecycle` while the phase is not `UP`.
+
+## ConsumerRuntime
+
+Broker servers use `ConsumerRuntime` for per-message lifecycle:
+
+```ts
+const runtime = new ConsumerRuntime({
+  concurrency: 4,                                   // <=0 or omitted = unlimited
+  retry: { maxAttempts: 3, delayMs: 100, maxDelayMs: 2000 }
+});
+
+await runtime.handle({
+  payload,
+  ack: () => commit(),                              // success settlement
+  fail: (err, attempts) => republishToDlq(err)      // retry budget exhausted
+}, async message => {
+  await handle(message.payload);
+});
+```
+
+`runtime.stats()` reports `completed`, `failed`, `retried`, `inFlight` and
+`peakInFlight`; broker servers log a drained summary on shutdown.

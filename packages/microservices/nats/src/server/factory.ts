@@ -9,6 +9,26 @@ import { NatsMessageAdapter } from './message-adapter';
 import { NatsMessageAdapterFactory } from './message-adapter.factory';
 import { useBrokerMessageTransfer } from '@tsdi/transport';
 
+/**
+ * Flatten nats `MsgHdrs` into a plain header map for adapters/tracing.
+ */
+function toNatsHeaders(headers: any): Record<string, string> | undefined {
+    if (!headers) {
+        return undefined;
+    }
+    if (typeof headers.keys === 'function' && typeof headers.get === 'function') {
+        const normalized: Record<string, string> = {};
+        for (const key of headers.keys()) {
+            const value = headers.get(key);
+            if (value != null) {
+                normalized[String(key)] = String(value);
+            }
+        }
+        return normalized;
+    }
+    return headers;
+}
+
 const useNatsMessageTransfer = () => useBrokerMessageTransfer<any, Record<string, any>>({
     canHandle: (input) => !!input && typeof input.subject === 'string' && !!input.data,
     normalize: ({ subject, data, sc, msg }) => {
@@ -38,6 +58,7 @@ const useNatsMessageTransfer = () => useBrokerMessageTransfer<any, Record<string
             url,
             topic,
             method,
+            headers: toNatsHeaders(msg?.headers),
             body,
             payload: body,
             subject: actualSubject,

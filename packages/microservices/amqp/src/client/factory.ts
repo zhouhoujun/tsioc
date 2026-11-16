@@ -101,6 +101,7 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
             : typeof input === 'string'
                 ? Buffer.from(input)
                 : Buffer.from(JSON.stringify(withRequestId(input, correlationId)));
+        const messageHeaders = request?.headers?.size ? request.headers.getHeaders() : undefined;
         let consumerTag: string | undefined;
         let replyQueue: string | undefined;
         let settled = false;
@@ -129,7 +130,7 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
         };
 
         if (request.observe === 'events') {
-            channel.publish(exchange, routingKey, publishPayload, { correlationId });
+            channel.publish(exchange, routingKey, publishPayload, { correlationId, headers: messageHeaders });
             finish(() => {
                 observer.next({ type: 0 } as ResponseEventPacket);
                 observer.complete();
@@ -166,6 +167,7 @@ function createAmqpClientBackend(config: AmqpClientOptions) {
                 consumerTag = tag;
                 channel.publish(exchange, routingKey, publishPayload, {
                     correlationId,
+                    headers: messageHeaders,
                     replyTo: queue
                 });
                 if (request.observe !== 'observe') {

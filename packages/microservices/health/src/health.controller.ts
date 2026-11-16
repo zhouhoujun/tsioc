@@ -1,5 +1,5 @@
 import { Inject, Optional } from '@tsdi/ioc';
-import { Controller, Get } from '@tsdi/service';
+import { Controller, Get, ReadinessStateService } from '@tsdi/service';
 import { StatusMessageAdapter } from '@tsdi/common';
 import { HealthIndicator } from './indicator';
 import { HealthOptions, HealthReport, HealthResult } from './health';
@@ -14,7 +14,8 @@ import { HEALTH_INDICATORS, HEALTH_OPTIONS } from './tokens';
 export class HealthController {
     constructor(
         @Inject(HEALTH_INDICATORS) private indicators: HealthIndicator[],
-        @Optional() @Inject(HEALTH_OPTIONS) private options?: HealthOptions
+        @Optional() @Inject(HEALTH_OPTIONS) private options?: HealthOptions,
+        @Optional() @Inject(ReadinessStateService) private readinessState?: ReadinessStateService
     ) {}
 
     /**
@@ -51,14 +52,26 @@ export class HealthController {
     /**
      * readiness probe for Kubernetes.
      *
-     * Returns 503 when any indicator is DOWN so load balancers stop routing to
-     * this instance.
+     * Returns 503 while the instance is starting or draining, and when any
+     * indicator is DOWN, so load balancers stop routing to this instance.
      * @returns health report.
      */
     @Get('/readiness')
     async readiness(
         @Optional() @Inject(StatusMessageAdapter) adapter?: StatusMessageAdapter
     ): Promise<HealthReport> {
+        const phase = this.readinessState?.current;
+        if (phase && phase !== 'UP') {
+            const report: HealthReport = {
+                status: 'DOWN',
+                timestamp: new Date().toISOString(),
+                components: {
+                    lifecycle: { status: 'DOWN', error: `service is ${phase}` }
+                }
+            };
+            this.applyStatus(adapter, report.status);
+            return this.redact(report);
+        }
         return this.check(adapter);
     }
 

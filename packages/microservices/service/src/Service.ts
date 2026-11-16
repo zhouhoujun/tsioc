@@ -6,6 +6,7 @@ import { Observable } from 'rxjs';
 import { REGISTRATION_STRATEGY } from './strategies/IRegistrationStrategy';
 import { HEALTH_CHECK_STRATEGY } from './strategies/IHealthCheckStrategy';
 import { GRACEFUL_SHUTDOWN_STRATEGY } from './strategies/IGracefulShutdownStrategy';
+import { ReadinessStateService } from './readiness';
 
 
 /**
@@ -22,17 +23,76 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
     @Runner()
     async start() {
         if (this.injector.ready) await this.injector.ready;
-        await this.strategyRegister();
-        await this.strategyHealthStart();
-        return await this.onStart();
+        const readiness = this.readiness;
+        readiness?.markStarting();
+        try {
+            // Listen first: a registry must never advertise an endpoint that is
+            // not accepting traffic yet, and health reports need the listener.
+            const started = await this.onStart();
+            await this.strategyRegister();
+            await this.strategyHealthStart();
+            readiness?.markUp();
+            return started;
+        } catch (err) {
+            await this.rollbackStart();
+            readiness?.markDown();
+            throw err;
+        }
     }
 
     @Shutdown()
     async close() {
-        await this.strategyGracefulShutdown();
-        await this.strategyDeregister();
-        await this.onShutdown();
-        this.handler.onDestroy?.();
+        const failures: unknown[] = [];
+        const settle = async (run: () => Promise<any>) => {
+            try {
+                await run();
+            } catch (err) {
+                failures.push(err);
+            }
+        };
+
+        // 1) readiness DRAINING/DOWN, 2) leave the registry, 3) grace period +
+        // drain, 4) close transports so no new request can be accepted.
+        this.readiness?.markDraining();
+        await settle(() => this.strategyHealthStop());
+        await settle(() => this.strategyDeregister());
+        await settle(() => this.strategyGracefulShutdown());
+        await settle(() => this.onShutdown());
+        this.readiness?.markDown();
+        try {
+            this.handler.onDestroy?.();
+        } catch (err) {
+            failures.push(err);
+        }
+
+        if (failures.length) {
+            throw failures[0];
+        }
+    }
+
+    /**
+     * Readiness state shared with `/health/readiness`.
+     */
+    protected get readiness(): ReadinessStateService | null {
+        return this.injector.get(ReadinessStateService, null);
+    }
+
+    /**
+     * Best-effort rollback of a partially started service.
+     *
+     * Runs in reverse start order and never masks the original startup error.
+     */
+    private async rollbackStart(): Promise<void> {
+        const ignore = async (run: () => Promise<any>) => {
+            try {
+                await run();
+            } catch {
+                // rollback is best effort; the startup error is what matters.
+            }
+        };
+        await ignore(() => this.strategyHealthStop());
+        await ignore(() => this.strategyDeregister());
+        await ignore(() => this.onShutdown());
     }
 
     /**
@@ -78,6 +138,17 @@ export abstract class MicroService<TRequest = any, TResponse = any, TContext ext
         const strategy = this.injector.get(HEALTH_CHECK_STRATEGY, null);
         if (strategy) {
             return strategy.start();
+        }
+        return Promise.resolve();
+    }
+
+    /**
+     * Stop health reporting (readiness DOWN) using strategy.
+     */
+    protected async strategyHealthStop(): Promise<any> {
+        const strategy = this.injector.get(HEALTH_CHECK_STRATEGY, null);
+        if (strategy) {
+            return strategy.stop();
         }
         return Promise.resolve();
     }

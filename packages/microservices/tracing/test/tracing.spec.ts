@@ -112,10 +112,20 @@ describe('Tracing Module Test', () => {
             span.finish();
         });
 
-        it('should track current span', () => {
+        it('should track current span inside runWithSpan', () => {
             const span = tracer.startSpan('parent');
-            expect(tracer.getCurrentSpan()).toBe(span);
+            expect(tracer.runWithSpan(span, () => tracer.getCurrentSpan())).toBe(span);
             span.finish();
+            expect(tracer.getCurrentSpan()).toBeNull();
+        });
+
+        it('does not parent concurrent spans started in the same async context', () => {
+            const first = tracer.startSpan('first');
+            const second = tracer.startSpan('second');
+            expect(first.parentSpanId).toBeUndefined();
+            expect(second.parentSpanId).toBeUndefined();
+            first.finish();
+            second.finish();
         });
 
         it('should set current span', () => {
@@ -181,27 +191,36 @@ describe('Tracing Module Test', () => {
             expect(context?.spanId).toBe('legacy-span');
         });
 
-        it('restores the previous span when a nested span finishes', () => {
+        it('scopes nested spans and restores the outer scope', () => {
             const root = tracer.startSpan('root');
-            const child = tracer.startSpan('child');
-            expect(child.parentSpanId).toBe(root.spanId);
-            expect(tracer.getCurrentSpan()).toBe(child);
-            child.finish();
-            expect(tracer.getCurrentSpan()).toBe(root);
-            root.finish();
+            const child = tracer.runWithSpan(root, () => {
+                expect(tracer.getCurrentSpan()).toBe(root);
+                const inner = tracer.startSpan('child');
+                expect(inner.parentSpanId).toBe(root.spanId);
+                tracer.runWithSpan(inner, () => {
+                    expect(tracer.getCurrentSpan()).toBe(inner);
+                });
+                expect(tracer.getCurrentSpan()).toBe(root);
+                return inner;
+            });
             expect(tracer.getCurrentSpan()).toBeNull();
+            child.finish();
+            root.finish();
         });
 
         it('keeps parentage correct under concurrent async work', async () => {
-            const run = (name: string) => new Promise<{ root: Span; child: Span }>(resolve => {
+            const run = async (name: string, delay: number) => {
                 const root = tracer.startSpan(name);
-                setTimeout(() => {
+                return tracer.runWithSpan(root, async () => {
+                    await new Promise(resolve => setTimeout(resolve, delay));
                     const child = tracer.startSpan(`${name}-child`);
-                    resolve({ root, child });
-                }, 0);
-            });
-            const [first, second] = await Promise.all([run('a'), run('b')]);
+                    return { root, child };
+                });
+            };
+            const [first, second] = await Promise.all([run('a', 15), run('b', 1)]);
 
+            expect(first.root.parentSpanId).toBeUndefined();
+            expect(second.root.parentSpanId).toBeUndefined();
             expect(first.child.parentSpanId).toBe(first.root.spanId);
             expect(first.child.traceId).toBe(first.root.traceId);
             expect(second.child.parentSpanId).toBe(second.root.spanId);

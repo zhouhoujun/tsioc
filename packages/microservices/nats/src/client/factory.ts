@@ -7,7 +7,7 @@ import { NatsClient } from './client';
 import { NatsRequest } from './request';
 import { NatsPatternFormatter } from '../server';
 import { Observable } from 'rxjs';
-import { NatsConnection, StringCodec } from 'nats';
+import { NatsConnection, StringCodec, headers as natsHeaders } from 'nats';
 
 
 function natsClientTransportFactory(option: Partial<NatsClientOptions>, asDefault?: boolean): ClientTransportFeature {
@@ -88,6 +88,23 @@ export function withNatsTransport(...options: Partial<NatsClientOptions>[]): Cli
     });
 }
 
+/**
+ * Propagate request headers (including the trace carrier injected by
+ * `AbstractClient`) into NATS headers.
+ */
+function toNatsHeaders(request: NatsRequest<any>): ReturnType<typeof natsHeaders> | undefined {
+    if (!request?.headers?.size) {
+        return undefined;
+    }
+    const carrier = natsHeaders();
+    for (const [key, value] of Object.entries(request.headers.getHeaders())) {
+        if (value != null) {
+            carrier.append(key, String(value));
+        }
+    }
+    return carrier;
+}
+
 function createNatsClientBackend(_config: NatsClientOptions) {
     return (input: any, context: any) => new Observable<any>((observer) => {
         const nc = context.get(SOCKET) as NatsConnection | undefined;
@@ -104,9 +121,10 @@ function createNatsClientBackend(_config: NatsClientOptions) {
         const payload = typeof input === 'string' || input instanceof Uint8Array
             ? input
             : JSON.stringify(withRequestId(input, requestId));
+        const messageHeaders = toNatsHeaders(request);
 
         if (request.observe === 'events') {
-            nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload);
+            nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { headers: messageHeaders });
             observer.next({ type: 0 } as ResponseEventPacket);
             observer.complete();
             return;
@@ -133,14 +151,14 @@ function createNatsClientBackend(_config: NatsClientOptions) {
                     observer.next(parsed);
                 }
             })().catch(err => observer.error(err));
-            nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { reply: inbox });
+            nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { reply: inbox, headers: messageHeaders });
             return () => {
                 closed = true;
                 sub.unsubscribe();
             };
         }
 
-        nc.request(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { timeout: request.timeout ?? 10000 })
+        nc.request(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { timeout: request.timeout ?? 10000, headers: messageHeaders })
             .then(msg => {
                 let parsed: any = sc.decode(msg.data);
                 try {

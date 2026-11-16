@@ -2,7 +2,8 @@
 import { runTest } from '@tsdi/unit';
 
 const tests: string[] = [
-    './test/http-microservice.spec.ts'
+    './test/http-microservice.spec.ts',
+    './test/in-flight-drain.spec.ts'
 ];
 
 if (process.env.TSIO_TEST_HTTP) {

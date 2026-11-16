@@ -14,6 +14,11 @@ export interface GracefulShutdownOptions {
      */
     timeout?: number;
     /**
+     * deadline for draining in-flight requests, overrides `timeout` when set.
+     * 排空在途请求的超时时间，设置后覆盖 `timeout`
+     */
+    drainTimeoutMs?: number;
+    /**
      * wait duration before starting shutdown in milliseconds. default 5000.
      * 开始关闭前的等待时间（毫秒），默认 5000
      */

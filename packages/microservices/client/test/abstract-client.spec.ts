@@ -72,6 +72,7 @@ describe('AbstractClient', () => {
         const tracer: any = {
             serviceName: 'test-service',
             startSpan: () => span,
+            runWithSpan: (_span: any, fn: () => any) => fn(),
             injectContext: (_context: any, carrier: any) => { carrier.traceparent = '00-trace-span-01'; }
         };
         const injector = createInjector([

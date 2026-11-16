@@ -6,6 +6,7 @@ import { MetricsCollector } from '@tsdi/metrics';
 import { Tracer } from '@tsdi/tracing';
 import { ClientHandler } from './ClientHandler';
 import { ClientDiscoveryStrategy } from './strategies/ClientDiscoveryStrategy';
+import { toServiceError } from './errors';
 
 /**
  * Abstract microservice client. Extends base client with Spring Cloud-style features.
@@ -93,7 +94,7 @@ export abstract class AbstractClient<
                 }
             }
         }
-        return of(req).pipe(
+        const pipeline = of(req).pipe(
                 concatMap((req: TRequest) => this.handler.handle(req, context)),
                 tap(value => {
                     this.recordClientMetrics(metrics, labels, startedAt, responseStatus(value));
@@ -109,6 +110,11 @@ export abstract class AbstractClient<
                     context.onDestroy();
                 })
             );
+        // Subscribe inside the span scope so child spans created by the backend
+        // inherit this client span as parent (and concurrent calls stay siblings).
+        return tracer && span
+            ? new Observable(subscriber => tracer.runWithSpan(span, () => pipeline.subscribe(subscriber)))
+            : pipeline;
     }
 
     private clientMetricLabels(req: any): Record<string, string> {
@@ -144,8 +150,8 @@ export abstract class AbstractClient<
         }
     }
 
-    protected onError(err: Error): Error {
-        return err;
+    protected onError(err: unknown): Error {
+        return toServiceError(err);
     }
 
     /**

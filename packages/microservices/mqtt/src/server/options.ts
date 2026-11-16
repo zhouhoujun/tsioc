@@ -1,6 +1,6 @@
 import { token, Provider } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
-import { ServiceOptions } from '@tsdi/service';
+import { ServiceOptions, ConsumerRetryOptions } from '@tsdi/service';
 import * as mqtt from 'mqtt';
 
 /**
@@ -21,6 +21,21 @@ export interface MqttServOptions extends ServiceOptions {
      * Topics to subscribe to.
      */
     subscribeTopics?: { topic: string; qos?: 0 | 1 | 2 }[];
+    /**
+     * in-process retry before a failed delivery is dropped/dead-lettered.
+     * QoS1/2 ack still happens after the callback resolves, so retrying here
+     * avoids a broker redelivery round trip.
+     */
+    retry?: ConsumerRetryOptions;
+    /**
+     * topic that receives deliveries which exhausted their retry budget.
+     */
+    deadLetterTopic?: string;
+    /**
+     * maximum concurrent handlers. default unlimited (mqtt.js callback
+     * concurrency is preserved).
+     */
+    concurrency?: number;
 }
 
 export const MQTT_SERV_OPTIONS = token<MqttServOptions>('MQTT_SERV_OPTIONS');

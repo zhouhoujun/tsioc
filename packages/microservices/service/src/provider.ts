@@ -18,8 +18,11 @@ import {
 import { AuthOptions, CookieOptions, CorsOptions, ExecptionLoggerOptions, FeatureInterceptorOptions, ServiceFeatureKind, ServiceFeature, ServiceFeatureFn, ServiceFeatureLike, ServiceLoggerOptions, SERVICE_EXECEPTION_LOGGER_OPTIONS, ServiceTransportFeature, ServiceConfig, ServiceFeatureOptions } from './options';
 import { RegistrationOptions, HealthOptions, GracefulShutdownOptions } from './features';
 import { AuthInterceptor, BodyParserInterceptor, ContentInterceptor, CookieInterceptor, CorsInterceptor, ExecptionLogger, JsonInterceptor, SessionInterceptor } from './interceptors';
+import { InFlightInterceptor } from './interceptors/in-flight';
+import { InFlightTracker } from './InFlightTracker';
 import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middleware';
 import { SetupServices } from './SetupMicroServices';
+import { ReadinessStateService } from './readiness';
 import { ServiceMessageValueReader } from './message-value-reader';
 import { DiscoveryHealthCheckStrategy } from './strategies/discovery-health.strategy';
 import { DiscoveryRegistrationStrategy } from './strategies/discovery-registration.strategy';
@@ -44,6 +47,7 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
 
     const providers: Provider[] = [
         SetupServices,
+        ReadinessStateService,
         LoggerInterceptor,
         { provide: MessageValueReader, useClass: ServiceMessageValueReader, asDefault: true }
     ];
@@ -265,6 +269,10 @@ export function useGracefulShutdown(options?: boolean | GracefulShutdownOptions)
         return makeServiceFeature(
             ServiceFeatureKind.GracefulShutdown,
             [
+                InFlightTracker,
+                // Outermost interceptor: count every request that enters the
+                // handler chain (including body parsing) so `close()` can drain.
+                toProvider(getServiceInterceptorsToken(config), InFlightInterceptor, { multi: true, multiOrder: -10000 }),
                 DefaultGracefulShutdownStrategy,
                 { provide: SERVICE_GRACEFUL_SHUTDOWN_OPTIONS, useValue: isBoolean(options) ? {} : (options ?? {}) },
                 { provide: GRACEFUL_SHUTDOWN_STRATEGY, useExisting: DefaultGracefulShutdownStrategy }

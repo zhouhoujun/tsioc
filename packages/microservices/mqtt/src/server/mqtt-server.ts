@@ -4,8 +4,8 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
-import { Subject, race, take, takeUntil } from 'rxjs';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime } from '@tsdi/service';
+import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import * as mqtt from 'mqtt';
 import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_FILTERS, MQTT_BIND_GUARDS } from './options';
 
@@ -21,6 +21,14 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     @InjectLog() logger!: Logger;
 
     private destroy$: Subject<void>;
+    private runtime?: ConsumerRuntime;
+
+    private get consumerRuntime(): ConsumerRuntime {
+        return this.runtime ??= new ConsumerRuntime({
+            retry: this.options?.retry,
+            concurrency: this.options?.concurrency
+        });
+    }
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
@@ -62,8 +70,12 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             });
         });
 
-        this.client.on(Events.MESSAGE, (topic: string, payload: Buffer) => {
-            this.handleMessage(topic, payload);
+        this.client.on(Events.MESSAGE, (topic: string, payload: Buffer, packet?: any) => {
+            // mqtt.js ignores the callback return value, but awaiting keeps
+            // handler failures observable (and counted) instead of unhandled.
+            this.handleMessage(topic, payload, packet).catch(err => {
+                this.logger.error('MQTT request handling error:', err);
+            });
         });
 
         this.client.on(Events.ERROR, (err: Error) => {
@@ -84,6 +96,13 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         this.destroy$.next();
         this.destroy$.complete();
+
+        const stats = this.runtime?.stats();
+        if (stats && (stats.completed || stats.failed || stats.retried)) {
+            this.logger.info(
+                `MQTT consumer drained: completed=${stats.completed} failed=${stats.failed} retried=${stats.retried}`
+            );
+        }
 
         const client = this.client;
         await new Promise<void>((resolve) => {
@@ -140,18 +159,32 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         });
     }
 
-    private handleMessage(topic: string, payload: Buffer) {
+    private async handleMessage(topic: string, payload: Buffer, packet?: any): Promise<void> {
+        await this.consumerRuntime.handle({
+            payload: { topic, payload, packet },
+            fail: (err) => {
+                if (this.options?.deadLetterTopic) {
+                    this.client?.publish(this.options.deadLetterTopic, payload, { qos: 1 });
+                    return;
+                }
+                throw err;
+            }
+        }, message => this.handleRequest(message.payload.topic, message.payload.payload, message.payload.packet));
+    }
+
+    private async handleRequest(topic: string, payload: Buffer, packet?: any): Promise<void> {
+        // `packet` carries MQTT 5 user properties, which is where the trace
+        // carrier lives; keeping it on the request lets tracing extract it.
+        const request = { topic, payload, packet };
         const context = createRequestContext(this.injector, [
-            [REQUEST, { topic, payload } as any],
+            [REQUEST, request as any],
         ]);
 
-        this.handler.handle({ topic, payload } as TReq, context)
-            .pipe(
-                takeUntil(race(this.destroy$).pipe(take(1)))
-            ).subscribe({
-                error: (err) => {
-                    this.logger.error('MQTT request handling error:', err);
-                }
-            });
+        await lastValueFrom(
+            this.handler.handle(request as TReq, context)
+                .pipe(
+                    takeUntil(race(this.destroy$).pipe(take(1)))
+                )
+        );
     }
 }

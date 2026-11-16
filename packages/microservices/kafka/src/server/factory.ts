@@ -16,6 +16,24 @@ function toKafkaRouteUrl(rawUrl: unknown): string | undefined {
     return rawUrl.replace(/^\/+/, '').replace(/\//g, '.');
 }
 
+/**
+ * Convert kafkajs header buffers into plain strings so adapters and tracing
+ * can read them.
+ */
+function toKafkaHeaders(headers: Record<string, any> | undefined): Record<string, string> | undefined {
+    if (!headers) {
+        return undefined;
+    }
+    const normalized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(headers)) {
+        const current = Array.isArray(value) ? value[0] : value;
+        if (current != null) {
+            normalized[key] = Buffer.isBuffer(current) ? current.toString() : String(current);
+        }
+    }
+    return normalized;
+}
+
 const useKafkaMessageTransfer = () => useBrokerMessageTransfer<any, Record<string, any>>({
     canHandle: (payload) => !!payload && !!payload.message && typeof payload.topic === 'string',
     normalize: (payload) => {
@@ -40,6 +58,7 @@ const useKafkaMessageTransfer = () => useBrokerMessageTransfer<any, Record<strin
             ...requestSource,
             url,
             method,
+            headers: toKafkaHeaders(message.headers),
             body,
             payload: body,
             topic,

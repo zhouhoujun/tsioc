@@ -449,7 +449,27 @@ export class AppModule {}
 
 `withExporter` 可传 exporter class、exporter 实例，或一次传多个。未注册 exporter 时 span 仅保留在内存批次中。
 
-## 13. 选型建议
+## 13. 可靠性配置（S1）
+
+交付语义与重试默认保持兼容（at-most-once / 进程内重试关闭），需要时显式开启：
+
+| 传输 | 选项 | 说明 |
+|---|---|---|
+| Kafka | `delivery: 'at-least-once'` | 关闭 autoCommit，成功后提交 `offset+1`；崩溃/再平衡后重投 |
+| Kafka | `retry: { maxAttempts, delayMs, maxDelayMs }` | 进程内重试（指数退避），耗尽后按 `deadLetterTopic` 处理 |
+| Kafka | `deadLetterTopic` | 耗尽重试后投递 DLQ 并提交 offset；未配置则不提交并抛错 |
+| Kafka | `concurrency` | 映射 `partitionsConsumedConcurrently` |
+| AMQP | `retry: { maxAttempts, delayMs }` | TTL retry queue + `x-tsdi-retry-count` 头，超限进 DLX |
+| AMQP | `deadLetterExchange` / `deadLetterRoutingKey` / `deadLetterQueue` | 耗尽重试后的去处；未配置保留 broker DLX 语义 |
+| MQTT | `retry` / `deadLetterTopic` / `concurrency` | QoS ack 在回调完成后发出；耗尽后发布到 DLQ topic |
+| NATS | `retry` / `deadLetterSubject` / `concurrency` | core NATS 仍是 at-most-once；耗尽后发布到 DLQ subject |
+| 通用 | `useGracefulShutdown({ waitDuration, drainTimeoutMs })` | readiness DOWN → deregister → drain → close |
+| 通用 | `/health/readiness` | `STARTING`/`DRAINING`/`DOWN` 时返回 503 |
+
+MQTT 追踪透传需要 MQTT 5：server/client 的 `connectOpts.protocolVersion: 5`，
+trace carrier 走 `properties.userProperties`；MQTT 4 不发送属性。
+
+## 14. 选型建议
 
 | 目标 | 建议 |
 |---|---|

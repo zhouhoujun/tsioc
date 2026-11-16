@@ -23,7 +23,6 @@ export class DefaultSpan implements Span {
     logs: SpanLog[] = [];
     private finished = false;
     private tracer: DefaultTracer;
-    private readonly previousSpan: Span | null;
 
     constructor(tracer: DefaultTracer, name: string, options: SpanOptions = {}) {
         this.tracer = tracer;
@@ -35,7 +34,6 @@ export class DefaultSpan implements Span {
         this.kind = options.kind ?? 'INTERNAL';
         this.startTime = options.startTime ?? Date.now();
         this.attributes = options.attributes ?? {};
-        this.previousSpan = tracer.getCurrentSpan();
     }
 
     private static generateId(bytes: number): string {
@@ -86,7 +84,6 @@ export class DefaultSpan implements Span {
             this.endTime = Date.now();
             this.duration = this.endTime - this.startTime;
             this.tracer.onSpanFinished(this);
-            this.tracer.restoreCurrentSpan(this, this.previousSpan);
         }
     }
 
@@ -195,8 +192,18 @@ export class DefaultTracer extends Tracer implements OnDestroy {
             ...options,
             parent: options.parent ?? this.getCurrentSpan() ?? undefined
         });
-        this.setCurrentSpan(span);
         return span;
+    }
+
+    /**
+     * Run `fn` inside an isolated `AsyncLocalStorage` scope.
+     *
+     * `startSpan()` deliberately does not activate spans: two concurrent
+     * operations started in the same async context would otherwise parent the
+     * second span to the first one.
+     */
+    runWithSpan<T>(span: Span, fn: () => T): T {
+        return this.storage.run(span, fn);
     }
 
     getCurrentSpan(): Span | null {
@@ -205,17 +212,6 @@ export class DefaultTracer extends Tracer implements OnDestroy {
 
     setCurrentSpan(span: Span): void {
         this.storage.enterWith(span);
-    }
-
-    /**
-     * Restore the span that was active before `span` finished. Called by
-     * `DefaultSpan.finish()` so nested/concurrent requests keep the right
-     * parent.
-     */
-    restoreCurrentSpan(finished: Span, previous: Span | null): void {
-        if (this.getCurrentSpan() === finished) {
-            this.storage.enterWith(previous);
-        }
     }
 
     extractContext(carrier: Record<string, string>): TraceContext | null {

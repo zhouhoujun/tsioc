@@ -161,8 +161,10 @@ function createMqttClientBackend(config: MqttClientOptions) {
             observer.complete();
         };
 
+        const publishProperties = toMqttPublishProperties(config, request);
+
         if (request.observe === 'events') {
-            publishMessage(client, topic, payload)
+            publishMessage(client, topic, payload, publishProperties)
                 .then(() => {
                     observer.next({ type: 0 } as ResponseEventPacket);
                     observer.complete();
@@ -173,7 +175,7 @@ function createMqttClientBackend(config: MqttClientOptions) {
 
         client.on(Events.MESSAGE, onMessage);
         subscribeTopic(client, responseTopic, normalizeSubscribeOptions(config.subscribeOpts))
-            .then(() => publishMessage(client, topic, payload))
+            .then(() => publishMessage(client, topic, payload, publishProperties))
             .then(() => {
                 if (request.observe === 'observe') {
                     return;
@@ -241,9 +243,28 @@ function unsubscribeTopic(client: mqtt.MqttClient, topic: string): Promise<void>
     });
 }
 
-function publishMessage(client: mqtt.MqttClient, topic: string, payload: string | Buffer): Promise<void> {
+function toMqttPublishProperties(config: MqttClientOptions, request: any): mqtt.IClientPublishOptions['properties'] | undefined {
+    // User properties (and therefore the trace carrier) only exist in MQTT 5.
+    if (config.connectOpts?.protocolVersion !== 5 || !request?.headers?.size) {
+        return undefined;
+    }
+    const userProperties: Record<string, string> = {};
+    for (const [key, value] of Object.entries(request.headers.getHeaders())) {
+        if (value != null) {
+            userProperties[key] = String(value);
+        }
+    }
+    return Object.keys(userProperties).length ? { userProperties } : undefined;
+}
+
+function publishMessage(
+    client: mqtt.MqttClient,
+    topic: string,
+    payload: string | Buffer,
+    properties?: mqtt.IClientPublishOptions['properties']
+): Promise<void> {
     return new Promise((resolve, reject) => {
-        client.publish(topic, payload, (err) => {
+        client.publish(topic, payload, { properties }, (err) => {
             if (err) reject(err);
             else resolve();
         });

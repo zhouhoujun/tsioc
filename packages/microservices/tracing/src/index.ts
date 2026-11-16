@@ -1,4 +1,5 @@
 export * from './tracing';
+export * from './carrier';
 export * from './tracer';
 export * from './default.tracer';
 export * from './interceptors';

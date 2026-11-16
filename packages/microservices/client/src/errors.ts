@@ -55,3 +55,49 @@ export class ServiceError extends Error {
         return false;
     }
 }
+
+/**
+ * Coerce any backend failure into an `Error`.
+ *
+ * Broker transports throw `ErrorResponse` (a `ResponseBase`, not an `Error`),
+ * which breaks `instanceof Error`, stack traces and log/alert collectors.
+ * HTTP already throws `ServiceError`; this keeps every client surface
+ * consistent without changing concrete `Error` subclasses that callers may
+ * already branch on.
+ */
+export function toServiceError(err: unknown): Error {
+    if (err instanceof Error) {
+        return err;
+    }
+    const candidate = err as {
+        status?: number | string | null;
+        statusCode?: number | string | null;
+        statusMessage?: string;
+        statusText?: string;
+        message?: string;
+        headers?: Record<string, any>;
+        error?: any;
+        body?: any;
+        payload?: any;
+    } | null | undefined;
+    const rawStatus = candidate?.status ?? candidate?.statusCode;
+    const status = typeof rawStatus === 'number' ? rawStatus : undefined;
+    const body = candidate?.error ?? candidate?.body ?? candidate?.payload;
+    const rawHeaders = candidate?.headers as any;
+    const headers = rawHeaders
+        ? (typeof rawHeaders.getHeaders === 'function' ? rawHeaders.getHeaders() : rawHeaders)
+        : undefined;
+    const message = (typeof body === 'string' ? body : body?.message)
+        ?? candidate?.statusMessage
+        ?? candidate?.statusText
+        ?? candidate?.message
+        ?? (typeof err === 'string' ? err : 'Unknown service error');
+    return new ServiceError(message, status != null ? 'upstream' : 'unknown', {
+        status,
+        statusMessage: candidate?.statusMessage ?? candidate?.statusText,
+        body,
+        headers,
+        response: err,
+        cause: body instanceof Error ? body : err
+    });
+}

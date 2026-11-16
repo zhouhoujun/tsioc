@@ -3,7 +3,7 @@ import expect = require('expect');
 import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
-import { provideService, useRouter } from '@tsdi/service';
+import { provideService, useRouter, useGracefulShutdown } from '@tsdi/service';
 import { HttpServer, useHttpTransport } from '@tsdi/http-microservice';
 import { HealthModule, HealthController } from '../src';
 
@@ -67,6 +67,19 @@ class HealthDownApp { }
 })
 class HealthHttpApp { }
 
+@Module({
+    imports: [LoggerModule, HealthModule],
+    declarations: [HealthController],
+    providers: [
+        provideService(
+            useRouter(),
+            useGracefulShutdown({ waitDuration: 200, drainTimeoutMs: 100 }),
+            useHttpTransport({ listenOpts: { port: 0, host: '127.0.0.1' }, asDefault: true })
+        )
+    ]
+})
+class HealthDrainingApp { }
+
 describe('Health endpoints', () => {
     let ctx: ApplicationContext;
     let port: number;
@@ -98,6 +111,32 @@ describe('Health endpoints', () => {
         const readiness = await get(port, '/health/readiness');
         expect(readiness.status).toBe(200);
         expect(readiness.body.status).toBe('UP');
+    });
+});
+
+describe('Health endpoints while draining', () => {
+    it('returns 503 during graceful shutdown and stays 200 before it', async () => {
+        const app = await Application.run(HealthDrainingApp);
+        const ref = app.runners.getRef(HttpServer as any) as { instance: { server: http.Server } };
+        const address = ref.instance.server.address();
+        if (!address || typeof address === 'string') {
+            throw new Error('Unable to resolve bound port');
+        }
+        const port = address.port;
+
+        const before = await get(port, '/health/readiness');
+        expect(before.status).toBe(200);
+        expect(before.body.status).toBe('UP');
+
+        const closing = app.close();
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const draining = await get(port, '/health/readiness');
+        expect(draining.status).toBe(503);
+        expect(draining.body.status).toBe('DOWN');
+        expect(draining.body.components.lifecycle.error).toBe('service is DRAINING');
+
+        await closing;
     });
 });
 

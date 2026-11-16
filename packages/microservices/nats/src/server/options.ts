@@ -1,6 +1,6 @@
 import { token, Provider } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
-import { ServiceOptions } from '@tsdi/service';
+import { ServiceOptions, ConsumerRetryOptions } from '@tsdi/service';
 
 export interface NatsServOptions extends ServiceOptions {
     transport: Transport.NATS;
@@ -9,6 +9,19 @@ export interface NatsServOptions extends ServiceOptions {
     servers?: string[];
     subjects?: string[];
     queue?: string;
+    /**
+     * in-process retry before a failed delivery is dropped/dead-lettered.
+     * Core NATS is at-most-once; JetStream acks are outside this server.
+     */
+    retry?: ConsumerRetryOptions;
+    /**
+     * subject that receives deliveries which exhausted their retry budget.
+     */
+    deadLetterSubject?: string;
+    /**
+     * maximum concurrent handlers. default unlimited.
+     */
+    concurrency?: number;
 }
 
 export const NATS_SERV_OPTIONS = token<NatsServOptions>('NATS_SERV_OPTIONS');

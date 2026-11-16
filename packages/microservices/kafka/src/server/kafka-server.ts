@@ -2,8 +2,8 @@ import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { createRequestContext, RequestContext, Transport, REQUEST } from '@tsdi/common';
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
-import { Subject, race, take, takeUntil } from 'rxjs';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime } from '@tsdi/service';
+import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import { Kafka, Consumer, Producer, EachMessagePayload } from 'kafkajs';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS, KAFKA_BIND_INTERCEPTORS, KAFKA_BIND_FILTERS, KAFKA_BIND_GUARDS } from './options';
 import { Router } from '@tsdi/service';
@@ -62,8 +62,13 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             }
 
             await this.consumer.run({
+                // At-least-once commits only after the handler succeeds; letting
+                // kafkajs auto-commit would mark the offset as soon as the
+                // callback resolves, which can skip a failed message.
+                autoCommit: !this.isAtLeastOnce(),
+                partitionsConsumedConcurrently: this.options.concurrency,
                 eachMessage: async (payload: EachMessagePayload) => {
-                    this.handleMessage(payload);
+                    await this.consumeMessage(payload);
                 }
             });
 
@@ -79,6 +84,12 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     async onShutdown(): Promise<void> {
         this.destroy$.next();
         this.destroy$.complete();
+        const stats = this.runtime?.stats();
+        if (stats && (stats.completed || stats.failed || stats.retried)) {
+            this.logger.info(
+                `Kafka consumer drained: completed=${stats.completed} failed=${stats.failed} retried=${stats.retried}`
+            );
+        }
         if (this.consumer) { await this.consumer.disconnect(); this.consumer = null; }
         if (this.producer) { await this.producer.disconnect(); this.producer = null; }
 
@@ -125,17 +136,83 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         return topics;
     }
 
-    private handleMessage(payload: EachMessagePayload) {
+    private isAtLeastOnce(): boolean {
+        return this.options?.delivery === 'at-least-once';
+    }
+
+    private runtime?: ConsumerRuntime;
+
+    private get consumerRuntime(): ConsumerRuntime {
+        return this.runtime ??= new ConsumerRuntime({ retry: this.options?.retry });
+    }
+
+    /**
+     * Process one delivery through the shared consumer runtime: retry/backoff
+     * happens in-process, and the offset is committed only when the runtime
+     * reports success (or a dead-letter was published).
+     */
+    private async consumeMessage(payload: EachMessagePayload): Promise<void> {
+        await this.consumerRuntime.handle({
+            payload,
+            ack: () => this.isAtLeastOnce() ? this.commitOffset(payload) : undefined,
+            fail: async (err) => {
+                if (this.isAtLeastOnce() && this.options?.deadLetterTopic) {
+                    await this.deadLetter(payload, err);
+                    await this.commitOffset(payload);
+                    return;
+                }
+                this.logger?.error('Kafka request handling error:', err);
+                // Rethrow so kafkajs does not commit this offset: the message
+                // is redelivered after restart/rebalance.
+                throw err;
+            }
+        }, message => this.handleMessage(message.payload));
+    }
+
+    private async commitOffset(payload: EachMessagePayload): Promise<void> {
+        if (!this.consumer) {
+            return;
+        }
+        await this.consumer.commitOffsets([{
+            topic: payload.topic,
+            partition: payload.partition,
+            offset: (Number(payload.message.offset) + 1).toString()
+        }]);
+    }
+
+    /**
+     * Publish an exhausted message to the dead-letter topic, preserving the
+     * original payload and delivery metadata.
+     */
+    private async deadLetter(payload: EachMessagePayload, err: unknown): Promise<void> {
+        if (!this.producer) {
+            return;
+        }
+        const error = err instanceof Error ? err.message : String(err);
+        await this.producer.send({
+            topic: this.options.deadLetterTopic!,
+            messages: [{
+                key: payload.message.key,
+                value: payload.message.value,
+                headers: {
+                    ...(payload.message.headers ?? {}),
+                    'x-original-topic': payload.topic,
+                    'x-original-partition': String(payload.partition),
+                    'x-original-offset': payload.message.offset,
+                    'x-error': error
+                }
+            }]
+        });
+    }
+
+    private async handleMessage(payload: EachMessagePayload): Promise<void> {
         const context = createRequestContext(this.injector, [
             [REQUEST, payload as any],
         ]);
 
-        this.handler.handle(payload as TReq, context)
-            .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
-            .subscribe({
-                error: (err) => {
-                    this.logger.error('Kafka request handling error:', err);
-                }
-            });
+        await lastValueFrom(
+            this.handler.handle(payload as TReq, context)
+                .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
+        );
     }
 }

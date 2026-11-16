@@ -26,10 +26,23 @@ export abstract class Tracer {
 
     /**
      * start a new span.
+     *
+     * The span inherits the current span as parent, but it does **not** become
+     * the current span by itself; wrap the work in `runWithSpan()` so async
+     * continuations (and concurrent requests) get an isolated trace scope.
+     *
      * @param name span name.
      * @param options span options.
      */
     abstract startSpan(name: string, options?: SpanOptions): Span;
+
+    /**
+     * run `fn` with `span` as the current trace scope.
+     *
+     * Uses `AsyncLocalStorage.run()` so concurrent work does not leak spans
+     * into each other. Prefer this over `setCurrentSpan()` in request paths.
+     */
+    abstract runWithSpan<T>(span: Span, fn: () => T): T;
 
     /**
      * get current active span.

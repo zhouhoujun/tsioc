@@ -83,6 +83,24 @@ export function withKafkaTransport(...options: Partial<KafkaClientOptions>[]): C
     return options.map((o, i) => kafkaClientTransportFactory(o, o.asDefault ?? (i === 0)));
 }
 
+/**
+ * Propagate request headers (including the trace carrier injected by
+ * `AbstractClient`) into kafkajs message headers.
+ */
+function toKafkaMessageHeaders(request: KafkaRequest<any>): Record<string, Buffer> | undefined {
+    const headers = request?.headers;
+    if (!headers || !headers.size) {
+        return undefined;
+    }
+    const mapped: Record<string, Buffer> = {};
+    for (const [key, value] of Object.entries(headers.getHeaders())) {
+        if (value != null) {
+            mapped[key] = Buffer.isBuffer(value) ? value : Buffer.from(String(value));
+        }
+    }
+    return Object.keys(mapped).length ? mapped : undefined;
+}
+
 function createKafkaClientBackend(config: KafkaClientOptions) {
     return (input: any, context: any) => new Observable<any>((observer) => {
         const producer = context.get(SOCKET) as Producer | undefined;
@@ -103,9 +121,10 @@ function createKafkaClientBackend(config: KafkaClientOptions) {
                 : typeof input === 'string'
                     ? Buffer.from(input)
             : Buffer.from(JSON.stringify(withRequestId(input, requestId)));
+        const messageHeaders = toKafkaMessageHeaders(request);
 
         if (request.observe === 'events') {
-            producer.send({ topic, messages: [{ value: payload }] })
+            producer.send({ topic, messages: [{ value: payload, headers: messageHeaders }] })
                 .then(() => {
                     observer.next({ type: 0 } as ResponseEventPacket);
                     observer.complete();
@@ -168,7 +187,7 @@ function createKafkaClientBackend(config: KafkaClientOptions) {
                     }
                 }
             });
-            await producer.send({ topic, messages: [{ value: payload }] });
+            await producer.send({ topic, messages: [{ value: payload, headers: messageHeaders }] });
             if (request.observe !== 'observe') {
                 timer = setTimeout(() => {
                     fail(new Error('Timeout has occurred'));
