@@ -80,7 +80,7 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
             return items;
         }
         const budget = Math.max(12, columns - getDisplayWidth(this.createLabel) - 1);
-        const widthOf = (item: TabItem): number => getDisplayWidth(item.label) + (item.showClose ? 2 : 0);
+        const widthOf = (item: TabItem): number => getDisplayWidth(item.label) + (item.showClose ? 3 : 0);
         const total = items.reduce((sum, item) => sum + widthOf(item), 0);
         if (total <= budget) {
             return items;

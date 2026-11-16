@@ -381,6 +381,8 @@ export interface AgentConsoleOptions {
     messageToggleInteraction?: 'click' | 'enter';
     /** Touch-friendly pointer handling: taps still click, vertical drags scroll. */
     touchMode?: boolean;
+    /** TUI shows tab close buttons always; web shows them on hover. False keeps only the selected tab. */
+    tabCloseOnHover?: boolean;
     workspace?: string;
     connectors?: Record<string, unknown>;
     authorizeConnector?: (appId: string) => boolean | Promise<boolean>;
@@ -442,6 +444,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     showMessageTimestamps: true,
     messageToggleInteraction: 'click',
     touchMode: false,
+    tabCloseOnHover: true,
     workspace: '',
     connectors: undefined as unknown as Record<string, unknown>,
     authorizeConnector: undefined as unknown as (appId: string) => boolean | Promise<boolean>,
