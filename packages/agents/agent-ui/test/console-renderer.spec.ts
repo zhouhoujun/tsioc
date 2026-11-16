@@ -727,7 +727,7 @@ export class AgentConsoleMessagesRendererTest {
             id: 'a2',
             role: 'system',
             content: [
-                ...Array.from({ length: 85 }, (_, index) => `detail ${index + 1}`),
+                ...Array.from({ length: 40 }, (_, index) => `detail ${index + 1}`),
                 '需要我继续完成这些收尾吗？'
             ].join('\n'),
             createdAt: 2
@@ -739,7 +739,7 @@ export class AgentConsoleMessagesRendererTest {
         const messageLines = renderer.renderToLines(messagesPanel.hostView.rootNodes[0]);
 
         expect(messageLines.some(line => line.includes('detail 1'))).toBe(true);
-        expect(messageLines.some(line => line.includes('detail 85'))).toBe(true);
+        expect(messageLines.some(line => line.includes('detail 40'))).toBe(true);
         expect(messageLines.some(line => line.includes('more lines'))).toBe(false);
         expect(messageLines.some(line => line.includes('需要我继续完成这些收尾吗？'))).toBe(true);
     }

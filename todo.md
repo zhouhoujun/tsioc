@@ -4338,3 +4338,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **实测否决**：2 分片 wall 216s（单进程同一环境 104–161s），重 spec 集中于单分片 + JSDOM 内存/GC 争用，未获得收益；按 AGENTS「未经实测提升的改动不得保留」回退 sharding 与 unit.ts/package.json 改动。
 - **顺带发现的真实问题**：分片改变执行顺序后，`dialog-deeplink` 的 `mountAgentWebConsole` 在 `finally` 才挂 `.catch`，bootstrap 的 `model.activate` 拒绝会先成为 unhandled rejection 并杀掉进程（单进程下只是时序侥幸）。已改为同步 `.catch(() => null)`，并保留 `await mountedPromise` 的清理逻辑。
 - **保留**：超大 fixture 收敛（前一条提交）与本次 unhandled rejection 修复。
+
+## 2026-11-16 Activity 默认 medium 影响面评估（暂不翻默认）
+- 临时把 `activityVerbosity` 默认改为 `medium` 跑完整 agent-ui：**2134 passing / 2 failed**，失败全部是 p285 first-screen gate（desktop-basic、mobile-320）——聚合把多步工具/命令折叠成 Activity 后，`minRenderedRows` 与 `minCjkRows` 不再满足；其余 2134 项（含 timeline、activity、tab 隔离、消息渲染）全通过。
+- 结论：默认 medium 在功能上可行，但需要改写这两个 gate 的首屏/CJK 断言（它们验证的是“每条 seed 行都渲染”）。按 AGENTS「改变已有用户功能需先说明并确认取舍」，暂保持默认 `high`（opt-in）。
+- 若确认翻默认：`AgentConsoleStateTypes.ts` 一行改为 `medium`，并把 p285 两个场景改为验证 Activity 行 + 展开后的 CJK（或给 mount 增加显式 consoleOptions 以固定 gate 详细度）。
+- 本轮顺带把 `console-renderer` 的 85 行 system question 用例降为 40 行（断言同步），保持“长问题不折叠”的验证。
