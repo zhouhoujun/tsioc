@@ -66,6 +66,10 @@ export function resolveWorkflowValue(source: any, context: ActivityContext): any
     if (source === undefined || source === null) {
         return source;
     }
+    if (typeof source === 'object' && !Array.isArray(source)
+        && typeof (source as any).type === 'string') {
+        return resolveValueRef(source as any, context);
+    }
     if (typeof source !== 'string') {
         return source;
     }
@@ -96,6 +100,24 @@ export function resolveWorkflowValue(source: any, context: ActivityContext): any
         value = value[key];
     }
     return value;
+}
+
+/** Resolve a typed value descriptor against msg/flow/global/env. */
+function resolveValueRef(ref: { type: string; path?: string; value?: any }, context: ActivityContext): any {
+    switch (ref.type) {
+        case 'literal':
+            return ref.value;
+        case 'msg':
+            return resolveFrom((context as any).msg || { payload: (context as any).payload }, ref.path);
+        case 'flow':
+            return resolveFrom((context as any).flow || {}, ref.path);
+        case 'global':
+            return resolveFrom((context as any).global || {}, ref.path);
+        case 'env':
+            return resolveFrom((context as any).env || {}, ref.path);
+        default:
+            return ref;
+    }
 }
 
 function matchRouterRule(actual: any, operator: string, expected: any): boolean {
@@ -765,7 +787,10 @@ export async function executeVisualNode(
                 : String(config.topic);
             const base = topic ? { topic } : {};
             if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-                return { success: true, data: { ...base, ...payload, nodeId: node.id } };
+                return {
+                    success: true,
+                    data: { ...base, ...payload, payload, nodeId: node.id }
+                };
             }
             return { success: true, data: { nodeId: node.id, ...base, payload } };
         }
@@ -869,22 +894,37 @@ export async function executeVisualNode(
             }
             const payload = coerceJson(config.payload ?? {});
             if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-                return { success: true, data: { ...payload, nodeId: node.id, triggered: true } };
+                return {
+                    success: true,
+                    data: { ...payload, payload, nodeId: node.id, triggered: true }
+                };
             }
             return { success: true, data: { nodeId: node.id, triggered: true, payload } };
         }
         case 'function': {
             try {
                 const source = String(config.code || 'return input;');
+                const msg = (context as any).msg || { payload: (context as any).payload };
+                const flow = (context as any).flow || {};
+                const global = (context as any).global || {};
+                const env = (context as any).env || {};
                 const run = async (code: string) => {
                     // Trusted-code node: same trust level as a Node-RED function node.
                     const fn = new Function(
                         'context',
                         'input',
                         'msg',
+                        'flow',
+                        'global',
+                        'env',
                         `"use strict"; return (async () => { ${code}\n })();`
-                    ) as (ctx: any, input: any, msg: any) => Promise<any>;
-                    return fn(context, context, { ...context });
+                    ) as (ctx: any, input: any, msg: any, flow: any, global: any, env: any) => Promise<any>;
+                    const value = await fn(context, context, msg, flow, global, env);
+                    // Function nodes may mutate msg directly; keep the branch
+                    // context payload/topic in sync before the next node runs.
+                    (context as any).msg = msg;
+                    (context as any).payload = msg.payload;
+                    return value;
                 };
                 if (String(config.initialize || '').trim()) {
                     const initial = await run(String(config.initialize));
@@ -900,7 +940,14 @@ export async function executeVisualNode(
                     }
                 }
                 if (value && typeof value === 'object' && !Array.isArray(value)) {
-                    return { success: true, data: { ...value, nodeId: node.id } };
+                    const isMessage = 'payload' in value
+                        || 'topic' in value
+                        || 'parts' in value
+                        || 'meta' in value;
+                    return {
+                        success: true,
+                        data: { ...value, nodeId: node.id, ...(isMessage ? { msg: value } : {}) }
+                    };
                 }
                 return { success: true, data: { nodeId: node.id, result: value } };
             } catch (error) {

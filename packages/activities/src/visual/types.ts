@@ -567,6 +567,25 @@ export interface WorkflowExecutionSnapshot {
     logs: WorkflowExecutionLogEntry[];
 }
 
+/** Message passed between nodes (Node-RED compatible core fields). */
+export interface WorkflowMessage {
+    payload: any;
+    topic?: string;
+    parts?: { id: string; index: number; count: number; type?: string };
+    meta?: Record<string, any>;
+}
+
+/**
+ * Typed value reference used by node fields. Plain strings keep the legacy
+ * literal/context-path behavior.
+ */
+export type WorkflowValueRef =
+    | { type: 'literal'; value: any }
+    | { type: 'msg'; path: string }
+    | { type: 'flow'; path: string }
+    | { type: 'global'; path: string }
+    | { type: 'env'; path: string };
+
 /**
  * 工作流执行选项
  * Workflow execution options.
@@ -600,6 +619,8 @@ export interface WorkflowExecutionOptions {
      * scheduled and in-flight delay/trigger waits stop early.
      */
     timeout?: number;
+    /** Environment values exposed as `env` to nodes (secrets stay out of definitions). */
+    env?: Record<string, any>;
 }
 
 /**

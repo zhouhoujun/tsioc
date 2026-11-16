@@ -11,7 +11,8 @@ import {
     WorkflowExecutionEventType,
     WorkflowExecutionSnapshot,
     WorkflowExecutionState,
-    WorkflowExecutionOptions
+    WorkflowExecutionOptions,
+    WorkflowMessage
 } from './types';
 import { WorkflowNodeRegistry } from './node-registry';
 import {
@@ -99,6 +100,7 @@ export function toWorkflowExecutionSnapshot(state: WorkflowExecutionState): Work
 @Injectable()
 export class VisualWorkflowService {
     private readonly executions = new Map<string, WorkflowExecutionState>();
+    private readonly globalContext: Record<string, any> = {};
     private readonly registry: WorkflowNodeRegistry;
     private readonly pathInterceptor = new VisualExecutionPathInterceptor();
     private readonly policyInterceptor = new WorkflowNodePolicyInterceptor();
@@ -160,7 +162,7 @@ export class VisualWorkflowService {
         const executionId = options.executionId
             || options.resumeFrom?.executionId
             || this.generateExecutionId();
-        const runtimeContext = this.withPluginServices(context);
+        const runtimeContext = this.withMessageContext(this.withPluginServices(context), options);
         const state = options.resumeFrom
             ? this.createStateFromCheckpoint(definition, options.resumeFrom, executionId)
             : this.createState(definition, executionId);
@@ -358,6 +360,82 @@ export class VisualWorkflowService {
      * Expose installed plugin services (and keep caller-provided services).
      * Task/function nodes can resolve them from `context.services`.
      */
+    /** Shared `global` scope exposed to every execution of this service. */
+    getGlobalContext(): Record<string, any> {
+        return this.globalContext;
+    }
+
+    /**
+     * Ensure every execution has a msg envelope plus flow/global/env scopes.
+     * Existing payload-based definitions keep working through `payload`.
+     */
+    private withMessageContext(
+        context: ActivityContext,
+        options: WorkflowExecutionOptions
+    ): ActivityContext {
+        const existing = (context as any)?.msg;
+        const payload = existing?.payload !== undefined
+            ? existing.payload
+            : (context as any)?.payload !== undefined
+                ? (context as any).payload
+                : (context as any)?.value;
+        const msg: WorkflowMessage = {
+            ...(existing || {}),
+            payload,
+            ...(existing?.topic !== undefined
+                ? {}
+                : (context as any)?.topic !== undefined ? { topic: (context as any).topic } : {}),
+            meta: { ...(existing?.meta || {}) }
+        };
+        return {
+            ...context,
+            ...(payload !== undefined ? { payload } : {}),
+            msg,
+            flow: (context as any)?.flow || {},
+            global: (context as any)?.global || this.globalContext,
+            env: (context as any)?.env || options.env || {}
+        };
+    }
+
+    /** Apply a node's returned `msg` (or legacy payload) to its branch context. */
+    private applyResultMessage(context: ActivityContext, result: ActivityResult): void {
+        const data = result?.data as Record<string, any> | undefined;
+        if (!data || typeof data !== 'object') {
+            return;
+        }
+        const current = (context as any).msg;
+        const incoming = data.msg;
+        if (incoming && typeof incoming === 'object') {
+            const msg: WorkflowMessage = {
+                ...(current || {}),
+                ...incoming,
+                meta: { ...(current?.meta || {}), ...(incoming.meta || {}) }
+            };
+            if (!('payload' in incoming) && current?.payload !== undefined) {
+                msg.payload = current.payload;
+            }
+            (context as any).msg = msg;
+            (context as any).payload = msg.payload;
+            if (msg.topic !== undefined) {
+                (context as any).topic = msg.topic;
+            }
+            return;
+        }
+        if ('payload' in data && current) {
+            const msg: WorkflowMessage = {
+                ...current,
+                payload: data.payload,
+                ...(data.topic !== undefined ? { topic: data.topic } : {}),
+                ...(data.parts !== undefined ? { parts: data.parts } : {})
+            };
+            (context as any).msg = msg;
+            (context as any).payload = msg.payload;
+            if (msg.topic !== undefined) {
+                (context as any).topic = msg.topic;
+            }
+        }
+    }
+
     private withPluginServices(context: ActivityContext): ActivityContext {
         const installed = this.plugins?.serviceRegistry.toObject();
         if (!installed || !Object.keys(installed).length) {
@@ -543,6 +621,8 @@ export class VisualWorkflowService {
             });
             this.checkpoint(options, state);
         }
+
+        this.applyResultMessage(context, result);
 
         if (String(state.status) === 'cancelled' || this.isCancelled(state)) {
             state.status = 'cancelled';
@@ -947,7 +1027,19 @@ export class VisualWorkflowService {
         result: ActivityResult,
         _connection: NodeConnection
     ): ActivityContext {
-        return { ...context, ...(result.data || {}) };
+        const data = { ...(result.data || {}) } as Record<string, any>;
+        // The message is branch-local; do not share the same object across
+        // parallel wires. `flow`/`global` stay shared by design.
+        delete data.msg;
+        const current = (context as any).msg;
+        const msg = current
+            ? { ...current, meta: { ...(current.meta || {}) } }
+            : undefined;
+        return {
+            ...context,
+            ...data,
+            ...(msg ? { msg, payload: msg.payload } : {})
+        };
     }
 
     private isJoinReady(

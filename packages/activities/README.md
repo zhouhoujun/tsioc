@@ -517,6 +517,28 @@ GET  /api/workflows/:id/hook?path=/orders   # query fallback
 - Without an `http-response` node the endpoint returns a JSON run summary with
   status `200` on success and `500` on failure.
 
+### Messages and scopes
+
+Each execution context now carries a Node-RED style message plus scopes:
+
+```typescript
+context.msg    // { payload, topic?, parts?, meta? }
+context.flow   // per-run values shared by all nodes in this execution
+context.global // service-wide values (persist across runs)
+context.env    // host-provided environment values
+```
+
+- `function` nodes receive `(context, input, msg, flow, global, env)`; mutating
+  `msg` or returning it updates the payload/topic for downstream nodes.
+- Existing definitions keep working: plain `payload` results are mirrored into
+  `msg.payload`, and context fields are still merged as before.
+- `service.getGlobalContext()` exposes the shared global scope; pass
+  `{ env: { ... } }` in execution options to provide environment values.
+- Fields resolved through `resolveWorkflowValue` accept typed references:
+  `{ type: 'msg' | 'flow' | 'global' | 'env', path }` and
+  `{ type: 'literal', value }`. Plain strings keep the legacy
+  literal/context-path behavior.
+
 ## Visual Designer (drag & drop)
 
 The package ships a renderer-neutral designer built on `@tsdi/components`:
