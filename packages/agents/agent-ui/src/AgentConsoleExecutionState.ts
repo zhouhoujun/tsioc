@@ -1,4 +1,5 @@
 import type { AgentConsoleActivity, AgentConsoleApprovalRequest, AgentConsoleToolRun } from './AgentConsoleStateTypes';
+import { sameAgentConsoleApprovals } from './AgentConsoleStateEquality';
 
 export interface AgentConsoleExecutionState {
     pendingApprovals: AgentConsoleApprovalRequest[];
@@ -14,9 +15,14 @@ export interface AgentConsoleExecutionState {
 }
 
 export function setPendingApprovalsInState(state: AgentConsoleExecutionState, requests: AgentConsoleApprovalRequest[]): void {
-    state.pendingApprovals = requests
+    const next = requests
         .slice()
         .sort((left, right) => left.createdAt - right.createdAt);
+    // Tab switches/background refreshes re-fetch the same pending inbox.
+    if (sameAgentConsoleApprovals(state.pendingApprovals, next)) {
+        return;
+    }
+    state.pendingApprovals = next;
     if (!state.pendingApprovals.length) {
         state.selectedApprovalId = '';
         state.approvalsFocused = false;

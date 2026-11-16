@@ -7,6 +7,7 @@ import type {
 } from './AgentConsoleStateTypes';
 import { AgentConsoleSessionSelectionHost } from './AgentConsoleSessionSelectionHost';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { sameAgentConsoleSessions, sameAgentConsoleStringList } from './AgentConsoleStateEquality';
 import {
     buildSelectedSessionCopyText as buildSelectedSessionCopyTextInState,
     clampSessionSelectionToFilter as clampSessionSelectionToFilterInState,
@@ -38,9 +39,25 @@ import {
 export abstract class AgentConsoleSessionListHost extends AgentConsoleSessionSelectionHost {
     protected abstract self(): AgentConsoleSessionState;
 
-    setSessions(sessions: AgentConsoleSessionItem[]): void { this.sessions = sessions.slice(); this.clampSessionSelectionToFilter(); }
+    setSessions(sessions: AgentConsoleSessionItem[]): void {
+        if (sameAgentConsoleSessions(this.sessions, sessions)) {
+            // The list may be unchanged while the nav filter/selection changed;
+            // callers rely on setSessions to re-clamp the selection.
+            this.clampSessionSelectionToFilter();
+            return;
+        }
+        this.sessions = sessions.slice();
+        this.clampSessionSelectionToFilter();
+    }
 
-    setOpenSessionIds(ids: string[]): void { const seen = new Set<string>(); this.openSessionIds = (ids || []).map(id => String(id || '').trim()).filter(id => id && !seen.has(id) && !!seen.add(id)); }
+    setOpenSessionIds(ids: string[]): void {
+        const seen = new Set<string>();
+        const next = (ids || []).map(id => String(id || '').trim()).filter(id => id && !seen.has(id) && !!seen.add(id));
+        if (sameAgentConsoleStringList(this.openSessionIds, next)) {
+            return;
+        }
+        this.openSessionIds = next;
+    }
 
     setProjects(projects: AgentConsoleProjectItem[]): void {
         this.projects = projects.slice();

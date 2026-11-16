@@ -6,6 +6,7 @@ import type {
     AgentConsoleToolRun
 } from './AgentConsoleStateTypes';
 import { applyAbsoluteTokenUsage, applyTokenUsage, resetTurnTokenUsage as resetTurnTokenUsageInState } from './AgentConsoleTokenUsageState';
+import { sameAgentConsoleTools } from './AgentConsoleStateEquality';
 import {
     appendPendingAttachment as appendPendingAttachmentInState,
     clearPendingAttachments as clearPendingAttachmentsInState,
@@ -68,6 +69,9 @@ export abstract class AgentConsoleSessionTelemetryHost extends AgentConsoleSessi
     }
 
     setTools(tools: AgentConsoleToolItem[]): void {
+        if (sameAgentConsoleTools(this.tools, tools)) {
+            return;
+        }
         this.tools = tools;
         if (!this.tools.length) {
             this.selectedToolName = '';

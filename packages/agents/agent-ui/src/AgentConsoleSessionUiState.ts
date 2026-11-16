@@ -192,9 +192,9 @@ export class AgentConsoleSessionUiState {
                 accessor?.paintCachedFrame?.(cached.renderedLines!);
             }
             this.applyCachedView(targetId, cached, applyComposer);
-            for (let turn = 0; turn < 4; turn += 1) {
-                await Promise.resolve();
-            }
+            // Do not yield to the render microtask here: the cached frame is
+            // already painted, so the restored-view batch can land in the same
+            // frame instead of paying an extra full transcript render.
         }
         // A cached switch is a no-op paint until the refresh lands; keeping a
         // render batch open would freeze typing and tab feedback for the whole

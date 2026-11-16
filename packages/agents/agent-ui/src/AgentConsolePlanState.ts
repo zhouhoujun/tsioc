@@ -5,6 +5,7 @@ import type {
     AgentConsoleSessionState
 } from './AgentConsoleSessionState';
 import { DEFAULT_TIMELINE_LABELS } from './AgentConsoleTimelineWindow';
+import { sameAgentConsolePlanTodos } from './AgentConsoleStateEquality';
 
 /** Plan-todo projection, filtering, selection and inline plan message. */
 export function setGoalSummary(state: AgentConsoleSessionState, goal: AgentConsoleGoalSummary | null | undefined): void {
@@ -268,18 +269,28 @@ export function setPlanTodos(
     if (planId) {
         state.planId = String(planId);
     }
-    state.planTodos = todos.map(todo => {
+    const nextTodos = todos.map(todo => {
         const pid = state.planId || (planId ? String(planId) : undefined);
         if (!pid) {
             return { ...todo };
         }
         return { ...todo, planId: pid, revision: state.planRevision };
     });
+    const nextSourceSessionId = String(sourceSessionId || '').trim();
+    const nextScope = scope || '';
+    // Background tab refreshes re-apply the same plan; assigning an equal
+    // array still triggers every bound panel and a full render.
+    if (sameAgentConsolePlanTodos(state.planTodos, nextTodos)
+        && state.planTodoSourceSessionId === nextSourceSessionId
+        && (state.planScope || '') === nextScope) {
+        return;
+    }
+    state.planTodos = nextTodos;
     if (state.planTodos.length <= 7) {
         state.planTodoExpanded = false;
     }
-    state.planTodoSourceSessionId = String(sourceSessionId || '').trim();
-    state.planScope = scope || '';
+    state.planTodoSourceSessionId = nextSourceSessionId;
+    state.planScope = nextScope;
     state.planMessage = buildPlanMessage(state);
 }
 

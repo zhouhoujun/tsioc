@@ -4307,3 +4307,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第六十二批（2026-11-16）：
   - Kafka/NATS/AMQP/MQTT/Redis 真实 Docker E2E 全部通过。
   - gRPC client-stream cancel 5ms 宽限，连续 3 次稳定。
+
+## 2026-11-16 tab 切换：减少无效状态写入与多余整帧渲染
+- **实测结论（先量再改）**：缓存 tab 的剩余耗时不是重建 50 条消息组件（item 缓存已命中、outlet 复用），而是每次切换 2–3 次完整 transcript 渲染（每次 ~40–60ms）；CPU profile 中渲染/样式/布局约占一半，响应式与模板指令占其余。
+- **修复 1：刷新结果等值时不再写入**。新增 `AgentConsoleStateEquality`，`setSessions` / `setOpenSessionIds` / `setTools` / `setPlanTodos` / `setPendingApprovals` 内容相同即跳过数组赋值（`setSessions` 仍执行 selection 重夹取，保持原有导航语义）。后台会话/工具/计划/审批刷新因此不再触发额外整帧。
+- **修复 2：缓存切换不再主动让出渲染微任务**。缓存帧已先绘制，`applyCachedView` 后不再 `await` 4 个微任务，使 restore 落在同一帧，减少一次整帧重绘。
+- **实测**：每 tab 切换渲染次数 2.5 → 2.3，渲染耗时/切换约 97ms → 约 57ms（首帧仍由缓存帧即时呈现）。未做多 pane keep-alive：profile 显示布局/渲染是主成本，多 pane 不会消除，收益不足且回归面大。
+- **验证**：agents gate 10/10 PASS（components/common/console/html、agent-ui 2128、tsc、source-size、diff-check、build:web）；新增 equality 回归 6 条。
