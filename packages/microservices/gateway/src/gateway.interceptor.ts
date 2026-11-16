@@ -7,15 +7,17 @@ import { HttpMessageAdapter, HTTP_AUTH_RESULT, HTTP_RESPONSE, HttpRequestMessage
 import { ApiRateLimiter } from '@tsdi/service';
 import { Incoming, RequestContext, RequestHandler, RequestInterceptor, Transport, TransferSide } from '@tsdi/common';
 import { Observable, from, lastValueFrom } from 'rxjs';
-import { GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayAggregateSource, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayRuleConditionOptions, GatewayRuleOptions, GatewayWebhookOptions } from './gateway.options';
+import { GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayAggregateSource, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayRuleConditionOptions, GatewayRuleOptions, GatewayWebhookOptions, ResolvedGatewayRoute } from './gateway.options';
 import { MetricsCollector } from '@tsdi/metrics';
 import { AbstractClient, getClientToken } from '@tsdi/client';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
 import { GatewayLoadBalancer } from './load-balancer';
+import { GatewayRouteTable } from './gateway.route-table';
+import { GatewayRuleEngine, ruleToRoute } from './gateway.rule-engine';
 import { resolveRetryBackoff } from './retry-policy';
 import { HttpAuthService, HttpAuthOptions, HmacSignatureService } from '@tsdi/security';
-import { Tracer } from '@tsdi/tracing';
+import { Tracer, Span } from '@tsdi/tracing';
 import { Logger } from '@tsdi/logger';
 
 interface GatewayForwardResult {
@@ -88,29 +90,6 @@ export function classifyGatewayError(error: any): GatewayErrorType {
     return 'internal';
 }
 
-type ResolvedGatewayRoute = GatewayRouteOptions & {
-    transport?: Transport;
-    clientName?: string;
-    timeout?: number;
-    headers?: Record<string, string>;
-    responseHeaders?: Record<string, string>;
-    stripPrefix?: boolean;
-    payload?: (request: any) => any;
-    forwardHeaders?: GatewayForwardHeadersOptions;
-    auth?: HttpAuthOptions | false;
-    accessControl?: GatewayAccessControlOptions;
-    rewrite?: GatewayRewriteOptions;
-    canary?: GatewayCanaryOptions;
-    cache?: GatewayCacheOptions | false;
-    webhook?: GatewayWebhookOptions;
-    apiKey?: GatewayRouteOptions['apiKey'];
-    signature?: GatewayRouteOptions['signature'];
-    responseCache?: GatewayRouteOptions['responseCache'];
-    authorize?: GatewayRouteOptions['authorize'];
-    compression?: GatewayRouteOptions['compression'];
-    bulkhead?: GatewayRouteOptions['bulkhead'];
-};
-
 /** Request used by the admin console to preview gateway matching. */
 export interface GatewayMatchPreviewRequest {
     method?: string;
@@ -168,6 +147,12 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private loadBalancer: GatewayLoadBalancer;
     private httpFetch?: typeof fetch;
     private httpDispatcher?: { close?: () => Promise<void> | void };
+    private routeTable?: GatewayRouteTable;
+    private routeTableRevision = -1;
+    private routeTableRoutes?: GatewayRouteOptions[];
+    private ruleEngine?: GatewayRuleEngine;
+    private ruleEngineRevision = -1;
+    private ruleEngineRules?: GatewayRuleOptions[];
 
     constructor(
         @Inject(GATEWAY_OPTIONS) private options: GatewayOptions,
@@ -201,7 +186,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             if (rule.action.type === 'deny') {
                 return from(this.denyByRule(rule, request, context));
             }
-            return from(this.forward(this.resolveRoute(this.ruleToRoute(rule)), request, context));
+            return from(this.forward(this.resolveRoute(ruleToRoute(rule)), request, context));
         }
         const route = this.matchRoute(request);
         if (!route) {
@@ -269,61 +254,28 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     }
 
     private matchRule(request: HttpRequestMessage): GatewayRuleOptions | null {
-        const indexed = this.runtime.getRules(this.options.rules)
-            .map((rule, index) => ({ rule, index }))
-            .filter(item => item.rule?.enabled !== false)
-            .sort((a, b) => (a.rule.priority ?? 0) - (b.rule.priority ?? 0) || a.index - b.index);
-        for (const item of indexed) {
-            if (this.matchesRule(item.rule, request)) {
-                return item.rule;
-            }
-        }
-        return null;
+        return this.getRuleEngine().match({
+            path: this.normalizeRequestUrl(request.url ?? '/'),
+            method: (request.method ?? 'GET').toUpperCase(),
+            host: this.getRequestHost(request),
+            header: name => this.getHeaderValue(request, name),
+            query: name => this.getQueryValue(request.url ?? '/', name)
+        });
     }
 
-    private matchesRule(rule: GatewayRuleOptions, request: HttpRequestMessage): boolean {
-        const conditions = rule.when ?? [];
-        return conditions.every(condition => this.matchesRuleCondition(condition, request));
-    }
-
-    private matchesRuleCondition(condition: GatewayRuleConditionOptions, request: HttpRequestMessage): boolean {
-        const operator = condition.operator ?? 'equals';
-        let actual: string | undefined;
-        switch (condition.field) {
-            case 'path':
-                actual = this.normalizeRequestUrl(request.url ?? '/');
-                break;
-            case 'method':
-                actual = (request.method ?? 'GET').toUpperCase();
-                break;
-            case 'host':
-                actual = this.getRequestHost(request);
-                break;
-            case 'header':
-                actual = condition.name ? this.getHeaderValue(request, condition.name) : undefined;
-                break;
-            case 'query':
-                actual = condition.name ? this.getQueryValue(request.url ?? '/', condition.name) : undefined;
-                break;
-            default:
-                return false;
+    /**
+     * Compiled rule list shared by every request in this config revision.
+     */
+    private getRuleEngine(): GatewayRuleEngine {
+        const revision = this.runtime.configRevision;
+        const rules = this.runtime.getRules(this.options.rules);
+        if (this.ruleEngine && this.ruleEngineRevision === revision && this.ruleEngineRules === rules) {
+            return this.ruleEngine;
         }
-        const expected = condition.value;
-        switch (operator) {
-            case 'exists':
-                return actual !== undefined && actual !== '';
-            case 'not-exists':
-                return actual === undefined || actual === '';
-            case 'prefix':
-                return expected != null && actual != null && actual.startsWith(expected);
-            case 'not-prefix':
-                return expected == null || actual == null || !actual.startsWith(expected);
-            case 'not-equals':
-                return actual !== expected;
-            case 'equals':
-            default:
-                return expected != null && actual === expected;
-        }
+        this.ruleEngine = new GatewayRuleEngine(rules);
+        this.ruleEngineRevision = revision;
+        this.ruleEngineRules = rules;
+        return this.ruleEngine;
     }
 
     private getQueryValue(url: string, name: string): string | undefined {
@@ -341,38 +293,6 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             }
         }
         return undefined;
-    }
-
-    private ruleToRoute(rule: GatewayRuleOptions): GatewayRouteOptions {
-        const action = rule.action;
-        const pathCondition = (rule.when ?? []).find(condition => condition.field === 'path'
-            && (condition.operator === 'prefix' || condition.operator === 'equals')
-            && condition.value);
-        return {
-            path: action.path ?? pathCondition?.value ?? '/',
-            service: action.service ?? '',
-            transport: action.transport,
-            clientName: action.clientName,
-            targetPath: action.targetPath,
-            pattern: action.pattern,
-            targetUrl: action.targetUrl,
-            stripPrefix: action.stripPrefix,
-            headers: action.headers,
-            responseHeaders: action.responseHeaders,
-            timeout: action.timeout,
-            rateLimit: action.rateLimit,
-            bulkhead: action.bulkhead,
-            circuitBreaker: action.circuitBreaker,
-            cache: action.cache,
-            rewrite: action.rewrite,
-            accessControl: action.accessControl,
-            auth: action.auth,
-            apiKey: action.apiKey,
-            signature: action.signature,
-            authorize: action.authorize,
-            mock: action.mock,
-            enabled: true
-        };
     }
 
     private async denyByRule(rule: GatewayRuleOptions, request: HttpRequestMessage, context: RequestContext): Promise<any> {
@@ -408,96 +328,35 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     }
 
     private matchRoute(request: HttpRequestMessage): ResolvedGatewayRoute | null {
-        const url = this.normalizeRequestUrl(request.url ?? '/');
-        const method = (request.method ?? 'GET').toUpperCase();
-        const host = this.getRequestHost(request);
-        const routes = this.runtime.getRoutes(this.options.routes)
-            .filter(route => route.enabled !== false)
-            .map(route => this.resolveRoute(route));
         const mode = this.runtime.getOption('routeMatching', this.options.routeMatching) ?? 'segment';
-
-        let best: ResolvedGatewayRoute | null = null;
-        let bestScore = -1;
-        for (const route of routes) {
-            const match = mode === 'legacy'
-                ? (url.startsWith(route.path) ? { params: {} } : null)
-                : this.matchRoutePath(route.path, url);
-            if (!match) {
-                continue;
-            }
-            if (route.methods?.length && !route.methods.map(m => m.toUpperCase()).includes(method)) {
-                continue;
-            }
-            if (route.hosts?.length && !route.hosts.includes(host)) {
-                continue;
-            }
-            if (!this.matchHeaders(route, request)) {
-                continue;
-            }
-            if (!this.matchCanary(route.canary, request)) {
-                continue;
-            }
-            if (mode === 'legacy') {
-                return route;
-            }
-            const score = this.routeSpecificity(route.path);
-            if (score > bestScore) {
-                best = route;
-                bestScore = score;
-            }
-        }
-        return best;
+        return this.getRouteTable().match({
+            url: this.normalizeRequestUrl(request.url ?? '/'),
+            method: (request.method ?? 'GET').toUpperCase(),
+            host: this.getRequestHost(request),
+            legacy: mode === 'legacy',
+            accepts: route => this.matchHeaders(route, request) && this.matchCanary(route.canary, request)
+        });
     }
 
     /**
-     * Segment-aware prefix match. A route path is a prefix of the request path
-     * (so `/api/users` still matches `/api/users/profile`) but must align on
-     * segment boundaries (so it does not match `/api/users2`). `:name` captures
-     * one segment and a trailing `*` matches the remainder.
+     * Compiled route table shared by every request in this config revision.
+     * Defaults/global auth are merged at compile time, so matching no longer
+     * clones routes or re-scores paths per request.
      */
-    private matchRoutePath(pattern: string, url: string): { params: Record<string, string> } | null {
-        const normalized = this.normalizeRequestUrl(pattern || '/');
-        if (normalized === '/' || normalized === '/*') {
-            return { params: {} };
+    private getRouteTable(): GatewayRouteTable {
+        const revision = this.runtime.configRevision;
+        const routes = this.runtime.getRoutes(this.options.routes);
+        if (this.routeTable && this.routeTableRevision === revision && this.routeTableRoutes === routes) {
+            return this.routeTable;
         }
-        const patternSegments = normalized.split('/').filter(Boolean);
-        const urlSegments = url.split('/').filter(Boolean);
-        const params: Record<string, string> = {};
-        for (let index = 0; index < patternSegments.length; index++) {
-            const segment = patternSegments[index];
-            if (segment === '*') {
-                return { params };
-            }
-            const actual = urlSegments[index];
-            if (actual === undefined) {
-                return null;
-            }
-            if (segment.startsWith(':')) {
-                params[segment.slice(1)] = actual;
-                continue;
-            }
-            if (segment !== actual) {
-                return null;
-            }
-        }
-        return { params };
-    }
-
-    /**
-     * Higher is more specific: static segments beat parameters, longer paths
-     * beat shorter ones.
-     */
-    private routeSpecificity(pattern: string): number {
-        const normalized = this.normalizeRequestUrl(pattern || '/');
-        return normalized.split('/').filter(Boolean).reduce((score, segment) => {
-            if (segment === '*') {
-                return score + 1;
-            }
-            if (segment.startsWith(':')) {
-                return score + 10;
-            }
-            return score + 100 + segment.length;
-        }, 0);
+        this.routeTable = GatewayRouteTable.compile(routes, {
+            version: revision,
+            resolve: route => this.resolveRoute(route),
+            normalizePath: path => this.normalizeRequestUrl(path || '/')
+        });
+        this.routeTableRevision = revision;
+        this.routeTableRoutes = routes;
+        return this.routeTable;
     }
 
     private tagGatewayError(error: any, adapter: any): GatewayErrorType {
@@ -585,11 +444,13 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
 
         try {
-            const result = route.aggregate?.enabled
-                ? await this.forwardAggregate(route, request, traceHeaders)
-                : this.isHttpRoute(route)
-                    ? await this.forwardHttp(route, request, traceHeaders)
-                    : await this.forwardMicroservice(route, request, traceHeaders);
+            const result = await this.runInTrace(trace, () =>
+                route.aggregate?.enabled
+                    ? this.forwardAggregate(route, request, traceHeaders)
+                    : this.isHttpRoute(route)
+                        ? this.forwardHttp(route, request, traceHeaders)
+                        : this.forwardMicroservice(route, request, traceHeaders)
+            );
 
             const upstreamFailed = this.isFailureStatus(route, result.status);
             if (upstreamFailed) {
@@ -1850,6 +1711,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     private startTrace(request: HttpRequestMessage): {
         headers: Record<string, string>;
+        span?: Span;
         error?: any;
         finish(error?: any): void;
     } {
@@ -1863,20 +1725,22 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             return { headers: carrier, finish: () => undefined };
         }
         let finish: (error?: any) => void = () => undefined;
+        let span: Span | undefined;
         if (this.tracer) {
-            const span = this.tracer.startSpan(
+            const activeSpan = this.tracer.startSpan(
                 `gateway ${request.method ?? 'GET'} ${this.normalizeRequestUrl(request.url ?? '/')}`,
                 { kind: 'SERVER' }
             );
-            this.tracer.injectContext(span.context(), carrier);
+            span = activeSpan;
+            this.tracer.injectContext(activeSpan.context(), carrier);
             finish = (error?: any) => {
                 if (error) {
-                    span.setStatus('ERROR');
-                    span.recordError(error instanceof Error ? error : new Error(String(error?.message ?? error)));
+                    activeSpan.setStatus('ERROR');
+                    activeSpan.recordError(error instanceof Error ? error : new Error(String(error?.message ?? error)));
                 } else {
-                    span.setStatus('OK');
+                    activeSpan.setStatus('OK');
                 }
-                span.finish();
+                activeSpan.finish();
             };
         } else {
             carrier['x-trace-id'] = this.generateTraceId();
@@ -1886,8 +1750,17 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         carrier['x-request-id'] = requestId;
         return {
             headers: carrier,
+            span,
             finish
         };
+    }
+
+    /**
+     * Run an upstream call inside the gateway server span so downstream client
+     * spans inherit it as parent without leaking into concurrent requests.
+     */
+    private runInTrace<T>(trace: { span?: Span }, run: () => Promise<T>): Promise<T> {
+        return trace.span && this.tracer ? this.tracer.runWithSpan(trace.span, run) : run();
     }
 
     private recordGatewayError(

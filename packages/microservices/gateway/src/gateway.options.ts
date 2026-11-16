@@ -690,6 +690,35 @@ export interface GatewayRouteOptions {
     loadBalance?: GatewayLoadBalanceOptions;
 }
 
+/**
+ * Route with global defaults merged in, ready for request handling.
+ *
+ * Compilation happens once per config revision (see `GatewayRouteTable`), not
+ * per request.
+ */
+export type ResolvedGatewayRoute = GatewayRouteOptions & {
+    transport?: Transport;
+    clientName?: string;
+    timeout?: number;
+    headers?: Record<string, string>;
+    responseHeaders?: Record<string, string>;
+    stripPrefix?: boolean;
+    payload?: (request: any) => any;
+    forwardHeaders?: GatewayForwardHeadersOptions;
+    auth?: HttpAuthOptions | false;
+    accessControl?: GatewayAccessControlOptions;
+    rewrite?: GatewayRewriteOptions;
+    canary?: GatewayCanaryOptions;
+    cache?: GatewayCacheOptions | false;
+    webhook?: GatewayWebhookOptions;
+    apiKey?: GatewayRouteOptions['apiKey'];
+    signature?: GatewayRouteOptions['signature'];
+    responseCache?: GatewayRouteOptions['responseCache'];
+    authorize?: GatewayRouteOptions['authorize'];
+    compression?: GatewayRouteOptions['compression'];
+    bulkhead?: GatewayRouteOptions['bulkhead'];
+};
+
 export interface GatewayDefaults {
     /**
      * global inbound prefix, stripped before route match.

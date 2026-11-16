@@ -1,5 +1,7 @@
 export * from './gateway.module';
 export * from './gateway.interceptor';
+export * from './gateway.route-table';
+export * from './gateway.rule-engine';
 export * from './gateway.options';
 export * from './provider';
 export * from './gateway.runtime';
