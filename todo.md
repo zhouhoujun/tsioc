@@ -4413,3 +4413,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 用 `batchReactiveUpdates` 包住整个投影更新，合并为一轮 effect（与 applyCachedView/restore 已在用的机制一致）。
 - 实测（1000 条历史，20 次 token 更新）：p50 **~170ms → 101–146ms**，p95 ~204ms → 135–171ms（约 −20~35%）。
 - 关键子集 160 passing（turn-stream、renderer、window、activity、tab 隔离、console-renderer）；source-size OK。
+
+## 2026-11-16 流式消息更新：跳过无变化的数组/用量写入
+- `setMessagesInState` 每次都会 `commandExecutionMessages = []`（即使已空）和写入新的 tokenUsage 对象，导致对应绑定每个 token 都被触发。
+- 改为：空数组不重复赋值；tokenUsage 三项（prompt/completion/total）相等时保留原对象。
+- 实测（1000 条历史，20 次 token，稳定轮次）：p50 **~72–77ms**、p95 **~89–120ms**（此前 101–146 / 135–171）。
+- 关键子集 55 passing；tsc、source-size 通过。

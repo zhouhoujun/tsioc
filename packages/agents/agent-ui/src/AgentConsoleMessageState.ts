@@ -105,12 +105,19 @@ function setMessagesProjection(state: AgentConsoleMessageCollectionState, messag
             || (roleMarkers.length >= 1
                 && (content.includes('truncated') || content.includes('"path"') || content.includes('path":"'))));
     });
-    if (!preserveCommandExecutionMessages) {
+    if (!preserveCommandExecutionMessages && state.commandExecutionMessages.length) {
         state.commandExecutionMessages = [];
     }
     const messageUsage = messages.some(message => !!resolveUsagePayload(message?.metadata?.usage));
     if (messageUsage || !preserveCommandExecutionMessages) {
-        state.tokenUsage = resolveTokenUsageFromMessages(messages);
+        const nextUsage = resolveTokenUsageFromMessages(messages);
+        const currentUsage = state.tokenUsage;
+        if (!currentUsage
+            || currentUsage.promptTokens !== nextUsage.promptTokens
+            || currentUsage.completionTokens !== nextUsage.completionTokens
+            || currentUsage.totalTokens !== nextUsage.totalTokens) {
+            state.tokenUsage = nextUsage;
+        }
     }
     const displayMessages = state.displayMessages;
     if (!displayMessages.length) {
