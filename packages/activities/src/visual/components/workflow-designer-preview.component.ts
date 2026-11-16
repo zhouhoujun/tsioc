@@ -152,6 +152,8 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
                 @click="groupMenuSelection">{{groupSelectionLabel}}</button>
             <button type="button" class="workflow-node-menu-item" v-if="canUngroupSelection"
                 @click="ungroupMenuSelection">{{ungroupLabel}}</button>
+            <button type="button" class="workflow-node-menu-item" v-if="referencedWorkflowId"
+                data-subflow="true" @click="openReferencedWorkflow">{{openSubflowLabel}}</button>
             <button type="button" class="workflow-node-menu-item" @click="duplicateMenuNode">{{duplicateLabel}}</button>
             <button type="button" class="workflow-node-menu-item is-danger" @click="deleteMenuNode">{{deleteLabel}}</button>
         </div>
@@ -201,6 +203,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     @Attribute() showRunLogs = true;
     /** Handles shell actions (save/open-library) in the host. */
     @Attribute() hostAction?: (action: string) => void;
+    /** Open a referenced workflow document by id (host tab host). */
+    @Attribute() openWorkflowAction?: (id: string) => void;
     /** Notify the host that the designer is dirty / an edit happened. */
     @Attribute() autosaveAction?: () => void;
     showShortcuts = false;
@@ -592,6 +596,33 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     get selectionCount(): number {
         return this.designer?.selectedNodeIds.length || 0;
     }
+
+    get referencedWorkflowId(): string {
+        const node = this.designer?.nodes.find(item => item.id === this.nodeMenuId);
+        if (!node || (node.type !== 'subprocess' && node.type !== 'loop')) {
+            return '';
+        }
+        const value = node.config?.workflow;
+        if (typeof value !== 'string') {
+            return '';
+        }
+        const text = value.trim();
+        return /^[A-Za-z0-9_-]+$/.test(text) ? text : '';
+    }
+
+    get openSubflowLabel(): string {
+        return this.t('openSubflow', 'Open sub workflow');
+    }
+
+    readonly openReferencedWorkflow = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        const id = self.referencedWorkflowId;
+        self.showNodeMenu = false;
+        if (id) {
+            self.openWorkflowAction?.(id);
+        }
+        self.notifyChange();
+    };
 
     get canUngroupSelection(): boolean {
         const selected = new Set(this.designer?.selectedNodeIds || []);

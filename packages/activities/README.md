@@ -626,7 +626,8 @@ Features:
   link/junction/sequence, try/catch, sub workflow, comment,
 - sub workflow / loop nodes resolve a stored workflow id through the host
   resolver (`service.setDefinitionResolver`; the HTTP server uses the definition
-  store) or fall back to a context path / inline definition JSON,
+  store) or fall back to a context path / inline definition JSON; right-clicking
+  such a node can open the referenced workflow in a new tab,
 - opt-in autosave (`autosave`, `autosaveDelay`) with Saved / Unsaved / Saving /
   Save failed state in the toolbar; manual save and autosave share the same store,
 - global keyboard shortcuts (`Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,

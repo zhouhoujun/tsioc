@@ -1314,6 +1314,33 @@ describe('Workflow Designer UI', () => {
         expect(WORKFLOW_ACTION_BUS.size).toBe(before - 1);
     });
 
+    it('opens a referenced sub-workflow from the node menu', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        const child = createDefaultWorkflowDefinition(ref.instance.designer.registry, 'en');
+        child.id = 'child-flow';
+        child.name = 'Child flow';
+        await store.save(child);
+        ref.instance.store = store;
+
+        const node = ref.instance.designer.addNode('subprocess', { x: 80, y: 80 })!;
+        ref.instance.designer.updateNodeConfig(node.id, { workflow: 'child-flow' });
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const element = root.querySelector('.workflow-node[data-node-id="' + node.id + '"]') as any;
+        element.dispatchEvent(new (doc.defaultView as any).MouseEvent('contextmenu', {
+            bubbles: true, cancelable: true, clientX: 200, clientY: 150
+        }));
+        await flush();
+        const open = root.querySelector('.workflow-node-menu-item[data-subflow]') as any;
+        expect(open).toBeTruthy();
+        open.click();
+        await waitFor(() => ref.instance.designer.definition.id === 'child-flow');
+
+        expect(ref.instance.designer.definition.id).toBe('child-flow');
+        expect(ref.instance.openWorkflowCount).toBe(2);
+    });
+
     it('saves and reopens definitions through the workflow library', async () => {
         ref.instance.store = new InMemoryWorkflowDefinitionStore();
         await ref.instance.saveWorkflow();

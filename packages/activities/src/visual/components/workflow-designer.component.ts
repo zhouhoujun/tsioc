@@ -57,6 +57,7 @@ interface WorkflowDocumentTab {
             :saveState="saveState"
             :themeChangeAction="themeSelectAction"
             :hostAction="previewHostAction"
+            :openWorkflowAction="openReferencedWorkflow"
             :hiddenActions="previewHiddenActions"
             :autosaveAction="scheduleAutosave"></workflow-designer-preview>
         <workflow-library :items="libraryItems" :visible="showLibrary"
@@ -761,6 +762,17 @@ export class WorkflowDesignerComponent implements OnDestroy {
             return;
         }
         self.preview?.handleToolbarAction(action);
+    };
+
+    readonly openReferencedWorkflow = async (id: string): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const opened = await self.openWorkflowTab(id);
+        if (!opened) {
+            self.designer.error = self.libraryError || self.t(
+                'notFound',
+                'Workflow not found'
+            ) + `: ${id}`;
+        }
     };
 
     readonly previewHostAction = (action: string): void => {
