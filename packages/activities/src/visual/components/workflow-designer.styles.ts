@@ -780,6 +780,15 @@ workflow-canvas {
     transform-origin: 0 0;
 }
 
+.workflow-selection-box {
+    position: fixed;
+    z-index: 8;
+    border: 1px dashed var(--wf-theme-primary, #2563eb);
+    border-radius: 2px;
+    background: rgba(37, 99, 235, 0.08);
+    pointer-events: none;
+}
+
 .workflow-canvas-edges {
     position: absolute;
     left: 0;

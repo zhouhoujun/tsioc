@@ -503,6 +503,62 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-node-menu')).toBeFalsy();
     });
 
+    it('selects multiple nodes with shift-click and applies bulk operations', async () => {
+        ref.instance.designer.selectNode('task_1');
+        await flush();
+
+        const second = root.querySelector('.workflow-node[data-node-id="task_2"]') as any;
+        second.dispatchEvent(new (doc.defaultView as any).MouseEvent('mousedown', {
+            bubbles: true, shiftKey: true, clientX: 900, clientY: 150
+        }));
+        second.dispatchEvent(new (doc.defaultView as any).MouseEvent('mouseup', {
+            bubbles: true, clientX: 900, clientY: 150
+        }));
+        await flush();
+
+        expect(ref.instance.designer.selectedNodeIds.sort()).toEqual(['task_1', 'task_2']);
+        expect(root.querySelectorAll('.workflow-node.is-selected').length).toBe(2);
+        expect(root.querySelector('.workflow-status-selected')?.textContent).toContain('已选择 2 个节点');
+
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'e', ctrlKey: true, bubbles: true
+        }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(true);
+        expect(ref.instance.designer.nodes.find(node => node.id === 'task_2')?.disabled).toBe(true);
+        expect(root.querySelectorAll('.workflow-node.is-disabled').length).toBe(2);
+
+        canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'Delete', bubbles: true
+        }));
+        await flush();
+        expect(ref.instance.designer.nodes.some(node => node.id === 'task_1')).toBe(false);
+        expect(ref.instance.designer.nodes.some(node => node.id === 'task_2')).toBe(false);
+        expect(ref.instance.designer.selectionCount).toBe(0);
+    });
+
+    it('box-selects nodes with shift+drag', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        canvas.dispatchEvent(new (doc.defaultView as any).MouseEvent('mousedown', {
+            bubbles: true, cancelable: true, shiftKey: true, clientX: 70, clientY: 200
+        }));
+        canvas.dispatchEvent(new (doc.defaultView as any).MouseEvent('mousemove', {
+            bubbles: true, clientX: 500, clientY: 300
+        }));
+        await flush();
+        expect(root.querySelector('.workflow-selection-box')).toBeTruthy();
+
+        canvas.dispatchEvent(new (doc.defaultView as any).MouseEvent('mouseup', {
+            bubbles: true, clientX: 500, clientY: 300
+        }));
+        await flush();
+
+        expect(ref.instance.designer.selectedNodeIds.sort()).toEqual(['start_1', 'task_1']);
+        expect(root.querySelector('.workflow-selection-box')).toBeFalsy();
+        expect(root.querySelectorAll('.workflow-node.is-selected').length).toBe(2);
+    });
+
     it('loads persisted run history when opening a saved workflow', async () => {
         const store = new InMemoryWorkflowDefinitionStore();
         const saved = createDefaultWorkflowDefinition(ref.instance.designer.registry, 'en');

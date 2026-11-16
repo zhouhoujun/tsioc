@@ -88,6 +88,7 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             <span>{{statusModel.executionLabel}}</span>
             <span>{{statusModel.zoomLabel}}</span>
         </div>
+        <div class="workflow-selection-box" v-if="selectionBox" [style]="selectionBoxStyle"></div>
         <div class="workflow-node-menu-backdrop" v-if="showNodeMenu" @mousedown="closeNodeMenu"
             @contextmenu="closeNodeMenu"></div>
         <div class="workflow-node-menu" v-if="showNodeMenu" [style]="nodeMenuStyle">
@@ -145,6 +146,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     @Attribute() autosaveAction?: () => void;
     showShortcuts = false;
     showNodeMenu = false;
+    selectionBox: { x: number; y: number; width: number; height: number } | undefined = undefined;
     nodeMenuId = '';
     nodeMenuX = 0;
     nodeMenuY = 0;
@@ -319,6 +321,14 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return `left:${this.nodeMenuX}px;top:${this.nodeMenuY}px`;
     }
 
+    get selectionBoxStyle(): string {
+        const box = this.selectionBox;
+        if (!box) {
+            return '';
+        }
+        return `left:${box.x}px;top:${box.y}px;width:${box.width}px;height:${box.height}px`;
+    }
+
     /** Drop run chips locally; the shell also clears persisted history. */
     readonly clearRunHistory = (): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
@@ -339,7 +349,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             self.showNodeMenu = false;
             return;
         }
-        self.designer.updateNode(node.id, { disabled: node.disabled !== true });
+        if (!self.designer.selectedNodeIds.includes(node.id)) {
+            self.designer.selectNode(node.id);
+        }
+        self.designer.toggleSelectionDisabled();
         self.showNodeMenu = false;
         self.notifyChange();
     };
@@ -412,6 +425,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             { action: this.t('redo', 'Redo'), keys: 'Ctrl+Y' },
             { action: this.t('duplicate', 'Duplicate'), keys: 'Ctrl+D' },
             { action: this.t('toggleNode', 'Enable/disable node'), keys: 'Ctrl+E' },
+            { action: this.t('boxSelect', 'Box select'), keys: 'Shift+drag' },
             { action: this.t('delete', 'Delete'), keys: 'Delete' },
             { action: this.t('zoomPan', 'Zoom / pan'), keys: 'Ctrl+Wheel / Wheel' },
             { action: this.t('shortcuts', 'Keyboard shortcuts'), keys: '?' }
@@ -708,6 +722,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             designer.nodes?.length || 0,
             designer.connections?.length || 0,
             designer.selection?.nodeId || '',
+            (designer.selectedNodeIds || []).join(','),
             designer.selection?.connectionId || '',
             designer.canUndo ? 1 : 0,
             designer.canRedo ? 1 : 0,
@@ -1101,7 +1116,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 }
                 break;
             case 'node-down':
-                if (designer.connectionDraft && payload.nodeId) {
+                if ((payload.shiftKey || payload.ctrlKey || payload.metaKey) && payload.nodeId) {
+                    designer.selectNode(payload.nodeId, { additive: true });
+                } else if (designer.connectionDraft && payload.nodeId) {
                     // Clicking a target node while a wire is pending connects to
                     // its first compatible port instead of starting a node drag.
                     this.connectToNode(payload.nodeId);
@@ -1120,7 +1137,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 break;
             case 'node-context':
                 if (payload.nodeId) {
-                    designer.selectNode(payload.nodeId);
+                    if (!designer.selectedNodeIds.includes(payload.nodeId)) {
+                        designer.selectNode(payload.nodeId);
+                    }
                     self.showNodeMenu = true;
                     self.nodeMenuId = payload.nodeId;
                     self.nodeMenuX = payload.clientX || 0;
@@ -1128,6 +1147,45 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                     self.notifyChange();
                 }
                 break;
+            case 'box-select-start':
+                self.selectionBox = {
+                    x: payload.clientX || 0,
+                    y: payload.clientY || 0,
+                    width: 0,
+                    height: 0
+                };
+                break;
+            case 'box-select-move': {
+                const start = self.selectionBox;
+                const x = payload.clientX || 0;
+                const y = payload.clientY || 0;
+                if (start) {
+                    self.selectionBox = {
+                        x: Math.min(start.x, x),
+                        y: Math.min(start.y, y),
+                        width: Math.abs(x - start.x),
+                        height: Math.abs(y - start.y)
+                    };
+                }
+                break;
+            }
+            case 'box-select': {
+                self.selectionBox = undefined;
+                const box = payload.box;
+                if (box) {
+                    const ids = designer.nodes
+                        .filter(node => {
+                            const frame = workflowNodeFrame(node);
+                            return node.position.x < box.x + box.width
+                                && node.position.x + frame.width > box.x
+                                && node.position.y < box.y + box.height
+                                && node.position.y + frame.height > box.y;
+                        })
+                        .map(node => node.id);
+                    designer.selectNodes(ids, payload.additive === true);
+                }
+                break;
+            }
             case 'edge-click':
                 if (payload.connectionId) {
                     designer.selectConnection(payload.connectionId);
@@ -1337,9 +1395,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             return;
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'e' || key === 'E')) {
-            const node = this.designer.selectedNode;
-            if (node) {
-                this.designer.updateNode(node.id, { disabled: node.disabled !== true });
+            if (this.designer.toggleSelectionDisabled()) {
                 this.notifyChange();
             }
             return;

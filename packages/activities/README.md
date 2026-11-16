@@ -557,6 +557,9 @@ Features:
   valid ports and hovered nodes highlight while wiring, and `Esc` or an empty-canvas
   click cancels the pending wire,
 - click an edge (widened hit path) to select it; `Delete` removes the selected node or connection,
+- multi-select with `Shift`/`Ctrl` click or `Shift`+drag box selection; selected
+  nodes move together, and `Delete`, `Ctrl+D`, `Ctrl+E` apply to the whole
+  selection,
 - `Enabled` in the inspector (or the node right-click menu) disables a node
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
@@ -584,8 +587,8 @@ Features:
 - opt-in autosave (`autosave`, `autosaveDelay`) with Saved / Unsaved / Saving /
   Save failed state in the toolbar; manual save and autosave share the same store,
 - global keyboard shortcuts (`Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
-  `Ctrl+D` duplicate, `Ctrl+E` enable/disable, `?`/`F1` shortcut sheet) and an
-  empty-canvas onboarding hint,
+  `Ctrl+D` duplicate, `Ctrl+E` enable/disable, `Shift`+drag box select,
+  `?`/`F1` shortcut sheet) and an empty-canvas onboarding hint,
 - run history chips replay retained execution snapshots on the canvas; when the
   store implements `listExecutions` (for example `HttpWorkflowDefinitionStore`),
   opening a saved workflow also loads its persisted runs from the server,

@@ -212,13 +212,14 @@ export function buildWorkflowCanvasModel(
     const geometry = new Map<string, ReturnType<typeof nodeGeometry>>();
     const execution = designer.execution;
     const selection = designer.selection;
+    const selectedNodeIds = new Set(designer.selectedNodeIds);
     const previousNodes = previous
         ? new Map(previous.nodes.map(view => [view.id, view]))
         : undefined;
 
     for (const node of designer.nodes) {
         const status = (execution?.nodeStates?.[node.id]?.status as NodeExecutionStatus) || 'idle';
-        const selected = selection?.nodeId === node.id;
+        const selected = selectedNodeIds.has(node.id);
         const prior = previousNodes?.get(node.id);
         const inputs = prior ? viewInputsOf<NodeViewInputs>(prior) : undefined;
         if (inputs
@@ -640,7 +641,7 @@ export function buildWorkflowToolbarModel(
         name: designer.definition.name,
         nodeCount: designer.nodes.length,
         connectionCount: designer.connections.length,
-        hasSelection: !!designer.selection?.nodeId || !!designer.selection?.connectionId,
+        hasSelection: designer.selectedNodeIds.length > 0 || !!designer.selection?.connectionId,
         canUndo: designer.canUndo,
         canRedo: designer.canRedo,
         canResume: designer.canResume,
@@ -658,14 +659,23 @@ export function buildWorkflowStatusModel(
     const selected = designer.selectedNode;
     const execution = designer.execution;
     const typeLabel = selected ? designer.registry.nodeLabel(selected.type, locale, translator) : '';
+    const selectionCount = designer.selectedNodeIds.length;
     return {
         message: resolveWorkflowText(translator, locale, designer.message, '', designer.messageParams),
         error: resolveWorkflowText(translator, locale, designer.error, '', designer.errorParams),
         running: designer.running,
         nodeCount: designer.nodes.length,
-        selectedLabel: selected
-            ? `${selected.name} · ${typeLabel}`
-            : translateWorkflow(translator, locale, 'workflow.ui.noSelection', 'No node selected'),
+        selectedLabel: selectionCount > 1
+            ? translateWorkflow(
+                translator,
+                locale,
+                'workflow.ui.nodesSelected',
+                '{count} nodes selected',
+                { count: selectionCount }
+            )
+            : selected
+                ? `${selected.name} · ${typeLabel}`
+                : translateWorkflow(translator, locale, 'workflow.ui.noSelection', 'No node selected'),
         zoomLabel: `${Math.round(designer.zoom * 100)}%`,
         executionLabel: executionStatusLabel(execution?.status, locale, translator)
     };

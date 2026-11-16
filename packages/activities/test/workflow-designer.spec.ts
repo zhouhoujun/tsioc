@@ -116,6 +116,58 @@ describe('Visual Workflow Designer', () => {
             expect(designer.nodes.find(node => node.id === 'task_1')!.position).toEqual(original);
         });
 
+        it('selects multiple nodes additively and drags them together', () => {
+            designer.selectNode('task_1');
+            designer.selectNode('task_2', { additive: true });
+            expect(designer.selectedNodeIds).toEqual(['task_1', 'task_2']);
+            expect(designer.selectionCount).toBe(2);
+
+            const first = { ...designer.nodes.find(node => node.id === 'task_1')!.position };
+            const second = { ...designer.nodes.find(node => node.id === 'task_2')!.position };
+            expect(designer.beginNodeDrag('task_1', { x: first.x + 5, y: first.y + 5 })).toBe(true);
+            designer.dragNodeTo({ x: first.x + 45, y: first.y + 25 });
+            expect(designer.endNodeDrag()).toBe(true);
+
+            expect(designer.nodes.find(node => node.id === 'task_1')!.position).toEqual({ x: first.x + 40, y: first.y + 20 });
+            expect(designer.nodes.find(node => node.id === 'task_2')!.position).toEqual({ x: second.x + 40, y: second.y + 20 });
+            designer.undo();
+            expect(designer.nodes.find(node => node.id === 'task_1')!.position).toEqual(first);
+            expect(designer.nodes.find(node => node.id === 'task_2')!.position).toEqual(second);
+        });
+
+        it('deletes and duplicates a multi-node selection', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            local.selectNodes(['task_1', 'condition_1']);
+            const duplicate = local.duplicateSelection();
+            expect(duplicate).toBeDefined();
+            expect(local.selectionCount).toBe(2);
+            expect(local.nodes.length).toBe(8);
+            expect(local.connections.some(connection =>
+                connection.sourceNodeId === duplicate!.id
+                && connection.targetNodeId === local.selectedNodeIds[1]
+            )).toBe(true);
+
+            local.selectNodes(['task_1', 'condition_1']);
+            expect(local.deleteSelection()).toBe(true);
+            expect(local.nodes.some(node => node.id === 'task_1' || node.id === 'condition_1')).toBe(false);
+            expect(local.connections.every(connection =>
+                connection.sourceNodeId !== 'task_1'
+                && connection.targetNodeId !== 'task_1'
+                && connection.sourceNodeId !== 'condition_1'
+                && connection.targetNodeId !== 'condition_1'
+            )).toBe(true);
+        });
+
+        it('toggles disabled state for every selected node', () => {
+            designer.selectNodes(['task_1', 'task_2']);
+            expect(designer.toggleSelectionDisabled()).toBe(true);
+            expect(designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(true);
+            expect(designer.nodes.find(node => node.id === 'task_2')?.disabled).toBe(true);
+            designer.toggleSelectionDisabled();
+            expect(designer.nodes.find(node => node.id === 'task_1')?.disabled).toBe(false);
+            expect(designer.nodes.find(node => node.id === 'task_2')?.disabled).toBe(false);
+        });
+
         it('treats mousedown without movement as a selection, not an undoable edit', () => {
             const original = designer.nodes.find(node => node.id === 'task_2')!.position;
             designer.selectNode('task_1');

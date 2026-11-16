@@ -72,7 +72,7 @@ describe('Workflow designer translations', () => {
             for (const category of registry.categories()) {
                 expect(messages.category?.[category]).toBeTruthy();
             }
-            for (const key of ['inspectorTitle', 'enabled', 'webhookUrl', 'enableNode', 'disableNode', 'name', 'run', 'save']) {
+            for (const key of ['inspectorTitle', 'enabled', 'webhookUrl', 'enableNode', 'disableNode', 'nodesSelected', 'boxSelect', 'name', 'run', 'save']) {
                 expect(messages.ui?.[key]).toBeTruthy();
             }
         }

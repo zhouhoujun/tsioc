@@ -13,6 +13,9 @@ export type WorkflowCanvasPointerType =
     | 'node-down'
     | 'node-up'
     | 'node-context'
+    | 'box-select-start'
+    | 'box-select-move'
+    | 'box-select'
     | 'edge-click'
     | 'port-down'
     | 'port-up'
@@ -31,6 +34,8 @@ export interface WorkflowCanvasPointerPayload {
     portId?: string;
     portType?: 'input' | 'output' | 'both';
     nodeType?: string;
+    box?: { x: number; y: number; width: number; height: number };
+    additive?: boolean;
     key?: string;
     shiftKey?: boolean;
     ctrlKey?: boolean;
@@ -124,6 +129,9 @@ export class WorkflowCanvasComponent implements AfterViewInit {
     @Attribute() panAction?: (dx: number, dy: number) => void;
 
     private panStart?: { clientX: number; clientY: number };
+    selectionBox?: { x: number; y: number; width: number; height: number };
+    private boxStart?: { x: number; y: number };
+    private boxAdditive = false;
 
     /**
      * Injected ElementRef can point at the outer host page in nested templates,
@@ -203,11 +211,43 @@ export class WorkflowCanvasComponent implements AfterViewInit {
     }
 
     backgroundDown(event: any): void {
+        const world = this.worldFromEvent(event);
+        if (event?.shiftKey) {
+            // Shift+drag draws a selection rectangle; Ctrl/Command adds to the
+            // existing selection instead of replacing it.
+            event?.preventDefault?.();
+            this.panStart = undefined;
+            this.boxStart = world;
+            this.boxAdditive = !!(event?.ctrlKey || event?.metaKey);
+            this.selectionBox = { x: world.x, y: world.y, width: 0, height: 0 };
+            this.emit({
+                type: 'box-select-start',
+                event,
+                world,
+                clientX: Number(event?.clientX) || 0,
+                clientY: Number(event?.clientY) || 0
+            });
+            return;
+        }
+        this.boxStart = undefined;
+        this.selectionBox = undefined;
         this.panStart = { clientX: Number(event?.clientX) || 0, clientY: Number(event?.clientY) || 0 };
-        this.emit({ type: 'background-down', event, world: this.worldFromEvent(event) });
+        this.emit({ type: 'background-down', event, world });
     }
 
     pointerMove(event: any): void {
+        if (this.boxStart) {
+            const world = this.worldFromEvent(event);
+            this.selectionBox = this.boxBetween(this.boxStart, world);
+            this.emit({
+                type: 'box-select-move',
+                event,
+                box: this.selectionBox,
+                clientX: Number(event?.clientX) || 0,
+                clientY: Number(event?.clientY) || 0
+            });
+            return;
+        }
         if (this.panStart && this.panAction) {
             const clientX = Number(event?.clientX) || 0;
             const clientY = Number(event?.clientY) || 0;
@@ -219,12 +259,38 @@ export class WorkflowCanvasComponent implements AfterViewInit {
 
     pointerUp(event: any): void {
         this.panStart = undefined;
+        if (this.boxStart) {
+            const box = this.selectionBox;
+            const additive = this.boxAdditive;
+            this.boxStart = undefined;
+            this.boxAdditive = false;
+            this.selectionBox = undefined;
+            if (box && (box.width > 2 || box.height > 2)) {
+                this.emit({ type: 'box-select', event, box, additive });
+                return;
+            }
+        }
         this.emit({ type: 'pointer-up', event, world: this.worldFromEvent(event) });
     }
 
     pointerLeave(event: any): void {
         this.panStart = undefined;
+        if (this.boxStart) {
+            this.boxStart = undefined;
+            this.boxAdditive = false;
+            this.selectionBox = undefined;
+            return;
+        }
         this.emit({ type: 'pointer-leave', event });
+    }
+
+    boxBetween(a: { x: number; y: number }, b: { x: number; y: number }): { x: number; y: number; width: number; height: number } {
+        return {
+            x: Math.min(a.x, b.x),
+            y: Math.min(a.y, b.y),
+            width: Math.abs(b.x - a.x),
+            height: Math.abs(b.y - a.y)
+        };
     }
 
     nodeDown(event: any, node: WorkflowCanvasNodeView): void {
@@ -234,6 +300,9 @@ export class WorkflowCanvasComponent implements AfterViewInit {
             type: 'node-down',
             event,
             nodeId: node.id,
+            shiftKey: !!event?.shiftKey,
+            ctrlKey: !!event?.ctrlKey,
+            metaKey: !!event?.metaKey,
             world: this.worldFromEvent(event)
         });
     }

@@ -194,10 +194,33 @@ export class WorkflowDesigner {
     }
 
     get selectedNode(): IVisualWorkflowNode | undefined {
-        if (!this.selection.nodeId) {
+        const id = this.selection.nodeId || this.selectedNodeIds[this.selectedNodeIds.length - 1];
+        if (!id) {
             return undefined;
         }
-        return this.definition.nodes.find(node => node.id === this.selection.nodeId);
+        return this.definition.nodes.find(node => node.id === id);
+    }
+
+    /** All selected node ids, filtered against the current document. */
+    get selectedNodeIds(): string[] {
+        const ids = (this.selection.nodeIds || [])
+            .filter(id => this.definition.nodes.some(node => node.id === id));
+        if (ids.length) {
+            return ids;
+        }
+        return this.selection.nodeId
+            && this.definition.nodes.some(node => node.id === this.selection.nodeId)
+            ? [this.selection.nodeId]
+            : [];
+    }
+
+    get selectedNodes(): IVisualWorkflowNode[] {
+        const ids = new Set(this.selectedNodeIds);
+        return this.definition.nodes.filter(node => ids.has(node.id));
+    }
+
+    get selectionCount(): number {
+        return this.selectedNodeIds.length;
     }
 
     get selectedConnection(): NodeConnection | undefined {
@@ -282,8 +305,9 @@ export class WorkflowDesigner {
             ),
             metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
         }));
-        if (this.selection.nodeId === nodeId) {
-            this.selection = {};
+        const remaining = this.selectedNodeIds.filter(id => id !== nodeId);
+        if (remaining.length !== this.selectedNodeIds.length) {
+            this.setSelection({ nodeIds: remaining });
         }
         this.setMessage('workflow.message.nodeRemoved');
         return true;
@@ -364,12 +388,65 @@ export class WorkflowDesigner {
     }
 
     setSelection(selection: WorkflowSelection): void {
-        this.selection = { ...selection };
+        const requested = (selection.nodeIds?.length
+            ? selection.nodeIds
+            : selection.nodeId
+                ? [selection.nodeId]
+                : []
+        ).filter(id => this.definition.nodes.some(node => node.id === id));
+        const nodeIds = Array.from(new Set(requested));
+        const primary = selection.nodeId && nodeIds.includes(selection.nodeId)
+            ? selection.nodeId
+            : nodeIds[nodeIds.length - 1];
+        this.selection = {
+            ...(nodeIds.length ? { nodeId: primary, nodeIds } : {}),
+            ...(selection.connectionId && !nodeIds.length ? { connectionId: selection.connectionId } : {})
+        };
         this.clearError();
     }
 
-    selectNode(nodeId: string): void {
-        this.setSelection({ nodeId });
+    /** Select one node; `additive` toggles it in the current node selection. */
+    selectNode(nodeId: string, options: { additive?: boolean } = {}): void {
+        if (!options.additive) {
+            this.setSelection({ nodeId });
+            return;
+        }
+        const current = this.selectedNodeIds;
+        const next = current.includes(nodeId)
+            ? current.filter(id => id !== nodeId)
+            : [...current, nodeId];
+        this.setSelection({ nodeIds: next, nodeId: current.includes(nodeId) ? next[next.length - 1] : nodeId });
+    }
+
+    /** Replace or extend the selection (used by box selection). */
+    selectNodes(nodeIds: string[], additive = false): void {
+        const current = additive ? this.selectedNodeIds : [];
+        const next = Array.from(new Set([...current, ...nodeIds.filter(Boolean)]));
+        this.setSelection({ nodeIds: next, nodeId: next[next.length - 1] });
+    }
+
+    /** Enable or disable every selected node in one undo entry. */
+    setSelectionDisabled(disabled: boolean): boolean {
+        const ids = new Set(this.selectedNodeIds);
+        if (!ids.size) {
+            return false;
+        }
+        this.commit(current => ({
+            ...current,
+            nodes: current.nodes.map(node =>
+                ids.has(node.id) ? { ...node, disabled } : node
+            ),
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        return true;
+    }
+
+    toggleSelectionDisabled(): boolean {
+        const nodes = this.selectedNodes;
+        if (!nodes.length) {
+            return false;
+        }
+        return this.setSelectionDisabled(!nodes.every(node => node.disabled === true));
     }
 
     selectConnection(connectionId: string): void {
@@ -381,8 +458,23 @@ export class WorkflowDesigner {
     }
 
     deleteSelection(): boolean {
-        if (this.selection.nodeId) {
-            return this.removeNode(this.selection.nodeId);
+        const nodeIds = this.selectedNodeIds;
+        if (nodeIds.length > 1) {
+            const ids = new Set(nodeIds);
+            this.commit(current => ({
+                ...current,
+                nodes: current.nodes.filter(node => !ids.has(node.id)),
+                connections: current.connections.filter(connection =>
+                    !ids.has(connection.sourceNodeId) && !ids.has(connection.targetNodeId)
+                ),
+                metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+            }));
+            this.selection = {};
+            this.setMessage('workflow.message.nodesRemoved', { count: nodeIds.length });
+            return true;
+        }
+        if (nodeIds.length === 1) {
+            return this.removeNode(nodeIds[0]);
         }
         if (this.selection.connectionId) {
             return this.removeConnection(this.selection.connectionId);
@@ -477,13 +569,26 @@ export class WorkflowDesigner {
         if (!node) {
             return false;
         }
-        // Re-selecting the same node must not broadcast a redundant state write
-        // (it reruns every bound view for no visible change).
-        if (this.selection.nodeId !== nodeId || this.selection.connectionId) {
-            this.selection = { nodeId };
+        const selected = this.selectedNodeIds;
+        const dragIds = selected.includes(nodeId) ? selected : [nodeId];
+        // Re-selecting an already selected node must not broadcast a redundant
+        // state write (it reruns every bound view for no visible change).
+        if (!selected.includes(nodeId)) {
+            this.selection = { nodeId, nodeIds: [nodeId] };
+        } else if (this.selection.connectionId) {
+            this.selection = { nodeId: this.selection.nodeId || nodeId, nodeIds: selected };
         }
+        const origins: Record<string, NodePosition> = {};
+        dragIds.forEach(id => {
+            const item = this.definition.nodes.find(entry => entry.id === id);
+            if (item) {
+                origins[id] = { ...item.position };
+            }
+        });
         this.drag = {
             nodeId,
+            nodeIds: dragIds,
+            origins,
             startX: node.position.x,
             startY: node.position.y,
             offsetX: world.x - node.position.x,
@@ -503,19 +608,29 @@ export class WorkflowDesigner {
         const x = Math.round(world.x - this.drag.offsetX);
         const y = Math.round(world.y - this.drag.offsetY);
         const snapped = this.snapPosition({ x, y });
-        if (snapped.x === this.definition.nodes.find(node => node.id === this.drag!.nodeId)?.position.x
-            && snapped.y === this.definition.nodes.find(node => node.id === this.drag!.nodeId)?.position.y) {
+        const primary = this.definition.nodes.find(node => node.id === this.drag!.nodeId);
+        if (snapped.x === primary?.position.x && snapped.y === primary?.position.y) {
             return;
         }
         if (!this.dragStartSnapshot) {
             this.dragStartSnapshot = this.definition;
         }
         this.drag.moved = true;
+        const origins = this.drag.origins || {};
+        const originX = origins[this.drag.nodeId]?.x ?? primary?.position.x ?? snapped.x;
+        const originY = origins[this.drag.nodeId]?.y ?? primary?.position.y ?? snapped.y;
+        const deltaX = snapped.x - originX;
+        const deltaY = snapped.y - originY;
+        const moving = new Set(this.drag.nodeIds || [this.drag.nodeId]);
         this.applyDefinition({
             ...this.definition,
-            nodes: this.definition.nodes.map(node =>
-                node.id === this.drag!.nodeId ? { ...node, position: snapped } : node
-            )
+            nodes: this.definition.nodes.map(node => {
+                if (!moving.has(node.id)) {
+                    return node;
+                }
+                const origin = origins[node.id] || node.position;
+                return { ...node, position: { x: origin.x + deltaX, y: origin.y + deltaY } };
+            })
         });
     }
 
@@ -704,28 +819,69 @@ export class WorkflowDesigner {
      * Duplicate the selected node with a new id and a small offset.
      */
     duplicateSelection(): IVisualWorkflowNode | undefined {
-        const node = this.selectedNode;
-        if (!node) {
+        const roots = this.selectedNodes;
+        if (!roots.length) {
             return undefined;
         }
-        const duplicate = this.registry.createNode(node.type, {
-            x: node.position.x + this.gridSize * 2,
-            y: node.position.y + this.gridSize * 2
-        }, {
-            id: this.nextNodeId(node.type),
-            name: `${node.name} copy`,
-            config: { ...(node.config || {}) }
+        const offset = this.gridSize * 2;
+        const usedNodes = new Set(this.definition.nodes.map(node => node.id));
+        const usedConnections = new Set(this.definition.connections.map(connection => connection.id));
+        const nextNodeId = (type: string): string => {
+            let index = 1;
+            while (usedNodes.has(`${type}_${index}`)) {
+                index += 1;
+            }
+            const id = `${type}_${index}`;
+            usedNodes.add(id);
+            return id;
+        };
+        const nextConnectionId = (): string => {
+            let index = 1;
+            while (usedConnections.has(`conn_${index}`)) {
+                index += 1;
+            }
+            const id = `conn_${index}`;
+            usedConnections.add(id);
+            return id;
+        };
+
+        const idMap = new Map<string, string>();
+        const duplicates = roots.map(node => {
+            const duplicate = this.registry.createNode(node.type, {
+                x: node.position.x + offset,
+                y: node.position.y + offset
+            }, {
+                id: nextNodeId(node.type),
+                name: `${node.name} copy`,
+                config: { ...(node.config || {}) }
+            });
+            duplicate.description = node.description;
+            duplicate.style = { ...(node.style || {}) };
+            duplicate.disabled = node.disabled === true;
+            idMap.set(node.id, duplicate.id);
+            return duplicate;
         });
-        duplicate.description = node.description;
-        duplicate.style = { ...(node.style || {}) };
+        const duplicateConnections = this.definition.connections
+            .filter(connection => idMap.has(connection.sourceNodeId) && idMap.has(connection.targetNodeId))
+            .map(connection => ({
+                ...connection,
+                id: nextConnectionId(),
+                sourceNodeId: idMap.get(connection.sourceNodeId)!,
+                targetNodeId: idMap.get(connection.targetNodeId)!
+            }));
+
         this.commit(current => ({
             ...current,
-            nodes: [...current.nodes, duplicate],
+            nodes: [...current.nodes, ...duplicates],
+            connections: [...current.connections, ...duplicateConnections],
             metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
         }));
-        this.selection = { nodeId: duplicate.id };
-        this.setMessage('workflow.message.duplicated', { name: duplicate.name });
-        return duplicate;
+        this.selection = {
+            nodeId: duplicates[duplicates.length - 1].id,
+            nodeIds: duplicates.map(node => node.id)
+        };
+        this.setMessage('workflow.message.duplicated', { name: duplicates[0].name });
+        return duplicates[0];
     }
 
     selectExecution(executionId: string): boolean {

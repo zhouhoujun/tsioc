@@ -729,7 +729,10 @@ export interface WorkflowPaletteGroup {
  * Designer selection.
  */
 export interface WorkflowSelection {
+    /** Primary selected node (inspector/status focus). */
     nodeId?: string;
+    /** All selected nodes; `nodeId` is always included when nodes are selected. */
+    nodeIds?: string[];
     connectionId?: string;
 }
 
@@ -755,6 +758,10 @@ export interface WorkflowConnectionDraft {
  */
 export interface WorkflowNodeDragState {
     nodeId: string;
+    /** Nodes that move together (the selection at drag start). */
+    nodeIds?: string[];
+    /** Starting positions for every dragged node. */
+    origins?: Record<string, NodePosition>;
     startX: number;
     startY: number;
     offsetX: number;
