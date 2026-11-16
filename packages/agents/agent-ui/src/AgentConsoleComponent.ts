@@ -555,7 +555,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
             () => this.state.sessionId,
             () => this.surfaceAccessor?.beginRenderBatch?.(),
             () => this.surfaceAccessor?.endRenderBatch?.(), applyAgentConsoleSessionComposer.bind(null, { state: this.state }),
-            String(sessionId || '').trim() || undefined
+            String(sessionId || '').trim() || undefined, options?.background === true
         );
     }
 

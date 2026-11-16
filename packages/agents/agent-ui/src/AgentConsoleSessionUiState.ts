@@ -174,7 +174,9 @@ export class AgentConsoleSessionUiState {
         begin: () => void = () => undefined,
         end: () => void = () => undefined,
         applyComposer?: (input: string, cursor: number, attachments: AgentConsolePendingAttachment[]) => void,
-        targetSessionId?: string
+        targetSessionId?: string,
+        /** Coalesce a cached switch's cached-apply + restore into one frame. */
+        coalesceCached = false
     ): Promise<void> {
         const previousSessionId = currentSessionId();
         this.capture(previousSessionId);
@@ -182,6 +184,14 @@ export class AgentConsoleSessionUiState {
         this.panes.activate(targetId || previousSessionId);
         const cached = targetId ? this.panes.snapshot(targetId) : undefined;
         const showingCached = !!cached?.messages;
+        // A cached switch paints the target frame first; the batch below only
+        // covers applying the cached view and restoring scroll/draft. Silent
+        // (background) switches defer the refresh, so this never spans network
+        // I/O and typing stays responsive.
+        const batching = !showingCached || coalesceCached;
+        if (batching) {
+            begin();
+        }
         if (cached?.messages) {
             // Hide/show semantics: paint the target tab's cached view before
             // awaiting the background refresh. Let the reactive bindings and
@@ -206,12 +216,6 @@ export class AgentConsoleSessionUiState {
             // already painted, so the restored-view batch can land in the same
             // frame instead of paying an extra full transcript render.
         }
-        // A cached switch is a no-op paint until the refresh lands; keeping a
-        // render batch open would freeze typing and tab feedback for the whole
-        // refresh. Only first visits coalesce their empty->loaded transition.
-        if (!showingCached) {
-            begin();
-        }
         try {
             await open(cached);
         } finally {
@@ -230,7 +234,7 @@ export class AgentConsoleSessionUiState {
             } finally {
                 // A restore failure must never leave the surface's render batch
                 // open; that would freeze every later session update.
-                if (!showingCached) {
+                if (batching) {
                     end();
                 }
             }

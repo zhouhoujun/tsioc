@@ -4375,3 +4375,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 原因：单 live state 下，切 tab 必须把 outgoing pane 从 live→frozen、incoming 从 frozen→live，两个 pane 各重跑 200 行 v-for；隐藏只省布局，不省模板 diff。
 - **决策**：回退多 pane 渲染，避免把更慢的实现留在主干；保留 `AgentConsoleSessionPaneStore` 基座与本次真正有价值的 **per-tab inline 展开状态**（capture/restore `expandedMessageIds`）。
 - **结论**：要真正“切换=隐藏/显示”，必须做 per-session live state（事件桥/审批/plan/turn 按 session 路由）+ 全局配置字段分类；这是下一阶段的架构重构，不是消息面板一层能完成的。
+
+## 2026-11-16 后台 tab 切换：缓存应用+restore 合并为一帧
+- 问题：缓存切换先应用缓存视图（排队一次渲染），`await open()` 后再 restore（再排队一次），即使已有缓存帧也要跑 2 次整帧。
+- 修复：`switchSession` 新增 `coalesceCached`（`AgentConsoleComponent.openSession` 在 `background:true` 时传入）。渲染批在 `applyCachedView` 之前开启，restore 之后关闭；后台刷新在定时器中、批已结束，不会冻结输入。
+- 实测（4 tabs × 200 messages）：**renders/switch 2 → 1**，单帧渲染 ~142ms；即时 flush 从 ~2 帧降到 1 帧。非后台/首次访问保持原路径。
+- 验证：tab 隔离/宿主/activity/html/console-renderer 144 passing；full gate 全绿。
