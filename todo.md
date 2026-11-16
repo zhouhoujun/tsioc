@@ -4323,3 +4323,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - timeline 模式保留自己的事件窗口/分组，不参与 activity 聚合。
 - **实现**：`AgentConsoleActivityAggregation` 在 mainline 投影之后生成稳定 id（`__activity__<首步id>`）的合成消息；新增 `activity` 语义 kind、`AgentConsoleActivityMessageRenderer` 路由与 `AgentConsoleActivityTemplate`（不自带 preview，展开状态由投影生成行）。`/display activity` 写入 `activityVerbosity`，设置 store 做净化/读写并启动恢复。
 - **验证**：agents gate 10/10 PASS（agent-ui 2136）；新增 `activity-aggregation.spec.ts` 覆盖 high/medium/low、展开、running/失败保留、命令与持久化、真实 TUI 渲染；i18n 目录 en/zh 同步。
+
+## 2026-11-16 agent-ui 测试时长：收敛超大 fixture
+- **先量后改**：完整套件单测耗时在 104s / 138s / 161s 之间波动（同一份代码），进程启动 + GC/CPU 争用占大头；因此以「单 spec 隔离运行」衡量确定性收益。
+- **改动（只缩小数据量，不改断言性质）**：
+  - `session-tab-isolation`：90/80、80/70、40/34 → 45/40、24/18；仍覆盖跨 tab 滚动/草稿隔离、缓存帧先绘制与“加载中不泄漏上一 tab”。单文件 **32.7s → 19.6s（−40%）**。
+  - `viewport-chrome-pinning` 的 markdown 溢出用例：30 份完整 Markdown 文档 → 8 份；仍验证表格/代码块/引用滚动时 chrome 固定。单文件 **9.1s → 3.7s（−59%）**。
+  - `console-renderer` 的 stream 无窗口用例：300 → 120 条消息（断言同步更新）；仍验证 scrollback 不裁剪。fresh-surface 用例 80 → 20 条，**2.1s → 0.6s**。
+  - `html-console` 默认展开用例：system 90 行 → 40 行（断言 line 40）；仍验证 viewport 全量展开、不折叠。
+- **验证**：agents gate 10/10 PASS（agent-ui 2136 passing）；无断言语义删减，仅调整与数据量绑定的索引/计数。

@@ -447,13 +447,13 @@ export class HtmlConsoleTest {
                 content: `tail ${index}`,
                 createdAt: index + 3
             })),
-            { id: 's1', role: 'system', content: Array.from({ length: 90 }, (_, index) => `line ${index + 1}`).join('\n'), createdAt: 20 }
+            { id: 's1', role: 'system', content: Array.from({ length: 40 }, (_, index) => `line ${index + 1}`).join('\n'), createdAt: 20 }
         ] as any);
         await ref.render();
         await settleDynamicMessages();
         const messagesPanel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         expect(messagesPanel.instance.visibleMessages.some(line => line.content === 'middle marker')).toEqual(true);
-        expect(messagesPanel.instance.renderedLines.some(line => line.messageId === 's1' && line.content === 'line 90')).toEqual(true);
+        expect(messagesPanel.instance.renderedLines.some(line => line.messageId === 's1' && line.content === 'line 40')).toEqual(true);
         expect(messagesPanel.instance.renderedLines.some(line => line.messageId === 's1' && line.previewCollapsed)).toEqual(false);
     }
 

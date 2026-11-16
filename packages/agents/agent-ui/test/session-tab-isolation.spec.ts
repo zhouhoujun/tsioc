@@ -165,8 +165,8 @@ export class AgentConsoleSessionTabIsolationTest {
 
     @Test('a returning tab paints its cached view while the refresh is in flight')
     async returningTabPaintsCachedViewImmediately() {
-        const aMessages = messages('alpha', 40);
-        const bMessages = messages('beta', 34);
+        const aMessages = messages('alpha', 24);
+        const bMessages = messages('beta', 18);
         let releaseA: (page: any) => void = () => undefined;
         let aLoads = 0;
         const harness = await this.createHarness({
@@ -337,8 +337,8 @@ export class AgentConsoleSessionTabIsolationTest {
 
     @Test('switching a tab never shows the previous tab transcript')
     async switchDoesNotLeakMessagesWhileLoading() {
-        const aMessages = messages('alpha', 40);
-        const bMessages = messages('beta', 34);
+        const aMessages = messages('alpha', 24);
+        const bMessages = messages('beta', 18);
         let releaseB: (page: any) => void = () => undefined;
         let loadingB = false;
         const harness = await this.createHarness({
@@ -390,8 +390,8 @@ export class AgentConsoleSessionTabIsolationTest {
 
     @Test('a switched tab lands on its own latest message instead of the previous scroll position')
     async switchResetsScrollAndFollowsTail() {
-        const aMessages = messages('alpha', 80);
-        const bMessages = messages('beta', 70);
+        const aMessages = messages('alpha', 45);
+        const bMessages = messages('beta', 40);
         const harness = await this.createHarness(this.baseService({
             'session-a': aMessages,
             'session-b': bMessages
@@ -414,7 +414,7 @@ export class AgentConsoleSessionTabIsolationTest {
             expect(harness.state.messagesNewCount).toEqual(0);
             expect(harness.state.messagesFocused).toBe(false);
             const screen = harness.screen();
-            expect(screen.some(line => line.includes('beta message 69'))).toBe(true);
+            expect(screen.some(line => line.includes('beta message 39'))).toBe(true);
             expect(screen.some(line => line.includes('alpha message'))).toBe(false);
             expect(screen.slice(-5).some(line => line.trimStart().replace(/^[│┃║]\s*/, '').startsWith('>'))).toBe(true);
         } finally {
@@ -468,8 +468,8 @@ export class AgentConsoleSessionTabIsolationTest {
 
     @Test('each tab keeps its own scroll position, draft and message state')
     async eachTabKeepsOwnScrollAndDraft() {
-        const aMessages = messages('alpha', 90);
-        const bMessages = messages('beta', 80);
+        const aMessages = messages('alpha', 45);
+        const bMessages = messages('beta', 40);
         const harness = await this.createHarness(this.baseService({
             'session-a': aMessages,
             'session-b': bMessages

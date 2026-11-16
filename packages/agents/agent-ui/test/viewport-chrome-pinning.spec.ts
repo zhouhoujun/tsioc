@@ -163,7 +163,7 @@ export class AgentConsoleViewportChromePinningTest {
         const harness = await this.createHarness({
             width: 80,
             height: 24,
-            messages: Array.from({ length: 30 }, (_value, index) => ({
+            messages: Array.from({ length: 8 }, (_value, index) => ({
                 id: `m${index}`,
                 role: index % 2 === 0 ? 'user' : 'assistant',
                 content: `${markdown}\n\nmessage ${index}`,

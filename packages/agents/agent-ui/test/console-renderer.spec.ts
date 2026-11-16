@@ -3214,7 +3214,7 @@ export class AgentConsoleTuiRendererTest {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         ref.instance.sessionState.setTimelineMode('off');
         ref.instance.sessionState.setConsoleOptions({ messagesVisibleItems: 4, messageLayout: 'scrollback' });
-        ref.instance.sessionState.setMessages(Array.from({ length: 300 }, (_, index) => ({
+        ref.instance.sessionState.setMessages(Array.from({ length: 120 }, (_, index) => ({
             id: `msg-${index + 1}`,
             role: index % 2 === 0 ? 'user' : 'assistant',
             content: `message ${index + 1} with a longer body line for collapse accounting`,
@@ -3225,13 +3225,13 @@ export class AgentConsoleTuiRendererTest {
 
         const panel = ref.hostView.query(AgentConsoleMessagesPanelComponent) as ComponentRef<AgentConsoleMessagesPanelComponent>;
         const visible = panel.instance.visibleMessages;
-        expect(visible.length).toBeGreaterThanOrEqual(300);
+        expect(visible.length).toBeGreaterThanOrEqual(120);
         expect(visible.some(item => item.id === 'msg-1')).toBe(true);
-        expect(visible.some(item => item.id === 'msg-300')).toBe(true);
+        expect(visible.some(item => item.id === 'msg-120')).toBe(true);
 
         const rendered = panel.instance.renderedLines;
         expect(rendered.some(line => line.messageId === 'msg-1')).toBe(true);
-        expect(rendered.some(line => line.messageId === 'msg-300')).toBe(true);
+        expect(rendered.some(line => line.messageId === 'msg-120')).toBe(true);
     }
 
     @Test('setMessages does not auto-select synthetic plan message')
@@ -3280,7 +3280,7 @@ export class AgentConsoleSurfaceReattachRegressionTest {
             expect(brandCount(surface.lastRenderedLines)).toBe(1);
             expect(firstWrites.join('').startsWith('\x1b[2J\x1b[H')).toBe(true);
 
-            consoleRef.instance.sessionState.setMessages(Array.from({ length: 80 }, (_value, index) => ({
+            consoleRef.instance.sessionState.setMessages(Array.from({ length: 20 }, (_value, index) => ({
                 id: `stream-${index}`,
                 role: index % 2 === 0 ? 'user' : 'assistant',
                 content: `streaming line ${index}`,
