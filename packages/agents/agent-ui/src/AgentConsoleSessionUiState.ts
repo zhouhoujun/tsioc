@@ -33,6 +33,11 @@ export interface AgentConsoleSessionUiSnapshot {
     pendingApprovals?: any[];
     status?: string;
     workspace?: string;
+    /** Last fully rendered frame, used to paint the tab before reactive flush. */
+    renderedLines?: string[];
+    renderedColumns?: number;
+    renderedRows?: number;
+    renderedTheme?: unknown;
 }
 
 export interface AgentConsoleSessionUiStateHost {
@@ -115,7 +120,11 @@ export class AgentConsoleSessionUiState {
             planScope: state.planScope,
             pendingApprovals: (state.pendingApprovals || []).slice(),
             status: state.status,
-            workspace: state.workspace
+            workspace: state.workspace,
+            renderedLines: surfaceAccessor?.getLastRenderedLines?.().slice(),
+            renderedColumns: Number((surfaceAccessor?.getTerminalSize?.() as any)?.columns ?? (surfaceAccessor?.getTerminalSize?.() as any)?.cols ?? 0),
+            renderedRows: Number(surfaceAccessor?.getTerminalSize?.()?.rows ?? 0),
+            renderedTheme: state.theme
         });
     }
 
@@ -171,6 +180,16 @@ export class AgentConsoleSessionUiState {
             // actually changed, so revisiting a tab does not blank and rebuild
             // the transcript.
             this.applyCachedView(targetId, cached, applyComposer);
+            const accessor = this.resolveHost().surfaceAccessor;
+            const size = accessor?.getTerminalSize?.();
+            const columns = Number((size as any)?.columns ?? (size as any)?.cols ?? 0);
+            const rows = Number(size?.rows ?? 0);
+            const frameMatches = !!cached.renderedLines?.length
+                && (!cached.renderedColumns || !columns || cached.renderedColumns === columns)
+                && (!cached.renderedRows || !rows || cached.renderedRows === rows);
+            if (frameMatches) {
+                accessor?.paintCachedFrame?.(cached.renderedLines!);
+            }
             for (let turn = 0; turn < 4; turn += 1) {
                 await Promise.resolve();
             }

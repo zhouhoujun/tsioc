@@ -3264,6 +3264,37 @@ export class ConsoleRendererTest {
         surface.destroy();
     }
 
+    @Test('paints a cached session frame immediately')
+    paintCachedFrameShowsTabBeforeRelayout() {
+        const root = { addEventListener() {}, removeEventListener() {} } as any;
+        const lines = Array.from({ length: 30 }, (_value, index) => `live ${index + 1}`);
+        const surface = new TuiTerminalSurface({
+            renderer: {
+                renderToTuiLayout: () => ({
+                    lines,
+                    regions: [
+                        { id: 'transcript', startRow: 0, endRow: lines.length },
+                        { id: 'footer', startRow: lines.length, endRow: lines.length }
+                    ]
+                })
+            },
+            root,
+            width: 80,
+            height: 30,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        surface.render();
+        const cached = Array.from({ length: 30 }, (_value, index) => `cached ${index + 1}`);
+        expect(surface.paintCachedFrame(cached)).toEqual(true);
+        expect(surface.lastRenderedLines[0]).toEqual('cached 1');
+        expect(surface.lastRenderedLines[29]).toEqual('cached 30');
+        surface.destroy();
+    }
+
     @Test('floating jump-to-bottom affordance resumes following on click')
     viewportNoticeResumesFollowing() {
         const lines = Array.from({ length: 100 }, (_value, index) => `line ${index + 1}`);

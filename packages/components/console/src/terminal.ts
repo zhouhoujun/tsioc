@@ -442,6 +442,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     queueViewportOffset?(_offsetRows: number): void { return undefined; }
     /** Mark the next frame as a prepend so the visible history row is preserved. */
     notifyViewportPrepend?(): void { return undefined; }
+    /** Paint a previously rendered session frame immediately (tab hide/show). */
+    paintCachedFrame?(_lines: string[]): boolean { return false; }
     isViewportFollowing?(): boolean | undefined { return undefined; }
     abstract notifyNonMouseInput?(options?: { keepSelection?: boolean }): boolean;
     abstract writeTerminalClipboardText(text: string): boolean;
@@ -741,6 +743,10 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
 
     notifyViewportPrepend?(): void {
         this.surface?.notifyViewportPrepend();
+    }
+
+    paintCachedFrame?(lines: string[]): boolean {
+        return this.surface?.paintCachedFrame(lines) ?? false;
     }
 
     getViewportScrollOffset?(): number {
@@ -1500,6 +1506,36 @@ export class TuiTerminalSurface {
             this.resolveOutput()?.write(result.output);
         }
         return result;
+    }
+
+    /**
+     * Paint already-rendered lines immediately (session tab hide/show) while
+     * the reactive tree catches up. The next normal render diffs against it.
+     */
+    paintCachedFrame(lines: string[]): boolean {
+        if (this.destroyed || !Array.isArray(lines) || !lines.length) {
+            return false;
+        }
+        const width = this.resolveWidth();
+        const height = this.resolveHeight();
+        if (!height) {
+            return false;
+        }
+        const result = renderPrimaryTerminalScreen({
+            state: this.renderState,
+            lines: lines.slice(-height),
+            width,
+            cursorMode: 'bottom',
+            placeCursor: false
+        });
+        this.renderState = result.state;
+        this.renderedLines = result.fittedLines.slice();
+        this.terminalRow = result.terminalRow;
+        this.selectionFrame = undefined;
+        if (result.output) {
+            this.resolveOutput()?.write(result.output);
+        }
+        return true;
     }
 
     /** Repaint only the selection overlay, reusing the last layout frame. */

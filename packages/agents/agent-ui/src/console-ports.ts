@@ -47,6 +47,8 @@ export abstract class ConsoleTerminalSurfaceAccessor {
     queueViewportOffset?(offsetRows: number): void;
     /** Mark the next frame as a prepend so the visible history row is preserved. */
     notifyViewportPrepend?(): void;
+    /** Paint a previously rendered session frame immediately (tab hide/show). */
+    paintCachedFrame?(lines: string[]): boolean;
     /** Open the base-layer transcript pager over the last full render; optional query is a find. */
     openPagerFromLastRender?(query?: string, statusCopy?: AgentConsolePagerStatusCopy): boolean;
     closePager?(): boolean;

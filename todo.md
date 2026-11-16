@@ -4277,3 +4277,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **实测（真实 Chrome + SQLite）**：Ctrl+S 得 v1、发布得 v2，面板对 v1 点「发布此版本」后 release 变为 v1、v1 行高亮且不再显示发布按钮（草稿未变）；运行后面板显示 `1 · 5.8 KB`，点「清空」后 chips 为 0、`executionHistory` 为 0，且对 `store.clearExecutions('workflow_demo')` 调用一次。
 - **回归**：activities **377 passing**（新增回滚发布/执行历史清空/diff 相关断言）；microservices/admin 63；components/common 79；workflow-admin preview EXIT 0；`tsc` 0；`check-source-size` / `git diff --check` OK；设计器初始包 768.0 KiB / gzip **200.2 KiB**。
 - **预算**：gzip 预算随本轮 UI 增长由 205 KB 调整为 **212 KB**（raw 800 KB 不变）；`preview-test.js` 阈值不变。
+
+## 2026-11-16 tab 切换首帧：缓存帧即时绘制
+- **继续定位**：初始会话切回时 0.6–1.3s 的剩余耗时来自响应式 effect 扇出（50 条消息展开成大量行/模板组件，各自订阅全局 state；批量只保证每个 effect 跑一次，但 effect 数量本身很大）。
+- **修复**：`AgentConsoleSessionUiState` 在 capture 时保存 `getLastRenderedLines()` + 终端尺寸；缓存 tab 切换在 applyCachedView 后、响应式 flush 前调用 `surfaceAccessor.paintCachedFrame(lines)`，先把该 tab 的最后一帧画出来，再让后台 reactive 更新/刷新追上。
+  - `TuiTerminalSurface.paintCachedFrame()` 用 `renderPrimaryTerminalScreen` 直接绘制缓存行并更新 renderState；下一次正常 render 继续 diff。
+  - 仅尺寸匹配且存在缓存帧时启用；不影响首次访问。
+- **实测**：切回初始 tab 的表观首帧从 ~1.3s 降到 **~74ms（同步调用返回时已显示缓存帧）**；后台 flush 仍存在但不阻塞“看到自己的会话”。consol `paintCachedFrame` 新增单测。
+- **验证**：components、common、console、html、agent-ui 全绿；tsc-agent-ui 0；source-size/diff-check OK；build:web 成功。
