@@ -64,9 +64,18 @@ import {
 
 export const WORKFLOW_DEFINITION_STORE = token<WorkflowDefinitionStore>('WORKFLOW_DEFINITION_STORE');
 export const WORKFLOW_EXECUTION_STORE = token<WorkflowExecutionStore>('WORKFLOW_EXECUTION_STORE');
+export const WORKFLOW_EXECUTION_POLICY = token<WorkflowExecutionPolicy>('WORKFLOW_EXECUTION_POLICY');
 export const WORKFLOW_EXECUTION_LIMIT = token<number>('WORKFLOW_EXECUTION_LIMIT');
 export const WORKFLOW_VERSION_STORE = token<WorkflowVersionStore>('WORKFLOW_VERSION_STORE');
 export const WORKFLOW_EXECUTION_BYTES = token<number>('WORKFLOW_EXECUTION_BYTES');
+
+/** Server-side execution policy for host plugins such as file/exec. */
+export interface WorkflowExecutionPolicy {
+    /** When set, file/exec nodes are restricted to this directory. */
+    workspaceRoot?: string;
+    /** Optional command allowlist for exec nodes. */
+    allowedCommands?: string[];
+}
 
 /** Plugin catalog API: installed plugins plus bundled/available manifests. */
 @Controller('/api/plugins')
@@ -119,8 +128,20 @@ export class WorkflowHttpController {
         @Inject(WORKFLOW_EXECUTION_LIMIT) private historyLimit: number,
         @Inject(WORKFLOW_EXECUTION_BYTES) private historyBytes: number,
         @Inject(WORKFLOW_VERSION_STORE) private versions: WorkflowVersionStore,
+        @Inject(WORKFLOW_EXECUTION_POLICY) private policy: WorkflowExecutionPolicy,
         private execution: VisualWorkflowService
     ) { }
+
+    private executionContext(context: Record<string, any> = {}): Record<string, any> {
+        const merged = { ...(context || {}) };
+        if (this.policy?.workspaceRoot) {
+            merged.workspaceRoot = this.policy.workspaceRoot;
+        }
+        if (this.policy?.allowedCommands?.length) {
+            merged.allowedCommands = [...this.policy.allowedCommands];
+        }
+        return merged;
+    }
 
     @Get('/')
     list() {
@@ -276,7 +297,7 @@ export class WorkflowHttpController {
     ) {
         const definition = await this.definitionToRun(id);
         const timeout = Math.max(0, Number(body?.timeout) || 0);
-        const result = await this.execution.execute(definition, body?.context || {}, {
+        const result = await this.execution.execute(definition, this.executionContext(body?.context), {
             timeout: timeout || undefined
         });
         await this.persist(result);
@@ -345,7 +366,7 @@ export class WorkflowHttpController {
         const queryPath = typeof query.path === 'string' && query.path ? query.path : '';
         const requestedPath = pathOverride || queryPath || '/hook';
         const response: { statusCode?: number; headers?: Record<string, any>; body?: any } = {};
-        const result = await this.execution.execute(definition, {
+        const result = await this.execution.execute(definition, this.executionContext({
             request: {
                 method,
                 path: requestedPath,
@@ -354,7 +375,7 @@ export class WorkflowHttpController {
                 body: adapter.read('body')
             },
             response
-        } as any);
+        }) as any);
         await this.persist(result);
 
         const status = Number(response.statusCode) || (result.success ? 200 : 500);
@@ -384,7 +405,7 @@ export class WorkflowHttpController {
         if (!body?.checkpoint) {
             throw new BadRequestException('checkpoint is required');
         }
-        const result = await this.execution.execute(definition, body?.context || {}, {
+        const result = await this.execution.execute(definition, this.executionContext(body?.context), {
             resumeFrom: body.checkpoint
         });
         await this.persist(result);
@@ -510,6 +531,10 @@ export interface WorkflowHttpServerOptions {
     executionHistoryBytes?: number;
     /** SQLite database path when `store` is not supplied. */
     databaseFile?: string;
+    /** Restrict file/exec plugin nodes to this directory (defaults to WORKFLOW_WORKSPACE_ROOT). */
+    workspaceRoot?: string;
+    /** Optional command allowlist for exec plugin nodes. */
+    allowedCommands?: string[];
     /** Programmatic plugins installed when the server starts. */
     plugins?: WorkflowPlugin[];
     /** Built-in plugin ids installed when the server starts (mqtt/redis/nats/coap). */
@@ -609,6 +634,13 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             { provide: WORKFLOW_DEFINITION_STORE, useValue: store },
             { provide: WORKFLOW_EXECUTION_STORE, useValue: executionStore },
             { provide: WORKFLOW_EXECUTION_LIMIT, useValue: options.executionHistoryLimit ?? 200 },
+            {
+                provide: WORKFLOW_EXECUTION_POLICY,
+                useValue: {
+                    workspaceRoot: options.workspaceRoot || process.env.WORKFLOW_WORKSPACE_ROOT || undefined,
+                    allowedCommands: options.allowedCommands?.length ? options.allowedCommands : undefined
+                } as WorkflowExecutionPolicy
+            },
             { provide: WORKFLOW_EXECUTION_BYTES, useValue: options.executionHistoryBytes ?? 5_000_000 },
             { provide: WORKFLOW_VERSION_STORE, useValue: versionStore },
             ...(options.providers || []),

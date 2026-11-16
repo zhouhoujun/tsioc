@@ -65,7 +65,8 @@ describe('Workflow HTTP microservice', () => {
             host: '127.0.0.1',
             store: new InMemoryWorkflowDefinitionStore(),
             executionStore,
-            staticRoot
+            staticRoot,
+            workspaceRoot: staticRoot
         }));
         await waitForServer(base);
     });
@@ -485,6 +486,57 @@ describe('Workflow HTTP microservice', () => {
 
         await request(`${base}/api/workflows/execution-demo`, { method: 'DELETE' });
         expect((await executionStore.list('execution-demo')).length).toBe(0);
+    });
+
+    it('applies the workspace policy to file plugin nodes', async () => {
+        const install = await request(`${base}/api/plugins/file/install`, { method: 'POST' });
+        expect(install.status).toBe(200);
+        const outsidePath = path.join(staticRoot, '..', 'workflow-policy-outside.txt');
+        const insidePath = path.join(staticRoot, 'policy-inside.txt');
+        const writeDefinition = (id: string, file: string) => ({
+            id,
+            name: 'Policy demo',
+            nodes: [{
+                id: 'file_write', name: 'Write', type: 'file-write' as const,
+                position: { x: 0, y: 0 },
+                config: { path: file, content: 'policy' }
+            }],
+            connections: []
+        });
+        try {
+            await request(`${base}/api/workflows/policy-outside`, {
+                method: 'PUT',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(writeDefinition('policy-outside', outsidePath))
+            });
+            const denied = await request(`${base}/api/workflows/policy-outside/run`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ context: {} })
+            });
+            expect(denied.body.success).toBe(false);
+            expect(String(denied.body.error || '')).toContain(staticRoot);
+            expect(fs.existsSync(outsidePath)).toBe(false);
+
+            await request(`${base}/api/workflows/policy-inside`, {
+                method: 'PUT',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(writeDefinition('policy-inside', insidePath))
+            });
+            const allowed = await request(`${base}/api/workflows/policy-inside/run`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ context: {} })
+            });
+            expect(allowed.body.success).toBe(true);
+            expect(fs.readFileSync(insidePath, 'utf8')).toBe('policy');
+        } finally {
+            fs.rmSync(insidePath, { force: true });
+            fs.rmSync(outsidePath, { force: true });
+            await request(`${base}/api/workflows/policy-outside`, { method: 'DELETE' });
+            await request(`${base}/api/workflows/policy-inside`, { method: 'DELETE' });
+            await request(`${base}/api/plugins/file`, { method: 'DELETE' });
+        }
     });
 
     it('lists, installs and uninstalls workflow plugins', async () => {

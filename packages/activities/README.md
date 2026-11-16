@@ -818,6 +818,21 @@ Plugin services are exposed to every node as `context.services` and are disposed
 on uninstall. Plugin nodes are marked `requiresServer` by default; set
 `requiresServer: false` for browser-compatible plugins.
 
+Host plugins run with the server process privileges, so production hosts can
+scope them:
+
+```typescript
+await startWorkflowHttpServer({
+    workspaceRoot: '/srv/workflows',
+    allowedCommands: ['/usr/bin/node', 'git']
+});
+```
+
+`workspaceRoot` (or `WORKFLOW_WORKSPACE_ROOT`) resolves file paths inside that
+directory and rejects escapes with an actionable error; `allowedCommands`
+restricts exec nodes and keeps their working directory inside the root. Without
+a policy the plugins keep their previous unrestricted behavior.
+
 ### Error ports
 
 A `task`/`http-request` node that fails routes through its `error` output when

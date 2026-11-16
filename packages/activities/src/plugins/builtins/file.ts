@@ -3,12 +3,30 @@ import { IVisualWorkflowNode } from '../../visual/types';
 import { WorkflowPlugin } from '../types';
 import { errorResult, pluginField, pluginPort } from './shared';
 
-function resolvePath(config: any, context: ActivityContext): string {
+function workspaceRoot(context: ActivityContext): string | undefined {
+    const policy = (context as any)?.policy;
+    return (context as any)?.workspaceRoot || policy?.workspaceRoot || undefined;
+}
+
+function resolvePath(config: any, context: ActivityContext, path: typeof import('node:path')): string {
     const input = String(config?.path || '').trim();
     if (!input) {
         throw new Error('File path is required');
     }
-    return input;
+    const root = workspaceRoot(context);
+    if (!root) {
+        return input;
+    }
+    const resolvedRoot = path.resolve(root);
+    const resolved = path.resolve(resolvedRoot, input);
+    const relative = path.relative(resolvedRoot, resolved);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+        throw new Error(
+            `File path must stay inside the workspace root: ${resolvedRoot}. `
+            + 'Use a path inside the root or update WORKFLOW_WORKSPACE_ROOT.'
+        );
+    }
+    return resolved;
 }
 
 
@@ -50,7 +68,8 @@ export function createFilePlugin(): WorkflowPlugin {
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
                 try {
                     const fs: any = await import('node:fs/promises');
-                    const file = resolvePath(node.config, context);
+                    const path: any = await import('node:path');
+                    const file = resolvePath(node.config, context, path);
                     const content = await fs.readFile(file, { encoding: String(node.config?.encoding || 'utf8') });
                     const output = String(node.config?.output || 'content');
                     return { success: true, data: { nodeId: node.id, [output]: content, content } };
@@ -93,9 +112,9 @@ export function createFilePlugin(): WorkflowPlugin {
                 try {
                     const fs: any = await import('node:fs/promises');
                     const path: any = await import('node:path');
-                    const file = resolvePath(node.config, context);
+                    const file = resolvePath(node.config, context, path);
                     if (node.config?.createDirs === true) {
-                        await fs.mkdir(path.dirname(path.resolve(file)), { recursive: true });
+                        await fs.mkdir(path.dirname(file), { recursive: true });
                     }
                     const content = String(node.config?.content ?? '');
                     if (node.config?.append === true) {

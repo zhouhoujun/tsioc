@@ -199,6 +199,61 @@ describe('workflow plugins', () => {
         expect(execItem?.description).toContain('host command');
     });
 
+    it('enforces workspace and command policy for file and exec plugins', async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-plugin-policy-'));
+        const root = path.join(dir, 'root');
+        fs.mkdirSync(root, { recursive: true });
+        try {
+            const filePlugin = createFilePlugin();
+            const write = filePlugin.nodes!.find(node => node.type === 'file-write')!;
+            const read = filePlugin.nodes!.find(node => node.type === 'file-read')!;
+
+            const denied = await write.execute!({
+                id: 'policy_write_out', type: 'file-write',
+                config: { path: path.join(dir, 'outside.txt'), content: 'nope' }
+            } as any, { workspaceRoot: root } as any);
+            expect(denied.success).toBe(false);
+            expect(denied.error?.message).toContain(root);
+            expect(fs.existsSync(path.join(dir, 'outside.txt'))).toBe(false);
+
+            const allowed = await write.execute!({
+                id: 'policy_write_in', type: 'file-write',
+                config: { path: path.join(root, 'ok.txt'), content: 'hello' }
+            } as any, { workspaceRoot: root } as any);
+            expect(allowed.success).toBe(true);
+            const content = await read.execute!({
+                id: 'policy_read_in', type: 'file-read',
+                config: { path: 'ok.txt' }
+            } as any, { workspaceRoot: root } as any);
+            expect(content.success).toBe(true);
+            expect(content.data?.content).toBe('hello');
+
+            const exec = createExecPlugin().nodes!.find(node => node.type === 'exec')!;
+            const blocked = await exec.execute!({
+                id: 'policy_exec_blocked', type: 'exec',
+                config: { command: '/bin/sh', args: ['-c', 'echo blocked'] }
+            } as any, { workspaceRoot: root, allowedCommands: [process.execPath] } as any);
+            expect(blocked.success).toBe(false);
+            expect(blocked.error?.message).toContain('not allowed');
+
+            const ran = await exec.execute!({
+                id: 'policy_exec_ok', type: 'exec',
+                config: { command: process.execPath, args: ['-e', 'process.stdout.write("ok")'], timeout: 5000 }
+            } as any, { workspaceRoot: root, allowedCommands: [process.execPath] } as any);
+            expect(ran.success).toBe(true);
+            expect(ran.data?.stdout).toBe('ok');
+
+            const escapedCwd = await exec.execute!({
+                id: 'policy_exec_cwd', type: 'exec',
+                config: { command: process.execPath, args: ['-e', 'process.stdout.write("ok")'], cwd: '..' }
+            } as any, { workspaceRoot: root, allowedCommands: [process.execPath] } as any);
+            expect(escapedCwd.success).toBe(false);
+            expect(escapedCwd.error?.message).toContain(root);
+        } finally {
+            fs.rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
     it('runs host commands with the exec plugin', async () => {
         const plugin = createExecPlugin();
         const node = plugin.nodes!.find(item => item.type === 'exec')!;

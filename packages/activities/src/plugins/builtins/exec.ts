@@ -52,10 +52,35 @@ export function createExecPlugin(): WorkflowPlugin {
                 const config = node.config || {};
                 try {
                     const childProcess: any = await import('node:child_process');
+                    const path: any = await import('node:path');
+                    const policy = (context as any)?.policy || {};
+                    const workspaceRoot = (context as any)?.workspaceRoot || policy.workspaceRoot;
+                    const allowedCommands = (context as any)?.allowedCommands || policy.allowedCommands;
+                    const command = String(config.command || '');
+                    if (Array.isArray(allowedCommands) && allowedCommands.length
+                        && !allowedCommands.some(item =>
+                            String(item) === command || String(item) === path.basename(command)
+                        )) {
+                        throw new Error(
+                            `Command is not allowed by the workspace policy: ${command}. `
+                            + `Allowed commands: ${allowedCommands.join(', ')}`
+                        );
+                    }
+                    let cwd: string | undefined = config.cwd ? String(config.cwd) : undefined;
+                    if (workspaceRoot) {
+                        const resolvedRoot = path.resolve(String(workspaceRoot));
+                        cwd = config.cwd ? path.resolve(resolvedRoot, String(config.cwd)) : resolvedRoot;
+                        const relative = path.relative(resolvedRoot, cwd);
+                        if (relative.startsWith('..') || path.isAbsolute(relative)) {
+                            throw new Error(
+                                `Working directory must stay inside the workspace root: ${resolvedRoot}`
+                            );
+                        }
+                    }
                     const timeout = Math.max(0, Number(config.timeout) || 0);
                     const result = await new Promise<{ code: number; stdout: string; stderr: string }>((resolve, reject) => {
-                        const child = childProcess.spawn(String(config.command || ''), argumentList(config.args), {
-                            cwd: config.cwd ? String(config.cwd) : undefined,
+                        const child = childProcess.spawn(command, argumentList(config.args), {
+                            cwd,
                             env: config.env && typeof config.env === 'object'
                                 ? { ...((globalThis as any).process?.env || {}), ...config.env }
                                 : (globalThis as any).process?.env,
