@@ -322,6 +322,12 @@
 - Admin SLO Alerts 支持 JSON / CSV 导出（key/timestamp/iso/errorRate/p95/阈值）。
 - CSV 做引号转义，文件名 gateway-slo-alerts.csv。
 
+第六十一批（发布分片）：
+
+- `publish-dry-run.mjs` 支持 `--shard=N/M` 与 `--list`。
+- gate 支持 `PUBLISH_DRY_RUN_SHARD`，便于 CI 并行分片构建/发布校验。
+- Admin bundle 已按当前 code-editor 版本重建。
+
 第五十八批（tracing feature 组合）：
 
 - 验证 `useFeatures({ extraFeatures: [useTracing(...)] })` 可装配 tracing interceptor。

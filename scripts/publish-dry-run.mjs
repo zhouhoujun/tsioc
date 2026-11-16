@@ -17,9 +17,30 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const microservices = join(root, 'packages', 'microservices');
 const arg = process.argv.find(value => value.startsWith('--packages='));
-const selected = arg
+let selected = arg
     ? arg.slice('--packages='.length).split(',').map(value => value.trim()).filter(Boolean)
     : readdirSync(microservices).filter(name => existsSync(join(microservices, name, 'package.json')));
+
+const shardArg = process.argv.find(value => value.startsWith('--shard='));
+if (shardArg) {
+    const match = /^(\d+)\/(\d+)$/.exec(shardArg.slice('--shard='.length));
+    if (!match) {
+        console.error('--shard must look like 1/3');
+        process.exit(2);
+    }
+    const index = Number(match[1]) - 1;
+    const total = Number(match[2]);
+    if (index < 0 || total <= 0 || index >= total) {
+        console.error('invalid shard index');
+        process.exit(2);
+    }
+    selected = selected.filter((_, position) => position % total === index);
+}
+
+if (process.argv.includes('--list')) {
+    console.log(selected.join('\n'));
+    process.exit(0);
+}
 
 const prepared = [];
 for (const name of selected) {

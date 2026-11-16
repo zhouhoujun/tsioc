@@ -241,7 +241,10 @@ run_publish_dry_run() {
         stage_skip "$id" "$label (set PUBLISH_DRY_RUN_PACKAGES=gateway,... to run)"
         return
     fi
-    if node "$ROOT_DIR/scripts/publish-dry-run.mjs" "--packages=$packages" >"$log" 2>&1; then
+    local shard="${PUBLISH_DRY_RUN_SHARD:-}"
+    local shardArg=""
+    if [ -n "$shard" ]; then shardArg="--shard=$shard"; fi
+    if node "$ROOT_DIR/scripts/publish-dry-run.mjs" "--packages=$packages" $shardArg >"$log" 2>&1; then
         stage_pass "$id" "$label"
     else
         stage_fail "$id" "$label"

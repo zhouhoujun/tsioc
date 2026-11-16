@@ -4301,3 +4301,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第五十八批（2026-11-16）：
   - tracing 通过 service extraFeatures 组合验证。
   - 回归：tracing 45。
+- 微服务框架第六十一批（2026-11-16）：
+  - publish-dry-run --shard/--list；gate PUBLISH_DRY_RUN_SHARD。
+  - admin bundle 重建提交（含 code-editor）。
