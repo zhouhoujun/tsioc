@@ -4425,3 +4425,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 流式行本身是当前跟随行且 `streaming=true` 时，直接选它，不再投影；完成（`streaming=false`）、聚焦、详情或末行可能被过滤时仍走完整 display 投影，保证最终回答/合成行的选中语义不变。
 - 实测（1000 条历史，20 次 token，稳定轮次）：p50 **~51–58ms**、p95 **~66–91ms**（此前 72–77 / 89–120）。
 - 关键子集 174 passing（turn-stream、renderer、window、activity、tab 隔离、console-renderer、edit-message）；tsc、source-size 通过。
+
+## 2026-11-16 P1 queue：逐条移除 / 载入编辑
+- `/queue` 原来只有 `list` / `clear`。新增 `remove <n>`（移除第 n 条）与 `edit <n>`（从队列取出并载入输入框，含附件，便于修改后重发）。
+- 命令定义、补全枚举、en/zh 文案（`queueRemoved` / `queueEditLoaded` / `queueEntryMissing`）与 usage 同步更新。
+- 测试：`vm-submit` 新增 remove/edit/越界用例；i18n lockstep 计数同步（688 → 691）。
+- 注：上一 HEAD（285fc8f9e）的 agent-ui 全量 **2148 passing**、build:web 成功。

@@ -76,6 +76,32 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
         host.notify(formatAgentUiNotice(host.translator, 'clearedQueuedPrompts', { queueLength: queue.length, plural: queue.length === 1 ? '' : 's' }));
         return true;
     }
+    const manage = /^(remove|edit)\s+(\d+)$/i.exec(parsed);
+    if (manage) {
+        const index = Number(manage[2]) - 1;
+        if (!Number.isInteger(index) || index < 0 || index >= queue.length) {
+            host.notify(formatAgentUiNotice(host.translator, 'queueEntryMissing', { index: manage[2] }));
+            return true;
+        }
+        const [entry] = queue.splice(index, 1);
+        if (queue.length) {
+            host.queuedPrompts.set(host.state.sessionId, queue);
+        } else {
+            host.queuedPrompts.delete(host.state.sessionId);
+        }
+        host.state.setQueuedPromptCount(queue.length);
+        if (manage[1].toLowerCase() === 'edit') {
+            // Move the queued prompt back into the composer so it can be
+            // revised and sent again (removes it from the queue).
+            host.state.setInput(entry.input, entry.input.length);
+            host.state.setPendingAttachments((entry.attachments || []).slice());
+            host.state.refreshInputSuggestions?.();
+            host.notify(formatAgentUiNotice(host.translator, 'queueEditLoaded', { index: manage[2] }));
+        } else {
+            host.notify(formatAgentUiNotice(host.translator, 'queueRemoved', { index: manage[2] }));
+        }
+        return true;
+    }
     host.notify(formatAgentUiNotice(host.translator, 'queueUsage'));
     return true;
 }

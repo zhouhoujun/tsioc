@@ -793,6 +793,43 @@ export class VmSubmitTest {
         expect(state.notice).toContain('No queued prompts');
     }
 
+    @Test('queue command removes or edits one queued prompt')
+    async queueCommandRemovesAndEdits() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+
+        state.setInput('first prompt');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        state.setInput('/compact');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        state.setInput('third prompt');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        expect(state.queuedPromptCount).toEqual(3);
+
+        await (component as any).handleCommand('/queue remove 2');
+        expect(state.queuedPromptCount).toEqual(2);
+        expect(state.notice).toContain('Removed queued prompt 2.');
+
+        await (component as any).handleCommand('/queue');
+        const listed = state.commandOutputs.filter(entry => entry.command === '/queue list').pop();
+        expect(listed?.text).toContain('first prompt');
+        expect(listed?.text).toContain('third prompt');
+        expect(listed?.text).not.toContain('/compact');
+
+        await (component as any).handleCommand('/queue edit 1');
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.input).toEqual('first prompt');
+        expect(state.notice).toContain('Loaded queued prompt 1');
+
+        await (component as any).handleCommand('/queue remove 9');
+        expect(state.queuedPromptCount).toEqual(1);
+        expect(state.notice).toContain('No queued prompt at 9.');
+
+        await (component as any).handleCommand('/queue clear');
+        expect(state.queuedPromptCount).toEqual(0);
+    }
+
     @Test('unsetting escape disables the configured interrupt binding but Esc still interrupts a running turn')
     async unsettingEscapeDisablesInterrupt() {
         const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
