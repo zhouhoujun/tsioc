@@ -21,6 +21,7 @@ export type WorkflowCanvasPointerType =
     | 'box-select-move'
     | 'box-select'
     | 'edge-click'
+    | 'edge-dblclick'
     | 'port-down'
     | 'port-up'
     | 'drop'
@@ -105,7 +106,8 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
                 <path v-for="edge in model.edges" v-bind="edge.attrs"></path>
                 <path v-for="edge in model.edges" v-bind="edge.hitAttrs"
                       @mousedown="edgeDown($event)"
-                      @click="edgeClick($event, edge)"></path>
+                      @click="edgeClick($event, edge)"
+                      @dblclick="edgeDouble($event, edge)"></path>
                 <text v-for="edge in model.edges" v-if="edge.label" v-bind="edge.labelAttrs">{{edge.label}}</text>
                 <g v-if="model.draft">
                     <path v-bind="model.draft ? model.draft.attrs : {}"></path>
@@ -345,6 +347,12 @@ export class WorkflowCanvasComponent implements AfterViewInit {
     edgeClick(event: any, edge: { id: string }): void {
         this.stop(event);
         this.emit({ type: 'edge-click', event, connectionId: edge.id });
+    }
+
+    edgeDouble(event: any, edge: { id: string }): void {
+        this.stop(event);
+        event?.preventDefault?.();
+        this.emit({ type: 'edge-dblclick', event, connectionId: edge.id });
     }
 
     groupDown(event: any, group: { id: string }): void {

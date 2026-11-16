@@ -451,6 +451,37 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-node[data-node-id="task_1"]')?.classList.contains('is-disabled')).toBe(false);
     });
 
+    it('inserts a quick-added node onto an existing wire', async () => {
+        const edge = root.querySelector('.workflow-edge-hit[data-edge-id="conn_2"]') as any;
+        edge.dispatchEvent(new (doc.defaultView as any).MouseEvent('dblclick', {
+            bubbles: true, cancelable: true
+        }));
+        await flush();
+        expect(root.querySelector('.workflow-quick-add')).toBeTruthy();
+
+        const input = root.querySelector('.workflow-quick-add-input') as any;
+        input.value = 'log';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'Enter', bubbles: true
+        }));
+        await flush();
+
+        const nodes = ref.instance.designer.nodes;
+        const connections = ref.instance.designer.connections;
+        const log = nodes.find(node => node.type === 'log')!;
+        expect(nodes.length).toBe(7);
+        expect(connections.length).toBe(7);
+        expect(connections.some(item => item.id === 'conn_2')).toBe(false);
+        expect(connections.some(item =>
+            item.sourceNodeId === 'task_1' && item.targetNodeId === log.id
+        )).toBe(true);
+        expect(connections.some(item =>
+            item.sourceNodeId === log.id && item.targetNodeId === 'condition_1'
+        )).toBe(true);
+    });
+
     it('quick-adds a node through the search overlay', async () => {
         const canvas = root.querySelector('.workflow-canvas') as any;
         canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {

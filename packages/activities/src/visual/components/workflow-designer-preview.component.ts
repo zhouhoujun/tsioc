@@ -213,6 +213,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     showQuickAdd = false;
     quickAddQuery = '';
     quickAddIndex = 0;
+    quickAddSpliceId = '';
     showGroupSettings = false;
     groupSettingsId = '';
     groupSettingsName = '';
@@ -466,6 +467,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         self.showQuickAdd = true;
         self.quickAddQuery = '';
         self.quickAddIndex = 0;
+        self.quickAddSpliceId = '';
         setTimeout(() => {
             const document = (globalThis as { document?: Document }).document;
             (document?.querySelector?.('.workflow-quick-add-input') as any)?.focus?.();
@@ -477,6 +479,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         self.showQuickAdd = false;
         self.quickAddQuery = '';
         self.quickAddIndex = 0;
+        self.quickAddSpliceId = '';
     };
 
     readonly quickAddInput = (event: any): void => {
@@ -527,15 +530,29 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 outputs: definition.outputs || []
             } as any)
             : { width: 184, height: 64 };
-        const rect = self.canvasRect();
-        const zoom = self.designer.zoom || 1;
-        const pan = self.designer.pan || { x: 0, y: 0 };
-        const centerX = rect ? (rect.width / zoom) / 2 - pan.x / zoom : 400;
-        const centerY = rect ? (rect.height / zoom) / 2 - pan.y / zoom : 240;
-        self.designer.addNode(type as any, {
+        const spliceId = self.quickAddSpliceId;
+        const midpoint = spliceId ? self.connectionMidpoint(spliceId) : undefined;
+        let centerX: number;
+        let centerY: number;
+        if (midpoint) {
+            centerX = midpoint.x;
+            centerY = midpoint.y;
+        } else {
+            const rect = self.canvasRect();
+            const zoom = self.designer.zoom || 1;
+            const pan = self.designer.pan || { x: 0, y: 0 };
+            centerX = rect ? (rect.width / zoom) / 2 - pan.x / zoom : 400;
+            centerY = rect ? (rect.height / zoom) / 2 - pan.y / zoom : 240;
+        }
+        const position = {
             x: Math.round(centerX - frame.width / 2),
             y: Math.round(centerY - frame.height / 2)
-        });
+        };
+        if (spliceId) {
+            self.designer.spliceNode(type as any, position, spliceId);
+        } else {
+            self.designer.addNode(type as any, position);
+        }
         self.closeQuickAdd();
         self.notifyChange();
     };
@@ -1314,30 +1331,50 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return { width: rect.width, height: rect.height };
     }
 
+    private connectionEnds(connection: { sourceNodeId: string; sourcePort: string; targetNodeId: string; targetPort: string }) {
+        const source = this.designer.nodes.find(node => node.id === connection.sourceNodeId);
+        const target = this.designer.nodes.find(node => node.id === connection.targetNodeId);
+        if (!source || !target) {
+            return undefined;
+        }
+        const sourceFrame = workflowNodeFrame(source);
+        const outputIndex = Math.max(0, (source.outputs || [])
+            .findIndex(port => port.id === connection.sourcePort));
+        const inputIndex = Math.max(0, (target.inputs || [])
+            .findIndex(port => port.id === connection.targetPort));
+        return {
+            start: {
+                x: source.position.x + sourceFrame.width,
+                y: source.position.y + WORKFLOW_PORT_START + outputIndex * WORKFLOW_PORT_SPACING - 5
+            },
+            end: {
+                x: target.position.x,
+                y: target.position.y + WORKFLOW_PORT_START + inputIndex * WORKFLOW_PORT_SPACING - 5
+            }
+        };
+    }
+
+    private connectionMidpoint(connectionId: string): { x: number; y: number } | undefined {
+        const connection = this.designer.connections.find(item => item.id === connectionId);
+        if (!connection) {
+            return undefined;
+        }
+        const ends = this.connectionEnds(connection);
+        return ends
+            ? { x: (ends.start.x + ends.end.x) / 2, y: (ends.start.y + ends.end.y) / 2 }
+            : undefined;
+    }
+
     /** Nearest edge under a world point, used to insert nodes on wires. */
     private connectionAt(point: { x: number; y: number }, maxDistance: number) {
         let nearest: { id: string } | undefined;
         let nearestDistance = maxDistance;
         for (const connection of this.designer.connections) {
-            const source = this.designer.nodes.find(node => node.id === connection.sourceNodeId);
-            const target = this.designer.nodes.find(node => node.id === connection.targetNodeId);
-            if (!source || !target) {
+            const ends = this.connectionEnds(connection);
+            if (!ends) {
                 continue;
             }
-            const sourceFrame = workflowNodeFrame(source);
-            const outputIndex = Math.max(0, (source.outputs || [])
-                .findIndex(port => port.id === connection.sourcePort));
-            const inputIndex = Math.max(0, (target.inputs || [])
-                .findIndex(port => port.id === connection.targetPort));
-            const start = {
-                x: source.position.x + sourceFrame.width,
-                y: source.position.y + WORKFLOW_PORT_START + outputIndex * WORKFLOW_PORT_SPACING - 5
-            };
-            const end = {
-                x: target.position.x,
-                y: target.position.y + WORKFLOW_PORT_START + inputIndex * WORKFLOW_PORT_SPACING - 5
-            };
-            const distance = this.pointToSegment(point, start, end);
+            const distance = this.pointToSegment(point, ends.start, ends.end);
             if (distance <= nearestDistance) {
                 nearestDistance = distance;
                 nearest = connection;
@@ -1622,6 +1659,13 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 }
                 break;
             }
+            case 'edge-dblclick':
+                if (payload.connectionId) {
+                    self.quickAddSpliceId = payload.connectionId;
+                    self.openQuickAdd();
+                    self.quickAddSpliceId = payload.connectionId;
+                }
+                break;
             case 'edge-click':
                 if (payload.connectionId) {
                     designer.selectConnection(payload.connectionId);
