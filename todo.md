@@ -4366,3 +4366,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `AgentConsoleSessionUiState` 的快照从内部 `Map` 迁到该 store：capture 写入并 bump version；restore 读取；switchSession 激活目标 pane；`paneStore` getter 暴露给宿主与后续 pane 渲染。
 - **无行为变化**：仍是单 live state + 缓存帧；全套 tab 隔离/草稿/滚动测试与 parity 全绿。新增 store 单测与 “visited tab owns a pane record” 集成断言。
 - 下一步（P0-1 第二步）：消息面板按 session 渲染多个 pane，active pane 绑定 live state，inactive pane 绑定冻结 view；切换只切可见性，节点树与 click targets 保持存活。
+
+## 2026-11-16 P0-1 多 pane 实验：渲染降了、切换反而更慢（已回退）
+- 实现：根模板按 open sessions 渲染多个 messages panel，active pane 绑定 live state，inactive pane 绑定 frozen state；`v-show` 切可见性。
+- **实测（4 tabs × 200 messages）**：
+  - 布局成本大降：render ms/switch **187ms → 24ms**，hidden pane 确实不参与排版。
+  - 但切换总耗时 **p50 357–689ms、p95 1.3–1.8s**（单 pane 基线 ~150–400ms），CPU profile 中 `for.dir.updateViewsWithTrackBy`/`createContext` 占 ≈9%。
+  - 原因：单 live state 下，切 tab 必须把 outgoing pane 从 live→frozen、incoming 从 frozen→live，两个 pane 各重跑 200 行 v-for；隐藏只省布局，不省模板 diff。
+- **决策**：回退多 pane 渲染，避免把更慢的实现留在主干；保留 `AgentConsoleSessionPaneStore` 基座与本次真正有价值的 **per-tab inline 展开状态**（capture/restore `expandedMessageIds`）。
+- **结论**：要真正“切换=隐藏/显示”，必须做 per-session live state（事件桥/审批/plan/turn 按 session 路由）+ 全局配置字段分类；这是下一阶段的架构重构，不是消息面板一层能完成的。

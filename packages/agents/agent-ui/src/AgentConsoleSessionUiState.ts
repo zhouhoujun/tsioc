@@ -18,6 +18,8 @@ export interface AgentConsoleSessionUiSnapshot {
     messagesFocused: boolean;
     messageDetailOpen: boolean;
     messageDetailScroll: number;
+    /** Inline-expanded messages owned by this tab (per-session disclosure). */
+    expandedMessageIds?: string[];
     /**
      * Cached transcript/projection for hide/show tab switching. Restoring this
      * makes a revisit paint the tab's own view immediately instead of blanking
@@ -118,6 +120,7 @@ export class AgentConsoleSessionUiState {
             messagesFocused: state.messagesFocused,
             messageDetailOpen: state.messageDetailOpen,
             messageDetailScroll: state.messageDetailScroll,
+            expandedMessageIds: (state.expandedMessageIds || []).slice(),
             messages: state.messages,
             sections: state.sections,
             goalSummary: state.goalSummary,
@@ -152,6 +155,7 @@ export class AgentConsoleSessionUiState {
         // panel layouts would otherwise repaint the previous placeholder/value.
         surfaceAccessor?.invalidateRenderCache?.();
         this.restoreMessageSelection(state, saved);
+        this.restoreExpandedMessages(state, saved);
         this.restoreViewport(state, surfaceAccessor, id, saved);
     }
 
@@ -254,6 +258,7 @@ export class AgentConsoleSessionUiState {
             }
             this.restoreComposer(state, saved, applyComposer);
             this.restoreMessageSelection(state, saved);
+            this.restoreExpandedMessages(state, saved);
         });
     }
 
@@ -274,6 +279,15 @@ export class AgentConsoleSessionUiState {
         }
         state.setInput(input, cursor);
         state.setPendingAttachments(attachments);
+    }
+
+    protected restoreExpandedMessages(state: AgentConsoleSessionState, saved?: AgentConsoleSessionUiSnapshot): void {
+        const next = (saved?.expandedMessageIds || []).slice();
+        const current = state.expandedMessageIds || [];
+        if (next.length === current.length && next.every((id, index) => id === current[index])) {
+            return;
+        }
+        state.expandedMessageIds = next;
     }
 
     protected restoreMessageSelection(state: AgentConsoleSessionState, saved?: AgentConsoleSessionUiSnapshot): void {

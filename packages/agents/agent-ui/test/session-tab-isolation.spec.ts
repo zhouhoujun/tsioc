@@ -243,6 +243,39 @@ export class AgentConsoleSessionTabIsolationTest {
         }
     }
 
+    @Test('each tab keeps its own inline expanded messages')
+    async eachTabKeepsItsOwnExpansions() {
+        const aMessages = messages('alpha', 6);
+        const bMessages = messages('beta', 6);
+        const harness = await this.createHarness(this.baseService({
+            'session-a': aMessages,
+            'session-b': bMessages
+        }));
+        const { instance, state } = harness;
+        try {
+            await instance.openSession('session-a');
+            await settle();
+            harness.surface.render();
+            state.setMessages(aMessages as any);
+            state.setMessageExpanded('alpha0', true);
+            expect(state.isMessageExpanded('alpha0')).toEqual(true);
+
+            await instance.openSession('session-b');
+            await settle();
+            expect(state.isMessageExpanded('alpha0')).toEqual(false);
+            state.setMessageExpanded('beta1', true);
+
+            await instance.openSession('session-a');
+            await settle();
+            expect(state.isMessageExpanded('alpha0')).toEqual(true);
+            expect(state.isMessageExpanded('beta1')).toEqual(false);
+        } finally {
+            harness.surface.destroy();
+            (instance as any).sessionUiState.forget('session-a');
+            (instance as any).sessionUiState.forget('session-b');
+        }
+    }
+
     @Test('a returning tab restores its own composer draft')
     async returningTabRestoresComposerDraft() {
         const harness = await this.createHarness(this.baseService({
