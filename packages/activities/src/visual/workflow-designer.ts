@@ -37,6 +37,7 @@ const MAX_ZOOM = 2.5;
 export interface WorkflowClipboardSnapshot {
     nodes: IVisualWorkflowNode[];
     connections: NodeConnection[];
+    groups: WorkflowGroup[];
     sourceWorkflowId: string;
     /** Cascading paste offset counter; reset on every copy. */
     pastes: number;
@@ -1191,6 +1192,9 @@ export class WorkflowDesigner {
             connections: this.definition.connections
                 .filter(connection => ids.has(connection.sourceNodeId) && ids.has(connection.targetNodeId))
                 .map(connection => ({ ...connection })),
+            groups: (this.definition.groups || [])
+                .filter(group => group.nodeIds.length > 0 && group.nodeIds.every(id => ids.has(id)))
+                .map(group => ({ ...group, nodeIds: [...group.nodeIds] })),
             sourceWorkflowId: this.definition.id,
             pastes: 0
         };
@@ -1281,10 +1285,32 @@ export class WorkflowDesigner {
                 targetNodeId: idMap.get(connection.targetNodeId)!
             }));
 
+        const usedGroups = new Set(this.groups.map(group => group.id));
+        const nextGroupId = (): string => {
+            let index = 1;
+            while (usedGroups.has(`group_${index}`)) {
+                index += 1;
+            }
+            const id = `group_${index}`;
+            usedGroups.add(id);
+            return id;
+        };
+        const pastedGroups = (clip.groups || [])
+            .map(group => ({
+                ...group,
+                id: nextGroupId(),
+                nodeIds: group.nodeIds.map(id => idMap.get(id)).filter((id): id is string => !!id),
+                collapsed: false
+            }))
+            .filter(group => group.nodeIds.length > 0);
+
         this.commit(current => ({
             ...current,
             nodes: [...current.nodes, ...pasted],
             connections: [...current.connections, ...pastedConnections],
+            ...(pastedGroups.length
+                ? { groups: [...(current.groups || []), ...pastedGroups] }
+                : {}),
             metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
         }));
         this.selection = {
@@ -1347,10 +1373,32 @@ export class WorkflowDesigner {
                 targetNodeId: idMap.get(connection.targetNodeId)!
             }));
 
+        const usedGroups = new Set(this.groups.map(group => group.id));
+        const nextGroupId = (): string => {
+            let index = 1;
+            while (usedGroups.has(`group_${index}`)) {
+                index += 1;
+            }
+            const id = `group_${index}`;
+            usedGroups.add(id);
+            return id;
+        };
+        const duplicateGroups = this.groups
+            .filter(group => group.nodeIds.length > 0 && group.nodeIds.every(id => idMap.has(id)))
+            .map(group => ({
+                ...group,
+                id: nextGroupId(),
+                nodeIds: group.nodeIds.map(id => idMap.get(id)!),
+                collapsed: false
+            }));
+
         this.commit(current => ({
             ...current,
             nodes: [...current.nodes, ...duplicates],
             connections: [...current.connections, ...duplicateConnections],
+            ...(duplicateGroups.length
+                ? { groups: [...(current.groups || []), ...duplicateGroups] }
+                : {}),
             metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
         }));
         this.selection = {
