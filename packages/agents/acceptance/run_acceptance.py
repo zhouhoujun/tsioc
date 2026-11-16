@@ -946,6 +946,14 @@ def scenario_tool_row_identity_v88(pid: int, fd: int, screen: Screen) -> bool:
     invocations onto one line, so only the last argument survived and the
     pending row could never merge with its own completion.
     """
+    # This scenario verifies one row per invocation, so pin the per-step
+    # transcript first: the default activity verbosity folds finished steps
+    # into a single Activity row by design.
+    send(fd, '/display activity high'.encode())
+    send(fd, b'\r')
+    wait_for(fd, screen, [r'Activity verbosity: high', r'活动详细度'], timeout=TIMEOUT,
+             settle=1.0, quiet_window=1.5)
+
     mark = len(bytes(screen.raw))
     send(fd, '并行读文件'.encode())
     send(fd, b'\r')
