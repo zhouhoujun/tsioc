@@ -200,6 +200,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @NoReactive() private keyHandler?: (event: any) => void;
     @NoReactive() private documentRef?: any;
     @NoReactive() private actionBusUnsubscribe?: () => void;
+    @NoReactive() private readonly subflowParents = new Map<string, string>();
+    private subflowVersion = 0;
 
     readonly registry: WorkflowNodeRegistry;
     private readonly service?: VisualWorkflowService;
@@ -303,7 +305,15 @@ export class WorkflowDesignerComponent implements OnDestroy {
     };
 
     get toolbarModel(): WorkflowToolbarModel {
-        return this.preview?.toolbarModel as WorkflowToolbarModel;
+        const model = this.preview?.toolbarModel as WorkflowToolbarModel;
+        if (!model) {
+            return model;
+        }
+        // Read the version so breadcrumb menu changes are re-rendered after a
+        // subflow tab is opened.
+        void this.subflowVersion;
+        const parent = this.subflowParents.get(this.designer.definition.id);
+        return parent ? { ...model, subflowParent: parent } : model;
     }
 
     get workflowTabSource(): TabBarSource {
@@ -757,6 +767,13 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.openLibrary();
             return;
         }
+        if (action === 'back-subflow') {
+            const parent = self.subflowParents.get(self.designer.definition.id);
+            if (parent) {
+                void self.openWorkflowTab(parent);
+            }
+            return;
+        }
         if (action === 'plugins') {
             void self.openPlugins();
             return;
@@ -766,8 +783,12 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     readonly openReferencedWorkflow = async (id: string): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const parent = self.designer?.definition.id;
         const opened = await self.openWorkflowTab(id);
-        if (!opened) {
+        if (opened && parent && parent !== id) {
+            self.subflowParents.set(id, parent);
+            self.subflowVersion += 1;
+        } else if (!opened) {
             self.designer.error = self.libraryError || self.t(
                 'notFound',
                 'Workflow not found'

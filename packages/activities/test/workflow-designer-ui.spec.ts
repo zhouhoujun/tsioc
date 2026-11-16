@@ -1263,6 +1263,7 @@ describe('Workflow Designer UI', () => {
 
         (root.querySelector('.workflow-run-log-tab[data-mode="messages"]') as any).click();
         await flush();
+        expect(root.querySelector('.workflow-debug-clear')).toBeTruthy();
         const items = root.querySelectorAll('.workflow-debug-item');
         expect(items.length).toBeGreaterThan(0);
 
@@ -1353,6 +1354,7 @@ describe('Workflow Designer UI', () => {
         await store.save(child);
         ref.instance.store = store;
 
+        const parentId = ref.instance.designer.definition.id;
         const node = ref.instance.designer.addNode('subprocess', { x: 80, y: 80 })!;
         ref.instance.designer.updateNodeConfig(node.id, { workflow: 'child-flow' });
         ref.instance.designer.selectNode(node.id);
@@ -1370,6 +1372,12 @@ describe('Workflow Designer UI', () => {
 
         expect(ref.instance.designer.definition.id).toBe('child-flow');
         expect(ref.instance.openWorkflowCount).toBe(2);
+
+        const back = root.querySelector('.workflow-global-bar [data-menu-id="back-subflow"]') as any;
+        expect(back).toBeTruthy();
+        back.click();
+        await waitFor(() => ref.instance.designer.definition.id === parentId);
+        expect(ref.instance.designer.definition.id).toBe(parentId);
     });
 
     it('saves and reopens definitions through the workflow library', async () => {

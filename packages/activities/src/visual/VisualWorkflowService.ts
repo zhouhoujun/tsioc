@@ -402,6 +402,17 @@ export class VisualWorkflowService {
         return result;
     }
 
+    /** Drop rate-limit/queue state for one workflow (or all workflows). */
+    clearNodeRuntimeState(workflowId?: string): void {
+        for (const key of [...this.nodeRuntime.keys()]) {
+            const separator = key.indexOf(':');
+            const owner = separator < 0 ? '' : key.slice(0, separator);
+            if (!workflowId || owner === workflowId) {
+                this.nodeRuntime.delete(key);
+            }
+        }
+    }
+
     /** Shared `global` scope exposed to every execution of this service. */
     getGlobalContext(): Record<string, any> {
         return this.globalContext;
@@ -632,10 +643,37 @@ export class VisualWorkflowService {
             visited.add(node.id);
             return this.existingNodeResult(node.id, record!, state);
         } else {
-            if (node.type === 'join' && !this.isJoinReady(plan, state, node.id)) {
-                // A parallel branch reached the join before its siblings finished.
-                // Do not execute or mark it visited; the last arriving branch will.
-                return { success: true, data: { nodeId: node.id, waiting: true } };
+            if (node.type === 'join') {
+                let ready = this.isJoinReady(plan, state, node.id);
+                const mode = String(node.config?.mode || 'array');
+                const timeoutMs = mode === 'timeout'
+                    ? Math.max(0, Number(node.config?.timeout) || 0)
+                    : 0;
+                if (!ready && timeoutMs > 0) {
+                    // Timeout join: the first arriving branch waits for siblings
+                    // and then continues with whatever settled in time.
+                    const deadline = Date.now() + timeoutMs;
+                    while (!ready && Date.now() < deadline) {
+                        if (String(state.status) === 'cancelled' || this.isCancelled(state)) {
+                            state.status = 'cancelled';
+                            return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id } };
+                        }
+                        await delay(Math.min(25, Math.max(1, deadline - Date.now())));
+                        ready = this.isJoinReady(plan, state, node.id);
+                    }
+                    if (!ready) {
+                        ready = true;
+                    }
+                }
+                if (!ready) {
+                    // A parallel branch reached the join before its siblings finished.
+                    // Do not execute or mark it visited; a later branch will.
+                    return { success: true, data: { nodeId: node.id, waiting: true } };
+                }
+                if (visited.has(node.id)) {
+                    return state.nodeResults.get(node.id)
+                        || { success: true, data: { nodeId: node.id, waiting: true } };
+                }
             }
             visited.add(node.id);
 
@@ -1104,6 +1142,11 @@ export class VisualWorkflowService {
         const statuses = incoming.map(connection =>
             state.nodeStates?.get(connection.sourceNodeId)?.status
         );
+        const node = plan.nodes.get(nodeId);
+        if (String(node?.config?.mode || 'array') === 'count') {
+            const needed = Math.max(1, Number(node?.config?.count) || 1);
+            return statuses.filter(status => status === 'success').length >= needed;
+        }
         const settled = statuses.every(status =>
             status === 'success' || status === 'failed' || status === 'skipped' || status === 'cancelled'
         );

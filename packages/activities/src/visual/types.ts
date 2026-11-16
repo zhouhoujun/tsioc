@@ -994,6 +994,8 @@ export interface WorkflowInspectorModel {
  */
 export interface WorkflowToolbarModel {
     name: string;
+    /** Parent workflow id when the active document was opened from a subflow. */
+    subflowParent?: string;
     nodeCount: number;
     connectionCount: number;
     hasSelection: boolean;

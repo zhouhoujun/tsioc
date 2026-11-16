@@ -782,8 +782,8 @@ POST /api/executions/:executionId/cancel
 Snapshots use the same serializable shape the designer replays, so external
 dashboards can render node/edge state without loading the workflow definition.
 `GET /api/workflows/:id/runtime` exposes per-node runtime state such as
-rate-limit windows; the execution panel's **Messages** tab shows the same state
-under each node.
+rate-limit windows (`DELETE` clears it); the execution panel's **Messages** tab
+shows the same state under each node and offers a Clear state action.
 
 Finished runs are persisted automatically: `SqliteWorkflowExecutionStore` writes
 to the same database file when SQLite is available, otherwise an in-memory store

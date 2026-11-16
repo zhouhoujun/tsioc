@@ -602,6 +602,11 @@ describe('Workflow HTTP microservice', () => {
         const missing = await request(`${base}/api/workflows/missing/runtime`);
         expect(missing.status).toBe(404);
 
+        const cleared = await request(`${base}/api/workflows/runtime-demo/runtime`, { method: 'DELETE' });
+        expect(cleared.status).toBe(200);
+        const empty = await request(`${base}/api/workflows/runtime-demo/runtime`);
+        expect(empty.body).toEqual({});
+
         await request(`${base}/api/workflows/runtime-demo`, { method: 'DELETE' });
     });
 

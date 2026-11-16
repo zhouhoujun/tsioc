@@ -604,11 +604,15 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 options: [
                     { label: 'Branch results array', value: 'array' },
                     { label: 'Merged object', value: 'merge' },
-                    { label: 'Keys object', value: 'key' }
+                    { label: 'Keys object', value: 'key' },
+                    { label: 'First N branches', value: 'count' },
+                    { label: 'Wait with timeout', value: 'timeout' }
                 ]
             }),
             configField({ key: 'keyField', label: 'Key field', type: 'text', defaultValue: 'key', placeholder: 'key', visibleWhen: { key: 'mode', equals: 'key' }, description: 'Branch result property used as the object key.' }),
             configField({ key: 'valueField', label: 'Value field', type: 'text', placeholder: 'value', visibleWhen: { key: 'mode', equals: 'key' }, description: 'Branch result property stored under each key. Empty stores the whole branch result.' }),
+            configField({ key: 'count', label: 'Branch count', type: 'number', defaultValue: 2, min: 1, max: 1000, step: 1, visibleWhen: { key: 'mode', equals: 'count' }, description: 'How many successful branches are included.' }),
+            configField({ key: 'timeout', label: 'Wait timeout', type: 'number', defaultValue: 1000, min: 0, max: 600000, step: 100, unit: 'ms', visibleWhen: { key: 'mode', equals: 'timeout' }, description: 'Proceed with settled branches after this wait.' }),
             configField({ key: 'resultField', label: 'Result field', type: 'text', defaultValue: 'joined', placeholder: 'joined' }),
             configField({ key: 'ignoreEmpty', label: 'Skip empty branches', type: 'boolean', defaultValue: true })
         ],
@@ -744,12 +748,23 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
             configField({ key: 'delay', label: 'Delay', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', description: 'Time to wait before emitting the payload.',}),
+            configField({
+                key: 'newMessage',
+                label: 'New message',
+                type: 'select',
+                defaultValue: 'parallel',
+                options: [
+                    { label: 'Run every message', value: 'parallel' },
+                    { label: 'Restart pending delay', value: 'restart' }
+                ],
+                description: 'How concurrent messages through this trigger are handled.'
+            }),
             configField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {}, placeholder: '{ "key": "value" }' }),
             configField({ key: 'emitSecond', label: 'Send a second message', type: 'boolean', defaultValue: false, description: 'Emit another payload after the first one reached the branch.',}),
             configField({ key: 'secondDelay', label: 'Second delay', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', visibleWhen: { key: 'emitSecond', equals: true }, description: 'Time to wait after the first message before emitting the second.',}),
             configField({ key: 'secondPayload', label: 'Second payload', type: 'json', defaultValue: {}, placeholder: '{ "done": true }', visibleWhen: { key: 'emitSecond', equals: true } })
         ],
-        defaultConfig: { delay: 0, payload: {}, emitSecond: false, secondDelay: 0, secondPayload: {} }
+        defaultConfig: { delay: 0, newMessage: 'parallel', payload: {}, emitSecond: false, secondDelay: 0, secondPayload: {} }
     },
     {
         type: 'delay',

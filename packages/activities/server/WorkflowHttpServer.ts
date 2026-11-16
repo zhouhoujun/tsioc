@@ -398,6 +398,17 @@ export class WorkflowHttpController {
         };
     }
 
+    /** Clear rate-limit/queue state for a workflow. */
+    @Delete('/:id/runtime')
+    async clearRuntime(@RequestPath('id') id: string) {
+        const definition = await this.store.get(id);
+        if (!definition) {
+            throw new NotFoundException(`Workflow not found: ${id}`);
+        }
+        this.execution.clearNodeRuntimeState(id);
+        return { cleared: true };
+    }
+
     /** Per-node runtime state (rate-limit windows, queues) for diagnostics. */
     @Get('/:id/runtime')
     async runtime(@RequestPath('id') id: string) {

@@ -20,6 +20,8 @@ import { WorkflowDebugItem, WorkflowExecutionLogEntry } from '../types';
             <button type="button" class="workflow-run-log-tab" data-mode="messages"
                 [class]="tabClass('messages')" @click="setMode('messages')">{{messagesLabel}}</button>
             <span class="workflow-status-spacer"></span>
+            <button class="workflow-btn workflow-debug-clear" type="button"
+                v-if="mode === 'messages'" @click="clearState">{{clearStateLabel}}</button>
             <button class="workflow-btn" @click="close">{{closeLabel}}</button>
         </div>
         <div class="workflow-debug-search-row" v-if="mode === 'messages'">
@@ -59,6 +61,7 @@ export class WorkflowRunLogComponent {
     @Attribute() visible = false;
     @Attribute() locale = 'zh-CN';
     @Attribute() closeAction?: () => void;
+    @Attribute() clearStateAction?: () => void;
 
     mode: 'logs' | 'messages' = 'logs';
     search = '';
@@ -105,6 +108,14 @@ export class WorkflowRunLogComponent {
 
     get closeLabel(): string {
         return this.t('close', 'Close');
+    }
+
+    get clearStateLabel(): string {
+        return this.t('clearRuntimeState', 'Clear state');
+    }
+
+    clearState(): void {
+        this.clearStateAction?.();
     }
 
     get filteredDebugItems(): WorkflowDebugItem[] {

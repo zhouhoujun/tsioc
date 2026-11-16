@@ -86,6 +86,7 @@ export class WorkflowManagementMenuComponent {
             model.canUndo ? 1 : 0,
             model.canRedo ? 1 : 0,
             model.hasSelection ? 1 : 0,
+            model.subflowParent || '',
             model.nodeCount
         ].join('|');
         const cache = this.cache;
@@ -102,6 +103,9 @@ export class WorkflowManagementMenuComponent {
                     { id: 'plugins', label: t('plugins', 'Plugins') },
                     { id: 'rename', label: t('rename', 'Rename workflow'), icon: 'rename' },
                     { id: 'open-library', label: t('library', 'Workflows') },
+                    ...(model.subflowParent
+                        ? [{ id: 'back-subflow', label: t('backSubflow', 'Back to parent workflow') }]
+                        : []),
                     { id: 'toggle-json', label: t('jsonMenu', 'Import / Export JSON') }
                 ]
             },

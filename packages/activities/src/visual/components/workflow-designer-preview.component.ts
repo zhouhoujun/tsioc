@@ -86,7 +86,8 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
                 <workflow-run-history v-if="showRunHistory" :items="runHistory" :locale="locale"
                     :selectAction="selectRun" :clearAction="clearRunHistory"></workflow-run-history>
                 <workflow-run-log v-if="showRunLogs" :items="runLogs" :debugItems="debugItems"
-                    :visible="showLogs" :locale="locale" :closeAction="closeLogs"></workflow-run-log>
+                    :visible="showLogs" :locale="locale" :closeAction="closeLogs"
+                    :clearStateAction="clearRuntimeState"></workflow-run-log>
             </workspace-bottom>
         </workspace-layout>
         <div class="workflow-statusbar" v-if="showStatusbar">
@@ -1492,6 +1493,12 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
 
     readonly resumeWorkflow = async (): Promise<void> => {
         await this.designer.resume({ context: this.runContext });
+    };
+
+    readonly clearRuntimeState = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.designer?.service?.clearNodeRuntimeState(self.designer.definition.id);
+        self.notifyChange();
     };
 
     readonly closeLogs = (): void => {

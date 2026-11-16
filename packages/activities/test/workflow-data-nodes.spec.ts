@@ -557,6 +557,8 @@ describe('Workflow data & trigger nodes', () => {
         const runtime = service.getNodeRuntimeState(definition.id);
         expect(Array.isArray(runtime.delay_1?.rateStamps)).toBe(true);
         expect(service.getNodeRuntimeState('other-workflow')).toEqual({});
+        service.clearNodeRuntimeState(definition.id);
+        expect(service.getNodeRuntimeState(definition.id)).toEqual({});
     });
 
     it('queues rate-limited messages until the window opens', async () => {
@@ -581,6 +583,32 @@ describe('Workflow data & trigger nodes', () => {
         expect(second.success).toBe(true);
         expect(calls).toBe(2);
         expect(elapsed).toBeGreaterThanOrEqual(60);
+    });
+
+    it('restarts a pending trigger delay when a newer message arrives', async () => {
+        let calls = 0;
+        const context = {
+            actions: {
+                record: () => {
+                    calls += 1;
+                    return { calls };
+                }
+            }
+        };
+        const definition = chain([
+            { type: 'trigger', config: { delay: 120, newMessage: 'restart', payload: { n: 1 } } },
+            { type: 'task', config: { action: 'record' } }
+        ]);
+
+        const firstPromise = service.execute(definition, context);
+        await new Promise(resolve => setTimeout(resolve, 30));
+        const secondPromise = service.execute(definition, context);
+        const [first, second] = await Promise.all([firstPromise, secondPromise]);
+
+        expect(calls).toBe(1);
+        expect(first.data?.executionState?.nodeStates.trigger_0.result?.data?.dropped).toBe(true);
+        expect(first.data?.executionState?.nodeStates.task_1.status).toBe('skipped');
+        expect(second.data?.executionState?.nodeStates.task_1.status).toBe('success');
     });
 
     it('emits a second trigger message and runs the branch again', async () => {

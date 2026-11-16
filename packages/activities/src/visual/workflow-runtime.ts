@@ -957,7 +957,28 @@ export async function executeVisualNode(
         }
         case 'trigger': {
             const delay = Math.max(0, Number(config.delay) || 0);
-            if (!(await pause(delay, extras?.cancelled))) {
+            const state = extras?.nodeState || {};
+            const mode = String(config.newMessage || 'parallel');
+            const generation = (Number(state.triggerGeneration) || 0) + 1;
+            state.triggerGeneration = generation;
+            let superseded = false;
+            const stopped = !(await pause(delay, () => {
+                if (extras?.cancelled?.()) {
+                    return true;
+                }
+                if (mode === 'restart' && Number(state.triggerGeneration) !== generation) {
+                    superseded = true;
+                    return true;
+                }
+                return false;
+            }));
+            if (stopped) {
+                if (superseded) {
+                    return {
+                        success: true,
+                        data: { nodeId: node.id, dropped: true, superseded: true, triggered: false }
+                    };
+                }
                 return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id } };
             }
             const payload = coerceJson(config.payload ?? {});
@@ -1453,7 +1474,11 @@ export async function executeVisualNode(
             const target = String(config.resultField || 'joined');
             const mode = String(config.mode || 'array');
             let value: any;
-            if (mode === 'merge') {
+            if (mode === 'count') {
+                value = values.slice(0, Math.max(1, Number(config.count) || 1));
+            } else if (mode === 'timeout') {
+                value = values;
+            } else if (mode === 'merge') {
                 value = values.reduce((merged: Record<string, any>, item) =>
                     item && typeof item === 'object' && !Array.isArray(item)
                         ? { ...merged, ...item }
@@ -1478,7 +1503,14 @@ export async function executeVisualNode(
             }
             return {
                 success: true,
-                data: { nodeId: node.id, joined: true, branches: values.length, results: values, [target]: value }
+                data: {
+                    nodeId: node.id,
+                    joined: true,
+                    branches: Array.isArray(value) ? value.length : values.length,
+                    totalBranches: incoming.length,
+                    results: values,
+                    [target]: value
+                }
             };
         }
         case 'trycatch':

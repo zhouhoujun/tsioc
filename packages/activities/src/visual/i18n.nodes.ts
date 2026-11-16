@@ -337,7 +337,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "resultField": "Result field",
                 "ignoreEmpty": "Skip empty branches",
                 "keyField": "Key field",
-                "valueField": "Value field"
+                "valueField": "Value field",
+                "count": "Branch count",
+                "timeout": "Wait timeout"
             },
             "loop": {
                 "iterations": "Iterations",
@@ -349,7 +351,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "Payload (JSON)",
                 "emitSecond": "Send a second message",
                 "secondDelay": "Second delay",
-                "secondPayload": "Second payload"
+                "secondPayload": "Second payload",
+                "newMessage": "New message"
             },
             "delay": {
                 "mode": "Mode",
@@ -965,7 +968,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "resultField": "Context field that receives the joined value.",
                 "ignoreEmpty": "Leave branches without result data out of the joined value.",
                 "keyField": "Branch result property used as the object key.",
-                "valueField": "Branch result property stored under each key. Empty stores the whole branch result."
+                "valueField": "Branch result property stored under each key. Empty stores the whole branch result.",
+                "count": "How many successful branches are included.",
+                "timeout": "Proceed with settled branches after this wait."
             },
             "loop": {
                 "iterations": "Number of times to run the sub-workflow.",
@@ -977,7 +982,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "JSON emitted when the trigger fires",
                 "emitSecond": "Emit another payload after the first one reached the branch.",
                 "secondDelay": "Time to wait after the first message before emitting the second.",
-                "secondPayload": "Payload merged into the second message."
+                "secondPayload": "Payload merged into the second message.",
+                "newMessage": "How concurrent messages through this trigger are handled."
             },
             "delay": {
                 "delay": "pause duration before the next node",
@@ -1295,7 +1301,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "set": "Set",
             "delete": "Delete",
             "append": "Append",
-            "count": "Count",
+            "count": "First N branches",
             "sum": "Sum",
             "avg": "Average",
             "min": "Min",
@@ -1346,7 +1352,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "rate": "Rate limit",
             "drop": "Drop",
             "queue": "Queue",
-            "key": "Keys object"
+            "key": "Keys object",
+            "parallel": "Run every message",
+            "restart": "Restart pending delay",
+            "timeout": "Wait with timeout"
         }
     },
     "zh-CN": {
@@ -1680,7 +1689,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "resultField": "结果字段",
                 "ignoreEmpty": "跳过空分支",
                 "keyField": "键字段",
-                "valueField": "值字段"
+                "valueField": "值字段",
+                "count": "分支数量",
+                "timeout": "等待超时"
             },
             "loop": {
                 "iterations": "迭代次数",
@@ -1692,7 +1703,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "数据（JSON）",
                 "emitSecond": "发送第二条消息",
                 "secondDelay": "第二次延迟",
-                "secondPayload": "第二条消息内容"
+                "secondPayload": "第二条消息内容",
+                "newMessage": "新消息处理"
             },
             "delay": {
                 "mode": "模式",
@@ -2292,7 +2304,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "resultField": "接收合并结果的上下文字段。",
                 "ignoreEmpty": "不把没有结果数据的分支计入合并结果。",
                 "keyField": "作为对象键的分支结果属性。",
-                "valueField": "每个键下保存的分支结果属性；留空保存整个分支结果。"
+                "valueField": "每个键下保存的分支结果属性；留空保存整个分支结果。",
+                "count": "包含多少个成功分支的结果。",
+                "timeout": "超过该等待时间后使用已完成分支继续。"
             },
             "loop": {
                 "iterations": "子工作流执行次数。",
@@ -2304,7 +2318,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "触发时输出的 JSON 数据。",
                 "emitSecond": "第一条消息到达分支后再发送一条消息。",
                 "secondDelay": "第一条消息发送后等待多久再发送第二条。",
-                "secondPayload": "合并到第二条消息中的数据。"
+                "secondPayload": "合并到第二条消息中的数据。",
+                "newMessage": "并发消息到达该触发器时的处理方式。"
             },
             "delay": {
                 "delay": "进入下一个节点前的等待时间。",
@@ -2614,7 +2629,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "set": "设置",
             "delete": "删除",
             "append": "追加",
-            "count": "计数",
+            "count": "前 N 个分支",
             "sum": "求和",
             "avg": "平均",
             "min": "最小",
@@ -2673,7 +2688,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "rate": "限流",
             "drop": "丢弃",
             "queue": "排队",
-            "key": "按键聚合"
+            "key": "按键聚合",
+            "parallel": "每条消息都执行",
+            "restart": "重启等待中的延迟",
+            "timeout": "超时后继续"
         }
     }
 };

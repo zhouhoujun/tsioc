@@ -458,6 +458,78 @@ describe('Visual Workflow Execution Path', () => {
         });
     });
 
+    it('joins the first N branches in count mode', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_cn' }),
+            registry.createNode('parallel', { x: 200, y: 0 }, { id: 'parallel_cn' }),
+            registry.createNode('delay', { x: 400, y: -80 }, { id: 'delay_a', config: { delay: 10 } }),
+            registry.createNode('delay', { x: 400, y: 0 }, { id: 'delay_b', config: { delay: 20 } }),
+            registry.createNode('delay', { x: 400, y: 80 }, { id: 'delay_c', config: { delay: 120 } }),
+            registry.createNode('join', { x: 600, y: 0 }, { id: 'join_cn', config: { mode: 'count', count: 2 } }),
+            registry.createNode('end', { x: 800, y: 0 }, { id: 'end_cn' })
+        ];
+        const edge = (id: string, source: string, target: string) => ({
+            id, sourceNodeId: source, sourcePort: 'out', targetNodeId: target, targetPort: 'in'
+        });
+        const definition = {
+            id: 'join-count-test',
+            name: 'Join count test',
+            nodes,
+            connections: [
+                edge('c1', 'start_cn', 'parallel_cn'),
+                edge('c2', 'parallel_cn', 'delay_a'),
+                edge('c3', 'parallel_cn', 'delay_b'),
+                edge('c4', 'parallel_cn', 'delay_c'),
+                edge('c5', 'delay_a', 'join_cn'),
+                edge('c6', 'delay_b', 'join_cn'),
+                edge('c7', 'delay_c', 'join_cn'),
+                edge('c8', 'join_cn', 'end_cn')
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const joined = result.data?.executionState?.nodeStates.join_cn.result?.data?.joined;
+        expect(result.success).toBe(true);
+        expect(Array.isArray(joined)).toBe(true);
+        expect(joined.length).toBe(2);
+        expect(result.data?.executionState.nodeStates.end_cn.status).toBe('success');
+    });
+
+    it('joins settled branches after the join timeout', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_tm' }),
+            registry.createNode('parallel', { x: 200, y: 0 }, { id: 'parallel_tm' }),
+            registry.createNode('delay', { x: 400, y: -80 }, { id: 'delay_fast', config: { delay: 20 } }),
+            registry.createNode('delay', { x: 400, y: 0 }, { id: 'delay_slow', config: { delay: 40 } }),
+            registry.createNode('delay', { x: 400, y: 80 }, { id: 'delay_late', config: { delay: 300 } }),
+            registry.createNode('join', { x: 600, y: 0 }, { id: 'join_tm', config: { mode: 'timeout', timeout: 80 } }),
+            registry.createNode('end', { x: 800, y: 0 }, { id: 'end_tm' })
+        ];
+        const edge = (id: string, source: string, target: string) => ({
+            id, sourceNodeId: source, sourcePort: 'out', targetNodeId: target, targetPort: 'in'
+        });
+        const definition = {
+            id: 'join-timeout-test',
+            name: 'Join timeout test',
+            nodes,
+            connections: [
+                edge('m1', 'start_tm', 'parallel_tm'),
+                edge('m2', 'parallel_tm', 'delay_fast'),
+                edge('m3', 'parallel_tm', 'delay_slow'),
+                edge('m4', 'parallel_tm', 'delay_late'),
+                edge('m5', 'delay_fast', 'join_tm'),
+                edge('m6', 'delay_slow', 'join_tm'),
+                edge('m7', 'delay_late', 'join_tm'),
+                edge('m8', 'join_tm', 'end_tm')
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const joined = result.data?.executionState?.nodeStates.join_tm.result?.data?.joined;
+        expect(result.success).toBe(true);
+        expect(Array.isArray(joined)).toBe(true);
+        expect(joined.length).toBe(2);
+        expect(result.data?.executionState.nodeStates.end_tm.status).toBe('success');
+    });
+
     it('merges join branch objects when the join mode is merge', async () => {
         const nodes = [
             registry.createNode('start', { x: 0, y: 0 }, { id: 'start_m' }),
