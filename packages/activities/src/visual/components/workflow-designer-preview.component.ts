@@ -1332,14 +1332,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 self.selectionBox = undefined;
                 const box = payload.box;
                 if (box) {
-                    const ids = designer.nodes
-                        .filter(node => {
-                            const frame = workflowNodeFrame(node);
-                            return node.position.x < box.x + box.width
-                                && node.position.x + frame.width > box.x
-                                && node.position.y < box.y + box.height
-                                && node.position.y + frame.height > box.y;
-                        })
+                    const ids = this.canvasModel.nodes
+                        .filter(node => node.x < box.x + box.width
+                            && node.x + node.width > box.x
+                            && node.y < box.y + box.height
+                            && node.y + node.height > box.y)
                         .map(node => node.id);
                     designer.selectNodes(ids, payload.additive === true);
                 }
@@ -1357,6 +1354,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             case 'group-remove':
                 if (payload.groupId) {
                     designer.removeGroup(payload.groupId);
+                }
+                break;
+            case 'group-toggle':
+                if (payload.groupId) {
+                    designer.toggleGroupCollapsed(payload.groupId);
                 }
                 break;
             case 'edge-click':

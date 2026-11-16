@@ -867,8 +867,8 @@ workflow-canvas {
 .workflow-group-title {
     position: absolute;
     top: 7px;
-    left: 12px;
-    max-width: calc(100% - 48px);
+    left: 28px;
+    max-width: calc(100% - 64px);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -878,6 +878,20 @@ workflow-canvas {
     cursor: grab;
     pointer-events: auto;
     user-select: none;
+}
+
+.workflow-group-toggle {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    border: 0;
+    background: transparent;
+    color: var(--wf-group-color, #60a5fa);
+    font-size: 11px;
+    line-height: 1;
+    padding: 2px 4px;
+    cursor: pointer;
+    pointer-events: auto;
 }
 
 .workflow-group-remove {

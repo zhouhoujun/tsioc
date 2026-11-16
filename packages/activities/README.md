@@ -594,6 +594,8 @@ Features:
 - `Ctrl+G` wraps the selection in a named group frame (`Ctrl+Shift+G` or the
   frame's `✕` removes it); dragging the frame title moves all member nodes
   together and groups persist with the workflow definition,
+- frames can be collapsed with the `▾` control: member nodes and their internal
+  edges are hidden while the frame (and its wiring) stays in place,
 - `Enabled` in the inspector (or the node right-click menu) disables a node
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,

@@ -765,6 +765,8 @@ export interface WorkflowGroup {
     name: string;
     nodeIds: string[];
     color?: string;
+    /** Collapsed groups hide their member nodes and internal edges. */
+    collapsed?: boolean;
 }
 
 export interface WorkflowSelection {
@@ -877,6 +879,7 @@ export interface WorkflowCanvasGroupView {
     width: number;
     height: number;
     color: string;
+    collapsed: boolean;
     attrs: Record<string, string>;
 }
 

@@ -1080,6 +1080,37 @@ export class WorkflowDesigner {
         return group;
     }
 
+    /** Collapse/expand a frame; collapsing clears selection of its nodes. */
+    setGroupCollapsed(groupId: string, collapsed?: boolean): boolean {
+        const group = this.groups.find(item => item.id === groupId);
+        if (!group) {
+            return false;
+        }
+        const next = collapsed === undefined ? group.collapsed !== true : collapsed === true;
+        if (next === (group.collapsed === true)) {
+            return false;
+        }
+        this.commit(current => ({
+            ...current,
+            groups: (current.groups || []).map(item =>
+                item.id === groupId ? { ...item, collapsed: next } : item
+            ),
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        if (next) {
+            const members = new Set(group.nodeIds);
+            const remaining = this.selectedNodeIds.filter(id => !members.has(id));
+            if (remaining.length !== this.selectedNodeIds.length) {
+                this.setSelection({ nodeIds: remaining });
+            }
+        }
+        return true;
+    }
+
+    toggleGroupCollapsed(groupId: string): boolean {
+        return this.setGroupCollapsed(groupId);
+    }
+
     /** Remove a frame while keeping its nodes on the canvas. */
     removeGroup(groupId: string): boolean {
         const group = this.groups.find(item => item.id === groupId);

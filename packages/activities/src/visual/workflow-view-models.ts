@@ -217,8 +217,17 @@ export function buildWorkflowCanvasModel(
     const previousNodes = previous
         ? new Map(previous.nodes.map(view => [view.id, view]))
         : undefined;
+    const hiddenNodeIds = new Set<string>();
+    (designer.definition.groups || []).forEach(group => {
+        if (group.collapsed === true) {
+            (group.nodeIds || []).forEach(id => hiddenNodeIds.add(id));
+        }
+    });
 
     for (const node of designer.nodes) {
+        if (hiddenNodeIds.has(node.id)) {
+            continue;
+        }
         const status = (execution?.nodeStates?.[node.id]?.status as NodeExecutionStatus) || 'idle';
         const selected = selectedNodeIds.has(node.id);
         const prior = previousNodes?.get(node.id);
@@ -288,7 +297,10 @@ export function buildWorkflowCanvasModel(
     const previousEdges = previous
         ? new Map(previous.edges.map(view => [view.id, view]))
         : undefined;
-    const edgeViews: WorkflowCanvasEdgeView[] = designer.connections.map(connection => {
+    const edgeViews: WorkflowCanvasEdgeView[] = designer.connections
+        .filter(connection => !hiddenNodeIds.has(connection.sourceNodeId)
+            && !hiddenNodeIds.has(connection.targetNodeId))
+        .map(connection => {
         const sourceGeo = geometry.get(connection.sourceNodeId);
         const targetGeo = geometry.get(connection.targetNodeId);
         const sourcePort = sourceGeo?.outputs.find(port => port.id === connection.sourcePort) || sourceGeo?.outputs[0];
@@ -427,22 +439,27 @@ function buildCanvasGroups(designer: WorkflowDesigner): WorkflowCanvasGroupView[
         const maxX = Math.max(...frames.map(frame => frame.node.position.x + frame.width)) + padding;
         const maxY = Math.max(...frames.map(frame => frame.node.position.y + frame.height)) + padding;
         const color = group.color || '#60a5fa';
+        const collapsed = group.collapsed === true;
+        const width = Math.max(160, maxX - minX);
+        const height = collapsed ? 34 : Math.max(80, maxY - minY);
         views.push({
             id: group.id,
             name: group.name || group.id,
             x: minX,
             y: minY,
-            width: Math.max(120, maxX - minX),
-            height: Math.max(80, maxY - minY),
+            width,
+            height,
             color,
+            collapsed,
             attrs: {
-                class: 'workflow-group',
+                class: ['workflow-group', collapsed ? 'is-collapsed' : ''].filter(Boolean).join(' '),
                 'data-group-id': group.id,
+                'data-collapsed': collapsed ? 'true' : 'false',
                 style: [
                     `left:${minX}px`,
                     `top:${minY}px`,
-                    `width:${Math.max(120, maxX - minX)}px`,
-                    `height:${Math.max(80, maxY - minY)}px`,
+                    `width:${width}px`,
+                    `height:${height}px`,
                     `--wf-group-color:${color}`
                 ].join(';')
             }

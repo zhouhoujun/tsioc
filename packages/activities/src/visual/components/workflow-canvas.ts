@@ -15,6 +15,7 @@ export type WorkflowCanvasPointerType =
     | 'node-context'
     | 'group-down'
     | 'group-remove'
+    | 'group-toggle'
     | 'box-select-start'
     | 'box-select-move'
     | 'box-select'
@@ -84,6 +85,10 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
         <div class="workflow-canvas-content" [style]="contentStyle">
             <div class="workflow-group" v-for="group in model.groups" v-bind="group.attrs"
                  @mousedown="groupDown($event, group)">
+                <button class="workflow-group-toggle" type="button"
+                    [title]="group.collapsed ? 'Expand group' : 'Collapse group'"
+                    @mousedown="stopGroupRemove($event)"
+                    @click="groupToggle($event, group)">{{group.collapsed ? '▸' : '▾'}}</button>
                 <span class="workflow-group-title">{{group.name}}</span>
                 <button class="workflow-group-remove" type="button" title="{{group.name}}"
                     @mousedown="stopGroupRemove($event)" @click="groupRemove($event, group)">✕</button>
@@ -355,6 +360,12 @@ export class WorkflowCanvasComponent implements AfterViewInit {
     stopGroupRemove(event: any): void {
         this.stop(event);
         event?.preventDefault?.();
+    }
+
+    groupToggle(event: any, group: { id: string }): void {
+        this.stop(event);
+        event?.preventDefault?.();
+        this.emit({ type: 'group-toggle', event, groupId: group.id });
     }
 
     groupRemove(event: any, group: { id: string }): void {

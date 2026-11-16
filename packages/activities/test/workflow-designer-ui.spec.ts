@@ -600,6 +600,29 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.selectionCount).toBe(0);
     });
 
+    it('collapses and expands node groups', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        ref.instance.designer.selectNodes(['task_1', 'task_2']);
+        await flush();
+        canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'g', ctrlKey: true, bubbles: true
+        }));
+        await flush();
+
+        const group = root.querySelector('.workflow-group[data-group-id]') as any;
+        expect(group).toBeTruthy();
+        const before = root.querySelectorAll('.workflow-canvas-nodes .workflow-node').length;
+        (group.querySelector('.workflow-group-toggle') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-group')?.classList.contains('is-collapsed')).toBe(true);
+        expect(root.querySelectorAll('.workflow-canvas-nodes .workflow-node').length).toBe(before - 2);
+
+        (root.querySelector('.workflow-group-toggle') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-group')?.classList.contains('is-collapsed')).toBe(false);
+        expect(root.querySelectorAll('.workflow-canvas-nodes .workflow-node').length).toBe(before);
+    });
+
     it('inserts a dropped node on an existing wire', async () => {
         const beforeNodes = ref.instance.designer.nodes.length;
         const beforeConnections = ref.instance.designer.connections.length;

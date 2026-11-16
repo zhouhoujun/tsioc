@@ -475,6 +475,20 @@ describe('Visual Workflow Designer', () => {
             expect(local.validate().valid).toBe(false);
         });
 
+        it('collapses groups without deleting their nodes', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            local.selectNodes(['task_1', 'task_2']);
+            const group = local.groupSelection()!;
+            local.selectNodes(['task_1', 'task_2']);
+            expect(local.setGroupCollapsed(group.id, true)).toBe(true);
+            expect(local.groups[0].collapsed).toBe(true);
+            expect(local.selectionCount).toBe(0);
+            expect(local.nodes.length).toBe(6);
+            expect(local.toggleGroupCollapsed(group.id)).toBe(true);
+            expect(local.groups[0].collapsed).toBe(false);
+            expect(local.nodes.length).toBe(6);
+        });
+
         it('inserts a node on an existing wire', () => {
             const local = new WorkflowDesigner({ registry, service });
             expect(local.nodes.length).toBe(6);
