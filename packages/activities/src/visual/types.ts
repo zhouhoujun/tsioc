@@ -907,6 +907,8 @@ export interface WorkflowInspectorFieldView {
     key: string;
     label: string;
     type: WorkflowConfigFieldType;
+    /** Field accepts literal/msg/flow/global/env references. */
+    typed?: boolean;
     value: any;
     displayValue: string;
     checked: boolean;

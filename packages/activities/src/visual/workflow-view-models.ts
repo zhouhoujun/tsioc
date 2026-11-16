@@ -568,6 +568,7 @@ export function buildWorkflowInspectorModel(
                 field.label
             ),
             type: field.type,
+            typed: field.typed === true,
             value,
             displayValue: field.type === 'json'
                 ? (typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2))

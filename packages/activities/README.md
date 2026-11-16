@@ -800,6 +800,11 @@ default to key/value rows with an explicit JSON toggle; lists (rules, arguments,
 columns) use add/remove rows. Field metadata supplies labels, hints, units,
 conditional visibility and validation rules.
 
+Fields marked `typed` show a literal/`msg`/`flow`/`global`/`env` selector. The
+stored value becomes `msg.payload.endpoint`-style reference text and reference
+values skip URL/format validation; literal values keep the normal validation.
+HTTP request URL/body fields opt in by default.
+
 ### Workflow plugins
 
 `WorkflowPluginRegistry` installs custom nodes, services and lifecycle hooks:

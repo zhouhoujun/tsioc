@@ -463,6 +463,15 @@ describe('Visual Workflow Designer', () => {
             expect(local.nodes.length).toBe(7);
         });
 
+        it('accepts typed value references for validated fields', () => {
+            const local = new WorkflowDesigner({ registry, service });
+            const node = local.addNode('http-request', { x: 40, y: 40 })!;
+            local.updateNodeConfig(node.id, { url: 'msg.payload.endpoint' });
+            expect(local.validate().valid).toBe(true);
+            local.updateNodeConfig(node.id, { url: 'not a url' });
+            expect(local.validate().valid).toBe(false);
+        });
+
         it('inserts a node on an existing wire', () => {
             const local = new WorkflowDesigner({ registry, service });
             expect(local.nodes.length).toBe(6);

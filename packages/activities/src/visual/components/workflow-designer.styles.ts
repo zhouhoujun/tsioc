@@ -1390,6 +1390,23 @@ workflow-canvas {
     overflow-wrap: anywhere;
 }
 
+.workflow-field-value-type-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+}
+
+.workflow-field-value-type {
+    width: auto;
+    min-width: 84px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 2px 6px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 10px;
+}
+
 .workflow-field-label-row {
     display: flex;
     align-items: center;

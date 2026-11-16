@@ -846,7 +846,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'url', label: 'URL', type: 'url', required: true, placeholder: 'https://api.example.com', group: 'Request', description: 'Absolute endpoint or a path resolved by the host.',}),
+            configField({ key: 'url', label: 'URL', type: 'url', required: true, typed: true, placeholder: 'https://api.example.com', group: 'Request', description: 'Absolute endpoint or a path resolved by the host.',}),
             configField({
                 key: 'method',
                 label: 'Method',
@@ -855,7 +855,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 options: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(value => ({ label: value, value })),
                 group: 'Request',}),
             configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3, placeholder: '{ "Content-Type": "application/json" }', group: 'Request',}),
-            configField({ key: 'body', label: 'Body', type: 'textarea', rows: 4, placeholder: '{ "name": "demo" }', group: 'Request', visibleWhen: { key: 'method', notEquals: 'GET' } }),
+            configField({ key: 'body', label: 'Body', type: 'textarea', rows: 4, typed: true, placeholder: '{ "name": "demo" }', group: 'Request', visibleWhen: { key: 'method', notEquals: 'GET' } }),
             configField({
                 key: 'responseType',
                 label: 'Response',

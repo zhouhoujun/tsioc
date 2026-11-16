@@ -95,6 +95,17 @@ let dynamicFormSequence = 0;
                             @click="resetField(field)">↺</button>
                         </span>
                     </div>
+                    <div [class]="typedRowClass()" v-if="isTypedInput(field)">
+                        <select [class]="typedTypeClass()" data-value-type="true"
+                            [disabled]="field.disabled || field.readonly"
+                            @change="changeTypedType(field, $event)">
+                            <option value="literal" [selected]="typedType(field) === 'literal'">Literal</option>
+                            <option value="msg" [selected]="typedType(field) === 'msg'">msg</option>
+                            <option value="flow" [selected]="typedType(field) === 'flow'">flow</option>
+                            <option value="global" [selected]="typedType(field) === 'global'">global</option>
+                            <option value="env" [selected]="typedType(field) === 'env'">env</option>
+                        </select>
+                    </div>
                     <div [class]="inputWrapClass(field)" v-if="isTextInput(field) || isNumberInput(field)">
                         <input v-if="isTextInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
                             [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
@@ -829,7 +840,14 @@ export class DynamicFormComponent implements OnDestroy {
     listRemoveClass(): string { return `${this.classPrefix}-list-remove`; }
 
     changeText(field: DynamicFormField, event: any): void {
-        this.updateValue(field, event?.target?.value);
+        let raw = event?.target?.value;
+        if (field.typed === true && typeof raw === 'string' && raw !== '') {
+            const type = this.typedType(field);
+            if (type !== 'literal' && !/^(msg|flow|global|env)\./.test(raw)) {
+                raw = `${type}.${raw}`;
+            }
+        }
+        this.updateValue(field, raw);
     }
 
     changeBoolean(field: DynamicFormField, event: any): void {
@@ -1080,6 +1098,23 @@ export class DynamicFormComponent implements OnDestroy {
         return this.isSelectInput(field) || this.isRadioInput(field);
     }
 
+    isTypedInput(field: DynamicFormField): boolean {
+        return field.typed === true;
+    }
+
+    typedType(field: DynamicFormField): string {
+        const value = String(this.fieldValue(field) ?? '');
+        const match = /^(msg|flow|global|env)\./.exec(value);
+        return match ? match[1] : 'literal';
+    }
+
+    changeTypedType(field: DynamicFormField, event: any): void {
+        const next = String(event?.target?.value || 'literal');
+        const current = String(this.fieldValue(field) ?? '');
+        const text = current.replace(/^(msg|flow|global|env)\./, '');
+        this.updateValue(field, next === 'literal' ? text : `${next}.${text}`);
+    }
+
     isTextareaInput(field: DynamicFormField): boolean {
         return field.type === 'textarea';
     }
@@ -1094,6 +1129,8 @@ export class DynamicFormComponent implements OnDestroy {
 
     formClass(): string { return `${this.classPrefix}-form dynamic-form`; }
     schemaErrorClass(): string { return `${this.classPrefix}-schema-error`; }
+    typedRowClass(): string { return `${this.classPrefix}-field-value-type-row`; }
+    typedTypeClass(): string { return `${this.classPrefix}-field-value-type`; }
     groupClass(): string { return `${this.classPrefix}-field-group`; }
     groupFieldsClass(): string { return `${this.classPrefix}-fields`; }
     groupTitleClass(): string { return `${this.classPrefix}-field-group-title`; }

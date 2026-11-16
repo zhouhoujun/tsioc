@@ -387,6 +387,41 @@ describe('Workflow Designer UI', () => {
         expect(node?.style?.backgroundColor).toBe('#112233');
     });
 
+    it('edits typed value references from the inspector', async () => {
+        const node = ref.instance.designer.addNode('http-request', { x: 40, y: 40 })!;
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        let field = root.querySelector('.workflow-field[data-field-key="url"]') as any;
+        const typeSelect = field.querySelector('.workflow-field-value-type') as any;
+        expect(typeSelect).toBeTruthy();
+        typeSelect.value = 'msg';
+        typeSelect.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+
+        field = root.querySelector('.workflow-field[data-field-key="url"]') as any;
+        const input = field.querySelector('input') as any;
+        expect(input.value).toBe('msg.');
+        input.value = 'payload.endpoint';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 420));
+
+        const updated = ref.instance.designer.nodes.find(item => item.id === node.id)!;
+        expect(updated.config?.url).toBe('msg.payload.endpoint');
+        expect(root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-error')).toBeFalsy();
+
+        const literalSelect = root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-value-type') as any;
+        literalSelect.value = 'literal';
+        literalSelect.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        const literalInput = root.querySelector('.workflow-field[data-field-key="url"] input') as any;
+        literalInput.value = 'https://example.com/api';
+        literalInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await new Promise(resolve => setTimeout(resolve, 420));
+        expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.url)
+            .toBe('https://example.com/api');
+    });
+
     it('disables a node from the inspector and marks it on the canvas', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();

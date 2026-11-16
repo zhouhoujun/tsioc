@@ -50,6 +50,7 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
         model.fields.map(field => [
             field.key,
             field.type,
+            field.typed ? 1 : 0,
             field.value ?? null,
             field.displayValue,
             field.checked ? 1 : 0,
@@ -71,7 +72,7 @@ function schemaKey(model: WorkflowInspectorModel): string {
     if (!model.hasSelection) {
         return 'empty';
     }
-    return model.fields.map(field => `${field.key}:${field.type}:${field.visible === false ? 0 : 1}`).join('|');
+    return model.fields.map(field => `${field.key}:${field.type}:${field.typed ? 1 : 0}:${field.visible === false ? 0 : 1}`).join('|');
 }
 
 /**
@@ -290,6 +291,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
         return {
             key: field.key,
             type: this.dynamicType(field),
+            typed: field.typed === true,
             label: field.label,
             placeholder: field.placeholder,
             description: field.description,

@@ -76,6 +76,8 @@ export interface DynamicFormCondition {
 export interface DynamicFormField {
     key: string;
     type: DynamicFormFieldType;
+    /** Show a literal/msg/flow/global/env reference selector for this field. */
+    typed?: boolean;
     label?: string;
     placeholder?: string;
     description?: string;

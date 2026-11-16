@@ -128,6 +128,24 @@ export const DYNAMIC_FORM_CSS = `
     pointer-events: none;
 }
 
+.df-field-value-type-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+}
+
+.df-field-value-type {
+    width: auto;
+    min-width: 84px;
+    border: 1px solid var(--df-border);
+    border-radius: var(--df-radius);
+    padding: 3px 6px;
+    background: var(--df-bg-alt);
+    color: var(--df-text-muted);
+    font-size: 11px;
+    outline: none;
+}
+
 .df-input,
 .df-select,
 .df-textarea {
