@@ -451,6 +451,29 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-node[data-node-id="task_1"]')?.classList.contains('is-disabled')).toBe(false);
     });
 
+    it('quick-adds a node through the search overlay', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'k', ctrlKey: true, bubbles: true
+        }));
+        await flush();
+        expect(root.querySelector('.workflow-quick-add')).toBeTruthy();
+
+        const input = root.querySelector('.workflow-quick-add-input') as any;
+        input.value = 'log';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(root.querySelector('.workflow-quick-add-item[data-node-type="log"]')).toBeTruthy();
+
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'Enter', bubbles: true
+        }));
+        await flush();
+
+        expect(root.querySelector('.workflow-quick-add')).toBeFalsy();
+        expect(ref.instance.designer.nodes.some(node => node.type === 'log')).toBe(true);
+    });
+
     it('shows the webhook URL for HTTP in nodes', async () => {
         const node = ref.instance.designer.addNode('http-in', { x: 40, y: 40 })!;
         ref.instance.designer.updateNodeConfig(node.id, { path: '/orders' });

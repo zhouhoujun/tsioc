@@ -72,7 +72,7 @@ describe('Workflow designer translations', () => {
             for (const category of registry.categories()) {
                 expect(messages.category?.[category]).toBeTruthy();
             }
-            for (const key of ['inspectorTitle', 'enabled', 'webhookUrl', 'enableNode', 'disableNode', 'nodesSelected', 'boxSelect', 'copy', 'cut', 'paste', 'alignLeft', 'distributeHorizontal', 'messages', 'debugSearch', 'noMessages', 'runtimeState', 'groupSelection', 'ungroup', 'groupSettings', 'groupName', 'groupColor', 'plugins', 'pluginInstall', 'pluginUninstall', 'name', 'run', 'save']) {
+            for (const key of ['inspectorTitle', 'enabled', 'webhookUrl', 'enableNode', 'disableNode', 'nodesSelected', 'boxSelect', 'copy', 'cut', 'paste', 'alignLeft', 'distributeHorizontal', 'messages', 'debugSearch', 'noMessages', 'runtimeState', 'groupSelection', 'ungroup', 'groupSettings', 'groupName', 'groupColor', 'quickAdd', 'quickAddPlaceholder', 'quickAddEmpty', 'plugins', 'pluginInstall', 'pluginUninstall', 'name', 'run', 'save']) {
                 expect(messages.ui?.[key]).toBeTruthy();
             }
         }

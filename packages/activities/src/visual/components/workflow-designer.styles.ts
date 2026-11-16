@@ -479,6 +479,102 @@ export const WORKFLOW_DESIGNER_CSS = `
     line-height: 1;
 }
 
+.workflow-quick-add {
+    position: fixed;
+    inset: 0;
+    z-index: 74;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+    background: var(--wf-theme-overlay, rgba(15, 23, 42, 0.42));
+}
+
+.workflow-quick-add-panel {
+    width: min(480px, 92vw);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 12px;
+    background: var(--wf-theme-surface, #ffffff);
+    box-shadow: 0 24px 60px var(--wf-theme-shadow, rgba(15, 23, 42, 0.28));
+}
+
+.workflow-quick-add-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: var(--wf-theme-surface, #ffffff);
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-quick-add-list {
+    max-height: 52vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.workflow-quick-add-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 7px;
+    padding: 6px 8px;
+    background: transparent;
+    color: var(--wf-theme-text, #0f172a);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.workflow-quick-add-item.is-active,
+.workflow-quick-add-item:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.workflow-quick-add-icon {
+    width: 18px;
+    text-align: center;
+}
+
+.workflow-quick-add-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.workflow-quick-add-category {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.workflow-quick-add-empty {
+    padding: 10px;
+    color: #94a3b8;
+    font-size: 11px;
+}
+
+.workflow-designer[data-theme="dark"] .workflow-quick-add-item,
+.workflow-designer[data-theme="solarized"] .workflow-quick-add-item,
+.workflow-designer[data-theme="high-contrast"] .workflow-quick-add-item {
+    color: var(--wf-theme-text, #e2e8f0);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-quick-add-item.is-active,
+.workflow-designer[data-theme="solarized"] .workflow-quick-add-item.is-active,
+.workflow-designer[data-theme="high-contrast"] .workflow-quick-add-item.is-active {
+    background: var(--wf-theme-surface, #0b1220);
+    color: #93c5fd;
+}
+
 .workflow-group-settings-panel {
     width: min(380px, 100%);
 }

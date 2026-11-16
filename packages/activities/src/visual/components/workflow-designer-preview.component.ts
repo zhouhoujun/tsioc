@@ -100,6 +100,24 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
             <span>{{statusModel.zoomLabel}}</span>
         </div>
         <div class="workflow-selection-box" v-if="selectionBox" [style]="selectionBoxStyle"></div>
+        <div class="workflow-quick-add" v-if="showQuickAdd" @click="closeQuickAdd">
+            <div class="workflow-quick-add-panel" @click="stopShortcutClick">
+                <input class="workflow-quick-add-input" type="search"
+                    placeholder="{{quickAddPlaceholder}}" [value]="quickAddQuery"
+                    @input="quickAddInput" @keydown="quickAddKey" />
+                <div class="workflow-quick-add-list">
+                    <button v-for="(item, index) in quickAddItems" type="button"
+                        class="workflow-quick-add-item" data-node-type="{{item.type}}"
+                        [class]="quickAddItemClass(index)"
+                        @click="chooseQuickAdd(item.type)">
+                        <span class="workflow-quick-add-icon"><icon [name]="item.type" [glyph]="item.icon" size="sm"></icon></span>
+                        <span class="workflow-quick-add-label">{{item.label}}</span>
+                        <span class="workflow-quick-add-category">{{item.category}}</span>
+                    </button>
+                    <div class="workflow-quick-add-empty" v-if="!quickAddItems.length">{{quickAddEmpty}}</div>
+                </div>
+            </div>
+        </div>
         <div class="workflow-publish workflow-group-settings" v-if="showGroupSettings">
             <div class="workflow-publish-panel workflow-group-settings-panel">
                 <div class="workflow-publish-head">
@@ -188,6 +206,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     showShortcuts = false;
     showNodeMenu = false;
     selectionBox: { x: number; y: number; width: number; height: number } | undefined = undefined;
+    showQuickAdd = false;
+    quickAddQuery = '';
+    quickAddIndex = 0;
     showGroupSettings = false;
     groupSettingsId = '';
     groupSettingsName = '';
@@ -404,6 +425,117 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         self.notifyChange();
     };
 
+    get quickAddPlaceholder(): string { return this.t('quickAddPlaceholder', 'Search nodes to add'); }
+    get quickAddEmpty(): string { return this.t('quickAddEmpty', 'No matching nodes.'); }
+
+    get quickAddItems(): Array<{ type: string; label: string; icon: string; category: string }> {
+        const query = String(this.quickAddQuery || '').trim().toLowerCase();
+        const items: Array<{ type: string; label: string; icon: string; category: string }> = [];
+        (this.paletteGroups || []).forEach(group => {
+            (group.items || []).forEach(item => {
+                items.push({
+                    type: item.type,
+                    label: item.label,
+                    icon: item.icon,
+                    category: group.label
+                });
+            });
+        });
+        const filtered = query
+            ? items.filter(item =>
+                [item.label, item.type, item.category]
+                    .some(value => String(value || '').toLowerCase().includes(query))
+            )
+            : items;
+        return filtered.slice(0, 60);
+    }
+
+    quickAddItemClass(index: number): Record<string, boolean> {
+        return {
+            'workflow-quick-add-item': true,
+            'is-active': index === this.quickAddIndex
+        };
+    }
+
+    readonly openQuickAdd = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.showQuickAdd = true;
+        self.quickAddQuery = '';
+        self.quickAddIndex = 0;
+        setTimeout(() => {
+            const document = (globalThis as { document?: Document }).document;
+            (document?.querySelector?.('.workflow-quick-add-input') as any)?.focus?.();
+        }, 0);
+    };
+
+    readonly closeQuickAdd = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.showQuickAdd = false;
+        self.quickAddQuery = '';
+        self.quickAddIndex = 0;
+    };
+
+    readonly quickAddInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.quickAddQuery = String(event?.target?.value ?? '');
+        self.quickAddIndex = 0;
+    };
+
+    readonly quickAddKey = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        const key = String(event?.key || '');
+        const items = self.quickAddItems;
+        if (key === 'ArrowDown') {
+            event?.preventDefault?.();
+            self.quickAddIndex = Math.min(Math.max(0, items.length - 1), self.quickAddIndex + 1);
+            return;
+        }
+        if (key === 'ArrowUp') {
+            event?.preventDefault?.();
+            self.quickAddIndex = Math.max(0, self.quickAddIndex - 1);
+            return;
+        }
+        if (key === 'Escape') {
+            event?.preventDefault?.();
+            self.closeQuickAdd();
+            return;
+        }
+        if (key === 'Enter') {
+            event?.preventDefault?.();
+            const item = items[self.quickAddIndex] || items[0];
+            if (item) {
+                self.chooseQuickAdd(item.type);
+            }
+        }
+    };
+
+    readonly chooseQuickAdd = (type: string): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        if (!self.designer || !type) {
+            return;
+        }
+        const definition = self.registry.get(type as any);
+        const frame = definition
+            ? workflowNodeFrame({
+                type: definition.type,
+                position: { x: 0, y: 0 },
+                inputs: definition.inputs || [],
+                outputs: definition.outputs || []
+            } as any)
+            : { width: 184, height: 64 };
+        const rect = self.canvasRect();
+        const zoom = self.designer.zoom || 1;
+        const pan = self.designer.pan || { x: 0, y: 0 };
+        const centerX = rect ? (rect.width / zoom) / 2 - pan.x / zoom : 400;
+        const centerY = rect ? (rect.height / zoom) / 2 - pan.y / zoom : 240;
+        self.designer.addNode(type as any, {
+            x: Math.round(centerX - frame.width / 2),
+            y: Math.round(centerY - frame.height / 2)
+        });
+        self.closeQuickAdd();
+        self.notifyChange();
+    };
+
     get groupSettingsTitle(): string { return this.t('groupSettings', 'Group settings'); }
     get groupNameLabel(): string { return this.t('groupName', 'Group name'); }
     get groupColorLabel(): string { return this.t('groupColor', 'Color'); }
@@ -601,6 +733,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             { action: this.t('paste', 'Paste'), keys: 'Ctrl+V' },
             { action: this.t('toggleNode', 'Enable/disable node'), keys: 'Ctrl+E' },
             { action: this.t('boxSelect', 'Box select'), keys: 'Shift+drag' },
+            { action: this.t('quickAdd', 'Quick add node'), keys: 'Ctrl+K' },
             { action: this.t('groupSelection', 'Group selection'), keys: 'Ctrl+G' },
             { action: this.t('ungroup', 'Ungroup'), keys: 'Ctrl+Shift+G' },
             { action: this.t('delete', 'Delete'), keys: 'Delete' },
@@ -1684,6 +1817,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'v' || key === 'V')) {
             this.designer.pasteClipboard();
+            return;
+        }
+        if ((payload.ctrlKey || payload.metaKey) && (key === 'k' || key === 'K')) {
+            this.openQuickAdd();
             return;
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'g' || key === 'G')) {

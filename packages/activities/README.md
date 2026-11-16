@@ -603,6 +603,8 @@ Features:
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
 - searchable palette: filter 54 registered node types by label, description or type,
+- `Ctrl+K` opens a quick-add overlay that searches every registered node and
+  inserts the selected one at the viewport center (arrow keys + Enter),
 - inspector property editing is rendered by the shared JSON-configured
   `dynamic-form` component (conditional fields, groups, per-field defaults and
   reset); validation uses `@tsdi/components/forms` (`required`, `min`/`max`,
@@ -626,8 +628,8 @@ Features:
   Save failed state in the toolbar; manual save and autosave share the same store,
 - global keyboard shortcuts (`Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
   `Ctrl+D` duplicate, `Ctrl+E` enable/disable, `Shift`+drag box select,
-  `Ctrl+C/X/V` copy/cut/paste, `Ctrl+G` group, `?`/`F1` shortcut sheet) and
-  an empty-canvas onboarding hint,
+  `Ctrl+C/X/V` copy/cut/paste, `Ctrl+K` quick add, `Ctrl+G` group, `?`/`F1`
+  shortcut sheet) and an empty-canvas onboarding hint,
 - run history chips replay retained execution snapshots on the canvas; when the
   store implements `listExecutions` (for example `HttpWorkflowDefinitionStore`),
   opening a saved workflow also loads its persisted runs from the server,
