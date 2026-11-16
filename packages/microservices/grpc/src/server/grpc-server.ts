@@ -290,9 +290,17 @@ export class GrpcServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         callback: grpc.sendUnaryData<any>
     ): void {
         const chunks: any[] = [];
+        let cancelled = false;
         call.on('data', (chunk: any) => chunks.push(chunk));
         call.on('error', () => undefined);
+        call.on('cancelled', () => { cancelled = true; });
         call.on('end', async () => {
+            // grpc-js may emit `end` before `cancelled` when the client aborts
+            // a stream; give the cancellation event one tick to arrive.
+            await new Promise(resolve => setTimeout(resolve, 0));
+            if (cancelled || (call as any).cancelled === true) {
+                return;
+            }
             const payload = chunks.length === 1 ? chunks[0] : chunks;
             const request = {
                 pattern: `/${this.options.packageName ? `${this.options.packageName}.` : ''}${serviceName}/${methodName}`,

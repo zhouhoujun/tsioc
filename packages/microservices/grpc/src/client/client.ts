@@ -1,7 +1,7 @@
 import { Injectable, isString, Context, Inject } from '@tsdi/ioc';
 import { defaultFormatter, Pattern, RequestInitOpts, UrlRequestOptions, ResponseEvent, PatternFormatter } from '@tsdi/common';
 import { AbstractClient, ClientHandler } from '@tsdi/client';
-import { defer, mergeMap, Observable } from 'rxjs';
+import { defer, isObservable, mergeMap, Observable } from 'rxjs';
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import { GRPC_CLIENT_OPTIONS, GrpcClientOptions } from './options';
@@ -96,6 +96,40 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
                     { code: err?.code, statusCode: err?.code }
                 )));
                 call.on('end', () => observer.complete());
+                if (isObservable(values)) {
+                    const subscription = values.subscribe({
+                        next: (value: any) => {
+                            try {
+                                call.write(value);
+                            } catch (error) {
+                                observer.error(error);
+                            }
+                        },
+                        error: (error: any) => {
+                            try {
+                                call.destroy?.(error);
+                            } catch {
+                                // best effort
+                            }
+                            observer.error(error);
+                        },
+                        complete: () => {
+                            try {
+                                call.end();
+                            } catch {
+                                // best effort
+                            }
+                        }
+                    });
+                    return () => {
+                        subscription.unsubscribe();
+                        try {
+                            call.cancel?.();
+                        } catch {
+                            // best effort
+                        }
+                    };
+                }
                 writeStreamValues(call, values ?? []);
                 return () => {
                     try {
@@ -113,7 +147,7 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
      */
     clientStream<T = any>(
         pattern: Pattern,
-        values: any[],
+        values: any[] | Observable<any>,
         options: { headers?: Record<string, string>; timeout?: number } = {}
     ): Observable<T> {
         return defer(() => this.connect()).pipe(
@@ -146,7 +180,41 @@ export class GrpcClient extends AbstractClient<GrpcRequest<any>, ResponseEvent<a
                 const call = callOptions
                     ? fn.call(connection, metadata, callOptions, callback)
                     : fn.call(connection, metadata, callback);
-                for (const value of values ?? []) {
+                if (isObservable(values)) {
+                    const subscription = values.subscribe({
+                        next: (value: any) => {
+                            try {
+                                call.write(value);
+                            } catch (error) {
+                                observer.error(error);
+                            }
+                        },
+                        error: (error: any) => {
+                            try {
+                                call.destroy?.(error);
+                            } catch {
+                                // best effort
+                            }
+                            observer.error(error);
+                        },
+                        complete: () => {
+                            try {
+                                call.end();
+                            } catch {
+                                // best effort
+                            }
+                        }
+                    });
+                    return () => {
+                        subscription.unsubscribe();
+                        try {
+                            call.cancel?.();
+                        } catch {
+                            // best effort
+                        }
+                    };
+                }
+                for (const value of (values as any[]) ?? []) {
                     call.write(value);
                 }
                 call.end();

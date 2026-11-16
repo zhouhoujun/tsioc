@@ -6,7 +6,7 @@ import { LoggerModule } from '@tsdi/logger';
 import { Controller, Handle, Payload, provideService, useRouter } from '@tsdi/service';
 import { REQUEST, Transport } from '@tsdi/common';
 import { provideClient } from '@tsdi/client';
-import { lastValueFrom, Observable, toArray } from 'rxjs';
+import { lastValueFrom, Observable, Subject, toArray } from 'rxjs';
 import { GrpcServer } from '../src/server/grpc-server';
 import { useGrpcTransport } from '../src/server/factory';
 import { GrpcClient } from '../src/client/client';
@@ -17,6 +17,7 @@ const PROTO_PATH = path.resolve(__dirname, 'fixtures/greeter.proto');
 @Controller('/grpc')
 class GreeterController {
     static cancelled = 0;
+    static uploads = 0;
 
     @Handle('/grpc.test.Greeter/Watch', Transport.gRPC)
     watch(@Payload('name') name: string) {
@@ -36,6 +37,7 @@ class GreeterController {
 
     @Handle('/grpc.test.Greeter/Upload', Transport.gRPC)
     upload(@Payload() payload: any) {
+        GreeterController.uploads += 1;
         const items = Array.isArray(payload) ? payload : [payload];
         return { message: items.map((item: any) => item?.name).join(',') };
     }
@@ -167,6 +169,21 @@ describe('gRPC unary RPC', () => {
             ).pipe(toArray())
         );
         expect(values.map(value => value.message)).toEqual(['x', 'y']);
+    });
+
+    it('does not invoke the handler when a client stream is cancelled', async () => {
+        const client = clientCtx.get(GrpcClient);
+        const before = GreeterController.uploads;
+        const values = new Subject<any>();
+        const subscription = client.clientStream<any>(
+            { service: 'Greeter', method: 'Upload' } as any,
+            values
+        ).subscribe(() => undefined);
+        values.next({ name: 'partial' });
+        await new Promise(resolve => setTimeout(resolve, 20));
+        subscription.unsubscribe();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(GreeterController.uploads).toBe(before);
     });
 
     it('propagates client cancellation to the server handler teardown', async () => {

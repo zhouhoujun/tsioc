@@ -301,6 +301,12 @@
 - Runtime 保留最近 20 条 SLO 告警（route/时间/errorRate/p95/阈值），每条路由保留 10 条。
 - Diagnostics 输出 alerts；Admin 新增 SLO Alerts 卡片。
 
+第五十四批（gRPC client-stream 取消）：
+
+- `clientStream` 支持 `Observable` 输入，并可在未 complete 时取消。
+- 服务端在 `end` 后延后一拍检查 `cancelled`，避免 grpc-js 的 end→cancelled 顺序导致误执行 handler。
+- 新增取消不触发 handler 的 E2E。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

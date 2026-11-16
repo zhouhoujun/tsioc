@@ -4285,3 +4285,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 仅尺寸匹配且存在缓存帧时启用；不影响首次访问。
 - **实测**：切回初始 tab 的表观首帧从 ~1.3s 降到 **~74ms（同步调用返回时已显示缓存帧）**；后台 flush 仍存在但不阻塞“看到自己的会话”。consol `paintCachedFrame` 新增单测。
 - **验证**：components、common、console、html、agent-ui 全绿；tsc-agent-ui 0；source-size/diff-check OK；build:web 成功。
+- 微服务框架第五十四批（2026-11-13）：
+  - gRPC clientStream 支持 Observable 输入与取消。
+  - 服务端 end/cancelled 顺序竞态处理。
+  - 回归：grpc 27。
