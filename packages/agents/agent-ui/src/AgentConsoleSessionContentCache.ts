@@ -10,6 +10,7 @@ import type { AgentConsoleSessionContentPresentation } from './AgentConsoleSessi
  * and always recompute.
  */
 const presentationCache = new WeakMap<object, AgentConsoleSessionContentPresentation>();
+const normalizedContentCache = new WeakMap<object, string>();
 
 export function cacheAgentConsoleSessionContent(
     compute: (message: AgentMessage) => AgentConsoleSessionContentPresentation
@@ -30,4 +31,35 @@ export function cacheAgentConsoleSessionContent(
         }
         return compute(message);
     };
+}
+
+/**
+ * Cached normalized conversation text (content + parts) used by the mainline
+ * dedupe pass. Same mutability rule as the presentation cache.
+ */
+export function cachedNormalizedConversationContent(message?: AgentMessage): string {
+    if (!message) {
+        return '';
+    }
+    const metadata: any = (message as any)?.metadata || {};
+    const mutable = metadata.streaming === true
+        || metadata.partial === true
+        || String(metadata.status || '').trim().toLowerCase() === 'running';
+    if (!mutable && typeof message === 'object') {
+        const cached = normalizedContentCache.get(message);
+        if (cached !== undefined) {
+            return cached;
+        }
+        const value = computeNormalizedConversationContent(message);
+        normalizedContentCache.set(message, value);
+        return value;
+    }
+    return computeNormalizedConversationContent(message);
+}
+
+function computeNormalizedConversationContent(message: AgentMessage): string {
+    const parts = (message.parts || []).map(part => part.type === 'text'
+        ? `text:${part.text}`
+        : `${part.type}:${part.name || ''}:${part.type === 'image' ? part.imageUrl : part.dataUrl}`);
+    return `${String(message.content || '').replace(/\s+/g, ' ').trim()}|${parts.join('|')}`;
 }

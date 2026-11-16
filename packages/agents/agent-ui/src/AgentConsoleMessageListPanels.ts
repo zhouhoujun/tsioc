@@ -9,6 +9,7 @@ import { formatScheduledTaskDetailLines } from './AgentConsoleScheduledTaskForma
 import { formatSessionAge, formatSessionHint } from './AgentConsoleFormatters';
 import { formatReviewHeaderMeta, formatReviewSelectionMeta, formatReviewStatsMeta } from './AgentConsoleReviewPanelFormat';
 import { resolveMessageRowOffset } from './AgentConsoleTranscriptLayout';
+import { shouldWindowAgentConsoleTranscript } from './AgentConsoleTranscriptWindow';
 import { AgentMessage, basenameAgentPath, ScheduledAgentTask } from '@tsdi/agent';
 import {
     AgentConsoleActivity,
@@ -171,25 +172,20 @@ export class AgentConsoleMessagesPanelComponent {
         return Math.max(0, Number(this.state.consoleOptions.transcriptWindowMessages) || 0);
     }
 
+    /** Reuse the window decision across the many getters that read one frame. */
+    protected windowDecision?: { messages: unknown; key: string; value: boolean };
+
     protected shouldWindowTranscript(limit: number): boolean {
-        const state = this.state;
-        if (state.messageLayout === 'scrollback') {
-            return false;
-        }
-        if (!state.transcriptFollowing || state.messagesFocused || state.messageDetailOpen) {
-            return false;
-        }
         const messages = this.messages;
-        const hidden = messages.length - limit;
-        // An older error root cause must never be windowed away.
-        for (let index = 0; index < hidden; index += 1) {
-            const metadata: any = messages[index]?.metadata || {};
-            const status = String(metadata.status || '').toLowerCase();
-            if (metadata.error || status === 'failed' || status === 'error' || status === 'cancelled') {
-                return false;
-            }
+        const state = this.state;
+        const key = `${limit}|${state.messageLayout}|${state.transcriptFollowing}|${state.messagesFocused}|${state.messageDetailOpen}`;
+        const cached = this.windowDecision;
+        if (cached && cached.messages === messages && cached.key === key) {
+            return cached.value;
         }
-        return true;
+        const value = shouldWindowAgentConsoleTranscript(messages, state, limit);
+        this.windowDecision = { messages, key, value };
+        return value;
     }
 
     /** Slice identity so the item cache invalidates when the window changes. */

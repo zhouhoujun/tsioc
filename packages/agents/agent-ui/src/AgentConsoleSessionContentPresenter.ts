@@ -1,5 +1,5 @@
 import { AgentMessage, getAgentMessageImageParts } from '@tsdi/agent';
-import { cacheAgentConsoleSessionContent } from './AgentConsoleSessionContentCache';
+import { cacheAgentConsoleSessionContent, cachedNormalizedConversationContent } from './AgentConsoleSessionContentCache';
 
 export type AgentConsoleContentFamily = 'conversation' | 'execution' | 'decision' | 'artifact' | 'diagnostic';
 export type AgentConsoleContentKind = 'user' | 'assistant-final' | 'assistant-partial' | 'assistant-preamble' | 'thought' | 'tool'
@@ -364,11 +364,7 @@ export function isNonConversationAssistant(message: AgentMessage): boolean {
 }
 
 export function normalizedConversationContent(message?: AgentMessage): string {
-    if (!message) return '';
-    const parts = (message.parts || []).map(part => part.type === 'text'
-        ? `text:${part.text}`
-        : `${part.type}:${part.name || ''}:${part.type === 'image' ? part.imageUrl : part.dataUrl}`);
-    return `${String(message.content || '').replace(/\s+/g, ' ').trim()}|${parts.join('|')}`;
+    return cachedNormalizedConversationContent(message);
 }
 
 export function firstMeaningfulLine(value: unknown): string {

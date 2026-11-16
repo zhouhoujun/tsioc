@@ -4402,3 +4402,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **可变消息不缓存**：`metadata.streaming/partial` 或 `status=running` 的流式行会被 runtime 原地修改，缓存会读到旧内容，因此这些消息始终重新计算。
 - 实测（1000 条消息，30 次 token 投影）：p50 **65ms → 51ms**，p95 **94ms → 69ms**（约 −22%）。
 - 验证：完整 agent-ui **2148 passing**；tsc、source-size、diff-check 通过。
+
+## 2026-11-16 流式/窗口热路径的重复计算收敛
+- `shouldWindowTranscript` 被多个 getter 在同一帧重复调用，每次都扫描隐藏消息找旧错误；改为按 `(messages, limit, layout, following, focused, detailOpen)` 缓存判定。抽到 `AgentConsoleTranscriptWindow.ts`，同时把 600 行的消息面板压回预算内。
+- `normalizedConversationContent` 在 conversation mainline 去重中对每条消息重复拼 content+parts；改为按消息对象缓存（同样的 streaming/partial/running 可变消息不缓存）。
+- 说明：这两项是热路径复用，单次 token 的墙钟仍由单 live state 的响应式扇出主导（~170ms/token，1000 条历史）；进一步需要 per-session state/窄订阅，而不是再抠投影。
