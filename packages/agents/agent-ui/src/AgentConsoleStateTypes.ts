@@ -332,6 +332,12 @@ export interface AgentConsoleOptions {
     /** Transcript layout: scrollback keeps conversation rows flowing; viewport windows them (legacy 'stream' -> 'scrollback', 'dynamic' -> 'viewport'). */
     messageLayout?: 'scrollback' | 'viewport' | 'dynamic' | 'stream';
     messageDetailVisibleLines?: number;
+    /**
+     * Viewport mode renders only the newest N transcript messages while the
+     * view is following the latest row; scrolling up switches to the full
+     * transcript. 0 disables windowing.
+     */
+    transcriptWindowMessages?: number;
     /** v19-A8: auxiliary tool/event/file-change/system/error content preview lines (policy render, default 8). */
     auxiliaryPreviewLines?: number;
     /**
@@ -408,6 +414,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messageLayout: 'viewport',
     messageDetailVisibleLines: 6,
     auxiliaryPreviewLines: DEFAULT_RENDER_POLICY.auxiliaryPreviewLines,
+    transcriptWindowMessages: 40,
     activityVerbosity: 'medium',
     reasoningPreviewLines: DEFAULT_RENDER_POLICY.reasoningPreviewLines,
     questionTailVisibleLines: DEFAULT_RENDER_POLICY.questionTailVisibleLines,

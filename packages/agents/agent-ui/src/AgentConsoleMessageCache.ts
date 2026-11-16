@@ -23,6 +23,8 @@ export interface AgentConsoleMessageItemsCacheEntry {
     messageDetailOpen: boolean;
     markdownContentWidth: number;
     collapsedTurns: Record<string, boolean>;
+    /** Window slice identity (tail window vs full transcript). */
+    windowSignature: string;
     items: AgentConsoleRenderedMessageItem[];
 }
 

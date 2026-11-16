@@ -154,10 +154,53 @@ export class AgentConsoleMessagesPanelComponent {
         if (this.state.timelineMode) {
             return this.resolveTimelineVisibleMessages(messages);
         }
-        // MESSAGE LAYOUT CONTRACT: stream relies on native scrollback and
-        // viewport relies on the platform surface row scroll; both render the
-        // full transcript and let the platform viewport clip it.
+        // Viewport mode renders only the tail while following the latest row;
+        // the surface keeps scroll distance-from-bottom, so expanding to the
+        // full transcript (scroll up / selection / reveal) does not jump.
+        const limit = this.transcriptWindowLimit;
+        if (limit > 0 && messages.length > limit && this.shouldWindowTranscript(limit)) {
+            return messages.slice(-limit);
+        }
+        // MESSAGE LAYOUT CONTRACT: native scrollback and non-following viewport
+        // render the full transcript and let the platform clip/scroll it.
         return messages;
+    }
+
+    /** Tail-window size for viewport mode (0 disables windowing). */
+    protected get transcriptWindowLimit(): number {
+        return Math.max(0, Number(this.state.consoleOptions.transcriptWindowMessages) || 0);
+    }
+
+    protected shouldWindowTranscript(limit: number): boolean {
+        const state = this.state;
+        if (state.messageLayout === 'scrollback') {
+            return false;
+        }
+        if (!state.transcriptFollowing || state.messagesFocused || state.messageDetailOpen) {
+            return false;
+        }
+        const messages = this.messages;
+        const hidden = messages.length - limit;
+        // An older error root cause must never be windowed away.
+        for (let index = 0; index < hidden; index += 1) {
+            const metadata: any = messages[index]?.metadata || {};
+            const status = String(metadata.status || '').toLowerCase();
+            if (metadata.error || status === 'failed' || status === 'error' || status === 'cancelled') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Slice identity so the item cache invalidates when the window changes. */
+    protected get transcriptWindowSignature(): string {
+        const visible = this.visibleMessages;
+        if (!visible.length) {
+            return 'empty';
+        }
+        const first = String(visible[0]?.id || '');
+        const last = String(visible[visible.length - 1]?.id || '');
+        return `${visible.length}:${first}:${last}`;
     }
 
     protected resolveTimelineVisibleMessages(
@@ -193,6 +236,7 @@ export class AgentConsoleMessagesPanelComponent {
         const messageDetailOpen = this.state.messageDetailOpen;
         const collapsedTurns = this.state.timelineCollapsedTurns;
         const sessionId = String(this.state.sessionId || '').trim();
+        const windowSignature = this.transcriptWindowSignature;
         // Hide/show tab switch: reuse this session's projection even though the
         // panel last painted a different tab.
         const cached = sessionMessageItemsEntry(this, sessionId, messageItemsCache.get(this));
@@ -230,7 +274,8 @@ export class AgentConsoleMessagesPanelComponent {
             && cached.timelineMode === timelineMode
             && cached.timelineViewMode === timelineViewMode
             && cached.messageDetailOpen === messageDetailOpen && cached.markdownContentWidth === this.state.markdownContentWidth
-            && cached.collapsedTurns === collapsedTurns;
+            && cached.collapsedTurns === collapsedTurns
+            && cached.windowSignature === windowSignature;
         // The reactive proxy can hand back a different array identity for the
         // same restored transcript; compare content for the per-session cache.
         const sameMessages = !!cached && sameAgentConsoleMessages(cached.messages as any, messages as any);
@@ -274,6 +319,7 @@ export class AgentConsoleMessagesPanelComponent {
                 messageDetailOpen,
                 markdownContentWidth: this.state.markdownContentWidth,
                 collapsedTurns,
+                windowSignature,
                 items
             };
             messageItemsCache.set(this, entry);
@@ -323,6 +369,7 @@ export class AgentConsoleMessagesPanelComponent {
             timelineViewMode,
             messageDetailOpen, markdownContentWidth: this.state.markdownContentWidth,
             collapsedTurns,
+            windowSignature,
             items
         };
         messageItemsCache.set(this, entry);

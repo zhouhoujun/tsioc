@@ -4388,3 +4388,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 缓存 tab 在 flush 前已绘制自己的帧（`lastRenderedLines` 含目标会话内容）。
   - 打印 p50/p95 作为观察值（本次 p50 112ms / p95 138ms，60 条消息），不做机器相关的硬阈值以免抖动。
 - 该 spec 进入 agent-ui 全量测试与 gate，后续窗口化/状态重构若让切 tab 重新变成多帧会被立即拦下。
+
+## 2026-11-16 viewport 尾部窗口化（跟随最新时只渲染尾部）
+- 新增 `consoleOptions.transcriptWindowMessages`（默认 40，0 关闭）。viewport 模式下，只要 `transcriptFollowing`、未聚焦消息、未打开详情、非 timeline、非 scrollback，且尾部之外没有 error/failed/cancelled 根因，`visibleMessages` 只取最后 N 条；上翻/选中/详情/旧错误/scrollback 自动回退全量。
+- 滚动语义依赖 surface 的“距底部行数”偏移：切全量时在上方新增行不改变可见内容，不跳行。
+- 缓存新增 `windowSignature`（长度 + 首尾 id），窗口滑动/切换全量时正确失效，窗口内只重建变化的行。
+- 实测（4 tabs × 1000 messages）：**renders/switch 1.00，render 28.7ms/switch，sync p50 52ms / p95 106ms**；visible 40 / total 1000。相比未窗口化单帧 ~142ms（200 条）显著下降。
+- 新增 `transcript-window.spec.ts`：尾部窗口、上翻全量、旧错误禁用窗口、scrollback/0 关闭。
+- 完整 agent-ui：**2148 passing**；tsc、source-size、diff-check 通过。
