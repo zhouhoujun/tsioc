@@ -830,6 +830,29 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.[0]?.action).toBe('append');
     });
 
+    it('edits typed values inside list fields', async () => {
+        const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        (root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-add') as any).click();
+        await flush();
+        const row = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row') as any;
+        const typeSelect = row.querySelector('[data-field-key="value"] .workflow-field-value-type') as any;
+        expect(typeSelect).toBeTruthy();
+        typeSelect.value = 'msg';
+        typeSelect.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+
+        const input = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="value"] input') as any;
+        input.value = 'payload.status';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+
+        const rules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
+        expect(rules?.[0]?.value).toBe('msg.payload.status');
+    });
+
     it('renders unit suffixes from node field metadata', async () => {
         ref.instance.designer.selectNode('task_1');
         await flush();

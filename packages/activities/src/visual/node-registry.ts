@@ -267,7 +267,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                             { label: 'is truthy', value: 'truthy' }
                         ]
                     }),
-                    configField({ key: 'value', label: 'Compare to', type: 'text', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+                    configField({ key: 'value', label: 'Compare to', type: 'text', typed: true, visibleWhen: { key: 'operator', notEquals: 'truthy' } })
                 ]
             })
         ],
@@ -522,7 +522,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                             { label: 'is truthy', value: 'truthy' }
                         ]
                     }),
-                    configField({ key: 'value', label: 'Compare to', type: 'text', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+                    configField({ key: 'value', label: 'Compare to', type: 'text', typed: true, visibleWhen: { key: 'operator', notEquals: 'truthy' } })
                 ]
             })
         ],
@@ -1031,7 +1031,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                             { label: 'Append', value: 'append' }
                         ]
                     }),
-                    configField({ key: 'field', label: 'Field', type: 'text', required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'variables.name', description: 'Context path to modify.' }),
+                    configField({ key: 'field', label: 'Field', type: 'text', typed: true, required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'variables.name', description: 'Context path to modify.' }),
                     configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', notEquals: 'delete' }, description: 'New value or item to append.' })
                 ]
             })

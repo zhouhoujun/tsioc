@@ -191,6 +191,17 @@ let dynamicFormSequence = 0;
                                 <div v-for="child in field.itemFields" v-if="isListItemVisible(child, item)">
                                     <div [class]="listItemFieldClass(child)" data-field-key="{{child.key}}">
                                         <label [class]="labelClass()">{{fieldLabel(child)}}<span [class]="requiredClass()" v-if="isRequired(child)">*</span></label>
+                                        <div [class]="typedRowClass()" v-if="isTypedInput(child)">
+                                            <select [class]="typedTypeClass()" data-value-type="true"
+                                                [disabled]="child.disabled || child.readonly"
+                                                @change="changeListItemTypedType(field, listIndex(field, item), child, $event)">
+                                                <option value="literal" [selected]="listItemTypedType(item, child) === 'literal'">Literal</option>
+                                                <option value="msg" [selected]="listItemTypedType(item, child) === 'msg'">msg</option>
+                                                <option value="flow" [selected]="listItemTypedType(item, child) === 'flow'">flow</option>
+                                                <option value="global" [selected]="listItemTypedType(item, child) === 'global'">global</option>
+                                                <option value="env" [selected]="listItemTypedType(item, child) === 'env'">env</option>
+                                            </select>
+                                        </div>
                                         <input v-if="isTextInput(child) || isNumberInput(child)" [class]="inputClass(child)"
                                             type="{{htmlType(child)}}"
                                             [value]="listItemValue(item, child)"
@@ -814,12 +825,37 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     changeListItem(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void {
-                const items = this.listItems(field).map(item => ({ ...item }));
-        const raw = child.type === 'checkbox' || child.type === 'switch'
+        const items = this.listItems(field).map(item => ({ ...item }));
+        let raw = child.type === 'checkbox' || child.type === 'switch'
             ? !!event?.target?.checked
             : event?.target?.value;
+        if (child.typed === true && typeof raw === 'string' && raw !== '') {
+            const type = this.listItemTypedType(items[index], child);
+            if (type !== 'literal' && !/^(msg|flow|global|env)\./.test(raw)) {
+                raw = `${type}.${raw}`;
+            }
+        }
         items[index] = { ...(items[index] || {}), [child.key]: this.coerceValue(child, raw) };
         this.updateList(field, items);
+    }
+
+    listItemTypedType(item: any, child: DynamicFormField): string {
+        const value = String(this.listItemValue(item, child) ?? '');
+        const match = /^(msg|flow|global|env)\./.exec(value);
+        return match ? match[1] : 'literal';
+    }
+
+    changeListItemTypedType(
+        field: DynamicFormField,
+        index: number,
+        child: DynamicFormField,
+        event: any
+    ): void {
+        const item = this.listItems(field)[index] || {};
+        const current = String(this.listItemValue(item, child) ?? '');
+        const text = current.replace(/^(msg|flow|global|env)\./, '');
+        const next = String(event?.target?.value || 'literal');
+        this.changeListItemOption(field, index, child, next === 'literal' ? text : `${next}.${text}`);
     }
 
     changeListItemOption(field: DynamicFormField, index: number, child: DynamicFormField, value: any): void {
