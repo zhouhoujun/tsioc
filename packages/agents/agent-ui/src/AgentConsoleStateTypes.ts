@@ -334,6 +334,12 @@ export interface AgentConsoleOptions {
     messageDetailVisibleLines?: number;
     /** v19-A8: auxiliary tool/event/file-change/system/error content preview lines (policy render, default 8). */
     auxiliaryPreviewLines?: number;
+    /**
+     * Transcript verbosity for consecutive tool/command/event steps.
+     * `high` renders every step (default); `medium`/`low` collapse finished
+     * runs into one expandable Activity row.
+     */
+    activityVerbosity?: 'low' | 'medium' | 'high';
     /** v19-A8: reasoning content preview lines (policy render, default 4). */
     reasoningPreviewLines?: number;
     /** v19-A8: trailing question lines kept visible when a question tail is present (policy render, default 6). */
@@ -402,6 +408,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messageLayout: 'viewport',
     messageDetailVisibleLines: 6,
     auxiliaryPreviewLines: DEFAULT_RENDER_POLICY.auxiliaryPreviewLines,
+    activityVerbosity: 'high',
     reasoningPreviewLines: DEFAULT_RENDER_POLICY.reasoningPreviewLines,
     questionTailVisibleLines: DEFAULT_RENDER_POLICY.questionTailVisibleLines,
     messageSelectionPageSize: 6,

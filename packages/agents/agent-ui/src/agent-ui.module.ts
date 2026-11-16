@@ -53,7 +53,8 @@ import {
     AgentConsolePlanMessageRenderer,
     AgentConsoleQuestionMessageRenderer,
     AgentConsoleThoughtMessageRenderer,
-    AgentConsoleToolMessageRenderer
+    AgentConsoleToolMessageRenderer,
+    AgentConsoleActivityMessageRenderer
     , AgentConsoleUserRenderer
 } from './AgentConsoleMessageRenderers';
 import { AgentConsoleComponent } from './AgentConsoleComponent';
@@ -192,6 +193,7 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
         AgentConsoleDiagnosticMessageRenderer,
         AgentConsoleThoughtMessageRenderer,
         AgentConsoleToolMessageRenderer,
+        AgentConsoleActivityMessageRenderer,
         AgentConsoleCommandMessageRenderer,
         AgentConsolePlanMessageRenderer,
         AgentConsoleFilesMessageRenderer,
@@ -207,6 +209,7 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
                 'assistant-preamble': AgentConsolePreambleRenderer,
                 thought: AgentConsoleThoughtMessageRenderer,
                 tool: AgentConsoleToolMessageRenderer,
+                activity: AgentConsoleActivityMessageRenderer,
                 command: AgentConsoleCommandMessageRenderer,
                 event: AgentConsoleDiagnosticMessageRenderer,
                 question: AgentConsoleQuestionMessageRenderer,

@@ -13,7 +13,8 @@ import {
     AgentConsoleApprovalTemplate, AgentConsoleCommandTemplate, AgentConsoleErrorTemplate,
     AgentConsoleFilesTemplate, AgentConsolePlanTemplate, AgentConsoleQuestionTemplate,
     AgentConsoleSystemTemplate, AgentConsoleThoughtTemplate,
-    AgentConsoleToolTemplate, AgentConsoleUserTemplate
+    AgentConsoleToolTemplate, AgentConsoleUserTemplate,
+    AgentConsoleActivityTemplate
 } from './AgentConsoleMessageTemplates';
 import type { AgentConsoleMessageTemplateKind, AgentConsoleResolvedMessageRenderer } from './AgentConsoleMessageRenderers';
 
@@ -159,6 +160,13 @@ export class AgentConsoleToolMessageRenderer extends AgentConsoleKindRenderer {
     readonly kind = 'tool' as const;
     readonly label = 'Tool · ';
     readonly component = AgentConsoleToolTemplate;
+}
+
+@Injectable()
+export class AgentConsoleActivityMessageRenderer extends AgentConsoleKindRenderer {
+    readonly kind = 'activity' as const;
+    readonly label = 'Activity · ';
+    readonly component = AgentConsoleActivityTemplate;
 }
 
 @Injectable()

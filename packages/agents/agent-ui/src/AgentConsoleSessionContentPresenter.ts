@@ -2,7 +2,7 @@ import { AgentMessage, getAgentMessageImageParts } from '@tsdi/agent';
 
 export type AgentConsoleContentFamily = 'conversation' | 'execution' | 'decision' | 'artifact' | 'diagnostic';
 export type AgentConsoleContentKind = 'user' | 'assistant-final' | 'assistant-partial' | 'assistant-preamble' | 'thought' | 'tool'
-    | 'command' | 'event' | 'question' | 'approval' | 'plan' | 'file-change' | 'attachment'
+    | 'command' | 'event' | 'activity' | 'question' | 'approval' | 'plan' | 'file-change' | 'attachment'
     | 'error' | 'warning' | 'cancelled' | 'system';
 
 export interface AgentConsoleSessionContentPresentation {
@@ -26,8 +26,8 @@ export function presentAgentConsoleSessionContent(message: AgentMessage): AgentC
     const causalKey = clean(metadata.causalKey || metadata.uiEventKey);
     const detailRef = clean(metadata.detailRef || (uiKind === 'event' ? message.id : undefined));
     const meta = [clean(metadata.durationMs != null ? `${metadata.durationMs}ms` : ''), clean(status)].filter(Boolean) as string[];
-
     if (message.role === 'user') return result('conversation', 'user', 'Request', summary, 'primary', true);
+    if (uiKind === 'activity') return result('execution', 'activity', 'Activity', summary, 'supporting', false);
     if (uiKind === 'plan-todo') return result('artifact', 'plan', 'Plan', summary, 'active', true);
     if (uiKind === 'file-change') return result('artifact', 'file-change', 'Files changed', summary, 'supporting', false);
     if (uiKind === 'command-execution' || metadata.type === 'shell') {

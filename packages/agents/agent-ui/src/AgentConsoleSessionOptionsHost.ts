@@ -31,6 +31,22 @@ export abstract class AgentConsoleSessionOptionsHost extends AgentConsoleSession
         };
     }
 
+    /** Transcript verbosity for consecutive completed tool/command/event steps. */
+    get activityVerbosity(): 'low' | 'medium' | 'high' {
+        const value = this.consoleOptions.activityVerbosity;
+        return value === 'low' || value === 'medium' ? value : 'high';
+    }
+
+    setActivityVerbosity(value: 'low' | 'medium' | 'high'): void {
+        if (this.activityVerbosity === value) {
+            return;
+        }
+        this.consoleOptions = {
+            ...this.consoleOptions,
+            activityVerbosity: value
+        };
+    }
+
     setWhichKeyVisible(value: boolean): void {
         this.whichKeyVisible = !!value;
         if (!this.whichKeyVisible) {

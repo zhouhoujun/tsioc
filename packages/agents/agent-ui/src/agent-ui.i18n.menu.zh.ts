@@ -198,6 +198,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         yoloDescription: '自动批准需要审批的工具',
         timestampsLabel: '时间戳：{state}',
         timestampsDescription: '消息时间戳是否显示',
+        activityLabel: '活动详细度：{level}',
+        activityDescription: '把已完成的工具/思考步骤合并为一行',
         toolOutputLabel: '工具输出：{state}',
         toolOutputDescription: '消息中是否显示工具输出',
         usernameLabel: '用户名：{state}',

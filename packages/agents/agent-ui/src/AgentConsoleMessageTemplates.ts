@@ -401,6 +401,19 @@ export class AgentConsoleToolTemplate extends AgentConsoleMessageTemplateBase {
     }
 }
 
+/**
+ * Collapsed run of finished execution steps. The projection already emits the
+ * summary line (collapsed) or summary + one line per step (expanded), so this
+ * template must not preview/collapse the lines again.
+ */
+@Component({ selector: 'agent-console-activity-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
+export class AgentConsoleActivityTemplate extends AgentConsoleMessageTemplateBase {
+    override get templateClass(): string { return 'message-template-tool'; }
+    override get lines(): AgentConsoleRenderedLine[] {
+        return (this.item?.lines || []).map(line => ({ ...line, toggleMode: 'inline' as const }));
+    }
+}
+
 @Component({ selector: 'agent-console-command-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
 export class AgentConsoleCommandTemplate extends AgentConsoleMessageTemplateBase {
     override get templateClass(): string { return 'message-template-command'; }

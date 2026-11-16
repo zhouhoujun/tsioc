@@ -203,6 +203,9 @@ export class P285InteractionGateMountTest {
         if (scenario.expect.messagesVisibleItems) {
             state.setConsoleOptions({ messagesVisibleItems: scenario.expect.messagesVisibleItems });
         }
+        // The gate measures first-screen/CJK rendering of every seeded row;
+        // activity aggregation has its own suite and would hide rows by design.
+        state.setActivityVerbosity('high');
         // The mount promise settles only when the SSE stream EOFs. Non-drop
         // scenarios keep the stream open (connected, idle), so fire the mount
         // WITHOUT awaiting: the seed counters land during connectOnce's seed

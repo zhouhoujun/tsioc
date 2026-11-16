@@ -137,6 +137,28 @@ export async function runDisplayCommand(
     translator?: AgentUiTranslator | null
 ): Promise<boolean> {
     const requested = String(args || '').trim().toLowerCase();
+    if (requested === 'activity' || requested.startsWith('activity ')) {
+        const levels: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+        // Bare `/display activity` steps down verbosity (high -> medium -> low).
+        const cycle: Array<'low' | 'medium' | 'high'> = ['high', 'medium', 'low'];
+        const requestedLevel = requested.split(/\s+/)[1] as 'low' | 'medium' | 'high' | undefined;
+        const current = state.activityVerbosity;
+        if (requestedLevel && !levels.includes(requestedLevel)) {
+            notify(formatAgentUiNotice(translator, 'activityVerbosityUsage'));
+            return true;
+        }
+        const next = requestedLevel || cycle[(cycle.indexOf(current) + 1) % cycle.length];
+        state.setActivityVerbosity(next);
+        notify(formatAgentUiNotice(translator, next === 'low'
+            ? 'activityVerbosityLow'
+            : next === 'medium' ? 'activityVerbosityMedium' : 'activityVerbosityHigh'));
+        try {
+            await persistSettings({ activityVerbosity: next });
+        } catch (error: any) {
+            notify(error?.message || formatAgentUiNotice(translator, 'activityVerbositySaveFailed'));
+        }
+        return true;
+    }
     if (requested === 'critical') {
         state.setShowCriticalMarks(!state.showCriticalMarks);
         notify(formatAgentUiNotice(translator, state.showCriticalMarks ? 'criticalMarksEnabled' : 'criticalMarksDisabled'));

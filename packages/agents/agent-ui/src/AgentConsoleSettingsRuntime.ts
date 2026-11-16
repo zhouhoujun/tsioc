@@ -97,6 +97,9 @@ export async function restoreSettings(self: any): Promise<void> {
         if (typeof persisted.showUsername === 'boolean') {
             self.state.setShowUsername(persisted.showUsername);
         }
+        if (persisted.activityVerbosity) {
+            self.state.setActivityVerbosity(persisted.activityVerbosity);
+        }
         if (persisted.timelineViewMode) {
             self.state.setTimelineMode(persisted.timelineViewMode);
         } else if (typeof persisted.timelineMode === 'boolean') {

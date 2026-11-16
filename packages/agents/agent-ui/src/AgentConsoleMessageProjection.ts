@@ -1,6 +1,7 @@
 import type { AgentMessage } from '@tsdi/agent';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleDecisionMainline, projectAgentConsoleDiagnosticMainline, projectAgentConsoleExecutionMainline, projectAgentConsoleTimelineDurations } from './AgentConsoleSessionContentPresenter';
+import { aggregateAgentConsoleActivity } from './AgentConsoleActivityAggregation';
 import { DEFAULT_TIMELINE_LABELS, TimelineWindowMessage, fillTimelineLabel, formatTimelineClockTime, formatTimelineSessionDuration, isError, truncateTimelineRowText } from './AgentConsoleTimelineWindow';
 
 const displayMessagesCache = new WeakMap<object, {
@@ -14,6 +15,7 @@ const displayMessagesCache = new WeakMap<object, {
     planSignature: string;
     consoleOptions: AgentConsoleSessionState['consoleOptions'];
     timelineLabels: AgentConsoleSessionState['consoleOptions']['timelineLabels'];
+    expandedMessageIds?: string[];
     result: AgentMessage[];
 }>();
 
@@ -22,6 +24,10 @@ export function resolveDisplayMessages(state: AgentConsoleSessionState): AgentMe
     const planSignature = planTodos
         .map(todo => `${todo.id}:${todo.status}:${todo.content}:${todo.elapsedMs ?? ''}`)
         .join('|');
+    // Only activity aggregation depends on completion expansion; keeping the
+    // key out of the default (high) path avoids re-projecting a long transcript
+    // every time an ordinary long message is expanded.
+    const activityAggregation = !state.timelineMode && state.activityVerbosity !== 'high';
     const cached = displayMessagesCache.get(state);
     if (cached
         && cached.messages === state.messages
@@ -33,7 +39,8 @@ export function resolveDisplayMessages(state: AgentConsoleSessionState): AgentMe
         && cached.planTodos === planTodos
         && cached.planSignature === planSignature
         && cached.consoleOptions === state.consoleOptions
-        && cached.timelineLabels === state.consoleOptions.timelineLabels) {
+        && cached.timelineLabels === state.consoleOptions.timelineLabels
+        && (!activityAggregation || cached.expandedMessageIds === state.expandedMessageIds)) {
         return cached.result;
     }
     const result = buildDisplayMessages(state);
@@ -48,6 +55,7 @@ export function resolveDisplayMessages(state: AgentConsoleSessionState): AgentMe
         planSignature,
         consoleOptions: state.consoleOptions,
         timelineLabels: state.consoleOptions.timelineLabels,
+        expandedMessageIds: activityAggregation ? state.expandedMessageIds : undefined,
         result
     });
     return result;
@@ -108,12 +116,23 @@ function buildDisplayMessages(state: AgentConsoleSessionState): AgentMessage[] {
         const projected = projectAgentConsoleExecutionMainline(projectAgentConsoleDiagnosticMainline(
             projectAgentConsoleDecisionMainline(projectAgentConsoleArtifactMainline(filtered))
         ));
+        // verbosity: collapse finished step runs into one expandable Activity
+        // row. Timeline modes already group/window execution rows, so they keep
+        // their own projection. Applied last so the mainline projections never
+        // re-order or de-duplicate the synthetic row.
+        const aggregated = state.timelineMode
+            ? projected
+            : aggregateAgentConsoleActivity(projected, {
+                verbosity: state.activityVerbosity,
+                isExpanded: id => state.isMessageExpanded(id),
+                formatSteps: count => state.translateLabel('agent.message.activitySteps', { count }, `${count} steps`)
+            });
         // A command echo starts a new interaction. Appending it after the
         // projected turn keeps the final answer (and every existing row) in
         // place; inserting it mid-list rebuilt the async message rows, which
         // briefly emptied the transcript and moved the viewport.
-        projected.push(...state.commandExecutionMessages);
-        return projected;
+        aggregated.push(...state.commandExecutionMessages);
+        return aggregated;
     }
 
 export function resolveTimelineSessionStartTime(state: AgentConsoleSessionState): number {

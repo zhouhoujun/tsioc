@@ -65,6 +65,7 @@ export const agentUiEnglish: TranslationBundle = {
                 warning: 'Warning · ',
                 cancelled: 'Cancelled · ',
                 system: 'System · ',
+                activity: 'Activity · ',
                 event: 'Event · ',
                 rawOutput: 'Raw output',
                 loadingOutput: 'Loading raw output…',
@@ -102,6 +103,7 @@ export const agentUiEnglish: TranslationBundle = {
                 unknown: 'The request to {provider} for model {model} failed (status {status}). Retry, or switch model with /model.'
             },
             message: {
+                activitySteps: '{count} steps',
                 expand: '… {count} more lines. Click to expand',
                 collapse: 'Click to collapse',
                 expandAction: 'Click to expand',

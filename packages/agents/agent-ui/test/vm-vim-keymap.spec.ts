@@ -483,7 +483,7 @@ export class VmVimKeymapTest {
 
             await component.sessionState.confirmSelectMenu('general');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
-            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'yolo', 'timestamps', 'tooloutput', 'username', 'title', 'touch']);
+            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'yolo', 'timestamps', 'activity', 'tooloutput', 'username', 'title', 'touch']);
 
             await component.sessionState.confirmSelectMenu('vim');
             await pending;

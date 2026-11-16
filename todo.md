@@ -4314,3 +4314,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - **修复 2：缓存切换不再主动让出渲染微任务**。缓存帧已先绘制，`applyCachedView` 后不再 `await` 4 个微任务，使 restore 落在同一帧，减少一次整帧重绘。
 - **实测**：每 tab 切换渲染次数 2.5 → 2.3，渲染耗时/切换约 97ms → 约 57ms（首帧仍由缓存帧即时呈现）。未做多 pane keep-alive：profile 显示布局/渲染是主成本，多 pane 不会消除，收益不足且回归面大。
 - **验证**：agents gate 10/10 PASS（components/common/console/html、agent-ui 2128、tsc、source-size、diff-check、build:web）；新增 equality 回归 6 条。
+
+## 2026-11-16 transcript activity 聚合（可折叠 Activity 行）
+- **新增**：`activityVerbosity: 'high' | 'medium' | 'low'`（默认 `high`，保持现有逐步骤显示；`/display activity [low|medium|high]` 或 `/settings → General → Activity verbosity` 开启并持久化到 workspace settings）。
+  - `medium`：连续 ≥2 个已完成的 tool/command/event 步骤合并为一行 `Activity · N steps · 总耗时`，点击/Enter 展开显示每步摘要与耗时。
+  - `low`：在 `medium` 基础上把已完成的 thought 也并入 activity。
+  - running / failed / error / blocked 步骤、错误根因、最终回答始终单独显示，不被折叠。
+  - timeline 模式保留自己的事件窗口/分组，不参与 activity 聚合。
+- **实现**：`AgentConsoleActivityAggregation` 在 mainline 投影之后生成稳定 id（`__activity__<首步id>`）的合成消息；新增 `activity` 语义 kind、`AgentConsoleActivityMessageRenderer` 路由与 `AgentConsoleActivityTemplate`（不自带 preview，展开状态由投影生成行）。`/display activity` 写入 `activityVerbosity`，设置 store 做净化/读写并启动恢复。
+- **验证**：agents gate 10/10 PASS（agent-ui 2136）；新增 `activity-aggregation.spec.ts` 覆盖 high/medium/low、展开、running/失败保留、命令与持久化、真实 TUI 渲染；i18n 目录 en/zh 同步。

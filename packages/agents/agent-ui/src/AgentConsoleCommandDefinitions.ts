@@ -78,7 +78,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/theme', description: 'preview or apply a saved UI theme', group: 'display', args: [{ name: 'name' }] },
     { name: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide'] }] },
     { name: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['off', 'compact', 'steps', 'verbose'] }] },
-    { name: '/display', description: 'toggle message timestamp visibility: /display [on|off|critical]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide', 'critical'] }] },
+    { name: '/display', description: 'display settings: timestamps /display [on|off], critical marks /display critical, activity verbosity /display activity [low|medium|high]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide', 'critical', 'activity'] }, { name: 'value', variadic: true }] },
     { name: '/layout', description: 'switch transcript layout: /layout [scrollback|viewport]', group: 'display', hidden: true, args: [{ name: 'mode', type: 'enum', values: ['scrollback', 'viewport'] }] },
     { name: '/tui', description: 'switch TUI buffer mode: /tui [fullscreen|scrollback]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['fullscreen', 'scrollback', 'viewport'] }] },
     { name: '/outputs', description: 'command results history: browse /outputs; up/down/j/k move, / filter, enter copy', group: 'display' },

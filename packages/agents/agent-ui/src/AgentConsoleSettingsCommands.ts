@@ -10,11 +10,13 @@ export interface AgentConsoleSettingsState {
     showTimestamps: boolean;
     vimMode: boolean;
     messageLayout: 'scrollback' | 'viewport';
+    activityVerbosity: 'low' | 'medium' | 'high';
     setTimelineMode(mode: 'off' | 'compact' | 'steps' | 'verbose'): void;
     setShowCriticalMarks(value: boolean): void;
     setShowTimestamps(value: boolean): void;
     setVimMode(value: boolean): void;
     setMessageLayout(value: 'scrollback' | 'viewport' | 'stream'): void;
+    setActivityVerbosity(value: 'low' | 'medium' | 'high'): void;
 }
 
 export async function openSettingsKeybindsTab(
@@ -113,6 +115,7 @@ export async function openSettingsGeneralTab(host: SettingsPanelHost): Promise<b
         { label: settingsLabel(host.translator, 'agent.menu.settings.thinkingLabel', 'Thinking: {state}', { state: shownHidden(host.state.showThinking) }), value: 'thinking', description: settingsLabel(host.translator, 'agent.menu.settings.thinkingDescription', 'reasoning message visibility') },
         { label: settingsLabel(host.translator, 'agent.menu.settings.yoloLabel', 'Yolo mode: {state}', { state: onOff(host.yoloMode) }), value: 'yolo', description: settingsLabel(host.translator, 'agent.menu.settings.yoloDescription', 'automatically approve gated tools') },
         { label: settingsLabel(host.translator, 'agent.menu.settings.timestampsLabel', 'Timestamps: {state}', { state: shownHidden(host.state.showTimestamps) }), value: 'timestamps', description: settingsLabel(host.translator, 'agent.menu.settings.timestampsDescription', 'message timestamp visibility') },
+        { label: settingsLabel(host.translator, 'agent.menu.settings.activityLabel', 'Activity verbosity: {level}', { level: host.state.activityVerbosity }), value: 'activity', description: settingsLabel(host.translator, 'agent.menu.settings.activityDescription', 'collapse finished tool/reasoning runs into one row') },
         { label: settingsLabel(host.translator, 'agent.menu.settings.toolOutputLabel', 'Tool output: {state}', { state: shownHidden(host.state.showToolOutput) }), value: 'tooloutput', description: settingsLabel(host.translator, 'agent.menu.settings.toolOutputDescription', 'tool output visibility in messages') },
         { label: settingsLabel(host.translator, 'agent.menu.settings.usernameLabel', 'Username: {state}', { state: shownHidden(host.state.showUsername) }), value: 'username', description: settingsLabel(host.translator, 'agent.menu.settings.usernameDescription', 'username label visibility') },
         { label: settingsLabel(host.translator, 'agent.menu.settings.windowTitleLabel', 'Window title: {state}', { state: onOff(host.options.ui?.terminalTitle !== false) }), value: 'title', description: settingsLabel(host.translator, 'agent.menu.settings.windowTitleDescription', 'terminal/document title sync') },
@@ -163,6 +166,9 @@ export async function openSettingsGeneralTab(host: SettingsPanelHost): Promise<b
     }
     if (option === 'timestamps') {
         return host.runDisplayCommand('');
+    }
+    if (option === 'activity') {
+        return host.runDisplayCommand('activity');
     }
     if (option === 'tooloutput') {
         host.state.setShowToolOutput(!host.state.showToolOutput);

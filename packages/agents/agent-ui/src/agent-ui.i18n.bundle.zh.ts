@@ -181,6 +181,7 @@ export const agentUiChinese: TranslationBundle = {
                 warning: '警告 · ',
                 cancelled: '已取消 · ',
                 system: '系统 · ',
+                activity: '活动 · ',
                 event: '事件 · ',
                 rawOutput: '原始输出',
                 loadingOutput: '正在读取原始输出…',
@@ -218,6 +219,7 @@ export const agentUiChinese: TranslationBundle = {
                 unknown: '请求 {provider} 的 {model} 失败（状态 {status}）。可重试，或用 /model 切换模型。'
             },
             message: {
+                activitySteps: '{count} 个步骤',
                 expand: '… 还有 {count} 行，点击展开',
                 collapse: '点击收起',
                 expandAction: '点击展开',

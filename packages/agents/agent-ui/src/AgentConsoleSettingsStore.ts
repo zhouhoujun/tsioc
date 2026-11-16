@@ -10,6 +10,7 @@ export interface AgentConsoleSettingsData {
     showTimestamps?: boolean;
     showToolOutput?: boolean;
     showUsername?: boolean;
+    activityVerbosity?: 'low' | 'medium' | 'high';
     timelineMode?: boolean;
     timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
     messageLayout?: 'scrollback' | 'viewport' | 'dynamic' | 'stream';
@@ -137,6 +138,11 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         showTimestamps: typeof parsed?.showTimestamps === 'boolean' ? parsed.showTimestamps : undefined,
         showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
         showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
+        activityVerbosity: parsed?.activityVerbosity === 'low'
+            ? 'low'
+            : parsed?.activityVerbosity === 'medium'
+                ? 'medium'
+                : parsed?.activityVerbosity === 'high' ? 'high' : undefined,
         timelineViewMode,
         messageLayout: parsed?.messageLayout === 'scrollback' || parsed?.messageLayout === 'stream'
             ? 'scrollback'
@@ -200,6 +206,7 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.showTimestamps === 'boolean' ? { showTimestamps: data.showTimestamps } : {}),
             ...(typeof data.showToolOutput === 'boolean' ? { showToolOutput: data.showToolOutput } : {}),
             ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
+            ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),
             ...(data.messageLayout ? { messageLayout: data.messageLayout } : {}),
             ...(data.thinkingLevel ? { thinkingLevel: data.thinkingLevel } : {}),

@@ -198,6 +198,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         yoloDescription: 'automatically approve gated tools',
         timestampsLabel: 'Timestamps: {state}',
         timestampsDescription: 'message timestamp visibility',
+        activityLabel: 'Activity verbosity: {level}',
+        activityDescription: 'collapse finished tool/reasoning runs into one row',
         toolOutputLabel: 'Tool output: {state}',
         toolOutputDescription: 'tool output visibility in messages',
         usernameLabel: 'Username: {state}',

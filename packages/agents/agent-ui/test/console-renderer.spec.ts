@@ -580,7 +580,7 @@ export class AgentConsoleMessagesRendererTest {
     @Test('mounts semantic route components and only folds Thought in stream layout')
     async mountsSemanticRouteComponents() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
-        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'scrollback' });
+        ref.instance.sessionState.setConsoleOptions({ messageLayout: 'scrollback', activityVerbosity: 'high' });
         const content = Array.from({ length: 12 }, (_, index) => `semantic line ${index + 1}`).join('\n');
         ref.instance.sessionState.setMessages([
             { id: 'thought', role: 'assistant', content, metadata: { uiEventType: 'reasoning' } },
