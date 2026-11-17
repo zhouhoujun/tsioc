@@ -1,0 +1,249 @@
+# @tsdi/components/common
+
+Renderer-neutral components and shared utilities for `@tsdi/components`.
+
+This package is the layer between the reactive component core and the concrete
+platform renderers. It contains widgets whose markup and behavior are identical
+in a browser and in a terminal, plus the pure helpers both surfaces need
+(display width, input handling, themes, paging, syntax tokens).
+
+## Architecture
+
+```
+host application (agent-ui, workflow designer, admin UI, ...)
+        │  @Component templates + imports
+        ▼
+@tsdi/components/common          ← this package (renderer-neutral)
+        │  only depends on
+        ▼
+@tsdi/components                 ← reactive Proxy core, template compiler,
+        │                          Renderer / TemplateParser abstractions
+        ├── @tsdi/components/html      (real DOM)
+        ├── @tsdi/components/console   (terminal grid)
+        └── @tsdi/components/xml       (headless node tree)
+```
+
+Rules this layer must keep (see the root `AGENTS.md`):
+
+- `common` may import `@tsdi/components` and `@tsdi/ioc`, nothing else from the
+  platform packages.
+- It must never import `@tsdi/components/html` or `@tsdi/components/console`, and
+  must not touch Node APIs (`node:`, `process`, `Buffer`, `fs`, ...).
+- Platform differences are expressed through stable semantics — shared class
+  names, `data-*` attributes and plain data props — not through per-platform
+  branches or duplicated markup.
+- Widgets receive everything they need as `@Attribute()` inputs/callbacks and
+  expose only semantic state. The HTML renderer paints DOM, the console renderer
+  paints terminal cells.
+
+## Entry points
+
+| Import | Contents |
+| --- | --- |
+| `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
+| `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
+| `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
+| `@tsdi/components/common/<widget>` | one widget package: `alert`, `dialog`, `dynamic-form`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `panel`, `select`, `status-list`, `tab-bar`, `tabs`, `toast` |
+
+## Bootstrapping
+
+`BaseComponentsModule` provides the renderer-neutral services (currently
+`ThemeService`). Import it, plus the widget modules a component declares:
+
+```ts
+import { Component } from '@tsdi/components';
+import { BaseComponentsModule } from '@tsdi/components/common';
+import { PanelModule } from '@tsdi/components/common/panel';
+import { ListModule } from '@tsdi/components/common/list';
+
+@Component({
+  selector: 'my-page',
+  imports: [BaseComponentsModule, PanelModule, ListModule],
+  template: `
+    <panel :summary="summary" :items="detailItems"></panel>
+    <list [items]="messages" :selectAction="select"></list>
+  `
+})
+export class MyPageComponent {
+  summary = '2 runs';
+  detailItems = [{ lineNumber: '1', text: 'ready' }];
+  messages = [{ id: 'm1', label: 'Hello' }];
+
+  select = (item: { id: string }) => { /* ... */ };
+}
+```
+
+Applications that mount a whole page pass the platform template module and the
+core module; the shared modules come along through component `imports`:
+
+```ts
+const ctx = await Application.run(MyPageComponent, {
+  deps: [HtmlTemplateModule, ComponentsModule]   // or XmlTemplateModule / ConsoleTemplateModule
+});
+```
+
+## Services and helpers
+
+### ThemeService
+
+```ts
+import { ThemeService, applyThemeToDocument } from '@tsdi/components/common';
+
+const themes = new ThemeService();
+themes.current;            // 'light' (default)
+themes.available;          // ['light', 'dark', 'solarized', 'high-contrast']
+themes.setTheme('dark');   // notifies subscribers
+themes.subscribe(theme => { /* host: swap CSS variables */ });
+applyThemeToDocument(document, 'high-contrast');
+```
+
+The service stores a theme name only. Renderers own the actual CSS variables
+(`components/html` mirrors the theme onto document/data attributes, the console
+renderer resolves its own variables from the active stylesheet).
+
+### Display width
+
+CJK/emoji-aware text metrics used by tables, braces and terminal layout:
+
+```ts
+getDisplayWidth('组件');          // 4
+sliceByDisplayWidth(text, 20);    // cut without splitting wide glyphs
+padByDisplayWidth(text, 20);      // right-pad to a column count
+fitByDisplayWidth(text, 20);      // slice + pad
+```
+
+### Shared input helpers
+
+Renderer-neutral state machines for prompts, select windows and history rules:
+`clampSelectIndex`, `resolveSelectWindow` (`resolveListWindow`), `formatIndexedOptionLabel`,
+`clampTextCursor`, `previousGraphemeIndex`/`nextGraphemeIndex`,
+`previousWordStart`/`nextWordEnd`, `shouldSkipHistoryEntry`,
+`processTextInputChunk`/`shouldSubmitTextInputChunk`, `resolveEnterAction`,
+`buildBrandBlock`, `parseSlashCommandLine`. The browser and the terminal feed
+the same helpers so keyboard behavior stays identical.
+
+### Raw element refs
+
+`markElementRefRaw(elementRef)` marks a renderer element ref so the reactive
+proxy never wraps it. Widgets that hand their `ElementRef` to platform layout
+code call it in the constructor; otherwise DOM/console nodes would be proxied
+and compared/changed unexpectedly.
+
+## Pager and scrolling model
+
+`ScrollBox` is the unit-agnostic scroll/follow model; `PagerBox` adds find
+matches over rendered lines; `composePagerViewLines` produces the HUD + visible
+rows consumed by both surfaces.
+
+```ts
+import { PagerBox, composePagerViewLines } from '@tsdi/components/common/pager';
+import { renderPagerView } from '@tsdi/components/html';       // DOM
+// console: renderPrimaryTerminalScreen(...) paints the same lines
+
+const pager = new PagerBox({ wheelStep: 3 });
+pager.setContent(lines);
+pager.search('error');
+pager.visibleLines();
+const view = composePagerViewLines(pager, viewportHeight);
+```
+
+- `ScrollBox`: `setContentHeight`, `setViewportHeight`, `setMetrics`, `scrollBy`,
+  `scrollTo`, `scrollToEdge`, `handleKey`, `wheel`, `noteNewItems`,
+  `resumeFollow`, `following`, `newItemCount`, `setSticky`.
+- `PagerBox`: `open`/`close`, `setContent`, `search`, `nextMatch`/`prevMatch`,
+  `visibleRange`/`visibleLines`, `matchesAtRow`, `scrollMatchIntoView`.
+- DOM/terminal adapters live in `components/html` / `components/console`; they
+  only mirror positions and paint segments (`match` / `current`).
+
+## Syntax tokens
+
+```ts
+import { tokenizeCodeLine, normalizeCodeLanguage } from '@tsdi/components/common/syntax';
+
+const state = {};
+const tokens = tokenizeCodeLine('const x = 1;', 'ts', state); // [{ text, kind }, ...]
+```
+
+The tokenizer is shared by both renderers: DOM emits spans with `data-tone`,
+the terminal maps token kinds to code-theme colors. Keep language profiles here
+— never add a second tokenizer in a renderer or in agent-ui.
+
+## Widget catalog
+
+All widgets are renderer-neutral and expose their state through `@Attribute()`
+fields. Actions are callback attributes (`selectAction`, `closeAction`,
+`changeAction`, ...); value-change notifications use `EventEmitter` fields
+(e.g. `panel.expandedChange`).
+
+| Selector | Component / module | Purpose and main attributes |
+| --- | --- | --- |
+| `panel` | `PanelComponent` / `PanelModule` | Collapsible detail panel. `summary`, `meta`, `selection`, `hint`, `items` (`PanelLineItem[]`), `expanded` + `expandedChange`, `locale`, `expandText`/`collapseText`. Project slots with `<panel-header>`, `<panel-summary>`, `<panel-body>` children; clicking the header/summary/toggle flips `expanded`. |
+| `list` | `ListComponent` / `ListModule` | Windowed list with paging. `items`, `cursor`, `hasMore`, `hasPrevious`, `loading`, `error`, `empty`, labels (`loadingLabel`/`moreLabel`/`olderLabel`), `loadPage`/`loadPreviousPage`, `selectAction`/`selectValueAction`/`closeAction`, `visibleItems`, `windowOffset`, detail props (`detailLines`, `contextLines`). |
+| `select-list` | `SelectComponent` / `SelectModule` | Select menu overlay. `options` (`SelectOption[]`), `selectedIndex`, `visibleCount`, `title`, `hint`, `detailLines`, `suggestion`, `fitContent`, `selectAction`, `closeAction`, `keydownAction`. |
+| `dialog-panel` | `DialogComponent` / `DialogModule` | Dialog chrome: `title`, `lines`, `hint`, `ariaLabel`, `closeLabel`, `closeAction`, `maxWidth`/`minWidth`, `horizontalChrome`. |
+| `alert-dialog` | `AlertDialogComponent` / `AlertModule` | Dialog with semantic tone and primary action: adds `tone` (`info`/`success`/`warning`/`error`), `actionLabel`, `acceptAction`. |
+| `toast-stack` | `ToastStackComponent` / `ToastModule` | Renders `ToastEntry[]`; the host provides `ToastService` (queue: `show`, `dismiss`, `clear`, `subscribe`) and feeds `items` to the stack. |
+| `status-list` | `StatusListComponent` / `StatusListModule` | `title`, `hint`, `items` (`StatusListItem[]`) for compact key/value/status rows. |
+| `keymap-panel` | `KeymapPanelComponent` / `KeymapPanelModule` | Keyboard help: `items` or `groups`, `grouped`, `title`, `hint`. |
+| `tabs` | `TabsComponent` / `TabsModule` | Tab strip + content host driven by `TabsSource`; `stripOnly` renders only the bar, `activeId`, `select`/`create`/`close`. |
+| `tab-bar` | `TabBarComponent` / `TabBarModule` | Shared strip only. Data comes from a `TabBarSource` attribute or the `TAB_BAR_SOURCE` token; `items` carry `active`, `showClose` (`true`/`false`/`'hover'`), `disabled`. |
+| `menu-bar` | `MenuBarComponent` / `MenuBarModule` | Application menu with one level of flyout submenus. `groups` (`MenuBarGroup[]`), `label`, `icon`, `caret`, `align`, `open`, `selectAction`, `openChange`. |
+| `workspace-layout` | `WorkspaceLayoutComponent` / `WorkspaceLayoutModule` | Left/center/right/bottom panes with draggable splitters. `leftRatio`/`rightRatio`/`bottomRatio`, `min*`, `resizable`, `*Collapsed`, `resizeAction`/`collapseAction`, `resizePane`/`togglePane` helpers. Style with `installWorkspaceLayoutStyles(document)`. |
+| `grid-layout` / `grid-item` | `GridLayoutComponent` / `GridLayoutModule` | CSS-grid container. `columns`, `rows`, `gap`, `rowGap`, `columnGap`, `autoFit`, `minItemWidth`, `areas`, `flow`, `alignItems`, `justifyItems`, `fill`; items accept `span`, `rowSpan`, `start`, `end`, `rowStart`/`rowEnd`, `area`. |
+| `markdown-table` / `markdown-code` | `MarkdownTableComponent` / `MarkdownModule` | Semantic table/code shells consumed by both renderers. Table cells are `MarkdownToken[]` + align; code lines are `MarkdownToken[][]` with tone classes. |
+| `dynamic-form` | `DynamicFormComponent` / `DynamicFormModule` | JSON-schema form with shared validation. See the main `@tsdi/components` README for the full schema, validation and host API. |
+| `icon` | `IconDirective` / `IconModule` | `<icon name="run" size="sm" label="…">` (or `icon` / `glyph`), registry lookups (`getIcon`, `resolveIcon`, `hasIcon`, `ICON_NAMES`), optional SVG helpers (`iconPathAttributes`, `iconGlyphText`). |
+
+### Projection example (`panel`)
+
+```html
+<panel :items="detailItems">
+  <panel-header>{{summary}}</panel-header>
+  <panel-summary>
+    <label v-for="line in summaryLines">{{line}}</label>
+  </panel-summary>
+  <panel-body>
+    <label v-for="line in bodyLines">{{line}}</label>
+  </panel-body>
+</panel>
+```
+
+The projected tags are read through `PROJECTION_NODES`; the console and DOM
+renderers project real children, so no platform flag is needed.
+
+## Styling
+
+Widgets emit stable class names (`console-panel`, `dialog-panel`, `list-panel`,
+`select-shell`, `tab-bar`, `markdown-table`, ...) and semantic attributes
+(`data-tone`, `data-status`, `data-selected`, `aria-*`). DOM hosts install the
+shared skins with the exported helpers — `installDynamicFormStyles`,
+`installGridLayoutStyles`, `installIconStyles`, `installMenuBarStyles`,
+`installTabBarStyles`, `installWorkspaceLayoutStyles` — while the console
+renderer resolves the same class names through the compiled console stylesheet
+(`components/console/styles/console.scss`, shipped as
+`default-styles.generated.ts`). Do not hard-code colors in widget templates —
+use the theme variables documented under each widget's styles module.
+
+## Exports
+
+```ts
+// core helpers
+export { BaseComponentsModule, ThemeService, applyThemeToDocument }
+export { getDisplayWidth, sliceByDisplayWidth, padByDisplayWidth, fitByDisplayWidth }
+export * from './input'          // shared prompt/select/history helpers
+export { markElementRefRaw }
+
+// widgets are imported from their own entry points
+export * from '@tsdi/components/common/panel'   // etc.
+```
+
+## Testing
+
+```bash
+cd packages/components/common
+npm run test      # ts-node -r tsconfig-paths/register unit.ts
+```
+
+Widget specs live in `test/`; they mount real components through `Application`
+and assert the rendered DOM/console output. Keep new widgets covered by a
+spec that mounts them with a real renderer instead of only calling methods.

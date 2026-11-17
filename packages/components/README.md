@@ -5,6 +5,27 @@ This repo is for distribution on `npm`. The source for this module is in the
 
 `@tsdi/components`： components framewroks. base on AOP, Ioc container, via `@tsdi/core`.
 
+It is a **reactive UI framework**: component state is wrapped in an ES `Proxy`,
+and template bindings observe property changes automatically (no manual
+subscriptions, notifications or re-renders). Lists are updated by replacing the
+array reference. See [Reactivity (Proxy-based)](#reactivity-proxy-based) below.
+
+
+## Packages
+
+| Package | Role | Docs |
+| --- | --- | --- |
+| `@tsdi/components` | Reactive core, template compiler, renderer ports | this README |
+| `@tsdi/components/common` | Renderer-neutral widgets (panel, list, select, dialog, tabs, menu, layout, grid, dynamic-form, markdown, icons, ...) and shared helpers (theme, display width, pager, syntax tokens) | [common](common/README.md) |
+| `@tsdi/components/html` | DOM renderer plus browser helpers (scroll follow, overlay anchors, pager, animation clock) | [html](html/README.md) |
+| `@tsdi/components/console` | Terminal renderer (console tree, TUI layout, terminal surface, input/paging) | [console](console/README.md) |
+| `@tsdi/components/xml` | Headless XML node-tree renderer for server/CLI and tests | [xml](xml/README.md) |
+| `@tsdi/components/router` | Angular-style routes, guards, lazy loading, outlets and links | [router](router/README.md) |
+
+Platform packages are siblings: `common` depends only on the core, `html` and
+`console` never import each other, and `xml` is a third, DOM-free renderer. Hosts
+pick one renderer module and reuse the same component templates and shared
+widgets.
 
 # Install
 
@@ -14,12 +35,150 @@ npm install @tsdi/components
 
 ```
 
+## Reactivity (Proxy-based)
+
+`@tsdi/components` is a reactive framework. Component instances, objects passed
+in through template bindings (`:prop` / `[prop]`), DI-shared state, and any
+nested plain objects/arrays they expose are lazily wrapped in an ES `Proxy`
+(`src/reactive.ts`). Every property read inside a template binding is tracked by
+the shared `ReactiveEffect` (`src/impl/effect.ts`), and every write re-runs
+exactly the bindings that read that property.
+
+**Template bindings are the listeners.** Every binding form below is evaluated
+inside `effect.run(...)` while the view is created or refreshed (an event
+handler body runs later, when the event fires). Whatever the expression reads
+becomes a dependency; event handlers only need to write state. There is nothing
+to subscribe to and nothing to refresh manually.
+
+### Template binding syntax
+
+```html
+<!-- 1. Text interpolation: any expression, pipes allowed -->
+<h1>{{title}}</h1>
+<p>{{user.name}} · {{count + 1}} · {{today | date-format:'yyyy-MM-dd'}}</p>
+
+<!-- 2. Interpolation inside attribute values -->
+<span class="tone-{{tone}}" title="Hello {{user.name}}">…</span>
+
+<!-- 3. Property binding: `:prop` and `[prop]` are equivalent -->
+<input :disabled="busy" [value]="query" />
+<div :class="{active: isActive}" :style="{color: color}"></div>
+
+<!-- 4. Two-way binding: writes back on the `input` event -->
+<input v-model="query" />
+
+<!-- 5. Events: arguments are evaluated when the event fires -->
+<button @click="save">Save</button>
+<button @click="pick(item.id)">Pick</button>
+<form @submit="submit($event)">…</form>
+
+<!-- 6. Structural directives -->
+<p v-if="loading">Loading…</p>
+<p v-else-if="error">Failed</p>
+<p v-else>Ready</p>
+<div v-show="expanded">…</div>
+<li v-for="item in items">{{item.text}}</li>
+<li v-for="(item, index) in items">{{index}}: {{item.text}}</li>
+<li v-for="let item of items">{{item.text}}</li>
+<div v-switch="mode">
+  <span v-case="'edit'">Editing</span>
+  <span v-default>Viewing</span>
+</div>
+
+<!-- 7. Object attribute spread / event map -->
+<path v-bind="edge.attrs"></path>
+<button v-on="{ click: save, dblclick: reset }">…</button>
+
+<!-- 8. Child component inputs / outputs (declared with @Attribute) -->
+<status-bar :state="state" @select="onSelect"></status-bar>
+```
+
+- `{{ expr }}` delimiters are configurable through the compiler
+  (`delimiters: ['{{', '}}']`).
+- `:prop` / `[prop]` / `v-for` evaluate arbitrary expressions (`:value="user.name"`,
+  `v-for="row in rows.filter(r => r.visible)"`); `v-model` writes `context[prop]`
+  directly, so its target must be a plain field name (`v-model="query"`, not
+  `v-model="user.name"`).
+- `v-for` scopes expose the declared names plus `$implicit`, `$index`, `$first`,
+  `$last`, `$even`, `$odd`, `$key` and `$count`. Event arguments such as
+  `@click="pick(item.id)"` resolve against the current loop scope when the event
+  fires.
+- Child components receive values through `:attr="expr"` (plain `attr="text"`
+  passes a literal string) and callbacks through `@event="handler"`; the names
+  must match an `@Attribute()` declared by the child (alias allowed).
+- `v-templateOutlet` + `:templateOutletContext` render a `TemplateRef` with a
+  context object, and `v-bind="obj"` sets string attributes from an object.
+- Structural directives compose with the other bindings on the same element:
+  `<button v-for="x in xs" @click="pick(x)">`.
+
+### Which writes re-run bindings
+
+- object fields at any depth: `state.title = 'x'`,
+  `state.settings.theme = 'dark'`, `delete state.temp` — yes
+- whole replacement: `state.session = other`, `state.items = next` — yes
+- array element / index writes: `arr[i] = v` — yes for bindings that read that
+  index (and for `v-for` content when the item fields are written, e.g.
+  `items[0].text = 'done'`)
+- **array structural mutation is not detected**: `push` / `pop` / `shift` /
+  `unshift` / `splice` / `sort` / `reverse` keep the same array reference, so
+  `v-for` and `{{items.length}}` do **not** update. Replace the reference
+  instead: `state.items = [...state.items, item]`,
+  `state.items = state.items.filter(...)`.
+
+```typescript
+@Component({
+  selector: 'todo-list',
+  template: `
+    <h2>{{state.title}} ({{state.items.length}})</h2>
+    <ul><li v-for="item in state.items">{{item.text}}</li></ul>
+    <button @click="update">Update</button>
+  `
+})
+export class TodoListComponent {
+  state = { title: 'Todos', items: [{ text: 'Write docs' }] };
+
+  update() {
+    this.state.title = 'Updated';            // plain field
+    this.state.items[0].text = 'Done';       // field of a list item
+    // list changes must replace the array reference:
+    this.state.items = [...this.state.items, { text: 'Ship' }];
+  }
+}
+```
+
+Rules and limits:
+
+- **Do not** add `subscribe()` / `listeners` / `notify()` / `forceUpdate()` /
+  manual `render()` / `setInterval` polling to keep the view in sync. The proxy
+  layer already owns dependency tracking and triggering.
+- Writes with the same value (`===`) are short-circuited and do not re-render.
+  Mutate the proxied object directly; do not clone state just to force an
+  update.
+- `Date`, `Map`, `Set`, `WeakMap`, `WeakSet` and `Promise` are **not** proxied
+  (`isNative`). In-place changes such as `map.set(...)` or
+  `date.setTime(...)` are invisible; assign a new instance instead
+  (`state.byId = new Map(state.byId)`).
+- Derived values: use `@Computed(['a', 'b'])`; the cache is invalidated when a
+  dependency changes.
+- Bulk writes: wrap them in `batchReactiveUpdates(() => { ... })` so bindings
+  re-run once (used for whole-screen swaps such as tab switches).
+- `@NoReactive()` marks a property/accessor/method (or a whole class) as
+  "do not track". Only use it for internals that must not drive the view.
+- One raw object gets exactly one proxy (`getReactiveProxy(raw)`), so do not
+  share the same state object between two applications/roots.
+- Helpers `reactive()`, `isReactive()` and `canReactive()` are exported from
+  `@tsdi/components` for debugging why a binding did or did not update.
+
+Animations and elapsed time are not data state: subscribe to the shared
+`AnimationClock` instead of starting a private timer.
+
 ## components
-*  `@Component`  Component decorator,  use to defaine class as component with template.
-*  `@Input` Input decorator, use to define property or param as component binding field or args.
-*  `@Output` Output decorator, use to define property or param as component output field or args.
-*  `@RefChild` RefChild decorator, use to select child element and inject to the property in component.
-*  `@Pipe` Pipe decorator, use to define class type as pipe transform.
+*  `@Component`  Component decorator, define a class as a component with a template.
+*  `@Directive`  Directive decorator, define attribute / structural / custom-element directives (see below).
+*  `@Attribute`  Attribute decorator, define a property or param as a component/directive binding field (input).
+*  `@Computed`  Computed decorator, define a derived property with dependencies and cache.
+*  `@NoReactive`  NoReactive decorator, mark a member or class as not tracked by the reactive proxy.
+*  `@ViewChild`  ViewChild decorator, select a child component/element/template and inject it to the property in component.
 
 ## @Directive decorator
 
@@ -215,7 +374,10 @@ The service mirrors the theme to `data-theme`, `data-agent-theme` and
 
 ```typescript
 // Decorators
-export { Component, Input, Output, RefChild, Pipe, Directive }
+export { Component, Directive, Attribute, Computed, NoReactive, ViewChild }
+
+// Reactivity
+export { reactive, isReactive, canReactive, getReactiveProxy, batchReactiveUpdates, AnimationClock }
 
 // Tokens
 export { DIRECTIVES, CUSTOM_ELEMENTS, COMPONENTS }

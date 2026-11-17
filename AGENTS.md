@@ -4,7 +4,32 @@
 
 ### 1. Components 是响应式框架（全框架通用，含 `@tsdi/components`、`@tsdi/components/console` 及 consumers 如 `agents/agent-ui`）
 
-业务数据变化驱动界面更新，**不需要手动触发更新**。动画与实时计时属于时间状态，允许由 components 通用层的共享生命周期时钟驱动。
+`@packages/components/`（`@tsdi/components`）是**基于 ES `Proxy` 的响应式框架**（`src/reactive.ts` + `src/impl/effect.ts`）：组件实例、通过模板绑定传给子组件的对象（`:prop` / `[prop]`，绑定字段用 `@Attribute()` 声明）、DI 共享状态，以及它们读取到的嵌套普通对象/数组都会被懒包装成 proxy。
+
+**模板/页面绑定就是监听器**：插值 `{{expr}}`、属性绑定 `:prop` / `[prop]`、属性值内插值（`class="tone-{{tone}}"`）、双向 `v-model`、事件 `@click` / `@click="pick(item.id)"`、结构指令 `v-if` / `v-else-if` / `v-else` / `v-show` / `v-for`（`item in items`、`(item, index) in items`、`let item of items`）/ `v-switch` + `v-case` + `v-default`、对象展开 `v-bind`、事件表 `v-on`、子组件 `:attr` / `@event`（由 `@Attribute` 声明）、`@Computed`，全部在 `effect.run` 内求值并登记依赖；`@event` 处理函数里直接写状态即可，写入会触发其它绑定，不需要额外通知。**任何对象属性变化**都会自动重跑对应绑定并刷新 DOM/TUI，包括：
+
+- 直接赋值 / 删除：`obj.x = v`、`state.count++`、`delete obj.x`
+- 深层字段：`state.settings.theme = 'dark'`（嵌套对象在读取时已懒代理）
+- 数组元素/字段：`arr[i] = v`、`items[i].text = 'done'`（读取过该索引/字段的绑定会重跑，含 `v-for` 项内容）
+- 整体替换：`state.messages = [...]`、`state.session = other`
+
+**数组结构性修改不会触发列表刷新**：`push` / `pop` / `shift` / `unshift` / `splice` / `sort` / `reverse` 保持同一引用，`v-for` 只订阅集合属性、`{{items.length}}` 也不会重跑。列表增删/重排必须**整体替换引用**（`state.messages = [...state.messages, msg]`、`state.items = state.items.filter(...)`），这是 agent-ui 的现有写法，禁止改成原地 `push` 后期待界面刷新。
+
+因此业务数据变化驱动界面更新，**不需要手动触发更新**。新增状态只需要"声明字段 + 模板绑定"，数据 → 界面的链路只有这一条。
+
+**禁止的错误用法（已多次重复踩坑，必须避免）**：
+
+- 禁止为状态同步恢复 `subscribe()` / `listeners` / `notify()` / `emit('change')` 手写订阅广播；proxy 层已统一负责依赖收集与触发（`AgentConsoleSessionState` 中此类机制已删除，不得加回）。
+- 禁止 `forceUpdate()` / 手动调用 `render()` / 手动重设节点内容来"让界面刷新"；绑定会自己重跑。
+- 禁止用 `setInterval` / `setTimeout` 轮询数据变化或定时刷新界面（动画与实时计时只能用共享 `AnimationClock`，见下）。
+- 禁止为了触发更新而做无意义拷贝（`JSON.parse(JSON.stringify(state))`、每帧重建对象）；对象字段直接改代理对象即可，只有列表增删/重排才需要替换数组引用。值相等（`===`）的写入会被短路，不会触发更新。
+- 禁止用 `push` / `splice` / `sort` 等原地修改列表后期待 `v-for` 刷新（见上，必须替换引用）。
+- `Date` / `Map` / `Set` / `WeakMap` / `WeakSet` / `Promise` **不会被代理**（`isNative`），原地修改（如 `map.set()`、`date.setTime()`）不会触发更新；必须整体替换引用（`state.byId = new Map(state.byId)`）。
+- `@NoReactive` 只用于确实不应建立依赖的成员；普通状态不要标记，否则绑定不会跟随变化。
+
+调试"绑定不更新"时的检查顺序：① 读取是否发生在绑定 `effect.run` 内（模板内联表达式 / 绑定属性）；② 对象是否被代理（`isReactive`，或属原生类型/`@NoReactive`）；③ 写入是否是同一引用且值相等（被短路），或是否用了 `push/splice` 原地改列表；④ 是否有代码在 proxy 之外操作了 raw target（把 raw 对象缓存到别处直接改）；⑤ 组件的绑定属性名是否与 `@Attribute()` 声明（或 alias）一致。
+
+动画与实时计时属于时间状态，允许由 components 通用层的共享生命周期时钟驱动。
 
 - 更新链路：属性 set → `effect.trigger` → 绑定重跑 → `textContent` setter（值短路，`components/console/src/console.ts:246`）→ `notifyChanged` → `CHANGE_EVENT` 冒泡到 root → `requestRender`（微任务合并）。
 - **禁止业务组件、agent-ui 或平台适配层各自用 `setInterval`/`setTimeout` 刷新界面**；动画与 elapsed-time 统一订阅 `@tsdi/components` 的共享生命周期时钟，首个订阅启动、最后一个订阅停止，并在 directive/application 销毁时清理。
@@ -42,24 +67,21 @@
 ### 3. 响应式代理机制（`@tsdi/components/src/reactive.ts` + `impl/effect.ts`）
 
 **组件实例封装**
-- `ComponentRefImpl.createInstance` 用 `reactive(instance, injector.get(ReactiveEffect), computeds)` 把组件实例包成 proxy；每个组件注入器提供**自己的** `DefaultReactiveEffect` 实例（组件间不共享 effect）。
-- 组件属性对象（如 `sessionState`、嵌套对象）在**读取时**经 get trap 懒封装：`canReactive(res)` 通过则 `reactive(res, effect)`，用**当前组件自己的 effect** 包成嵌套 proxy；函数属性原样返回（非 native 不 bind）。
-- `REACT_FlAG`（`Symbol('__REACT')`）标记定义在 **proxy 上**（不在 raw target 上），因此同一 raw 对象可被多个组件用各自 effect 封装成多个 proxy；`canReactive` 对已带标记的对象返回 false（不套层）。
+- `ComponentRefImpl.createInstance` 用 `reactive(instance, injector.get(ReactiveEffect), computeds)` 把组件实例包成 proxy；`DefaultReactiveEffect` 由 `ComponentsModule` 提供，组件/指令注入器沿用父级实例（`createInjector` 在 `injector.has(ReactiveEffect)` 时直接 `setValue(injector.get(ReactiveEffect))`），**同一组件树/应用默认共享同一个 effect 与 depsMap**；只有找不到祖先 effect 的节点才新建一个。
+- 组件属性对象（如 `sessionState`、嵌套对象）在**读取时**经 get trap 懒封装：`canReactive(res)` 通过则 `reactive(res, effect)` 包成嵌套 proxy；函数属性原样返回（非 native 不 bind）。
+- 同一 raw 对象由 `proxyCache` 复用**同一个** proxy（不重复包装），`REACT_FlAG`（`Symbol('__REACT')`，不可枚举、不可配置）定义在 **raw target** 上：`hasReactiveFlag` 用 `hasOwnProperty` 判断，所以 proxy 自身也会被视为已代理，`canReactive` 返回 false（不套层）。同一 raw 对象不要跨应用/跨 root 共享，否则会复用绑定在另一个 effect 上的 proxy。
 
 **依赖追踪（DefaultReactiveEffect）**
-- 绑定更新在 `effect.run(fn)` 内读取状态：`run` 维护 `activeEffects` 集合、`runningDepth` 与 `currentFn`；`track(target, key)` 在 `runningDepth > 0` 时把 **`currentFn`** 注册进 `depsMap[target][key]`。
-- 注意：`track` 注册的是 `currentFn`，不是 `this.fn`（类中不存在该字段，曾导致注册 undefined、trigger 时崩溃）。
-- `trigger(target, key)` 执行 `depsMap[target][key]` 中所有 fn。
+- 绑定更新在 `effect.run(fn)` 内读取状态：`run` 维护 `activeEffects` 集合与 `runningDepth`；`track(target, key)` 在 `activeEffects` 为空时直接返回，否则把 `activeEffects` 中的**绑定函数**注册进 `depsMap[target][key]`。
+- `trigger(target, key)` 执行 `depsMap[target][key]` 中所有绑定函数（同一 effect 内跨组件同样生效）；`run` 最外层结束时冲刷 `pendingEffects`。
+- `batchReactiveUpdates(fn)` 把 `fn` 内的多次写入合并为一轮绑定重跑（tab 切换等整屏替换场景使用）。
 
-**跨组件状态更新（代理广播，不再用 subscribe/notify）**
-- 共享状态（如 `AgentConsoleSessionState`）被多个组件读取，各自封装成不同 proxy、track 到不同 effect；set trap 只会触发**创建该 proxy 的 effect**，单靠 `effect.trigger(target, key)` 无法更新其他组件的绑定（曾因此消息面板不刷新）。
-- 因此：
-  1. get trap 对 `key !== REACT_FlAG` 的读取**无条件登记读取者**：`subscribableEffects`（WeakMap<target, WeakSet<effect>>）加入当前 effect，并 `track(target, SUBSCRIBABLE_NOTIFY)`（绑定读取时该符号依赖注册成功）。
-  2. set/deleteProperty 值变化时：① `effect.trigger(target, key)`（本 proxy）；② **广播**：遍历 `subscribableEffects.get(target)`，对非当前 effect 调 `subEffect.trigger(target, SUBSCRIBABLE_NOTIFY)` → 各组件绑定重跑 → 界面更新。
-- **禁止恢复 `state.subscribe()` / `listeners` / `notify()`**：广播已由 proxy 层统一承担，`AgentConsoleSessionState` 中的 `subscribe()` / `listeners` / `batch()` 已删除。
+**外部事件源（可选，不是状态同步机制）**
+- 仅当被读取的对象自身实现了 `subscribe(listener)`（外部事件源/服务），get trap 才为每个 effect 建立订阅（`subscribableEffects`：`WeakMap<target, WeakMap<effect, unsubscribe>>`），外部通知时 `trigger(target, SUBSCRIBABLE_NOTIFY)` 重跑绑定；普通对象/数组**不需要也不应该**再实现订阅。
+- **禁止恢复 `state.subscribe()` / `listeners` / `notify()` / `batch()` 作为业务状态同步机制**：依赖收集与触发由 proxy 层统一承担，`AgentConsoleSessionState` 中的这些成员已删除。
 
 **调试要点**
-- 绑定不更新排查：先确认读取经 proxy（get trap 有 track）且 `runningDepth > 0`（绑定在 effect.run 内）；再确认写入触发的 effect 是否命中该绑定注册的 effect 实例；跨组件场景依赖 SUBSCRIBABLE_NOTIFY 广播，而不是同一 effect 实例。
+- 绑定不更新排查：① 读取是否经 proxy 且在绑定 `effect.run` 内（`track` 在 `activeEffects` 非空时才登记）；② `isReactive` 是否为 true（原生类型、`@NoReactive`、raw 对象被直接改都不会触发）；③ 写入值是否与旧值 `===` 相等（被短路）；④ 是否把 raw 对象缓存到 proxy 之外直接修改。
 - `[TRIGGER-DEBUG]` 等调试 log 不得留在 `effect.ts` 等核心文件。
 
 **核心热路径性能纪律（2026-09 用户确认，必守）**
