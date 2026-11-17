@@ -456,6 +456,76 @@ export class WorkflowHttpController {
         return { cleared: true };
     }
 
+    /** Aggregate run counts/durations computed from persisted + live snapshots. */
+    @Get('/:id/metrics')
+    async metrics(
+        @RequestPath('id') id: string,
+        @RequestParam('limit', { nullable: true }) limit?: string
+    ) {
+        const definition = await this.store.get(id);
+        if (!definition) {
+            throw new NotFoundException(`Workflow not found: ${id}`);
+        }
+        const size = Math.max(1, Math.min(1000, Number(limit) || 200));
+        const snapshots = new Map<string, any>();
+        (await this.history.list(id, size)).forEach(snapshot => {
+            snapshots.set(snapshot.executionId, snapshot);
+        });
+        this.execution.getExecutions()
+            .filter(state => state.workflowId === id)
+            .map(state => toWorkflowExecutionSnapshot(state))
+            .forEach(snapshot => snapshots.set(snapshot.executionId, snapshot));
+
+        const all = Array.from(snapshots.values());
+        const durations = all
+            .filter(snapshot => snapshot.startTime && snapshot.endTime)
+            .map(snapshot => snapshot.endTime - snapshot.startTime);
+        const last = [...all].sort((a, b) => (b.startTime || 0) - (a.startTime || 0))[0];
+        const nodes = new Map<string, { nodeId: string; runs: number; failed: number; durationMs: number; timed: number }>();
+        all.forEach(snapshot => {
+            Object.values(snapshot.nodeStates || {}).forEach((state: any) => {
+                if (state.status !== 'success' && state.status !== 'failed') {
+                    return;
+                }
+                const entry = nodes.get(state.nodeId) || {
+                    nodeId: state.nodeId, runs: 0, failed: 0, durationMs: 0, timed: 0
+                };
+                entry.runs += 1;
+                if (state.status === 'failed') {
+                    entry.failed += 1;
+                }
+                if (state.startedAt && state.finishedAt) {
+                    entry.durationMs += state.finishedAt - state.startedAt;
+                    entry.timed += 1;
+                }
+                nodes.set(state.nodeId, entry);
+            });
+        });
+        return {
+            workflowId: id,
+            runs: all.length,
+            running: all.filter(snapshot => snapshot.status === 'running').length,
+            succeeded: all.filter(snapshot => snapshot.status === 'completed').length,
+            failed: all.filter(snapshot => snapshot.status === 'failed').length,
+            cancelled: all.filter(snapshot => snapshot.status === 'cancelled').length,
+            avgDurationMs: durations.length
+                ? Math.round(durations.reduce((sum, value) => sum + value, 0) / durations.length)
+                : 0,
+            lastRunAt: last?.startTime,
+            lastStatus: last?.status,
+            nodes: Array.from(nodes.values())
+                .map(entry => ({
+                    nodeId: entry.nodeId,
+                    runs: entry.runs,
+                    failed: entry.failed,
+                    avgDurationMs: entry.timed
+                        ? Math.round(entry.durationMs / entry.timed)
+                        : 0
+                }))
+                .sort((a, b) => b.runs - a.runs)
+        };
+    }
+
     /** Per-node runtime state (rate-limit windows, queues) for diagnostics. */
     @Get('/:id/runtime')
     async runtime(@RequestPath('id') id: string) {

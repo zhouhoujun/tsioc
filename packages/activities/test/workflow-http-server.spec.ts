@@ -576,6 +576,44 @@ describe('Workflow HTTP microservice', () => {
         await request(`${base}/api/workflows/child-http`, { method: 'DELETE' });
     });
 
+    it('reports workflow metrics from execution history', async () => {
+        const definition = {
+            id: 'metrics-demo',
+            name: 'Metrics demo',
+            nodes: [
+                { id: 'start_m', name: 'Start', type: 'start' as const, position: { x: 0, y: 0 } },
+                { id: 'end_m', name: 'End', type: 'end' as const, position: { x: 200, y: 0 } }
+            ],
+            connections: [{
+                id: 'm1', sourceNodeId: 'start_m', sourcePort: 'out', targetNodeId: 'end_m', targetPort: 'in'
+            }]
+        };
+        await request(`${base}/api/workflows/metrics-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        await request(`${base}/api/workflows/metrics-demo/run`, {
+            method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+        });
+        await request(`${base}/api/workflows/metrics-demo/run`, {
+            method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+        });
+
+        const metrics = await request(`${base}/api/workflows/metrics-demo/metrics`);
+        expect(metrics.status).toBe(200);
+        expect(metrics.body.runs).toBe(2);
+        expect(metrics.body.succeeded).toBe(2);
+        expect(metrics.body.failed).toBe(0);
+        expect(metrics.body.lastStatus).toBe('completed');
+        expect(metrics.body.nodes.length).toBeGreaterThanOrEqual(2);
+        expect(metrics.body.nodes.find((node: any) => node.nodeId === 'start_m')?.runs).toBe(2);
+        expect(metrics.status).toBe(200);
+        expect((await request(`${base}/api/workflows/missing/metrics`)).status).toBe(404);
+
+        await request(`${base}/api/workflows/metrics-demo`, { method: 'DELETE' });
+    });
+
     it('starts, reports and stops deployed workflow schedules', async () => {
         const longSchedule = {
             id: 'schedule-demo',

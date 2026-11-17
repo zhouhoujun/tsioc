@@ -798,6 +798,9 @@ dashboards can render node/edge state without loading the workflow definition.
 `GET /api/workflows/:id/runtime` exposes per-node runtime state such as
 rate-limit windows (`DELETE` clears it); the execution panel's **Messages** tab
 shows the same state under each node and offers a Clear state action.
+`GET /api/workflows/:id/metrics` aggregates the last snapshots into run counts,
+success/failure/cancel totals, average duration and per-node run/failure/average
+duration metrics.
 
 Finished runs are persisted automatically: `SqliteWorkflowExecutionStore` writes
 to the same database file when SQLite is available, otherwise an in-memory store
