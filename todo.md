@@ -4532,3 +4532,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - metrics 延迟指标 ms/seconds 双发。
   - 修复 http in-flight-drain keep-alive 测试隔离。
   - 回归：metrics 57、client 88、gateway 140、http 199（TSIO_TEST_HTTP=1）。
+
+- 微服务框架第七十五批（2026-11-16）：
+  - defineService/describeService；swagger openapi.json。
+  - 回归：service 85、swagger 11。

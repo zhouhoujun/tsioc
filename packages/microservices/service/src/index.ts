@@ -18,3 +18,4 @@ export * from './transport';
 
 
 export * from './RedirectResult';
+export * from './define';

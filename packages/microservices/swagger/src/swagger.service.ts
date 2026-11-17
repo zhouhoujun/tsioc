@@ -125,6 +125,13 @@ export class SwaggerService {
             adapter?.setBody?.(html);
             return;
         });
+        router.use(joinPath(prefix, 'openapi.json'), async (_input: any, ctx: any) => {
+            const adapter = ctx.getMessageAdapter?.();
+            ctx.set(CONTENT_TYPE, ContentType.APPL_JSON);
+            adapter?.setHeader?.('content-type', 'application/json; charset=utf-8');
+            adapter?.setBody?.(JSON.stringify(doc));
+            return;
+        });
         const sendAsset = (file: string, contentType: string) => async (_input: any, ctx: any) => {
             const adapter = ctx.getMessageAdapter?.();
             const content = fs.readFileSync(path.join(swaggerRoot, file));

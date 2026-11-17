@@ -415,6 +415,12 @@
 - `in-flight-drain.spec.ts` 使用 `agent: false`，避免 Node keep-alive 复用已关闭 server 的 socket。
 - 回归：metrics 57、client 88、gateway 140、http 默认 50 / 全量 199。
 
+第七十五批（defineService + OpenAPI JSON）：
+
+- 新增 `service/src/define.ts`：`defineService({ transport, controllers, providers })` 与 `describeService` capabilities。
+- swagger 在 `/{prefix}/openapi.json` 输出 OpenAPI 文档，供前端直接消费。
+- 回归：service 85、swagger 11。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

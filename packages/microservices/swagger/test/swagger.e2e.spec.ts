@@ -81,6 +81,17 @@ describe('Swagger E2E', () => {
         expect(res.body).toContain('<base href="/api-doc/">');
     });
 
+    it('serves the OpenAPI document as JSON', async () => {
+        const res = await httpGet('/api-doc/openapi.json');
+
+        expect(res.status).toBe(200);
+        expect(res.contentType).toContain('application/json');
+        const doc = JSON.parse(res.body);
+        expect(doc.openapi).toBe('3.0.0');
+        expect(doc.info.title).toBe('Swagger E2E');
+        expect(doc.paths['/hello/'] ?? doc.paths['/hello']).toBeDefined();
+    });
+
     it('serves swagger static assets under the swagger prefix', async () => {
         const bundle = await httpGet('/api-doc/swagger-ui-bundle.js');
         const css = await httpGet('/api-doc/swagger-ui.css');
