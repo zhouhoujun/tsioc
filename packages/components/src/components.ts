@@ -1,9 +1,9 @@
-import { isType, Injector, Module, ResolveInterceptorFn, Runtime, Type } from '@tsdi/ioc';
+import { isType, Injector, Module, ResolveInterceptorFn, Runtime, token, Type } from '@tsdi/ioc';
 import { ApplicationContext, bootstrapApplication, EnvironmentOption } from '@tsdi/core';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
 import { ReactiveEffect } from './effect';
-import { DefaultReactiveEffect } from './impl/effect';
+import { DefaultReactiveEffect, ReactiveEffectOptions } from './impl/effect';
 import { VForDirective } from './directives/for.dir';
 import { VElseDirective, VElseIfDirective, VIfDirective } from './directives/if.dir';
 import { DirectiveFactory } from './refs/directive';
@@ -30,16 +30,27 @@ import { componentResolvers } from './impl/resolvers';
  * @export
  * @class ComponentsModule
  */
+export const REACTIVE_EFFECT_OPTIONS = token<ReactiveEffectOptions>('REACTIVE_EFFECT_OPTIONS');
+
 @Module({
     providers: [
         { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
         componentResolvers,
-        { provide: ReactiveEffect, useFactory: (injector: Injector) => {
-            const effect = new DefaultReactiveEffect();
-            injector.onDestroy(effect);
-            return effect;
-        }, deps: [Injector] },
+        {
+            provide: REACTIVE_EFFECT_OPTIONS,
+            useValue: { schedule: 'sync' },
+            asDefault: true
+        },
+        {
+            provide: ReactiveEffect,
+            useFactory: (injector: Injector, options: ReactiveEffectOptions) => {
+                const effect = new DefaultReactiveEffect(options);
+                injector.onDestroy(effect);
+                return effect;
+            },
+            deps: [Injector, REACTIVE_EFFECT_OPTIONS]
+        },
         FocusMonitor,
         FocusTrapFactory
     ],

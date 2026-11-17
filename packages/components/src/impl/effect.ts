@@ -11,6 +11,19 @@ const MAX_REENTRANCY_PASSES = 20;
 let reactiveBatchDepth = 0;
 const batchedEffects = new Set<DefaultReactiveEffect>();
 
+export type EffectScheduleMode = 'sync' | 'microtask';
+
+export interface ReactiveEffectOptions {
+    /** Custom runner used instead of the built-in synchronous pass. */
+    scheduler?: (fn: Function) => void;
+    /**
+     * 'sync' (default) re-runs dependents inside the write.
+     * 'microtask' queues them and flushes once before the next task; state
+     * reads still observe the written value immediately.
+     */
+    schedule?: EffectScheduleMode;
+}
+
 /**
  * Coalesce reactive writes into one effect pass. Every trigger inside `fn`
  * queues its dependent effect functions; at the end each effect runs once.
@@ -40,6 +53,8 @@ export class DefaultReactiveEffect implements ReactiveEffect {
     private flushing = false;
     private scheduler?: (fn: Function) => void;
     private isActive = true;
+    readonly schedule: EffectScheduleMode;
+    private microtaskQueued = false;
 
     // Bindings created for one embedded view run under that view's scope, so
     // their dependency functions can be removed when the view is destroyed.
@@ -48,8 +63,9 @@ export class DefaultReactiveEffect implements ReactiveEffect {
 
     [noReact] = true;
 
-    constructor(options?: { scheduler?: (fn: Function) => void }) {
+    constructor(options?: ReactiveEffectOptions) {
         this.scheduler = options?.scheduler;
+        this.schedule = options?.schedule ?? 'sync';
     }
 
     createScope(): ReactiveScope {
@@ -99,6 +115,11 @@ export class DefaultReactiveEffect implements ReactiveEffect {
                 batchedEffects.add(this);
                 return;
             }
+            if (this.schedule === 'microtask' && !isLifecycleHook) {
+                deps.forEach(effectFn => this.pendingEffects.add(effectFn));
+                this.scheduleMicrotaskFlush();
+                return;
+            }
             // 如果是生命周期钩子变化，立即执行
             // 必须经由 run() 执行，以便重跑期间 activeEffects 生效，
             // 使重跑过程中首次读取的依赖也能被 track 收集。
@@ -125,6 +146,19 @@ export class DefaultReactiveEffect implements ReactiveEffect {
                 this.pendingEffects.add(effectFn);
             } else {
                 this.run(effectFn);
+            }
+        });
+    }
+
+    private scheduleMicrotaskFlush(): void {
+        if (this.microtaskQueued) {
+            return;
+        }
+        this.microtaskQueued = true;
+        Promise.resolve().then(() => {
+            this.microtaskQueued = false;
+            if (this.pendingEffects.size > 0) {
+                this.flushPendingEffects();
             }
         });
     }
