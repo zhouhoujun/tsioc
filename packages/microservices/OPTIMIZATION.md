@@ -446,6 +446,13 @@
 - 21 个缺失 README 的微服务包补齐说明：用途、安装、典型注册方式、选项位置与测试命令。
 - npm pack 后文档完整；`package-publish` gate PASS。
 
+第八十批（broker auth 头合并 + E2E 隔离）：
+
+- NATS/Kafka/AMQP 的 normalize 合并 payload headers 与 broker headers，避免实际无 broker header 时丢弃 `authorization`。
+- Kafka `ServiceError` 归一后更新大内容错误断言；不同 spec 使用独立 consumer group / 唯一 auth topic。
+- MQTT fake client 支持 `publish(topic, payload, options, callback)` 签名。
+- `MS_BROKER_PROFILE=1 ms-brokers` PASS：Kafka 81、NATS 59、AMQP 63、MQTT 87、Redis 73。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

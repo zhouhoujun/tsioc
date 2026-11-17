@@ -3,7 +3,7 @@ import { Module } from '@tsdi/ioc';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, ErrorResponse, BadRequestException, Transport } from '@tsdi/common';
 import { provideService, useInterceptors, useRouter, RouteMapping, RequestParam, RedirectResult, Handle } from '@tsdi/service';
-import { provideClient } from '@tsdi/client';
+import { provideClient, ServiceError } from '@tsdi/client';
 import { useTcpTransport } from '../../tcp/src/server';
 import { withTcpTransport } from '../../tcp/src/client';
 import { TcpClient } from '../../tcp/src/client/client';
@@ -72,7 +72,7 @@ const TCP_PORT = 21410;
                 listenOpts: { port: TCP_PORT, host: '127.0.0.1' },
                 asDefault: true
             }),
-            useKafkaTransport({ brokers: KAFKA_BROKERS })
+            useKafkaTransport({ brokers: KAFKA_BROKERS, groupId: 'tsdi-tcp-hybrid' })
         ),
         provideClient(
             withTcpTransport({
@@ -131,7 +131,7 @@ describe('Kafka hybrid TCP server and Kafka client', () => {
 
     it('returns large content error over Kafka', async () => {
         const result: any = await sendKafka('content/big.json');
-        expect(result).toBeInstanceOf(ErrorResponse);
+        expect(result).toBeInstanceOf(ServiceError);
         expect(result.statusMessage).toContain('great than max size');
     });
 

@@ -38,7 +38,10 @@ const useAmqpMessage = () => useBrokerMessageTransfer<any, Record<string, any>>(
             url,
             topic,
             method,
-            headers: msg.properties?.headers,
+            headers: {
+                ...(requestSource.headers && typeof requestSource.headers === 'object' ? requestSource.headers : {}),
+                ...(msg.properties?.headers ?? {})
+            },
             body,
             payload: body,
             replyTo: msg.properties.replyTo,

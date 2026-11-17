@@ -148,7 +148,9 @@ describe('Kafka Transport E2E', () => {
 
 describe('Kafka auth E2E', () => {
     const BROKERS = TEST_BROKERS;
-    const TOPIC = 'e2e.auth.ping';
+    // Unique per process so replayed offsets from previous runs cannot
+    // answer the auth assertions with stale (header-less) messages.
+    const TOPIC = `e2e.auth.ping.${Date.now()}`;
     const authOptions: AuthOptions = { bearerToken: 'secret-token' };
 
     interface KafkaAuthEnvelope {

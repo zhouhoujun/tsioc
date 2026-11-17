@@ -58,7 +58,10 @@ const useKafkaMessageTransfer = () => useBrokerMessageTransfer<any, Record<strin
             ...requestSource,
             url,
             method,
-            headers: toKafkaHeaders(message.headers),
+            headers: {
+                ...(requestSource.headers && typeof requestSource.headers === 'object' ? requestSource.headers : {}),
+                ...(toKafkaHeaders(message.headers) ?? {})
+            },
             body,
             payload: body,
             topic,

@@ -23,9 +23,15 @@ class FakeMqttClient extends EventEmitter {
         callback(null);
     }
 
-    publish(topic: string, payload: string | Buffer, callback: (err?: Error | null) => void) {
+    publish(
+        topic: string,
+        payload: string | Buffer,
+        optionsOrCallback?: any,
+        callback?: (err?: Error | null) => void
+    ) {
         this.published.push({ topic, payload });
-        callback(null);
+        const done = typeof optionsOrCallback === 'function' ? optionsOrCallback : callback;
+        done?.(null);
     }
 }
 

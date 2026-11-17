@@ -4585,3 +4585,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 ## 2026-11-17 steer 徽标
 - 输入框 meta 行新增 `steer` 徽标（en/zh：steer / 转向），与 plan/yolo/queued 同序；`/steer` 与设置切换立即反映。
 - 测试：badge en/zh、顺序、`/steer` 同步，yolo-badge + i18n + settings 63 passing。
+
+- 微服务框架第八十批（2026-11-16）：
+  - broker payload headers 合并，修复 bearer auth E2E。
+  - Kafka/MQTT 测试隔离与 ServiceError 断言。
+  - gate ms-brokers PASS（Kafka 81 / NATS 59 / AMQP 63 / MQTT 87 / Redis 73）。

@@ -38,7 +38,7 @@ const HTTP_PORT = 21310;
                 microservice: false as any,
                 listenOpts: { port: HTTP_PORT, host: '127.0.0.1' }
             }),
-            useKafkaTransport({ brokers: KAFKA_BROKERS })
+            useKafkaTransport({ brokers: KAFKA_BROKERS, groupId: 'tsdi-http1-hybrid' })
         ),
         provideClient(
             withHttpTransport({

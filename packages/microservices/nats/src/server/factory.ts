@@ -58,7 +58,10 @@ const useNatsMessageTransfer = () => useBrokerMessageTransfer<any, Record<string
             url,
             topic,
             method,
-            headers: toNatsHeaders(msg?.headers),
+            headers: {
+                ...(requestSource.headers && typeof requestSource.headers === 'object' ? requestSource.headers : {}),
+                ...(toNatsHeaders(msg?.headers) ?? {})
+            },
             body,
             payload: body,
             subject: actualSubject,
