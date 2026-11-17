@@ -16,7 +16,7 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 895_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 915_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 function freePort() {

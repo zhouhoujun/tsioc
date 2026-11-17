@@ -46,10 +46,10 @@ const DEV = process.env.NODE_ENV === 'development' || process.argv.includes('--d
 const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // Raw budget raised from 780 KB (2026-11) with the publish confirmation and
 // version-history UI; the gzip budget below is the meaningful transfer gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 895_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 915_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 227_000);
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 233_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

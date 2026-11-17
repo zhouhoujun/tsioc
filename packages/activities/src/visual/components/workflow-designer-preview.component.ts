@@ -264,7 +264,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     showLogs = false;
     @ViewChild('workspaceLayout', WorkspaceLayoutComponent) workspaceLayout?: WorkspaceLayoutComponent;
     /** Inspector exposes a flush hook so commands never run on stale edits. */
-    @ViewChild('inspector') inspector?: WorkflowInspectorComponent;
+    @ViewChild(WorkflowInspectorComponent) inspector?: WorkflowInspectorComponent;
     jsonText = '';
     jsonError = '';
     private selfRef?: WorkflowDesignerPreviewComponent;
@@ -462,18 +462,17 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         ];
     }
 
-    readonly alignAction = (action: string): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        if (!self.designer) {
+    alignAction(action: string): void {
+        if (!this.designer) {
             return;
         }
         if (action.startsWith('distribute-')) {
-            self.designer.distributeSelection(action.slice('distribute-'.length) as WorkflowDistributeMode);
+            this.designer.distributeSelection(action.slice('distribute-'.length) as WorkflowDistributeMode);
         } else {
-            self.designer.alignSelection(action as WorkflowAlignMode);
+            this.designer.alignSelection(action as WorkflowAlignMode);
         }
-        self.notifyChange();
-    };
+        this.notifyChange();
+    }
 
     get quickAddPlaceholder(): string { return this.t('quickAddPlaceholder', 'Search nodes to add'); }
     get quickAddEmpty(): string { return this.t('quickAddEmpty', 'No matching nodes.'); }
@@ -507,59 +506,55 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         };
     }
 
-    readonly openQuickAdd = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.showQuickAdd = true;
-        self.quickAddQuery = '';
-        self.quickAddIndex = 0;
-        self.quickAddSpliceId = '';
+    openQuickAdd(): void {
+        this.showQuickAdd = true;
+        this.quickAddQuery = '';
+        this.quickAddIndex = 0;
+        this.quickAddSpliceId = '';
         setTimeout(() => {
             const document = (globalThis as { document?: Document }).document;
             (document?.querySelector?.('.workflow-quick-add-input') as any)?.focus?.();
         }, 0);
-    };
+    }
 
-    readonly closeQuickAdd = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.showQuickAdd = false;
-        self.quickAddQuery = '';
-        self.quickAddIndex = 0;
-        self.quickAddSpliceId = '';
-    };
+    closeQuickAdd(): void {
+        this.showQuickAdd = false;
+        this.quickAddQuery = '';
+        this.quickAddIndex = 0;
+        this.quickAddSpliceId = '';
+    }
 
-    readonly quickAddInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.quickAddQuery = String(event?.target?.value ?? '');
-        self.quickAddIndex = 0;
-    };
+    quickAddInput(event: any): void {
+        this.quickAddQuery = String(event?.target?.value ?? '');
+        this.quickAddIndex = 0;
+    }
 
-    readonly quickAddKey = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+    quickAddKey(event: any): void {
         const key = String(event?.key || '');
-        const items = self.quickAddItems;
+        const items = this.quickAddItems;
         if (key === 'ArrowDown') {
             event?.preventDefault?.();
-            self.quickAddIndex = Math.min(Math.max(0, items.length - 1), self.quickAddIndex + 1);
+            this.quickAddIndex = Math.min(Math.max(0, items.length - 1), this.quickAddIndex + 1);
             return;
         }
         if (key === 'ArrowUp') {
             event?.preventDefault?.();
-            self.quickAddIndex = Math.max(0, self.quickAddIndex - 1);
+            this.quickAddIndex = Math.max(0, this.quickAddIndex - 1);
             return;
         }
         if (key === 'Escape') {
             event?.preventDefault?.();
-            self.closeQuickAdd();
+            this.closeQuickAdd();
             return;
         }
         if (key === 'Enter') {
             event?.preventDefault?.();
-            const item = items[self.quickAddIndex] || items[0];
+            const item = items[this.quickAddIndex] || items[0];
             if (item) {
-                self.chooseQuickAdd(item.type);
+                this.chooseQuickAdd(item.type);
             }
         }
-    };
+    }
 
     /** Match nodes on the canvas by name, id or type. */
     protected matchNodes(query: string): Array<{ id: string; label: string; type: string }> {
@@ -587,93 +582,86 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         };
     }
 
-    readonly refreshFind = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.findResults = self.matchNodes(self.findQuery);
-        self.findIndex = 0;
-    };
+    refreshFind(): void {
+        this.findResults = this.matchNodes(this.findQuery);
+        this.findIndex = 0;
+    }
 
-    readonly openFind = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.showFind = true;
-        self.findQuery = '';
-        self.refreshFind();
+    openFind(): void {
+        this.showFind = true;
+        this.findQuery = '';
+        this.refreshFind();
         setTimeout(() => {
             const document = (globalThis as { document?: Document }).document;
             (document?.querySelector?.('.workflow-find-input') as any)?.focus?.();
         }, 0);
-    };
+    }
 
-    readonly closeFind = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.showFind = false;
-        self.findQuery = '';
-        self.findIndex = 0;
-        self.findResults = [];
-    };
+    closeFind(): void {
+        this.showFind = false;
+        this.findQuery = '';
+        this.findIndex = 0;
+        this.findResults = [];
+    }
 
-    readonly findInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.findQuery = String(event?.target?.value ?? '');
-        self.refreshFind();
-    };
+    findInput(event: any): void {
+        this.findQuery = String(event?.target?.value ?? '');
+        this.refreshFind();
+    }
 
-    readonly findKey = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+    findKey(event: any): void {
         const key = String(event?.key || '');
-        const items = self.findResults;
+        const items = this.findResults;
         if (key === 'ArrowDown') {
             event?.preventDefault?.();
-            self.findIndex = Math.min(Math.max(0, items.length - 1), self.findIndex + 1);
+            this.findIndex = Math.min(Math.max(0, items.length - 1), this.findIndex + 1);
             return;
         }
         if (key === 'ArrowUp') {
             event?.preventDefault?.();
-            self.findIndex = Math.max(0, self.findIndex - 1);
+            this.findIndex = Math.max(0, this.findIndex - 1);
             return;
         }
         if (key === 'Escape') {
             event?.preventDefault?.();
-            self.closeFind();
+            this.closeFind();
             return;
         }
         if (key === 'Enter') {
             event?.preventDefault?.();
-            self.chooseFind(self.findIndex);
+            this.chooseFind(this.findIndex);
         }
-    };
+    }
 
     /** Select the matched node and bring it to the middle of the viewport. */
-    readonly chooseFind = (index: number): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        const item = self.findResults[index] || self.findResults[0];
+    chooseFind(index: number): void {
+        const item = this.findResults[index] || this.findResults[0];
         if (!item) {
             return;
         }
-        const node = self.designer.nodes.find(entry => entry.id === item.id);
+        const node = this.designer.nodes.find(entry => entry.id === item.id);
         if (!node) {
             return;
         }
-        self.designer.selectNode(node.id);
-        const viewport = self.canvasViewport();
+        this.designer.selectNode(node.id);
+        const viewport = this.canvasViewport();
         if (viewport) {
             const frame = workflowNodeFrame(node);
-            const zoom = self.designer.zoom || 1;
-            self.designer.pan = {
+            const zoom = this.designer.zoom || 1;
+            this.designer.pan = {
                 x: Math.round(viewport.width / 2 - (node.position.x + frame.width / 2) * zoom),
                 y: Math.round(viewport.height / 2 - (node.position.y + frame.height / 2) * zoom)
             };
         }
-        self.closeFind();
-        self.notifyChange();
-    };
+        this.closeFind();
+        this.notifyChange();
+    }
 
-    readonly chooseQuickAdd = (type: string): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        if (!self.designer || !type) {
+    chooseQuickAdd(type: string): void {
+        if (!this.designer || !type) {
             return;
         }
-        const definition = self.registry.get(type as any);
+        const definition = this.registry.get(type as any);
         const frame = definition
             ? workflowNodeFrame({
                 type: definition.type,
@@ -682,17 +670,17 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 outputs: definition.outputs || []
             } as any)
             : { width: 184, height: 64 };
-        const spliceId = self.quickAddSpliceId;
-        const midpoint = spliceId ? self.connectionMidpoint(spliceId) : undefined;
+        const spliceId = this.quickAddSpliceId;
+        const midpoint = spliceId ? this.connectionMidpoint(spliceId) : undefined;
         let centerX: number;
         let centerY: number;
         if (midpoint) {
             centerX = midpoint.x;
             centerY = midpoint.y;
         } else {
-            const rect = self.canvasRect();
-            const zoom = self.designer.zoom || 1;
-            const pan = self.designer.pan || { x: 0, y: 0 };
+            const rect = this.canvasRect();
+            const zoom = this.designer.zoom || 1;
+            const pan = this.designer.pan || { x: 0, y: 0 };
             centerX = rect ? (rect.width / zoom) / 2 - pan.x / zoom : 400;
             centerY = rect ? (rect.height / zoom) / 2 - pan.y / zoom : 240;
         }
@@ -701,13 +689,13 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             y: Math.round(centerY - frame.height / 2)
         };
         if (spliceId) {
-            self.designer.spliceNode(type as any, position, spliceId);
+            this.designer.spliceNode(type as any, position, spliceId);
         } else {
-            self.designer.addNode(type as any, position);
+            this.designer.addNode(type as any, position);
         }
-        self.closeQuickAdd();
-        self.notifyChange();
-    };
+        this.closeQuickAdd();
+        this.notifyChange();
+    }
 
     get groupSettingsTitle(): string { return this.t('groupSettings', 'Group settings'); }
     get groupNameLabel(): string { return this.t('groupName', 'Group name'); }
@@ -715,25 +703,22 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     get cancelLabel(): string { return this.t('cancel', 'Cancel'); }
     get saveLabel(): string { return this.t('save', 'Save'); }
 
-    readonly closeGroupSettings = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.showGroupSettings = false;
-        self.groupSettingsError = '';
-        self.notifyChange();
-    };
+    closeGroupSettings(): void {
+        this.showGroupSettings = false;
+        this.groupSettingsError = '';
+        this.notifyChange();
+    }
 
-    readonly groupNameInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.groupSettingsName = String(event?.target?.value ?? '');
-        self.groupSettingsError = '';
-    };
+    groupNameInput(event: any): void {
+        this.groupSettingsName = String(event?.target?.value ?? '');
+        this.groupSettingsError = '';
+    }
 
-    readonly groupColorInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.groupSettingsColor = String(event?.target?.value ?? '#60a5fa');
-    };
+    groupColorInput(event: any): void {
+        this.groupSettingsColor = String(event?.target?.value ?? '#60a5fa');
+    }
 
-    readonly groupSettingsKey = (event: any): void => {
+    groupSettingsKey(event: any): void {
         const key = String(event?.key || '');
         if (key === 'Enter') {
             event?.preventDefault?.();
@@ -742,25 +727,24 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             event?.preventDefault?.();
             this.closeGroupSettings();
         }
-    };
+    }
 
-    readonly saveGroupSettings = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        if (!self.designer || !self.groupSettingsId) {
+    saveGroupSettings(): void {
+        if (!this.designer || !this.groupSettingsId) {
             return;
         }
-        const saved = self.designer.updateGroup(self.groupSettingsId, {
-            name: self.groupSettingsName,
-            color: self.groupSettingsColor
+        const saved = this.designer.updateGroup(this.groupSettingsId, {
+            name: this.groupSettingsName,
+            color: this.groupSettingsColor
         });
         if (!saved) {
-            self.groupSettingsError = self.t('groupNameRequired', 'Enter a group name');
+            this.groupSettingsError = this.t('groupNameRequired', 'Enter a group name');
             return;
         }
-        self.showGroupSettings = false;
-        self.groupSettingsError = '';
-        self.notifyChange();
-    };
+        this.showGroupSettings = false;
+        this.groupSettingsError = '';
+        this.notifyChange();
+    }
 
     get selectionCount(): number {
         return this.designer?.selectedNodeIds.length || 0;
@@ -783,15 +767,14 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return this.t('openSubflow', 'Open sub workflow');
     }
 
-    readonly openReferencedWorkflow = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        const id = self.referencedWorkflowId;
-        self.showNodeMenu = false;
+    openReferencedWorkflow(): void {
+        const id = this.referencedWorkflowId;
+        this.showNodeMenu = false;
         if (id) {
-            self.openWorkflowAction?.(id);
+            this.openWorkflowAction?.(id);
         }
-        self.notifyChange();
-    };
+        this.notifyChange();
+    }
 
     get canUngroupSelection(): boolean {
         const selected = new Set(this.designer?.selectedNodeIds || []);
@@ -807,23 +790,21 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return this.t('ungroup', 'Ungroup');
     }
 
-    readonly groupMenuSelection = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        if (self.designer) {
-            self.designer.groupSelection();
+    groupMenuSelection(): void {
+        if (this.designer) {
+            this.designer.groupSelection();
         }
-        self.showNodeMenu = false;
-        self.notifyChange();
-    };
+        this.showNodeMenu = false;
+        this.notifyChange();
+    }
 
-    readonly ungroupMenuSelection = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        if (self.designer) {
-            self.designer.ungroupSelection();
+    ungroupMenuSelection(): void {
+        if (this.designer) {
+            this.designer.ungroupSelection();
         }
-        self.showNodeMenu = false;
-        self.notifyChange();
-    };
+        this.showNodeMenu = false;
+        this.notifyChange();
+    }
 
     get selectionBoxStyle(): string {
         const box = this.selectionBox;
@@ -840,46 +821,42 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         self.hostAction?.('clear-runs');
     };
 
-    readonly closeNodeMenu = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.showNodeMenu = false;
-        self.notifyChange();
-    };
+    closeNodeMenu(): void {
+        this.showNodeMenu = false;
+        this.notifyChange();
+    }
 
-    readonly toggleMenuNode = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        const node = self.designer?.nodes.find(item => item.id === self.nodeMenuId);
+    toggleMenuNode(): void {
+        const node = this.designer?.nodes.find(item => item.id === this.nodeMenuId);
         if (!node) {
-            self.showNodeMenu = false;
+            this.showNodeMenu = false;
             return;
         }
-        if (!self.designer.selectedNodeIds.includes(node.id)) {
-            self.designer.selectNode(node.id);
+        if (!this.designer.selectedNodeIds.includes(node.id)) {
+            this.designer.selectNode(node.id);
         }
-        self.designer.toggleSelectionDisabled();
-        self.showNodeMenu = false;
-        self.notifyChange();
-    };
+        this.designer.toggleSelectionDisabled();
+        this.showNodeMenu = false;
+        this.notifyChange();
+    }
 
-    readonly duplicateMenuNode = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        if (self.nodeMenuId) {
-            self.designer.selectNode(self.nodeMenuId);
-            self.designer.duplicateSelection();
+    duplicateMenuNode(): void {
+        if (this.nodeMenuId) {
+            this.designer.selectNode(this.nodeMenuId);
+            this.designer.duplicateSelection();
         }
-        self.showNodeMenu = false;
-        self.notifyChange();
-    };
+        this.showNodeMenu = false;
+        this.notifyChange();
+    }
 
-    readonly deleteMenuNode = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        if (self.nodeMenuId) {
-            self.designer.selectNode(self.nodeMenuId);
-            self.designer.deleteSelection();
+    deleteMenuNode(): void {
+        if (this.nodeMenuId) {
+            this.designer.selectNode(this.nodeMenuId);
+            this.designer.deleteSelection();
         }
-        self.showNodeMenu = false;
-        self.notifyChange();
-    };
+        this.showNodeMenu = false;
+        this.notifyChange();
+    }
 
     get saveStateClass(): string {
         return `workflow-save-state is-${this.effectiveSaveState}`;
@@ -944,13 +921,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     toggleShortcuts(): void {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.showShortcuts = !self.showShortcuts;
+        this.showShortcuts = !this.showShortcuts;
     }
 
     closeShortcuts(): void {
-        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        self.showShortcuts = false;
+        this.showShortcuts = false;
     }
 
     stopShortcutClick(event: any): void {
@@ -1283,9 +1258,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         ];
     }
 
-    readonly notifyChange = (): void => {
+    notifyChange(): void {
         this.autosaveAction?.();
-    };
+    }
 
     readonly toggleSchedule = (): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
@@ -1335,37 +1310,37 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 self.toggleSchedule();
                 break;
             case 'run':
-                void this.designer.run({ context: this.runContext });
+                void self.designer.run({ context: self.runContext });
                 break;
             case 'resume':
                 void self.resumeWorkflow();
                 break;
             case 'cancel':
-                void this.designer.cancel();
+                void self.designer.cancel();
                 break;
             case 'undo':
-                this.designer.undo();
+                self.designer.undo();
                 break;
             case 'redo':
-                this.designer.redo();
+                self.designer.redo();
                 break;
             case 'delete':
-                this.designer.deleteSelection();
+                self.designer.deleteSelection();
                 break;
             case 'zoom-in':
-                this.designer.zoomIn();
+                self.designer.zoomIn();
                 break;
             case 'zoom-out':
-                this.designer.zoomOut();
+                self.designer.zoomOut();
                 break;
             case 'reset-view':
                 self.fitView();
                 break;
             case 'auto-layout':
-                this.designer.autoLayout();
+                self.designer.autoLayout();
                 break;
             case 'duplicate':
-                this.designer.duplicateSelection();
+                self.designer.duplicateSelection();
                 break;
             case 'toggle-logs':
                 self.showLogs = !self.showLogs;
@@ -1380,7 +1355,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 self.hostAction?.('open-library');
                 break;
             case 'clear':
-                this.designer.clear();
+                self.designer.clear();
                 break;
             case 'toggle-json':
                 self.toggleJson();
@@ -1395,7 +1370,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     };
 
     /** Fit every node into the visible canvas; falls back to 100%/origin. */
-    readonly fitView = (): void => {
+    fitView(): void {
         const viewport = this.canvasViewport();
         const nodes = this.designer.nodes;
         if (!viewport || !nodes.length) {
@@ -1437,11 +1412,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             canvas.scrollLeft = 0;
             canvas.scrollTop = 0;
         }
-    };
+    }
 
     readonly addFromPalette = (item: WorkflowPaletteItem): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        this.designer.addNode(item.type, this.nextAddPosition());
+        self.designer.addNode(item.type, self.nextAddPosition());
         self.notifyChange();
     };
 
@@ -1627,26 +1602,29 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     readonly paletteDragStart = (event: any, item: WorkflowPaletteItem): void => {
-        this.pendingNodeType = item.type;
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.pendingNodeType = item.type;
         if (event?.dataTransfer) {
             event.dataTransfer.setData('application/x-tsdi-workflow-node', item.type);
             event.dataTransfer.effectAllowed = 'copy';
         }
-        this.designer.message = 'workflow.message.dropHint';
-        this.designer.messageParams = { name: item.label };
+        self.designer.message = 'workflow.message.dropHint';
+        self.designer.messageParams = { name: item.label };
     };
 
     readonly handlePan = (dx: number, dy: number): void => {
-        this.designer.panBy(dx, dy);
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.designer.panBy(dx, dy);
     };
 
     readonly selectRun = (executionId: string): void => {
-        this.designer.selectExecution(executionId);
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.designer.selectExecution(executionId);
     };
 
-    readonly resumeWorkflow = async (): Promise<void> => {
+    async resumeWorkflow(): Promise<void> {
         await this.designer.resume({ context: this.runContext });
-    };
+    }
 
     readonly clearRuntimeState = (): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
@@ -1683,7 +1661,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
 
     readonly handleCanvas = (payload: WorkflowCanvasPointerPayload): void => {
         const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
-        const designer = this.designer;
+        const designer = self.designer;
         if (self.showNodeMenu && payload.type !== 'node-context') {
             self.showNodeMenu = false;
         }
@@ -1725,7 +1703,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 } else if (designer.connectionDraft && payload.nodeId) {
                     // Clicking a target node while a wire is pending connects to
                     // its first compatible port instead of starting a node drag.
-                    this.connectToNode(payload.nodeId);
+                    self.connectToNode(payload.nodeId);
                 } else if (payload.nodeId && payload.world) {
                     designer.beginNodeDrag(payload.nodeId, payload.world);
                 }
@@ -1736,7 +1714,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 } else if (designer.connectionDraft && payload.nodeId) {
                     // Releasing anywhere on the target node body is enough; the
                     // user does not have to hit the small port dot.
-                    this.connectToNode(payload.nodeId);
+                    self.connectToNode(payload.nodeId);
                 }
                 break;
             case 'node-context':
@@ -1777,7 +1755,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 self.selectionBox = undefined;
                 const box = payload.box;
                 if (box) {
-                    const ids = this.canvasModel.nodes
+                    const ids = self.canvasModel.nodes
                         .filter(node => node.x < box.x + box.width
                             && node.x + node.width > box.x
                             && node.y < box.y + box.height
@@ -1865,10 +1843,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 break;
             }
             case 'drop': {
-                const type = payload.nodeType || this.pendingNodeType;
-                this.pendingNodeType = undefined;
+                const type = payload.nodeType || self.pendingNodeType;
+                self.pendingNodeType = undefined;
                 if (type && payload.world) {
-                    const definition = this.registry.get(type as any);
+                    const definition = self.registry.get(type as any);
                     const frame = definition
                         ? workflowNodeFrame({
                             type: definition.type,
@@ -1882,7 +1860,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                         y: Math.round(payload.world.y - frame.height / 2)
                     };
                     const connection = definition?.inputs?.length && definition?.outputs?.length
-                        ? this.connectionAt(payload.world, 24)
+                        ? self.connectionAt(payload.world, 24)
                         : undefined;
                     if (connection) {
                         designer.spliceNode(type as any, position, connection.id);
@@ -1893,12 +1871,12 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 break;
             }
             case 'key-down':
-                this.handleKey(payload);
+                self.handleKey(payload);
                 break;
             case 'wheel': {
-                const rect = this.canvasRect();
+                const rect = self.canvasRect();
                 if (payload.ctrlKey || payload.metaKey) {
-                    this.zoomAtPoint(payload, rect);
+                    self.zoomAtPoint(payload, rect);
                 } else {
                     const shift = !!payload.shiftKey;
                     const rawX = Number(payload.deltaX) || 0;
@@ -1918,38 +1896,40 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             || payload.type === 'port-down'
             || payload.type === 'port-up'
             || payload.type === 'key-down') {
-            this.notifyChange();
+            self.notifyChange();
         }
     };
 
     readonly inspectorRestore = (): void => {
-        const node = this.designer.selectedNode;
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        const node = self.designer.selectedNode;
         if (node) {
-            this.designer.resetNodeConfig(node.id);
-            this.notifyChange();
+            self.designer.resetNodeConfig(node.id);
+            self.notifyChange();
         }
     };
 
     readonly inspectorChange = (key: string, value: any, type: string, nodeId?: string): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
                 const node = nodeId
-            ? this.designer.nodes.find(item => item.id === nodeId)
-            : this.designer.selectedNode;
+            ? self.designer.nodes.find(item => item.id === nodeId)
+            : self.designer.selectedNode;
         if (!node) {
             return;
         }
         if (key === 'name') {
-            this.designer.renameNode(node.id, String(value));
-            this.notifyChange();
+            self.designer.renameNode(node.id, String(value));
+            self.notifyChange();
             return;
         }
         if (key === 'description') {
-            this.designer.updateNode(node.id, { description: String(value) });
-            this.notifyChange();
+            self.designer.updateNode(node.id, { description: String(value) });
+            self.notifyChange();
             return;
         }
         if (key === 'enabled') {
-            this.designer.updateNode(node.id, { disabled: value === false });
-            this.notifyChange();
+            self.designer.updateNode(node.id, { disabled: value === false });
+            self.notifyChange();
             return;
         }
         if (key === 'icon' || key === 'color') {
@@ -1966,15 +1946,15 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             } else {
                 delete style.backgroundColor;
             }
-            this.designer.updateNode(node.id, { style });
-            this.notifyChange();
+            self.designer.updateNode(node.id, { style });
+            self.notifyChange();
             return;
         }
         if (type === 'list') {
-            this.designer.updateNodeConfig(node.id, {
+            self.designer.updateNodeConfig(node.id, {
                 [key]: Array.isArray(value) ? value : []
             });
-            this.notifyChange();
+            self.notifyChange();
             return;
         }
         let parsed = value;
@@ -1987,14 +1967,14 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 try {
                     parsed = JSON.parse(String(value));
                 } catch (error) {
-                    this.designer.error = `Invalid JSON: ${(error as Error).message}`;
+                    self.designer.error = `Invalid JSON: ${(error as Error).message}`;
                     return;
                 }
             }
         } else if (type === 'number') {
             parsed = value === '' || value === undefined || value === null ? undefined : Number(value);
             if (typeof parsed === 'number' && !Number.isFinite(parsed)) {
-                this.designer.error = 'Invalid number';
+                self.designer.error = 'Invalid number';
                 return;
             }
         } else if (type === 'boolean') {
@@ -2004,8 +1984,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         } else {
             parsed = String(value ?? '');
         }
-        this.designer.updateNodeConfig(node.id, { [key]: parsed });
-        this.notifyChange();
+        self.designer.updateNodeConfig(node.id, { [key]: parsed });
+        self.notifyChange();
     };
 
     toggleJson(): void {

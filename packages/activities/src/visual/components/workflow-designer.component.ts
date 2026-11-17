@@ -802,12 +802,12 @@ export class WorkflowDesignerComponent implements OnDestroy {
         return translateWorkflow(self.translator, self.localeValue, `workflow.ui.${key}`, fallback, params);
     }
 
-    readonly clearAutosaveTimer = (): void => {
+    clearAutosaveTimer(): void {
         if (this.autosaveTimer !== undefined) {
             clearTimeout(this.autosaveTimer);
             this.autosaveTimer = undefined;
         }
-    };
+    }
 
     /** Mark the document dirty and schedule an autosave when enabled. */
     readonly scheduleAutosave = (): void => {
@@ -1030,12 +1030,13 @@ export class WorkflowDesignerComponent implements OnDestroy {
     };
 
     readonly previewHostAction = (action: string): void => {
-        this.toolbarAction(action);
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.toolbarAction(action);
     };
 
-    readonly fitView = (): void => {
+    fitView(): void {
         this.preview?.fitView();
-    };
+    }
 
     // Backwards-compatible delegates. The workspace implementation lives in
     // WorkflowDesignerPreviewComponent; the full shell still exposes the same
@@ -1056,16 +1057,15 @@ export class WorkflowDesignerComponent implements OnDestroy {
         this.preview?.toggleShortcuts();
     }
 
-    readonly openLibrary = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+    async openLibrary(): Promise<void> {
         try {
-            self.libraryItems = await self.designer.listSaved(self.store);
-            self.libraryError = '';
+            this.libraryItems = await this.designer.listSaved(this.store);
+            this.libraryError = '';
         } catch (error) {
-            self.libraryError = (error as Error).message;
+            this.libraryError = (error as Error).message;
         }
-        self.showLibrary = true;
-    };
+        this.showLibrary = true;
+    }
 
     get pluginsTitle(): string { return this.t('pluginsTitle', 'Workflow plugins'); }
     get closePluginsLabel(): string { return this.t('close', 'Close'); }
@@ -1078,18 +1078,16 @@ export class WorkflowDesignerComponent implements OnDestroy {
         return this.t('pluginNodeCount', '{count} nodes', { count: item.nodes?.length || 0 });
     }
 
-    readonly openPlugins = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showPlugins = true;
-        self.pluginError = '';
-        await self.refreshPlugins();
-    };
+    async openPlugins(): Promise<void> {
+        this.showPlugins = true;
+        this.pluginError = '';
+        await this.refreshPlugins();
+    }
 
-    readonly closePlugins = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showPlugins = false;
-        self.pluginError = '';
-    };
+    closePlugins(): void {
+        this.showPlugins = false;
+        this.pluginError = '';
+    }
 
     private async refreshPlugins(): Promise<void> {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
@@ -1118,7 +1116,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
     }
 
-    readonly togglePlugin = (item: WorkflowPluginManifest & { installed: boolean }): void => {
+    togglePlugin(item: WorkflowPluginManifest & { installed: boolean }): void {
         if (!item) {
             return;
         }
@@ -1127,48 +1125,46 @@ export class WorkflowDesignerComponent implements OnDestroy {
         } else {
             void this.installPlugin(item.id);
         }
-    };
+    }
 
-    readonly installPlugin = async (id: string): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        if (!self.pluginManager || !id) {
+    async installPlugin(id: string): Promise<void> {
+        if (!this.pluginManager || !id) {
             return;
         }
-        self.pluginBusyId = id;
-        self.pluginError = '';
+        this.pluginBusyId = id;
+        this.pluginError = '';
         try {
-            const result = await self.pluginManager.install(id);
+            const result = await this.pluginManager.install(id);
             if (result.plugin) {
-                self.registerPluginNodes(result.plugin);
+                this.registerPluginNodes(result.plugin);
             }
-            await self.refreshPlugins();
+            await this.refreshPlugins();
         } catch (error) {
-            self.pluginError = (error as Error).message;
+            this.pluginError = (error as Error).message;
         } finally {
-            self.pluginBusyId = '';
+            this.pluginBusyId = '';
         }
-    };
+    }
 
-    readonly uninstallPlugin = async (id: string): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        if (!self.pluginManager || !id) {
+    async uninstallPlugin(id: string): Promise<void> {
+        if (!this.pluginManager || !id) {
             return;
         }
-        const item = self.pluginItems.find(plugin => plugin.id === id);
-        self.pluginBusyId = id;
-        self.pluginError = '';
+        const item = this.pluginItems.find(plugin => plugin.id === id);
+        this.pluginBusyId = id;
+        this.pluginError = '';
         try {
-            await self.pluginManager.uninstall(id);
+            await this.pluginManager.uninstall(id);
             if (item) {
-                self.unregisterPluginNodes(item);
+                this.unregisterPluginNodes(item);
             }
-            await self.refreshPlugins();
+            await this.refreshPlugins();
         } catch (error) {
-            self.pluginError = (error as Error).message;
+            this.pluginError = (error as Error).message;
         } finally {
-            self.pluginBusyId = '';
+            this.pluginBusyId = '';
         }
-    };
+    }
 
     private registerPluginNodes(plugin: WorkflowPluginManifest): void {
         const registry = this.designer?.registry || this.registry;
@@ -1188,134 +1184,124 @@ export class WorkflowDesignerComponent implements OnDestroy {
         return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     };
 
-    readonly openAudit = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showAudit = true;
-        self.auditError = '';
-        await self.refreshAudit();
-    };
+    async openAudit(): Promise<void> {
+        this.showAudit = true;
+        this.auditError = '';
+        await this.refreshAudit();
+    }
 
-    readonly closeAudit = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showAudit = false;
-        self.auditError = '';
-    };
+    closeAudit(): void {
+        this.showAudit = false;
+        this.auditError = '';
+    }
 
-    readonly refreshAudit = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        if (!self.store?.listAudit) {
-            self.auditItems = [];
-            self.auditError = self.t('auditUnavailable', 'This host does not expose an audit log.');
+    async refreshAudit(): Promise<void> {
+        if (!this.store?.listAudit) {
+            this.auditItems = [];
+            this.auditError = this.t('auditUnavailable', 'This host does not expose an audit log.');
             return;
         }
-        self.auditBusy = true;
-        self.auditError = '';
+        this.auditBusy = true;
+        this.auditError = '';
         try {
-            self.auditItems = await self.store.listAudit({
-                workflowId: self.designer.definition.id,
+            this.auditItems = await this.store.listAudit({
+                workflowId: this.designer.definition.id,
                 limit: 100
             });
         } catch (error) {
-            self.auditError = (error as Error).message;
+            this.auditError = (error as Error).message;
         } finally {
-            self.auditBusy = false;
+            this.auditBusy = false;
         }
-    };
+    }
 
 
-    readonly credentialNameInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.credentialName = String(event?.target?.value ?? '');
-        self.credentialError = '';
-    };
+    credentialNameInput(event: any): void {
+        this.credentialName = String(event?.target?.value ?? '');
+        this.credentialError = '';
+    }
 
-    readonly credentialValueInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.credentialValue = String(event?.target?.value ?? '');
-        self.credentialError = '';
-    };
+    credentialValueInput(event: any): void {
+        this.credentialValue = String(event?.target?.value ?? '');
+        this.credentialError = '';
+    }
 
-    readonly openCredentials = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showCredentials = true;
-        self.credentialError = '';
-        self.credentialName = '';
-        self.credentialValue = '';
-        await self.refreshCredentials();
-    };
+    async openCredentials(): Promise<void> {
+        this.showCredentials = true;
+        this.credentialError = '';
+        this.credentialName = '';
+        this.credentialValue = '';
+        await this.refreshCredentials();
+    }
 
-    readonly closeCredentials = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showCredentials = false;
-        self.credentialError = '';
+    closeCredentials(): void {
+        this.showCredentials = false;
+        this.credentialError = '';
         // The typed secret never lingers once the dialog closes.
-        self.credentialValue = '';
-    };
+        this.credentialValue = '';
+    }
 
-    readonly refreshCredentials = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        if (!self.store?.listCredentials) {
-            self.credentialNames = [];
-            self.credentialError = self.t('credentialsUnavailable', 'This host does not expose credential storage.');
+    async refreshCredentials(): Promise<void> {
+        if (!this.store?.listCredentials) {
+            this.credentialNames = [];
+            this.credentialError = this.t('credentialsUnavailable', 'This host does not expose credential storage.');
             return;
         }
-        self.credentialBusy = true;
-        self.credentialError = '';
+        this.credentialBusy = true;
+        this.credentialError = '';
         try {
-            self.credentialNames = await self.store.listCredentials();
+            this.credentialNames = await this.store.listCredentials();
         } catch (error) {
-            self.credentialError = (error as Error).message;
+            this.credentialError = (error as Error).message;
         } finally {
-            self.credentialBusy = false;
+            this.credentialBusy = false;
         }
-    };
+    }
 
-    readonly saveCredential = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        const name = self.credentialName.trim();
-        if (!self.store?.setCredential) {
-            self.credentialError = self.t('credentialsUnavailable', 'This host does not expose credential storage.');
+    async saveCredential(): Promise<void> {
+        const name = this.credentialName.trim();
+        if (!this.store?.setCredential) {
+            this.credentialError = this.t('credentialsUnavailable', 'This host does not expose credential storage.');
             return;
         }
         if (!name) {
-            self.credentialError = self.t('credentialNameRequired', 'Enter a credential name.');
+            this.credentialError = this.t('credentialNameRequired', 'Enter a credential name.');
             return;
         }
-        if (!self.credentialValue) {
-            self.credentialError = self.t('credentialValueRequired', 'Enter the secret value to store.');
+        if (!this.credentialValue) {
+            this.credentialError = this.t('credentialValueRequired', 'Enter the secret value to store.');
             return;
         }
-        self.credentialBusy = true;
-        self.credentialError = '';
+        this.credentialBusy = true;
+        this.credentialError = '';
         try {
-            await self.store.setCredential(name, self.credentialValue);
-            self.credentialValue = '';
-            self.credentialName = '';
-            await self.refreshCredentials();
+            await this.store.setCredential(name, this.credentialValue);
+            this.credentialValue = '';
+            this.credentialName = '';
+            await this.refreshCredentials();
         } catch (error) {
-            self.credentialError = (error as Error).message;
+            this.credentialError = (error as Error).message;
         } finally {
-            self.credentialBusy = false;
+            this.credentialBusy = false;
         }
-    };
+    }
 
-    readonly removeCredential = async (name: string): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+    async removeCredential(name: string): Promise<void> {
         const id = String(name || '').trim();
-        if (!id || !self.store?.removeCredential) {
+        if (!id || !this.store?.removeCredential) {
             return;
         }
-        self.credentialBusy = true;
-        self.credentialError = '';
+        this.credentialBusy = true;
+        this.credentialError = '';
         try {
-            await self.store.removeCredential(id);
-            await self.refreshCredentials();
+            await this.store.removeCredential(id);
+            await this.refreshCredentials();
         } catch (error) {
-            self.credentialError = (error as Error).message;
+            this.credentialError = (error as Error).message;
         } finally {
-            self.credentialBusy = false;
+            this.credentialBusy = false;
         }
-    };
+    }
 
     get deploymentsTitle(): string { return this.t('deployments', 'Deployments'); }
     get deploymentsEmpty(): string { return this.t('deploymentsEmpty', 'No workflows are deployed.'); }
@@ -1326,18 +1312,16 @@ export class WorkflowDesignerComponent implements OnDestroy {
     get runningLabel(): string { return this.t('running', 'Running'); }
     get stoppedLabel(): string { return this.t('stopped', 'Stopped'); }
 
-    readonly openDeployments = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showDeployments = true;
-        self.deploymentError = '';
-        await self.refreshDeployments();
-    };
+    async openDeployments(): Promise<void> {
+        this.showDeployments = true;
+        this.deploymentError = '';
+        await this.refreshDeployments();
+    }
 
-    readonly closeDeployments = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showDeployments = false;
-        self.deploymentError = '';
-    };
+    closeDeployments(): void {
+        this.showDeployments = false;
+        this.deploymentError = '';
+    }
 
     private async refreshDeployments(): Promise<void> {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
@@ -1353,99 +1337,93 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
     }
 
-    readonly startAllDeployments = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        if (!self.store?.startDeployments) {
+    async startAllDeployments(): Promise<void> {
+        if (!this.store?.startDeployments) {
             return;
         }
-        self.deploymentBusy = true;
-        self.deploymentError = '';
+        this.deploymentBusy = true;
+        this.deploymentError = '';
         try {
-            await self.store.startDeployments();
-            await self.refreshDeployments();
+            await this.store.startDeployments();
+            await this.refreshDeployments();
         } catch (error) {
-            self.deploymentError = (error as Error).message;
+            this.deploymentError = (error as Error).message;
         } finally {
-            self.deploymentBusy = false;
+            this.deploymentBusy = false;
         }
-    };
+    }
 
-    readonly stopAllDeployments = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        if (!self.store?.stopDeployments) {
+    async stopAllDeployments(): Promise<void> {
+        if (!this.store?.stopDeployments) {
             return;
         }
-        self.deploymentBusy = true;
-        self.deploymentError = '';
+        this.deploymentBusy = true;
+        this.deploymentError = '';
         try {
-            await self.store.stopDeployments();
-            await self.refreshDeployments();
+            await this.store.stopDeployments();
+            await this.refreshDeployments();
         } catch (error) {
-            self.deploymentError = (error as Error).message;
+            this.deploymentError = (error as Error).message;
         } finally {
-            self.deploymentBusy = false;
+            this.deploymentBusy = false;
         }
-    };
+    }
 
-    readonly toggleDeployment = async (item: WorkflowDeploymentStatus): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.deploymentBusy = true;
-        self.deploymentError = '';
+    async toggleDeployment(item: WorkflowDeploymentStatus): Promise<void> {
+        this.deploymentBusy = true;
+        this.deploymentError = '';
         try {
             if (item.running) {
-                await self.store.stopDeployments?.([item.workflowId]);
+                await this.store.stopDeployments?.([item.workflowId]);
             } else {
-                await self.store.startDeployments?.([item.workflowId]);
+                await this.store.startDeployments?.([item.workflowId]);
             }
-            await self.refreshDeployments();
+            await this.refreshDeployments();
         } catch (error) {
-            self.deploymentError = (error as Error).message;
+            this.deploymentError = (error as Error).message;
         } finally {
-            self.deploymentBusy = false;
+            this.deploymentBusy = false;
         }
-    };
+    }
 
-    readonly openMetrics = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.metricsError = '';
-        self.metricsData = undefined;
-        self.metricsTrend = [];
-        self.metricsRate = 0;
-        self.showMetrics = true;
-        await self.loadMetrics();
-    };
+    async openMetrics(): Promise<void> {
+        this.metricsError = '';
+        this.metricsData = undefined;
+        this.metricsTrend = [];
+        this.metricsRate = 0;
+        this.showMetrics = true;
+        await this.loadMetrics();
+    }
 
-    readonly setMetricsWindow = async (windowMs: number): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.metricsWindow = windowMs;
-        await self.loadMetrics();
-    };
+    async setMetricsWindow(windowMs: number): Promise<void> {
+        this.metricsWindow = windowMs;
+        await this.loadMetrics();
+    }
 
-    readonly loadMetrics = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        if (!self.store?.getMetrics) {
-            self.metricsError = self.t('metricsUnavailable', 'This host does not expose execution metrics.');
+    async loadMetrics(): Promise<void> {
+        if (!this.store?.getMetrics) {
+            this.metricsError = this.t('metricsUnavailable', 'This host does not expose execution metrics.');
             return;
         }
-        self.metricsError = '';
+        this.metricsError = '';
         try {
-            const data = await self.store.getMetrics(self.designer.definition.id, {
+            const data = await this.store.getMetrics(this.designer.definition.id, {
                 limit: 200,
-                windowMs: self.metricsWindow,
+                windowMs: this.metricsWindow,
                 buckets: 12
             });
-            self.metricsData = data;
-            self.metricsTrend = data?.trend || [];
-            self.metricsMaxRuns = self.metricsTrend.reduce((max, point) => Math.max(max, point.runs), 0);
+            this.metricsData = data;
+            this.metricsTrend = data?.trend || [];
+            this.metricsMaxRuns = this.metricsTrend.reduce((max, point) => Math.max(max, point.runs), 0);
             const runs = data?.runs || 0;
-            self.metricsRate = runs ? Math.round(((data?.succeeded || 0) / runs) * 100) : 0;
+            this.metricsRate = runs ? Math.round(((data?.succeeded || 0) / runs) * 100) : 0;
             if (!data) {
-                self.metricsError = self.t('metricsUnavailable', 'This host does not expose execution metrics.');
+                this.metricsError = this.t('metricsUnavailable', 'This host does not expose execution metrics.');
             }
         } catch (error) {
-            self.metricsError = (error as Error).message;
+            this.metricsError = (error as Error).message;
         }
-    };
+    }
 
     /** Bar width relative to the busiest bucket in the window. */
     readonly trendStyle = (point: WorkflowMetricsTrendPoint): string => {
@@ -1467,79 +1445,71 @@ export class WorkflowDesignerComponent implements OnDestroy {
             : time;
     };
 
-    readonly closeMetrics = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showMetrics = false;
-        self.metricsError = '';
-        self.metricsData = undefined;
-        self.metricsTrend = [];
-        self.metricsRate = 0;
-    };
+    closeMetrics(): void {
+        this.showMetrics = false;
+        this.metricsError = '';
+        this.metricsData = undefined;
+        this.metricsTrend = [];
+        this.metricsRate = 0;
+    }
 
     get settingsTitle(): string { return this.t('settings', 'Workflow settings'); }
     get descriptionLabel(): string { return this.t('description', 'Description'); }
     get runTimeoutLabel(): string { return this.t('runTimeout', 'Run timeout'); }
     get saveLabel(): string { return this.t('save', 'Save'); }
 
-    readonly openSettings = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.settingsDescription = self.designer?.definition.description || '';
-        self.settingsTimeout = String(self.designer?.defaultTimeout || 0);
-        self.settingsError = '';
-        self.showSettings = true;
-    };
+    openSettings(): void {
+        this.settingsDescription = this.designer?.definition.description || '';
+        this.settingsTimeout = String(this.designer?.defaultTimeout || 0);
+        this.settingsError = '';
+        this.showSettings = true;
+    }
 
-    readonly closeSettings = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showSettings = false;
-        self.settingsError = '';
-    };
+    closeSettings(): void {
+        this.showSettings = false;
+        this.settingsError = '';
+    }
 
-    readonly settingsDescriptionInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.settingsDescription = String(event?.target?.value ?? '');
-        self.settingsError = '';
-    };
+    settingsDescriptionInput(event: any): void {
+        this.settingsDescription = String(event?.target?.value ?? '');
+        this.settingsError = '';
+    }
 
-    readonly settingsTimeoutInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.settingsTimeout = String(event?.target?.value ?? '0');
-        self.settingsError = '';
-    };
+    settingsTimeoutInput(event: any): void {
+        this.settingsTimeout = String(event?.target?.value ?? '0');
+        this.settingsError = '';
+    }
 
-    readonly saveSettings = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        if (!self.designer) {
+    saveSettings(): void {
+        if (!this.designer) {
             return;
         }
-        const timeout = Number(self.settingsTimeout || 0);
+        const timeout = Number(this.settingsTimeout || 0);
         if (!Number.isFinite(timeout) || timeout < 0) {
-            self.settingsError = self.t('timeoutInvalid', 'Enter a timeout of 0 or more milliseconds');
+            this.settingsError = this.t('timeoutInvalid', 'Enter a timeout of 0 or more milliseconds');
             return;
         }
-        self.designer.updateSettings({
-            description: self.settingsDescription,
+        this.designer.updateSettings({
+            description: this.settingsDescription,
             timeout
         });
-        self.showSettings = false;
-        self.settingsError = '';
-        self.scheduleAutosave();
-    };
+        this.showSettings = false;
+        this.settingsError = '';
+        this.scheduleAutosave();
+    }
 
-    readonly openRename = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.renameValue = self.designer?.definition?.name || '';
-        self.renameError = '';
-        self.showRename = true;
-    };
+    openRename(): void {
+        this.renameValue = this.designer?.definition?.name || '';
+        this.renameError = '';
+        this.showRename = true;
+    }
 
-    readonly renameInput = (event: any): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.renameValue = String(event?.target?.value ?? '');
-        self.renameError = '';
-    };
+    renameInput(event: any): void {
+        this.renameValue = String(event?.target?.value ?? '');
+        this.renameError = '';
+    }
 
-    readonly renameKey = (event: any): void => {
+    renameKey(event: any): void {
         const key = String(event?.key || '');
         if (key === 'Enter') {
             event?.preventDefault?.();
@@ -1550,34 +1520,32 @@ export class WorkflowDesignerComponent implements OnDestroy {
             event?.preventDefault?.();
             this.cancelRename();
         }
-    };
+    }
 
-    readonly cancelRename = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showRename = false;
-        self.renameError = '';
-    };
+    cancelRename(): void {
+        this.showRename = false;
+        this.renameError = '';
+    }
 
-    readonly commitRename = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        const name = String(self.renameValue || '').trim();
+    commitRename(): void {
+        const name = String(this.renameValue || '').trim();
         if (!name) {
-            self.renameError = self.t('renameEmpty', 'Enter a workflow name');
+            this.renameError = this.t('renameEmpty', 'Enter a workflow name');
             return;
         }
-        const tab = self.activeTab();
+        const tab = this.activeTab();
         if (!tab) {
-            self.showRename = false;
+            this.showRename = false;
             return;
         }
         tab.designer.renameWorkflow(name);
-        self.showRename = false;
-        self.renameError = '';
+        this.showRename = false;
+        this.renameError = '';
         // The tab label and toolbar title derive from the definition name, so
         // rebuild the cached tab source and let autosave persist the rename.
-        self.emitTabs();
-        self.scheduleAutosave();
-    };
+        this.emitTabs();
+        this.scheduleAutosave();
+    }
 
     readonly saveWorkflow = async (): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
@@ -1608,31 +1576,30 @@ export class WorkflowDesignerComponent implements OnDestroy {
      * Publish the active document. Run and webhook entry points execute the
      * released version from then on; the draft keeps autosaving.
      */
-    readonly publishWorkflow = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.preview?.inspector?.formBlur();
-        self.clearAutosaveTimer();
-        self.saveState = 'saving';
+    async publishWorkflow(): Promise<void> {
+        this.preview?.inspector?.formBlur();
+        this.clearAutosaveTimer();
+        this.saveState = 'saving';
         try {
-            const release = await self.designer.publishTo(self.store);
+            const release = await this.designer.publishTo(this.store);
             if (!release) {
-                self.saveState = self.designer.dirty ? 'dirty' : 'saved';
+                this.saveState = this.designer.dirty ? 'dirty' : 'saved';
                 return;
             }
-            const active = self.activeTab();
+            const active = this.activeTab();
             if (active) {
                 active.persisted = true;
             }
-            self.syncActiveTabId();
-            self.libraryError = '';
-            self.lastAutosaveAt = Date.now();
-            self.unsavedSince = undefined;
-            self.saveState = self.designer.dirty ? 'dirty' : 'saved';
+            this.syncActiveTabId();
+            this.libraryError = '';
+            this.lastAutosaveAt = Date.now();
+            this.unsavedSince = undefined;
+            this.saveState = this.designer.dirty ? 'dirty' : 'saved';
         } catch (error) {
-            self.saveState = 'error';
-            self.libraryError = (error as Error).message;
+            this.saveState = 'error';
+            this.libraryError = (error as Error).message;
         }
-    };
+    }
 
     readonly saveWorkflowAs = async (): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
@@ -1730,63 +1697,59 @@ export class WorkflowDesignerComponent implements OnDestroy {
      * Ask before publishing: it changes what production entry points execute,
      * so a mis-click must not be enough.
      */
-    readonly openPublish = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.preview?.inspector?.formBlur();
-        const validation = self.designer.validate();
+    async openPublish(): Promise<void> {
+        this.preview?.inspector?.formBlur();
+        const validation = this.designer.validate();
         if (!validation.valid) {
-            self.designer.error = validation.errors.join('; ');
+            this.designer.error = validation.errors.join('; ');
             return;
         }
-        self.publishError = '';
+        this.publishError = '';
         try {
-            const store = self.store;
+            const store = this.store;
             if (typeof store?.listVersions === 'function') {
-                const list = await store.listVersions(self.designer.definition.id, 1);
-                self.versionRelease = list.release;
+                const list = await store.listVersions(this.designer.definition.id, 1);
+                this.versionRelease = list.release;
             }
         } catch {
             // Release info is advisory; the publish request validates again.
         }
-        self.showPublish = true;
-    };
+        this.showPublish = true;
+    }
 
-    readonly cancelPublish = (): void => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showPublish = false;
-        self.publishError = '';
-    };
+    cancelPublish(): void {
+        this.showPublish = false;
+        this.publishError = '';
+    }
 
-    readonly confirmPublish = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showPublish = false;
-        await self.publishWorkflow();
-        if (self.saveState === 'error') {
-            self.publishError = self.libraryError || self.designer.error || '';
+    async confirmPublish(): Promise<void> {
+        this.showPublish = false;
+        await this.publishWorkflow();
+        if (this.saveState === 'error') {
+            this.publishError = this.libraryError || this.designer.error || '';
         }
-    };
+    }
 
     /** Open the version history overlay for the active document. */
-    readonly openVersions = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.showVersions = true;
-        self.versionError = '';
-        const store = self.store;
+    async openVersions(): Promise<void> {
+        this.showVersions = true;
+        this.versionError = '';
+        const store = this.store;
         if (typeof store?.listVersions !== 'function') {
-            self.versionItems = [];
-            self.versionRelease = undefined;
-            self.versionError = self.t('versionUnsupported', 'This host does not keep version history');
+            this.versionItems = [];
+            this.versionRelease = undefined;
+            this.versionError = this.t('versionUnsupported', 'This host does not keep version history');
             return;
         }
         try {
-            const list = await store.listVersions(self.designer.definition.id);
-            self.versionItems = list.items || [];
-            self.versionRelease = list.release;
+            const list = await store.listVersions(this.designer.definition.id);
+            this.versionItems = list.items || [];
+            this.versionRelease = list.release;
         } catch (error) {
-            self.versionItems = [];
-            self.versionError = (error as Error).message;
+            this.versionItems = [];
+            this.versionError = (error as Error).message;
         }
-    };
+    }
 
     readonly closeVersions = (): void => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
@@ -1836,18 +1799,17 @@ export class WorkflowDesignerComponent implements OnDestroy {
     };
 
     /** Clear persisted run history for the open document. */
-    readonly clearRunHistory = async (): Promise<void> => {
-        const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        const store = self.store;
+    async clearRunHistory(): Promise<void> {
+        const store = this.store;
         if (typeof store?.clearExecutions !== 'function') {
             return;
         }
         try {
-            await store.clearExecutions(self.designer.definition.id);
+            await store.clearExecutions(this.designer.definition.id);
         } catch (error) {
-            self.libraryError = (error as Error).message;
+            this.libraryError = (error as Error).message;
         }
-    };
+    }
 
     readonly closeVersionDiff = (): void => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
