@@ -258,6 +258,8 @@ export class PanelComponent {
 
 - `indexOf` is O(1); `insert`, `remove`, `move`, `detach`, `reattach`,
   `getHostElement` keep the internal view index and DOM order aligned.
+  `ViewChildren` result order follows the container order after moves/inserts;
+  detached views are removed from query results and restored on reattach.
 - `createComponent` accepts `ref?: string` besides `inputs`/`index`; the ref is
   registered in the owning view index and works with string
   `ViewChild`/`ViewChildren` queries. It clamps stale insertion indexes,

@@ -111,6 +111,30 @@ export class ViewQueryIndex {
         return found;
     }
 
+    /** Keep child query indexes in the same order as their container views. */
+    reorderChildren(ordered: ViewQueryIndex[]): void {
+        const wanted = ordered.filter(child => this.children.includes(child));
+        if (!wanted.length) {
+            return;
+        }
+        const wantedSet = new Set(wanted);
+        let cursor = 0;
+        let changed = false;
+        for (let i = 0; i < this.children.length; i++) {
+            if (!wantedSet.has(this.children[i])) {
+                continue;
+            }
+            const next = wanted[cursor++];
+            if (this.children[i] !== next) {
+                this.children[i] = next;
+                changed = true;
+            }
+        }
+        if (changed) {
+            this.touch();
+        }
+    }
+
     queryFirstByName(name: string): RNode | undefined {
         const normalized = (name.startsWith('#') ? name.slice(1) : name).toLowerCase();
         if (!normalized) {

@@ -110,6 +110,17 @@ class ViewContainerRefImpl implements ViewContainerRef {
     private notifyQueryIndex(): void {
         this.queryIndex()?.notifyChanged();
     }
+
+    private reorderQueryChildren(): void {
+        const index = this.queryIndex();
+        if (!index) {
+            return;
+        }
+        const ordered = this.views
+            .map(view => (view as any)?.queryIndex as import('./query-index').ViewQueryIndex | undefined)
+            .filter((child): child is import('./query-index').ViewQueryIndex => !!child);
+        index.reorderChildren(ordered);
+    }
     /**
      * Returns the number of views currently attached to this container.
      *
@@ -245,6 +256,11 @@ class ViewContainerRefImpl implements ViewContainerRef {
         // Insert view into views array
         this.views.splice(insertIndex, 0, viewRef);
         this.reindex(insertIndex);
+        const childIndex = (viewRef as any)?.queryIndex as import('./query-index').ViewQueryIndex | undefined;
+        if (childIndex?.parent) {
+            childIndex.parent.mount(childIndex);
+        }
+        this.reorderQueryChildren();
 
         // Insert DOM nodes
         const nativeElement = this.element.nativeElement;
@@ -377,6 +393,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         if ('destroy' in viewRef) {
             (viewRef as any).destroy();
         }
+        this.reorderQueryChildren();
         this.notifyQueryIndex();
     }
 
@@ -393,6 +410,9 @@ class ViewContainerRefImpl implements ViewContainerRef {
         if (componentRef) {
             this.queryIndex()?.removeComponentRef(componentRef);
         }
+        const childIndex = (viewRef as any)?.queryIndex as import('./query-index').ViewQueryIndex | undefined;
+        childIndex?.parent?.unmount(childIndex);
+        this.reorderQueryChildren();
         this.notifyQueryIndex();
         return viewRef;
     }

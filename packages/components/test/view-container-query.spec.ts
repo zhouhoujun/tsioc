@@ -17,7 +17,7 @@ class VcrContainerComponent {
     @ViewChild('tpl') tpl?: TemplateRef<any>;
     @ViewChild('anchor', ViewContainerRef) vcr?: ViewContainerRef;
     @ViewChild('dynItem', ElementRef) firstItem?: ElementRef;
-    @ViewChildren('dynItem') itemList?: QueryList<ElementRef>;
+    @ViewChildren('dynItem', ElementRef) itemList?: QueryList<ElementRef>;
 }
 
 @Component({
@@ -53,6 +53,7 @@ export class ViewContainerRefTest {
             const component = ref.instance as VcrContainerComponent;
             const root = ref.hostView.rootNodes[0] as any;
             const labels = () => (root.querySelectorAll('.item') || []).map((node: any) => node.textContent);
+            const queryLabels = () => component.itemList?.toArray().map(item => item?.nativeElement?.textContent);
             const vcr = component.vcr!;
             const tpl = component.tpl!;
 
@@ -70,17 +71,22 @@ export class ViewContainerRefTest {
             expect(vcr.indexOf(c)).toBe(2);
 
             vcr.move(c, 0);
+            await Promise.resolve().then(() => Promise.resolve());
             expect(labels()).toEqual(['C', 'A', 'B']);
+            expect(queryLabels()).toEqual(['C', 'A', 'B']);
             expect(vcr.indexOf(c)).toBe(0);
             expect(vcr.indexOf(a)).toBe(1);
 
             vcr.move(c, 2);
+            await Promise.resolve().then(() => Promise.resolve());
             expect(labels()).toEqual(['A', 'B', 'C']);
+            expect(queryLabels()).toEqual(['A', 'B', 'C']);
             expect(vcr.indexOf(c)).toBe(2);
 
             vcr.remove(1);
             await Promise.resolve().then(() => Promise.resolve());
             expect(labels()).toEqual(['A', 'C']);
+            expect(queryLabels()).toEqual(['A', 'C']);
             expect(vcr.indexOf(b)).toBe(-1);
             expect(vcr.length).toBe(2);
 
