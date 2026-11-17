@@ -12,7 +12,8 @@ import { MetricsRegistry } from './registry';
 import { MetricsCollector } from './collector';
 import { EventLoopLagGauge, MemoryGauge } from './gauges';
 import { LatencyHistogram } from './histograms';
-import { RequestCounter, ErrorCounter } from './counters';
+import { ConsumerMetricsRecorder, RequestCounter, ErrorCounter } from './counters';
+import { CONSUMER_METRICS } from '@tsdi/service';
 
 /**
  * Register metrics collection for a microservice transport.
@@ -38,6 +39,8 @@ export function useMetrics(options: MetricsModuleOptions = {}): ServiceFeatureFn
             MetricsRegistry,
             RequestCounter,
             ErrorCounter,
+            ConsumerMetricsRecorder,
+            { provide: CONSUMER_METRICS, useExisting: ConsumerMetricsRecorder },
             { provide: METRICS_OPTIONS, useValue: options },
             {
                 provide: MetricsCollector,

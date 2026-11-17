@@ -6,7 +6,8 @@ import { Transport } from '@tsdi/common';
 import { LoggerModule } from '@tsdi/logger';
 import { Controller, Get, provideService, useRouter } from '@tsdi/service';
 import { HttpServer, useHttpTransport } from '@tsdi/http-microservice';
-import { MetricsController, useMetrics } from '../src';
+import { CONSUMER_METRICS } from '@tsdi/service';
+import { ConsumerMetricsRecorder, MetricsController, useMetrics } from '../src';
 
 @Controller('/ping')
 class PingController {
@@ -92,5 +93,11 @@ describe('useMetrics feature', () => {
         expect(providerNames).not.toContain('MemoryGauge');
         expect(providerNames).not.toContain('LatencyHistogram');
         expect(providerNames).not.toContain('EventLoopLagGauge');
+    });
+
+    it('provides the consumer metrics sink for broker runtimes', () => {
+        const feature = useMetrics()({ transport: Transport.HTTP, features: {} } as any) as any;
+        const provider = feature.providers.find((entry: any) => entry.provide === CONSUMER_METRICS);
+        expect(provider?.useExisting).toBe(ConsumerMetricsRecorder);
     });
 });

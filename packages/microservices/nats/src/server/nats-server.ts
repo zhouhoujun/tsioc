@@ -5,7 +5,7 @@ import { connect, StringCodec, NatsConnection, Subscription } from 'nats';
 import {
     createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import { NatsServOptions, NATS_SERV_OPTIONS, NATS_BIND_INTERCEPTORS, NATS_BIND_FILTERS, NATS_BIND_GUARDS } from './options';
 
@@ -25,7 +25,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private runtime?: ConsumerRuntime;
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime({
+        return this.runtime ??= new ConsumerRuntime({ metrics: this.consumerMetrics ?? undefined, labels: { transport: 'nats' },
             retry: this.options?.retry,
             concurrency: this.options?.concurrency
         });
@@ -34,6 +34,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
         @Inject(NATS_SERV_OPTIONS, { nullable: true }) protected options: NatsServOptions,
+        @Inject(CONSUMER_METRICS, { nullable: true }) protected consumerMetrics?: ConsumerMetricsSink | null,
     ) {
         super();
         this.destroy$ = new Subject();
@@ -143,6 +144,7 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private async handleMessage(subject: string, data: Uint8Array, sc: any, msg: any): Promise<void> {
         await this.consumerRuntime.handle({
+            labels: { topic: subject },
             payload: { subject, data, sc, msg },
             fail: (err) => {
                 if (this.options?.deadLetterSubject && this.nc) {

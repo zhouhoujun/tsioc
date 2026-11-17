@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AmqpServOptions, AMQP_SERV_OPTIONS, AMQP_BIND_INTERCEPTORS, AMQP_BIND_FILTERS, AMQP_BIND_GUARDS } from './options';
@@ -31,7 +31,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     @InjectLog() logger!: Logger;
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime();
+        return this.runtime ??= new ConsumerRuntime({ metrics: this.consumerMetrics ?? undefined, labels: { transport: 'amqp', group: this.options?.queue } });
     }
 
     private destroy$: Subject<void>;
@@ -39,6 +39,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
         @Inject(AMQP_SERV_OPTIONS, { nullable: true }) protected options: AmqpServOptions,
+        @Inject(CONSUMER_METRICS, { nullable: true }) protected consumerMetrics?: ConsumerMetricsSink | null,
     ) {
         super();
         this.destroy$ = new Subject();
@@ -248,6 +249,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         // transfer hooks; the runtime adds unified accounting and the optional
         // concurrency limit without settling the message twice.
         await this.consumerRuntime.handle({
+            labels: { topic: msg.fields.routingKey },
             payload: msg,
             // Rethrow so the consume callback logs/observes the failure; the
             // AMQP transfer hooks already nacked or dead-lettered the message.

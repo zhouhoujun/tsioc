@@ -2,7 +2,7 @@ import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { createRequestContext, RequestContext, Transport, REQUEST } from '@tsdi/common';
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import { Kafka, Consumer, Producer, EachMessagePayload } from 'kafkajs';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS, KAFKA_BIND_INTERCEPTORS, KAFKA_BIND_FILTERS, KAFKA_BIND_GUARDS } from './options';
@@ -22,6 +22,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
         @Inject(KAFKA_SERV_OPTIONS, { nullable: true }) protected options: KafkaServOptions,
+        @Inject(CONSUMER_METRICS, { nullable: true }) protected consumerMetrics?: ConsumerMetricsSink | null,
     ) {
         super();
         this.destroy$ = new Subject();
@@ -143,7 +144,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     private runtime?: ConsumerRuntime;
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime({ retry: this.options?.retry });
+        return this.runtime ??= new ConsumerRuntime({ retry: this.options?.retry, metrics: this.consumerMetrics ?? undefined, labels: { transport: 'kafka', group: this.options?.groupId } });
     }
 
     /**
@@ -153,6 +154,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
      */
     private async consumeMessage(payload: EachMessagePayload): Promise<void> {
         await this.consumerRuntime.handle({
+            labels: { topic: payload.topic },
             payload,
             ack: () => this.isAtLeastOnce() ? this.commitOffset(payload) : undefined,
             fail: async (err) => {

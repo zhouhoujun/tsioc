@@ -4644,3 +4644,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第八十九批（2026-11-16）：
   - webhook allowlist 禁止非 http(s) 与自动重定向。
   - 回归：gateway 149。
+
+- 微服务框架第九十批（2026-11-16）：
+  - ConsumerRuntime metrics sink + broker 注入；consumer 指标。
+  - 回归：service 88、metrics 67，brokers 不变。

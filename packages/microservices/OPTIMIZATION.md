@@ -506,6 +506,12 @@
 - allowlist 模式下仅允许 http/https，并设置 `redirect:'manual'`，防止 3xx 跳转到内网地址绕过白名单。
 - `webhook.spec.ts` 增加协议/重定向断言；gateway 149 passing。
 
+第九十批（Consumer 指标）：
+
+- `ConsumerRuntime` 支持可选 `ConsumerMetricsSink`/labels；Kafka/AMQP/MQTT/NATS 通过 `CONSUMER_METRICS` 可选注入。
+- metrics 新增 `ConsumerMetricsRecorder`：started/completed/failed/retried、in-flight gauge、处理耗时 ms/seconds 双发。
+- 回归：service 88、metrics 67；broker 套件保持 Kafka 81/NATS 59/AMQP 63/MQTT 87。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

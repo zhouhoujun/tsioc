@@ -2,7 +2,8 @@ import { Module, ModuleWithProviders, Provider } from '@tsdi/ioc';
 import { MetricsCollector } from './collector';
 import { MetricsRegistry } from './registry';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
-import { RequestCounter, ErrorCounter } from './counters';
+import { ConsumerMetricsRecorder, RequestCounter, ErrorCounter } from './counters';
+import { CONSUMER_METRICS } from '@tsdi/service';
 import { EventLoopLagGauge, MemoryGauge } from './gauges';
 import { LatencyHistogram } from './histograms';
 import { MetricsModuleOptions } from './metrics';
@@ -18,6 +19,8 @@ export const METRICS_PROVIDERS: Provider[] = [
     { provide: MetricsCollector, useClass: MetricsRegistry },
     RequestCounter,
     ErrorCounter,
+    ConsumerMetricsRecorder,
+    { provide: CONSUMER_METRICS, useExisting: ConsumerMetricsRecorder },
     MemoryGauge,
     EventLoopLagGauge,
     LatencyHistogram,

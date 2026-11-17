@@ -1,4 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
+import { ConsumerMetricLabels, ConsumerMetricsSink } from './metrics';
 
 /**
  * Retry policy applied inside a consumer process.
@@ -28,6 +29,10 @@ export interface ConsumerRuntimeOptions {
      */
     concurrency?: number;
     retry?: ConsumerRetryOptions;
+    /** Optional metrics sink (provided by `@tsdi/metrics`). */
+    metrics?: ConsumerMetricsSink;
+    /** Base labels for every delivery handled by this runtime. */
+    labels?: ConsumerMetricLabels;
 }
 
 /**
@@ -39,6 +44,8 @@ export interface ConsumerRuntimeOptions {
  */
 export interface ConsumerMessage<T = unknown> {
     payload: T;
+    /** Per-delivery metric labels such as `topic`. */
+    labels?: ConsumerMetricLabels;
     ack?(): void | Promise<void>;
     fail?(error: unknown, attempts: number): void | Promise<void>;
 }
@@ -91,19 +98,26 @@ export class ConsumerRuntime {
         await this.acquire();
         try {
             const maxAttempts = Math.max(this.options.retry?.maxAttempts ?? 0, 0);
+            const labels: ConsumerMetricLabels = { ...(this.options.labels ?? {}), ...(message.labels ?? {}) };
+            const metrics = this.options.metrics;
+            const startedAt = Date.now();
+            metrics?.started?.(labels);
             for (let attempt = 0; ; attempt++) {
                 try {
                     await handler(message);
                     await message.ack?.();
                     this.state.completed++;
+                    metrics?.completed?.(Date.now() - startedAt, labels);
                     return true;
                 } catch (err) {
                     if (attempt >= maxAttempts) {
                         this.state.failed++;
+                        metrics?.failed?.(labels);
                         await message.fail?.(err, attempt + 1);
                         return false;
                     }
                     this.state.retried++;
+                    metrics?.retried?.(labels);
                     await this.delay(attempt + 1);
                 }
             }

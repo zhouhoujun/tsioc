@@ -692,7 +692,7 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 
 | 项目 | 结果 |
 |---|---|
-| metrics 单位 | 新增 `recordDuration`，http/client/gateway 延迟指标双发 `*_ms` + `*_seconds`；新增 event-loop lag p99/max |
+| metrics 单位 | 新增 `recordDuration`，http/client/gateway 延迟指标双发 `*_ms` + `*_seconds`；新增 event-loop lag p99/max；consumer started/completed/failed/retried/in-flight/duration |
 | defineService | `defineService` / `describeService`；示例见 `examples/http-quickstart.ts` |
 | OpenAPI | swagger 暴露 `GET /{prefix}/openapi.json` |
 | 契约兼容 | `compareContracts` / `assertCompatible` + CLI `--compat`，breaking 变化 exit 1 |

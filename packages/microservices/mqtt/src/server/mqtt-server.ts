@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import * as mqtt from 'mqtt';
 import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_FILTERS, MQTT_BIND_GUARDS } from './options';
@@ -24,7 +24,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private runtime?: ConsumerRuntime;
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime({
+        return this.runtime ??= new ConsumerRuntime({ metrics: this.consumerMetrics ?? undefined, labels: { transport: 'mqtt' },
             retry: this.options?.retry,
             concurrency: this.options?.concurrency
         });
@@ -33,6 +33,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
         @Inject(MQTT_SERV_OPTIONS, { nullable: true }) protected options: MqttServOptions,
+        @Inject(CONSUMER_METRICS, { nullable: true }) protected consumerMetrics?: ConsumerMetricsSink | null,
     ) {
         super();
         this.destroy$ = new Subject();
@@ -161,6 +162,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private async handleMessage(topic: string, payload: Buffer, packet?: any): Promise<void> {
         await this.consumerRuntime.handle({
+            labels: { topic },
             payload: { topic, payload, packet },
             fail: (err) => {
                 if (this.options?.deadLetterTopic) {
