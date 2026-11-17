@@ -1,4 +1,4 @@
-import { AfterViewInit, Attribute, Component, ElementRef, NoReactive, OnDestroy, ViewChild, noReact } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, Computed, ElementRef, NoReactive, OnDestroy, ViewChild, noReact } from '@tsdi/components';
 import {
     markElementRefRaw,
 } from '@tsdi/components/common';
@@ -54,6 +54,8 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
  * adds multi-document tabs and the workflow library on top; products such as
  * the microservice admin embed this component directly for a single document.
  */
+const EMPTY_LOGS: any[] = [];
+
 /** Compare a model cache key without building a string per read. */
 function sameModelKey(previous: any[], next: any[]): boolean {
     if (previous === next) {
@@ -300,21 +302,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         revision: number;
         model: ReturnType<typeof buildWorkflowInspectorModel>;
     };
-    @NoReactive() private debugItemsCache?: {
-        execution: any;
-        locale: string;
-        revision: number;
-        items: ReturnType<typeof buildWorkflowDebugItems>;
-    };
-    @NoReactive() private runHistoryCache?: {
-        history: any;
-        selected: string | undefined;
-        locale: string;
-        model: ReturnType<typeof buildWorkflowRunHistory>;
-    };
     @NoReactive() private statusModelCache?: { key: any[]; model: ReturnType<typeof buildWorkflowStatusModel> };
-    @NoReactive() private paletteCache?: { key: string; groups: WorkflowPaletteGroup[] };
-    @NoReactive() private runLogsCache?: { execution: any; logs: any[] };
     @NoReactive() private codeSuggestionCache?: {
         nodes: any[];
         runContext: any;
@@ -932,15 +920,13 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         event?.stopPropagation?.();
     }
 
+    @Computed()
     get paletteGroups(): WorkflowPaletteGroup[] {
-        const key = `${this.localeValue}|${this.registry.revision}`;
-        const cache = this.paletteCache;
-        if (cache && cache.key === key) {
-            return cache.groups;
-        }
-        const groups = buildWorkflowPalette(this.registry, this.localeValue, this.translator);
-        this.paletteCache = { key, groups };
-        return groups;
+        // `revision` is the registry's change token: reading it declares the
+        // dependency that plugin installs bump. Locale/translator are read by
+        // the builder itself.
+        void this.registry.revision;
+        return buildWorkflowPalette(this.registry, this.localeValue, this.translator);
     }
 
     get canvasModel() {
@@ -1037,6 +1023,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return model;
     }
 
+    /**
+     * Not `@Computed`: the tool model must not depend on the document identity,
+     * otherwise every drag frame (which replaces `definition`) would rebuild it.
+     * The key compares cheap scalars instead.
+     */
     get toolbarModel() {
         const key = this.toolbarModelKey();
         const cache = this.toolbarModelCache;
@@ -1048,6 +1039,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return model;
     }
 
+    /** See `toolbarModel`: scalar key instead of `@Computed` document deps. */
     get statusModel() {
         const key = this.statusModelKey();
         const cache = this.statusModelCache;
@@ -1059,41 +1051,25 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return model;
     }
 
+    @Computed()
     get debugItems() {
-        const execution = this.designer.execution;
-        const locale = this.localeValue;
-        const revision = this.registry.revision;
-        const cache = this.debugItemsCache;
-        if (cache && cache.execution === execution && cache.locale === locale && cache.revision === revision) {
-            return cache.items;
-        }
-        const items = buildWorkflowDebugItems(this.designer, this.registry, locale, this.translator);
-        this.debugItemsCache = { execution, locale, revision, items };
-        return items;
+        // Inputs are immutable snapshots (execution), the locale and the
+        // registry revision, so computed caching matches the previous key.
+        void this.registry.revision;
+        return buildWorkflowDebugItems(this.designer, this.registry, this.localeValue, this.translator);
     }
 
+    @Computed()
     get runHistory() {
-        const history = this.designer.executionHistory;
-        const selected = this.designer.selectedExecutionId;
-        const locale = this.localeValue;
-        const cache = this.runHistoryCache;
-        if (cache && cache.history === history && cache.selected === selected && cache.locale === locale) {
-            return cache.model;
-        }
-        const model = buildWorkflowRunHistory(this.designer, locale, this.translator);
-        this.runHistoryCache = { history, selected, locale, model };
-        return model;
+        // History is replaced (never spliced), so identity invalidation is exact.
+        return buildWorkflowRunHistory(this.designer, this.localeValue, this.translator);
     }
 
+    @Computed()
     get runLogs() {
-        const execution = this.designer.execution;
-        const cache = this.runLogsCache;
-        if (cache && cache.execution === execution) {
-            return cache.logs;
-        }
-        const logs = execution?.logs || [];
-        this.runLogsCache = { execution, logs };
-        return logs;
+        // Cached so an execution without logs does not allocate a fresh array
+        // on every read.
+        return this.designer.execution?.logs || EMPTY_LOGS;
     }
 
     /**
