@@ -106,6 +106,8 @@ export interface AgentConsoleRenderedLine {
 }
 export interface AgentConsoleRenderedMessageItem {
     [noReact]?: boolean;
+    /** Source message id (web DOM reveal and selection). */
+    messageId?: string;
     kind: string;
     templateKind: AgentConsoleMessageTemplateKind;
     selected: boolean;

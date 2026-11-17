@@ -8,7 +8,7 @@ import { styleTextToObject } from './AgentConsoleTheme';
 
 const ITEM_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
-    <div class="{{blockClass}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" data-selected="{{item.selected}}">
+    <div class="{{blockClass}}" data-message-id="{{item.messageId}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" data-selected="{{item.selected}}">
         <div class="message-line-wrap" v-for="line in lines">
             <label class="message-line" v-if="line.toggleMode" data-tone="{{line.tone}}" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-hover="fade" @click="toggleMessageDetail(line)">
                 <span class="message-status">{{line.status}}</span>
@@ -30,7 +30,7 @@ const ITEM_TEMPLATE = `
 
 const MARKDOWN_TEMPLATE = `
     <div class="message-block-spacing" v-if="spacerBefore">​</div>
-    <div class="{{markdownClass}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" data-selected="{{item.selected}}">
+    <div class="{{markdownClass}}" data-message-id="{{item.messageId}}" data-template-kind="{{templateKind}}" data-semantic-kind="{{semanticKind}}" data-status="{{item.statusKind}}" data-selected="{{item.selected}}">
         <label class="message-line markdown-line" v-for="line in lines" data-tone="{{line.tone}}" aria-label="{{line.ariaLabel}}" continuationIndent="{{line.continuationIndent}}" data-code="{{line.code}}" data-table="{{line.table}}">
             <span class="message-status">{{line.status}}</span>
             <span class="message-role" v-if="line.role">{{line.role}}</span>

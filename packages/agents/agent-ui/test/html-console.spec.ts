@@ -106,6 +106,9 @@ export class HtmlConsoleTest {
         expect(inputRoot.textContent).toContain('deepseek-v4-flash · 1.2K tokens');
         expect(messagesRoot.textContent).toContain('›');
         expect(messagesRoot.textContent).toContain('hello');
+        // DOM hosts reveal /activity targets by source message id.
+        expect(messagesRoot.querySelector('[data-message-id="u1"]')).toBeTruthy();
+        expect(messagesRoot.querySelector('[data-message-id="a1"]')).toBeTruthy();
         expect(messagesRoot.textContent).toContain('assistant');
         expect(messagesRoot.textContent).toContain(longMessage);
         expect(messagesRoot.textContent).not.toContain('**assistant**');

@@ -311,6 +311,7 @@ export function renderAgentConsoleMessageItem(
     }
     return {
         [noReact]: true,
+        messageId: message?.id,
         kind: roleLabel,
         templateKind,
         selected,

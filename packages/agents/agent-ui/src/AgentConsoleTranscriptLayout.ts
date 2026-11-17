@@ -129,6 +129,8 @@ export function resolveMessageRowOffset(items: readonly AgentConsoleRowOffsetIte
 
 /** Surface port used to reveal a transcript row. */
 export interface AgentConsoleTranscriptRevealSurface {
+    /** DOM hosts can reveal by message id directly (no row math). */
+    revealMessage?(messageId: string): boolean;
     scrollViewportToRow?(row: number): boolean;
 }
 
@@ -148,7 +150,14 @@ export function revealAgentConsoleMessage(
     messageId: string
 ): boolean {
     const id = String(messageId || '').trim();
-    if (!id || !source?.messageRowOffset || !surface?.scrollViewportToRow) {
+    if (!id) {
+        return false;
+    }
+    if (surface?.revealMessage?.(id)) {
+        syncFollowing();
+        return true;
+    }
+    if (!source?.messageRowOffset || !surface?.scrollViewportToRow) {
         return false;
     }
     const row = source.messageRowOffset(id);

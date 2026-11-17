@@ -171,6 +171,22 @@ export async function mountAgentWebConsole(
         getTerminalSize: () => ({ columns: measureDomConsoleColumns(resolveMessagesPanel() ?? mount), rows: 0 }),
         getTerminalViewportRows: () => 0,
         notifyViewportPrepend: () => follower?.notifyPrepend(),
+        // /activity and message navigation reveal by source message id in the
+        // DOM; row math is a terminal-only concept.
+        revealMessage: (messageId: string): boolean => {
+            const panel = resolveMessagesPanel() ?? mount;
+            const rows = panel?.querySelectorAll?.('[data-message-id]');
+            if (!rows) {
+                return false;
+            }
+            for (const row of Array.from(rows) as HTMLElement[]) {
+                if (row.getAttribute('data-message-id') === messageId) {
+                    row.scrollIntoView?.({ block: 'center' });
+                    return true;
+                }
+            }
+            return false;
+        },
         subscribeToSurfaceResize: (listener: () => void): (() => void) => {
             const view = doc.defaultView as (Window & typeof globalThis) | null | undefined;
             const Observer = (view as { ResizeObserver?: typeof ResizeObserver } | null | undefined)?.ResizeObserver;
