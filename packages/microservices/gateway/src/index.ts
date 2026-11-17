@@ -4,6 +4,7 @@ export * from './gateway.types';
 export * from './gateway.observability';
 export * from './gateway.auth';
 export * from './gateway.http';
+export * from './gateway.response';
 export * from './gateway.route-table';
 export * from './gateway.rule-engine';
 export * from './gateway.options';

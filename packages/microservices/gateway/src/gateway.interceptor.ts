@@ -21,6 +21,7 @@ import { Tracer, Span } from '@tsdi/tracing';
 import { Logger } from '@tsdi/logger';
 import { GatewayObservability } from './gateway.observability';
 import { GatewayAuth } from './gateway.auth';
+import { GatewayResponse } from './gateway.response';
 import { getClientIp, getHeaderValue, getRequestHost, normalizeGatewayUrl } from './gateway.http';
 import { GatewayErrorType, GatewayForwardMeta, GatewayForwardResult, classifyGatewayError } from './gateway.types';
 
@@ -88,6 +89,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private ruleEngineRules?: GatewayRuleOptions[];
     private observability: GatewayObservability;
     private gatewayAuth: GatewayAuth;
+    private responsePipeline: GatewayResponse;
 
     constructor(
         @Inject(GATEWAY_OPTIONS) private options: GatewayOptions,
@@ -108,6 +110,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.logger = this.injector.get(Logger, null) ?? null;
         this.observability = new GatewayObservability(this.options, this.runtime, this.metrics, this.logger, this.tracer);
         this.gatewayAuth = new GatewayAuth(this.options, this.runtime, this.authService, this.signatureService);
+        this.responsePipeline = new GatewayResponse(this.options, this.runtime, this.observability);
         if (this.endpointResolver && typeof (this.endpointResolver as any).resolve !== 'function') {
             this.endpointResolver = null;
         }
@@ -312,7 +315,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
         const adapter = context.get(HttpMessageAdapter);
         const response = context.get(HTTP_RESPONSE);
-        const cacheKey = this.resolveCacheKey(route, request);
+        const cacheKey = this.responsePipeline.resolveCacheKey(route, request);
         if (cacheKey) {
             const cached = await this.runtime.getCachedEntry(cacheKey);
             if (cached) {
@@ -350,7 +353,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         try {
             const routeKey = `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`;
         if (!(await this.runtime.canPassCircuit(routeKey, route.circuitBreaker))) {
-            const fallback = this.resolveFallbackPayload(route, request, new Error('Circuit breaker is open'));
+            const fallback = this.responsePipeline.resolveFallbackPayload(route, request, new Error('Circuit breaker is open'));
             if (!fallback) {
                 const error = Object.assign(new Error('Circuit breaker is open'), {
                     statusCode: 503,
@@ -384,8 +387,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             } else {
                 await this.runtime.recordSuccess(routeKey);
             }
-            const cache = this.getCacheOptions(route);
-            if (cacheKey && !upstreamFailed && result.meta?.streaming !== true && this.shouldCache(route, result)) {
+            const cache = this.responsePipeline.getCacheOptions(route);
+            if (cacheKey && !upstreamFailed && result.meta?.streaming !== true && this.responsePipeline.shouldCache(route, result)) {
                 await this.runtime.setCached(cacheKey, result, cache?.ttl ?? 60_000, {
                     maxEntries: cache?.maxEntries,
                     maxBytes: cache?.maxBytes
@@ -411,7 +414,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         } catch (error: any) {
             await this.runtime.recordFailure(routeKey, route.circuitBreaker);
             const errorType = this.observability.tagError(error, adapter);
-            const fallback = this.resolveFallbackPayload(route, request, error);
+            const fallback = this.responsePipeline.resolveFallbackPayload(route, request, error);
             if (fallback) {
                 await this.dispatchWebhook(route, request, fallback);
                 return this.sendResponse(route, request, context, fallback, startedAt, adapter, response);
@@ -817,48 +820,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         response: any,
         error?: any
     ): any {
-        const streaming = result.meta?.streaming === true;
-        const rewritten = streaming
-            ? result
-            : this.applyResponseCaching(route, request, this.rewriteResponse(route, request, result));
-        const maskedPayload = streaming
-            ? rewritten.payload
-            : this.runtime.maskPayload(rewritten.payload, route.maskFields);
-        const compressed = streaming
-            ? { ...rewritten, payload: maskedPayload }
-            : this.applyCompression(route, request, { ...rewritten, payload: maskedPayload });
-        const payload = compressed.payload;
-
-        if (compressed.headers) {
-            Object.entries(compressed.headers).forEach(([key, value]) => {
-                if (value != null) {
-                    adapter?.setHeader(key, String(value));
-                }
-            });
-        }
-        Object.entries(route.responseHeaders ?? {}).forEach(([key, value]) => {
-            adapter?.setHeader(key, value);
-        });
-        adapter?.setStatus(compressed.status, compressed.statusText);
-        const duration = Date.now() - startedAt;
-        this.runtime.recordRouteOutcome(
-            `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`,
-            compressed.status,
-            duration,
-            route.slo ?? this.options.slo
-        );
-        this.observability.recordMetrics(route, request, compressed.status, duration, compressed.meta);
-        this.observability.recordAccessLog(route, request, compressed.status, duration, compressed.meta, error);
-
-        if (adapter) {
-            adapter.setPayload(payload);
-            if (response && typeof response.end === 'function') {
-                return payload;
-            }
-            adapter.sendResponse(payload);
-            return response;
-        }
-        return payload;
+        return this.responsePipeline.send(route, request, result, startedAt, adapter, response, error);
     }
 
     private buildUpstreamUrl(baseUrl: string, route: ResolvedGatewayRoute, request: HttpRequestMessage): string {
@@ -1267,183 +1229,6 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return typeof body === 'function' ? body(request) : body;
     }
 
-    private rewriteResponse(route: ResolvedGatewayRoute, request: HttpRequestMessage, result: GatewayForwardResult): GatewayForwardResult {
-        const headers = {
-            ...(result.headers ?? {})
-        };
-        const rewriteHeaders = route.rewrite?.responseHeaders;
-        if (rewriteHeaders) {
-            Object.assign(headers, typeof rewriteHeaders === 'function' ? rewriteHeaders(result.payload, request) : rewriteHeaders);
-        }
-        const responseBody = route.rewrite?.responseBody;
-        const payload = responseBody === undefined
-            ? result.payload
-            : (typeof responseBody === 'function' ? responseBody(result.payload, request) : responseBody);
-        return {
-            ...result,
-            headers,
-            payload
-        };
-    }
-
-    private applyResponseCaching(route: ResolvedGatewayRoute, request: HttpRequestMessage, result: GatewayForwardResult): GatewayForwardResult {
-        const options = route.responseCache;
-        if (!options || result.status < 200 || result.status >= 300) {
-            return result;
-        }
-        const headers = {
-            ...(result.headers ?? {})
-        };
-        if (options.cacheControl !== undefined) {
-            headers['cache-control'] = typeof options.cacheControl === 'number'
-                ? `public, max-age=${options.cacheControl}`
-                : options.cacheControl;
-        }
-        if (options.vary?.length) {
-            headers['vary'] = options.vary.join(', ');
-        }
-        if (options.etag) {
-            const etag = headers['etag'] ?? this.generateEtag(result.payload);
-            headers['etag'] = etag;
-            const ifNoneMatch = getHeaderValue(request, 'if-none-match');
-            if (ifNoneMatch && ifNoneMatch === etag) {
-                return {
-                    status: 304,
-                    statusText: 'Not Modified',
-                    payload: null,
-                    headers
-                };
-            }
-        }
-        return {
-            ...result,
-            headers
-        };
-    }
-
-    private applyCompression(route: ResolvedGatewayRoute, request: HttpRequestMessage, result: GatewayForwardResult): GatewayForwardResult {
-        const options = route.compression;
-        if (!options?.enabled || result.payload == null || result.status === 304) {
-            return result;
-        }
-        const accepted = getHeaderValue(request, 'accept-encoding') ?? '';
-        const algorithms = options.algorithms ?? ['br', 'gzip'];
-        const encoding = algorithms.find(name => accepted.includes(name));
-        if (!encoding) {
-            return result;
-        }
-        const body = typeof result.payload === 'string'
-            ? Buffer.from(result.payload)
-            : Buffer.isBuffer(result.payload)
-                ? result.payload
-                : Buffer.from(JSON.stringify(result.payload));
-        if (body.length < (options.minSize ?? 256)) {
-            return result;
-        }
-        const compressed = encoding === 'br'
-            ? zlib.brotliCompressSync(body)
-            : zlib.gzipSync(body);
-        return {
-            ...result,
-            payload: compressed,
-            headers: {
-                ...(result.headers ?? {}),
-                'content-encoding': encoding,
-                'content-length': String(compressed.length),
-                'vary': this.mergeVaryHeader((result.headers ?? {})['vary'], 'accept-encoding')
-            }
-        };
-    }
-
-    private shouldCache(route: ResolvedGatewayRoute, result: GatewayForwardResult): boolean {
-        const cache = this.getCacheOptions(route);
-        if (!cache?.enabled || result.status < 200 || result.status >= 300) {
-            return false;
-        }
-        const headers = result.headers ?? {};
-        if (headers['set-cookie'] || headers['Set-Cookie']) {
-            return false;
-        }
-        const cacheControl = String(headers['cache-control'] ?? headers['Cache-Control'] ?? '').toLowerCase();
-        return !cacheControl.includes('no-store') && !cacheControl.includes('private');
-    }
-
-    private resolveCacheKey(route: ResolvedGatewayRoute, request: HttpRequestMessage): string | null {
-        const cache = this.getCacheOptions(route);
-        if (!cache?.enabled) {
-            return null;
-        }
-        if (cache.key) {
-            return cache.key(request, route);
-        }
-        const authorization = getHeaderValue(request, 'authorization');
-        const cookie = getHeaderValue(request, 'cookie');
-        if (!cache.allowAuth && (authorization || cookie)) {
-            return null;
-        }
-        const parts = [`${route.path}:${request.method ?? 'GET'}:${request.url ?? '/'}`];
-        const vary = (cache.vary ?? []).map(name => name.toLowerCase()).sort();
-        for (const name of vary) {
-            parts.push(`${name}=${getHeaderValue(request, name) ?? ''}`);
-        }
-        if (cache.allowAuth && authorization) {
-            parts.push(`auth=${crypto.createHash('sha1').update(String(authorization)).digest('hex')}`);
-        }
-        return parts.join('|');
-    }
-
-    private resolveFallbackPayload(route: ResolvedGatewayRoute, request: HttpRequestMessage, error?: any): GatewayForwardResult | null {
-        const circuitOpen = error?.message === 'Circuit breaker is open';
-        const circuit = this.getCircuitBreakerOptions(route);
-        if (circuitOpen && circuit?.fallback !== undefined) {
-            return {
-                status: error?.statusCode ?? 200,
-                statusText: error?.statusMessage ?? 'OK',
-                payload: typeof circuit.fallback === 'function'
-                    ? circuit.fallback(request, error)
-                    : circuit.fallback,
-                headers: { 'x-gateway-fallback': '1' },
-                meta: {
-                    outcome: 'fallback'
-                }
-            };
-        }
-        const mockPayload = this.runtime.resolveMock(route.mock, request, error);
-        if (mockPayload !== undefined) {
-            return {
-                status: route.mock?.status ?? (error?.statusCode ?? 200),
-                statusText: error?.statusMessage ?? 'OK',
-                payload: mockPayload,
-                headers: { 'x-gateway-mock': '1' },
-                meta: {
-                    outcome: 'mock'
-                }
-            };
-        }
-        if (circuit?.fallback !== undefined) {
-            return {
-                status: error?.statusCode ?? 200,
-                statusText: error?.statusMessage ?? 'OK',
-                payload: typeof circuit.fallback === 'function'
-                    ? circuit.fallback(request, error)
-                    : circuit.fallback,
-                headers: { 'x-gateway-fallback': '1' },
-                meta: {
-                    outcome: 'fallback'
-                }
-            };
-        }
-        return null;
-    }
-
-    private getCacheOptions(route: ResolvedGatewayRoute) {
-        return route.cache === false ? undefined : route.cache;
-    }
-
-    private getCircuitBreakerOptions(route: ResolvedGatewayRoute) {
-        return route.circuitBreaker === false ? undefined : route.circuitBreaker;
-    }
-
     private async dispatchWebhook(route: ResolvedGatewayRoute, request: HttpRequestMessage, response: GatewayForwardResult): Promise<void> {
         const webhook = route.webhook;
         if (!webhook?.enabled) {
@@ -1482,27 +1267,6 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         } else {
             await runner();
         }
-    }
-
-    private generateEtag(payload: any): string {
-        const body = typeof payload === 'string'
-            ? payload
-            : Buffer.isBuffer(payload)
-                ? payload
-                : JSON.stringify(payload ?? null);
-        const hash = crypto.createHash('sha1').update(body).digest('hex');
-        return `W/\"${hash}\"`;
-    }
-
-    private mergeVaryHeader(existing: string | undefined, value: string): string {
-        if (!existing) {
-            return value;
-        }
-        const values = existing.split(',').map(v => v.trim()).filter(Boolean);
-        if (!values.includes(value)) {
-            values.push(value);
-        }
-        return values.join(', ');
     }
 
     private isTracer(value: any): value is Tracer {

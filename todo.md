@@ -4471,3 +4471,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第六十四批（2026-11-16）：
   - 抽出 gateway.auth.ts 与 gateway.http.ts。
   - 回归：gateway 116、admin 63。
+
+- 微服务框架第六十五批（2026-11-16）：
+  - 抽出 gateway.response.ts（改写/缓存/etag/压缩/fallback）。
+  - 回归：gateway 125。
