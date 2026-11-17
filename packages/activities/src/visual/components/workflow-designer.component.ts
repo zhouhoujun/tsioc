@@ -18,7 +18,8 @@ import {
     WorkflowVersionSummary,
     createDefaultWorkflowDefinitionStore,
     WorkflowMetrics,
-    WorkflowDeploymentStatus
+    WorkflowDeploymentStatus,
+    WorkflowAuditEntry
 } from '../workflow-store';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 import { WorkflowDesignerPreviewComponent } from './workflow-designer-preview.component';
@@ -91,6 +92,29 @@ interface WorkflowDocumentTab {
             :restoreAction="restoreVersion" :compareAction="compareVersion"
             :releaseAction="releaseVersion"
             :closeDiffAction="closeVersionDiff" :closeAction="closeVersions"></workflow-version-panel>
+        <div class="workflow-publish workflow-audit" v-if="showAudit">
+            <div class="workflow-publish-panel workflow-audit-panel">
+                <div class="workflow-publish-head">
+                    <span class="workflow-publish-title">{{auditTitle}}</span>
+                    <button class="workflow-btn workflow-publish-close" type="button"
+                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeAudit">✕</button>
+                </div>
+                <div class="workflow-publish-error" v-if="auditError">{{auditError}}</div>
+                <div class="workflow-audit-list" v-if="auditItems.length">
+                    <div class="workflow-audit-row" v-for="entry in auditItems" data-audit-id="{{entry.id}}">
+                        <span class="workflow-audit-time">{{formatAuditTime(entry.at)}}</span>
+                        <span class="workflow-audit-action">{{entry.action}}</span>
+                        <span class="workflow-audit-workflow" v-if="entry.workflowId">{{entry.workflowId}}</span>
+                        <span class="workflow-audit-actor" v-if="entry.actor">{{entry.actor}}</span>
+                    </div>
+                </div>
+                <div class="workflow-audit-empty" v-else>{{auditEmpty}}</div>
+                <div class="workflow-publish-actions">
+                    <button class="workflow-btn" type="button" [disabled]="auditBusy" @click="refreshAudit">{{auditRefresh}}</button>
+                    <button class="workflow-btn" type="button" @click="closeAudit">{{closeLabel}}</button>
+                </div>
+            </div>
+        </div>
         <div class="workflow-publish workflow-deployments" v-if="showDeployments">
             <div class="workflow-publish-panel workflow-deployments-panel">
                 <div class="workflow-publish-head">
@@ -275,6 +299,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
     showVersions = false;
     showPublish = false;
     publishError = '';
+    showAudit = false;
+    auditItems: WorkflowAuditEntry[] = [];
+    auditError = '';
+    auditBusy = false;
     showDeployments = false;
     deploymentItems: WorkflowDeploymentStatus[] = [];
     deploymentError = '';
@@ -890,6 +918,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.openDeployments();
             return;
         }
+        if (action === 'audit') {
+            void self.openAudit();
+            return;
+        }
         if (action === 'plugins') {
             void self.openPlugins();
             return;
@@ -1064,6 +1096,50 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     /** Open the rename overlay for the active workflow document. */
+    get auditTitle(): string { return this.t('audit', 'Audit log'); }
+    get auditEmpty(): string { return this.t('auditEmpty', 'No audit entries for this workflow.'); }
+    get auditRefresh(): string { return this.t('refresh', 'Refresh'); }
+
+    readonly formatAuditTime = (at: number): string => {
+        const date = new Date(at);
+        const pad = (value: number) => String(value).padStart(2, '0');
+        return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
+
+    readonly openAudit = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showAudit = true;
+        self.auditError = '';
+        await self.refreshAudit();
+    };
+
+    readonly closeAudit = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showAudit = false;
+        self.auditError = '';
+    };
+
+    readonly refreshAudit = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.store?.listAudit) {
+            self.auditItems = [];
+            self.auditError = self.t('auditUnavailable', 'This host does not expose an audit log.');
+            return;
+        }
+        self.auditBusy = true;
+        self.auditError = '';
+        try {
+            self.auditItems = await self.store.listAudit({
+                workflowId: self.designer.definition.id,
+                limit: 100
+            });
+        } catch (error) {
+            self.auditError = (error as Error).message;
+        } finally {
+            self.auditBusy = false;
+        }
+    };
+
     get deploymentsTitle(): string { return this.t('deployments', 'Deployments'); }
     get deploymentsEmpty(): string { return this.t('deploymentsEmpty', 'No workflows are deployed.'); }
     get deploymentStartAll(): string { return this.t('deploymentStartAll', 'Start all'); }

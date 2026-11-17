@@ -807,7 +807,8 @@ Entries include save/publish/restore/delete, schedule and deployment start/stop,
 runtime-state clears and plugin installs. The audit store defaults to SQLite next
 to the workflow database (in-memory when the definition store is in-memory) and
 keeps the newest 2000 entries; override with `auditStore` /
-`auditHistoryLimit`.
+`auditHistoryLimit`. The designer's **Audit log** dialog shows the recent entries
+for the active workflow when the store exposes `listAudit`.
 
 The same server exposes execution inspection and cancellation:
 

@@ -36,6 +36,15 @@ export interface WorkflowRelease {
     publishedBy?: string;
 }
 
+export interface WorkflowAuditEntry {
+    id: string;
+    at: number;
+    action: string;
+    workflowId?: string;
+    actor?: string;
+    detail?: Record<string, any>;
+}
+
 export interface WorkflowDeploymentStatus {
     workflowId: string;
     running: boolean;
@@ -110,6 +119,8 @@ export interface WorkflowDefinitionStore {
     listDeployments?(): Promise<WorkflowDeploymentStatus[]>;
     startDeployments?(workflowIds?: string[], context?: Record<string, any>): Promise<WorkflowDeploymentStatus[]>;
     stopDeployments?(workflowIds?: string[]): Promise<number>;
+    /** Optional audit history for configuration/deployment changes. */
+    listAudit?(filter?: { workflowId?: string; action?: string; limit?: number }): Promise<WorkflowAuditEntry[]>;
 }
 
 export interface WorkflowStoreSaveOptions {
@@ -471,6 +482,23 @@ export class HttpWorkflowDefinitionStore implements WorkflowDefinitionStore {
         if (!result.ok) {
             throw new Error(`Failed to clear workflows: HTTP ${result.status}`);
         }
+    }
+
+    async listAudit(filter: {
+        workflowId?: string;
+        action?: string;
+        limit?: number;
+    } = {}): Promise<WorkflowAuditEntry[]> {
+        const params: string[] = [];
+        if (filter.workflowId) {
+            params.push(`workflowId=${encodeURIComponent(filter.workflowId)}`);
+        }
+        if (filter.action) {
+            params.push(`action=${encodeURIComponent(filter.action)}`);
+        }
+        params.push(`limit=${Math.max(1, filter.limit || 100)}`);
+        const result = await this.request(`audit?${params.join('&')}`, { method: 'GET' });
+        return result.ok && Array.isArray(result.body) ? result.body as WorkflowAuditEntry[] : [];
     }
 
     async listDeployments(): Promise<WorkflowDeploymentStatus[]> {

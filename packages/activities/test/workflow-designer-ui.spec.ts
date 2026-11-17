@@ -1513,6 +1513,29 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.executionHistory.length).toBe(0);
     });
 
+    it('shows audit entries for the active workflow', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        const now = Date.now();
+        (store as any).listAudit = async (filter: any) => ([
+            { id: 'a1', at: now, action: 'publish', workflowId: filter?.workflowId },
+            { id: 'a2', at: now - 1000, action: 'save', workflowId: filter?.workflowId }
+        ]);
+        ref.instance.store = store;
+
+        (root.querySelector('.workflow-global-bar [data-menu-id="audit"]') as any).click();
+        await waitFor(() => !!root.querySelector('.workflow-audit-row'));
+
+        expect(root.querySelectorAll('.workflow-audit-row').length).toBe(2);
+        const text = root.querySelector('.workflow-audit')?.textContent || '';
+        expect(text).toContain('publish');
+        expect(text).toContain('save');
+        expect(text).toContain(ref.instance.designer.definition.id);
+
+        (root.querySelector('.workflow-audit .workflow-publish-close') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-audit')).toBeFalsy();
+    });
+
     it('lists and stops hosted deployments', async () => {
         const store = new InMemoryWorkflowDefinitionStore();
         let deployments = [{
