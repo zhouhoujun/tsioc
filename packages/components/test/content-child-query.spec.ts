@@ -80,6 +80,13 @@ class RequiredContentHost {
     @ContentChild({ selector: 'missing', required: true }) missing?: ProjectedItem;
 }
 
+@Component({
+    selector: 'required-content-parent',
+    imports: [RequiredContentHost],
+    template: `<div><required-content-host></required-content-host></div>`
+})
+class RequiredContentParent { }
+
 @Suite('content child queries')
 export class ContentChildQueryTest {
     @Test('resolves projected content without leaking into the parent view')
@@ -123,7 +130,7 @@ export class ContentChildQueryTest {
     async requiredContent() {
         let error: any;
         try {
-            const ctx = await Application.run(RequiredContentHost, {
+            const ctx = await Application.run(RequiredContentParent, {
                 deps: [ConsoleTemplateModule, ComponentsModule]
             });
             await ctx.close();

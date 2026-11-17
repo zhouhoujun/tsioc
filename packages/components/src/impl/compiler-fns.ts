@@ -13,6 +13,7 @@ import { Subscription } from 'rxjs';
 import { createTemplateRef } from './template';
 import { TEMPLATE_SCOPE_PARENT } from './template';
 import { registerProjectionOutlet } from './projection';
+import { trackRenderTask } from './render-tasks';
 import { BaseIfDirective, VIfDirective, VElseIfDirective, VElseDirective, setupIfChain } from '../directives/if.dir';
 import { SwitchDirective, CaseDirective, DefaultDirective, registerSwitchDirective, findSwitchDirective } from '../directives/switch-case.dir';
 
@@ -412,7 +413,7 @@ export function compileComponentToFactory(
         });
 
         // 渲染组件
-        componentRef.render();
+        trackRenderTask(injector, componentRef.render());
 
         if (hostBindingCount > 0) {
             const hostBindings = bindings.slice(0, hostBindingCount);
@@ -1048,7 +1049,7 @@ export function bindingComponentFactory(element: RElement, componentDef: Compone
                 processComponentAttribute(componentRef, name, value, context, effect, injector, delimiter);
             });
 
-            componentRef.render();
+            trackRenderTask(injector, componentRef.render());
         }
     });
 }

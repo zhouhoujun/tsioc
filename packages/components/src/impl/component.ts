@@ -20,6 +20,7 @@ import { QueryList } from '../refs/query-list';
 import { ViewContainerRef } from '../refs/container';
 import { markQueryBoundary, ViewQueryIndex } from './query-index';
 import { flushProjectionOutlets } from './projection';
+import { takeRenderTasks } from './render-tasks';
 import { mergeTemplateSchemas } from '../template/schema';
 import { TEMPLATE_SCHEMAS } from '../template/schema-provider';
 import { DefaultReactiveEffect } from './effect';
@@ -161,6 +162,13 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         });
         markQueryBoundary(this._elementRef?.nativeElement as RNode, this._hostView.queryIndex);
         this.attachHostViewToElement();
+        const childRenders = takeRenderTasks(this.injector);
+        if (childRenders.length) {
+            await Promise.all(childRenders);
+            if (this.injector.destroyed) {
+                return;
+            }
+        }
         const renderer = this._hostView.injector.get(Renderer, null);
         if (renderer) {
             flushProjectionOutlets(this._elementRef?.nativeElement, renderer);
