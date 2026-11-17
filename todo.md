@@ -4590,3 +4590,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - broker payload headers 合并，修复 bearer auth E2E。
   - Kafka/MQTT 测试隔离与 ServiceError 断言。
   - gate ms-brokers PASS（Kafka 81 / NATS 59 / AMQP 63 / MQTT 87 / Redis 73）。
+
+## 2026-11-17 运行中工作行显示 steer 提示
+- steer 模式开启时 Working 行提示变为 `esc to interrupt · enter steers`（zh：`按 esc 中断 · 回车转向`），关闭后恢复。
+- README 的 Queue 段补 `/steer [on|off]` 说明。
+- 测试：console-renderer 新增 switch on/off 断言，106 passing。

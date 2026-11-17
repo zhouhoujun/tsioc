@@ -22,6 +22,7 @@ export const agentUiChinese: TranslationBundle = {
                 toolsRunning: '正在执行 {count} 项操作',
                 backgroundCommand: '后台命令执行中',
                 interruptHint: '按 esc 中断',
+                interruptHintSteer: '按 esc 中断 · 回车转向',
                 backgroundRunning: '{count} 个后台终端运行中',
                 backgroundView: '/ps 查看',
                 backgroundStop: '/ps stop 关闭'

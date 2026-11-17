@@ -99,6 +99,7 @@ Session: `/resume` `/archive` `/fork` `/side` `/share` `/unshare` `/sections` `/
 Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
 Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors/final answer
 Queue: `/queue [list|clear|remove <n>|edit <n>]` while a turn is running
+Steer: `/steer [on|off]` makes Enter during a running turn interrupt it and start a new turn (persisted per workspace)
 Input: `/editor` `/stash` `/apps` `/skills` `/mcp` `/plugins` `/voice`
 Review: `/review` `/diff` `/approve`
 Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental`

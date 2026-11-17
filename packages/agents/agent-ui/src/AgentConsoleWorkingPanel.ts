@@ -231,6 +231,11 @@ export class AgentConsoleWorkingPanelComponent {
     }
 
     get interruptHint(): string {
+        // Steer mode makes Enter interrupt the in-flight turn, so the working
+        // line has to advertise it alongside Esc.
+        if (this.state?.steerMode === true) {
+            return this.translator?.translate('agent.turn.interruptHintSteer') || 'esc to interrupt · enter steers';
+        }
         return this.translator?.translate('agent.turn.interruptHint') || 'esc to interrupt';
     }
 

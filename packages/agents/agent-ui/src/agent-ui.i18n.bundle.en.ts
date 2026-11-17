@@ -22,6 +22,7 @@ export const agentUiEnglish: TranslationBundle = {
                 toolsRunning: 'Running {count} operations',
                 backgroundCommand: 'Running a background command',
                 interruptHint: 'esc to interrupt',
+                interruptHintSteer: 'esc to interrupt · enter steers',
                 backgroundRunning: '{count} background terminal(s) running',
                 backgroundView: '/ps to view',
                 backgroundStop: '/ps stop to close'

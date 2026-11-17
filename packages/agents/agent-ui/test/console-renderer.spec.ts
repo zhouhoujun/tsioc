@@ -1486,6 +1486,25 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(workingLines.some(line => line.includes('activity turn'))).toBe(false);
     }
 
+    @Test('working line advertises Enter steering when steer mode is on')
+    async renderWorkingLineSteerHint() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.setStatus('running');
+        ref.instance.sessionState.turnStartedAt = Date.now() - 3000;
+        ref.instance.sessionState.setSteerMode(true);
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const workingPanel = ref.hostView.query(AgentConsoleWorkingPanelComponent) as ComponentRef<AgentConsoleWorkingPanelComponent>;
+        const workingLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
+        expect(workingLines.some(line => line.includes('esc to interrupt · enter steers'))).toBe(true);
+
+        ref.instance.sessionState.setSteerMode(false);
+        await ref.render();
+        const plainLines = renderer.renderToLines(workingPanel.hostView.rootNodes[0]);
+        expect(plainLines.some(line => line.includes('enter steers'))).toBe(false);
+    }
+
     @Test('working detail names the reasoning phase instead of preparing the response')
     async workingDetailNamesReasoningPhase() {
         const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
