@@ -371,6 +371,12 @@
 - `GatewayInterceptor` 降至约 436 行，仅保留匹配、preview、路由解析与 HTTP pool 生命周期。
 - 新增 `upstream.spec.ts` 9 个模块级测试；gateway 140 passing。
 
+第六十八批（Admin 纯函数拆分）：
+
+- 新增 `admin/web/admin.state.pure.ts`：告警时间、SLO CSV、config diff、路由校验与方法 key。
+- `admin.state.ts` 从 1343 行降到约 1255 行，页面行为不变。
+- 新增 `admin-state-pure.spec.ts` 6 个测试；admin 69 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

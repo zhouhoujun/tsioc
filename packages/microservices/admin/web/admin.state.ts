@@ -12,6 +12,7 @@ import { Router, RouterEvent } from '@tsdi/components/router';
 import { AdminLocale, adminMessage } from './admin.i18n';
 import { AdminPage, redirectToAdminLogin } from './routing';
 import { GatewayAdminHttp } from './http';
+import { buildSloAlertsCsv, countConfigDiff, formatAlertTime, formatDiffFields, routeMethodsKey, validateRouteFields } from './admin.state.pure';
 
 /** Structural document view used by the console (keeps decorator metadata DOM-free). */
 interface AdminDocumentLike {
@@ -449,11 +450,7 @@ export class GatewayAdminState {
     }
 
     formatAlertTime(timestamp: number): string {
-        try {
-            return new Date(timestamp).toISOString().slice(11, 19);
-        } catch {
-            return '';
-        }
+        return formatAlertTime(timestamp);
     }
 
     readonly exportSloAlerts = (): void => {
@@ -475,19 +472,7 @@ export class GatewayAdminState {
 
     sloAlertsCsv(): string {
         const alerts = this.selfRef?.diagnostics?.alerts ?? this.diagnostics?.alerts ?? [];
-        const header = ['key', 'timestamp', 'isoTime', 'errorRate', 'p95Ms', 'errorRateThreshold', 'p95ThresholdMs'];
-        const rows = alerts.map(alert => [
-            alert.key,
-            String(alert.timestamp),
-            new Date(alert.timestamp).toISOString(),
-            String(alert.errorRate),
-            String(alert.p95Ms),
-            alert.errorRateThreshold == null ? '' : String(alert.errorRateThreshold),
-            alert.p95ThresholdMs == null ? '' : String(alert.p95ThresholdMs)
-        ]);
-        return [header, ...rows]
-            .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-            .join('\n');
+        return buildSloAlertsCsv(alerts);
     }
 
     readonly exportSloAlertsCsv = (): void => {
@@ -773,39 +758,11 @@ export class GatewayAdminState {
     };
 
     diffFields(diff: GatewayConfigDiff | undefined, kind: 'routes' | 'rules', key: string): string {
-        const fields = diff?.[kind]?.changedFields?.[key];
-        if (!fields?.length) {
-            return '';
-        }
-        const values = diff?.[kind]?.changedValues?.[key] ?? {};
-        return fields.map(field => {
-            const change = values[field];
-            if (!change) {
-                return field;
-            }
-            return `${field}: ${this.formatDiffValue(change.before)} → ${this.formatDiffValue(change.after)}`;
-        }).join(', ');
-    }
-
-    private formatDiffValue(value: any): string {
-        if (value === undefined) {
-            return 'undefined';
-        }
-        if (value === null) {
-            return 'null';
-        }
-        const text = typeof value === 'string' ? value : JSON.stringify(value);
-        return text.length > 60 ? `${text.slice(0, 60)}…` : text;
+        return formatDiffFields(diff, kind, key);
     }
 
     diffSummary(entry: GatewayAdminConfigEntry): string {
-        const diff = entry.diff;
-        const count = diff
-            ? diff.routes.added.length + diff.routes.removed.length + diff.routes.changed.length
-                + diff.rules.added.length + diff.rules.removed.length + diff.rules.changed.length
-                + diff.options.length
-            : 0;
-        return this.t('config.diffSummary', { count });
+        return this.t('config.diffSummary', { count: countConfigDiff(entry.diff) });
     }
 
     async loadConfig(): Promise<void> {
@@ -1087,60 +1044,15 @@ export class GatewayAdminState {
     };
 
     private routeMethodsKey(route: GatewayRouteOptions): string {
-        const methods = (route.methods ?? [])
-            .map(method => String(method).trim().toUpperCase())
-            .filter(Boolean);
-        return (methods.length ? Array.from(new Set(methods)).sort() : ['ANY']).join(',');
+        return routeMethodsKey(route);
     }
 
     validateRoute(route: GatewayRouteOptions, index = -1): Record<string, string> {
-        const errors: Record<string, string> = {};
-        const path = String(route.path || '').trim();
-        if (!path) {
-            errors.path = this.t('validation.pathRequired');
-        } else if (!path.startsWith('/')) {
-            errors.path = this.t('validation.pathSlash');
-        } else if (/\s/.test(path)) {
-            errors.path = this.t('validation.pathSpace');
-        }
-        if (!route.service && !route.targetUrl) {
-            errors.service = this.t('validation.serviceRequired');
-        }
-        if (route.targetUrl && !/^(https?:\/\/|\/)/i.test(String(route.targetUrl))) {
-            errors.targetUrl = this.t('validation.url');
-        }
-        if (route.targetPath && !String(route.targetPath).startsWith('/')) {
-            errors.targetPath = this.t('validation.pathSlash');
-        }
-        if (route.timeout !== undefined && route.timeout !== null) {
-            const timeout = Number(route.timeout);
-            if (!Number.isFinite(timeout) || timeout < 0 || timeout > 600000) {
-                errors.timeout = this.t('validation.timeout');
-            }
-        }
-        const allowed = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'ANY'];
-        const methods = (route.methods ?? []).map(method => String(method).trim().toUpperCase()).filter(Boolean);
-        if (methods.some(method => !allowed.includes(method))) {
-            errors.methods = this.t('validation.methods');
-        }
-        const methodKey = this.routeMethodsKey(route);
-        const duplicate = this.routes.some((item, itemIndex) =>
-            itemIndex !== index
-            && String(item.path || '').trim() === path
-            && this.routeMethodsKey(item) === methodKey);
-        if (duplicate) {
-            errors.path = this.t('validation.duplicate');
-        }
-        if (route.slo) {
-            const errorRate = route.slo.errorRateThreshold;
-            const p95 = route.slo.p95ThresholdMs;
-            if (errorRate != null && (!Number.isFinite(Number(errorRate)) || Number(errorRate) < 0 || Number(errorRate) > 1)) {
-                errors.slo = this.t('validation.sloErrorRate');
-            } else if (p95 != null && (!Number.isFinite(Number(p95)) || Number(p95) <= 0)) {
-                errors.slo = this.t('validation.sloP95');
-            }
-        }
-        return errors;
+        return validateRouteFields(route, {
+            t: key => this.t(key),
+            routes: this.routes,
+            index
+        });
     }
 
     validateEditingRoute(): boolean {
