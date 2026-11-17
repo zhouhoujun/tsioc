@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { generateClient, generateContract, importOpenApi, importProto, MicroserviceContract } from './index';
+import { compareContracts, generateClient, generateContract, importOpenApi, importProto, MicroserviceContract } from './index';
 
 interface CliOptions {
     manifest: string;
@@ -16,6 +16,7 @@ interface CliOptions {
     fromOpenApi?: string;
     fromProto?: string;
     manifestOut?: string;
+    compat?: string;
 }
 
 function usage(): void {
@@ -33,6 +34,7 @@ Options:
   --from-openapi <file>  import an OpenAPI 3 document into a manifest
   --from-proto <file>    import a proto3 file into a manifest
   --manifest <file>      imported manifest output (default: <name>.contract.json)
+  --compat <file>        fail when breaking changes vs the previous manifest are found
   --check            fail when generated files differ from disk
   --help             show this help
 `);
@@ -84,6 +86,9 @@ function parseArgs(argv: string[]): CliOptions {
                 break;
             case '--manifest':
                 options.manifestOut = argv[++index];
+                break;
+            case '--compat':
+                options.compat = argv[++index];
                 break;
             case '--check':
                 options.check = true;
@@ -140,6 +145,17 @@ function main(): void {
     }
     const manifestPath = path.resolve(options.manifest);
     const contract = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as MicroserviceContract;
+    if (options.compat) {
+        const previous = JSON.parse(fs.readFileSync(path.resolve(options.compat), 'utf-8')) as MicroserviceContract;
+        const issues = compareContracts(previous, contract);
+        issues.forEach(issue => {
+            const output = issue.severity === 'breaking' ? console.error : console.warn;
+            output(`[contract:${issue.severity}] ${issue.path}: ${issue.message} (${issue.suggestion})`);
+        });
+        if (issues.some(issue => issue.severity === 'breaking')) {
+            process.exit(1);
+        }
+    }
     const generated = generateContract(contract, {
         decorators: options.decorators,
         dtoStyle: options.dtoStyle,

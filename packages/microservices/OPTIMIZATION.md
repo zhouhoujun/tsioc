@@ -421,6 +421,13 @@
 - swagger 在 `/{prefix}/openapi.json` 输出 OpenAPI 文档，供前端直接消费。
 - 回归：service 85、swagger 11。
 
+第七十六批（契约兼容检查）：
+
+- 新增 `contract/src/compat.ts`：模型/字段删除、类型变更、必填化、enum 值删除、路由删除/请求响应模型变更均报 breaking。
+- 新增 `assertCompatible` 与 `ContractCompatibilityError`，提示迁移建议。
+- CLI 支持 `--compat <previous.json>`，breaking 变化 exit 1。
+- 回归：contract 23 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

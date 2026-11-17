@@ -4536,3 +4536,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第七十五批（2026-11-16）：
   - defineService/describeService；swagger openapi.json。
   - 回归：service 85、swagger 11。
+
+- 微服务框架第七十六批（2026-11-16）：
+  - contract 兼容检查与 CLI --compat。
+  - 回归：contract 23。
