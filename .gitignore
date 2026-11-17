@@ -30,3 +30,5 @@ packages/agents/agent-ui/harness/.gate-artifacts/
 *.bak
 ### PTY acceptance residue (store writes <cwd>/.tsdi-agent/)
 .tsdi-agent/
+**/.browser-test-output/
+**/.nyc_output/

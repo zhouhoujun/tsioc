@@ -8,7 +8,11 @@
     "bench": "ts-node -r tsconfig-paths/register packages/microservices/benchmarks/run.ts",
     "postinstall": "npm prune",
     "reinstall": "npm cache clean && npm install",
-    "build": "ts-node -r tsconfig-paths/register taskfile.ts"
+    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+    "bench:core": "ts-node -r tsconfig-paths/register packages/ioc/benchmarks/run.ts",
+    "bench:check:core": "node scripts/check-core-bench.mjs",
+    "gate:framework": "node scripts/run-framework-gate.mjs",
+    "coverage:check": "node scripts/check-coverage.mjs"
   },
   "keywords": [
     "IoC",

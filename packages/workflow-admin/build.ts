@@ -49,7 +49,11 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 915_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 233_000);
+// Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
+// measured size (no headroom at all), and the ioc/aop correctness + AOP hot-path
+// work (joinpoint disposal, optional resolution, advisor resolution rewrite)
+// adds ~5.7 KB gzip to the bundled framework code.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 236_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
