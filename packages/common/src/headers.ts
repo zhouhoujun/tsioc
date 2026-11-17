@@ -96,7 +96,7 @@ export class HeaderMappings<T extends Header = Header> implements HeaderAccess<T
     }
 
     get(name: string): T | undefined {
-        return this._hdrs.get(name);
+        return this._hdrs.get(name.toLowerCase());
     }
 
     set(name: string, val: T): this {

@@ -39,7 +39,12 @@ export function isUrlSearchParams(value: any): value is URLSearchParams {
 export const LOCALHOST = 'localhost';
 
 const sta$ = /^\s*\//;
-const trim$ = /(?:^\s*\/)|(?:\/\s+$)/;
+// Trim leading and trailing slashes (with surrounding whitespace). The old
+// pattern required whitespace before the end of the string, so `'/a/'` kept its
+// trailing slash and `joinPath('/a/', 'b')` produced `a//b`.
+// The `g` flag is required: `replace` stops after the first match otherwise,
+// so a path with both a leading and a trailing slash only lost the leading one.
+const trim$ = /(?:^\s*\/+)|(?:\/+\s*$)/g;
 /**
  * join path.
  * @param paths 

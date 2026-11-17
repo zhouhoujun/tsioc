@@ -1,3 +1,6 @@
+/** ICU plural/select block, with optional whitespace around the commas. */
+const ICU_PATTERN = /\{\s*\w+\s*,\s*(?:plural|select)\s*,/;
+
 /**
  * Message formatter for i18n.
  *
@@ -11,8 +14,9 @@ export class MessageFormatter {
      * @param locale locale code.
      */
     format(message: string, params: Record<string, any>, locale: string): string {
-        // Handle plural/select syntax
-        if (message.includes('{') && (message.includes(', plural,') || message.includes(', select,'))) {
+        // Handle plural/select syntax. Whitespace around the commas is
+        // optional in ICU, so detect the shape instead of exact substrings.
+        if (ICU_PATTERN.test(message)) {
             return this.formatICU(message, params, locale);
         }
 
@@ -80,14 +84,16 @@ export class MessageFormatter {
                     const pluralForm = this.getPluralForm(value, locale);
                     const choiceContent = choices[pluralForm] || choices['other'] || '';
                     const replacement = this.interpolate(choiceContent, { '#': value, ...params });
-                    result = result.replace(fullPattern, replacement);
+                    // A function replacer keeps `$&`/`$'`/`$$` in translated
+                    // text literal instead of expandable replacement patterns.
+                    result = result.replace(fullPattern, () => replacement);
                 }
             } else if (type === 'select') {
                 const value = params[key];
                 if (value !== undefined) {
                     const choiceContent = choices[String(value)] || choices['other'] || '';
                     const replacement = this.interpolate(choiceContent, params);
-                    result = result.replace(fullPattern, replacement);
+                    result = result.replace(fullPattern, () => replacement);
                 }
             }
         }

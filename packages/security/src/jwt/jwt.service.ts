@@ -2,6 +2,9 @@ import { Injectable } from '@tsdi/ioc';
 import * as jwt from 'jsonwebtoken';
 import { createPublicKey, JsonWebKeyInput } from 'crypto';
 
+/** Algorithms accepted when verifying with a shared secret. */
+const HMAC_ALGORITHMS: jwt.Algorithm[] = ['HS256', 'HS384', 'HS512'];
+
 @Injectable()
 export class JWTService {
     // 解码JWT头部（增加错误处理）
@@ -24,8 +27,14 @@ export class JWTService {
     } = {}): Promise<any> {
         return new Promise((resolve, reject) => {
             const { publicKey, ...verifyOptions } = options;
+            // When a shared secret is used, only accept HMAC algorithms: this
+            // blocks algorithm-confusion attempts (for example an RS256 token
+            // crafted so the public key is treated as an HMAC secret).
+            const algorithms = verifyOptions.algorithms
+                ?? (publicKey ? undefined : HMAC_ALGORITHMS);
             jwt.verify(token, publicKey || this.getDefaultKey(), {
                 ...verifyOptions,
+                algorithms,
                 clockTolerance: options.clockTolerance || 30 // 默认30秒时钟容差
             }, (err, decoded) => {
                 if (err) {
@@ -71,11 +80,22 @@ export class JWTService {
         });
     }
 
-    // 默认密钥（增加环境变量检查）
+    /**
+     * Key used when the caller does not supply one.
+     *
+     * A built-in fallback secret makes every token forgeable, so it is only
+     * allowed outside production; production deployments must provide
+     * `JWT_SECRET` and get a hard failure instead of silently insecure tokens.
+     */
     private getDefaultKey(): string {
-        if (!process.env.JWT_SECRET) {
-            console.warn('Using default JWT secret - not recommended for production');
+        const secret = process.env.JWT_SECRET;
+        if (secret) {
+            return secret;
         }
-        return process.env.JWT_SECRET || 'default-secret';
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('JWT_SECRET is required in production; refusing to sign or verify with the built-in development secret.');
+        }
+        console.warn('Using the built-in development JWT secret - set JWT_SECRET before deploying.');
+        return 'default-secret';
     }
 }

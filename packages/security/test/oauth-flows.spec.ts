@@ -307,6 +307,9 @@ export class OAuthFlowsTest {
         const fetchMod2 = require('cross-fetch');
         const originalFetch2 = fetchMod2.fetch;
         fetchMod2.fetch = async () => ({ json: async () => ({ keys: [] }) });
+        // JWKS documents are cached per URI; drop the cached copy so this case
+        // really exercises the "key not found" path.
+        require('../src/oidc/oidc.service').clearJwksCache();
         try {
             await expect(service.validateIDToken('id-token', options)).rejects.toThrow('Public key not found');
         } finally {
