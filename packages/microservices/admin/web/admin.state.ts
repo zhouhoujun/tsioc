@@ -15,6 +15,7 @@ import { GatewayAdminHttp } from './http';
 import { buildSloAlertsCsv, formatAlertTime, validateRouteFields } from './admin.state.pure';
 import { AdminConfigController } from './admin.config.controller';
 import { AdminRoutesController } from './admin.routes.controller';
+import { AdminRulesController } from './admin.rules.controller';
 
 /** Structural document view used by the console (keeps decorator metadata DOM-free). */
 interface AdminDocumentLike {
@@ -136,6 +137,7 @@ export class GatewayAdminState {
     private selfRef?: GatewayAdminState;
     private configController?: AdminConfigController;
     private routesController?: AdminRoutesController;
+    private rulesController?: AdminRulesController;
     private routerSub?: { unsubscribe(): void };
 
     constructor(
@@ -312,6 +314,13 @@ export class GatewayAdminState {
             this.routesController = new AdminRoutesController(this.self() as any);
         }
         return this.routesController;
+    }
+
+    private rulesCtl(): AdminRulesController {
+        if (!this.rulesController) {
+            this.rulesController = new AdminRulesController(this.self() as any);
+        }
+        return this.rulesController;
     }
 
     get pageTitle(): string {
@@ -808,138 +817,39 @@ export class GatewayAdminState {
     };
 
     readonly editRules = async (id?: string): Promise<void> => {
-        const self = this.selfRef ?? this;
-        // Bindings without an explicit call receive the DOM event. Only a real
-        // workflow id may select a document; an event here used to become the
-        // requested URL (`/rules/[object PointerEvent]`).
-        const workflowId = typeof id === 'string' ? id.trim() : '';
-        if (workflowId) {
-            self.ruleWorkflowId = workflowId;
-        }
-        if (self.openDesigner) {
-            await self.openDesigner();
-        }
+        await this.rulesCtl().editRules(id);
     };
 
     readonly setMatchMethod = (event: Event): void => {
-        const self = this.selfRef ?? this;
-        self.matchMethod = String((event.target as HTMLSelectElement).value || 'GET').toUpperCase();
+        this.rulesCtl().setMatchMethod(event);
     };
 
     readonly setMatchPath = (event: Event): void => {
-        const self = this.selfRef ?? this;
-        self.matchPath = (event.target as HTMLInputElement).value;
+        this.rulesCtl().setMatchPath(event);
     };
 
     readonly testMatch = async (): Promise<void> => {
-        const self = this.selfRef ?? this;
-        const path = String(self.matchPath || '').trim();
-        if (!path.startsWith('/')) {
-            self.error = self.t('validation.pathSlash');
-            return;
-        }
-        if (!self.http) {
-            return;
-        }
-        self.matchLoading = true;
-        try {
-            const response = await self.http.match(self.matchMethod, path);
-            if (response.status === 401) {
-                self.requireLogin();
-                return;
-            }
-            if (!response.ok) {
-                self.error = self.t('error.apiUnavailable', { status: response.status });
-                self.matchResult = undefined;
-                return;
-            }
-            self.matchResult = response.body;
-            self.error = '';
-        } finally {
-            self.matchLoading = false;
-        }
+        await this.rulesCtl().testMatch();
     };
 
     readonly newRuleWorkflow = (): void => {
-        const self = this.selfRef ?? this;
-        self.creatingRuleWorkflow = true;
-        self.ruleWorkflowId = '';
-        if (self.openDesigner) {
-            void self.openDesigner();
-        }
+        this.rulesCtl().newRuleWorkflow();
     };
 
     readonly duplicateRuleWorkflow = async (id: string): Promise<void> => {
-        const self = this.selfRef ?? this;
-        if (!self.http || !id) {
-            return;
-        }
-        const response = await self.http.getRule(id);
-        if (!response.ok) {
-            self.error = self.t('error.apiUnavailable', { status: response.status });
-            return;
-        }
-        const original = response.body as { id?: string; name?: string };
-        const nextId = `${original.id || id}_copy_${Date.now().toString(36)}`;
-        const saved = await self.http.saveRule({
-            ...(response.body as Record<string, unknown>),
-            id: nextId,
-            name: `${original.name || original.id || id} copy`
-        });
-        if (!saved.ok) {
-            self.error = self.t('error.apiUnavailable', { status: saved.status });
-            return;
-        }
-        await self.loadRuleWorkflows();
-        self.status = self.t('status.ruleDuplicated', { id: nextId });
+        await this.rulesCtl().duplicateRuleWorkflow(id);
     };
 
     readonly applyRuleWorkflow = async (id: string): Promise<void> => {
-        const self = this.selfRef ?? this;
-        if (!self.http || !id) {
-            return;
-        }
-        const response = await self.http.applyRule(id);
-        if (!response.ok) {
-            self.error = self.t('error.ruleApply', { status: response.status });
-            return;
-        }
-        await self.reload();
-        self.ruleWorkflowId = id;
-        self.status = self.t('status.rulesApplied', { count: response.body?.rules?.length ?? 0 });
+        await this.rulesCtl().applyRuleWorkflow(id);
     };
 
     async loadRuleWorkflows(): Promise<void> {
-        const self = this.self();
-        if (!self.http) {
-            self.ruleWorkflows = [];
-            return;
-        }
-        const response = await self.http.listRules();
-        if (!response.ok) {
-            return;
-        }
-        const body = response.body;
-        self.ruleWorkflows = Array.isArray(body)
-            ? body
-            : Array.isArray(body?.items) ? body.items : [];
+        await this.rulesCtl().loadRuleWorkflows();
     }
 
     readonly deleteRuleWorkflow = async (id: string): Promise<void> => {
-        const self = this.selfRef ?? this;
-        if (!self.http || !id) {
-            return;
-        }
-        const response = await self.http.removeRule(id);
-        if (!response.ok && response.status !== 404) {
-            self.error = self.t('error.ruleDelete', { status: response.status });
-            return;
-        }
-        if (self.ruleWorkflowId === id) {
-            self.ruleWorkflowId = '';
-        }
-        await self.reload();
-        self.status = self.t('status.ruleDeleted', { id });
+        await this.rulesCtl().deleteRuleWorkflow(id);
     };
 
     // Event handlers used inside `v-for` rows are arrow properties: the

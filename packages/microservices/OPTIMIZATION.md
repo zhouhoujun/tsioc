@@ -389,6 +389,12 @@
 - `admin.state.ts` 降至约 1059 行，保留模板箭头处理器作为薄委托。
 - 回归：admin 69 passing。
 
+第七十一批（Admin rules controller）：
+
+- 新增 `admin/web/admin.rules.controller.ts`：规则工作流列表/复制/应用/删除与 match 测试。
+- `admin.state.ts` 降至约 969 行，reload 仍复用同一 `loadRuleWorkflows` 委托。
+- 回归：admin 69 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

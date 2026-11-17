@@ -4503,3 +4503,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第七十批（2026-11-16）：
   - 抽出 admin.routes.controller.ts（列表/编辑器/apply）。
   - admin.state.ts 1059 行；回归 admin 69。
+
+- 微服务框架第七十一批（2026-11-16）：
+  - 抽出 admin.rules.controller.ts。
+  - admin.state.ts 969 行；回归 admin 69。
