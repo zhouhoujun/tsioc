@@ -85,11 +85,12 @@ describe('useMetrics feature', () => {
     });
 
     it('allows disabling memory and latency collectors', () => {
-        const feature = useMetrics({ includeMemory: false, includeLatency: false })(
+        const feature = useMetrics({ includeMemory: false, includeLatency: false, includeEventLoopLag: false })(
             { transport: Transport.HTTP, features: {} } as any
         ) as any;
         const providerNames = feature.providers.map((provider: any) => provider?.name ?? provider?.provide?.name);
         expect(providerNames).not.toContain('MemoryGauge');
         expect(providerNames).not.toContain('LatencyHistogram');
+        expect(providerNames).not.toContain('EventLoopLagGauge');
     });
 });

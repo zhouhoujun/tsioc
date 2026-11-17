@@ -102,6 +102,10 @@ export interface MetricsModuleOptions {
      */
     includeLatency?: boolean;
     /**
+     * include the Node event-loop lag gauge. Default true.
+     */
+    includeEventLoopLag?: boolean;
+    /**
      * latency histogram buckets in milliseconds.
      */
     latencyBuckets?: number[];

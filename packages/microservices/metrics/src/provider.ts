@@ -10,7 +10,7 @@ import { METRICS_OPTIONS } from './tokens';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
 import { MetricsRegistry } from './registry';
 import { MetricsCollector } from './collector';
-import { MemoryGauge } from './gauges';
+import { EventLoopLagGauge, MemoryGauge } from './gauges';
 import { LatencyHistogram } from './histograms';
 import { RequestCounter, ErrorCounter } from './counters';
 
@@ -64,6 +64,9 @@ export function useMetrics(options: MetricsModuleOptions = {}): ServiceFeatureFn
         }
         if (includeLatency) {
             providers.push(LatencyHistogram);
+        }
+        if (options.includeEventLoopLag !== false) {
+            providers.push(EventLoopLagGauge);
         }
         providers.push(MetricsInterceptor, {
             provide: interceptorToken,

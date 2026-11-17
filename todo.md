@@ -4630,3 +4630,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第八十七批（2026-11-16）：
   - 抽出 gateway.webhook.ts（timeout/retry/allowlist）。
   - 回归：gateway 148。
+
+- 微服务框架第八十八批（2026-11-16）：
+  - EventLoopLagGauge（p99/max seconds）+ 可配置开关。
+  - 回归：metrics 63。

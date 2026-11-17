@@ -495,6 +495,12 @@
 - `gateway.upstream.ts` 不再内联 webhook，改为注入 `GatewayWebhook`。
 - 新增 `webhook.spec.ts` 6 个测试；gateway 148 passing。
 
+第八十八批（Event loop lag 指标）：
+
+- 新增 `EventLoopLagGauge`：采样 p99/max（秒），timer unref，destroy 时释放 histogram。
+- `useMetrics` / `MetricsModule` 默认启用，`includeEventLoopLag:false` 可关闭。
+- 回归：metrics 63 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

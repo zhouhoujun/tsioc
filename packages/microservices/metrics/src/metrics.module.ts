@@ -3,7 +3,7 @@ import { MetricsCollector } from './collector';
 import { MetricsRegistry } from './registry';
 import { MetricsInterceptor } from './interceptors/metrics.interceptor';
 import { RequestCounter, ErrorCounter } from './counters';
-import { MemoryGauge } from './gauges';
+import { EventLoopLagGauge, MemoryGauge } from './gauges';
 import { LatencyHistogram } from './histograms';
 import { MetricsModuleOptions } from './metrics';
 import { METRICS_OPTIONS } from './tokens';
@@ -19,6 +19,7 @@ export const METRICS_PROVIDERS: Provider[] = [
     RequestCounter,
     ErrorCounter,
     MemoryGauge,
+    EventLoopLagGauge,
     LatencyHistogram,
     MetricsInterceptor
 ];
