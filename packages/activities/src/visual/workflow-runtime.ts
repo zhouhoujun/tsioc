@@ -937,13 +937,16 @@ export async function executeVisualNode(
         }
         case 'tcp-in':
         case 'udp-in':
-        case 'websocket-in': {
+        case 'websocket-in':
+        case 'mqtt-in': {
             const inbound = (context as any).inbound;
             const transport = node.type === 'tcp-in'
                 ? 'tcp'
                 : node.type === 'udp-in'
                     ? 'udp'
-                    : 'websocket';
+                    : node.type === 'mqtt-in'
+                        ? 'mqtt'
+                        : 'websocket';
             if (!inbound) {
                 return {
                     success: true,
@@ -962,10 +965,51 @@ export async function executeVisualNode(
                     nodeId: node.id,
                     matched: true,
                     transport,
+                    topic: inbound.topic,
                     payload: inbound.payload ?? inbound.data,
                     data: inbound.data,
                     remote: inbound.remote
                 }
+            };
+        }
+        case 'mqtt-out': {
+            const publish = (context as any).mqttPublish;
+            const url = String(await resolveCredentialValue(config.url, context) ?? '').trim();
+            const topic = String(await resolveCredentialValue(config.topic, context) ?? '').trim();
+            if (typeof publish !== 'function') {
+                return {
+                    success: false,
+                    error: new Error(
+                        'MQTT publishing requires a workflow host with broker access. '
+                        + 'Run the workflow with `tsdi-agent serve` or inject a publisher.'
+                    ),
+                    data: { nodeId: node.id }
+                };
+            }
+            if (!url || !topic) {
+                return {
+                    success: false,
+                    error: new Error('MQTT out needs a broker URL and a topic.'),
+                    data: { nodeId: node.id }
+                };
+            }
+            const value = resolveWorkflowValue(config.payload === undefined ? 'payload' : config.payload, context);
+            const payload = typeof value === 'string' ? value : JSON.stringify(value ?? null);
+            const username = String(await resolveCredentialValue(config.username, context) ?? '');
+            const password = String(await resolveCredentialValue(config.password, context) ?? '');
+            await publish({
+                url,
+                topic,
+                payload,
+                qos: Number(config.qos) || 0,
+                retain: config.retain === true,
+                clientId: config.clientId ? String(config.clientId) : undefined,
+                username: username || undefined,
+                password: password || undefined
+            });
+            return {
+                success: true,
+                data: { nodeId: node.id, published: true, topic, payload }
             };
         }
         case 'http-response': {
@@ -1551,10 +1595,29 @@ export async function executeVisualNode(
             const source = config.workflow;
             const definition = await resolveSubWorkflow(source, context, host);
             if (definition && host?.executeDefinition) {
-                const result = await host.executeDefinition(definition, context);
+                // `inputs`/`outputs` map subflow ports to context paths so the
+                // parent chooses what the child sees and what comes back.
+                const inputs = coerceJson(config.inputs) || {};
+                const childContext: any = { ...context };
+                Object.keys(inputs).forEach(key => {
+                    childContext[key] = resolveWorkflowValue(inputs[key], context);
+                });
+                const result = await host.executeDefinition(definition, childContext);
+                const outputs = coerceJson(config.outputs) || {};
+                const mapped: Record<string, any> = {};
+                Object.keys(outputs).forEach(key => {
+                    const path = outputs[key];
+                    const value = resolveFrom(result.data, path);
+                    mapped[key] = value === undefined ? resolveFrom(result, path) : value;
+                });
+                const hasOutputs = Object.keys(mapped).length > 0;
                 return {
                     success: result.success,
-                    data: { nodeId: node.id, subprocess: result.data },
+                    data: {
+                        nodeId: node.id,
+                        subprocess: result.data,
+                        ...(hasOutputs ? { msg: mapped, payload: mapped } : {})
+                    },
                     error: result.error
                 };
             }

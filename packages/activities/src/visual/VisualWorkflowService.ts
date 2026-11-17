@@ -97,6 +97,18 @@ export function toWorkflowExecutionSnapshot(state: WorkflowExecutionState): Work
  *  - retained execution history for post-run inspection,
  *  - pluggable generic node definitions through {@link WorkflowNodeRegistry}.
  */
+/** Payload handed to the host MQTT transport by `mqtt-out`. */
+export interface WorkflowMqttPublishRequest {
+    url: string;
+    topic: string;
+    payload: string;
+    qos?: number;
+    retain?: boolean;
+    clientId?: string;
+    username?: string;
+    password?: string;
+}
+
 @Injectable()
 export class VisualWorkflowService {
     private readonly executions = new Map<string, WorkflowExecutionState>();
@@ -104,6 +116,7 @@ export class VisualWorkflowService {
     private readonly nodeRuntime = new Map<string, Record<string, any>>();
     private definitionResolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
     private credentialResolver?: (name: string) => Promise<string | undefined> | string | undefined;
+    private mqttPublisher?: (message: WorkflowMqttPublishRequest) => Promise<void> | void;
     private readonly registry: WorkflowNodeRegistry;
     private readonly pathInterceptor = new VisualExecutionPathInterceptor();
     private readonly policyInterceptor = new WorkflowNodePolicyInterceptor();
@@ -382,6 +395,16 @@ export class VisualWorkflowService {
         this.credentialResolver = resolver;
     }
 
+    /**
+     * Host transport used by `mqtt-out`. The workflow runtime stays host
+     * agnostic: browser hosts leave it unset and the node reports a clear error.
+     */
+    setMqttPublisher(
+        publisher?: (message: WorkflowMqttPublishRequest) => Promise<void> | void
+    ): void {
+        this.mqttPublisher = publisher;
+    }
+
     setDefinitionResolver(
         resolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined
     ): void {
@@ -455,7 +478,10 @@ export class VisualWorkflowService {
             flow: (context as any)?.flow || {},
             global: (context as any)?.global || this.globalContext,
             env: (context as any)?.env || options.env || {},
-            resolveCredential: (name: string) => this.credentialResolver?.(name)
+            resolveCredential: (name: string) => this.credentialResolver?.(name),
+            mqttPublish: this.mqttPublisher
+                ? (message: WorkflowMqttPublishRequest) => this.mqttPublisher!(message)
+                : undefined
         };
     }
 

@@ -603,7 +603,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 54 registered node types by label, description or type,
+- searchable palette: filter 56 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -797,6 +797,34 @@ GET  /api/deployments         # running schedules
 POST /api/deployments/start   # start all schedulable workflows (or workflowIds)
 POST /api/deployments/stop    # stop all or the given workflowIds
 ```
+
+### MQTT nodes
+
+`mqtt-in` and `mqtt-out` speak MQTT 3.1.1 over `mqtt://` (1883) or `mqtts://`
+(8883, TLS) with optional username/password (`{{credential:name}}` works).
+
+- `mqtt-in` is a host listener: `WorkflowInboundRunner` connects, subscribes and
+  starts one run per message with `context.inbound = { transport: 'mqtt', topic,
+  payload, data }`.
+- `mqtt-out` publishes `payload` (context path, JSON-encoded when it is not a
+  string) and needs a host transport: the HTTP server installs one
+  (`WorkflowMqttTransport`). Browser-only hosts get a clear error instead of a
+  silent no-op.
+- `qos` supports 0 and 1; incoming QoS 1 messages are acknowledged, and
+  subscriptions are re-established after a reconnect.
+
+### Sub-workflow ports
+
+`subprocess` maps data across the boundary:
+
+```json
+{ "workflow": "child-id", "inputs": { "orderId": "payload.id" }, "outputs": { "total": "total" } }
+```
+
+`inputs` puts `payload.id` into the child context as `orderId`; `outputs`
+resolves `total` from the child result and exposes it as the node's `msg`
+(so downstream nodes read `payload.total`). Without mappings the whole parent
+context is passed through, as before.
 
 Credentials are stored outside workflow definitions and never returned by the API:
 

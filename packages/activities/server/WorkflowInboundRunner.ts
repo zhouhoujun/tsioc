@@ -3,12 +3,15 @@ import * as net from 'node:net';
 import { ActivityContext, ActivityResult } from '../src/activities/Activity';
 import { VisualWorkflowDefinition, WorkflowExecutionOptions } from '../src/visual/types';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
+import { WorkflowMqttClient } from './WorkflowMqtt';
 
 /** Message delivered to a `tcp-in` / `udp-in` node through `context.inbound`. */
 export interface WorkflowInboundMessage {
     nodeId: string;
-    transport: 'tcp' | 'udp' | 'websocket';
+    transport: 'tcp' | 'udp' | 'websocket' | 'mqtt';
     data: string;
+    /** MQTT topic the message arrived on. */
+    topic?: string;
     remote?: { address?: string; port?: number };
 }
 
@@ -100,15 +103,16 @@ export class WorkflowInboundRunner {
 
         const dispatch = async (
             nodeId: string,
-            transport: 'tcp' | 'udp' | 'websocket',
+            transport: 'tcp' | 'udp' | 'websocket' | 'mqtt',
             data: string,
             remote: WorkflowInboundMessage['remote'],
-            reply: ((payload: string) => void) | undefined
+            reply: ((payload: string) => void) | undefined,
+            topic?: string
         ): Promise<void> => {
             if (!running) {
                 return;
             }
-            const message: WorkflowInboundMessage = { nodeId, transport, data, remote };
+            const message: WorkflowInboundMessage = { nodeId, transport, data, remote, ...(topic ? { topic } : {}) };
             try {
                 const result = await this.service.execute(
                     definition,
@@ -134,8 +138,10 @@ export class WorkflowInboundRunner {
             }
         };
 
+        const mqttClients: WorkflowMqttClient[] = [];
         const inboundNodes = (definition.nodes || []).filter(node =>
-            node.type === 'tcp-in' || node.type === 'udp-in' || node.type === 'websocket-in'
+            node.type === 'tcp-in' || node.type === 'udp-in'
+            || node.type === 'websocket-in' || node.type === 'mqtt-in'
         );
 
         for (const node of inboundNodes) {
@@ -175,6 +181,44 @@ export class WorkflowInboundRunner {
                     await this.stopListeners(listeners, sockets);
                     throw error;
                 }
+            } else if (node.type === 'mqtt-in') {
+                const url = String(config.url || '').trim();
+                const topic = String(config.topic || '').trim();
+                if (!url || !topic) {
+                    await this.stopListeners(listeners, sockets);
+                    mqttClients.forEach(client => client.close());
+                    throw new Error('MQTT in needs a broker URL and a topic.');
+                }
+                const client = new WorkflowMqttClient({
+                    url,
+                    clientId: config.clientId ? String(config.clientId) : undefined,
+                    username: config.username ? String(config.username) : undefined,
+                    password: config.password ? String(config.password) : undefined
+                });
+                try {
+                    // `subscribe` connects and waits for SUBACK so `start()`
+                    // only resolves once the listener is really active.
+                    await client.subscribe(topic, Number(config.qos) === 1 ? 1 : 0, message => {
+                        void dispatch(
+                            node.id,
+                            'mqtt',
+                            message.payload,
+                            undefined,
+                            undefined,
+                            message.topic
+                        );
+                    });
+                } catch (error) {
+                    client.close();
+                    await this.stopListeners(listeners, sockets);
+                    mqttClients.forEach(entry => entry.close());
+                    throw error;
+                }
+                mqttClients.push(client);
+                listeners.push({
+                    port: 0,
+                    close: async () => client.close()
+                });
             } else if (node.type === 'websocket-in') {
                 let WebSocketServer: any;
                 try {

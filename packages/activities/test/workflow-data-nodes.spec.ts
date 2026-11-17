@@ -256,6 +256,44 @@ describe('Workflow data & trigger nodes', () => {
         expect(String(missing.error?.message || '')).toContain('not found');
     });
 
+    it('maps sub-workflow input and output ports', async () => {
+        const child: VisualWorkflowDefinition = {
+            id: 'port-child',
+            name: 'Port child',
+            nodes: [
+                registry.createNode('function', { x: 0, y: 0 }, {
+                    id: 'child_fn',
+                    config: { code: 'return { total: (input.orderId || 0) * 2 };' }
+                })
+            ],
+            connections: []
+        };
+        service.setDefinitionResolver(id => id === 'port-child' ? child : undefined);
+
+        const result = await service.execute(chain([
+            {
+                type: 'subprocess',
+                config: {
+                    workflow: 'port-child',
+                    inputs: { orderId: 'payload.id' },
+                    outputs: { total: 'total' }
+                }
+            }
+        ]), { payload: { id: 21 } });
+        expect(result.success).toBe(true);
+        const state = result.data?.executionState?.nodeStates['subprocess_0'];
+        expect(state?.result?.data?.msg).toEqual({ total: 42 });
+        expect(state?.result?.data?.payload).toEqual({ total: 42 });
+
+        // No mapping keeps the previous behaviour (whole context passes through).
+        const passthrough = await service.execute(chain([
+            { type: 'subprocess', config: { workflow: 'port-child' } }
+        ]), { payload: { id: 3 } });
+        expect(passthrough.success).toBe(true);
+        expect(passthrough.data?.executionState?.nodeStates['subprocess_0']?.result?.data?.msg)
+            .toBeUndefined();
+    });
+
     it('runs a sub-workflow repeatedly with the loop node', async () => {
         const state = { count: 0 };
         const child: VisualWorkflowDefinition = {

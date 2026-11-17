@@ -737,6 +737,57 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { host: '0.0.0.0', port: 0, path: '', reply: false }
     },
     {
+        type: 'mqtt-in',
+        label: 'MQTT in',
+        description: 'Start the flow from an MQTT message',
+        category: 'trigger',
+        icon: '◉',
+        color: '#7c3aed',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Message')],
+        fields: [
+            configField({ key: 'url', label: 'Broker URL', type: 'text', required: true, defaultValue: 'mqtt://localhost:1883', placeholder: 'mqtt://broker:1883', description: 'mqtt:// or mqtts:// (TLS) broker URL.' }),
+            configField({ key: 'topic', label: 'Topic', type: 'text', required: true, defaultValue: '#', placeholder: 'sensors/+/temp', description: 'Subscription filter; + and # wildcards are supported.' }),
+            configField({ key: 'qos', label: 'QoS', type: 'select', defaultValue: '0', options: [
+                { label: '0', value: '0' },
+                { label: '1', value: '1' }
+            ] }),
+            configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto' }),
+            configField({ key: 'username', label: 'Username', type: 'text' }),
+            configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' })
+        ],
+        defaultConfig: { url: 'mqtt://localhost:1883', topic: '#', qos: '0' }
+    },
+    {
+        type: 'mqtt-out',
+        label: 'MQTT out',
+        description: 'Publish the message to an MQTT broker',
+        category: 'action',
+        icon: '◈',
+        color: '#7c3aed',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [
+            port('out', 'out', 'output', 'Output'),
+            port('error', 'error', 'output', 'Error')
+        ],
+        fields: [
+            configField({ key: 'url', label: 'Broker URL', type: 'text', required: true, defaultValue: 'mqtt://localhost:1883', placeholder: 'mqtt://broker:1883', description: 'mqtt:// or mqtts:// (TLS) broker URL.' }),
+            configField({ key: 'topic', label: 'Topic', type: 'text', required: true, placeholder: 'sensors/temp' }),
+            configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
+            configField({ key: 'qos', label: 'QoS', type: 'select', defaultValue: '0', options: [
+                { label: '0', value: '0' },
+                { label: '1', value: '1' }
+            ] }),
+            configField({ key: 'retain', label: 'Retain', type: 'boolean', defaultValue: false }),
+            configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto' }),
+            configField({ key: 'username', label: 'Username', type: 'text' }),
+            configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' })
+        ],
+        defaultConfig: { url: 'mqtt://localhost:1883', topic: '', payload: 'payload', qos: '0', retain: false }
+    },
+    {
         type: 'trigger',
         label: 'Trigger',
         description: 'Emit a payload after an optional delay',
@@ -1351,9 +1402,11 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'workflow', label: 'Workflow id or JSON', type: 'textarea', required: true, rows: 6, placeholder: 'workflow_id', description: 'Stored workflow id, context path, or inline definition JSON.' })
+            configField({ key: 'workflow', label: 'Workflow id or JSON', type: 'textarea', required: true, rows: 6, placeholder: 'workflow_id', description: 'Stored workflow id, context path, or inline definition JSON.' }),
+            configField({ key: 'inputs', label: 'Input ports', type: 'json', defaultValue: {}, placeholder: '{ "orderId": "payload.id" }', description: 'Child context key to parent context path.' }),
+            configField({ key: 'outputs', label: 'Output ports', type: 'json', defaultValue: {}, placeholder: '{ "total": "payload.total" }', description: 'Parent context key to child result path.' })
         ],
-        defaultConfig: {}
+        defaultConfig: { inputs: {}, outputs: {} }
     },
     {
         type: 'comment',

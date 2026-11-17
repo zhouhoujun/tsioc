@@ -287,6 +287,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "websocket-in": {
                 "label": "WebSocket in",
                 "description": "Start the flow from a WebSocket message"
+            },
+            "mqtt-in": {
+                "label": "MQTT in",
+                "description": "Start the flow from an MQTT message"
+            },
+            "mqtt-out": {
+                "label": "MQTT out",
+                "description": "Publish the message to an MQTT broker"
             }
         },
         "field": {
@@ -475,7 +483,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "Timeout"
             },
             "subprocess": {
-                "workflow": "Workflow id or JSON"
+                "workflow": "Workflow id or JSON",
+                "inputs": "Input ports",
+                "outputs": "Output ports"
             },
             "comment": {
                 "text": "Text"
@@ -687,6 +697,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "port": "Port",
                 "path": "Path",
                 "reply": "Reply with result"
+            },
+            "mqtt-in": {
+                "url": "Broker URL",
+                "topic": "Topic",
+                "qos": "QoS",
+                "clientId": "Client id",
+                "username": "Username",
+                "password": "Password"
+            },
+            "mqtt-out": {
+                "url": "Broker URL",
+                "topic": "Topic",
+                "payload": "Payload path",
+                "qos": "QoS",
+                "retain": "Retain",
+                "clientId": "Client id",
+                "username": "Username",
+                "password": "Password"
             }
         },
         "fieldPlaceholder": {
@@ -805,7 +833,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trycatch": {},
             "subprocess": {
-                "workflow": "workflow_id"
+                "workflow": "workflow_id",
+                "inputs": "{ \"orderId\": \"payload.id\" }",
+                "outputs": "{ \"total\": \"payload.total\" }"
             },
             "comment": {
                 "text": "Canvas note"
@@ -919,6 +949,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "0.0.0.0",
                 "port": "3000",
                 "path": "/ws"
+            },
+            "mqtt-in": {
+                "url": "mqtt://broker:1883",
+                "topic": "sensors/+/temp",
+                "clientId": "auto"
+            },
+            "mqtt-out": {
+                "url": "mqtt://broker:1883",
+                "topic": "sensors/temp",
+                "clientId": "auto"
             }
         },
         "fieldDescription": {
@@ -1106,7 +1146,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "route to the timeout port after this delay"
             },
             "subprocess": {
-                "workflow": "Stored workflow id, context path, or inline definition JSON."
+                "workflow": "Stored workflow id, context path, or inline definition JSON.",
+                "inputs": "Child context key to parent context path.",
+                "outputs": "Parent context key to child result path."
             },
             "comment": {},
             "custom": {
@@ -1262,6 +1304,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "port": "Port to listen on. 0 selects a free port.",
                 "path": "Optional WebSocket upgrade path such as /ws.",
                 "reply": "Send the final node result back to the client."
+            },
+            "mqtt-in": {
+                "url": "mqtt:// broker, or mqtts:// for TLS.",
+                "topic": "Subscription filter; + and # wildcards are supported.",
+                "qos": "Delivery guarantee for the subscription.",
+                "clientId": "Optional client id; generated when empty.",
+                "username": "Broker username.",
+                "password": "Broker password. Use {{credential:name}} to read a stored credential."
+            },
+            "mqtt-out": {
+                "url": "mqtt:// broker, or mqtts:// for TLS.",
+                "topic": "Topic to publish to.",
+                "payload": "Context path used as the message payload.",
+                "qos": "Delivery guarantee for the publish.",
+                "retain": "Ask the broker to keep the last message on the topic.",
+                "clientId": "Optional client id; generated when empty.",
+                "username": "Broker username.",
+                "password": "Broker password. Use {{credential:name}} to read a stored credential."
             }
         },
         "group": {
@@ -1358,7 +1418,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "parallel": "Run every message",
             "restart": "Restart pending delay",
             "timeout": "Wait with timeout",
-            "bearer": "Bearer token"
+            "bearer": "Bearer token",
+            "0": "0",
+            "1": "1"
         }
     },
     "zh-CN": {
@@ -1642,6 +1704,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "websocket-in": {
                 "label": "WebSocket 入口",
                 "description": "从 WebSocket 消息启动流程"
+            },
+            "mqtt-in": {
+                "label": "MQTT 输入",
+                "description": "从 MQTT 消息启动流程"
+            },
+            "mqtt-out": {
+                "label": "MQTT 输出",
+                "description": "把消息发布到 MQTT Broker"
             }
         },
         "field": {
@@ -1830,7 +1900,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超时"
             },
             "subprocess": {
-                "workflow": "工作流 ID 或 JSON"
+                "workflow": "工作流 ID 或 JSON",
+                "inputs": "输入端口",
+                "outputs": "输出端口"
             },
             "comment": {
                 "text": "文本"
@@ -2042,6 +2114,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "port": "端口",
                 "path": "路径",
                 "reply": "回复执行结果"
+            },
+            "mqtt-in": {
+                "url": "Broker 地址",
+                "topic": "主题",
+                "qos": "QoS",
+                "clientId": "客户端 ID",
+                "username": "用户名",
+                "password": "密码"
+            },
+            "mqtt-out": {
+                "url": "Broker 地址",
+                "topic": "主题",
+                "payload": "载荷路径",
+                "qos": "QoS",
+                "retain": "保留消息",
+                "clientId": "客户端 ID",
+                "username": "用户名",
+                "password": "密码"
             }
         },
         "fieldPlaceholder": {
@@ -2160,7 +2250,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trycatch": {},
             "subprocess": {
-                "workflow": "workflow_id"
+                "workflow": "workflow_id",
+                "inputs": "{ \"orderId\": \"payload.id\" }",
+                "outputs": "{ \"total\": \"payload.total\" }"
             },
             "comment": {
                 "text": "Canvas note"
@@ -2258,6 +2350,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "0.0.0.0",
                 "port": "3000",
                 "path": "/ws"
+            },
+            "mqtt-in": {
+                "url": "mqtt://broker:1883",
+                "topic": "sensors/+/temp",
+                "clientId": "auto"
+            },
+            "mqtt-out": {
+                "url": "mqtt://broker:1883",
+                "topic": "sensors/temp",
+                "clientId": "auto"
             }
         },
         "fieldDescription": {
@@ -2445,7 +2547,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超过该时间后进入超时端口。"
             },
             "subprocess": {
-                "workflow": "已保存的工作流 ID、上下文路径或内联定义 JSON。"
+                "workflow": "已保存的工作流 ID、上下文路径或内联定义 JSON。",
+                "inputs": "子流程上下文键 → 父流程上下文路径。",
+                "outputs": "父流程上下文键 → 子流程结果路径。"
             },
             "comment": {},
             "custom": {
@@ -2601,6 +2705,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "port": "监听端口，0 表示自动选择空闲端口。",
                 "path": "可选的 WebSocket 升级路径，例如 /ws。",
                 "reply": "把最终节点结果回写给客户端。"
+            },
+            "mqtt-in": {
+                "url": "mqtt:// 地址；TLS 使用 mqtts://。",
+                "topic": "订阅过滤器，支持 + 与 # 通配符。",
+                "qos": "订阅的投递保证级别。",
+                "clientId": "可选的客户端 ID；留空时自动生成。",
+                "username": "Broker 用户名。",
+                "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。"
+            },
+            "mqtt-out": {
+                "url": "mqtt:// 地址；TLS 使用 mqtts://。",
+                "topic": "发布到的主题。",
+                "payload": "作为消息载荷的上下文路径。",
+                "qos": "发布的投递保证级别。",
+                "retain": "要求 Broker 保留该主题的最后一条消息。",
+                "clientId": "可选的客户端 ID；留空时自动生成。",
+                "username": "Broker 用户名。",
+                "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。"
             }
         },
         "group": {
@@ -2697,7 +2819,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "parallel": "每条消息都执行",
             "restart": "重启等待中的延迟",
             "timeout": "超时后继续",
-            "bearer": "Bearer Token"
+            "bearer": "Bearer Token",
+            "0": "0",
+            "1": "1"
         }
     }
 };

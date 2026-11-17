@@ -6,3 +6,4 @@ export * from './WorkflowInboundRunner';
 export * from './WorkflowScheduleManager';
 export * from './WorkflowAuditStore';
 export * from './WorkflowCredentialStore';
+export * from './WorkflowMqtt';
