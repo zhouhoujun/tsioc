@@ -377,6 +377,12 @@
 - `admin.state.ts` 从 1343 行降到约 1255 行，页面行为不变。
 - 新增 `admin-state-pure.spec.ts` 6 个测试；admin 69 passing。
 
+第六十九批（Admin config controller）：
+
+- 新增 `admin/web/admin.config.controller.ts`：config 预览、历史、rollback 与 diff 摘要。
+- `admin.state.ts` 降至约 1191 行；控制器直接写 reactive host，绑定行为不变。
+- 回归：admin 69 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

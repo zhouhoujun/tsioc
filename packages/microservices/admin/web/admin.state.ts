@@ -12,7 +12,8 @@ import { Router, RouterEvent } from '@tsdi/components/router';
 import { AdminLocale, adminMessage } from './admin.i18n';
 import { AdminPage, redirectToAdminLogin } from './routing';
 import { GatewayAdminHttp } from './http';
-import { buildSloAlertsCsv, countConfigDiff, formatAlertTime, formatDiffFields, routeMethodsKey, validateRouteFields } from './admin.state.pure';
+import { buildSloAlertsCsv, formatAlertTime, routeMethodsKey, validateRouteFields } from './admin.state.pure';
+import { AdminConfigController } from './admin.config.controller';
 
 /** Structural document view used by the console (keeps decorator metadata DOM-free). */
 interface AdminDocumentLike {
@@ -132,6 +133,7 @@ export class GatewayAdminState {
 
     private loaded = false;
     private selfRef?: GatewayAdminState;
+    private configController?: AdminConfigController;
     private routerSub?: { unsubscribe(): void };
 
     constructor(
@@ -294,6 +296,13 @@ export class GatewayAdminState {
 
     private self(): GatewayAdminState {
         return (this.selfRef ?? this) as GatewayAdminState;
+    }
+
+    private config(): AdminConfigController {
+        if (!this.configController) {
+            this.configController = new AdminConfigController(this.self() as any);
+        }
+        return this.configController;
     }
 
     get pageTitle(): string {
@@ -758,108 +767,35 @@ export class GatewayAdminState {
     };
 
     diffFields(diff: GatewayConfigDiff | undefined, kind: 'routes' | 'rules', key: string): string {
-        return formatDiffFields(diff, kind, key);
+        return this.config().diffFields(diff, kind, key);
     }
 
     diffSummary(entry: GatewayAdminConfigEntry): string {
-        return this.t('config.diffSummary', { count: countConfigDiff(entry.diff) });
+        return this.config().diffSummary(entry);
     }
 
     async loadConfig(): Promise<void> {
-        const self = this.selfRef ?? this;
-        if (!self.http) {
-            return;
-        }
-        const response = await self.http.config();
-        if (response.ok) {
-            self.configVersion = response.body?.version ?? 0;
-        }
+        await this.config().loadConfig();
     }
 
     readonly previewConfigChanges = async (): Promise<void> => {
-        const self = this.selfRef ?? this;
-        if (!self.http) {
-            return;
-        }
-        self.configLoading = true;
-        try {
-            const response = await self.http.applyConfig({ routes: self.routes, dryRun: true });
-            if (response.status === 401) {
-                self.requireLogin();
-                return;
-            }
-            if (!response.ok) {
-                self.error = self.t('error.previewConfig', { status: response.status });
-                return;
-            }
-            self.configDiff = response.body?.diff;
-            self.configDiffOpen = true;
-        } finally {
-            self.configLoading = false;
-        }
+        await this.config().previewConfigChanges();
     };
 
     readonly closeConfigDiff = (): void => {
-        const self = this.selfRef ?? this;
-        self.configDiffOpen = false;
-        self.configDiff = undefined;
+        this.config().closeConfigDiff();
     };
 
     readonly openConfigHistory = async (): Promise<void> => {
-        const self = this.selfRef ?? this;
-        if (!self.http) {
-            return;
-        }
-        self.configLoading = true;
-        try {
-            const response = await self.http.configHistory();
-            if (response.status === 401) {
-                self.requireLogin();
-                return;
-            }
-            if (!response.ok) {
-                self.error = self.t('error.configHistory', { status: response.status });
-                return;
-            }
-            self.configHistory = Array.isArray(response.body) ? response.body : [];
-            self.configHistoryOpen = true;
-        } finally {
-            self.configLoading = false;
-        }
+        await this.config().openConfigHistory();
     };
 
     readonly closeConfigHistory = (): void => {
-        const self = this.selfRef ?? this;
-        self.configHistoryOpen = false;
+        this.config().closeConfigHistory();
     };
 
     readonly rollbackConfig = async (version: number): Promise<void> => {
-        const self = this.selfRef ?? this;
-        if (!self.http || !version) {
-            return;
-        }
-        self.configLoading = true;
-        try {
-            const response = await self.http.rollbackConfig(version, self.configVersion);
-            if (response.status === 401) {
-                self.requireLogin();
-                return;
-            }
-            if (response.status === 409) {
-                self.error = self.t('error.configConflict');
-                return;
-            }
-            if (!response.ok) {
-                self.error = self.t('error.rollbackConfig', { status: response.status });
-                return;
-            }
-            self.configVersion = response.body?.version ?? self.configVersion;
-            self.configHistoryOpen = false;
-            await self.reload();
-            self.status = self.t('status.configRolledBack', { version });
-        } finally {
-            self.configLoading = false;
-        }
+        await this.config().rollbackConfig(version);
     };
 
     readonly editRules = async (id?: string): Promise<void> => {
@@ -1101,7 +1037,7 @@ export class GatewayAdminState {
         }
     }
 
-    private requireLogin(): void {
+    requireLogin(): void {
         const self = this.self();
         self.needsLogin = true;
         self.authEnabled = true;
