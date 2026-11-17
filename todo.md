@@ -4656,3 +4656,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第九十二批（2026-11-16）：
   - 语言切换去掉多余 reload（不再丢未保存编辑）；设计器懒创建。
   - 回归：admin 87。
+
+## 2026-11-17 响应式用法审计（参照 packages/components README / AGENTS）
+- 修复（真实缺陷，已用无手动 render 的渲染断言证明旧实现失败）：
+  - `foldedReviewHunks`（Set）原地 `add/delete/clear`：Set 不被代理，折叠 hunk 后绑定不重跑。改为替换 Set；新增 console-renderer 用例「folding a hunk repaints without a manual render」。
+  - `pendingQuestionQueue` 原地 `push/shift`：队列长度读不到，第二个待答问题的 attention 徽标不刷新。改为替换数组；新增「a second pending question bumps the badge without a manual render」。
+- 审计结论（无缺陷/无需改动）：
+  - 未发现 `subscribe()/notify()/forceUpdate()/手动 render()/JSON 深拷贝/轮询定时器`；`setTimeout` 仅用于命令 burst 释放(48ms)、流式合帧(33ms)、toast 关闭、重连与 RPC 超时。
+  - 多字段整屏写入已用 `batchReactiveUpdates`（applyCachedView、restore、setMessages）；命令分发使用 surface 级 `beginRenderBatch/endRenderBatch`。
+  - 28 个组件模板的子组件绑定（`:prop`/`[prop]`）与 `@Attribute()` 声明一致（无未声明绑定）。
+  - `activeToolSet` 虽是原地 Set，但每次都会替换 `runningTools`，符合框架契约。
+  - `@Computed` 全库 0 使用 / 541 个 getter：当前框架实现中，计算属性 getter 读取**嵌套 proxy** 时不会登记依赖（`isComputing` 分支只认同对象的声明依赖），且缓存只在同对象同 key 写入时失效；agent-ui 因此改用 11 处 WeakMap 手写缓存（displayMessages、message items 等）。这是框架层限制，未在业务层强行套用。
+- 性能实验（未保留/未测出收益）：
+  - per-session `displayMessages` 缓存 + 投影签名比较 + `setMessages` 保持数组引用：40 次 1000 消息切换 A/B（渲染开）p50 约 87–89ms vs 基线 77–95ms，无稳定收益，按纪律回退。
+  - components/console 样式解析优化（getStyleMap 省拷贝、按选择器派生属性列表）：多项测量噪声大于收益，未保留。
+  - 现状成本拆分（1000 消息 ×4 tabs）：单次切换 ~85–105ms，其中 paint ≈50ms（getStyleMap/mergeStyles/applyCssAnimations 为主），openSession 状态+绑定 ≈45–55ms（displayMessages 投影、消息相等性、v-for 更新）。

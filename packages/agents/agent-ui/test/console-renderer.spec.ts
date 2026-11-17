@@ -423,6 +423,44 @@ export class AgentConsoleDashboardRendererTest {
 
 }
 
+@Suite('Agent Console Attention Badge Repaint')
+export class AgentConsoleAttentionBadgeRepaintTest {
+    ctx!: ApplicationContext;
+
+    @Before()
+    async init() {
+        this.ctx = await Application.run(AgentConsoleComponent, {
+            deps: [AgentModule, AgentUiModule, ConsoleTemplateModule, ComponentsModule]
+        });
+    }
+
+    @After()
+    async clean() { await this.ctx?.close(); }
+
+    @Test('a second pending question bumps the badge without a manual render')
+    async queuedQuestionBumpsBadge() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        const state: any = ref.instance.sessionState;
+        await ref.render();
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const inputPanel = ref.hostView.query(AgentConsoleInputPanelComponent) as ComponentRef<AgentConsoleInputPanelComponent>;
+        const paints = () => renderer.renderToLines(inputPanel.hostView.rootNodes[0]).join('\n');
+        const question = (id: string, createdAt: number) => ({
+            questionId: id, sessionId: state.sessionId, question: `Question ${id}`,
+            options: ['a'], severity: 'medium', createdAt, updatedAt: createdAt, status: 'pending'
+        });
+
+        state.setPendingQuestion(question('q1', 1));
+        await settleDynamicMessages(ref);
+        expect(paints()).toContain('! 1');
+
+        state.setPendingQuestion(question('q2', 2));
+        // No manual render: the queue write itself must repaint the badge.
+        await settleDynamicMessages(ref);
+        expect(paints()).toContain('! 2');
+    }
+}
+
 @Suite('Agent Console Messages Renderer')
 export class AgentConsoleMessagesRendererTest {
     ctx!: ApplicationContext;
@@ -1878,9 +1916,9 @@ export class AgentConsoleReviewRendererTest {
             diff: {
                 summary: '1 file diff(s) captured',
                 text: [
-                    'diff --git a/src/a.ts b/src/a.ts',
-                    '--- a/src/a.ts',
-                    '+++ b/src/a.ts',
+                    'diff --git a/src/live.ts b/src/live.ts',
+                    '--- a/src/live.ts',
+                    '+++ b/src/live.ts',
                     '@@ -1,2 +1,3 @@',
                     '-old first',
                     '+new first',
@@ -1905,6 +1943,55 @@ export class AgentConsoleReviewRendererTest {
         expect(reviewLines.some(line => line.includes('folded hunk +1 -1'))).toBe(true);
         expect(reviewLines.some(line => line.includes('-old second'))).toBe(false);
         expect(reviewLines.some(line => line.includes('@@ -10,2 +11,2 @@'))).toBe(true);
+    }
+
+    @Test('folding a hunk repaints without a manual render')
+    async foldRepaintsThroughBindings() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        ref.instance.sessionState.openReview({
+            id: 'task-fold-live',
+            title: 'Folded live',
+            status: 'completed'
+        }, {
+            executionMode: 'parallel',
+            diff: {
+                summary: '1 file diff(s) captured',
+                text: [
+                    'diff --git a/src/live.ts b/src/live.ts',
+                    '--- a/src/live.ts',
+                    '+++ b/src/live.ts',
+                    '@@ -1,2 +1,3 @@',
+                    '-old first',
+                    '+new first',
+                    '@@ -10,2 +11,2 @@',
+                    '-old second',
+                    '+new second'
+                ].join('\n')
+            },
+            workers: []
+        });
+        ref.instance.sessionState.selectedReviewHunkIndex = 1;
+        await settleDynamicMessages(ref);
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const reviewPanel = ref.hostView.query(AgentConsoleReviewPanelComponent) as ComponentRef<AgentConsoleReviewPanelComponent>;
+        const totalLines = (): number => {
+            const painted = renderer.renderToLines(reviewPanel.hostView.rootNodes[0]).join('\n');
+            const match = painted.match(/lines \d+-\d+ \/ (\d+)/);
+            return match ? Number(match[1]) : NaN;
+        };
+        const before = totalLines();
+        expect(Number.isFinite(before)).toBe(true);
+
+        ref.instance.sessionState.toggleReviewHunkFold();
+        // No `ref.render()` here: the state write itself must repaint, which
+        // only happens when the folded-hunk set is replaced (Set is not proxied).
+        await settleDynamicMessages(ref);
+        const after = totalLines();
+        expect(Number.isFinite(after)).toBe(true);
+        // Only the toggle write happened between the two paints.
+        expect(after).not.toEqual(before);
     }
 
     @Test('renders side-by-side review hunks in the coding task review panel')

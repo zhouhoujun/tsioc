@@ -176,11 +176,15 @@ export function toggleReviewHunkFold(state: AgentConsoleSessionState): void {
         }
         const index = Math.max(0, Math.min(hunks.length - 1, state.selectedReviewHunkIndex));
         const key = `${group.key}:${section.path}#${index}`;
-        if (state.foldedReviewHunks.has(key)) {
-            state.foldedReviewHunks.delete(key);
+        // `Set` is not proxied: in-place add/delete would leave every binding
+        // that reads the fold state stale. Replace the set instead.
+        const folded = new Set(state.foldedReviewHunks);
+        if (folded.has(key)) {
+            folded.delete(key);
         } else {
-            state.foldedReviewHunks.add(key);
+            folded.add(key);
         }
+        state.foldedReviewHunks = folded;
         clampReviewDetailScroll(state);
     }
 export function clampReviewDetailScroll(state: AgentConsoleSessionState): void {

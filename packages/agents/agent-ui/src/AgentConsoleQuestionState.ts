@@ -27,7 +27,9 @@ export function setPendingQuestion(state: AgentConsoleSessionState, question: Ag
         if (existing.status === 'answered' || existing.status === 'dismissed') return;
         state.pendingQuestionQueue[existingIndex] = { ...existing, ...question };
     } else {
-        state.pendingQuestionQueue.push(question);
+        // Replace the queue: in-place push neither re-runs the bindings that
+        // read the queue length nor refreshes `v-for` rows.
+        state.pendingQuestionQueue = [...state.pendingQuestionQueue, question];
     }
     state.pendingQuestion = state.pendingQuestionQueue[0] ?? null;
     state.pendingQuestionSelectedIndex = 0;
@@ -35,7 +37,8 @@ export function setPendingQuestion(state: AgentConsoleSessionState, question: Ag
 }
 
 export function finishPendingQuestion(state: AgentConsoleSessionState): AgentConsolePendingQuestion | null {
-    const finished = state.pendingQuestionQueue.shift() ?? null;
+    const finished = state.pendingQuestionQueue[0] ?? null;
+    state.pendingQuestionQueue = state.pendingQuestionQueue.slice(1);
     state.pendingQuestion = state.pendingQuestionQueue[0] ?? null;
     state.pendingQuestionSelectedIndex = 0;
     state.syncDerivedInputFocus();

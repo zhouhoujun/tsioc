@@ -140,7 +140,7 @@ export function clearReview(state: AgentConsoleSessionState): void {
     state.selectedReviewGroupIndex = 0;
     state.selectedReviewFileIndex = 0;
     state.selectedReviewHunkIndex = 0;
-    state.foldedReviewHunks.clear();
+    state.foldedReviewHunks = new Set();
     state.selectedReviewPatchFilter = 'all';
     state.reviewSideBySide = false;
     state.reviewFileAnnotations = {};
