@@ -6,7 +6,8 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
     "test": "ts-node -r tsconfig-paths/register unit.ts",
     "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c",
-    "bench": "ts-node -r tsconfig-paths/register bench/index.ts"
+    "bench": "ts-node -r tsconfig-paths/register bench/index.ts",
+    "bench:check": "node ../../scripts/check-components-bench.mjs"
   },
   "keywords": [
     "components",

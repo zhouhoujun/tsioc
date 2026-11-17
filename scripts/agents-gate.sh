@@ -26,6 +26,7 @@
 # Stage ids: agent agent-channels agent-cli agent-gateway agent-providers
 #            agent-ssh agent-tools agent-ui agent-desktop agent-vscode
 #            components components-common components-console components-html
+#            components-bench
 #            tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
@@ -105,6 +106,15 @@ run_npm_script() {
         echo "--- $id tail (last 30 lines) ---" >&2
         tail -30 "$log" >&2
     fi
+}
+
+# run_components_bench — opt-in performance budget (machine dependent)
+run_components_bench() {
+    if [ "${RUN_COMPONENTS_BENCH:-}" != "1" ]; then
+        stage_skip components-bench 'components performance budgets (opt-in; set RUN_COMPONENTS_BENCH=1)'
+        return
+    fi
+    run_npm_script components-bench 'components performance budgets' packages/components bench:check
 }
 
 # run_harness <id> <label> <gate-ts> [extra args...]
@@ -406,6 +416,7 @@ run_stage() {
         components-common) run_npm_test components-common '@tsdi/components/common unit tests' packages/components/common ;;
         components-console) run_npm_test components-console '@tsdi/components/console unit tests' packages/components/console ;;
         components-html)  run_npm_test components-html '@tsdi/components/html unit tests' packages/components/html ;;
+        components-bench) run_components_bench ;;
         tsc-agent)        run_tsc tsc-agent 'tsc --noEmit @tsdi/agent' packages/agents/agent ;;
         tsc-agent-ui)     run_tsc tsc-agent-ui 'tsc --noEmit @tsdi/agent-ui' packages/agents/agent-ui ;;
         tsc-agent-gateway) run_tsc tsc-agent-gateway 'tsc --noEmit @tsdi/agent-gateway' packages/agents/agent-gateway ;;
@@ -459,7 +470,7 @@ run_stage() {
 
 ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             agent-ssh agent-tools agent-ui agent-desktop agent-vscode
-            components components-common components-console components-html
+            components components-common components-console components-html components-bench
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
             build-agent-ui-web dom-gate tui-gate gate-regression
             pty-acceptance diff-check source-size
