@@ -265,6 +265,7 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         planNudge: '检测到规划意图 · 使用 /plan',
         planBadge: '计划',
         yoloBadge: '自动批准',
+        steerBadge: '转向',
         vimInsert: 'vim 插入',
         vimNormal: 'vim 普通',
         queuedBadge: '{count} 条排队'

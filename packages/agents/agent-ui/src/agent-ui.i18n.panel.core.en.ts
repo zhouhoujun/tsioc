@@ -265,6 +265,7 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         planNudge: 'Planning intent detected · use /plan',
         planBadge: 'plan',
         yoloBadge: 'auto-approve',
+        steerBadge: 'steer',
         vimInsert: 'vim insert',
         vimNormal: 'vim normal',
         queuedBadge: '{count} queued'

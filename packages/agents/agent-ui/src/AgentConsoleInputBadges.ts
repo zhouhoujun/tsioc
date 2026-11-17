@@ -5,6 +5,8 @@ export interface AgentConsoleInputBadgeState {
     planMode?: boolean;
     /** `/yolo` auto-approve is persisted, so it must stay visible. */
     yoloMode?: boolean;
+    /** Enter interrupts the running turn instead of queueing. */
+    steerMode?: boolean;
     vimMode?: boolean;
     inputMode?: string;
     isSshShellActive?: boolean;
@@ -30,6 +32,9 @@ export function formatAgentConsoleInputBadges(
     }
     if (state?.yoloMode) {
         badges.push(label('yoloBadge', 'auto-approve'));
+    }
+    if (state?.steerMode) {
+        badges.push(label('steerBadge', 'steer'));
     }
     if (state?.vimMode) {
         badges.push(String(state.inputMode || '') === 'normal'

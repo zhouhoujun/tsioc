@@ -33,6 +33,14 @@ export class YoloBadgeTest {
         expect(formatAgentConsoleInputBadges({ planMode: true, yoloMode: true }, en)).toEqual(['plan', 'auto-approve']);
     }
 
+    @Test('the steer badge renders next to the prompt (en + zh)')
+    async steerBadgeRenders() {
+        expect(formatAgentConsoleInputBadges({ steerMode: true }, en)).toEqual(['steer']);
+        expect(formatAgentConsoleInputBadges({ steerMode: true }, zh)).toEqual(['转向']);
+        expect(formatAgentConsoleInputBadges({ planMode: true, yoloMode: true, steerMode: true }, en))
+            .toEqual(['plan', 'auto-approve', 'steer']);
+    }
+
     @Test('/yolo on|off flips the state flag the badge reads')
     async yoloCommandSyncsState() {
         const component = createConsole(new RuntimeStub(), new SchedulerStub());
@@ -44,6 +52,17 @@ export class YoloBadgeTest {
         await (component as any).handleCommand('/yolo off');
         expect(state.yoloMode).toEqual(false);
         expect((component as any).yoloMode).toEqual(false);
+    }
+
+    @Test('/steer on|off flips the badge state')
+    async steerCommandSyncsBadge() {
+        const component = createConsole(new RuntimeStub(), new SchedulerStub());
+        const state = component.sessionState;
+        await (component as any).handleCommand('/steer on');
+        expect(state.steerMode).toEqual(true);
+        expect(formatAgentConsoleInputBadges(state as any, en)).toContain('steer');
+        await (component as any).handleCommand('/steer off');
+        expect(formatAgentConsoleInputBadges(state as any, en)).not.toContain('steer');
     }
 
     @Test('restoring the persisted setting also shows the badge')
