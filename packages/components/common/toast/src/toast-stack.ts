@@ -1,6 +1,13 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, Computed } from '@tsdi/components';
 import { getDisplayWidth } from '../../src/display-width';
-import type { ToastEntry } from './toast';
+import type { ToastEntry, ToastTone } from './toast';
+
+/** One painted toast row: stable identity, semantic tone and display text. */
+export interface ToastRow {
+    id: string;
+    tone: ToastTone;
+    text: string;
+}
 
 /**
  * Renderer-neutral toast strip. The host owns the queue (see `ToastService`)
@@ -15,7 +22,7 @@ import type { ToastEntry } from './toast';
     template: `
     <div class="console-toast-stack" role="status" aria-live="polite" v-show="visible">
         <div class="console-toast-card">
-        <label class="console-toast" data-tone="{{item.tone}}" v-for="item in entries">
+        <label class="console-toast" data-tone="{{item.tone}}" v-for="item in rows" trackBy="id">
             <span class="toast-message">{{item.text}}</span><span class="toast-close" role="button" data-cell-width="3" @click="dismiss(item.id, $event)">{{closeAffordance}}</span>
         </label>
         </div>
@@ -34,22 +41,38 @@ export class ToastStackComponent {
         return `\u00a0${this.closeLabel}`;
     }
 
-    get entries(): Array<ToastEntry & { text: string }> {
+    /** Rows painted by the strip: the queue entry plus its padded display text. */
+    @Computed()
+    get rows(): ToastRow[] {
         const items = Array.isArray(this.items) ? this.items : [];
         const width = Math.max(0, Math.floor(Number(this.messageWidth) || 0));
         if (!width) {
-            return items.map(item => ({ ...item, text: String(item?.message ?? '') }));
+            return items.map(item => ({
+                id: String(item?.id ?? ''),
+                tone: item?.tone || 'info',
+                text: String(item?.message ?? '')
+            }));
         }
         const closeWidth = getDisplayWidth(this.closeAffordance);
         return items.map(item => {
             const message = String(item?.message ?? '');
             const pad = Math.max(1, width - closeWidth - getDisplayWidth(message));
-            return { ...item, text: `${message}${' '.repeat(pad)}` };
+            return {
+                id: String(item?.id ?? ''),
+                tone: item?.tone || 'info',
+                text: `${message}${' '.repeat(pad)}`
+            };
         });
     }
 
+    /** @deprecated Use `rows`. */
+    get entries(): ToastRow[] {
+        return this.rows;
+    }
+
+    @Computed()
     get visible(): boolean {
-        return this.entries.length > 0;
+        return this.rows.length > 0;
     }
 
     dismiss(id: string, event?: Event): void {

@@ -1,21 +1,12 @@
-import {
-    Attribute,
-    Component,
-    ElementRef,
-    EventEmitter,
-    NodeType,
-    PROJECTION_NODES,
-    RNode
-} from '@tsdi/components';
-import { Module, Optional } from '@tsdi/ioc';
+import { Module } from '@tsdi/ioc';
 import { ThemeService } from './theme';
 
-interface ProjectionNode extends RNode {
-    tagName?: string;
-    textContent?: string | null;
-    [PROJECTION_NODES]?: RNode[];
-}
-
+/**
+ * Shared renderer-neutral services (currently the theme store).
+ *
+ * Widgets live in their own subpath entries (`@tsdi/components/common/panel`
+ * and friends); this module only provides services used across surfaces.
+ */
 @Module({
     providers: [ThemeService]
 })

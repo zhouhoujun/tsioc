@@ -1,3 +1,5 @@
+import { installStyleSheet } from '../../src/styles';
+
 /**
  * Default skin for the shared icon directive. The directive is usable without
  * any CSS (text-only hosts simply render the glyph fallback); DOM hosts install
@@ -47,14 +49,5 @@ export const ICON_CSS = `
 `;
 
 export function installIconStyles(doc?: Document | null): void {
-    if (!doc || typeof (doc as any).createElement !== 'function' || !doc.head) {
-        return;
-    }
-    if (doc.getElementById && doc.getElementById(ICON_STYLE_ID)) {
-        return;
-    }
-    const style = doc.createElement('style');
-    style.setAttribute('id', ICON_STYLE_ID);
-    style.textContent = ICON_CSS;
-    doc.head.appendChild(style);
+    installStyleSheet(doc, ICON_STYLE_ID, ICON_CSS);
 }

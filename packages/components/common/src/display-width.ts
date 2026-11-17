@@ -1,4 +1,50 @@
-const ANSI_SGR_SEQUENCE = /^\x1b\[[0-9;]*m/;
+/**
+ * ANSI SGR sequence scanner.
+ *
+ * The previous implementation called `value.slice(index).match(...)` for every
+ * escape byte, which allocated a substring (and ran a regex) per sequence. This
+ * scanner walks the same `ESC [ digits/semicolons m` grammar in place, so
+ * measuring a styled line is allocation-free and linear.
+ */
+function ansiSequenceLength(value: string, index: number): number {
+    if (value.charCodeAt(index) !== 0x1b || value.charCodeAt(index + 1) !== 0x5b) {
+        return 0;
+    }
+    let cursor = index + 2;
+    while (cursor < value.length) {
+        const code = value.charCodeAt(cursor);
+        if (code === 0x6d) {
+            return cursor + 1 - index;
+        }
+        // [0-9;] only, matching the previous /^\x1b\[[0-9;]*m/ contract.
+        if (code >= 0x30 && code <= 0x3b) {
+            cursor += 1;
+            continue;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+/**
+ * Display width of one code point: 0 for zero-width/combining glyphs, 2 for
+ * full-width (CJK, emoji), 1 otherwise. Kept separate from `getDisplayWidth`
+ * so slice/pad loops never re-measure a single character through the full
+ * string scanner.
+ */
+export function codePointDisplayWidth(codePoint: number): number {
+    if (
+        codePoint === 0 ||
+        codePoint === 0x200b ||
+        codePoint === 0x200c ||
+        codePoint === 0x200d ||
+        (codePoint >= 0x0300 && codePoint <= 0x036f) ||
+        (codePoint >= 0xfe00 && codePoint <= 0xfe0f)
+    ) {
+        return 0;
+    }
+    return isWideCodePoint(codePoint) ? 2 : 1;
+}
 
 /**
  * Full-width / wide code points occupy two display columns (CJK, emoji, etc.).
@@ -18,47 +64,30 @@ export function isWideCodePoint(codePoint: number): boolean {
             (codePoint >= 0xff00 && codePoint <= 0xff60) ||
             (codePoint >= 0xffe0 && codePoint <= 0xffe6) ||
             (codePoint >= 0x1f300 && codePoint <= 0x1f64f) ||
+            (codePoint >= 0x1f680 && codePoint <= 0x1f6ff) ||
             (codePoint >= 0x1f900 && codePoint <= 0x1f9ff) ||
             (codePoint >= 0x20000 && codePoint <= 0x3fffd)
         )
     );
 }
 
-function matchAnsiSequence(value: string, index: number): string | null {
-    if (value.charCodeAt(index) !== 0x1b) {
-        return null;
-    }
-    const match = value.slice(index).match(ANSI_SGR_SEQUENCE);
-    return match?.[0] ?? null;
-}
-
 export function getDisplayWidth(value: string): number {
+    const text = String(value ?? '');
     let width = 0;
-    for (let index = 0; index < value.length;) {
-        const ansi = matchAnsiSequence(value, index);
+    for (let index = 0; index < text.length;) {
+        const ansi = ansiSequenceLength(text, index);
         if (ansi) {
-            index += ansi.length;
+            index += ansi;
             continue;
         }
 
-        const codePoint = value.codePointAt(index);
+        const codePoint = text.codePointAt(index);
         if (codePoint == null) {
             index += 1;
             continue;
         }
-        if (
-            codePoint === 0 ||
-            codePoint === 0x200b ||
-            codePoint === 0x200c ||
-            codePoint === 0x200d ||
-            (codePoint >= 0x0300 && codePoint <= 0x036f) ||
-            (codePoint >= 0xfe00 && codePoint <= 0xfe0f)
-        ) {
-            index += codePoint > 0xffff ? 2 : 1;
-            continue;
-        }
 
-        width += isWideCodePoint(codePoint) ? 2 : 1;
+        width += codePointDisplayWidth(codePoint);
         index += codePoint > 0xffff ? 2 : 1;
     }
     return width;
@@ -72,30 +101,32 @@ export function sliceByDisplayWidth(value: string, width: number): string {
     if (width <= 0 || !value) {
         return '';
     }
+    const text = String(value);
     let used = 0;
     let result = '';
     let hasAnsi = false;
     let styleOpen = false;
-    for (let index = 0; index < value.length;) {
-        const ansi = matchAnsiSequence(value, index);
+    for (let index = 0; index < text.length;) {
+        const ansi = ansiSequenceLength(text, index);
         if (ansi) {
+            const sequence = text.slice(index, index + ansi);
             hasAnsi = true;
-            styleOpen = ansi !== '\x1b[0m';
-            result += ansi;
-            index += ansi.length;
+            styleOpen = sequence !== '\x1b[0m';
+            result += sequence;
+            index += ansi;
             continue;
         }
 
-        const codePoint = value.codePointAt(index);
+        const codePoint = text.codePointAt(index);
         if (codePoint == null) {
             index += 1;
             continue;
         }
-        const char = String.fromCodePoint(codePoint);
-        const charWidth = getDisplayWidth(char);
+        const charWidth = codePointDisplayWidth(codePoint);
         if (used + charWidth > width) {
             break;
         }
+        const char = String.fromCodePoint(codePoint);
         result += char;
         used += charWidth;
         index += char.length;
@@ -107,20 +138,22 @@ export function sliceByDisplayWidth(value: string, width: number): string {
 }
 
 export function padByDisplayWidth(value: string, width: number): string {
-    const visibleWidth = getDisplayWidth(value);
+    const text = String(value ?? '');
+    const visibleWidth = getDisplayWidth(text);
     if (visibleWidth >= width) {
-        return sliceByDisplayWidth(value, width);
+        return sliceByDisplayWidth(text, width);
     }
-    return `${value}${' '.repeat(width - visibleWidth)}`;
+    return `${text}${' '.repeat(width - visibleWidth)}`;
 }
 
 export function fitByDisplayWidth(value: string, width: number): string {
-    const visibleWidth = getDisplayWidth(value);
+    const text = String(value ?? '');
+    const visibleWidth = getDisplayWidth(text);
     if (visibleWidth <= width) {
-        return value;
+        return text;
     }
     if (width <= 3) {
-        return sliceByDisplayWidth(value, width);
+        return sliceByDisplayWidth(text, width);
     }
-    return `${sliceByDisplayWidth(value, width - 3)}...`;
+    return `${sliceByDisplayWidth(text, width - 3)}...`;
 }

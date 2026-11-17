@@ -37,6 +37,7 @@ export class IconDirective implements OnInit, OnDestroy {
     protected labelValue = '';
     protected strokeValue: number | string | undefined;
     protected ready = false;
+    protected pendingRender = false;
 
     constructor(
         @Optional() protected elementRef?: ElementRef,
@@ -51,7 +52,7 @@ export class IconDirective implements OnInit, OnDestroy {
             return;
         }
         this.iconName = next;
-        this.render();
+        this.scheduleRender();
     }
     get name(): string {
         return this.iconName;
@@ -65,7 +66,7 @@ export class IconDirective implements OnInit, OnDestroy {
             return;
         }
         this.iconName = next;
-        this.render();
+        this.scheduleRender();
     }
     get icon(): string {
         return this.iconName;
@@ -79,7 +80,7 @@ export class IconDirective implements OnInit, OnDestroy {
             return;
         }
         this.glyphValue = next;
-        this.render();
+        this.scheduleRender();
     }
     get glyph(): string {
         return this.glyphValue;
@@ -93,7 +94,7 @@ export class IconDirective implements OnInit, OnDestroy {
             return;
         }
         this.sizeValue = next;
-        this.render();
+        this.scheduleRender();
     }
     get size(): string {
         return this.sizeValue;
@@ -107,7 +108,7 @@ export class IconDirective implements OnInit, OnDestroy {
             return;
         }
         this.labelValue = next;
-        this.render();
+        this.scheduleRender();
     }
     get label(): string {
         return this.labelValue;
@@ -120,7 +121,7 @@ export class IconDirective implements OnInit, OnDestroy {
             return;
         }
         this.strokeValue = value;
-        this.render();
+        this.scheduleRender();
     }
     get strokeWidth(): number | string | undefined {
         return this.strokeValue;
@@ -135,63 +136,31 @@ export class IconDirective implements OnInit, OnDestroy {
     }
 
     onInit(): void {
-        // Plain attributes on the directive host are literals, not selector
-        // expressions. Read them once so `<icon name="run" size="sm" label="Run">`
-        // and `<icon name="run"></icon>` both work without binding syntax.
-        this.readStaticAttributes();
+        // Plain attributes such as `<icon name="run" size="sm" label="Run">` are
+        // assigned to these @Attribute setters by the compiler; no manual
+        // attribute scan is needed (kebab-case aliases are handled there too).
+        const el = this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined;
+        installIconStyles(el?.ownerDocument);
         this.ready = true;
         this.render();
     }
 
     onDestroy(): void {
+        this.pendingRender = false;
         this.ready = false;
         this.clear();
     }
 
-    protected readStaticAttributes(): void {
-        const el = this.elementRef?.nativeElement;
-        const renderer = this.renderer;
-        if (!el || !renderer) {
+    /** Coalesce attribute writes from one binding pass into a single redraw. */
+    protected scheduleRender(): void {
+        if (!this.ready || this.pendingRender) {
             return;
         }
-        const attrs = renderer.getAttributes(el) as Array<{ name: string; value: string }>;
-        attrs.forEach(attr => {
-            const name = attr.name;
-            if (!name || name.startsWith(':') || name.startsWith('[') || name.startsWith('@')
-                || name.startsWith('v-') || name.startsWith('*')) {
-                return;
-            }
-            const value = attr.value == null ? '' : String(attr.value);
-            switch (name) {
-                case 'name':
-                case 'icon':
-                    if (!this.iconName) {
-                        this.iconName = value;
-                    }
-                    break;
-                case 'glyph':
-                    if (!this.glyphValue) {
-                        this.glyphValue = value;
-                    }
-                    break;
-                case 'size':
-                    if (SIZES.includes(value)) {
-                        this.sizeValue = value;
-                    }
-                    break;
-                case 'label':
-                    if (!this.labelValue) {
-                        this.labelValue = value;
-                    }
-                    break;
-                case 'stroke-width':
-                case 'strokeWidth':
-                    if (this.strokeValue == null) {
-                        this.strokeValue = value;
-                    }
-                    break;
-                default:
-                    break;
+        this.pendingRender = true;
+        void Promise.resolve().then(() => {
+            this.pendingRender = false;
+            if (this.ready) {
+                this.render();
             }
         });
     }
@@ -206,7 +175,6 @@ export class IconDirective implements OnInit, OnDestroy {
             return;
         }
 
-        installIconStyles((el as any).ownerDocument);
         this.applyHostAttributes(el, renderer);
 
         this.clear();

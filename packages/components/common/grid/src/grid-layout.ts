@@ -1,18 +1,11 @@
 import {
     Attribute,
-    AfterViewInit,
     Component,
-    ElementRef,
-    PROJECTION_NODES,
-    RNode,
-    ViewChild
+    Computed,
+    ElementRef
 } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
-
-interface ProjectionNode extends RNode {
-    tagName?: string;
-}
 
 function toPixels(value: number | string | undefined, fallback: number): string {
     if (value === undefined || value === null || value === '') {
@@ -45,10 +38,10 @@ function toCount(value: number | string | undefined, fallback = 1): number {
     selector: 'grid-layout',
     template: `
     <div class="grid-layout" [class]="layoutClass" [style]="gridStyle">
-        <div class="grid-layout-items" #items></div>
+        <div class="grid-layout-items"><v-content></v-content></div>
     </div>`
 })
-export class GridLayoutComponent implements AfterViewInit {
+export class GridLayoutComponent {
     @Attribute() columns: number | string = 1;
     @Attribute() rows?: number | string;
     @Attribute() gap: number | string = 12;
@@ -65,14 +58,11 @@ export class GridLayoutComponent implements AfterViewInit {
     /** Fill the parent height (useful inside workspace panes). */
     @Attribute() fill = false;
 
-    @ViewChild('items', ElementRef) itemsRef?: ElementRef;
-
-    private projected = false;
-
     constructor(@Optional() protected elementRef?: ElementRef) {
         markElementRefRaw(elementRef);
     }
 
+    @Computed()
     get layoutClass(): Record<string, boolean> {
         return {
             'grid-layout': true,
@@ -80,6 +70,7 @@ export class GridLayoutComponent implements AfterViewInit {
         };
     }
 
+    @Computed()
     get gridStyle(): Record<string, string> {
         const columns = this.autoFit === true || (this.autoFit as any) === 'true' || (this.autoFit as any) === ''
             ? `repeat(auto-fit, minmax(${toPixels(this.minItemWidth, 200)}, 1fr))`
@@ -116,31 +107,6 @@ export class GridLayoutComponent implements AfterViewInit {
         return style;
     }
 
-    onAfterViewInit(): void {
-        markElementRefRaw(this.itemsRef);
-        this.mountProjectedContent();
-    }
-
-    mountProjectedContent(): void {
-        if (this.projected) {
-            return;
-        }
-        const container = this.itemsRef?.nativeElement as any;
-        if (!container) {
-            return;
-        }
-        const host = container.closest?.('grid-layout') || container.parentElement?.parentElement;
-        const nodes: ProjectionNode[] = (host as any)?.[PROJECTION_NODES] || [];
-        if (!nodes.length) {
-            return;
-        }
-        nodes.forEach(node => {
-            if (node && typeof container.appendChild === 'function') {
-                container.appendChild(node as any);
-            }
-        });
-        this.projected = true;
-    }
 }
 
 /**
@@ -150,10 +116,10 @@ export class GridLayoutComponent implements AfterViewInit {
     selector: 'grid-item',
     template: `
     <div class="grid-item" [style]="itemStyle">
-        <div class="grid-item-content" #content></div>
+        <div class="grid-item-content"><v-content></v-content></div>
     </div>`
 })
-export class GridItemComponent implements AfterViewInit {
+export class GridItemComponent {
     @Attribute() span?: number | string;
     @Attribute() rowSpan?: number | string;
     @Attribute() start?: number | string;
@@ -162,14 +128,11 @@ export class GridItemComponent implements AfterViewInit {
     @Attribute() rowEnd?: number | string;
     @Attribute() area?: string;
 
-    @ViewChild('content', ElementRef) contentRef?: ElementRef;
-
-    private projected = false;
-
     constructor(@Optional() protected elementRef?: ElementRef) {
         markElementRefRaw(elementRef);
     }
 
+    @Computed()
     get itemStyle(): Record<string, string> {
         const style: Record<string, string> = {};
         if (this.span !== undefined && this.span !== null && this.span !== '') {
@@ -192,26 +155,4 @@ export class GridItemComponent implements AfterViewInit {
         return style;
     }
 
-    onAfterViewInit(): void {
-        markElementRefRaw(this.contentRef);
-        this.mountProjectedContent();
-    }
-
-    mountProjectedContent(): void {
-        if (this.projected) {
-            return;
-        }
-        const container = this.contentRef?.nativeElement as any;
-        if (!container) {
-            return;
-        }
-        const host = container.closest?.('grid-item') || container.parentElement?.parentElement;
-        const nodes: ProjectionNode[] = (host as any)?.[PROJECTION_NODES] || [];
-        nodes.forEach(node => {
-            if (node && typeof container.appendChild === 'function') {
-                container.appendChild(node as any);
-            }
-        });
-        this.projected = true;
-    }
 }

@@ -4,18 +4,12 @@ import {
     Component,
     ElementRef,
     OnDestroy,
-    PROJECTION_NODES,
-    RNode,
     ViewChild
 } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 
 export type WorkspacePane = 'left' | 'right' | 'bottom';
-
-interface ProjectionNode extends RNode {
-    tagName?: string;
-}
 
 const MIN_RATIO = 0.08;
 const MAX_LEFT_RIGHT_RATIO = 0.6;
@@ -52,7 +46,7 @@ const MAX_BOTTOM_RATIO = 0.7;
     <div class="workspace-layout" #layoutRoot [style]="layoutStyle">
         <div class="workspace-layout-main">
             <section class="workspace-pane workspace-layout-left" aria-label="Left pane" v-show="!leftCollapsed">
-                <div class="workspace-slot" data-workspace-slot="left"></div>
+                <div class="workspace-slot" data-workspace-slot="left"><v-content select="workspace-left"></v-content></div>
             </section>
             <div class="workspace-splitter workspace-splitter-left"
                  role="separator" aria-orientation="vertical" aria-label="Resize left pane"
@@ -64,7 +58,7 @@ const MAX_BOTTOM_RATIO = 0.7;
                         @click="togglePane('left')">{{leftCollapsed ? '›' : '‹'}}</button>
             </div>
             <section class="workspace-pane workspace-layout-center" aria-label="Center pane">
-                <div class="workspace-slot" data-workspace-slot="center"></div>
+                <div class="workspace-slot" data-workspace-slot="center"><v-content select="workspace-center"></v-content><v-content></v-content></div>
             </section>
             <div class="workspace-splitter workspace-splitter-right"
                  role="separator" aria-orientation="vertical" aria-label="Resize right pane"
@@ -76,7 +70,7 @@ const MAX_BOTTOM_RATIO = 0.7;
                         @click="togglePane('right')">{{rightCollapsed ? '‹' : '›'}}</button>
             </div>
             <section class="workspace-pane workspace-layout-right" aria-label="Right pane" v-show="!rightCollapsed">
-                <div class="workspace-slot" data-workspace-slot="right"></div>
+                <div class="workspace-slot" data-workspace-slot="right"><v-content select="workspace-right"></v-content></div>
             </section>
         </div>
         <div class="workspace-splitter workspace-splitter-bottom"
@@ -89,7 +83,7 @@ const MAX_BOTTOM_RATIO = 0.7;
                     @click="togglePane('bottom')">{{bottomCollapsed ? '▲' : '▼'}}</button>
         </div>
         <section class="workspace-pane workspace-layout-bottom" aria-label="Bottom pane" v-show="!bottomCollapsed">
-            <div class="workspace-slot" data-workspace-slot="bottom"></div>
+            <div class="workspace-slot" data-workspace-slot="bottom"><v-content select="workspace-bottom"></v-content></div>
         </section>
     </div>`
 })
@@ -122,7 +116,6 @@ export class WorkspaceLayoutComponent implements AfterViewInit, OnDestroy {
 
     private moveHandler?: (event: any) => void;
     private upHandler?: (event: any) => void;
-    private projected = false;
 
     constructor(@Optional() protected elementRef?: ElementRef) {
         markElementRefRaw(elementRef);
@@ -138,45 +131,11 @@ export class WorkspaceLayoutComponent implements AfterViewInit, OnDestroy {
 
     onAfterViewInit(): void {
         markElementRefRaw(this.layoutRoot);
-        this.mountProjectedContent();
         this.bindResizeListeners();
     }
 
     onDestroy(): void {
         this.unbindResizeListeners();
-    }
-
-    /** Move declarative slot wrappers into the template's scrollable panes. */
-    mountProjectedContent(): void {
-        if (this.projected) {
-            return;
-        }
-        const root = this.layoutRoot?.nativeElement as any;
-        if (!root) {
-            return;
-        }
-        const host = root.closest?.('workspace-layout') || root.parentElement || this.hostElement;
-        const nodes: ProjectionNode[] = (host as any)?.[PROJECTION_NODES] || [];
-        if (!nodes.length) {
-            return;
-        }
-        const slots: Record<string, any> = {};
-        root.querySelectorAll?.('[data-workspace-slot]')?.forEach?.((slot: any) => {
-            slots[slot.getAttribute('data-workspace-slot')] = slot;
-        });
-        if (!Object.keys(slots).length) {
-            return;
-        }
-        nodes.forEach((node, index) => {
-            const tag = String(node.tagName || '').toLowerCase();
-            const key = tag.startsWith('workspace-') ? tag.slice('workspace-'.length) : '';
-            const fallback = ['left', 'center', 'right', 'bottom'][index];
-            const slot = slots[key] || slots[fallback];
-            if (slot && typeof slot.appendChild === 'function') {
-                slot.appendChild(node as any);
-            }
-        });
-        this.projected = true;
     }
 
     beginResize(event: any, pane: WorkspacePane): void {

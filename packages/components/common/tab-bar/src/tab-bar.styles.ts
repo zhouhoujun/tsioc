@@ -1,3 +1,5 @@
+import { installStyleSheet } from '../../src/styles';
+
 /**
  * Default skin for the generic tab bar.
  *
@@ -143,14 +145,5 @@ tab-bar {
 
 /** Install the shared tab strip skin once per document (idempotent). */
 export function installTabBarStyles(doc?: Document | null): void {
-    if (!doc || typeof doc.createElement !== 'function' || !doc.head) {
-        return;
-    }
-    if (doc.getElementById && doc.getElementById(TAB_BAR_STYLE_ID)) {
-        return;
-    }
-    const style = doc.createElement('style');
-    style.setAttribute('id', TAB_BAR_STYLE_ID);
-    style.textContent = TAB_BAR_CSS;
-    doc.head.appendChild(style);
+    installStyleSheet(doc, TAB_BAR_STYLE_ID, TAB_BAR_CSS);
 }

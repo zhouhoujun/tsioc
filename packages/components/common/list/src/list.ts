@@ -1,6 +1,7 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, Computed } from '@tsdi/components';
 
-export interface ListEntry {
+/** One rendered row of a {@link ListComponent}. */
+export interface ListItem {
     id: string;
     label: string;
     value?: string;
@@ -11,7 +12,10 @@ export interface ListEntry {
     selected?: boolean | string;
 }
 
-export interface ListPage<T extends { id: string } = ListEntry> {
+/** @deprecated Use {@link ListItem}. */
+export type ListEntry = ListItem;
+
+export interface ListPage<T extends { id: string } = ListItem> {
     items: T[];
     /** Whether a further page exists. Defaults to false for array results. */
     hasMore?: boolean;
@@ -19,12 +23,12 @@ export interface ListPage<T extends { id: string } = ListEntry> {
     nextCursor?: string;
 }
 
-export type ListLoader<T extends { id: string } = ListEntry> = (
+export type ListLoader<T extends { id: string } = ListItem> = (
     cursor?: string
 ) => Promise<ListPage<T> | T[]>;
 
 /** Loads the page *before* the current window (scrolling up / older history). */
-export type ListPreviousLoader<T extends { id: string } = ListEntry> = (
+export type ListPreviousLoader<T extends { id: string } = ListItem> = (
     cursor?: string
 ) => Promise<ListPage<T> | T[]>;
 
@@ -45,7 +49,7 @@ function normalizePage<T extends { id: string }>(result: ListPage<T> | T[] | und
  * are ignored and duplicate ids are dropped, so wheel/key bursts cannot enqueue
  * the same page twice.
  */
-export class ListPager<T extends { id: string } = ListEntry> {
+export class ListPager<T extends { id: string } = ListItem> {
     items: T[] = [];
     cursor?: string;
     hasMore = true;
@@ -158,11 +162,11 @@ export class ListPager<T extends { id: string } = ListEntry> {
         <label class="list-panel-context" v-for="line in contextLines">{{line}}</label>
         <div class="list" role="listbox" aria-label="{{listLabel}}">
             <label class="list-more list-previous" v-show="hasPrevious || windowStart > 0" @click="onReachStart">{{olderLabel}}</label>
-            <div id="{{item.id}}" class="list-row {{item.className}}" role="option" aria-selected="{{item.selected}}" v-for="item in renderedItems" @click="selectItem(item)">
+            <div id="{{item.id}}" class="list-row {{item.className}}" role="option" aria-selected="{{item.selected}}" v-for="item in renderedItems" trackBy="id" @click="selectItem(item)">
                 <span class="list-label">{{item.label}}</span>
                 <span class="list-description" v-if="item.description"> {{item.description}}</span>
             </div>
-            <label class="list-empty" v-show="!items.length && !loading">{{empty}}</label>
+            <label class="list-empty" v-show="!items.length && !loading">{{emptyLabel}}</label>
             <label class="list-loading" v-show="loading">{{loadingLabel}}</label>
             <label class="list-error" v-show="error">{{error}}</label>
             <button class="list-more" v-show="hasMore && !loading && atWindowEnd" @click="loadMore">{{moreLabel}}</button>
@@ -173,19 +177,23 @@ export class ListPager<T extends { id: string } = ListEntry> {
     </div>`
 })
 export class ListComponent {
-    @Attribute() items: ListEntry[] = [];
+    @Attribute() items: ListItem[] = [];
     @Attribute() cursor?: string;
     @Attribute() hasMore = true;
     @Attribute() loading = false;
     @Attribute() error = '';
-    @Attribute() empty = '';
+    @Attribute() emptyLabel = '';
+    /** @deprecated Use `emptyLabel`. */
+    @Attribute()
+    get empty(): string { return this.emptyLabel; }
+    set empty(value: string) { this.emptyLabel = String(value ?? ''); }
     @Attribute() loadingLabel = 'Loading…';
     @Attribute() moreLabel = 'Load more';
     @Attribute() olderLabel = 'Load older';
     @Attribute() ariaLabel = 'List';
     @Attribute() loadPage?: ListLoader;
     @Attribute() loadPreviousPage?: ListPreviousLoader;
-    @Attribute() selectAction?: (item: ListEntry) => void;
+    @Attribute() selectAction?: (item: ListItem) => void;
     @Attribute() selectValueAction?: (value: string) => void;
     @Attribute() closeAction?: () => void;
     @Attribute() closeLabel = '✕';
@@ -210,7 +218,7 @@ export class ListComponent {
     @Attribute() windowOffset = 0;
     @Attribute() hasPrevious = false;
     @Attribute() previousCursor?: string;
-    protected readonly pager = new ListPager<ListEntry>();
+    protected readonly pager = new ListPager<ListItem>();
 
     onInit(): void {
         if (this.autoLoad && !this.items.length && this.loadPage) {
@@ -219,6 +227,7 @@ export class ListComponent {
     }
 
     /** Index of the first painted row after clamping to the loaded items. */
+    @Computed()
     get windowStart(): number {
         const size = Math.floor(Number(this.visibleItems) || 0);
         if (size <= 0) {
@@ -229,13 +238,15 @@ export class ListComponent {
     }
 
     /** Whether the painted window reaches the last loaded row. */
+    @Computed()
     get atWindowEnd(): boolean {
         const size = Math.floor(Number(this.visibleItems) || 0);
         return size <= 0 || this.windowStart + size >= this.items.length;
     }
 
     /** Rows painted for the current window (large data never paints at once). */
-    get renderedItems(): ListEntry[] {
+    @Computed()
+    get renderedItems(): ListItem[] {
         const size = Math.floor(Number(this.visibleItems) || 0);
         if (size <= 0) {
             return this.items;
@@ -318,7 +329,7 @@ export class ListComponent {
         }
     }
 
-    selectItem(item: ListEntry): void {
+    selectItem(item: ListItem): void {
         if (item?.disabled) {
             return;
         }

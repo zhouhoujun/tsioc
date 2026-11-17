@@ -1,4 +1,4 @@
-import { Attribute, Component, OnDestroy, noReact } from '@tsdi/components';
+import { Attribute, Component, Computed, OnDestroy, noReact } from '@tsdi/components';
 import { FormControl, FormGroup } from '@tsdi/components/forms';
 import {
     DynamicFormChange,
@@ -10,6 +10,9 @@ import {
     DynamicFormValidateResult
 } from './dynamic-form.types';
 import { buildDynamicValidators, dynamicFormMessage } from './dynamic-form.validation';
+import { DYNAMIC_FORM_TEMPLATE } from './dynamic-form.template';
+import { createDynamicFormClasses, DynamicFormClasses } from './dynamic-form.classes';
+import * as editor from './dynamic-form.editors';
 
 function normalizeField(field: any): DynamicFormField {
     return {
@@ -76,207 +79,15 @@ let dynamicFormSequence = 0;
  */
 @Component({
     selector: 'dynamic-form',
-    template: `
-    <div [class]="formClass()">
-        <div [class]="schemaErrorClass()" v-if="schemaError">{{schemaError}}</div>
-        <div v-else>
-            <div [class]="noFieldsClass()" v-if="!visibleGroups.length">{{emptyLabel}}</div>
-            <div [class]="groupClass()" v-for="group in visibleGroups">
-                <div [class]="groupTitleClass()" v-if="group.label">{{group.label}}</div>
-                <div [class]="groupFieldsClass()">
-                <div [class]="fieldClass(field)" v-for="field in group.fields" data-field-key="{{field.key}}">
-                    <div [class]="labelRowClass()" v-if="field.type !== 'hidden'">
-                        <label [class]="labelClass()">{{fieldLabel(field)}}<span [class]="requiredClass()" v-if="isRequired(field)">*</span></label>
-                        <span class="df-field-actions">
-                        <button [class]="jsonModeClass()" v-if="field.type === 'json'" type="button"
-                            @click="toggleJsonMode(field)">{{isJsonRaw(field) ? (schema.jsonFieldsLabel || 'Fields') : (schema.jsonTextLabel || 'JSON')}}</button>
-                        <button [class]="resetClass()" v-if="canReset(field)" type="button"
-                            title="{{resetFieldLabel}}" aria-label="{{resetFieldLabel}}"
-                            @click="resetField(field)">↺</button>
-                        </span>
-                    </div>
-                    <div [class]="typedRowClass()" v-if="isTypedInput(field)">
-                        <select [class]="typedTypeClass()" data-value-type="true"
-                            [disabled]="field.disabled || field.readonly"
-                            @change="changeTypedType(field, $event)">
-                            <option value="literal" [selected]="typedType(field) === 'literal'">Literal</option>
-                            <option value="msg" [selected]="typedType(field) === 'msg'">msg</option>
-                            <option value="flow" [selected]="typedType(field) === 'flow'">flow</option>
-                            <option value="global" [selected]="typedType(field) === 'global'">global</option>
-                            <option value="env" [selected]="typedType(field) === 'env'">env</option>
-                        </select>
-                    </div>
-                    <div [class]="inputWrapClass(field)" v-if="isTextInput(field) || isNumberInput(field)">
-                        <input v-if="isTextInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
-                            [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
-                            [readOnly]="field.readonly" [disabled]="field.disabled"
-                            [min]="field.min" [max]="field.max" [step]="field.step"
-                            aria-required="{{isRequired(field) ? 'true' : 'false'}}"
-                            aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                            @input="changeText(field, $event)" @blur="blurField(field)" />
-                        <input v-if="isNumberInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
-                            [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
-                            [readOnly]="field.readonly" [disabled]="field.disabled"
-                            [min]="field.min" [max]="field.max" [step]="field.step || 1"
-                            aria-required="{{isRequired(field) ? 'true' : 'false'}}"
-                            aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                            @input="changeText(field, $event)" @blur="blurField(field)" />
-                        <span [class]="inputUnitClass()" v-if="field.unit">{{field.unit}}</span>
-                    </div>
-                    <label v-if="isBooleanInput(field)" [class]="checkboxRowClass()">
-                        <input type="checkbox" [checked]="fieldChecked(field)"
-                            [disabled]="field.disabled || field.readonly"
-                            @change="changeBoolean(field, $event)" />
-                        <span v-if="field.description">{{field.description}}</span>
-                    </label>
-                    <select v-if="isSelectInput(field)" [class]="selectClass(field)"
-                        [value]="fieldValue(field)"
-                        [disabled]="field.disabled || field.readonly"
-                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
-                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        @change="changeSelect(field, $event)">
-                        <option v-for="option in field.options" [value]="option.value"
-                            [selected]="sameOptionValue(option.value, fieldValue(field))"
-                            [disabled]="option.disabled">{{option.label}}</option>
-                    </select>
-                    <div v-if="isRadioInput(field)" [class]="optionsClass()" role="radiogroup"
-                        aria-required="{{isRequired(field) ? 'true' : 'false'}}">
-                        <label v-for="option in field.options" data-option-value="{{option.value}}"
-                            [class]="optionClass(field, option)">
-                            <input type="radio" name="{{formId}}-{{field.key}}"
-                                [value]="option.value"
-                                [checked]="sameOptionValue(option.value, fieldValue(field))"
-                                [disabled]="field.disabled || field.readonly || option.disabled"
-                                @change="chooseOption(field, option.value)" />
-                            <span>{{option.label}}</span>
-                        </label>
-                    </div>
-                    <textarea v-if="isJsonTextArea(field)" [class]="textareaClass(field)"
-                        data-dynamic-code="json"
-                        [value]="jsonTextValue(field)" [rows]="field.rows || 4"
-                        [placeholder]="field.placeholder || ''" [readOnly]="field.readonly" [disabled]="field.disabled"
-                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
-                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
-                    <div v-if="isJsonObjectEditor(field)" [class]="keyValueClass()">
-                        <div [class]="keyValueRowClass()" v-for="(entry, index) in jsonEntries(field)">
-                            <input [class]="keyValueKeyClass()" type="text" [value]="entry.key"
-                                [placeholder]="field.keyPlaceholder || 'Key'"
-                                @input="changeJsonEntryKey(field, index, $event)" />
-                            <input [class]="keyValueValueClass()" type="text" [value]="entry.display"
-                                [placeholder]="field.valuePlaceholder || 'Value'"
-                                @input="changeJsonEntryValue(field, index, $event)" />
-                            <button [class]="listRemoveClass()" type="button" @click="removeJsonEntry(field, index)">{{field.removeLabel || '✕'}}</button>
-                        </div>
-                        <button [class]="listAddClass()" type="button" @click="addJsonEntry(field)">{{field.addLabel || '+ Add'}}</button>
-                    </div>
-                    <textarea v-if="isTextareaInput(field)" [class]="textareaClass(field)"
-                        [value]="fieldValue(field)" [rows]="field.rows || (field.type === 'json' ? 4 : 3)"
-                        [placeholder]="field.placeholder || ''" [readOnly]="field.readonly" [disabled]="field.disabled"
-                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
-                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
-                    <textarea v-if="isCodeInput(field)" [class]="codeClass(field)"
-                        data-dynamic-code="{{field.language || 'javascript'}}"
-                        data-code-value="{{encodeValue(field)}}"
-                        data-code-suggestions="{{suggestionData(field)}}"
-                        [value]="fieldValue(field)" [rows]="field.rows || 8"
-                        [readOnly]="field.readonly" [disabled]="field.disabled"
-                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
-                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
-                    <div v-if="isListInput(field)" [class]="listClass()">
-                        <div [class]="listRowClass()" v-for="(item, index) in listItems(field)">
-                            <div [class]="listFieldsClass()">
-                                <div v-for="child in field.itemFields" v-if="isListItemVisible(child, item)">
-                                    <div [class]="listItemFieldClass(child)" data-field-key="{{child.key}}">
-                                        <label [class]="labelClass()">{{fieldLabel(child)}}<span [class]="requiredClass()" v-if="isRequired(child)">*</span></label>
-                                        <div [class]="typedRowClass()" v-if="isTypedInput(child)">
-                                            <select [class]="typedTypeClass()" data-value-type="true"
-                                                [disabled]="child.disabled || child.readonly"
-                                                @change="changeListItemTypedType(field, listIndex(field, item), child, $event)">
-                                                <option value="literal" [selected]="listItemTypedType(item, child) === 'literal'">Literal</option>
-                                                <option value="msg" [selected]="listItemTypedType(item, child) === 'msg'">msg</option>
-                                                <option value="flow" [selected]="listItemTypedType(item, child) === 'flow'">flow</option>
-                                                <option value="global" [selected]="listItemTypedType(item, child) === 'global'">global</option>
-                                                <option value="env" [selected]="listItemTypedType(item, child) === 'env'">env</option>
-                                            </select>
-                                        </div>
-                                        <input v-if="isTextInput(child) || isNumberInput(child)" [class]="inputClass(child)"
-                                            type="{{htmlType(child)}}"
-                                            [value]="listItemValue(item, child)"
-                                            [placeholder]="child.placeholder || ''"
-                                            [min]="child.min" [max]="child.max" [step]="child.step"
-                                            @input="changeListItem(field, listIndex(field, item), child, $event)" />
-                                        <textarea v-if="isTextareaInput(child) || isJsonInput(child)" [class]="textareaClass(child)"
-                                            [value]="listItemValue(item, child)"
-                                            [rows]="child.rows || (isJsonInput(child) ? 3 : 2)"
-                                            [placeholder]="child.placeholder || ''"
-                                            @input="changeListItem(field, listIndex(field, item), child, $event)"></textarea>
-                                        <label v-if="isBooleanInput(child)" [class]="checkboxRowClass()">
-                                            <input type="checkbox" [checked]="listItemChecked(item, child)"
-                                                @change="changeListItem(field, listIndex(field, item), child, $event)" />
-                                        </label>
-                                        <select v-if="isSelectInput(child)" [class]="selectClass(child)"
-                                            [value]="listItemValue(item, child)"
-                                            [disabled]="child.disabled || child.readonly"
-                                            @change="changeListItemSelect(field, listIndex(field, item), child, $event)">
-                                            <option v-for="option in child.options" [value]="option.value"
-                                                [selected]="sameOptionValue(option.value, listItemValue(item, child))"
-                                                [disabled]="option.disabled">{{option.label}}</option>
-                                        </select>
-                                        <div v-if="isRadioInput(child)" [class]="optionsClass()">
-                                            <label v-for="option in child.options" data-option-value="{{option.value}}"
-                                                [class]="optionClass(child, listItemValue(item, child))">
-                                                <input type="radio" name="{{formId}}-{{field.key}}-{{index}}-{{child.key}}"
-                                                    [value]="option.value"
-                                                    [checked]="sameOptionValue(option.value, listItemValue(item, child))"
-                                                    @change="changeListItemOption(field, listIndex(field, item), child, option.value)" />
-                                                <span>{{option.label}}</span>
-                                            </label>
-                                        </div>
-                                        <div [class]="errorClass()" v-if="listItemError(child, item)">{{listItemError(child, item)}}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button [class]="listRemoveClass()" type="button" @click="removeListItem(field, listIndex(field, item))">{{field.removeLabel || '✕'}}</button>
-                        </div>
-                        <button [class]="listAddClass()" type="button" @click="addListItem(field)">{{field.addLabel || '+ Add'}}</button>
-                    </div>
-                    <div v-if="isKeyValueInput(field)" [class]="keyValueClass()">
-                        <div [class]="keyValueRowClass()" v-for="(entry, index) in keyValueEntries(field)">
-                            <input [class]="keyValueKeyClass()" type="text"
-                                [value]="entry.key"
-                                [placeholder]="field.keyPlaceholder || 'Key'"
-                                @input="changeKeyValueKey(field, index, $event)" />
-                            <label v-if="keyValueValueType(field) === 'boolean'" [class]="checkboxRowClass()">
-                                <input type="checkbox" [checked]="entry.value === true"
-                                    @change="changeKeyValueValue(field, index, $event)" />
-                            </label>
-                            <input v-else [class]="keyValueValueClass()"
-                                type="{{keyValueValueType(field) === 'number' ? 'number' : 'text'}}"
-                                [value]="entry.value"
-                                [placeholder]="field.valuePlaceholder || 'Value'"
-                                @input="changeKeyValueValue(field, index, $event)" />
-                            <button [class]="listRemoveClass()" type="button" @click="removeKeyValue(field, index)">{{field.removeLabel || '✕'}}</button>
-                        </div>
-                        <button [class]="listAddClass()" type="button" @click="addKeyValue(field)">{{field.addLabel || '+ Add'}}</button>
-                    </div>
-                    <input v-if="field.type === 'hidden'" type="hidden" [value]="fieldValue(field)" />
-                    <div [class]="errorClass()" v-if="errorFor(field)">{{errorFor(field)}}</div>
-                    <div [class]="hintClass()" v-if="field.description && !isBooleanInput(field)">{{field.description}}</div>
-                </div>
-                </div>
-            </div>
-            <div [class]="actionsClass()" v-if="showActions">
-                <button type="button" [class]="buttonClass(false)" @click="resetForm()">{{resetText}}</button>
-                <button type="button" [class]="buttonClass(true)" @click="submit()">{{submitText}}</button>
-            </div>
-        </div>
-    </div>`
+    template: DYNAMIC_FORM_TEMPLATE
 })
 export class DynamicFormComponent implements OnDestroy {
     @Attribute() classPrefix = 'df';
+
+    @Computed()
+    get classes(): DynamicFormClasses {
+        return createDynamicFormClasses(this.classPrefix);
+    }
     @Attribute() showActions = false;
     @Attribute() submitLabel = '';
     @Attribute() resetLabel = '';
@@ -305,7 +116,6 @@ export class DynamicFormComponent implements OnDestroy {
     protected destroyed = false;
     protected syncQueued = false;
     protected syncMode: 'none' | 'soft' | 'force' = 'none';
-    protected visibleGroupsCache?: { schema: DynamicFormSchema; version: number; groups: Array<{ label: string; fields: DynamicFormField[] }> };
     protected readonly formId = `dynamic-form-${++dynamicFormSequence}`;
     protected jsonRawFields: Record<string, boolean> = {};
 
@@ -408,15 +218,12 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     /** Visible fields grouped under their section headers. */
+    @Computed()
     get visibleGroups(): Array<{ label: string; fields: DynamicFormField[] }> {
-        // Read the tracked inputs on every call so bindings keep their
-        // subscriptions even when the cache hits.
-        const schema = this._schema;
-        const version = this.valueVersion;
-        const cache = this.visibleGroupsCache;
-        if (cache && cache.schema === schema && cache.version === version) {
-            return cache.groups;
-        }
+        // `valueVersion` is the reactive signal for noReact form controls; the
+        // computed cache invalidates when it or the schema/field conditions
+        // change.
+        void this.valueVersion;
         const groups: Array<{ label: string; fields: DynamicFormField[] }> = [];
         const index: Record<string, number> = {};
         this.schemaFields().forEach(field => {
@@ -432,7 +239,6 @@ export class DynamicFormComponent implements OnDestroy {
             }
             groups[position].fields.push(field);
         });
-        this.visibleGroupsCache = { schema, version, groups };
         return groups;
     }
 
@@ -509,7 +315,7 @@ export class DynamicFormComponent implements OnDestroy {
         this.validationErrors = next;
     }
 
-    protected fieldDisplayValue(field: DynamicFormField, value: any): any {
+    fieldDisplayValue(field: DynamicFormField, value: any): any {
         if (field.type === 'json') {
             if (typeof value === 'string') {
                 return value;
@@ -539,7 +345,7 @@ export class DynamicFormComponent implements OnDestroy {
         return this.fieldDisplayValue(field, field.defaultValue);
     }
 
-    protected coerceValue(field: DynamicFormField, value: any): any {
+    coerceValue(field: DynamicFormField, value: any): any {
         if (field.type === 'checkbox' || field.type === 'switch') {
             return !!value;
         }
@@ -549,7 +355,7 @@ export class DynamicFormComponent implements OnDestroy {
         return value;
     }
 
-    protected updateValue(field: DynamicFormField, raw: any): void {
+    updateValue(field: DynamicFormField, raw: any): void {
         const control = this.form?.get(field.key);
                 if (!control) {
             return;
@@ -570,310 +376,97 @@ export class DynamicFormComponent implements OnDestroy {
         this.validityAction?.(!!this.form?.valid, this.form?.errors || null);
     }
 
-    isJsonRaw(field: DynamicFormField): boolean {
+    setEditorValue(field: DynamicFormField, value: any): void {
+        this._value = { ...(this._value || {}), [field.key]: value };
+        this.valueSignature = JSON.stringify(this._value);
+        this.updateValue(field, value);
+    }
+
+    isJsonRawField(field: DynamicFormField): boolean {
         return this.jsonRawFields[field.key] === true;
     }
 
-    isJsonObjectValue(field: DynamicFormField): boolean {
-        const value = this.fieldValue(field);
-        return value === undefined || value === null || value === '' || (typeof value === 'object' && !Array.isArray(value));
-    }
-
-    isJsonObjectEditor(field: DynamicFormField): boolean {
-        return field.type === 'json' && !this.isJsonRaw(field) && this.isJsonObjectValue(field);
-    }
-
-    isJsonTextArea(field: DynamicFormField): boolean {
-        return field.type === 'json' && (!this.isJsonObjectEditor(field));
-    }
-
-    jsonTextValue(field: DynamicFormField): string {
-        const value = this.fieldValue(field);
-        if (typeof value === 'string') {
-            return value;
-        }
-        try {
-            return JSON.stringify(value ?? {}, null, 2);
-        } catch {
-            return '';
-        }
-    }
-
-    toggleJsonMode(field: DynamicFormField): void {
-        if (this.isJsonRaw(field)) {
-            const next = { ...this.jsonRawFields };
-            delete next[field.key];
-            this.jsonRawFields = next;
-            const value = this.fieldValue(field);
-            if (typeof value === 'string' && value.trim()) {
-                try {
-                    this.updateValue(field, JSON.parse(value));
-                } catch {
-                    // Keep the raw string until it becomes valid JSON.
-                }
-            }
-            return;
-        }
-        this.jsonRawFields = { ...this.jsonRawFields, [field.key]: true };
-    }
-
-    jsonEntries(field: DynamicFormField): Array<{ key: string; value: any; display: string }> {
-        const value = this.fieldValue(field);
-        if (!value || typeof value !== 'object' || Array.isArray(value)) {
-            return [];
-        }
-        return Object.entries(value).map(([key, item]) => ({
-            key,
-            value: item,
-            display: typeof item === 'object' && item !== null ? JSON.stringify(item) : String(item ?? '')
-        }));
-    }
-
-    protected updateJsonObject(field: DynamicFormField, entries: Array<{ key: string; value: any }>): void {
-        const value: Record<string, any> = {};
-        for (const entry of entries) {
-            value[entry.key] = entry.value;
-        }
-        this._value = { ...(this._value || {}), [field.key]: value };
-        this.valueSignature = JSON.stringify(this._value);
-        this.updateValue(field, value);
-    }
-
-    addJsonEntry(field: DynamicFormField): void {
-        const entries = this.jsonEntries(field).map(entry => ({ key: entry.key, value: entry.value }));
-        const used = new Set(entries.map(entry => entry.key));
-        let index = entries.length + 1;
-        while (used.has(`field${index}`)) {
-            index += 1;
-        }
-        entries.push({ key: `field${index}`, value: '' });
-        this.updateJsonObject(field, entries);
-    }
-
-    removeJsonEntry(field: DynamicFormField, index: number): void {
-        const entries = this.jsonEntries(field).map(entry => ({ key: entry.key, value: entry.value }));
-        entries.splice(index, 1);
-        this.updateJsonObject(field, entries);
-    }
-
-    changeJsonEntryKey(field: DynamicFormField, index: number, event: any): void {
-        const entries = this.jsonEntries(field).map(entry => ({ key: entry.key, value: entry.value }));
-        entries[index] = { ...entries[index], key: String(event?.target?.value ?? '') };
-        this.updateJsonObject(field, entries);
-    }
-
-    changeJsonEntryValue(field: DynamicFormField, index: number, event: any): void {
-        const entries = this.jsonEntries(field).map(entry => ({ key: entry.key, value: entry.value }));
-        const raw = String(event?.target?.value ?? '');
-        let value: any = raw;
-        if (raw !== '') {
-            try {
-                value = JSON.parse(raw);
-            } catch {
-                value = raw;
-            }
+    setJsonRawField(field: DynamicFormField, raw: boolean): void {
+        const next = { ...this.jsonRawFields };
+        if (raw) {
+            next[field.key] = true;
         } else {
-            value = '';
+            delete next[field.key];
         }
-        entries[index] = { ...entries[index], value };
-        this.updateJsonObject(field, entries);
+        this.jsonRawFields = next;
     }
 
-    jsonModeClass(): string { return `${this.classPrefix}-field-mode`; }
+    isJsonRaw(field: DynamicFormField): boolean { return editor.isJsonRaw(this, field); }
 
-    isKeyValueInput(field: DynamicFormField): boolean {
-        return field.type === 'keyvalue';
-    }
+    isJsonObjectValue(field: DynamicFormField): boolean { return editor.isJsonObjectValue(this, field); }
 
-    keyValueValueType(field: DynamicFormField): 'text' | 'number' | 'boolean' {
-        return field.valueType === 'number' || field.valueType === 'boolean' ? field.valueType : 'text';
-    }
+    isJsonObjectEditor(field: DynamicFormField): boolean { return editor.isJsonObjectEditor(this, field); }
 
-    keyValueEntries(field: DynamicFormField): Array<{ key: string; value: any }> {
-        const value = this.fieldValue(field);
-        if (!value || typeof value !== 'object' || Array.isArray(value)) {
-            return [];
-        }
-        return Object.entries(value).map(([key, item]) => ({ key, value: item }));
-    }
+    isJsonTextArea(field: DynamicFormField): boolean { return editor.isJsonTextArea(this, field); }
 
-    protected updateKeyValue(field: DynamicFormField, entries: Array<{ key: string; value: any }>): void {
-        const value: Record<string, any> = {};
-        for (const entry of entries) {
-            value[entry.key] = entry.value;
-        }
-        this._value = { ...(this._value || {}), [field.key]: value };
-        this.valueSignature = JSON.stringify(this._value);
-        this.updateValue(field, value);
-    }
+    jsonTextValue(field: DynamicFormField): string { return editor.jsonTextValue(this, field); }
 
-    addKeyValue(field: DynamicFormField): void {
-        const entries = this.keyValueEntries(field);
-        const used = new Set(entries.map(entry => entry.key));
-        let index = entries.length + 1;
-        while (used.has(`field${index}`)) {
-            index += 1;
-        }
-        const valueType = this.keyValueValueType(field);
-        entries.push({
-            key: `field${index}`,
-            value: valueType === 'number' ? 0 : valueType === 'boolean' ? false : ''
-        });
-        this.updateKeyValue(field, entries);
-    }
+    toggleJsonMode(field: DynamicFormField): void { editor.toggleJsonMode(this, field); }
 
-    removeKeyValue(field: DynamicFormField, index: number): void {
-        const entries = this.keyValueEntries(field);
-        entries.splice(index, 1);
-        this.updateKeyValue(field, entries);
-    }
+    jsonEntries(field: DynamicFormField): Array<{ key: string; value: any; display: string }> { return editor.jsonEntries(this, field); }
 
-    changeKeyValueKey(field: DynamicFormField, index: number, event: any): void {
-        const entries = this.keyValueEntries(field);
-        entries[index] = { ...entries[index], key: String(event?.target?.value ?? '') };
-        this.updateKeyValue(field, entries);
-    }
 
-    changeKeyValueValue(field: DynamicFormField, index: number, event: any): void {
-        const entries = this.keyValueEntries(field);
-        const type = this.keyValueValueType(field);
-        const raw = type === 'boolean' ? !!event?.target?.checked : event?.target?.value;
-        const value = type === 'number'
-            ? (raw === '' ? 0 : Number(raw))
-            : type === 'boolean' ? !!raw : raw;
-        entries[index] = { ...entries[index], value };
-        this.updateKeyValue(field, entries);
-    }
+    addJsonEntry(field: DynamicFormField): void { editor.addJsonEntry(this, field); }
 
-    keyValueClass(): string { return `${this.classPrefix}-keyvalue`; }
-    keyValueRowClass(): string { return `${this.classPrefix}-keyvalue-row`; }
-    keyValueKeyClass(): string { return `${this.classPrefix}-input ${this.classPrefix}-keyvalue-key`; }
-    keyValueValueClass(): string { return `${this.classPrefix}-input ${this.classPrefix}-keyvalue-value`; }
+    removeJsonEntry(field: DynamicFormField, index: number): void { editor.removeJsonEntry(this, field, index); }
 
-    isJsonInput(field: DynamicFormField): boolean {
-        return field.type === 'json';
-    }
+    changeJsonEntryKey(field: DynamicFormField, index: number, event: any): void { editor.changeJsonEntryKey(this, field, index, event); }
 
-    isListInput(field: DynamicFormField): boolean {
-        return field.type === 'list';
-    }
+    changeJsonEntryValue(field: DynamicFormField, index: number, event: any): void { editor.changeJsonEntryValue(this, field, index, event); }
 
-    listIndex(field: DynamicFormField, item: any): number {
-        const index = this.listItems(field).indexOf(item);
-        return index < 0 ? 0 : index;
-    }
 
-    listItems(field: DynamicFormField): any[] {
-        const value = this.fieldValue(field);
-        return Array.isArray(value) ? value : [];
-    }
+    isKeyValueInput(field: DynamicFormField): boolean { return editor.isKeyValueInput(field); }
 
-    listItemValue(item: any, child: DynamicFormField): any {
-        const value = item?.[child.key];
-        return this.fieldDisplayValue(child, value === undefined ? child.defaultValue : value);
-    }
+    keyValueValueType(field: DynamicFormField): 'text' | 'number' | 'boolean' { return editor.keyValueValueType(field); }
 
-    listItemChecked(item: any, child: DynamicFormField): boolean {
-        return item?.[child.key] === true;
-    }
+    keyValueEntries(field: DynamicFormField): Array<{ key: string; value: any }> { return editor.keyValueEntries(this, field); }
 
-    isListItemVisible(child: DynamicFormField, item: any): boolean {
-        const condition = child.visibleWhen;
-        if (!condition) {
-            return true;
-        }
-        const value = item?.[condition.key];
-        if (condition.equals !== undefined) return String(value) === String(condition.equals);
-        if (condition.notEquals !== undefined) return String(value) !== String(condition.notEquals);
-        if (condition.in) return condition.in.map(entry => String(entry)).includes(String(value));
-        if (condition.truthy !== undefined) return condition.truthy ? !!value : !value;
-        if (condition.falsy !== undefined) return condition.falsy ? !value : !!value;
-        return true;
-    }
 
-    listItemError(child: DynamicFormField, item: any): string {
-        const value = this.listItemValue(item, child);
-        const empty = value === undefined || value === null || value === '';
-        if (child.required && empty) {
-            return this.messages?.required || child.errorMessages?.required || 'Required';
-        }
-        return '';
-    }
+    addKeyValue(field: DynamicFormField): void { editor.addKeyValue(this, field); }
 
-    protected updateList(field: DynamicFormField, items: any[]): void {
-                const list = [...items];
-        const key = field.key;
-        this._value = { ...(this._value || {}), [key]: list };
-        this.valueSignature = JSON.stringify(this._value);
-        this.updateValue(field, list);
-    }
+    removeKeyValue(field: DynamicFormField, index: number): void { editor.removeKeyValue(this, field, index); }
 
-    addListItem(field: DynamicFormField): void {
-        const items = this.listItems(field).map(item => ({ ...item }));
-        const next: Record<string, any> = {};
-        (field.itemFields || []).forEach(child => {
-            next[child.key] = child.defaultValue !== undefined ? child.defaultValue : (child.type === 'checkbox' || child.type === 'switch' ? false : '');
-        });
-        items.push(next);
-        this.updateList(field, items);
-    }
+    changeKeyValueKey(field: DynamicFormField, index: number, event: any): void { editor.changeKeyValueKey(this, field, index, event); }
 
-    removeListItem(field: DynamicFormField, index: number): void {
-        const items = this.listItems(field).map(item => ({ ...item }));
-        items.splice(index, 1);
-        this.updateList(field, items);
-    }
+    changeKeyValueValue(field: DynamicFormField, index: number, event: any): void { editor.changeKeyValueValue(this, field, index, event); }
 
-    changeListItem(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void {
-        const items = this.listItems(field).map(item => ({ ...item }));
-        let raw = child.type === 'checkbox' || child.type === 'switch'
-            ? !!event?.target?.checked
-            : event?.target?.value;
-        if (child.typed === true && typeof raw === 'string' && raw !== '') {
-            const type = this.listItemTypedType(items[index], child);
-            if (type !== 'literal' && !/^(msg|flow|global|env)\./.test(raw)) {
-                raw = `${type}.${raw}`;
-            }
-        }
-        items[index] = { ...(items[index] || {}), [child.key]: this.coerceValue(child, raw) };
-        this.updateList(field, items);
-    }
 
-    listItemTypedType(item: any, child: DynamicFormField): string {
-        const value = String(this.listItemValue(item, child) ?? '');
-        const match = /^(msg|flow|global|env)\./.exec(value);
-        return match ? match[1] : 'literal';
-    }
+    isJsonInput(field: DynamicFormField): boolean { return editor.isJsonInput(field); }
 
-    changeListItemTypedType(
-        field: DynamicFormField,
-        index: number,
-        child: DynamicFormField,
-        event: any
-    ): void {
-        const item = this.listItems(field)[index] || {};
-        const current = String(this.listItemValue(item, child) ?? '');
-        const text = current.replace(/^(msg|flow|global|env)\./, '');
-        const next = String(event?.target?.value || 'literal');
-        this.changeListItemOption(field, index, child, next === 'literal' ? text : `${next}.${text}`);
-    }
+    isListInput(field: DynamicFormField): boolean { return editor.isListInput(field); }
 
-    changeListItemOption(field: DynamicFormField, index: number, child: DynamicFormField, value: any): void {
-        const items = this.listItems(field).map(item => ({ ...item }));
-        items[index] = { ...(items[index] || {}), [child.key]: value };
-        this.updateList(field, items);
-    }
+    listIndex(field: DynamicFormField, item: any): number { return editor.listIndex(this, field, item); }
 
-    changeListItemSelect(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void {
-        this.changeListItemOption(field, index, child, this.optionValue(child, event?.target?.value));
-    }
+    listItems(field: DynamicFormField): any[] { return editor.listItems(this, field); }
 
-    listClass(): string { return `${this.classPrefix}-list`; }
-    listRowClass(): string { return `${this.classPrefix}-list-row`; }
-    listFieldsClass(): string { return `${this.classPrefix}-list-fields`; }
-    listItemFieldClass(_child: DynamicFormField): string { return `${this.classPrefix}-list-field`; }
-    listAddClass(): string { return `${this.classPrefix}-list-add`; }
-    listRemoveClass(): string { return `${this.classPrefix}-list-remove`; }
+    listItemValue(item: any, child: DynamicFormField): any { return editor.listItemValue(this, item, child); }
+
+    listItemChecked(item: any, child: DynamicFormField): boolean { return editor.listItemChecked(item, child); }
+
+    isListItemVisible(child: DynamicFormField, item: any): boolean { return editor.isListItemVisible(child, item); }
+
+    listItemError(child: DynamicFormField, item: any): string { return editor.listItemError(this, child, item); }
+
+
+    addListItem(field: DynamicFormField): void { editor.addListItem(this, field); }
+
+    removeListItem(field: DynamicFormField, index: number): void { editor.removeListItem(this, field, index); }
+
+    changeListItem(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void { editor.changeListItem(this, field, index, child, event); }
+
+    listItemTypedType(item: any, child: DynamicFormField): string { return editor.listItemTypedType(this, item, child); }
+
+    changeListItemTypedType(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void { editor.changeListItemTypedType(this, field, index, child, event); }
+
+    changeListItemOption(field: DynamicFormField, index: number, child: DynamicFormField, value: any): void { editor.changeListItemOption(this, field, index, child, value); }
+
+    changeListItemSelect(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void { editor.changeListItemSelect(this, field, index, child, event); }
+
 
     changeText(field: DynamicFormField, event: any): void {
         let raw = event?.target?.value;
@@ -1163,14 +756,6 @@ export class DynamicFormComponent implements OnDestroy {
     // Class helpers (keep skins configurable through `classPrefix`)
     // -----------------------------------------------------------------
 
-    formClass(): string { return `${this.classPrefix}-form dynamic-form`; }
-    schemaErrorClass(): string { return `${this.classPrefix}-schema-error`; }
-    typedRowClass(): string { return `${this.classPrefix}-field-value-type-row`; }
-    typedTypeClass(): string { return `${this.classPrefix}-field-value-type`; }
-    groupClass(): string { return `${this.classPrefix}-field-group`; }
-    groupFieldsClass(): string { return `${this.classPrefix}-fields`; }
-    groupTitleClass(): string { return `${this.classPrefix}-field-group-title`; }
-    noFieldsClass(): string { return `${this.classPrefix}-no-fields`; }
     fieldClass(field: DynamicFormField): string {
         const span = field.span || 'full';
         return [
@@ -1179,10 +764,6 @@ export class DynamicFormComponent implements OnDestroy {
             field.fieldClass || ''
         ].filter(Boolean).join(' ');
     }
-    labelRowClass(): string { return `${this.classPrefix}-field-label-row`; }
-    labelClass(): string { return `${this.classPrefix}-field-label`; }
-    requiredClass(): string { return `${this.classPrefix}-field-required`; }
-    resetClass(): string { return `${this.classPrefix}-field-reset`; }
     inputClass(field: DynamicFormField): string {
         return [ `${this.classPrefix}-input`, field.inputClass || '' ].filter(Boolean).join(' ');
     }
@@ -1192,27 +773,18 @@ export class DynamicFormComponent implements OnDestroy {
     inputWrapClass(field: DynamicFormField): string {
         return `${this.classPrefix}-input-wrap${field.unit ? ' has-unit' : ''}`;
     }
-    inputUnitClass(): string { return `${this.classPrefix}-input-unit`; }
     textareaClass(field: DynamicFormField): string {
         return [ `${this.classPrefix}-textarea`, field.inputClass || '' ].filter(Boolean).join(' ');
     }
     codeClass(field: DynamicFormField): string {
         return [ `${this.classPrefix}-textarea`, `${this.classPrefix}-code-editor`, field.inputClass || '' ].filter(Boolean).join(' ');
     }
-    checkboxRowClass(): string { return `${this.classPrefix}-checkbox-row`; }
-    optionsClass(): string { return `${this.classPrefix}-options`; }
     optionClass(field: DynamicFormField, option: DynamicFormOption): string {
         return [
             `${this.classPrefix}-option`,
             this.sameOptionValue(option.value, this.fieldValue(field)) ? 'is-selected' : '',
             option.disabled || field.disabled || field.readonly ? 'is-disabled' : ''
         ].filter(Boolean).join(' ');
-    }
-    errorClass(): string { return `${this.classPrefix}-field-error`; }
-    hintClass(): string { return `${this.classPrefix}-field-hint`; }
-    actionsClass(): string { return `${this.classPrefix}-actions`; }
-    buttonClass(primary: boolean): string {
-        return [ `${this.classPrefix}-btn`, primary ? `${this.classPrefix}-btn-primary` : '' ].filter(Boolean).join(' ');
     }
 
     onDestroy(): void {

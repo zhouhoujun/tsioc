@@ -50,7 +50,8 @@ export class GridLayoutSpec {
         expect(grid.querySelector('.a')?.textContent).toBe('A');
         expect(grid.querySelector('.b')?.textContent).toBe('B');
         expect(grid.querySelectorAll('.grid-item').length).toBe(3);
-        expect(grid.querySelector('.grid-layout-items')?.children.length).toBe(3);
+        const outlet = grid.querySelector('.grid-layout-items v-content') as HTMLElement;
+        expect(outlet.querySelectorAll('.grid-item').length).toBe(3);
         expect(grid.getAttribute('style') || '').toContain('repeat(2, minmax(0, 1fr))');
         expect(grid.getAttribute('style') || '').toContain('16px');
         const wide = grid.querySelector('.grid-item') as HTMLElement;

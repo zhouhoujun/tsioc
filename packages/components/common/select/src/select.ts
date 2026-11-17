@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, Computed } from '@tsdi/components';
 import { clampSelectIndex, resolveSelectWindow } from '../../src/input';
 import { getDisplayWidth } from '../../src/display-width';
 
@@ -16,11 +16,11 @@ export interface SelectOption {
 @Component({
     selector: 'select-list',
     template: `
-    <div class="console-panel select-list {{widthClass}}" role="dialog" aria-label="{{accessibilityLabel}}">
+    <div class="console-panel select-list {{widthClass}}" role="dialog" aria-label="{{ariaLabel}}">
         <div class="select-shell {{suggestion ? 'select-suggestions' : 'select-card'}}">
             <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
             <select class="select-core"
-                aria-label="{{accessibilityLabel}}"
+                aria-label="{{ariaLabel}}"
                 title="{{title}}" hint="{{hint}}" meta="{{meta}}"
                 options="{{optionsJson}}"
                 selectedIndex="{{selectedIndexText}}"
@@ -30,10 +30,10 @@ export interface SelectOption {
                 optionActiveClass="select-option is-selected"
                 @keydown="emitKeydown($event)"
                 @select-option="emitSelection($event)"></select>
-            <div class="select-rows" role="listbox" aria-label="{{accessibilityLabel}}">
+            <div class="select-rows" role="listbox" aria-label="{{ariaLabel}}">
                 <label class="select-title" v-if="title">{{title}}</label>
                 <label class="select-meta" v-if="meta">{{meta}}</label>
-                <label class="{{option.className}}" role="option" aria-selected="{{option.selected}}" v-for="option in visibleOptions" @click="choose(option.index)">
+                <label class="{{option.className}}" role="option" aria-selected="{{option.selected}}" v-for="option in visibleOptions" trackBy="index" @click="choose(option.index)">
                     <span class="select-option-label">{{option.label}}</span><span class="select-option-description" v-if="option.description">{{option.description}}</span>
                 </label>
                 <label class="select-detail" v-for="line in detailLines" v-if="detailLines && detailLines.length">{{line}}</label>
@@ -50,7 +50,11 @@ export class SelectComponent {
     @Attribute() hint = '';
     @Attribute() meta = '';
     @Attribute() detailLines: string[] = [];
-    @Attribute() accessibilityLabel = 'Selection menu';
+    @Attribute() ariaLabel = 'Selection menu';
+    /** @deprecated Use `ariaLabel` (kept for existing hosts). */
+    @Attribute()
+    get accessibilityLabel(): string { return this.ariaLabel; }
+    set accessibilityLabel(value: string) { this.ariaLabel = String(value ?? ''); }
     @Attribute() closeLabel = '✕';
     /** Composer-attached suggestion lists keep the opencode rails. */
     @Attribute() suggestion = false;
@@ -66,14 +70,15 @@ export class SelectComponent {
     @Attribute() closeAction?: () => void;
     @Attribute() keydownAction?: (event: KeyboardEvent) => void;
 
+    @Computed()
     get widthClass(): string {
         return this.fitContent ? `dialog-w-${this.resolveContentWidth()}` : '';
     }
 
     /** Fit blocking menus to their widest title/option; suggestions stay full width. */
     protected resolveContentWidth(): number {
-        const max = Math.max(24, Math.min(88, Number(this.maxWidth) || 88));
-        const min = Math.max(24, Math.min(max, Number(this.minWidth) || 28));
+        const max = Math.max(8, Number(this.maxWidth) || 88);
+        const min = Math.max(8, Math.min(max, Number(this.minWidth) || 28));
         const widthOptions = this.widthOptions?.length ? this.widthOptions : (this.options || []);
         const longest = Math.max(
             0,
@@ -89,6 +94,7 @@ export class SelectComponent {
     }
 
     /** Windowed rows for renderers that paint real elements (browser). */
+    @Computed()
     get visibleOptions(): Array<{ index: number; label: string; value: string; description: string; selected: boolean; className: string }> {
         const options = Array.isArray(this.options) ? this.options : [];
         const selected = clampSelectIndex(options.length, Number(this.selectedIndex));
@@ -117,10 +123,12 @@ export class SelectComponent {
         this.selectAction?.(option.value);
     }
 
+    @Computed()
     get optionsJson(): string {
         return JSON.stringify(this.options || []);
     }
 
+    @Computed()
     get detailLinesJson(): string {
         return this.detailLines?.length ? JSON.stringify(this.detailLines) : '';
     }

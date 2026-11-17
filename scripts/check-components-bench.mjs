@@ -37,7 +37,9 @@ const budgets = {
     'v-for reorder': 1000,
     'viewchild lookups': 1500,
     'viewchildren append': 800,
-    'writes after 500 toggles': 100
+    'writes after 500 toggles': 100,
+    'common display width (ansi)': 60,
+    'common slice width (ansi/cjk)': 60
 };
 
 const result = spawnSync('npm', ['run', 'bench'], {

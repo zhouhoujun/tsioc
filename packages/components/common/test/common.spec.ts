@@ -233,4 +233,21 @@ export class ComponentUtilitiesTest {
         expect(panel.summary).toEqual('summary');
         expect(panel.items.map(item => `${item.lineNumber}${item.text}`)).toEqual(['  1| first', '  2| second']);
     }
+
+    @Test('panel emits expanded changes and exposes per-part styles')
+    panelContract() {
+        const panel = new PanelComponent();
+        const states: boolean[] = [];
+        panel.expandedChange.subscribe(value => states.push(value));
+
+        panel.expanded = true;
+        panel.expanded = true;
+        panel.expanded = 'false';
+        expect(states).toEqual([true, false]);
+
+        panel.styles = { shell: { color: 'red' }, number: { color: 'blue' } };
+        expect(panel.shellStyle).toEqual({ color: 'red' });
+        expect(panel.numberStyle).toEqual({ color: 'blue' });
+        expect(panel.lineStyle).toEqual(undefined);
+    }
 }

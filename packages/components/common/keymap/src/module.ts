@@ -6,3 +6,6 @@ import { KeymapPanelComponent } from './keymap-panel';
     exports: [KeymapPanelComponent]
 })
 export class KeymapPanelModule {}
+
+/** Short entry-point alias: `@tsdi/components/common/keymap` exports both. */
+export const KeymapModule = KeymapPanelModule;

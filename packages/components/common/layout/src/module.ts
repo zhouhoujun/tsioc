@@ -6,3 +6,6 @@ import { WorkspaceLayoutComponent } from './workspace-layout';
     exports: [WorkspaceLayoutComponent]
 })
 export class WorkspaceLayoutModule {}
+
+/** Short entry-point alias: `@tsdi/components/common/layout` exports both. */
+export const LayoutModule = WorkspaceLayoutModule;

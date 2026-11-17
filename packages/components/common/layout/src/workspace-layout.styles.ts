@@ -1,3 +1,5 @@
+import { installStyleSheet } from '../../src/styles';
+
 /**
  * Styles for the generic workspace layout. Hosts can install it with
  * `installWorkspaceLayoutStyles(document)` or link the string themselves.
@@ -40,49 +42,49 @@ workspace-layout {
 /* Themeable scrollbars for every layout scroll container. */
 .workspace-pane,
 .workspace-slot,
-.workspace-slot > workspace-left,
-.workspace-slot > workspace-center,
-.workspace-slot > workspace-right,
-.workspace-slot > workspace-bottom {
+.workspace-slot workspace-left,
+.workspace-slot workspace-center,
+.workspace-slot workspace-right,
+.workspace-slot workspace-bottom {
     scrollbar-width: var(--workspace-scrollbar-width, thin);
     scrollbar-color: var(--workspace-scrollbar-thumb, #cbd5e1) var(--workspace-scrollbar-track, transparent);
 }
 
 .workspace-pane::-webkit-scrollbar,
 .workspace-slot::-webkit-scrollbar,
-.workspace-slot > workspace-left::-webkit-scrollbar,
-.workspace-slot > workspace-center::-webkit-scrollbar,
-.workspace-slot > workspace-right::-webkit-scrollbar,
-.workspace-slot > workspace-bottom::-webkit-scrollbar {
+.workspace-slot workspace-left::-webkit-scrollbar,
+.workspace-slot workspace-center::-webkit-scrollbar,
+.workspace-slot workspace-right::-webkit-scrollbar,
+.workspace-slot workspace-bottom::-webkit-scrollbar {
     width: var(--workspace-scrollbar-size, 10px);
     height: var(--workspace-scrollbar-size, 10px);
 }
 
 .workspace-pane::-webkit-scrollbar-track,
 .workspace-slot::-webkit-scrollbar-track,
-.workspace-slot > workspace-left::-webkit-scrollbar-track,
-.workspace-slot > workspace-center::-webkit-scrollbar-track,
-.workspace-slot > workspace-right::-webkit-scrollbar-track,
-.workspace-slot > workspace-bottom::-webkit-scrollbar-track {
+.workspace-slot workspace-left::-webkit-scrollbar-track,
+.workspace-slot workspace-center::-webkit-scrollbar-track,
+.workspace-slot workspace-right::-webkit-scrollbar-track,
+.workspace-slot workspace-bottom::-webkit-scrollbar-track {
     background: var(--workspace-scrollbar-track, transparent);
 }
 
 .workspace-pane::-webkit-scrollbar-thumb,
 .workspace-slot::-webkit-scrollbar-thumb,
-.workspace-slot > workspace-left::-webkit-scrollbar-thumb,
-.workspace-slot > workspace-center::-webkit-scrollbar-thumb,
-.workspace-slot > workspace-right::-webkit-scrollbar-thumb,
-.workspace-slot > workspace-bottom::-webkit-scrollbar-thumb {
+.workspace-slot workspace-left::-webkit-scrollbar-thumb,
+.workspace-slot workspace-center::-webkit-scrollbar-thumb,
+.workspace-slot workspace-right::-webkit-scrollbar-thumb,
+.workspace-slot workspace-bottom::-webkit-scrollbar-thumb {
     background: var(--workspace-scrollbar-thumb, #cbd5e1);
     border-radius: 999px;
 }
 
 .workspace-pane::-webkit-scrollbar-thumb:hover,
 .workspace-slot::-webkit-scrollbar-thumb:hover,
-.workspace-slot > workspace-left::-webkit-scrollbar-thumb:hover,
-.workspace-slot > workspace-center::-webkit-scrollbar-thumb:hover,
-.workspace-slot > workspace-right::-webkit-scrollbar-thumb:hover,
-.workspace-slot > workspace-bottom::-webkit-scrollbar-thumb:hover {
+.workspace-slot workspace-left::-webkit-scrollbar-thumb:hover,
+.workspace-slot workspace-center::-webkit-scrollbar-thumb:hover,
+.workspace-slot workspace-right::-webkit-scrollbar-thumb:hover,
+.workspace-slot workspace-bottom::-webkit-scrollbar-thumb:hover {
     background: var(--workspace-scrollbar-thumb-hover, #94a3b8);
 }
 
@@ -133,10 +135,10 @@ workspace-layout {
     flex-direction: column;
 }
 
-.workspace-slot > workspace-left,
-.workspace-slot > workspace-center,
-.workspace-slot > workspace-right,
-.workspace-slot > workspace-bottom {
+.workspace-slot workspace-left,
+.workspace-slot workspace-center,
+.workspace-slot workspace-right,
+.workspace-slot workspace-bottom {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
@@ -222,14 +224,5 @@ workspace-layout {
 `;
 
 export function installWorkspaceLayoutStyles(doc?: Document | null): void {
-    if (!doc || typeof doc.createElement !== 'function' || !doc.head) {
-        return;
-    }
-    if (doc.getElementById && doc.getElementById(WORKSPACE_LAYOUT_STYLE_ID)) {
-        return;
-    }
-    const style = doc.createElement('style');
-    style.setAttribute('id', WORKSPACE_LAYOUT_STYLE_ID);
-    style.textContent = WORKSPACE_LAYOUT_CSS;
-    doc.head.appendChild(style);
+    installStyleSheet(doc, WORKSPACE_LAYOUT_STYLE_ID, WORKSPACE_LAYOUT_CSS);
 }

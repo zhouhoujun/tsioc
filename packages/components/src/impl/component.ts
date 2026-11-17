@@ -318,7 +318,20 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         const index = this.contentQueryIndex;
         if (typeof selector === 'string') {
             const nodes = index?.queryByName(selector) ?? [];
-            return nodes.map(node => this.readNodeValue(node, query, propertyType, this.contentInjector));
+            if (nodes.length) {
+                return nodes.map(node => this.readNodeValue(node, query, propertyType, this.contentInjector));
+            }
+            // Mirror `resolveContentChild`: a tag/CSS selector (for example
+            // `panel-summary`, `[data-tab-id]`) falls back to the renderer's
+            // projection query when no local ref matches.
+            const projected = (this._elementRef?.nativeElement as any)?.[PROJECTION_NODES] as RNode[] | undefined;
+            const renderer = this._hostView?.injector.get(Renderer, null);
+            const found = projected?.length && renderer
+                ? renderer.querySelectorAll(projected, selector)
+                : null;
+            return found?.length
+                ? found.map(node => this.readNodeValue(node, query, propertyType, this.contentInjector))
+                : [];
         }
         return (index?.queryByType(selector as AbstractType) ?? [])
             .map(entry => this.readNodeValue(entry.node, query, propertyType, this.contentInjector));

@@ -1,3 +1,5 @@
+import { installStyleSheet } from '../../src/styles';
+
 /**
  * Styles for the renderer-neutral dynamic form. Hosts can install them with
  * `installDynamicFormStyles(document)` or link the exported string.
@@ -368,14 +370,5 @@ export const DYNAMIC_FORM_CSS = `
 `;
 
 export function installDynamicFormStyles(doc?: Document | null): void {
-    if (!doc || typeof doc.createElement !== 'function' || !doc.head) {
-        return;
-    }
-    if (doc.getElementById && doc.getElementById(DYNAMIC_FORM_STYLE_ID)) {
-        return;
-    }
-    const style = doc.createElement('style');
-    style.setAttribute('id', DYNAMIC_FORM_STYLE_ID);
-    style.textContent = DYNAMIC_FORM_CSS;
-    doc.head.appendChild(style);
+    installStyleSheet(doc, DYNAMIC_FORM_STYLE_ID, DYNAMIC_FORM_CSS);
 }

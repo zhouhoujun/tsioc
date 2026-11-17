@@ -39,7 +39,7 @@ export class MenuBarComponentTest {
         const selected: string[] = [];
         const states: boolean[] = [];
         menu.selectAction = id => selected.push(id);
-        menu.openChange = open => states.push(open);
+        menu.openChange.subscribe(open => states.push(open));
 
         menu.toggle();
         expect(menu.open).toBe(true);

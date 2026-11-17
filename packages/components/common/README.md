@@ -25,8 +25,8 @@ host application (agent-ui, workflow designer, admin UI, ...)
 
 Rules this layer must keep (see the root `AGENTS.md`):
 
-- `common` may import `@tsdi/components` and `@tsdi/ioc`, nothing else from the
-  platform packages.
+- `common` may import `@tsdi/components`, `@tsdi/components/forms` and
+  `@tsdi/ioc`, nothing else from the platform packages.
 - It must never import `@tsdi/components/html` or `@tsdi/components/console`, and
   must not touch Node APIs (`node:`, `process`, `Buffer`, `fs`, ...).
 - Platform differences are expressed through stable semantics — shared class
@@ -35,6 +35,10 @@ Rules this layer must keep (see the root `AGENTS.md`):
 - Widgets receive everything they need as `@Attribute()` inputs/callbacks and
   expose only semantic state. The HTML renderer paints DOM, the console renderer
   paints terminal cells.
+- `workspace-layout`, `grid-layout` and the DOM-only parts of `menu-bar` /
+  `tabs` (pointer capture, document listeners) require a DOM document. They
+  degrade to sequential/no-op rendering on the console renderer; do not add a
+  second platform branch in the widget.
 
 ## Entry points
 
@@ -44,6 +48,28 @@ Rules this layer must keep (see the root `AGENTS.md`):
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
 | `@tsdi/components/common/<widget>` | one widget package: `alert`, `dialog`, `dynamic-form`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `panel`, `select`, `status-list`, `tab-bar`, `tabs`, `toast` |
+
+## Naming conventions
+
+- **Entry = feature slug** (`panel`, `list`, `dialog`, `alert`, `keymap`,
+  `layout`, `toast`, ...). Widgets are imported from their own entry point, not
+  from the root index.
+- **Module = owning component + `Module`**: `PanelComponent` → `PanelModule`,
+  `AlertDialogComponent` → `AlertDialogModule`, `KeymapPanelComponent` →
+  `KeymapPanelModule`, `WorkspaceLayoutComponent` → `WorkspaceLayoutModule`.
+  `AlertModule`, `KeymapModule` and `LayoutModule` are short compatibility
+  aliases exported from the same entry points.
+- **Component names name the feature**; the selector may add a role suffix to
+  avoid native tags (`dialog-panel`, `select-list`). Selectors are kebab-case.
+- **Data types**: `*Item` for rendered rows (`ListItem`, `TabItem`,
+  `MenuBarItem`), `*Option` for choices (`SelectOption`), `*Entry` for queue /
+  persisted records (`ToastEntry`), `*Source` for injected providers
+  (`TabBarSource`), `*Change` for `EventEmitter` outputs (`expandedChange`),
+  `*Action` for callback inputs (`selectAction`, `closeAction`).
+- **Deprecated aliases stay one minor version**: `ListEntry` → `ListItem`,
+  `PanelLineItem` → `PanelItem`, `SelectComponent.accessibilityLabel` →
+  `ariaLabel`, `ListComponent.empty` → `emptyLabel`,
+  `ToastStackComponent.entries` → `rows`.
 
 ## Bootstrapping
 
@@ -177,18 +203,18 @@ fields. Actions are callback attributes (`selectAction`, `closeAction`,
 
 | Selector | Component / module | Purpose and main attributes |
 | --- | --- | --- |
-| `panel` | `PanelComponent` / `PanelModule` | Collapsible detail panel. `summary`, `meta`, `selection`, `hint`, `items` (`PanelLineItem[]`), `expanded` + `expandedChange`, `locale`, `expandText`/`collapseText`. Project slots with `<panel-header>`, `<panel-summary>`, `<panel-body>` children; clicking the header/summary/toggle flips `expanded`. |
-| `list` | `ListComponent` / `ListModule` | Windowed list with paging. `items`, `cursor`, `hasMore`, `hasPrevious`, `loading`, `error`, `empty`, labels (`loadingLabel`/`moreLabel`/`olderLabel`), `loadPage`/`loadPreviousPage`, `selectAction`/`selectValueAction`/`closeAction`, `visibleItems`, `windowOffset`, detail props (`detailLines`, `contextLines`). |
-| `select-list` | `SelectComponent` / `SelectModule` | Select menu overlay. `options` (`SelectOption[]`), `selectedIndex`, `visibleCount`, `title`, `hint`, `detailLines`, `suggestion`, `fitContent`, `selectAction`, `closeAction`, `keydownAction`. |
+| `panel` | `PanelComponent` / `PanelModule` | Collapsible detail panel. `summary`, `meta`, `selection`, `hint`, `items` (`PanelItem[]`), `expanded` + `expandedChange` (also emitted when a host writes `expanded`), `styles` per-part skin, `locale`, `expandText`/`collapseText`. Project slots with `<panel-header>`, `<panel-summary>`, `<panel-body>` children; clicking the header/summary/toggle flips `expanded`. |
+| `list` | `ListComponent` / `ListModule` | Windowed list with paging. `items`, `cursor`, `hasMore`, `hasPrevious`, `loading`, `error`, `emptyLabel` (`empty` alias), labels (`loadingLabel`/`moreLabel`/`olderLabel`), `loadPage`/`loadPreviousPage`, `selectAction`/`selectValueAction`/`closeAction`, `visibleItems`, `windowOffset`, detail props (`detailLines`, `contextLines`). |
+| `select-list` | `SelectComponent` / `SelectModule` | Select menu overlay. `options` (`SelectOption[]`), `selectedIndex`, `visibleCount`, `title`, `hint`, `detailLines`, `suggestion`, `fitContent`, `maxWidth`/`minWidth`, `ariaLabel` (`accessibilityLabel` alias), `selectAction`, `closeAction`, `keydownAction`. |
 | `dialog-panel` | `DialogComponent` / `DialogModule` | Dialog chrome: `title`, `lines`, `hint`, `ariaLabel`, `closeLabel`, `closeAction`, `maxWidth`/`minWidth`, `horizontalChrome`. |
-| `alert-dialog` | `AlertDialogComponent` / `AlertModule` | Dialog with semantic tone and primary action: adds `tone` (`info`/`success`/`warning`/`error`), `actionLabel`, `acceptAction`. |
-| `toast-stack` | `ToastStackComponent` / `ToastModule` | Renders `ToastEntry[]`; the host provides `ToastService` (queue: `show`, `dismiss`, `clear`, `subscribe`) and feeds `items` to the stack. |
+| `alert-dialog` | `AlertDialogComponent` / `AlertDialogModule` (`AlertModule` alias) | Dialog with semantic tone and primary action: adds `tone` (`info`/`success`/`warning`/`error`), `actionLabel`, `acceptAction`. |
+| `toast-stack` | `ToastStackComponent` / `ToastModule` | Renders `ToastEntry[]`; the host provides `ToastService` (queue: `show`, `dismiss`, `clear`, `subscribe`) and feeds `items` to the stack. Derived `rows` carry the padded display text (`entries` alias). |
 | `status-list` | `StatusListComponent` / `StatusListModule` | `title`, `hint`, `items` (`StatusListItem[]`) for compact key/value/status rows. |
-| `keymap-panel` | `KeymapPanelComponent` / `KeymapPanelModule` | Keyboard help: `items` or `groups`, `grouped`, `title`, `hint`. |
+| `keymap-panel` | `KeymapPanelComponent` / `KeymapPanelModule` (`KeymapModule` alias) | Keyboard help: `items` or `groups`, `grouped`, `title`, `hint`. |
 | `tabs` | `TabsComponent` / `TabsModule` | Tab strip + content host driven by `TabsSource`; `stripOnly` renders only the bar, `activeId`, `select`/`create`/`close`. |
 | `tab-bar` | `TabBarComponent` / `TabBarModule` | Shared strip only. Data comes from a `TabBarSource` attribute or the `TAB_BAR_SOURCE` token; `items` carry `active`, `showClose` (`true`/`false`/`'hover'`), `disabled`. |
-| `menu-bar` | `MenuBarComponent` / `MenuBarModule` | Application menu with one level of flyout submenus. `groups` (`MenuBarGroup[]`), `label`, `icon`, `caret`, `align`, `open`, `selectAction`, `openChange`. |
-| `workspace-layout` | `WorkspaceLayoutComponent` / `WorkspaceLayoutModule` | Left/center/right/bottom panes with draggable splitters. `leftRatio`/`rightRatio`/`bottomRatio`, `min*`, `resizable`, `*Collapsed`, `resizeAction`/`collapseAction`, `resizePane`/`togglePane` helpers. Style with `installWorkspaceLayoutStyles(document)`. |
+| `menu-bar` | `MenuBarComponent` / `MenuBarModule` | Application menu with one level of flyout submenus. `groups` (`MenuBarGroup[]`), `label`, `icon`, `caret`, `align`, `open`, `selectAction`, `openChange` (`EventEmitter<boolean>`). |
+| `workspace-layout` | `WorkspaceLayoutComponent` / `WorkspaceLayoutModule` (`LayoutModule` alias) | Left/center/right/bottom panes with draggable splitters. `leftRatio`/`rightRatio`/`bottomRatio`, `min*`, `resizable`, `*Collapsed`, `resizeAction`/`collapseAction`, `resizePane`/`togglePane` helpers. Style with `installWorkspaceLayoutStyles(document)`. |
 | `grid-layout` / `grid-item` | `GridLayoutComponent` / `GridLayoutModule` | CSS-grid container. `columns`, `rows`, `gap`, `rowGap`, `columnGap`, `autoFit`, `minItemWidth`, `areas`, `flow`, `alignItems`, `justifyItems`, `fill`; items accept `span`, `rowSpan`, `start`, `end`, `rowStart`/`rowEnd`, `area`. |
 | `markdown-table` / `markdown-code` | `MarkdownTableComponent` / `MarkdownModule` | Semantic table/code shells consumed by both renderers. Table cells are `MarkdownToken[]` + align; code lines are `MarkdownToken[][]` with tone classes. |
 | `dynamic-form` | `DynamicFormComponent` / `DynamicFormModule` | JSON-schema form with shared validation. See the main `@tsdi/components` README for the full schema, validation and host API. |
@@ -208,8 +234,10 @@ fields. Actions are callback attributes (`selectAction`, `closeAction`,
 </panel>
 ```
 
-The projected tags are read through `PROJECTION_NODES`; the console and DOM
-renderers project real children, so no platform flag is needed.
+The slotted tags are resolved through `@ContentChildren(...)` (the renderers keep
+the projected nodes in `PROJECTION_NODES`), so dynamic `v-for` / `v-if` content
+is reflected without a platform flag. Query refreshes after structural changes
+land in a microtask.
 
 ## Styling
 
@@ -221,8 +249,13 @@ shared skins with the exported helpers — `installDynamicFormStyles`,
 `installTabBarStyles`, `installWorkspaceLayoutStyles` — while the console
 renderer resolves the same class names through the compiled console stylesheet
 (`components/console/styles/console.scss`, shipped as
-`default-styles.generated.ts`). Do not hard-code colors in widget templates —
-use the theme variables documented under each widget's styles module.
+`default-styles.generated.ts`). All installers go through the shared
+`installStyleSheet(doc, id, css)` helper and are idempotent. Widgets without an
+`install*Styles` helper (`panel`, `list`, `select`, `dialog`, `alert`,
+`toast-stack`, `status-list`, `keymap-panel`, `markdown`) only emit structure
+classes; the host skin owns their colors. Do not hard-code colors in widget
+templates — use the theme variables documented under each widget's styles
+module.
 
 ## Exports
 
@@ -232,6 +265,7 @@ export { BaseComponentsModule, ThemeService, applyThemeToDocument }
 export { getDisplayWidth, sliceByDisplayWidth, padByDisplayWidth, fitByDisplayWidth }
 export * from './input'          // shared prompt/select/history helpers
 export { markElementRefRaw }
+export { installStyleSheet }
 
 // widgets are imported from their own entry points
 export * from '@tsdi/components/common/panel'   // etc.

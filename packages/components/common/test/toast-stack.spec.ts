@@ -20,7 +20,7 @@ export class ToastStackComponentTest {
         stack.closeAction = id => dismissed.push(id);
 
         expect(stack.visible).toEqual(true);
-        expect(stack.entries.map(item => item.message)).toEqual(['Copied', 'Saved']);
+        expect(stack.rows.map(item => item.text)).toEqual(['Copied', 'Saved']);
         expect(stack.closeLabel).toEqual('✕');
 
         stack.dismiss('toast-2');
@@ -31,9 +31,9 @@ export class ToastStackComponentTest {
     hidesWhenEmpty() {
         const stack = new ToastStackComponent();
         expect(stack.visible).toEqual(false);
-        expect(stack.entries).toEqual([]);
+        expect(stack.rows).toEqual([]);
         stack.items = undefined as unknown as ToastEntry[];
         expect(stack.visible).toEqual(false);
-        expect(stack.entries).toEqual([]);
+        expect(stack.rows).toEqual([]);
     }
 }

@@ -2,6 +2,7 @@ import { Application } from '@tsdi/core';
 import { Component, ComponentsModule, QueryList, ViewChild, ViewChildren, reactive } from '../src';
 import { DefaultReactiveEffect } from '../src/impl/effect';
 import { XmlTemplateModule } from '../xml/src';
+import { getDisplayWidth, sliceByDisplayWidth } from '../common/src/display-width';
 
 /**
  * Components performance harness.
@@ -264,6 +265,27 @@ async function benchToggleWrites(): Promise<void> {
     }
 }
 
+async function benchCommonWidth(): Promise<void> {
+    const styled = '\x1b[31mred\x1b[0m '.repeat(4000);
+    const plain = 'hello 世界 '.repeat(2000);
+    let sink = 0;
+    let start = now();
+    for (let i = 0; i < 40; i++) {
+        sink += getDisplayWidth(styled);
+    }
+    report('common display width (ansi)', ms(start), '40 x 52k');
+
+    start = now();
+    for (let i = 0; i < 40; i++) {
+        sink += sliceByDisplayWidth(styled, 120).length;
+        sink += getDisplayWidth(plain);
+    }
+    report('common slice width (ansi/cjk)', ms(start), '40 x 52k');
+    if (sink === -1) {
+        console.log('');
+    }
+}
+
 const ROUNDS = Math.max(1, Math.floor(Number(process.env.COMPONENTS_BENCH_ROUNDS || '3')) || 1);
 
 async function main(): Promise<void> {
@@ -276,6 +298,7 @@ async function main(): Promise<void> {
         await benchList();
         await benchViewQueries();
         await benchToggleWrites();
+        await benchCommonWidth();
     }
     printResults();
 }

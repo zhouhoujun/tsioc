@@ -23,6 +23,7 @@ class ContentHost {
     @ContentChild('pc') item?: ProjectedItem;
     @ContentChild('dyn') dynamic?: ProjectedItem;
     @ContentChildren(ProjectedItem) items?: QueryList<ProjectedItem>;
+    @ContentChildren('[data-tag]') tagged?: QueryList<any>;
 }
 
 @Component({
@@ -30,8 +31,8 @@ class ContentHost {
     imports: [ContentHost, ProjectedItem],
     template: `<div>
         <content-host>
-            <projected-item #pc label="P" slot="header"></projected-item>
-            <projected-item label="Q" class="body-item"></projected-item>
+            <projected-item #pc label="P" slot="header" data-tag="one"></projected-item>
+            <projected-item label="Q" class="body-item" data-tag="two"></projected-item>
         </content-host>
     </div>`
 })
@@ -101,6 +102,7 @@ export class ContentChildQueryTest {
             expect(parent.host?.item).toBeInstanceOf(ProjectedItem);
             expect(parent.host?.item?.label).toBe('P');
             expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['P', 'Q']);
+            expect(parent.host?.tagged?.length).toEqual(2);
             expect(parent.leaked).toBeUndefined();
             const root = ref.hostView.rootNodes[0] as any;
             expect((root.querySelector('.header-slot') as any)?.querySelectorAll('.projected')[0]?.textContent).toBe('P');

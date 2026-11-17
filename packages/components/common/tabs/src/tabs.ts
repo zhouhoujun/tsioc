@@ -2,22 +2,18 @@ import {
     AfterViewInit,
     Attribute,
     Component,
+    ContentChildren,
     ElementRef,
-    PROJECTION_NODES,
-    RNode,
+    QueryList,
+    Renderer,
     ViewChild
 } from '@tsdi/components';
-import { Inject, Optional } from '@tsdi/ioc';
-import { ApplicationContext } from '@tsdi/core';
+import { Inject, Injector, Optional } from '@tsdi/ioc';
 import { TAB_BAR_SOURCE, TabBarComponent, TabBarSource } from '../../tab-bar/src/tab-bar';
 import { markElementRefRaw } from '../../src/raw-element';
 
 /** Generic tabs source: the shared strip plus the pane that is currently shown. */
 export type TabsSource = TabBarSource;
-
-interface ProjectionNode extends RNode {
-    tagName?: string;
-}
 
 /**
  * Generic tabs: the shared {@link TabBarComponent} strip plus a pane container
@@ -41,7 +37,7 @@ interface ProjectionNode extends RNode {
     template: `
     <div class="tabs" data-active-tab="{{syncKey}}">
         <tab-bar :source="barSource"></tab-bar>
-        <div class="tabs-panes" #panes v-show="!stripOnly"></div>
+        <div class="tabs-panes" #panes v-show="!stripOnly"><v-content select="tab-pane"></v-content></div>
     </div>`
 })
 export class TabsComponent implements AfterViewInit {
@@ -51,13 +47,16 @@ export class TabsComponent implements AfterViewInit {
     @Attribute() activeId = '';
 
     @ViewChild('panes', ElementRef) panes?: ElementRef;
+    /** Projected panes, resolved through the framework content-query index. */
+    @ContentChildren('[data-tab-id]') paneRefs?: QueryList<ElementRef>;
 
-    protected projected = false;
+    protected viewReady = false;
 
     constructor(
         @Optional() protected elementRef?: ElementRef,
         @Optional() @Inject(TAB_BAR_SOURCE) protected injectedSource?: TabBarSource,
-        @Optional() @Inject(ApplicationContext) protected app?: ApplicationContext | null
+        @Optional() protected injector?: Injector | null,
+        @Optional() protected renderer?: Renderer | null
     ) {
         markElementRefRaw(elementRef);
     }
@@ -68,11 +67,29 @@ export class TabsComponent implements AfterViewInit {
         if (this.source) {
             return this.source;
         }
-        // A component declared in an opt-in module gets a module-scoped token
-        // instance; the host's source lives on the application context. Prefer
-        // the context source so both share the same session state.
-        this.resolvedSource ??= this.app?.get?.(TAB_BAR_SOURCE) as TabBarSource | undefined;
+        // A component declared in an opt-in module can receive a module-scoped
+        // token instance. Walk parent injectors to find the host/application
+        // source, then fall back to the injected value.
+        this.resolvedSource ??= this.findContextSource();
         return this.resolvedSource || this.injectedSource;
+    }
+
+    protected findContextSource(): TabBarSource | undefined {
+        let current: Injector | null | undefined = this.injector;
+        const seen = new Set<Injector>();
+        while (current && !seen.has(current)) {
+            seen.add(current);
+            const source = current.get?.(TAB_BAR_SOURCE, null as unknown as TabBarSource);
+            if (source) {
+                return source;
+            }
+            try {
+                current = current.getParent?.();
+            } catch {
+                current = undefined;
+            }
+        }
+        return undefined;
     }
 
     get visible(): boolean {
@@ -144,50 +161,30 @@ export class TabsComponent implements AfterViewInit {
     }
 
     onAfterViewInit(): void {
-        this.mountProjectedPanes();
+        this.viewReady = true;
         this.syncVisibility();
-    }
-
-    /** Move declarative `<tab-pane>` children into the pane container once. */
-    mountProjectedPanes(): void {
-        if (this.projected) {
-            return;
-        }
-        const container = this.panes?.nativeElement as any;
-        if (!container || typeof container.appendChild !== 'function') {
-            return;
-        }
-        const host = container.closest?.('tabs') || container.parentElement || this.hostElement;
-        const nodes: ProjectionNode[] = (host as any)?.[PROJECTION_NODES] || [];
-        if (!nodes.length) {
-            return;
-        }
-        nodes.forEach(node => {
-            const tag = String(node.tagName || '').toLowerCase();
-            if (tag && tag !== 'tab-pane' && !(node as any).getAttribute?.('data-tab-id')) {
-                return;
-            }
-            if (!(node as any).getAttribute?.('data-tab-id')) {
-                (node as any).setAttribute?.('data-tab-id', tag === 'tab-pane' ? '' : tag);
-            }
-            container.appendChild(node as any);
-        });
-        this.projected = true;
     }
 
     /** Keep every pane mounted; only the active pane is painted. */
     syncVisibility(): void {
-        const container = this.panes?.nativeElement as any;
-        if (!container || typeof container.querySelectorAll !== 'function') {
-            return;
-        }
         const active = this.currentId;
-        container.querySelectorAll('[data-tab-id]')?.forEach?.((pane: any) => {
+        const queryPanes = this.paneRefs?.toArray?.()
+            .map(ref => (ref as any)?.nativeElement ?? ref)
+            .filter(Boolean) as any[] | undefined;
+        const container = this.panes?.nativeElement as any;
+        const fallbackPanes = !queryPanes?.length && container && typeof container.querySelectorAll === 'function'
+            ? container.querySelectorAll('[data-tab-id]') as ArrayLike<any> | null
+            : null;
+        const panes = queryPanes?.length
+            ? queryPanes
+            : (fallbackPanes ? Array.from(fallbackPanes) : []);
+        panes.forEach((pane: any) => {
             const id = String(pane.getAttribute?.('data-tab-id') || '');
             const hidden = !!active && id !== active;
-            const style = pane.style;
-            if (style) {
-                style.display = hidden ? 'none' : '';
+            if (this.renderer) {
+                this.renderer.setStyle(pane, 'display', hidden ? 'none' : '');
+            } else if (pane.style) {
+                pane.style.display = hidden ? 'none' : '';
             } else {
                 pane.setAttribute?.('style', hidden ? 'display: none' : '');
             }
@@ -195,12 +192,9 @@ export class TabsComponent implements AfterViewInit {
     }
 
     protected scheduleSync(): void {
-        if (this.projected) {
-            void Promise.resolve().then(() => this.syncVisibility());
+        if (!this.viewReady) {
+            return;
         }
-    }
-
-    protected get hostElement(): any {
-        return this.elementRef?.nativeElement as any;
+        void Promise.resolve().then(() => this.syncVisibility());
     }
 }

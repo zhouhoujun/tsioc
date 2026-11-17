@@ -122,6 +122,21 @@ export class MenuBarDomTest {
         expect(selected).toEqual([]);
     }
 
+    @Test('rebuilds entries when a nested item field changes')
+    async updatesNestedItems() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        const menu = (this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>).instance;
+
+        expect(menu.entries[0].checked).toEqual(false);
+        menu.groups[0].items[0].checked = true;
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(menu.entries[0].checked).toEqual(true);
+        expect(root.querySelector('[data-menu-id="run"] .menu-bar-item-check')).toBeTruthy();
+    }
+
     @Test('Escape and outside clicks close the popup')
     async closesOnEscapeAndOutsideClick() {
         const selected: string[] = [];

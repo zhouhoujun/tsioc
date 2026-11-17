@@ -21,21 +21,17 @@ export interface KeymapGroup {
     template: `
     <div class="console-panel keymap-panel">
         <label class="keymap-title">{{title}}</label>
-        <template v-if="grouped">
-            <template v-for="group in groups">
-                <label class="keymap-group">{{group.label}}</label>
-                <label class="keymap-row" v-for="binding in group.items">
-                    <span class="keymap-key">{{binding.key}}</span>
-                    <span class="keymap-action"> {{binding.label || binding.action}}</span>
-                </label>
-            </template>
-        </template>
-        <template v-else>
-            <label class="keymap-row" v-for="binding in items">
+        <div class="keymap-group-block" v-if="grouped" v-for="group in groups">
+            <label class="keymap-group">{{group.label}}</label>
+            <label class="keymap-row" v-for="binding in group.items">
                 <span class="keymap-key">{{binding.key}}</span>
                 <span class="keymap-action"> {{binding.label || binding.action}}</span>
             </label>
-        </template>
+        </div>
+        <label class="keymap-row" v-if="!grouped" v-for="binding in items">
+            <span class="keymap-key">{{binding.key}}</span>
+            <span class="keymap-action"> {{binding.label || binding.action}}</span>
+        </label>
         <label class="keymap-hint">{{hint}}</label>
     </div>`
 })

@@ -1,3 +1,5 @@
+import { installStyleSheet } from '../../src/styles';
+
 /**
  * Styles for the generic grid layout.
  */
@@ -58,14 +60,5 @@ grid-item {
 `;
 
 export function installGridLayoutStyles(doc?: Document | null): void {
-    if (!doc || typeof doc.createElement !== 'function' || !doc.head) {
-        return;
-    }
-    if (doc.getElementById && doc.getElementById(GRID_LAYOUT_STYLE_ID)) {
-        return;
-    }
-    const style = doc.createElement('style');
-    style.setAttribute('id', GRID_LAYOUT_STYLE_ID);
-    style.textContent = GRID_LAYOUT_CSS;
-    doc.head.appendChild(style);
+    installStyleSheet(doc, GRID_LAYOUT_STYLE_ID, GRID_LAYOUT_CSS);
 }

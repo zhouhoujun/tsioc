@@ -1,4 +1,4 @@
-import { AfterViewInit, Attribute, Component, ElementRef, NoReactive, OnDestroy, ViewChild } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, Computed, ElementRef, EventEmitter, OnDestroy, ViewChild } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 
@@ -75,7 +75,7 @@ interface MenuBarEntryView {
             <span class="menu-bar-caret" v-if="caret"><icon [name]="caret" [glyph]="caret" size="xs"></icon></span>
         </button>
         <div class="menu-bar-popup" role="menu" v-show="open">
-            <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" data-menu-key="{{entry.key}}">
+            <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" trackBy="key" data-menu-key="{{entry.key}}">
                 <div class="menu-bar-separator" role="separator" v-if="entry.kind === 'separator'"></div>
                 <div class="menu-bar-group-title" v-if="entry.kind === 'title'">{{entry.label}}</div>
                 <button class="menu-bar-item {{entry.className}}" type="button" role="menuitem"
@@ -93,6 +93,7 @@ interface MenuBarEntryView {
                 <div [class]="'menu-bar-submenu' + (activeSubmenuKey === entry.id ? ' is-open' : '')" role="menu" v-if="entry.children.length">
                     <button class="menu-bar-item" type="button" role="menuitem"
                         v-for="child in entry.children"
+                        trackBy="id"
                         data-menu-id="{{child.id}}"
                         [disabled]="child.disabled"
                         [class]="child.className"
@@ -117,7 +118,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     @Attribute() triggerTitle = '';
     @Attribute() disabled = false;
     @Attribute() selectAction?: (id: string) => void;
-    @Attribute() openChange?: (open: boolean) => void;
+    @Attribute() openChange = new EventEmitter<boolean>();
 
     private _open = false;
     /** Id of the submenu parent currently expanded by click. */
@@ -125,12 +126,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     private bound = false;
     private pointerHandler?: (event: any) => void;
     private keyHandler?: (event: any) => void;
-    /**
-     * `groups` is usually rebuilt only when host data changes. The flattened
-     * entry list is cached per groups instance so an unrelated parent rerender
-     * does not recreate every menu row.
-     */
-    @NoReactive() private entriesCache?: { groups: MenuBarGroup[]; entries: MenuBarEntryView[] };
 
     /**
      * The component host's injected `ElementRef` can point at the outer host
@@ -157,7 +152,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             return;
         }
         this._open = next;
-        this.openChange?.(next);
+        this.openChange.emit(next);
     }
 
     get openText(): string {
@@ -165,12 +160,9 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     }
 
     /** Flat render list derived from groups; keeps the template free of nested loops. */
+    @Computed()
     get entries(): MenuBarEntryView[] {
         const groups = Array.isArray(this.groups) ? this.groups : [];
-        const cache = this.entriesCache;
-        if (cache && cache.groups === groups) {
-            return cache.entries;
-        }
         const entries: MenuBarEntryView[] = [];
         groups.forEach((group, groupIndex) => {
             if (!group) {
@@ -214,7 +206,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
                 });
             });
         });
-        this.entriesCache = { groups, entries };
         return entries;
     }
 

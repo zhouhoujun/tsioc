@@ -1,3 +1,5 @@
+import { installStyleSheet } from '../../src/styles';
+
 /**
  * Default skin for the generic menu bar. Hosts can install this stylesheet and
  * override the `--menu-bar-*` variables from their theme.
@@ -197,14 +199,5 @@ menu-bar {
 `;
 
 export function installMenuBarStyles(doc?: Document | null): void {
-    if (!doc || typeof doc.createElement !== 'function' || !doc.head) {
-        return;
-    }
-    if (doc.getElementById && doc.getElementById(MENU_BAR_STYLE_ID)) {
-        return;
-    }
-    const style = doc.createElement('style');
-    style.setAttribute('id', MENU_BAR_STYLE_ID);
-    style.textContent = MENU_BAR_CSS;
-    doc.head.appendChild(style);
+    installStyleSheet(doc, MENU_BAR_STYLE_ID, MENU_BAR_CSS);
 }

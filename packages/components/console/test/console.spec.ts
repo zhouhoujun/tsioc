@@ -1314,6 +1314,8 @@ export class ConsoleRendererTest {
             expect(panel.instance.toggleLabel).toBe('Hide details');
 
             ref.instance.summaryLines = [];
+            await Promise.resolve();
+            await Promise.resolve();
             panel.instance.expanded = false;
             expect(panel.instance.hasSummary).toBe(false);
             expect(panel.instance.bodyVisible).toBe(true);
