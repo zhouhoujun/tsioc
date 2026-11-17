@@ -4634,3 +4634,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第八十八批（2026-11-16）：
   - EventLoopLagGauge（p99/max seconds）+ 可配置开关。
   - 回归：metrics 63。
+
+## 2026-11-17 长会话切换预算测试（1000 条消息）
+- 新增 `tab-switch-long-session.spec.ts`：4 tabs × 1000 消息，逐次断言「每次切换 ≤ 1 帧」且渲染内容属于目标会话（不出现陈旧转录）。
+- 实测（安静机器，8 次切换）：p50 98–138ms、p95 119–167ms；拆分测得单次 render ≈ 56ms（`surface.render()` 4 次 225ms），其余为 openSession 的状态/投影/快照开销。
+- 说明：历史 52ms 来自另一套临时脚本口径，与本题不可直接比较；因此该用例只对「帧数 + 内容归属」做强断言，墙钟数值仅打印为参考。
+- 结论：多 state 方案（168–237ms）仍然明显劣于当前实现；若继续优化，应先打 render（每帧样式解析/动画）与 openSession 的 O(n) 投影，而不是再加一层状态转发。
