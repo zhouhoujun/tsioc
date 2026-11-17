@@ -4467,3 +4467,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第六十三批（2026-11-16）：
   - 抽出 gateway.observability.ts 与 gateway.types.ts。
   - 回归：gateway 110、admin 63。
+
+- 微服务框架第六十四批（2026-11-16）：
+  - 抽出 gateway.auth.ts 与 gateway.http.ts。
+  - 回归：gateway 116、admin 63。

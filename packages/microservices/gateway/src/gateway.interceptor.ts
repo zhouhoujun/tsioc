@@ -20,6 +20,8 @@ import { HttpAuthService, HttpAuthOptions, HmacSignatureService } from '@tsdi/se
 import { Tracer, Span } from '@tsdi/tracing';
 import { Logger } from '@tsdi/logger';
 import { GatewayObservability } from './gateway.observability';
+import { GatewayAuth } from './gateway.auth';
+import { getClientIp, getHeaderValue, getRequestHost, normalizeGatewayUrl } from './gateway.http';
 import { GatewayErrorType, GatewayForwardMeta, GatewayForwardResult, classifyGatewayError } from './gateway.types';
 
 export interface GatewayMatchPreviewRequest {
@@ -85,6 +87,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private ruleEngineRevision = -1;
     private ruleEngineRules?: GatewayRuleOptions[];
     private observability: GatewayObservability;
+    private gatewayAuth: GatewayAuth;
 
     constructor(
         @Inject(GATEWAY_OPTIONS) private options: GatewayOptions,
@@ -104,6 +107,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.signatureService = this.injector.get(HmacSignatureService, null) ?? new HmacSignatureService();
         this.logger = this.injector.get(Logger, null) ?? null;
         this.observability = new GatewayObservability(this.options, this.runtime, this.metrics, this.logger, this.tracer);
+        this.gatewayAuth = new GatewayAuth(this.options, this.runtime, this.authService, this.signatureService);
         if (this.endpointResolver && typeof (this.endpointResolver as any).resolve !== 'function') {
             this.endpointResolver = null;
         }
@@ -190,8 +194,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return this.getRuleEngine().match({
             path: this.normalizeRequestUrl(request.url ?? '/'),
             method: (request.method ?? 'GET').toUpperCase(),
-            host: this.getRequestHost(request),
-            header: name => this.getHeaderValue(request, name),
+            host: getRequestHost(request),
+            header: name => getHeaderValue(request, name),
             query: name => this.getQueryValue(request.url ?? '/', name)
         });
     }
@@ -265,7 +269,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return this.getRouteTable().match({
             url: this.normalizeRequestUrl(request.url ?? '/'),
             method: (request.method ?? 'GET').toUpperCase(),
-            host: this.getRequestHost(request),
+            host: getRequestHost(request),
             legacy: mode === 'legacy',
             accepts: route => this.matchHeaders(route, request) && this.matchCanary(route.canary, request)
         });
@@ -299,11 +303,11 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         try {
         await this.applyGlobalRateLimit(request, context);
         await this.applyRateLimit(route, request, context);
-        await this.authorize(route, request, context);
-        this.validateApiKey(route, request);
-        await this.validateSignature(route, request);
-        this.enforceAuthorization(route, request);
-        this.enforceAccessControl(route, request);
+        await this.gatewayAuth.authorize(route, request, context);
+        this.gatewayAuth.validateApiKey(route, request);
+        await this.gatewayAuth.validateSignature(route, request);
+        this.gatewayAuth.enforceAuthorization(route, request);
+        this.gatewayAuth.enforceAccessControl(route, request);
         this.enforceBodyLimit(route, request);
 
         const adapter = context.get(HttpMessageAdapter);
@@ -799,7 +803,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         if (!pool.length) {
             return null;
         }
-        const hashKey = GatewayLoadBalancer.resolveHashKey(route as any, request, name => this.getHeaderValue(request, name));
+        const hashKey = GatewayLoadBalancer.resolveHashKey(route as any, request, name => getHeaderValue(request, name));
         return this.loadBalancer.select(route as any, pool, hashKey);
     }
 
@@ -942,11 +946,11 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
         if (proxy) {
             const encrypted = !!(request.socket as any)?.encrypted
-                || String(this.getHeaderValue(request, 'x-forwarded-proto') ?? '').split(',')[0].trim() === 'https';
+                || String(getHeaderValue(request, 'x-forwarded-proto') ?? '').split(',')[0].trim() === 'https';
             if (!headers['x-forwarded-proto']) {
                 headers['x-forwarded-proto'] = encrypted ? 'https' : 'http';
             }
-            const host = this.getRequestHost(request);
+            const host = getRequestHost(request);
             if (host && !headers['x-forwarded-host']) {
                 headers['x-forwarded-host'] = host;
             }
@@ -982,7 +986,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             .filter(endpoint => !excluded?.has(endpoint.id));
         const candidates = this.filterCanaryEndpoints(route, endpoints);
         const pool = candidates.length > 0 ? candidates : endpoints;
-        const hashKey = GatewayLoadBalancer.resolveHashKey(route as any, request, name => this.getHeaderValue(request, name));
+        const hashKey = GatewayLoadBalancer.resolveHashKey(route as any, request, name => getHeaderValue(request, name));
         const endpoint = this.loadBalancer.select(route as any, pool, hashKey);
         if (!endpoint) {
             throw Object.assign(new Error(`Service '${route.service}' not found`), {
@@ -1075,7 +1079,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
         if (this.useSharedRateLimit(rateLimit)) {
             const decision = await this.runtime.incrementRateLimit(
-                `${route.path}:${this.getClientIp(input)}`,
+                `${route.path}:${getClientIp(input)}`,
                 rateLimit.windowMs!
             );
             if (decision && decision.count > rateLimit.limit!) {
@@ -1101,7 +1105,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
         if (this.useSharedRateLimit(rateLimit)) {
             const decision = await this.runtime.incrementRateLimit(
-                `global:${this.getClientIp(input)}`,
+                `global:${getClientIp(input)}`,
                 rateLimit.windowMs!
             );
             if (decision && decision.count > rateLimit.limit!) {
@@ -1127,160 +1131,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             && !options.throttle;
     }
 
-    private async authorize(route: ResolvedGatewayRoute, request: HttpRequestMessage, context: RequestContext): Promise<void> {
-        const auth = route.auth;
-        if (!auth) {
-            return;
-        }
-        const result = await this.authService.authenticate(request as any, auth);
-        request._auth = result as any;
-        context.set(HTTP_AUTH_RESULT, result as any);
-        if (!result.authenticated) {
-            throw Object.assign(new Error('Unauthorized gateway request'), {
-                statusCode: 401,
-                statusMessage: 'Unauthorized'
-            });
-        }
-    }
-
-    private enforceAccessControl(route: ResolvedGatewayRoute, request: HttpRequestMessage): void {
-        const acl = route.accessControl;
-        if (!acl) {
-            return;
-        }
-        const ip = this.getClientIp(request);
-        if (!ip) {
-            return;
-        }
-        if (acl.denyIps?.some(rule => this.matchesIp(rule, ip))) {
-            throw Object.assign(new Error('Gateway access denied'), {
-                statusCode: 403,
-                statusMessage: 'Forbidden'
-            });
-        }
-        if (acl.allowIps?.length && !acl.allowIps.some(rule => this.matchesIp(rule, ip))) {
-            throw Object.assign(new Error('Gateway access denied'), {
-                statusCode: 403,
-                statusMessage: 'Forbidden'
-            });
-        }
-    }
-
-    private validateApiKey(route: ResolvedGatewayRoute, request: HttpRequestMessage): void {
-        const options = route.apiKey;
-        if (!options) {
-            return;
-        }
-        const headerName = options.header ?? 'x-api-key';
-        const queryName = options.query ?? 'api_key';
-        const value = this.getHeaderValue(request, headerName)
-            ?? (queryName ? request.query?.[queryName] : undefined);
-        if (!value || !options.keys.includes(String(value))) {
-            throw Object.assign(new Error('Invalid gateway api key'), {
-                statusCode: 401,
-                statusMessage: 'Unauthorized'
-            });
-        }
-    }
-
-    private async validateSignature(route: ResolvedGatewayRoute, request: HttpRequestMessage): Promise<void> {
-        const options = route.signature;
-        if (!options) {
-            return;
-        }
-        const signatureHeader = options.header ?? 'x-signature';
-        const nonceHeader = options.nonceHeader ?? 'x-nonce';
-        const timestampHeader = options.timestampHeader ?? 'x-timestamp';
-        const signature = this.getHeaderValue(request, signatureHeader);
-        const timestamp = this.getHeaderValue(request, timestampHeader);
-        const nonce = this.getHeaderValue(request, nonceHeader);
-        if (!signature || !timestamp) {
-            throw Object.assign(new Error('Missing gateway signature headers'), {
-                statusCode: 401,
-                statusMessage: 'Unauthorized'
-            });
-        }
-        const ts = Number(timestamp);
-        const maxSkew = options.maxSkew ?? 300_000;
-        if (!Number.isFinite(ts) || Math.abs(Date.now() - ts) > maxSkew) {
-            throw Object.assign(new Error('Gateway signature expired'), {
-                statusCode: 401,
-                statusMessage: 'Unauthorized'
-            });
-        }
-        if (options.preventReplay && nonce) {
-            const accepted = await this.runtime.rememberNonce(`${route.path}:${nonce}`, maxSkew);
-            if (!accepted) {
-                throw Object.assign(new Error('Gateway signature replay detected'), {
-                    statusCode: 409,
-                    statusMessage: 'Conflict'
-                });
-            }
-        }
-        const body = request.rawBody ?? JSON.stringify(request.body ?? '');
-        const canonical = [
-            request.method ?? 'GET',
-            this.normalizeRequestUrl(request.url ?? '/'),
-            timestamp,
-            nonce ?? '',
-            typeof body === 'string' ? body : body.toString()
-        ].join('\n');
-        const verified = this.signatureService.verify(canonical, signature, options.secret, {
-            algorithm: options.algorithm,
-            encoding: options.encoding
-        });
-        if (!verified) {
-            throw Object.assign(new Error('Invalid gateway signature'), {
-                statusCode: 401,
-                statusMessage: 'Unauthorized'
-            });
-        }
-    }
-
-    private enforceAuthorization(route: ResolvedGatewayRoute, request: HttpRequestMessage): void {
-        const options = route.authorize;
-        if (!options) {
-            return;
-        }
-        const claims = request._auth?.claims ?? {};
-        const matchAny = options.matchAny ?? false;
-        const roleValues = this.asStringArray(claims.role ?? claims.roles);
-        const scopeValues = this.asStringArray(claims.scope ?? claims.scopes);
-        const roleMatched = !options.roles?.length
-            ? undefined
-            : (matchAny
-                ? options.roles.some(role => roleValues.includes(role))
-                : options.roles.every(role => roleValues.includes(role)));
-        const scopeMatched = !options.scopes?.length
-            ? undefined
-            : (matchAny
-                ? options.scopes.some(scope => scopeValues.includes(scope))
-                : options.scopes.every(scope => scopeValues.includes(scope)));
-        const claimsMatched = !options.claims
-            ? undefined
-            : Object.entries(options.claims).every(([key, expected]) => this.matchClaimValue(claims[key], expected));
-
-        const checks = [roleMatched, scopeMatched, claimsMatched].filter(v => v !== undefined) as boolean[];
-        if (checks.length === 0) {
-            return;
-        }
-        const passed = matchAny ? checks.some(Boolean) : checks.every(Boolean);
-        if (!passed) {
-            throw Object.assign(new Error('Forbidden gateway request'), {
-                statusCode: 403,
-                statusMessage: 'Forbidden'
-            });
-        }
-    }
-
     private normalizeRequestUrl(url: string): string {
-        const path = url.split('?')[0] || '/';
         const defaults = this.runtime.getOption('defaults', this.options.defaults);
-        const prefix = defaults?.prefix;
-        if (!prefix || prefix === '/') {
-            return path;
-        }
-        return path.startsWith(prefix) ? (path.slice(prefix.length) || '/') : path;
+        return normalizeGatewayUrl(url, defaults?.prefix);
     }
 
     private resolveRoute(route: GatewayRouteOptions): ResolvedGatewayRoute {
@@ -1325,7 +1178,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             return true;
         }
         return Object.entries(route.matchHeaders).every(([name, expected]) => {
-            const actual = this.getHeaderValue(request, name);
+            const actual = getHeaderValue(request, name);
             return actual === expected;
         });
     }
@@ -1335,7 +1188,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             return true;
         }
         if (canary.header) {
-            const actual = this.getHeaderValue(request, canary.header.name);
+            const actual = getHeaderValue(request, canary.header.name);
             if (!actual) {
                 return false;
             }
@@ -1347,7 +1200,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         if (canary.percentage == null) {
             return true;
         }
-        const base = this.getHeaderValue(request, 'x-request-id') ?? this.getClientIp(request) ?? request.url ?? '/';
+        const base = getHeaderValue(request, 'x-request-id') ?? getClientIp(request) ?? request.url ?? '/';
         return this.hashToPercent(base) < Math.max(0, Math.min(100, canary.percentage));
     }
 
@@ -1452,7 +1305,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         if (options.etag) {
             const etag = headers['etag'] ?? this.generateEtag(result.payload);
             headers['etag'] = etag;
-            const ifNoneMatch = this.getHeaderValue(request, 'if-none-match');
+            const ifNoneMatch = getHeaderValue(request, 'if-none-match');
             if (ifNoneMatch && ifNoneMatch === etag) {
                 return {
                     status: 304,
@@ -1473,7 +1326,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         if (!options?.enabled || result.payload == null || result.status === 304) {
             return result;
         }
-        const accepted = this.getHeaderValue(request, 'accept-encoding') ?? '';
+        const accepted = getHeaderValue(request, 'accept-encoding') ?? '';
         const algorithms = options.algorithms ?? ['br', 'gzip'];
         const encoding = algorithms.find(name => accepted.includes(name));
         if (!encoding) {
@@ -1523,15 +1376,15 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         if (cache.key) {
             return cache.key(request, route);
         }
-        const authorization = this.getHeaderValue(request, 'authorization');
-        const cookie = this.getHeaderValue(request, 'cookie');
+        const authorization = getHeaderValue(request, 'authorization');
+        const cookie = getHeaderValue(request, 'cookie');
         if (!cache.allowAuth && (authorization || cookie)) {
             return null;
         }
         const parts = [`${route.path}:${request.method ?? 'GET'}:${request.url ?? '/'}`];
         const vary = (cache.vary ?? []).map(name => name.toLowerCase()).sort();
         for (const name of vary) {
-            parts.push(`${name}=${this.getHeaderValue(request, name) ?? ''}`);
+            parts.push(`${name}=${getHeaderValue(request, name) ?? ''}`);
         }
         if (cache.allowAuth && authorization) {
             parts.push(`auth=${crypto.createHash('sha1').update(String(authorization)).digest('hex')}`);
@@ -1641,26 +1494,6 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return `W/\"${hash}\"`;
     }
 
-    private asStringArray(value: any): string[] {
-        if (Array.isArray(value)) {
-            return value.map(v => String(v));
-        }
-        if (typeof value === 'string') {
-            return value.split(/\s+/).map(v => v.trim()).filter(Boolean);
-        }
-        if (value == null) {
-            return [];
-        }
-        return [String(value)];
-    }
-
-    private matchClaimValue(actual: any, expected: any): boolean {
-        if (Array.isArray(actual)) {
-            return actual.some(item => this.matchClaimValue(item, expected));
-        }
-        return actual === expected;
-    }
-
     private mergeVaryHeader(existing: string | undefined, value: string): string {
         if (!existing) {
             return value;
@@ -1670,63 +1503,6 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             values.push(value);
         }
         return values.join(', ');
-    }
-
-    private getRequestHost(request: HttpRequestMessage): string {
-        return this.getHeaderValue(request, 'host') ?? '';
-    }
-
-    private getHeaderValue(request: HttpRequestMessage, name: string): string | undefined {
-        const normalized = name.toLowerCase();
-        const direct = request.getHeader?.(normalized) ?? request.getHeader?.(name);
-        if (direct != null) {
-            return String(direct);
-        }
-        const raw = request.headers?.[normalized] ?? request.headers?.[name];
-        if (Array.isArray(raw)) {
-            return raw.join(', ');
-        }
-        return raw != null ? String(raw) : undefined;
-    }
-
-    private getClientIp(request: HttpRequestMessage): string {
-        const forwarded = this.getHeaderValue(request, 'x-forwarded-for');
-        if (forwarded) {
-            return forwarded.split(',')[0].trim();
-        }
-        return request.socket?.remoteAddress ?? '';
-    }
-
-    private matchesIp(rule: string, ip: string): boolean {
-        if (!rule) {
-            return false;
-        }
-        if (rule.includes('/')) {
-            const [base, prefixText] = rule.split('/');
-            const prefix = parseInt(prefixText, 10);
-            if (!Number.isFinite(prefix)) {
-                return false;
-            }
-            return this.maskIpv4(ip, prefix) === this.maskIpv4(base, prefix);
-        }
-        return rule === ip;
-    }
-
-    private maskIpv4(ip: string, prefix: number): string {
-        const parts = ip.split('.').map(v => parseInt(v, 10));
-        if (parts.length !== 4 || parts.some(v => Number.isNaN(v))) {
-            return ip;
-        }
-        const safePrefix = Math.max(0, Math.min(32, prefix));
-        let mask = safePrefix === 0 ? 0 : (0xffffffff << (32 - safePrefix)) >>> 0;
-        const value = (((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3]) >>> 0;
-        const masked = value & mask;
-        return [
-            (masked >>> 24) & 255,
-            (masked >>> 16) & 255,
-            (masked >>> 8) & 255,
-            masked & 255
-        ].join('.');
     }
 
     private isTracer(value: any): value is Tracer {

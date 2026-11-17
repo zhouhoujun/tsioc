@@ -346,6 +346,13 @@
 - `GatewayInterceptor` 从 2062 行降到约 1791 行，只保留编排。
 - 新增 `observability.spec.ts` 10 个模块级测试；gateway 110、admin 63 passing。
 
+第六十四批（Gateway auth 拆分）：
+
+- 新增 `gateway.http.ts`：header/host/client ip/prefix/claim/CIDR 纯函数。
+- 新增 `gateway.auth.ts`：JWT、API key、HMAC 签名、claims 与 IP ACL。
+- `GatewayInterceptor` 降至约 1567 行；observability 复用共享 HTTP helpers。
+- 新增 `auth.spec.ts` 6 个模块级测试；gateway 116、admin 63 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

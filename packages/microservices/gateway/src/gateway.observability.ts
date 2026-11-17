@@ -6,6 +6,7 @@ import { Span, Tracer } from '@tsdi/tracing';
 import { GatewayOptions, ResolvedGatewayRoute } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayErrorType, GatewayForwardMeta, classifyGatewayError } from './gateway.types';
+import { getClientIp, getHeaderValue, getRequestHost, normalizeGatewayUrl } from './gateway.http';
 
 /**
  * Gateway observability: trace scope, metrics, access log and error tagging.
@@ -28,12 +29,12 @@ export class GatewayObservability {
         finish(error?: any): void;
     } {
         const carrier: Record<string, string> = {};
-        const existingTrace = this.getHeaderValue(request, 'x-trace-id');
-        const existingSpan = this.getHeaderValue(request, 'x-span-id');
+        const existingTrace = getHeaderValue(request, 'x-trace-id');
+        const existingSpan = getHeaderValue(request, 'x-span-id');
         if (existingTrace && existingSpan) {
             carrier['x-trace-id'] = existingTrace;
             carrier['x-span-id'] = existingSpan;
-            carrier['x-request-id'] = this.getHeaderValue(request, 'x-request-id') ?? existingTrace;
+            carrier['x-request-id'] = getHeaderValue(request, 'x-request-id') ?? existingTrace;
             return { headers: carrier, finish: () => undefined };
         }
         let finish: (error?: any) => void = () => undefined;
@@ -58,7 +59,7 @@ export class GatewayObservability {
             carrier['x-trace-id'] = this.generateTraceId();
             carrier['x-span-id'] = this.generateTraceId().slice(0, 16);
         }
-        const requestId = this.getHeaderValue(request, 'x-request-id') ?? carrier['x-trace-id'];
+        const requestId = getHeaderValue(request, 'x-request-id') ?? carrier['x-trace-id'];
         carrier['x-request-id'] = requestId;
         return { headers: carrier, span, finish };
     }
@@ -170,13 +171,13 @@ export class GatewayObservability {
         const options = typeof accessLog === 'object' ? accessLog : {};
         const headers = options.includeHeaders?.length
             ? Object.fromEntries(options.includeHeaders
-                .map(name => [name, this.getHeaderValue(request, name)] as const)
+                .map(name => [name, getHeaderValue(request, name)] as const)
                 .filter(([, value]) => value != null))
             : undefined;
-        const traceId = this.getHeaderValue(request, 'x-trace-id')
+        const traceId = getHeaderValue(request, 'x-trace-id')
             ?? traceHeaders?.['x-trace-id']
             ?? request.headers?.['x-trace-id'] as string | undefined;
-        const requestId = this.getHeaderValue(request, 'x-request-id')
+        const requestId = getHeaderValue(request, 'x-request-id')
             ?? traceHeaders?.['x-request-id']
             ?? traceId;
         const entry = {
@@ -188,8 +189,8 @@ export class GatewayObservability {
             path: this.normalizeRequestUrl(request.url ?? '/'),
             status,
             duration,
-            host: this.getRequestHost(request) || undefined,
-            clientIp: this.getClientIp(request) || undefined,
+            host: getRequestHost(request) || undefined,
+            clientIp: getClientIp(request) || undefined,
             endpoint: meta?.endpoint,
             cache: meta?.cacheStatus,
             outcome: meta?.outcome,
@@ -213,38 +214,8 @@ export class GatewayObservability {
     }
 
     private normalizeRequestUrl(url: string): string {
-        const path = url.split('?')[0] || '/';
         const defaults = this.runtime.getOption('defaults', this.options.defaults);
-        const prefix = defaults?.prefix;
-        if (!prefix || prefix === '/') {
-            return path;
-        }
-        return path.startsWith(prefix) ? (path.slice(prefix.length) || '/') : path;
-    }
-
-    private getRequestHost(request: HttpRequestMessage): string {
-        return this.getHeaderValue(request, 'host') ?? '';
-    }
-
-    private getHeaderValue(request: HttpRequestMessage, name: string): string | undefined {
-        const normalized = name.toLowerCase();
-        const direct = request.getHeader?.(normalized) ?? request.getHeader?.(name);
-        if (direct != null) {
-            return String(direct);
-        }
-        const raw = request.headers?.[normalized] ?? request.headers?.[name];
-        if (Array.isArray(raw)) {
-            return raw.join(', ');
-        }
-        return raw != null ? String(raw) : undefined;
-    }
-
-    private getClientIp(request: HttpRequestMessage): string {
-        const forwarded = this.getHeaderValue(request, 'x-forwarded-for');
-        if (forwarded) {
-            return forwarded.split(',')[0].trim();
-        }
-        return request.socket?.remoteAddress ?? '';
+        return normalizeGatewayUrl(url, defaults?.prefix);
     }
 
     private generateTraceId(): string {
