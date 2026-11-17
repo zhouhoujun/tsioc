@@ -149,7 +149,7 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
         if (dirType === DirectiveType.Component) {
             const compRefs = injector.getComponentRef(paramType, flags);
             if (compRefs && compRefs.length > 0) {
-                return compRefs[0];
+                return compRefs[0].instance;
             }
             let compRef = createAndAttachComponentForNode(injector, elementRef.nativeElement);
             if (!compRef && dirDef.selector) {
@@ -158,7 +158,7 @@ export const directorResovler: ResolveInterceptorFn = (input, next, context) => 
                     compRef = createAndAttachComponentForNode(injector, nodes[0]);
                 }
             }
-            return compRef ?? UNRESOLVED;
+            return compRef?.instance ?? UNRESOLVED;
         }
         return UNRESOLVED;
     }

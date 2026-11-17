@@ -9,6 +9,7 @@ import { noReact } from '../effect';
 import { RNode } from '../renderer/Node';
 import { TemplateFactory } from './template';
 import { ViewChildMetadata, ViewChildrenMetadata } from '../decorators/query';
+import type { ContentChildMetadata, ContentChildrenMetadata } from '../decorators/query';
 
 
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
@@ -18,6 +19,8 @@ export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof fact
     ƿtempFac?: TemplateFactory<T>;
     viewChilds?: ViewChildMetadata[];
     viewChildrens?: ViewChildrenMetadata[];
+    contentChilds?: ContentChildMetadata[];
+    contentChildrens?: ContentChildrenMetadata[];
 }
 
 /**

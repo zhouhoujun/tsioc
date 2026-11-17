@@ -1,6 +1,6 @@
 import { ComponentRef } from '../refs/component';
 import { DirectiveRef } from '../refs/directive';
-import { NodeInjector } from '../refs/injector';
+import { NodeInjector, getNodeOwnerInjector } from '../refs/injector';
 import { LOCAL_REFS, RNode } from '../renderer/Node';
 
 export interface ViewQueryEntry {
@@ -79,8 +79,9 @@ export class ViewQueryIndex {
         this.typesReady = true;
         this.allEntries = [];
         for (const node of this.ownNodes) {
-            const componentRef = this.injector.componentRefs.get(node);
-            const directiveRefs = this.injector.directiveRefs.get(node);
+            const owner = getNodeOwnerInjector(node) ?? this.injector;
+            const componentRef = owner.componentRefs.get(node);
+            const directiveRefs = owner.directiveRefs.get(node);
             if (componentRef) {
                 this.allEntries.push({ node, componentRef });
             }

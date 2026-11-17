@@ -14,6 +14,18 @@ import { LOCAL_REFS } from '../renderer/Node';
 
 export const NODES_RESOLVERS = token<ResolveInterceptorLike[]>('NODES_RESOLVERS');
 
+const nodeOwnerInjectors = new WeakMap<RNode, NodeInjector>();
+
+export function getNodeOwnerInjector(node: RNode): NodeInjector | undefined {
+    return nodeOwnerInjectors.get(node);
+}
+
+function ownNode(node: RNode | null | undefined, injector: NodeInjector): void {
+    if (node && typeof node === 'object') {
+        nodeOwnerInjectors.set(node, injector);
+    }
+}
+
 
 export const nodeResolveInterceptorFactory: () => ResolveInterceptorFn = () => {
     let hanlder: ResolveHandler;
@@ -164,6 +176,7 @@ export class NodeInjector extends ContextInjector {
     attachComponent<C>(compRef: ComponentRef<C>): void {
         if (compRef && compRef.elementRef && compRef.elementRef.nativeElement) {
             const el = compRef.elementRef.nativeElement;
+            ownNode(el, this);
             if (!this.elementRefs.has(el)) {
                 this.elementRefs.set(el, compRef.elementRef);
             }
@@ -174,6 +187,7 @@ export class NodeInjector extends ContextInjector {
     attachDirective<C>(dirRef: DirectiveRef<C>): void {
         if (dirRef && dirRef.elementRef && dirRef.elementRef.nativeElement) {
             const element = dirRef.elementRef.nativeElement;
+            ownNode(element, this);
             if (!this.elementRefs.has(element)) {
                 this.elementRefs.set(element, dirRef.elementRef);
             }
@@ -191,6 +205,7 @@ export class NodeInjector extends ContextInjector {
     attachTemplate<C>(tempRef: TemplateRef<C>): void {
         if (tempRef && tempRef.elementRef && tempRef.elementRef.nativeElement) {
             const el = tempRef.elementRef.nativeElement;
+            ownNode(el, this);
             if (!this.elementRefs.has(el)) {
                 this.elementRefs.set(el, tempRef.elementRef);
             }
@@ -202,6 +217,7 @@ export class NodeInjector extends ContextInjector {
         if (!refs?.length) {
             return;
         }
+        ownNode(node, this);
         refs.forEach(ref => {
             const key = ref?.trim().toLowerCase();
             if (!key || this.localRefNodes.has(key)) {

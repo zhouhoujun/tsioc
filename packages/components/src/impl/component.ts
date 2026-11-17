@@ -7,18 +7,18 @@ import { ReactiveEffect } from '../effect';
 import { ComponentOptions, ComponentRef, ComponentFactory, ComponentDef } from '../refs/component';
 import { TemplateCompiler } from '../template/compiler';
 import { reactive } from '../reactive';
-import { AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
-import { NodeInjector } from '../refs/injector';
+import { AfterContentInit, AfterViewInit, OnInit, OnDestroy } from '../lifecycle';
+import { NodeInjector, getNodeOwnerInjector } from '../refs/injector';
 import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
 import { TemplateRef, TemplateFactory } from '../refs/template';
-import { RNode } from '../renderer/Node';
+import { RNode, PROJECTION_NODES } from '../renderer/Node';
 import { DirectiveRef } from '../refs/directive';
-import { ViewChildMetadata, ViewChildrenMetadata } from '../decorators/query';
+import { ViewChildMetadata, ViewChildrenMetadata, ContentChildMetadata, ContentChildrenMetadata } from '../decorators/query';
 import { QueryList } from '../refs/query-list';
 import { ViewContainerRef } from '../refs/container';
-import { markQueryBoundary } from './query-index';
+import { markQueryBoundary, ViewQueryIndex } from './query-index';
 import { mergeTemplateSchemas } from '../template/schema';
 import { TEMPLATE_SCHEMAS } from '../template/schema-provider';
 import { DefaultReactiveEffect } from './effect';
@@ -47,8 +47,11 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     private _elementRef?: ElementRef<any>;
     private initCalled = false;
     private afterViewInitCalled = false;
+    private afterContentInitCalled = false;
     private queryUnsubscribe?: () => void;
     private queryResolveScheduled = false;
+    private contentQueryIndex?: ViewQueryIndex;
+    private contentInjector?: NodeInjector;
     constructor(
         _classRef: ClassRef<T>,
         context: NodeInjector,
@@ -156,7 +159,15 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         markQueryBoundary(this._elementRef?.nativeElement as RNode, this._hostView.queryIndex);
         this.attachHostViewToElement();
         this.subscribeViewQueries();
+        this.resolveContentChilds(def);
         this.resolveViewChilds(def);
+        if (!this.afterContentInitCalled) {
+            this.afterContentInitCalled = true;
+            const contentInitResult = (this.instance as AfterContentInit).onAfterContentInit?.();
+            if (contentInitResult && typeof (contentInitResult as Promise<void>).then === 'function') {
+                await contentInitResult;
+            }
+        }
         if (!this.afterViewInitCalled) {
             this.afterViewInitCalled = true;
             const afterViewInitResult = (this.instance as AfterViewInit).onAfterViewInit?.();
@@ -188,6 +199,79 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
                 hostElement.appendChild(node);
             }
         });
+    }
+
+    protected resolveContentChilds(def: ComponentDef): void {
+        const childQueries = def.contentChilds || [];
+        const childrenQueries = def.contentChildrens || [];
+        if (!childQueries.length && !childrenQueries.length) {
+            return;
+        }
+        const projected = (this._elementRef?.nativeElement as any)?.[PROJECTION_NODES] as RNode[] | undefined;
+        if (!this.contentQueryIndex) {
+            this.contentQueryIndex = new ViewQueryIndex();
+        }
+        this.contentInjector = this.injector.getParentInjector() ?? this.injector;
+        this.contentQueryIndex.rebuild(projected || [], this.contentInjector);
+        childQueries.forEach(query => {
+            (this.instance as any)[query.propertyKey] = this.resolveContentChild(query);
+        });
+        if (childrenQueries.length) {
+            this.resolveContentChildrens(childrenQueries);
+        }
+    }
+
+    protected resolveContentChild(query: ContentChildMetadata): any {
+        const propertyType = query.type as AbstractType | undefined;
+        const selector = query.selector ?? propertyType;
+        if (!selector) {
+            return undefined;
+        }
+        const index = this.contentQueryIndex;
+        if (typeof selector === 'string') {
+            const nodes = index?.queryByName(selector) ?? [];
+            if (nodes.length) {
+                return this.readNodeValue(nodes[0], query, propertyType, this.contentInjector);
+            }
+            const projected = (this._elementRef?.nativeElement as any)?.[PROJECTION_NODES] as RNode[] | undefined;
+            const renderer = this._hostView?.injector.get(Renderer, null);
+            const found = projected?.length && renderer
+                ? renderer.querySelector(projected, selector)
+                : null;
+            return found ? this.readNodeValue(found, query, propertyType, this.contentInjector) : undefined;
+        }
+        const entries = index?.queryByType(selector as AbstractType) ?? [];
+        return entries.length ? this.readNodeValue(entries[0].node, query, propertyType, this.contentInjector) : undefined;
+    }
+
+    protected resolveContentChildrens(queries: ContentChildrenMetadata[]): void {
+        queries.forEach(query => {
+            let list = (this.instance as any)[query.propertyKey] as QueryList<any>;
+            if (!(list instanceof QueryList)) {
+                list = new QueryList<any>();
+                (this.instance as any)[query.propertyKey] = list;
+            }
+            const next = this.resolveContentChildren(query);
+            const current = list.toArray();
+            if (current.length !== next.length || current.some((value, index) => value !== next[index])) {
+                list.reset(next);
+            }
+        });
+    }
+
+    protected resolveContentChildren(query: ContentChildrenMetadata): any[] {
+        const propertyType = query.type as AbstractType | undefined;
+        const selector = query.selector ?? propertyType;
+        if (!selector) {
+            return [];
+        }
+        const index = this.contentQueryIndex;
+        if (typeof selector === 'string') {
+            const nodes = index?.queryByName(selector) ?? [];
+            return nodes.map(node => this.readNodeValue(node, query, propertyType, this.contentInjector));
+        }
+        return (index?.queryByType(selector as AbstractType) ?? [])
+            .map(entry => this.readNodeValue(entry.node, query, propertyType, this.contentInjector));
     }
 
     protected resolveViewChilds(def: ComponentDef): void {
@@ -298,22 +382,23 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         return this.readResolvedValue(result, query, propertyType);
     }
 
-    protected readNodeValue(node: RNode, query: ViewChildMetadata | ViewChildrenMetadata, propertyType?: AbstractType): any {
+    protected readNodeValue(node: RNode, query: ViewChildMetadata | ViewChildrenMetadata | ContentChildMetadata | ContentChildrenMetadata, propertyType?: AbstractType, injector?: NodeInjector): any {
         const read = query.read as any;
+        const targetInjector = getNodeOwnerInjector(node) ?? injector ?? this._hostView?.injector;
         if (read === TemplateRef || propertyType === TemplateRef) {
-            return this._hostView?.injector.getTemplateRef(node) ?? undefined;
+            return targetInjector?.getTemplateRef(node) ?? undefined;
         }
         if (read === ElementRef || propertyType === ElementRef) {
-            return this._hostView?.injector.getElementRef(node) ?? undefined;
+            return targetInjector?.getElementRef(node) ?? undefined;
         }
         if (read === ViewContainerRef || propertyType === ViewContainerRef) {
-            return this._hostView?.injector.getViewContainerRef(node) ?? undefined;
+            return targetInjector?.getViewContainerRef(node) ?? undefined;
         }
-        const componentRef = this._hostView?.injector.getComponentRefByNode(node) ?? null;
+        const componentRef = targetInjector?.getComponentRefByNode(node) ?? null;
         if (read === ComponentRef || propertyType === ComponentRef) {
             return componentRef ?? undefined;
         }
-        const directiveRef = this._hostView?.injector.getDirectiveRefByNode(node) ?? null;
+        const directiveRef = targetInjector?.getDirectiveRefByNode(node) ?? null;
         if (read === DirectiveRef || propertyType === DirectiveRef) {
             return directiveRef ?? undefined;
         }
@@ -331,8 +416,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         }
         return componentRef?.instance
             ?? directiveRef?.instance
-            ?? this._hostView?.injector.getTemplateRef(node)
-            ?? this._hostView?.injector.getElementRef(node)
+            ?? targetInjector?.getTemplateRef(node)
+            ?? targetInjector?.getElementRef(node)
             ?? undefined;
     }
 
@@ -369,6 +454,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     protected override clean(): void {
         this.queryUnsubscribe?.();
         this.queryUnsubscribe = undefined;
+        this.contentQueryIndex?.clear();
+        this.contentQueryIndex = undefined;
         (this.instance as OnDestroy)?.onDestroy?.();
         super.clean();
         this.hostView?.destroy();
