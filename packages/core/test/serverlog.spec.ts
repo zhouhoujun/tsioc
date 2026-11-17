@@ -47,6 +47,11 @@ export class ServerBootTest {
 
     @Before()
     async init() {
+        // Clear the log directory *before* the application starts: log4js opens
+        // its file appenders during setup, and deleting the directory afterwards
+        // leaves them writing into a removed file.
+        this.logdir = path.join(dir, 'log');
+        rm('-rf', this.logdir);
         this.ctx = await Application.run({
             module: ServerMainModule,
             providers: [
@@ -55,8 +60,6 @@ export class ServerBootTest {
             ]
         });
         console.log(this.ctx.baseURL);
-        this.logdir = path.join(this.ctx.baseURL, 'log');
-        rm('-rf', this.logdir);
         const now = new Date();
         this.logfile = path.join(this.ctx.baseURL, `log/focas.-${formatDate(now).replace(/(-|\/)/g, '')}.log`);
     }

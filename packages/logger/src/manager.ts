@@ -9,6 +9,12 @@ import { Level, Levels, levels } from './Level';
 import { LoggerConfig, LoggerManager } from './LoggerManager';
 
 /**
+ * Any value used to register a {@link LoggerManager}: an adapter name, an
+ * adapter type or the resolved DI token.
+ */
+type LoggerAdapterKey = string | AbstractType | Token<LoggerManager>;
+
+/**
  * Configure logger manger. use to get configed logger manger.
  *
  * @export
@@ -22,11 +28,19 @@ export class LoggerManagers implements LoggerManager {
 
     private maps: Map<string | Token<LoggerManager>, LoggerManager>;
     private cfgs: Map<string | Token<LoggerManager>, LogConfigure>;
+    /**
+     * Configuration last applied per adapter. Reading a logger is a hot path
+     * (every `getLogger` call goes through {@link getLoggerManager}), and
+     * adapters such as log4js rebuild all appenders on `configure`; applying
+     * the same configuration object again would redo that work for nothing.
+     */
+    private applied: Map<LoggerAdapterKey | undefined, Record<string, any> | string>;
     private _defaultLogMgr!: LoggerManager;
     private _defaultCfg!: LogConfigure;
     constructor(@Inject() protected injector: Injector) {
         this.maps = new Map();
         this.cfgs = new Map();
+        this.applied = new Map();
     }
 
     hasConfigure(adapter?: string | AbstractType): boolean {
@@ -40,21 +54,52 @@ export class LoggerManagers implements LoggerManager {
     getLoggerManager(adapter?: string | AbstractType): LoggerManager {
         this.init();
         if (!adapter) {
-            this._defaultCfg.config && this._defaultLogMgr.configure(this._defaultCfg.config);
+            // Key the default configuration by its own adapter so it shares the
+            // "already applied" entry recorded during init.
+            this.applyConfigure(this._defaultCfg?.adapter, this._defaultCfg, this._defaultLogMgr);
             return this._defaultLogMgr;
         }
         const mgr = this.maps.get(adapter);
         if (!mgr) {
             throw new ArgumentException(`has no provider for LoggerManager ${adapter.toString()}.`)
         }
-        const cfg = this.cfgs.get(adapter);
-        cfg?.config && mgr.configure(cfg.config);
+        this.applyConfigure(adapter, this.cfgs.get(adapter), mgr);
         return mgr;
+    }
+
+    /**
+     * Apply a configuration once per adapter. Re-reading a logger must not
+     * rebuild the adapter's transports; an explicit {@link configure} call
+     * always applies and takes over from the startup configuration.
+     */
+    private applyConfigure(key: LoggerAdapterKey | undefined, cfg: LogConfigure | undefined, mgr: LoggerManager | undefined): void {
+        const config = cfg?.config;
+        if (!config || !mgr) {
+            return;
+        }
+        if (this.applied.get(key) === config) {
+            return;
+        }
+        this.applied.set(key, config);
+        mgr.configure(config);
     }
 
 
     configure(config: LoggerConfig, adapter?: string | AbstractType) {
-        this.getLoggerManager(adapter).configure(config)
+        this.init();
+        const mgr = adapter ? this.maps.get(adapter) : this._defaultLogMgr;
+        if (!mgr) {
+            throw new ArgumentException(`has no provider for LoggerManager ${adapter!.toString()}.`)
+        }
+        // Keep the stored configure in sync: an explicit call takes over from
+        // the startup configuration instead of being re-applied over it.
+        const key = adapter ?? this._defaultCfg?.adapter;
+        const cfg = key === undefined ? undefined : this.cfgs.get(key);
+        if (cfg) {
+            cfg.config = config;
+        }
+        this.applied.set(key, config);
+        mgr.configure(config)
     }
 
     getLogger(name?: string, adapter?: string | AbstractType): Logger {
@@ -87,7 +132,7 @@ export class LoggerManagers implements LoggerManager {
 
             this.cfgs.set(adapter, cfg);
 
-            cfg.config && manager.configure(cfg.config);
+            this.applyConfigure(adapter, cfg, manager);
             if (cfg.asDefault) {
                 this._defaultLogMgr = manager;
                 this._defaultCfg = cfg;

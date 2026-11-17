@@ -2,10 +2,24 @@ import { Abstract, isFunction, isToken, isObject, isArray, isNil } from '@tsdi/i
 import { Aspect, JoinPoint, JoinpointState, Pointcut } from '@tsdi/aop';
 import { Logger } from './logger';
 import { LogMetadata } from './metadata';
-import { isLevel, Level } from './Level';
+import { isLevel, Level, levelRanks } from './Level';
 import { LogProcess } from './LogProcess';
 import { JoinPointFormater, DefaultJoinPointFormater } from './formater';
 import { LogConfigure } from './LogConfigure';
+
+/**
+ * Level used for state-only logs (no explicit level supplied).
+ */
+function stateLevelOf(state: JoinpointState): Level {
+    switch (state) {
+        case JoinpointState.AfterThrowing:
+            return 'error';
+        case JoinpointState.Pointcut:
+            return 'info';
+        default:
+            return 'debug';
+    }
+}
 
 /**
  * base log aspect. for extends your log aspect.
@@ -52,27 +66,37 @@ export abstract class LogAspect extends LogProcess {
     }
 
     protected writeLog(logger: Logger, joinPoint: JoinPoint, level: Level, format: boolean, ...messages: any[]) {
-        (async () => {
-            const formatMsgs = format ? this.formatMessage(joinPoint, logger, level, ...messages) : messages;
-            if (level) {
-                logger[level](...formatMsgs)
-            } else {
-                switch (joinPoint.state) {
-                    case JoinpointState.Before:
-                    case JoinpointState.After:
-                    case JoinpointState.AfterReturning:
-                        logger.debug(...formatMsgs);
-                        break;
-                    case JoinpointState.Pointcut:
-                        logger.info(...formatMsgs);
-                        break;
-
-                    case JoinpointState.AfterThrowing:
-                        logger.error(...formatMsgs);
-                        break;
-                }
+        // Resolve the level this entry would be emitted at before doing any
+        // work: formatting, argument assembly and a promise per message are all
+        // wasted when the logger filters the entry out.
+        const threshold = logger.level === undefined ? undefined : levelRanks[logger.level];
+        if (threshold !== undefined) {
+            const rank = levelRanks[level || stateLevelOf(joinPoint.state)];
+            // `log` (rank -1) is the most verbose level and never filters.
+            if (rank !== undefined && rank >= 0 && rank < threshold) {
+                return;
             }
-        })()
+        }
+
+        const formatMsgs = format ? this.formatMessage(joinPoint, logger, level, ...messages) : messages;
+        if (level) {
+            logger[level](...formatMsgs)
+        } else {
+            switch (joinPoint.state) {
+                case JoinpointState.Before:
+                case JoinpointState.After:
+                case JoinpointState.AfterReturning:
+                    logger.debug(...formatMsgs);
+                    break;
+                case JoinpointState.Pointcut:
+                    logger.info(...formatMsgs);
+                    break;
+
+                case JoinpointState.AfterThrowing:
+                    logger.error(...formatMsgs);
+                    break;
+            }
+        }
     }
 
     protected formatTimestamp(): any {

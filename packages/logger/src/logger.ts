@@ -39,12 +39,6 @@ export abstract class Logger {
      * @param {...any[]} messages
      */
     abstract debug(...messages: any[]): void;
-    /**
-     * debg log.
-     *
-     * @param {...any[]} messages
-     */
-    abstract debug(...messages: any[]): void;
 
     /**
      * info log.
