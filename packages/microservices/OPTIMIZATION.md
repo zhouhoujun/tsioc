@@ -441,6 +441,11 @@
 - `curl` 即可做本地体检，后续可被 CLI 直接消费。
 - 回归：admin 72 passing。
 
+第七十九批（每包 README）：
+
+- 21 个缺失 README 的微服务包补齐说明：用途、安装、典型注册方式、选项位置与测试命令。
+- npm pack 后文档完整；`package-publish` gate PASS。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

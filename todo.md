@@ -4549,3 +4549,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第七十八批（2026-11-16）：
   - admin doctor 端点（路由/发现/熔断/SLO）。
   - 回归：admin 72。
+
+- 微服务框架第七十九批（2026-11-16）：
+  - 21 个包补齐 README。
+  - gate package-publish PASS。

@@ -1,0 +1,59 @@
+# @tsdi/udp
+
+UDP protocol microservice transport implementation for @tsdi/microservices.
+
+## Install
+
+```bash
+npm i @tsdi/udp
+```
+
+## Use
+
+```ts
+import { Module } from '@tsdi/ioc';
+import { Controller, Get, provideService, useRouter } from '@tsdi/service';
+import { useUdpTransport } from '@tsdi/udp';
+
+@Controller('/hello')
+class HelloController {
+    @Get('/')
+    hello() {
+        return { ok: true };
+    }
+}
+
+@Module({
+    declarations: [HelloController],
+    providers: [
+        provideService(
+            useRouter(),
+            useUdpTransport({ /* transport options, see src/server/options.ts */ })
+        )
+    ]
+})
+export class AppModule {}
+```
+
+Start it with `Application.run(AppModule)` from `@tsdi/core`.
+
+## Options
+
+Server options are typed in `src/server/options.ts`; client options are in
+`src/client/options.ts` when the transport exposes a typed client. The package
+entry point re-exports: `./server`, `./client`, `./udp.module`.
+
+## Tests
+
+```bash
+npm test
+```
+
+Tests expect A UDP endpoint such as `127.0.0.1:3001`; no external server for tests unless configured.
+
+
+## Related
+
+- Runnable examples: `packages/microservices/examples` in the repository.
+- Improvement plan and operational notes: `packages/microservices/IMPROVEMENT-PLAN.md`,
+  `packages/microservices/OPTIMIZATION.md`.
