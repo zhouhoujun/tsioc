@@ -468,10 +468,10 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     }
 
     protected isSteerModeEnabled(): boolean {
-        // Steering interrupts the in-flight turn, so it is opt-in: a plain Enter
-        // during a running turn queues the draft instead of cancelling the turn.
-        const mode = this.options.ui?.steerMode;
-        return mode === true || mode === 'on';
+        const configured = this.state.steerMode;
+        if (configured !== undefined) return configured;
+        // Opt-in; a plain Enter queues unless /steer or host AgentOptions enables it.
+        return this.options.ui?.steerMode === true || this.options.ui?.steerMode === 'on';
     }
 
     protected enqueuePrompt(input: string): void { enqueuePrompt(this as any, input); }

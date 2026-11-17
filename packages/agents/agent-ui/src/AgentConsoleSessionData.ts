@@ -235,6 +235,7 @@ export class AgentConsoleSessionData {
     pendingAttachments: AgentConsolePendingAttachment[] = [];
     queuedPromptCount = 0;
     showThinking = true;
+    steerMode?: boolean;
     showTimestamps = true;
     showCriticalMarks = false;
     showToolOutput = true;

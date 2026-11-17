@@ -31,6 +31,10 @@ export abstract class AgentConsoleSessionOptionsHost extends AgentConsoleSession
         };
     }
 
+    setSteerMode(value: boolean): void {
+        this.steerMode = value;
+    }
+
     /** Transcript verbosity for consecutive completed tool/command/event steps. */
     get activityVerbosity(): 'low' | 'medium' | 'high' {
         const value = this.consoleOptions.activityVerbosity;
