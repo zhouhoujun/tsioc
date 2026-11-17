@@ -19,6 +19,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const packageDir = join(root, 'packages', 'components');
 const scale = Number(process.env.COMPONENTS_BENCH_SCALE || '1') || 1;
 
+/**
+ * Idle-host calibration reference (ms) for the memory-access calibration loop
+ * the bench reports as `calibration`. Budgets scale up with the measured calibration so a
+ * machine that is busy with other work does not fail the gate; a real code
+ * regression still moves the metric against an unchanged calibration.
+ */
+const CALIBRATION_REFERENCE_MS = 250;
+
 const budgets = {
     'proxy reads': 2000,
     'trigger 1 key (100 bindings)': 1500,
@@ -57,10 +65,20 @@ for (const line of output.split('\n')) {
     }
 }
 
+const calibration = measured.get('calibration');
+if (!calibration) {
+    console.error('[BENCH-FAIL] missing metric: calibration');
+    process.exit(1);
+}
+const loadFactor = Math.max(1, calibration / CALIBRATION_REFERENCE_MS);
+if (loadFactor > 1.05) {
+    console.log(`[BENCH-INFO] host calibration ${calibration.toFixed(2)}ms -> budgets scaled x${loadFactor.toFixed(2)}`);
+}
+
 let failed = false;
 for (const [name, base] of Object.entries(budgets)) {
     const value = measured.get(name);
-    const budget = base * scale;
+    const budget = base * scale * loadFactor;
     if (value === undefined) {
         failed = true;
         console.error(`[BENCH-FAIL] missing metric: ${name}`);

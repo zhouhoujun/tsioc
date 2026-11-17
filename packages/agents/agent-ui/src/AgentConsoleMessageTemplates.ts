@@ -1,4 +1,4 @@
-import { Component, Attribute } from '@tsdi/components';
+import { Component, Attribute, Computed } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import type { AgentConsoleRenderedMessageItem, AgentConsoleRenderedLine } from './AgentConsoleMessageRenderers';
@@ -41,38 +41,6 @@ const MARKDOWN_TEMPLATE = `
     </div>
 `;
 
-const thoughtLinesCache = new WeakMap<object, {
-    source: AgentConsoleRenderedLine[];
-    selected: boolean;
-    detailOpen: boolean;
-    rawMode: boolean;
-    showCriticalMarks: boolean;
-    expandedIds: readonly string[];
-    markdownContentWidth: number;
-    lines: AgentConsoleRenderedLine[];
-}>();
-
-const bodyLinesCache = new WeakMap<object, {
-    source: AgentConsoleRenderedLine[];
-    selected: boolean;
-    detailOpen: boolean;
-    rawMode: boolean;
-    showCriticalMarks: boolean;
-    messageLayout: string;
-    finalAssistantMessageId: string;
-    expandedIds: readonly string[];
-    previewLines: number;
-    lines: AgentConsoleRenderedLine[];
-}>();
-
-/**
- * Visible token views, cached by the source token array. The template renders
- * `class="{{token.className}}"` (a simple path): a partially interpolated class
- * such as `tone-{{token.tone}}` keeps a dangling `tone-` prefix when the token
- * has no tone, so the whole class list is resolved here instead.
- */
-const routedTokenViews = new WeakMap<object, Array<{ text: string; className: string }>>();
-
 @Component({
     selector: 'agent-console-routed-tokens',
     template: `
@@ -84,18 +52,22 @@ const routedTokenViews = new WeakMap<object, Array<{ text: string; className: st
 export class AgentConsoleRoutedTokensComponent {
     @Attribute() tokens: AgentConsoleRenderedLine['tokens'] = [];
 
+    /**
+     * Visible token views. The template renders `class="{{token.className}}"`
+     * (a simple path): a partially interpolated class such as
+     * `tone-{{token.tone}}` keeps a dangling `tone-` prefix when the token has
+     * no tone, so the whole class list is resolved here instead. The framework
+     * caches the derived list and invalidates it when `tokens` changes.
+     */
+    @Computed()
     get renderedTokens(): Array<{ text: string; className: string }> {
-        const tokens = (Array.isArray(this.tokens) ? this.tokens : []) as unknown as object & Array<{ text?: string; tone?: string }>;
-        const cached = routedTokenViews.get(tokens);
-        if (cached) {
-            return cached;
-        }
-        const views = (Array.isArray(tokens) ? tokens : []).map(token => ({
+        const tokens = Array.isArray(this.tokens)
+            ? this.tokens as unknown as Array<{ text?: string; tone?: string }>
+            : [];
+        return tokens.map(token => ({
             text: String(token?.text ?? ''),
             className: token?.tone ? `message-token tone-${token.tone}` : 'message-token'
         }));
-        routedTokenViews.set(tokens, views);
-        return views;
     }
 }
 
@@ -162,36 +134,24 @@ export abstract class AgentConsoleMessageTemplateBase {
      * expand toggle; the last assistant answer and explicit `stream` layout stay full.
      */
     protected bodyPreviewLines(source: AgentConsoleRenderedLine[], previewLines: number): AgentConsoleRenderedLine[] {
-        const selected = !!this.item?.selected;
-        const detailOpen = this.state.messageDetailOpen;
-        const rawMode = this.state.rawMode;
-        const showCriticalMarks = this.state.showCriticalMarks;
-        const messageLayout = this.state.messageLayout;
-        const finalAssistantMessageId = this.state.finalAssistantMessageId;
-        const expandedIds = this.state.expandedMessageIds;
         const messageId = String(source[0]?.messageId || '');
-        const cached = bodyLinesCache.get(this);
-        if (cached
-            && cached.source === source
-            && cached.selected === selected
-            && cached.detailOpen === detailOpen
-            && cached.rawMode === rawMode
-            && cached.showCriticalMarks === showCriticalMarks
-            && cached.messageLayout === messageLayout
-            && cached.finalAssistantMessageId === finalAssistantMessageId
-            && cached.expandedIds === expandedIds
-            && cached.previewLines === previewLines) {
-            return cached.lines;
-        }
-        const expanded = rawMode || showCriticalMarks || messageLayout === 'scrollback'
-            || (messageId && messageId === finalAssistantMessageId)
+        const expanded = this.state.rawMode
+            || this.state.showCriticalMarks
+            || this.state.messageLayout === 'scrollback'
+            || (messageId && messageId === this.state.finalAssistantMessageId)
             || (messageId && this.state.isMessageExpanded(messageId))
-            || (detailOpen && selected);
-        const lines = expanded ? source.map(line => ({ ...line, toggleMode: 'inline' as const })) : this.previewLines(source, previewLines, true);
-        bodyLinesCache.set(this, {
-            source, selected, detailOpen, rawMode, showCriticalMarks, messageLayout, finalAssistantMessageId, expandedIds, previewLines, lines
-        });
-        return lines;
+            || (this.state.messageDetailOpen && !!this.item?.selected);
+        return expanded
+            ? source.map(line => ({ ...line, toggleMode: 'inline' as const }))
+            : this.previewLines(source, previewLines, true);
+    }
+    /**
+     * Auxiliary rows (tool/command) collapse to a preview unless the row is the
+     * final answer, expanded, or the layout asks for the full body.
+     */
+    @Computed()
+    protected get previewedLines(): AgentConsoleRenderedLine[] {
+        return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
     }
     get spacerBefore(): boolean { return !!this.item?.spacerBefore; }
     get templateKind(): string { return this.item?.templateKind || ''; }
@@ -263,34 +223,15 @@ export class AgentConsoleMarkdownComponent extends AgentConsoleMessageTemplateBa
 @Component({ selector: 'agent-console-thought-template', template: ITEM_TEMPLATE, imports: [AgentConsoleRoutedTokensComponent] })
 export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase {
     override get templateClass(): string { return 'message-template-thought'; }
+    @Computed()
     override get lines(): AgentConsoleRenderedLine[] {
         const source = this.item?.lines || [];
-        const selected = !!this.item?.selected;
-        const detailOpen = this.state.messageDetailOpen;
-        const rawMode = this.state.rawMode;
-        const showCriticalMarks = this.state.showCriticalMarks;
-        const markdownContentWidth = Number(this.state.markdownContentWidth) || 0;
-        const expandedIds = this.state.expandedMessageIds;
         const messageId = String(source[0]?.messageId || '');
-        const cached = thoughtLinesCache.get(this);
-        if (cached
-            && cached.source === source
-            && cached.selected === selected
-            && cached.detailOpen === detailOpen
-            && cached.rawMode === rawMode
-            && cached.showCriticalMarks === showCriticalMarks
-            && cached.expandedIds === expandedIds
-            && cached.markdownContentWidth === markdownContentWidth) {
-            return cached.lines;
-        }
-        const expanded = rawMode || (!!messageId && this.state.isMessageExpanded(messageId));
-        const lines = expanded
+        const expanded = this.state.rawMode || (!!messageId && this.state.isMessageExpanded(messageId));
+        const markdownContentWidth = Number(this.state.markdownContentWidth) || 0;
+        return expanded
             ? this.expandedThoughtLines(source)
             : this.collapsedThoughtLines(source, markdownContentWidth);
-        thoughtLinesCache.set(this, {
-            source, selected, detailOpen, rawMode, showCriticalMarks, expandedIds, markdownContentWidth, lines
-        });
-        return lines;
     }
 
     /** Expanded thoughts keep every line; the first line swaps + for −. */
@@ -398,7 +339,7 @@ export class AgentConsoleThoughtTemplate extends AgentConsoleMessageTemplateBase
 export class AgentConsoleToolTemplate extends AgentConsoleMessageTemplateBase {
     override get templateClass(): string { return 'message-template-tool'; }
     override get lines(): AgentConsoleRenderedLine[] {
-        return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
+        return this.previewedLines;
     }
 }
 
@@ -430,7 +371,7 @@ export class AgentConsoleActivityTemplate extends AgentConsoleMessageTemplateBas
 export class AgentConsoleCommandTemplate extends AgentConsoleMessageTemplateBase {
     override get templateClass(): string { return 'message-template-command'; }
     override get lines(): AgentConsoleRenderedLine[] {
-        return this.bodyPreviewLines(this.item?.lines || [], Math.max(1, this.state.consoleOptions.auxiliaryPreviewLines));
+        return this.previewedLines;
     }
 }
 

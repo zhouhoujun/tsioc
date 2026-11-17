@@ -4671,3 +4671,17 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - per-session `displayMessages` 缓存 + 投影签名比较 + `setMessages` 保持数组引用：40 次 1000 消息切换 A/B（渲染开）p50 约 87–89ms vs 基线 77–95ms，无稳定收益，按纪律回退。
   - components/console 样式解析优化（getStyleMap 省拷贝、按选择器派生属性列表）：多项测量噪声大于收益，未保留。
   - 现状成本拆分（1000 消息 ×4 tabs）：单次切换 ~85–105ms，其中 paint ≈50ms（getStyleMap/mergeStyles/applyCssAnimations 为主），openSession 状态+绑定 ≈45–55ms（displayMessages 投影、消息相等性、v-for 更新）。
+
+## 2026-11-17 跟进 components 新能力：@Computed 可用 + bench 负载鲁棒
+- 撤回旧结论「@Computed 对嵌套 proxy 不建依赖」：新实现通过 `computedCollectors` + `depsAreCurrent` 记录并校验嵌套依赖，计算属性在 agent-ui 可用。
+- agent-ui 模板层改用框架计算属性，删除 3 个手写缓存（`thoughtLinesCache`、`bodyLinesCache`、`routedTokenViews`）：
+  - `AgentConsoleRoutedTokensComponent.renderedTokens` → `@Computed()`；
+  - `AgentConsoleThoughtTemplate.lines` → `@Computed()`；
+  - 基类新增 `previewedLines`（`@Computed()`），Tool/Command 模板复用它。
+  - 验证：console-renderer + transcript-window + turn-stream-narration + long-session 共 124 passing。
+  - 性能：1000 消息流式/切换 A/B 交替多轮，差异在噪声内（p50 双向 ±10–20% 漂移），未作为性能优化宣称；保留理由是可维护性与框架用法一致。
+- 修复「components-bench 在并行负载下误报」：
+  - 每个指标改为多轮取最优（`COMPONENTS_BENCH_ROUNDS`，默认 3），并用 `process.cpuUsage()` 计 CPU 时间而非墙钟；
+  - 新增 `calibration` 指标（同形状的内存访问循环，5120 万次读）；
+  - `check-components-bench.mjs` 按 `calibration / 250ms` 放宽容差（下限 1，不收紧空闲机器），并在缩放 >5% 时打印 `[BENCH-INFO]`。
+  - 验证：空闲与 4 个 `yes` 满载并行两种情况下 `bench:check` 均 PASS。
