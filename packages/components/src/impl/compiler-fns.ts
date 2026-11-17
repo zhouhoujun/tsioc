@@ -12,6 +12,7 @@ import { EventEmitter } from '../EventEmitter';
 import { Subscription } from 'rxjs';
 import { createTemplateRef } from './template';
 import { TEMPLATE_SCOPE_PARENT } from './template';
+import { registerProjectionOutlet } from './projection';
 import { BaseIfDirective, VIfDirective, VElseIfDirective, VElseDirective, setupIfChain } from '../directives/if.dir';
 import { SwitchDirective, CaseDirective, DefaultDirective, registerSwitchDirective, findSwitchDirective } from '../directives/switch-case.dir';
 
@@ -51,7 +52,6 @@ const simplePathExpression = /^[_$a-zA-Z][_$a-zA-Z0-9]*(?:\.[_$a-zA-Z][_$a-zA-Z0
 // Root-level structural directives have no parent to insert their v-container
 // into; remember the replacement so the root node list can be rewritten.
 const rootStructuralContainers = new WeakMap<RNode, RNode>();
-const PROJECTION_CONSUMED = Symbol('__PROJECTION_CONSUMED');
 
 function extractLocalRefs(attrs: RAttr[]): string[] {
     return (attrs || [])
@@ -204,20 +204,7 @@ export function compileElementToFactory(
             }
             const payload: any = injector.getPayload?.();
             const host: any = payload?.nativeElement ?? payload;
-            const projected = host?.[PROJECTION_NODES] as RNode[] | undefined;
-            if (projected?.length && !host[PROJECTION_CONSUMED]) {
-                host[PROJECTION_CONSUMED] = true;
-                projected.forEach(child => {
-                    if (child.parentNode) {
-                        try {
-                            renderer.removeChild(child.parentNode, child);
-                        } catch {
-                            // Already detached.
-                        }
-                    }
-                    renderer.appendChild(outlet, child);
-                });
-            }
+            registerProjectionOutlet(host, outlet, attrs, renderer);
             return outlet;
         };
     }

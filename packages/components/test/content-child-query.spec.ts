@@ -17,7 +17,7 @@ class ProjectedItem {
 @Component({
     selector: 'content-host',
     imports: [ProjectedItem],
-    template: `<div class="slot"><v-content></v-content></div>`
+    template: `<div class="slot"><v-content slot="header" class="header-slot"></v-content><v-content class="body-slot"></v-content></div>`
 })
 class ContentHost {
     @ContentChild('pc') item?: ProjectedItem;
@@ -30,7 +30,7 @@ class ContentHost {
     imports: [ContentHost, ProjectedItem],
     template: `<div>
         <content-host>
-            <projected-item #pc label="P"></projected-item>
+            <projected-item #pc label="P" slot="header"></projected-item>
             <projected-item label="Q"></projected-item>
         </content-host>
     </div>`
@@ -96,7 +96,8 @@ export class ContentChildQueryTest {
             expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['P', 'Q']);
             expect(parent.leaked).toBeUndefined();
             const root = ref.hostView.rootNodes[0] as any;
-            expect(root.querySelector('.projected')?.textContent).toBe('P');
+            expect((root.querySelector('.header-slot') as any)?.querySelectorAll('.projected')[0]?.textContent).toBe('P');
+            expect((root.querySelector('.body-slot') as any)?.querySelectorAll('.projected')[0]?.textContent).toBe('Q');
         } finally {
             await ctx.close();
         }
