@@ -161,12 +161,48 @@ export class VForDirective {
             return;
         }
 
+        // Same length but different content (reorder / scattered edits):
+        // views map to positions by index already, so update their contexts in
+        // place instead of allocating new contexts and re-binding views.
+        if (this._useIndexTrackBy && Array.isArray(previous)) {
+            const previousRaw = unwrapReactive<any[]>(previous);
+            const collectionRaw = unwrapReactive<any[]>(collection);
+            if (previousRaw.length === collectionRaw.length && this._viewRefs.length === collectionRaw.length) {
+                for (let i = 0; i < collectionRaw.length; i++) {
+                    this.updateContextItem(this._viewRefs[i]?.context, collection[i], i);
+                }
+                this.meta.count = collectionRaw.length;
+                return;
+            }
+        }
+
         const contexts = collection.map((item, index) => {
             const context = this.createContext(item, index);
             return context;
         });
 
         this.updateViewsWithTrackBy(contexts);
+    }
+
+    /**
+     * Replace the item/position of an existing row context without recreating
+     * the context object or its reactive proxy.
+     */
+    private updateContextItem(context: any, item: any, index: number, key?: any): void {
+        if (!context) {
+            return;
+        }
+        if (context.$implicit !== item) {
+            context.$implicit = item;
+        }
+        if (context.$item !== item) {
+            context.$item = item;
+        }
+        if (context.$key !== key) {
+            context.$key = key;
+        }
+        this.setUserDefinedVariables(context, item, index, key);
+        this.updateContextIndex(context, index);
     }
 
     /**

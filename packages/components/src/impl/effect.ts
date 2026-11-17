@@ -13,6 +13,15 @@ const batchedEffects = new Set<DefaultReactiveEffect>();
 
 export type EffectScheduleMode = 'sync' | 'microtask';
 
+/**
+ * Per-function run state. Stored on the binding function itself instead of a
+ * WeakMap so the hot re-run path needs no extra hash lookups.
+ */
+const EFFECT_RUNNING = Symbol('__EFFECT_RUNNING');
+const EFFECT_DEPS = Symbol('__EFFECT_DEPS');
+const EFFECT_SCRATCH = Symbol('__EFFECT_SCRATCH');
+const EFFECT_SCOPE = Symbol('__EFFECT_SCOPE');
+
 export interface ReactiveEffectOptions {
     /** Custom runner used instead of the built-in synchronous pass. */
     scheduler?: (fn: Function) => void;
@@ -59,7 +68,6 @@ export class DefaultReactiveEffect implements ReactiveEffect {
     // Bindings created for one embedded view run under that view's scope, so
     // their dependency functions can be removed when the view is destroyed.
     private currentScope?: ReactiveScope;
-    private scopeByFn = new WeakMap<Function, ReactiveScope>();
 
     [noReact] = true;
 
@@ -96,7 +104,16 @@ export class DefaultReactiveEffect implements ReactiveEffect {
         // 添加当前激活的effect
         const scope = this.currentScope;
         this.activeEffects.forEach(effect => {
+            const size = deps!.size;
             deps!.add(effect);
+            // Record only the first registration in this run (Set guarantees
+            // duplicates are no-ops), which keeps branch-change cleanup cheap.
+            if (deps!.size !== size) {
+                const record = (effect as any)[EFFECT_DEPS] as any[] | undefined;
+                if (record) {
+                    record.push(target, key);
+                }
+            }
             if (scope) {
                 scope.record(target, key, effect);
             }
@@ -166,24 +183,97 @@ export class DefaultReactiveEffect implements ReactiveEffect {
 
     // 添加effect函数
     run(fn: Function, scope?: ReactiveScope) {
-        const resolvedScope = scope ?? this.currentScope ?? this.scopeByFn.get(fn);
+        const state = fn as any;
+        const resolvedScope = scope ?? this.currentScope ?? state[EFFECT_SCOPE];
         if (resolvedScope) {
-            this.scopeByFn.set(fn, resolvedScope);
+            state[EFFECT_SCOPE] = resolvedScope;
         }
         const previousScope = this.currentScope;
         this.currentScope = resolvedScope;
 
+        const owned = !state[EFFECT_RUNNING];
+        let previousDeps: any[] | undefined;
+        let runRecord: any[] | undefined;
+        if (owned) {
+            previousDeps = state[EFFECT_DEPS];
+            if (previousDeps?.length) {
+                // Drop last run's dependencies first; reads below re-register
+                // only the keys the current branch still uses.
+                this.removeDeps(fn, previousDeps);
+            }
+            const record: any[] = state[EFFECT_SCRATCH] ?? [];
+            state[EFFECT_SCRATCH] = undefined;
+            record.length = 0;
+            runRecord = record;
+            state[EFFECT_DEPS] = record;
+            state[EFFECT_RUNNING] = true;
+        }
+
         this.runningDepth += 1;
         this.activeEffects.add(fn);
+        let failed = true;
         try {
-            return fn();
+            const result = fn();
+            failed = false;
+            return result;
         } finally {
             this.activeEffects.delete(fn);
             this.currentScope = previousScope;
             this.runningDepth -= 1;
+            if (owned && runRecord) {
+                if (failed) {
+                    // A throwing binding must keep its previous dependencies so
+                    // later writes can retry it. Merge keys discovered before
+                    // the throw so the next run can drop them too.
+                    if (previousDeps?.length) {
+                        this.addDeps(fn, previousDeps);
+                    }
+                    state[EFFECT_DEPS] = previousDeps ? previousDeps.concat(runRecord) : runRecord.slice();
+                    state[EFFECT_SCRATCH] = previousDeps ?? runRecord;
+                } else {
+                    state[EFFECT_DEPS] = runRecord;
+                    // Reuse the previous array as scratch on the next run.
+                    state[EFFECT_SCRATCH] = previousDeps;
+                }
+                state[EFFECT_RUNNING] = false;
+            }
             if (this.runningDepth === 0 && !this.flushing && this.pendingEffects.size > 0) {
                 this.flushPendingEffects();
             }
+        }
+    }
+
+    private removeDeps(fn: Function, record: any[]): void {
+        for (let i = 0; i < record.length; i += 2) {
+            const target = record[i];
+            const key = record[i + 1];
+            const targetMap = this.depsMap.get(target);
+            const deps = targetMap?.get(key);
+            if (!deps) {
+                continue;
+            }
+            deps.delete(fn);
+            // Leave empty sets in place: the binding usually re-adds the same
+            // key on its next run, and removing map entries costs more than it
+            // saves for transient branch changes.
+        }
+    }
+
+    private addDeps(fn: Function, record: any[]): void {
+        for (let i = 0; i < record.length; i += 2) {
+            const target = record[i];
+            const key = record[i + 1];
+            let targetMap = this.depsMap.get(target);
+            if (!targetMap) {
+                targetMap = new Map();
+                this.depsMap.set(target, targetMap);
+            }
+            let deps = targetMap.get(key);
+            if (!deps) {
+                deps = new Set();
+                targetMap.set(key, deps);
+            }
+            deps.add(fn);
         }
     }
 
@@ -243,7 +333,7 @@ export class DefaultReactiveEffect implements ReactiveEffect {
      * view scope on destroy; safe to call after the effect was stopped.
      */
     removeDependency(target: object, key: string | symbol, fn: Function): void {
-        this.scopeByFn.delete(fn);
+        delete (fn as any)[EFFECT_SCOPE];
         const targetMap = this.depsMap.get(target);
         const deps = targetMap?.get(key);
         if (!deps) {

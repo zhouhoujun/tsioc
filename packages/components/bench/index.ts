@@ -41,6 +41,21 @@ async function benchReads(): Promise<void> {
     }
 }
 
+async function benchBindings(): Promise<void> {
+    const effect = new DefaultReactiveEffect();
+    const state: any = reactive({ value: 0 }, effect);
+    const bindings = 100;
+    for (let i = 0; i < bindings; i++) {
+        effect.run(() => { void state.value; });
+    }
+    const writes = 10_000;
+    const start = process.hrtime.bigint();
+    for (let i = 0; i < writes; i++) {
+        state.value = i;
+    }
+    report('trigger 1 key (100 bindings)', ms(start), `${writes} writes`);
+}
+
 async function benchComputed(): Promise<void> {
     let calls = 0;
     class State {
@@ -105,6 +120,16 @@ async function benchList(): Promise<void> {
             await Promise.resolve();
         }
         report('v-for middle remove', ms(start), '20 rows @ 1000');
+
+        start = process.hrtime.bigint();
+        for (let i = 0; i < 20; i++) {
+            component.items = [
+                ...component.items.slice(1),
+                component.items[0]
+            ];
+            await Promise.resolve();
+        }
+        report('v-for reorder', ms(start), '20 rotations @ 1000');
     } finally {
         await ctx.close();
     }
@@ -145,6 +170,7 @@ async function benchToggleWrites(): Promise<void> {
 async function main(): Promise<void> {
     console.log(`components bench (effect ${process.version})`);
     await benchReads();
+    await benchBindings();
     await benchComputed();
     await benchList();
     await benchToggleWrites();
