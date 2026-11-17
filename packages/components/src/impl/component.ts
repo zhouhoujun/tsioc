@@ -414,6 +414,12 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         if (propertyType && directiveRef?.instance instanceof propertyType) {
             return directiveRef.instance;
         }
+        if (read) {
+            const readInjector = componentRef?.injector ?? directiveRef?.injector ?? targetInjector;
+            if (readInjector?.has(read)) {
+                return readInjector.get(read);
+            }
+        }
         return componentRef?.instance
             ?? directiveRef?.instance
             ?? targetInjector?.getTemplateRef(node)

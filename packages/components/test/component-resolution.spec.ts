@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
 import { Component, ComponentsModule, Directive, ViewChild } from '../src';
 import { ConsoleTemplateModule } from '../console/src';
 
@@ -17,14 +18,27 @@ class ProbeDirective {
     constructor(public child: InjectChild) { }
 }
 
+@Injectable()
+class ChildService {
+    value = 'service';
+}
+
+@Component({
+    selector: 'service-child',
+    providers: [ChildService],
+    template: `<span>service</span>`
+})
+class ServiceChild { }
+
 @Component({
     selector: 'inject-parent',
-    imports: [InjectChild, ProbeDirective],
-    template: `<div><inject-child probe></inject-child></div>`
+    imports: [InjectChild, ProbeDirective, ServiceChild],
+    template: `<div><inject-child probe></inject-child><service-child #serviceChild></service-child></div>`
 })
 class InjectParent {
     @ViewChild(ProbeDirective) probe?: ProbeDirective;
     @ViewChild(InjectChild) child?: InjectChild;
+    @ViewChild('serviceChild', ChildService) service?: ChildService;
 }
 
 @Suite('component object resolution')
@@ -41,6 +55,8 @@ export class ComponentResolutionTest {
             expect(parent.child).toBeDefined();
             expect(parent.probe?.child).toBeInstanceOf(InjectChild);
             expect(parent.probe?.child).toBe(parent.child);
+            expect(parent.service).toBeInstanceOf(ChildService);
+            expect(parent.service?.value).toBe('service');
         } finally {
             await ctx.close();
         }
