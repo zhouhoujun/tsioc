@@ -667,16 +667,54 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 
 验证：gateway 140 passing、admin 69 passing；每步均通过 `tsc --noEmit`；`bash scripts/agents-gate.sh ms-gateway ms-admin ms-tsc` PASS（gate 已新增 `ms-admin` stage）。
 
-### 11.5 Admin 状态拆分（进行中）
+### 11.5 Admin 状态拆分完成
 
-- 新增 `admin/web/admin.state.pure.ts`：告警时间、SLO CSV、config diff、方法 key、路由校验；
-- `admin.state.ts` 1343 → 1255 行，页面行为与 63 个既有测试不变（新增 6 个纯函数测试，共 69）。
+`admin.state.ts` 1343 → 593 行，低于 600 行目标；页面行为不变：
 
-S2 剩余：
+| 模块 | 职责 |
+|---|---|
+| `admin.state.pure.ts` | 告警时间、SLO CSV、config diff、方法 key、路由校验 |
+| `admin.config.controller.ts` | 配置预览/历史/rollback |
+| `admin.routes.controller.ts` | 路由列表/编辑器/apply |
+| `admin.rules.controller.ts` | 规则工作流与 match 测试 |
+| `admin.routes-transfer.controller.ts` | 路由详情 JSON、导入/导出/reset |
+| `admin.diagnostics.controller.ts` | diagnostics/services 与 SLO 导出 |
+| `admin.view.controller.ts` | 派生视图、统计与展示格式 |
+| `admin.menu.controller.ts` | 语言/主题菜单 |
+| `admin.shell.controller.ts` | 初始化、路由订阅、跳转、登录重定向 |
+| `admin.types.ts` | 公开接口类型（state 继续 re-export） |
 
-- 继续拆 `admin.state.ts`：路由编辑器/配置历史/规则工作流控制器（目标 < 600 行）；
-- 指标 label 预编译与 `*_seconds` 双发（S3）；
-- webhook 独立模块（当前保留在 `gateway.upstream.ts`，无行为变化）。
+新增 `GET /api/gateway-admin/doctor`，汇总路由、发现、熔断与 SLO 告警检查。
+验证：admin 72 passing；bundle 已按拆分前源码重建（后续拆分的行为等价，待 activities 并发改动稳定后再次重建）。
+
+### 11.6 S3 执行记录（2026-11-16）
+
+| 项目 | 结果 |
+|---|---|
+| metrics 单位 | 新增 `recordDuration`，http/client/gateway 延迟指标双发 `*_ms` + `*_seconds` |
+| defineService | `defineService` / `describeService`；示例见 `examples/http-quickstart.ts` |
+| OpenAPI | swagger 暴露 `GET /{prefix}/openapi.json` |
+| 契约兼容 | `compareContracts` / `assertCompatible` + CLI `--compat`，breaking 变化 exit 1 |
+| 可运行示例 | quickstart + smoke，gate `ms-examples` 真实启动端口 |
+| soak | 新增 `examples/soak.ts` 与 opt-in gate `ms-soak`（heap/句柄稳定） |
+| 每包 README | 21 个缺失包补齐（共 26 个包） |
+| 发布 | `ms-admin` / `ms-examples` / `ms-soak` 接入 gate；publish 分片与 payload 校验 |
+
+真实 Docker broker 回归（`MS_BROKER_PROFILE=1 ms-brokers` PASS）：
+Kafka 81、NATS 59、AMQP 63、MQTT 87、Redis 73。
+修复了 NATS/Kafka/AMQP payload `authorization` 被 broker headers 覆盖丢失的问题。
+
+最终门禁（2026-11-16）：
+
+```text
+ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
+ms-examples ms-tsc ms-brokers package-deps package-publish
+```
+
+全部 PASS。soak 30s：37,942 请求、0 失败、heap -1MB、句柄回落到 2。
+
+外部验证未完成（Docker registry 无法访问，镜像拉取超时）：
+OTLP Collector 实机导出、Consul/Nacos/Eureka 实机容器。
 
 ---
 
