@@ -51,6 +51,7 @@ const simplePathExpression = /^[_$a-zA-Z][_$a-zA-Z0-9]*(?:\.[_$a-zA-Z][_$a-zA-Z0
 // Root-level structural directives have no parent to insert their v-container
 // into; remember the replacement so the root node list can be rewritten.
 const rootStructuralContainers = new WeakMap<RNode, RNode>();
+const PROJECTION_CONSUMED = Symbol('__PROJECTION_CONSUMED');
 
 function extractLocalRefs(attrs: RAttr[]): string[] {
     return (attrs || [])
@@ -187,6 +188,38 @@ export function compileElementToFactory(
     // 检查是否是模板标签
     if (tagName === (rendererOptions.templateTag || '')) {
         return  rendererOptions.templateFactory(node, renderer, attrs, bindings, options, rendererOptions);
+    }
+
+    // Projection outlet: <v-content> / <ng-content> renders projected nodes.
+    const lowerTag = String(tagName || '').toLowerCase();
+    if (lowerTag === 'v-content' || lowerTag === 'ng-content') {
+        return (renderer: Renderer, effect: ReactiveEffect, injector: NodeInjector) => {
+            const outlet = renderer.createElement('v-content');
+            if (typeof (renderer as any).setStyle === 'function') {
+                try {
+                    (renderer as any).setStyle(outlet, 'display', 'contents');
+                } catch {
+                    // Renderers without style support can keep the wrapper.
+                }
+            }
+            const payload: any = injector.getPayload?.();
+            const host: any = payload?.nativeElement ?? payload;
+            const projected = host?.[PROJECTION_NODES] as RNode[] | undefined;
+            if (projected?.length && !host[PROJECTION_CONSUMED]) {
+                host[PROJECTION_CONSUMED] = true;
+                projected.forEach(child => {
+                    if (child.parentNode) {
+                        try {
+                            renderer.removeChild(child.parentNode, child);
+                        } catch {
+                            // Already detached.
+                        }
+                    }
+                    renderer.appendChild(outlet, child);
+                });
+            }
+            return outlet;
+        };
     }
 
     // 检查是否有结构指令（v-for, v-if等）

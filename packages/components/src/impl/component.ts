@@ -302,10 +302,18 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
             .map(entry => this.readNodeValue(entry.node, query, propertyType, this.contentInjector));
     }
 
-    protected resolveViewChilds(def: ComponentDef): void {
+    protected resolveViewChilds(def: ComponentDef, mode: 'initial' | 'dynamic' = 'initial'): void {
         const queries = def.viewChilds || [];
         queries.forEach(query => {
-            (this.instance as any)[query.propertyKey] = this.resolveViewChild(query);
+            if (mode === 'dynamic' && query.static && (this.instance as any)[query.propertyKey] != null) {
+                return;
+            }
+            const value = this.resolveViewChild(query);
+            if (query.required && value == null) {
+                const selector = query.selector ?? query.type;
+                throw new Error(`ViewChild '${String(selector ?? query.propertyKey)}' not found on ${this.classRef.className}.`);
+            }
+            (this.instance as any)[query.propertyKey] = value;
         });
         const childrenQueries = def.viewChildrens || [];
         if (childrenQueries.length) {
@@ -373,7 +381,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
             if (this.injector.destroyed || !this._hostView || this._hostView.destroyed) {
                 return;
             }
-            this.resolveViewChilds(this.def);
+            this.resolveViewChilds(this.def, 'dynamic');
         });
     }
 

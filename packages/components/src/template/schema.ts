@@ -38,7 +38,8 @@ const COMMON_ELEMENT_NAMES = new Set([
     'a', 'article', 'aside', 'br', 'button', 'code', 'div', 'em', 'footer', 'form',
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'img', 'input', 'label', 'li',
     'main', 'nav', 'ol', 'option', 'p', 'pre', 'section', 'select', 'small', 'span',
-    'strong', 'table', 'tbody', 'td', 'textarea', 'th', 'thead', 'tr', 'ul'
+    'strong', 'table', 'tbody', 'td', 'textarea', 'th', 'thead', 'tr', 'ul',
+    'v-content', 'ng-content'
 ]);
 
 export function mergeTemplateSchemas(

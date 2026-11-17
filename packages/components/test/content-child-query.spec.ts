@@ -17,7 +17,7 @@ class ProjectedItem {
 @Component({
     selector: 'content-host',
     imports: [ProjectedItem],
-    template: `<div class="slot"></div>`
+    template: `<div class="slot"><v-content></v-content></div>`
 })
 class ContentHost {
     @ContentChild('pc') item?: ProjectedItem;
@@ -87,6 +87,8 @@ export class ContentChildQueryTest {
             expect(parent.host?.item?.label).toBe('P');
             expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['P', 'Q']);
             expect(parent.leaked).toBeUndefined();
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('.projected')?.textContent).toBe('P');
         } finally {
             await ctx.close();
         }

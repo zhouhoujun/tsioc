@@ -17,21 +17,26 @@ export type ViewChildReadToken =
 export interface ViewChildMetadata<T = any> extends PropertyMetadata<T> {
     selector?: ViewChildSelector;
     read?: ViewChildReadToken;
+    /** Resolve once during the initial view pass; do not refresh on structural changes. */
+    static?: boolean;
+    /** Throw a descriptive error when the selector is not found. */
+    required?: boolean;
 }
 
 export interface ViewChildrenMetadata<T = any> extends PropertyMetadata<T> {
     selector?: ViewChildSelector;
     read?: ViewChildReadToken;
+    required?: boolean;
 }
 
 export interface ViewChild {
     (selector?: ViewChildSelector, read?: ViewChildReadToken): MethodPropDecorator;
-    (options?: Omit<ViewChildMetadata, 'propertyKey' | 'mutil'>): MethodPropDecorator;
+    (options?: Omit<ViewChildMetadata, 'propertyKey' | 'mutil' | 'target'>): MethodPropDecorator;
 }
 
 export interface ViewChildren {
     (selector?: ViewChildSelector, read?: ViewChildReadToken): MethodPropDecorator;
-    (options?: Omit<ViewChildrenMetadata, 'propertyKey' | 'mutil'>): MethodPropDecorator;
+    (options?: Omit<ViewChildrenMetadata, 'propertyKey' | 'mutil' | 'target'>): MethodPropDecorator;
 }
 
 export interface ContentChildMetadata<T = any> extends PropertyMetadata<T> {
@@ -46,16 +51,16 @@ export interface ContentChildrenMetadata<T = any> extends PropertyMetadata<T> {
 
 export interface ContentChild {
     (selector?: ViewChildSelector, read?: ViewChildReadToken): MethodPropDecorator;
-    (options?: Omit<ContentChildMetadata, 'propertyKey' | 'mutil'>): MethodPropDecorator;
+    (options?: Omit<ContentChildMetadata, 'propertyKey' | 'mutil' | 'target'>): MethodPropDecorator;
 }
 
 export interface ContentChildren {
     (selector?: ViewChildSelector, read?: ViewChildReadToken): MethodPropDecorator;
-    (options?: Omit<ContentChildrenMetadata, 'propertyKey' | 'mutil'>): MethodPropDecorator;
+    (options?: Omit<ContentChildrenMetadata, 'propertyKey' | 'mutil' | 'target'>): MethodPropDecorator;
 }
 
 export const ViewChild: ViewChild = createDecorator<ViewChildMetadata>('ViewChild', {
-    props: (selector?: ViewChildSelector | Omit<ViewChildMetadata, 'propertyKey' | 'mutil'>, read?: ViewChildReadToken) => {
+    props: (selector?: ViewChildSelector | Omit<ViewChildMetadata, 'propertyKey' | 'mutil' | 'target'>, read?: ViewChildReadToken) => {
         if (selector && typeof selector === 'object' && !('prototype' in selector)) {
             return selector as ViewChildMetadata;
         }
@@ -68,7 +73,7 @@ export const ViewChild: ViewChild = createDecorator<ViewChildMetadata>('ViewChil
 });
 
 export const ViewChildren: ViewChildren = createDecorator<ViewChildrenMetadata>('ViewChildren', {
-    props: (selector?: ViewChildSelector | Omit<ViewChildrenMetadata, 'propertyKey' | 'mutil'>, read?: ViewChildReadToken) => {
+    props: (selector?: ViewChildSelector | Omit<ViewChildrenMetadata, 'propertyKey' | 'mutil' | 'target'>, read?: ViewChildReadToken) => {
         if (selector && typeof selector === 'object' && !('prototype' in selector)) {
             return selector as ViewChildrenMetadata;
         }
@@ -81,7 +86,7 @@ export const ViewChildren: ViewChildren = createDecorator<ViewChildrenMetadata>(
 });
 
 export const ContentChild: ContentChild = createDecorator<ContentChildMetadata>('ContentChild', {
-    props: (selector?: ViewChildSelector | Omit<ContentChildMetadata, 'propertyKey' | 'mutil'>, read?: ViewChildReadToken) => {
+    props: (selector?: ViewChildSelector | Omit<ContentChildMetadata, 'propertyKey' | 'mutil' | 'target'>, read?: ViewChildReadToken) => {
         if (selector && typeof selector === 'object' && !('prototype' in selector)) {
             return selector as ContentChildMetadata;
         }
@@ -94,7 +99,7 @@ export const ContentChild: ContentChild = createDecorator<ContentChildMetadata>(
 });
 
 export const ContentChildren: ContentChildren = createDecorator<ContentChildrenMetadata>('ContentChildren', {
-    props: (selector?: ViewChildSelector | Omit<ContentChildrenMetadata, 'propertyKey' | 'mutil'>, read?: ViewChildReadToken) => {
+    props: (selector?: ViewChildSelector | Omit<ContentChildrenMetadata, 'propertyKey' | 'mutil' | 'target'>, read?: ViewChildReadToken) => {
         if (selector && typeof selector === 'object' && !('prototype' in selector)) {
             return selector as ContentChildrenMetadata;
         }
