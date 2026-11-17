@@ -2,8 +2,18 @@ import { Token, Inject, Injector, Injectable } from '@tsdi/ioc';
 import { SuiteDescribe, RealtimeReporter, ICaseDescribe, CoverageSummary, UNITTESTCONFIGURE, UnitTestConfigure, CoverageReporter } from '@tsdi/unit';
 import { HrtimeFormatter } from '@tsdi/core';
 import * as path from 'path';
+import * as fs from 'fs';
 import { V8CoverageCollector } from './V8CoverageCollector';
 import * as chalk from 'chalk';
+
+/** Minimal HTML escaping for report output. */
+function escapeHtml(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 
 export type CoverageReporterType = 'text' | 'text-summary' | 'json' | 'html' | 'lcov' | 'cobertura';
 
@@ -256,8 +266,9 @@ export class V8CoverageReporter extends CoverageReporter {
         if (!this.coverageCollector) return;
 
         const summary = this.coverageCollector.getSummary();
-        const outputDir = this.options?.outputDir || 'coverage';
-        console.log(`\nHTML coverage report would be generated in: ${chalk.blue(outputDir + '/')}`);
+        const file = this.writeReport('index.html', this.buildHtmlReport());
+        if (!file) return;
+        console.log(`\nHTML coverage report: ${chalk.blue(file)}`);
         console.log(`Lines: ${this.formatCoverage(summary.lines)}`);
     }
 
@@ -265,8 +276,9 @@ export class V8CoverageReporter extends CoverageReporter {
         if (!this.coverageCollector) return;
 
         const summary = this.coverageCollector.getSummary();
-        const outputDir = this.options?.outputDir || 'coverage';
-        console.log(`\nLCOV coverage report would be generated in: ${chalk.blue(outputDir + '/lcov.info')}`);
+        const file = this.writeReport('lcov.info', this.buildLcovReport());
+        if (!file) return;
+        console.log(`\nLCOV coverage report: ${chalk.blue(file)}`);
         console.log(`Lines: ${this.formatCoverage(summary.lines)}`);
     }
 
@@ -274,9 +286,111 @@ export class V8CoverageReporter extends CoverageReporter {
         if (!this.coverageCollector) return;
 
         const summary = this.coverageCollector.getSummary();
-        const outputDir = this.options?.outputDir || 'coverage';
-        console.log(`\nCobertura XML coverage report would be generated in: ${chalk.blue(outputDir + '/cobertura.xml')}`);
+        const file = this.writeReport('cobertura.xml', this.buildCoberturaReport());
+        if (!file) return;
+        console.log(`\nCobertura coverage report: ${chalk.blue(file)}`);
         console.log(`Lines: ${this.formatCoverage(summary.lines)}`);
+    }
+
+    /** Resolve the report directory and create it on demand. */
+    protected reportDir(): string {
+        return path.resolve(this.options?.outputDir || 'coverage');
+    }
+
+    protected writeReport(name: string, contents: string): string | undefined {
+        try {
+            const dir = this.reportDir();
+            fs.mkdirSync(dir, { recursive: true });
+            const file = path.join(dir, name);
+            fs.writeFileSync(file, contents, 'utf-8');
+            return file;
+        } catch (error) {
+            console.log(chalk.yellow(`Warning: could not write ${name}: ${(error as Error).message}`));
+            return undefined;
+        }
+    }
+
+    protected buildHtmlReport(): string {
+        const summary = this.coverageCollector!.getSummary();
+        const rows = Array.from(this.coverageCollector!.getAllFileCoverages().entries())
+            .sort((a, b) => a[1].summary.lines.percentage - b[1].summary.lines.percentage)
+            .map(([filePath, file]) => {
+                const name = this.getRelativePath(filePath);
+                const pct = file.summary.lines.percentage.toFixed(1);
+                const cls = file.summary.lines.percentage >= 80 ? 'good' : file.summary.lines.percentage >= 60 ? 'warn' : 'bad';
+                return `      <tr class="${cls}"><td>${escapeHtml(name)}</td><td>${pct}%</td>` +
+                    `<td>${file.summary.statements.percentage.toFixed(1)}%</td>` +
+                    `<td>${file.summary.branches.percentage.toFixed(1)}%</td>` +
+                    `<td>${file.summary.functions.percentage.toFixed(1)}%</td></tr>`;
+            })
+            .join('\n');
+        return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Coverage report</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border-bottom: 1px solid #ddd; padding: .35rem .6rem; text-align: left; }
+      tr.bad td:first-child { color: #b00020; }
+      tr.warn td:first-child { color: #a06000; }
+      tr.good td:first-child { color: #0b6b2f; }
+    </style>
+  </head>
+  <body>
+    <h1>Coverage report</h1>
+    <p>Lines: ${summary.lines.percentage.toFixed(2)}% (${summary.lines.covered}/${summary.lines.total})</p>
+    <table>
+      <thead><tr><th>File</th><th>Lines</th><th>Statements</th><th>Branches</th><th>Functions</th></tr></thead>
+      <tbody>
+${rows}
+      </tbody>
+    </table>
+  </body>
+</html>
+`;
+    }
+
+    protected buildLcovReport(): string {
+        const records: string[] = [];
+        this.coverageCollector!.getAllFileCoverages().forEach((file, filePath) => {
+            const lines = Array.from(file.lines.entries()).sort((a, b) => a[0] - b[0]);
+            const covered = lines.filter(([, hits]) => hits > 0).length;
+            records.push(`SF:${filePath}`);
+            lines.forEach(([line, hits]) => records.push(`DA:${line},${hits}`));
+            records.push(`LF:${lines.length}`);
+            records.push(`LH:${covered}`);
+            records.push('end_of_record');
+        });
+        return records.join('\n') + '\n';
+    }
+
+    protected buildCoberturaReport(): string {
+        const summary = this.coverageCollector!.getSummary();
+        const rate = (value: { total: number; covered: number }) =>
+            value.total === 0 ? '1' : (value.covered / value.total).toFixed(4);
+        const classes = Array.from(this.coverageCollector!.getAllFileCoverages().entries())
+            .map(([filePath, file]) => {
+                const name = this.getRelativePath(filePath).replace(/\\/g, '/');
+                const lines = Array.from(file.lines.entries()).map(([line, hits]) =>
+                    `        <line number="${line}" hits="${hits}"/>`).join('\n');
+                return `      <class name="${escapeHtml(name)}" filename="${escapeHtml(name)}" ` +
+                    `line-rate="${rate(file.summary.lines)}" branch-rate="${rate(file.summary.branches)}">\n` +
+                    `        <lines>\n${lines}\n        </lines>\n      </class>`;
+            })
+            .join('\n');
+        return `<?xml version="1.0" encoding="utf-8"?>
+<coverage line-rate="${rate(summary.lines)}" branch-rate="${rate(summary.branches)}" version="1.0" timestamp="${Date.now()}">
+  <packages>
+    <package name="all">
+      <classes>
+${classes}
+      </classes>
+    </package>
+  </packages>
+</coverage>
+`;
     }
 
     protected checkThreshold(summary: CoverageSummary): void {

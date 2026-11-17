@@ -8,6 +8,7 @@ export * from './runner/Runner';
 export * from './runner/SuiteRunner';
 export * from './runner/OldTestRunner';
 export * from './runner/E2ERunner';
+export * from './runner/ensure-suites';
 export * from './UnitTestService';
 
 export * from './reports/interface';

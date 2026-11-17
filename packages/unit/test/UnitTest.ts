@@ -28,7 +28,11 @@ export class SuiteTest {
         console.log('---------after  test case ' + this.idx + '-----------');
     }
 
-    @Test('assert test timeout', 5)
+    // The case name describes a test that is still *within* its timeout: the
+    // outer timeout must be comfortably larger than the inner timer, otherwise
+    // the two 5ms timers race and the suite fails intermittently on a loaded
+    // machine.
+    @Test('assert test in time (timer below timeout)', 200)
     testTimeout() {
         console.log('---------assert test timeout------');
         const def = lang.defer();
@@ -40,7 +44,7 @@ export class SuiteTest {
         return def.promise;
     }
 
-    @Test('assert test in time', 5)
+    @Test('assert test in time', 200)
     testInTime(assert: Assert) {
         console.log('---------assert test in time------');
         const def = lang.defer();

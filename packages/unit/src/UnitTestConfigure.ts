@@ -44,5 +44,13 @@ export interface UnitTestConfigure extends EnvironmentOption {
     reporters?: ProvdierOf<TestReport>[];
     coverage?: CoverageOptions;
     e2e?: E2EOptions;
+    /**
+     * Allow a file glob that matches no test file.
+     *
+     * Defaults to `false`: a pattern that matches nothing is almost always a
+     * misconfigured `baseURL`/glob and would otherwise look like a green run
+     * (zero suites, exit code 0).
+     */
+    allowEmpty?: boolean;
 }
 

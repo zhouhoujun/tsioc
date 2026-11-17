@@ -40,6 +40,10 @@ export class V8CoverageCollector extends CoverageCollector {
     }
 
     async collect(): Promise<void> {
+        // Drop dumps left by previous runs: `readCoverageFiles` reads every
+        // `.json` in the directory, so stale data would be merged into this
+        // run and make coverage numbers non-reproducible.
+        this.clearCoverageDir();
         if (typeof (v8 as any).takeCoverage === 'function') {
             try {
                 (v8 as any).takeCoverage();
@@ -47,6 +51,22 @@ export class V8CoverageCollector extends CoverageCollector {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         await this.readCoverageFiles();
+    }
+
+    private clearCoverageDir(): void {
+        if (!fs.existsSync(this.coverageDir)) {
+            return;
+        }
+        for (const file of fs.readdirSync(this.coverageDir)) {
+            if (file.endsWith('.json')) {
+                try {
+                    fs.unlinkSync(path.join(this.coverageDir, file));
+                } catch {
+                    // A file that cannot be removed is skipped; it would only
+                    // add stale data, not break the run.
+                }
+            }
+        }
     }
 
     private async readCoverageFiles(): Promise<void> {
@@ -323,35 +343,53 @@ export class V8CoverageCollector extends CoverageCollector {
         return new RegExp(regex, 'i').test(filePath);
     }
 
+    /**
+     * Translate a coverage glob into an anchored regular expression.
+     *
+     * The previous implementation only anchored the end, so `src/**\/*.ts`
+     * matched `/anywhere/packages/ioc/src/file.ts` too and `**\/test/**` never
+     * matched anything (it required a trailing slash). Both directions broke
+     * per-package coverage scoping.
+     *
+     * `**\/` matches zero or more path segments, `**` matches anything
+     * (including `/`), `*` matches within a segment and `?` matches one
+     * non-separator character.
+     */
     private globToRegex(pattern: string): string {
-        const parts = pattern.split('**/');
-        let regex = '';
-        
-        for (let i = 0; i < parts.length; i++) {
-            if (i > 0) {
-                regex += '(?:[^/]+/)*';
-            }
-            regex += this.globPartToRegex(parts[i]);
-        }
-        
-        return regex + '$';
-    }
-    
-    private globPartToRegex(part: string): string {
-        let regex = '';
-        for (let i = 0; i < part.length; i++) {
-            const ch = part[i];
+        const normalized = pattern.replace(/\\/g, '/');
+        let regex = '^';
+        let index = 0;
+        while (index < normalized.length) {
+            const ch = normalized[index];
             if (ch === '*') {
+                if (normalized[index + 1] === '*') {
+                    if (normalized[index + 2] === '/') {
+                        regex += '(?:[^/]+/)*';
+                        index += 3;
+                        continue;
+                    }
+                    regex += '.*';
+                    index += 2;
+                    continue;
+                }
                 regex += '[^/]*';
-            } else if (ch === '?') {
-                regex += '[^/]';
-            } else if (ch === '.') {
-                regex += '\\.';
-            } else {
-                regex += ch;
+                index += 1;
+                continue;
             }
+            if (ch === '?') {
+                regex += '[^/]';
+                index += 1;
+                continue;
+            }
+            if ('\\^$.|+()[]{}'.includes(ch)) {
+                regex += '\\' + ch;
+                index += 1;
+                continue;
+            }
+            regex += ch;
+            index += 1;
         }
-        return regex;
+        return regex + '$';
     }
 
     getSummary(): CoverageSummary {

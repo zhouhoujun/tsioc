@@ -1,3 +1,6 @@
+import { mkdtempSync, existsSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { Suite, BeforeEach, Test, AfterEach } from '@tsdi/unit';
 import { Inject, Token } from '@tsdi/ioc';
 import { V8CoverageReporter } from '../src';
@@ -130,63 +133,80 @@ export class CoverageReporterTest {
 
     @Test('should render with html reporter')
     async testHtmlReport() {
-        this.reporter.setOptions({ 
-            enabled: true, 
-            reporters: ['html'],
-            outputDir: 'test-coverage'
-        });
-        
-        const suites = new Map<Token, SuiteDescribe>();
-        suites.set('suite1', {
-            describe: 'Test Suite',
-            cases: [
-                { title: 'case 1', key: 'key1', used: [1000000, 0] }
-            ],
-            start: [0, 0]
-        });
-        
-        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
-        expect(true).toBeTruthy();
+        const dir = mkdtempSync(join(tmpdir(), 'unit-console-html-'));
+        try {
+            this.reporter.setOptions({
+                enabled: true,
+                reporters: ['html'],
+                outputDir: dir
+            });
+
+            const suites = new Map<Token, SuiteDescribe>();
+            suites.set('suite1', {
+                describe: 'Test Suite',
+                cases: [
+                    { title: 'case 1', key: 'key1', used: [1000000, 0] }
+                ],
+                start: [0, 0]
+            });
+
+            await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
+            expect(existsSync(join(dir, 'index.html'))).toBeTruthy();
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
     }
 
     @Test('should render with lcov reporter')
     async testLcovReport() {
-        this.reporter.setOptions({ 
-            enabled: true, 
-            reporters: ['lcov'] 
-        });
-        
-        const suites = new Map<Token, SuiteDescribe>();
-        suites.set('suite1', {
-            describe: 'Test Suite',
-            cases: [
-                { title: 'case 1', key: 'key1', used: [1000000, 0] }
-            ],
-            start: [0, 0]
-        });
-        
-        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
-        expect(true).toBeTruthy();
+        const dir = mkdtempSync(join(tmpdir(), 'unit-console-lcov-'));
+        try {
+            this.reporter.setOptions({
+                enabled: true,
+                reporters: ['lcov'],
+                outputDir: dir
+            });
+
+            const suites = new Map<Token, SuiteDescribe>();
+            suites.set('suite1', {
+                describe: 'Test Suite',
+                cases: [
+                    { title: 'case 1', key: 'key1', used: [1000000, 0] }
+                ],
+                start: [0, 0]
+            });
+
+            await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
+            expect(existsSync(join(dir, 'lcov.info'))).toBeTruthy();
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
     }
 
     @Test('should render with cobertura reporter')
     async testCoberturaReport() {
-        this.reporter.setOptions({ 
-            enabled: true, 
-            reporters: ['cobertura'] 
-        });
-        
-        const suites = new Map<Token, SuiteDescribe>();
-        suites.set('suite1', {
-            describe: 'Test Suite',
-            cases: [
-                { title: 'case 1', key: 'key1', used: [1000000, 0] }
-            ],
-            start: [0, 0]
-        });
-        
-        await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
-        expect(true).toBeTruthy();
+        const dir = mkdtempSync(join(tmpdir(), 'unit-console-cobertura-'));
+        try {
+            this.reporter.setOptions({
+                enabled: true,
+                reporters: ['cobertura'],
+                outputDir: dir
+            });
+
+            const suites = new Map<Token, SuiteDescribe>();
+            suites.set('suite1', {
+                describe: 'Test Suite',
+                cases: [
+                    { title: 'case 1', key: 'key1', used: [1000000, 0] }
+                ],
+                start: [0, 0]
+            });
+
+            await this.reporter.render(Array.from(suites.values()), [1000000, 0]);
+            expect(existsSync(join(dir, 'cobertura.xml'))).toBeTruthy();
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
     }
 
     @Test('should render with multiple reporters')

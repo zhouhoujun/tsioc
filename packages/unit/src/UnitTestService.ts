@@ -4,6 +4,7 @@ import { OldTestRunner } from './runner/OldTestRunner';
 import { DefaultTestReport } from './reports/TestReport';
 import { SuiteDef } from './metadata';
 import { UNITTESTCONFIGURE } from './configure';
+import { ensureSuitesFound } from './runner/ensure-suites';
 
 
 
@@ -34,6 +35,12 @@ export class UnitTestService {
             }
         }
         oldRunner.unregisterGlobalScope();
+        // `suites` only holds exported suite classes; BDD specs register their
+        // suites on the runner while the files are loaded.
+        ensureSuitesFound(src, suites.filter(item => !!item).length + oldRunner.suites.length, {
+            baseURL: config.baseURL,
+            allowEmpty: config.allowEmpty
+        });
         await oldRunner.run();
 
         const { unitSuites, e2eSuites } = suites.reduce((prev: { unitSuites: Type[], e2eSuites: Type[] }, cur) => {
