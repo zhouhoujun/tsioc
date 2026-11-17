@@ -23,12 +23,15 @@ export function parseWorktreeArgs(args: string): AgentConsoleWorktreeRequest {
         || tokens[0] === 'create' || tokens[0] === 'enter'
         ? tokens.shift()!
         : 'create';
-    return {
+    const request: AgentConsoleWorktreeRequest = {
         action: action as AgentConsoleWorktreeRequest['action'],
         name: tokens.find(token => !token.startsWith('--')),
-        force: tokens.includes('--force'),
-        yes: tokens.includes('--yes')
+        force: tokens.includes('--force')
     };
+    if (tokens.includes('--yes')) {
+        request.yes = true;
+    }
+    return request;
 }
 
 function worktreeBaseName(path: string): string {

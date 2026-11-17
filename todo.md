@@ -4475,3 +4475,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第六十五批（2026-11-16）：
   - 抽出 gateway.response.ts（改写/缓存/etag/压缩/fallback）。
   - 回归：gateway 125。
+
+## 2026-11-16 worktree 解析兼容
+- `parseWorktreeArgs` 只在传入 `--yes` 时添加该字段，保持既有 `{action,name,force}` 形状，避免破坏 worktree-command 解析测试。
