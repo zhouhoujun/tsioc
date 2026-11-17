@@ -4605,3 +4605,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第八十一批（2026-11-16）：
   - Admin view/menu/shell controller 拆分，admin.state.ts 593 行。
   - 回归：admin 72。
+- 浏览器端 `[` / `]` 与 TUI 走同一契约（`handleBrowserGlobalKeyInput`），新增跨平台用例，keymap-context 70 passing。

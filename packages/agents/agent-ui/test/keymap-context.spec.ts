@@ -602,6 +602,26 @@ export class AgentConsoleThreadNavigationTest {
         expect(state.selectedMessage?.id).toEqual('m5');
     }
 
+    @Test('browser [ and ] jump between user prompts too')
+    async browserBracketsJumpBetweenUserPrompts() {
+        const { state, component } = createKeymapConsoleParts();
+        state.setMessages([
+            { id: 'm1', role: 'user', content: '1', createdAt: 1 } as any,
+            { id: 'm2', role: 'assistant', content: '2', createdAt: 2 } as any,
+            { id: 'm3', role: 'user', content: '3', createdAt: 3 } as any,
+            { id: 'm4', role: 'assistant', content: '4', createdAt: 4 } as any
+        ]);
+        navigationFor(state).setFocused(true);
+        state.setSelectedMessageId('m4');
+
+        expect(await (component as any).handleBrowserGlobalKeyInput('[', {})).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m3');
+        expect(await (component as any).handleBrowserGlobalKeyInput('[', {})).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m1');
+        expect(await (component as any).handleBrowserGlobalKeyInput(']', {})).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m3');
+    }
+
     @Test('PageUp from an empty composer enters transcript navigation')
     async pageUpEntersTranscriptFromComposer() {
         const { state, component } = createKeymapConsoleParts();
