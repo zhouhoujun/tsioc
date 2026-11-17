@@ -89,9 +89,9 @@ export class AdminShellController {
         } catch {
             // ignore storage failures
         }
-        if (this.started) {
-            void host.reload();
-        }
+        // `locale` is reactive: every `t()` binding reruns on its own. Do not
+        // refetch gateway state here - that would discard staged route edits
+        // and add a pointless round-trip just to change labels.
     }
 
     setTheme(theme: 'light' | 'dark'): void {

@@ -320,23 +320,38 @@ const DESIGNER_HIDDEN_ACTIONS = ['run', 'resume', 'cancel', 'toggle-logs', 'save
 export class GatewayAdminComponent implements OnInit, AfterViewInit, OnDestroy {
     designerOpen = false;
     designerHiddenActions = DESIGNER_HIDDEN_ACTIONS;
-    readonly registry: WorkflowNodeRegistry;
-    readonly designer: WorkflowDesigner;
+    designer?: WorkflowDesigner;
 
+    private registry?: WorkflowNodeRegistry;
     private store: GatewayAdminRuleStore;
 
     constructor(
         public readonly state: GatewayAdminState,
-        @Optional() effect?: ReactiveEffect,
+        @Optional() private effect?: ReactiveEffect,
         @Optional() private http?: GatewayAdminHttp
     ) {
         this.store = new GatewayAdminRuleStore(http as GatewayAdminHttp);
+    }
+
+    /**
+     * Build the designer only when the rules surface is opened. The admin
+     * dashboard/routes pages never pay for the node registry or a default
+     * workflow definition on startup.
+     */
+    private ensureDesigner(): WorkflowDesigner {
+        if (this.designer) {
+            return this.designer;
+        }
         this.registry = registerGatewayRuleNodes(new WorkflowNodeRegistry());
         const rawDesigner = new WorkflowDesigner({
             registry: this.registry,
             definition: createGatewayRuleWorkflow('zh-CN')
         });
-        this.designer = effect ? reactive(rawDesigner, effect) : rawDesigner;
+        const created = this.effect
+            ? reactive(rawDesigner, this.effect) as WorkflowDesigner
+            : rawDesigner;
+        this.designer = created;
+        return created;
     }
 
     onInit(): void {
@@ -359,12 +374,13 @@ export class GatewayAdminComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     private async loadRuleDocument(): Promise<void> {
+        const designer = this.ensureDesigner();
         if (this.state.creatingRuleWorkflow) {
             this.state.creatingRuleWorkflow = false;
             const definition = createGatewayRuleWorkflow('zh-CN');
             definition.id = `gateway_rules_${Date.now().toString(36)}`;
             this.state.ruleWorkflowId = definition.id;
-            this.designer.load(definition);
+            designer.load(definition);
             return;
         }
         const summaries = await this.store.list().catch(() => [] as WorkflowDefinitionSummary[]);
@@ -375,7 +391,7 @@ export class GatewayAdminComponent implements OnInit, AfterViewInit, OnDestroy {
             definition = await this.store.get(id);
         }
         this.state.ruleWorkflowId = id;
-        this.designer.load(definition ?? createGatewayRuleWorkflow('zh-CN'));
+        designer.load(definition ?? createGatewayRuleWorkflow('zh-CN'));
     }
 
     closeDesigner(): void {
@@ -385,9 +401,10 @@ export class GatewayAdminComponent implements OnInit, AfterViewInit, OnDestroy {
     async applyRules(): Promise<void> {
         this.state.error = '';
         try {
-            const summary = await this.store.save(this.designer.definition);
+            const designer = this.ensureDesigner();
+            const summary = await this.store.save(designer.definition);
             this.designerOpen = false;
-            this.state.ruleWorkflowId = this.designer.definition.id;
+            this.state.ruleWorkflowId = designer.definition.id;
             await this.state.loadRuleWorkflows();
             this.state.status = this.state.t('status.rulesApplied', { count: summary.nodeCount });
             const state = await this.state.fetchState();

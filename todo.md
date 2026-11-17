@@ -4652,3 +4652,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第九十一批（2026-11-16）：
   - Admin UI 响应式契约审计；派生视图按引用缓存；editRouteField 单次赋值。
   - 回归：admin 85。
+
+- 微服务框架第九十二批（2026-11-16）：
+  - 语言切换去掉多余 reload（不再丢未保存编辑）；设计器懒创建。
+  - 回归：admin 87。

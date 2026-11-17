@@ -519,6 +519,12 @@
 - `AdminViewController` 增加按引用失效的派生缓存：`filteredRoutes`/`enabledRoutes`、service/policy 汇总、diagnostics 投影、route detail JSON；避免每个模板绑定重复 filter/sort/Map/JSON。
 - 新增 `admin-view-cache.spec.ts` 4 个测试；admin 85 passing。bundle 待 activities 并发改动稳定后重建。
 
+第九十二批（Admin 启动/切换优化）：
+
+- 语言切换不再调用 `reload()`：`locale` 是响应式的，`t()` 绑定会自行重跑；原实现会多一次 state 请求并丢弃未保存的路由编辑。新增 `admin-shell.spec.ts` 断言。
+- 规则设计器改为首次打开时懒创建（registry/默认 workflow 不再在 dashboard/routes 启动时构建）。
+- 回归：admin 87 passing。bundle 待并发 activities 稳定后重建。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
