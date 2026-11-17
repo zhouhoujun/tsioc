@@ -6,3 +6,4 @@ export * from './auth';
 export * from './config';
 export * from './oidc-service';
 export * from './doctor';
+export * from './routes-cli';

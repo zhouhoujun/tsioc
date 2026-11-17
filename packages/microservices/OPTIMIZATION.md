@@ -477,6 +477,12 @@
 - 复用 `/api/gateway-admin/doctor`；401/5xx 给出可操作错误，warn 状态 exit 1。
 - 回归：admin 76 passing。
 
+第八十五批（admin routes CLI）：
+
+- 新增 `admin/src/routes-cli.ts`：`npm run routes -- --url ... [--token] [--json]`，输出 path/methods/target/flags 表。
+- 复用 `/api/gateway-admin/state`；401/5xx 可操作错误。
+- 回归：admin 81 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
