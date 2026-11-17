@@ -666,7 +666,7 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 
 `GatewayInterceptor` 仅保留 intercept/preview、规则与路由表缓存、canary/header 匹配、`resolveRoute` 与 HTTP pool 生命周期，已满足 < 500 行目标。
 
-验证：gateway 140 passing、admin 69 passing；每步均通过 `tsc --noEmit`；`bash scripts/agents-gate.sh ms-gateway ms-admin ms-tsc` PASS（gate 已新增 `ms-admin` stage）。
+验证：gateway 148 passing、admin 81 passing；每步均通过 `tsc --noEmit`；`bash scripts/agents-gate.sh ms-gateway ms-admin ms-tsc` PASS（gate 已新增 `ms-admin` stage）。
 
 ### 11.5 Admin 状态拆分完成
 
@@ -686,7 +686,7 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 | `admin.types.ts` | 公开接口类型（state 继续 re-export） |
 
 新增 `GET /api/gateway-admin/doctor`，汇总路由、发现、熔断与 SLO 告警检查。
-验证：admin 72 passing；bundle 已按拆分前源码重建（后续拆分的行为等价，待 activities 并发改动稳定后再次重建）。
+验证：admin 81 passing；bundle 已按拆分后的源码重建并提交。
 
 ### 11.6 S3 执行记录（2026-11-16）
 
@@ -700,6 +700,9 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 | soak | 新增 `examples/soak.ts` 与 opt-in gate `ms-soak`（heap/句柄稳定） |
 | chaos | `gateway/test/chaos-recovery.spec.ts`：真实实例 kill 后 <30s failover，dead endpoint circuit 打开 |
 | 每包 README | 21 个缺失包补齐（共 26 个包） |
+| chaos | 真实实例 kill 后 <30s failover，dead endpoint circuit 打开 |
+| admin CLI | `npm run doctor` / `npm run routes`（--url/--token/--json） |
+| webhook | 超时、有限重试、可选 SSRF host allowlist |
 | 发布 | `ms-admin` / `ms-examples` / `ms-soak` 接入 gate；publish 分片与 payload 校验 |
 
 真实 Docker broker 回归（`MS_BROKER_PROFILE=1 ms-brokers` PASS）：
@@ -713,7 +716,7 @@ ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
 ms-examples ms-tsc ms-brokers package-deps package-publish
 ```
 
-全部 PASS。soak 30s：37,942 请求、0 失败、heap -1MB、句柄回落到 2。
+全部 PASS。soak 30s：37,942 请求、0 失败、heap -1MB、句柄回落到 2。最终计数：gateway 148、admin 81、metrics 61。
 
 外部验证未完成（Docker registry 无法访问，镜像拉取超时）：
 OTLP Collector 实机导出、Consul/Nacos/Eureka 实机容器。
