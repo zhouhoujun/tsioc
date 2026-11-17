@@ -232,6 +232,11 @@ export class DefaultReactiveEffect implements ReactiveEffect {
         }
     }
 
+    /** App injector teardown hook: release every dependency held by this effect. */
+    onDestroy(): void {
+        this.stop();
+    }
+
     get active(): boolean {
         return this.isActive;
     }

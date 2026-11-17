@@ -1,4 +1,4 @@
-import { isType, Module, ResolveInterceptorFn, Runtime, Type } from '@tsdi/ioc';
+import { isType, Injector, Module, ResolveInterceptorFn, Runtime, Type } from '@tsdi/ioc';
 import { ApplicationContext, bootstrapApplication, EnvironmentOption } from '@tsdi/core';
 import { ComponentFactory } from './refs/component';
 import { ComponentFactoryImpl } from './impl/component';
@@ -35,7 +35,11 @@ import { componentResolvers } from './impl/resolvers';
         { provide: ComponentFactory, useClass: ComponentFactoryImpl, deps: [Runtime] },
         { provide: DirectiveFactory, useClass: DirectiveFactoryImpl, deps: [Runtime] },
         componentResolvers,
-        { provide: ReactiveEffect, useFactory: () => new DefaultReactiveEffect() },
+        { provide: ReactiveEffect, useFactory: (injector: Injector) => {
+            const effect = new DefaultReactiveEffect();
+            injector.onDestroy(effect);
+            return effect;
+        }, deps: [Injector] },
         FocusMonitor,
         FocusTrapFactory
     ],

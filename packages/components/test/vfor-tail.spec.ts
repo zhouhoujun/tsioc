@@ -8,7 +8,7 @@ interface Row { label: string; }
 
 @Component({
     selector: 'vfor-tail-comp',
-    template: `<div><span class="row" v-for="item in items">{{$index}}/{{$count}}/{{$last}}/{{item.label}}</span></div>`
+    template: `<div><span class="row" v-for="item in items">{{$index}}/{{$count}}/{{$first}}/{{$last}}/{{item.label}}</span></div>`
 })
 class VForTailComponent {
     items: Row[] = [{ label: 'A' }, { label: 'B' }];
@@ -20,7 +20,7 @@ export class VForTailTest {
         return root.querySelectorAll('.row').map((node: any) => node.textContent);
     }
 
-    @Test('append and remove from the tail keep $index/$count/$last current')
+    @Test('append and remove from the tail keep $index/$count/$first/$last current')
     async appendAndRemoveTail() {
         const ctx = await Application.run(VForTailComponent, {
             deps: [ConsoleTemplateModule, ComponentsModule]
@@ -30,21 +30,25 @@ export class VForTailTest {
             const component = ref.instance as VForTailComponent;
             const root = ref.hostView.rootNodes[0] as any;
 
-            expect(this.texts(root)).toEqual(['0/2/false/A', '1/2/true/B']);
+            expect(this.texts(root)).toEqual(['0/2/true/false/A', '1/2/false/true/B']);
 
             component.items = [...component.items, { label: 'C' }];
             await Promise.resolve();
-            expect(this.texts(root)).toEqual(['0/3/false/A', '1/3/false/B', '2/3/true/C']);
+            expect(this.texts(root)).toEqual([
+                '0/3/true/false/A',
+                '1/3/false/false/B',
+                '2/3/false/true/C'
+            ]);
 
             component.items = component.items.slice(0, 2);
             await Promise.resolve();
-            expect(this.texts(root)).toEqual(['0/2/false/A', '1/2/true/B']);
+            expect(this.texts(root)).toEqual(['0/2/true/false/A', '1/2/false/true/B']);
         } finally {
             await ctx.close();
         }
     }
 
-    @Test('middle insertion falls back to the keyed update')
+    @Test('middle insertion shifts only the affected rows')
     async middleInsertion() {
         const ctx = await Application.run(VForTailComponent, {
             deps: [ConsoleTemplateModule, ComponentsModule]
@@ -56,7 +60,31 @@ export class VForTailTest {
 
             component.items = [component.items[0], { label: 'X' }, component.items[1]];
             await Promise.resolve();
-            expect(this.texts(root)).toEqual(['0/3/false/A', '1/3/false/X', '2/3/true/B']);
+            expect(this.texts(root)).toEqual([
+                '0/3/true/false/A',
+                '1/3/false/false/X',
+                '2/3/false/true/B'
+            ]);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('middle removal shifts the remaining rows back')
+    async middleRemoval() {
+        const ctx = await Application.run(VForTailComponent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(VForTailComponent) as any;
+            const component = ref.instance as VForTailComponent;
+            const root = ref.hostView.rootNodes[0] as any;
+
+            component.items = [{ label: 'A' }, { label: 'X' }, { label: 'B' }];
+            await Promise.resolve();
+            component.items = [component.items[0], component.items[2]];
+            await Promise.resolve();
+            expect(this.texts(root)).toEqual(['0/2/true/false/A', '1/2/false/true/B']);
         } finally {
             await ctx.close();
         }

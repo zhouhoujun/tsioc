@@ -155,9 +155,9 @@ export class VForDirective {
 
     // 处理数组类型
     private updateArrayView(collection: any[], previous: any) {
-        // 默认 trackBy(index) 且前缀引用未变时，追加/截断只需要处理尾部：
+        // 默认 trackBy(index) 时，纯追加/截断/中间连续插入删除只改动受影响范围；
         // 流式消息列表每来一条都会替换数组引用，全量重建会造成 O(n²)。
-        if (this._useIndexTrackBy && Array.isArray(previous) && this.updateArrayTail(previous, collection)) {
+        if (this._useIndexTrackBy && Array.isArray(previous) && this.updateArrayRange(previous, collection)) {
             return;
         }
 
@@ -170,53 +170,107 @@ export class VForDirective {
     }
 
     /**
-     * Fast path for the common append/remove-tail case. Returns false when the
-     * shared prefix changed (then the caller falls back to the keyed update).
+     * Incremental path for a contiguous insertion or removal (the common
+     * append/remove-tail case included). Reorders and scattered edits fall back
+     * to the keyed update.
      */
-    private updateArrayTail(previous: any[], collection: any[]): boolean {
+    private updateArrayRange(previous: any[], collection: any[]): boolean {
         // Walk the raw arrays: indexing a reactive proxy array here costs a
         // full get-trap per element, which made append O(n) at ~1us/item.
         const previousRaw = unwrapReactive<any[]>(previous);
         const collectionRaw = unwrapReactive<any[]>(collection);
         const shared = Math.min(previousRaw.length, collectionRaw.length);
-        for (let i = 0; i < shared; i++) {
-            const left = previousRaw[i];
-            const right = collectionRaw[i];
-            // Streaming appends usually reuse the same proxy items, so this
-            // identity check is all that is needed on the hot path.
-            if (left !== right && unwrapReactive(left) !== unwrapReactive(right)) {
+
+        let prefix = 0;
+        while (prefix < shared && this.sameArrayItem(previousRaw[prefix], collectionRaw[prefix])) {
+            prefix += 1;
+        }
+
+        const offset = collectionRaw.length - previousRaw.length;
+        if (offset === 0) {
+            return prefix === shared;
+        }
+
+        // The suffix must line up after the inserted/removed block.
+        const suffixStart = offset > 0 ? prefix : prefix - offset;
+        for (let i = suffixStart; i < previousRaw.length; i++) {
+            if (!this.sameArrayItem(previousRaw[i], collectionRaw[i + offset])) {
                 return false;
             }
         }
-        if (previousRaw.length === collectionRaw.length) {
-            return true;
+
+        if (offset > 0) {
+            const inserted: ViewRef[] = [];
+            for (let i = 0; i < offset; i++) {
+                const position = prefix + i;
+                const context = this.createContext(collection[position], position);
+                const view = this.createView(context, position);
+                if (view) {
+                    inserted.push(view);
+                }
+            }
+            if (inserted.length) {
+                this._viewRefs.splice(prefix, 0, ...inserted);
+            }
+            // Existing rows after the insertion point shift their index.
+            for (let i = prefix + offset; i < this._viewRefs.length; i++) {
+                this.updateContextIndex(this._viewRefs[i]?.context, i);
+            }
+        } else {
+            const removed = -offset;
+            for (let i = 0; i < removed; i++) {
+                this.viewContainer.remove(prefix);
+            }
+            this._viewRefs.splice(prefix, removed);
+            for (let i = prefix; i < this._viewRefs.length; i++) {
+                this.updateContextIndex(this._viewRefs[i]?.context, i);
+            }
         }
 
         // One write for the shared count; $last derives from it on read.
-        if (collectionRaw.length > previousRaw.length) {
-            for (let i = previousRaw.length; i < collectionRaw.length; i++) {
-                const context = this.createContext(collection[i], i);
-                const view = this.createView(context);
-                if (view) {
-                    this._viewRefs.push(view);
-                }
-            }
-            this.meta.count = collectionRaw.length;
-            return true;
-        }
-
-        for (let i = this._viewRefs.length - 1; i >= collectionRaw.length; i--) {
-            const view = this._viewRefs[i];
-            const index = this.viewContainer.indexOf(view);
-            if (index >= 0) {
-                this.viewContainer.remove(index);
-            } else if (view && typeof view.destroy === 'function') {
-                view.destroy();
-            }
-        }
-        this._viewRefs.length = collectionRaw.length;
         this.meta.count = collectionRaw.length;
         return true;
+    }
+
+    private sameArrayItem(left: any, right: any): boolean {
+        if (left === right) {
+            return true;
+        }
+        return unwrapReactive(left) === unwrapReactive(right);
+    }
+
+    /**
+     * Update the index-derived fields of a row context that moved because rows
+     * before it were inserted or removed.
+     */
+    private updateContextIndex(context: any, index: number): void {
+        if (!context) {
+            return;
+        }
+        if (context.$index !== index) {
+            context.$index = index;
+        }
+        const first = index === 0;
+        if (context.$first !== first) {
+            context.$first = first;
+        }
+        const even = index % 2 === 0;
+        if (context.$even !== even) {
+            context.$even = even;
+        }
+        const odd = !even;
+        if (context.$odd !== odd) {
+            context.$odd = odd;
+        }
+        if (this._itemNames.length > 1) {
+            context[this._itemNames[1]] = index;
+        }
+        if (this._itemNames.length > 2) {
+            context[this._itemNames[2]] = index;
+        }
+        if (!this._itemNames.includes('index')) {
+            context.index = index;
+        }
     }
 
     // 处理Map类型
@@ -405,7 +459,7 @@ export class VForDirective {
         return false;
     }
 
-    private createView(context: any) {
+    private createView(context: any, index?: number) {
         if (!this._templateRef) {
             // console.warn('VForDirective: templateRef is not set');
             return null;
@@ -414,7 +468,8 @@ export class VForDirective {
         // Let the embedded view create its reactive context with the same effect
         // instance used by its bindings so reused views can refresh correctly.
         const viewRef = this.viewContainer.createEmbeddedView(this._templateRef, context, {
-            effect: this._effect
+            effect: this._effect,
+            index
         });
         return viewRef;
     }
