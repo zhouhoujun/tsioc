@@ -497,6 +497,37 @@ function startDesignerServer(port) {
             statusbar: document.querySelector('.workflow-statusbar')?.textContent?.replace(/\s+/g, ' ').trim()
         }));
 
+        // Seed a server-side run so the metrics trend has real buckets.
+        const seededRun = await fetch(`${base}/api/workflows/${apiList[0].id}/run`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ context: { seeded: true } })
+        });
+        await seededRun.text();
+        if (!seededRun.ok) {
+            errors.push(`server run for metrics failed: ${seededRun.status}`);
+        }
+
+        // Metrics render a windowed trend and refetch when the window changes.
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
+        await page.locator('[data-menu-id="metrics"]').click();
+        await page.waitForTimeout(450);
+        const metricsTrend = await page.evaluate(() => ({
+            windows: document.querySelectorAll('.workflow-metrics-window').length,
+            rows: document.querySelectorAll('.workflow-metrics-trend-row').length,
+            widths: Array.from(document.querySelectorAll('.workflow-metrics-trend-fill'))
+                .map(el => el.getAttribute('style') || '')
+        }));
+        await page.locator('.workflow-metrics-window').first().click();
+        await page.waitForTimeout(450);
+        const metricsWindowSwitch = await page.evaluate(() => ({
+            rows: document.querySelectorAll('.workflow-metrics-trend-row').length,
+            active: (document.querySelector('.workflow-metrics-window.is-active')?.textContent || '').trim()
+        }));
+        await page.locator('.workflow-metrics .workflow-publish-close').click();
+        await page.waitForTimeout(120);
+        const metricsClosed = await page.evaluate(() => !document.querySelector('.workflow-metrics'));
+
         // Verify the library list is backed by the HTTP service.
         await page.evaluate(() => window.workflowDesigner.toolbarAction('open-library'));
         await page.waitForSelector('.workflow-library-row', { timeout: 5000 });
@@ -673,7 +704,7 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, metricsTrend, metricsWindowSwitch, metricsClosed, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > INITIAL_JS_BUDGET || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !partialClean || !enterNewline || !tabAccepts
@@ -684,6 +715,9 @@ function startDesignerServer(port) {
             || !credentialDialog.open || credentialDialog.title !== 'Credentials'
             || credentialSaved.rows !== 1 || !credentialSaved.names.includes('preview-token') || credentialSaved.leaked
             || credentialRowsAfterRemove !== 0 || !credentialClosed
+            || metricsTrend.windows !== 3 || metricsTrend.rows !== 12
+            || !metricsTrend.widths.some(width => /width:(?!0%)\d+%/.test(width))
+            || metricsWindowSwitch.rows !== 12 || metricsWindowSwitch.active !== 'Last hour' || !metricsClosed
             || optionCount !== 8 || !compareHidden || !compareVisible || !compareHiddenAgain
             || actionPlaceholder !== 'actions.fetch' || !groupTitles.includes('Reliability')
             || !retrySet || !retryReset

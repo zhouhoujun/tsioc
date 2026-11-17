@@ -759,6 +759,72 @@ export const WORKFLOW_DESIGNER_CSS = `
     font-size: 12px;
 }
 
+.workflow-metrics-windows {
+    display: flex;
+    gap: 6px;
+}
+
+.workflow-metrics-window {
+    font-size: 11px;
+    padding: 3px 9px;
+}
+
+.workflow-metrics-window.is-active {
+    background: var(--wf-theme-accent, #2563eb);
+    border-color: var(--wf-theme-accent, #2563eb);
+    color: #fff;
+}
+
+.workflow-metrics-trend {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 26vh;
+    overflow: auto;
+}
+
+.workflow-metrics-trend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-metrics-trend-time {
+    flex: 0 0 auto;
+    min-width: 44px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.workflow-metrics-trend-bar {
+    flex: 1;
+    height: 7px;
+    border-radius: 4px;
+    background: var(--wf-theme-surface-muted, #eef2f7);
+    overflow: hidden;
+}
+
+.workflow-metrics-trend-fill {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--wf-theme-accent, #2563eb);
+}
+
+.workflow-metrics-trend-count {
+    flex: 0 0 auto;
+    min-width: 18px;
+    text-align: right;
+    color: var(--wf-theme-text, #0f172a);
+    font-weight: 600;
+}
+
+.workflow-metrics-trend-failed {
+    flex: 0 0 auto;
+    color: #b91c1c;
+}
+
 .workflow-metrics-nodes {
     max-height: 40vh;
     overflow: auto;

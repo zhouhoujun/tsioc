@@ -19,7 +19,8 @@ import {
     createDefaultWorkflowDefinitionStore,
     WorkflowMetrics,
     WorkflowDeploymentStatus,
-    WorkflowAuditEntry
+    WorkflowAuditEntry,
+    WorkflowMetricsTrendPoint
 } from '../workflow-store';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 import { WorkflowDesignerPreviewComponent } from './workflow-designer-preview.component';
@@ -183,23 +184,44 @@ interface WorkflowDocumentTab {
         <div class="workflow-publish workflow-metrics" v-if="showMetrics">
             <div class="workflow-publish-panel workflow-metrics-panel">
                 <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{metricsTitle}}</span>
+                    <span class="workflow-publish-title">{{tr('metrics', 'Execution metrics')}}</span>
                     <button class="workflow-btn workflow-publish-close" type="button"
                         [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeMetrics">✕</button>
                 </div>
                 <div class="workflow-metrics-error" v-if="metricsError">{{metricsError}}</div>
+                <div class="workflow-metrics-windows">
+                    <button class="workflow-btn workflow-metrics-window" type="button"
+                        [class]="metricsWindow === 3600000 ? 'is-active' : ''"
+                        @click="setMetricsWindow(3600000)">{{tr('lastHour', 'Last hour')}}</button>
+                    <button class="workflow-btn workflow-metrics-window" type="button"
+                        [class]="metricsWindow === 86400000 ? 'is-active' : ''"
+                        @click="setMetricsWindow(86400000)">{{tr('lastDay', 'Last 24h')}}</button>
+                    <button class="workflow-btn workflow-metrics-window" type="button"
+                        [class]="metricsWindow === 604800000 ? 'is-active' : ''"
+                        @click="setMetricsWindow(604800000)">{{tr('lastWeek', 'Last 7 days')}}</button>
+                </div>
                 <div class="workflow-metrics-summary" v-if="metricsData">
                     <div class="workflow-metrics-stat">
-                        <span>{{metricsRunsLabel}}</span><strong>{{metricsData?.runs}}</strong>
+                        <span>{{tr('metricsRuns', 'Runs')}}</span><strong>{{metricsData?.runs}}</strong>
                     </div>
                     <div class="workflow-metrics-stat">
-                        <span>{{metricsSuccessLabel}}</span><strong>{{metricsSuccessRate}}%</strong>
+                        <span>{{tr('metricsSuccess', 'Success')}}</span><strong>{{metricsRate}}%</strong>
                     </div>
                     <div class="workflow-metrics-stat">
-                        <span>{{metricsAvgLabel}}</span><strong>{{metricsData?.avgDurationMs}} ms</strong>
+                        <span>{{tr('metricsAvg', 'Average')}}</span><strong>{{metricsData?.avgDurationMs}} ms</strong>
                     </div>
                     <div class="workflow-metrics-stat">
-                        <span>{{metricsLastLabel}}</span><strong>{{metricsData?.lastStatus || '-'}}</strong>
+                        <span>{{tr('metricsLast', 'Last status')}}</span><strong>{{metricsData?.lastStatus || '-'}}</strong>
+                    </div>
+                </div>
+                <div class="workflow-metrics-trend" v-if="metricsTrend.length">
+                    <div class="workflow-metrics-trend-row" v-for="point in metricsTrend" data-trend-start="{{point.start}}">
+                        <span class="workflow-metrics-trend-time">{{formatTrendTime(point.start)}}</span>
+                        <span class="workflow-metrics-trend-bar">
+                            <span class="workflow-metrics-trend-fill" [style]="trendStyle(point)"></span>
+                        </span>
+                        <span class="workflow-metrics-trend-count">{{point.runs}}</span>
+                        <span class="workflow-metrics-trend-failed" v-if="point.failed">{{point.failed}} failed</span>
                     </div>
                 </div>
                 <div class="workflow-metrics-nodes" v-if="metricsData && metricsData.nodes.length">
@@ -349,6 +371,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
     deploymentBusy = false;
     showMetrics = false;
     metricsData?: WorkflowMetrics;
+    metricsTrend: WorkflowMetricsTrendPoint[] = [];
+    metricsWindow = 86400000;
+    metricsRate = 0;
+    metricsMaxRuns = 0;
     metricsError = '';
     showSettings = false;
     settingsDescription = '';
@@ -1371,34 +1397,66 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
     };
 
-    get metricsTitle(): string { return this.t('metrics', 'Execution metrics'); }
-    get metricsRunsLabel(): string { return this.t('metricsRuns', 'Runs'); }
-    get metricsSuccessLabel(): string { return this.t('metricsSuccess', 'Success'); }
-    get metricsAvgLabel(): string { return this.t('metricsAvg', 'Average'); }
-    get metricsLastLabel(): string { return this.t('metricsLast', 'Last status'); }
-    get metricsSuccessRate(): number {
-        const runs = this.metricsData?.runs || 0;
-        return runs ? Math.round(((this.metricsData?.succeeded || 0) / runs) * 100) : 0;
-    }
-
     readonly openMetrics = async (): Promise<void> => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         self.metricsError = '';
         self.metricsData = undefined;
+        self.metricsTrend = [];
+        self.metricsRate = 0;
         self.showMetrics = true;
+        await self.loadMetrics();
+    };
+
+    readonly setMetricsWindow = async (windowMs: number): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.metricsWindow = windowMs;
+        await self.loadMetrics();
+    };
+
+    readonly loadMetrics = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
         if (!self.store?.getMetrics) {
             self.metricsError = self.t('metricsUnavailable', 'This host does not expose execution metrics.');
             return;
         }
+        self.metricsError = '';
         try {
-            self.metricsData = await self.store.getMetrics(self.designer.definition.id, 200);
-            if (!self.metricsData) {
+            const data = await self.store.getMetrics(self.designer.definition.id, {
+                limit: 200,
+                windowMs: self.metricsWindow,
+                buckets: 12
+            });
+            self.metricsData = data;
+            self.metricsTrend = data?.trend || [];
+            self.metricsMaxRuns = self.metricsTrend.reduce((max, point) => Math.max(max, point.runs), 0);
+            const runs = data?.runs || 0;
+            self.metricsRate = runs ? Math.round(((data?.succeeded || 0) / runs) * 100) : 0;
+            if (!data) {
                 self.metricsError = self.t('metricsUnavailable', 'This host does not expose execution metrics.');
             }
         } catch (error) {
             self.metricsError = (error as Error).message;
         }
-        self.saveState = self.saveState;
+    };
+
+    /** Bar width relative to the busiest bucket in the window. */
+    readonly trendStyle = (point: WorkflowMetricsTrendPoint): string => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!point?.runs) {
+            return 'width:0%';
+        }
+        const max = Math.max(1, self.metricsMaxRuns);
+        return `width:${Math.max(4, Math.round((point.runs / max) * 100))}%`;
+    };
+
+    readonly formatTrendTime = (start: number): string => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const date = new Date(Number(start) || 0);
+        const pad = (value: number) => String(value).padStart(2, '0');
+        const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        return self.metricsWindow > 86400000
+            ? `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${time}`
+            : time;
     };
 
     readonly closeMetrics = (): void => {
@@ -1406,6 +1464,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
         self.showMetrics = false;
         self.metricsError = '';
         self.metricsData = undefined;
+        self.metricsTrend = [];
+        self.metricsRate = 0;
     };
 
     get settingsTitle(): string { return this.t('settings', 'Workflow settings'); }

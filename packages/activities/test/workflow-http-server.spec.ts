@@ -616,7 +616,31 @@ describe('Workflow HTTP microservice', () => {
         expect(metrics.body.lastStatus).toBe('completed');
         expect(metrics.body.nodes.length).toBeGreaterThanOrEqual(2);
         expect(metrics.body.nodes.find((node: any) => node.nodeId === 'start_m')?.runs).toBe(2);
+        // Without a window there is no trend, so hosts only pay for it on demand.
+        expect(metrics.body.trend).toEqual([]);
+        expect(metrics.body.windowMs).toBeUndefined();
         expect(metrics.status).toBe(200);
+
+        const windowed = await request(
+            `${base}/api/workflows/metrics-demo/metrics?window=3600000&buckets=6`
+        );
+        expect(windowed.status).toBe(200);
+        expect(windowed.body.runs).toBe(2);
+        expect(windowed.body.windowMs).toBe(3600000);
+        expect(windowed.body.trend.length).toBe(6);
+        const windowedRuns = windowed.body.trend.reduce((sum: number, point: any) => sum + point.runs, 0);
+        expect(windowedRuns).toBe(2);
+        const lastBucket = windowed.body.trend[5];
+        expect(lastBucket.runs).toBe(2);
+        expect(lastBucket.failed).toBe(0);
+        expect(lastBucket.avgDurationMs).toBeGreaterThanOrEqual(0);
+        expect(lastBucket.end - lastBucket.start).toBeGreaterThan(0);
+
+        // Runs outside the window are ignored.
+        const stale = await request(`${base}/api/workflows/metrics-demo/metrics?window=1&buckets=4`);
+        expect(stale.body.runs).toBe(0);
+        expect(stale.body.trend.length).toBe(4);
+        expect(stale.body.trend.every((point: any) => point.runs === 0)).toBe(true);
         expect((await request(`${base}/api/workflows/missing/metrics`)).status).toBe(404);
 
         await request(`${base}/api/workflows/metrics-demo`, { method: 'DELETE' });

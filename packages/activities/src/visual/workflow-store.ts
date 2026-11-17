@@ -59,6 +59,25 @@ export interface WorkflowNodeMetrics {
     avgDurationMs: number;
 }
 
+export interface WorkflowMetricsTrendPoint {
+    /** Bucket start (epoch ms). */
+    start: number;
+    /** Bucket end (epoch ms). */
+    end: number;
+    runs: number;
+    failed: number;
+    avgDurationMs: number;
+}
+
+export interface WorkflowMetricsQuery {
+    /** Snapshots considered (default 200). */
+    limit?: number;
+    /** Only count runs inside this trailing window (ms). */
+    windowMs?: number;
+    /** Trend buckets across the window (default 12). */
+    buckets?: number;
+}
+
 export interface WorkflowMetrics {
     workflowId: string;
     runs: number;
@@ -70,6 +89,10 @@ export interface WorkflowMetrics {
     lastRunAt?: number;
     lastStatus?: string;
     nodes: WorkflowNodeMetrics[];
+    /** Window used for `trend` (omitted when no window was requested). */
+    windowMs?: number;
+    /** Evenly split run counts across `windowMs`. */
+    trend?: WorkflowMetricsTrendPoint[];
 }
 
 export interface WorkflowVersionList {
@@ -114,7 +137,7 @@ export interface WorkflowDefinitionStore {
     /** Drop persisted run history (one workflow, or all when omitted). */
     clearExecutions?(workflowId?: string): Promise<void>;
     /** Optional aggregated execution metrics for a workflow. */
-    getMetrics?(workflowId: string, limit?: number): Promise<WorkflowMetrics | undefined>;
+    getMetrics?(workflowId: string, query?: WorkflowMetricsQuery | number): Promise<WorkflowMetrics | undefined>;
     /** Optional deployment manager: list/start/stop hosted schedules. */
     listDeployments?(): Promise<WorkflowDeploymentStatus[]>;
     startDeployments?(workflowIds?: string[], context?: Record<string, any>): Promise<WorkflowDeploymentStatus[]>;
@@ -567,9 +590,20 @@ export class HttpWorkflowDefinitionStore implements WorkflowDefinitionStore {
         return Number(result.body?.stopped) || 0;
     }
 
-    async getMetrics(workflowId: string, limit = 200): Promise<WorkflowMetrics | undefined> {
+    async getMetrics(
+        workflowId: string,
+        query: WorkflowMetricsQuery | number = {}
+    ): Promise<WorkflowMetrics | undefined> {
+        const options: WorkflowMetricsQuery = typeof query === 'number' ? { limit: query } : (query || {});
+        const params = [`limit=${Math.max(1, options.limit || 200)}`];
+        if (options.windowMs) {
+            params.push(`window=${Math.max(1, Math.round(options.windowMs))}`);
+        }
+        if (options.buckets) {
+            params.push(`buckets=${Math.max(1, Math.min(60, Math.round(options.buckets)))}`);
+        }
         const result = await this.request(
-            `workflows/${encodeURIComponent(workflowId)}/metrics?limit=${Math.max(1, limit)}`,
+            `workflows/${encodeURIComponent(workflowId)}/metrics?${params.join('&')}`,
             { method: 'GET' }
         );
         if (result.status === 404) {

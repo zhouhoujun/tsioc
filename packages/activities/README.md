@@ -608,8 +608,9 @@ Features:
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
 - execution metrics (menu → Execution metrics) show total runs, success rate,
-  average duration, last status and per-node run/failure/duration rows when the
-  store exposes `getMetrics`,
+  average duration, last status, per-node run/failure/duration rows and a
+  windowed run trend (last hour / 24h / 7 days) when the store exposes
+  `getMetrics`,
 - `Ctrl+K` opens a quick-add overlay that searches every registered node and
   inserts the selected one at the viewport center (arrow keys + Enter),
 - inspector property editing is rendered by the shared JSON-configured
@@ -840,7 +841,10 @@ rate-limit windows (`DELETE` clears it); the execution panel's **Messages** tab
 shows the same state under each node and offers a Clear state action.
 `GET /api/workflows/:id/metrics` aggregates the last snapshots into run counts,
 success/failure/cancel totals, average duration and per-node run/failure/average
-duration metrics.
+duration metrics. `window` (ms) restricts the period and `buckets` (1-60, default
+12) adds an evenly split `trend` of `{ start, end, runs, failed, avgDurationMs }`
+points; without a window `trend` stays empty so dashboards only pay for it when
+they chart it.
 
 Finished runs are persisted automatically: `SqliteWorkflowExecutionStore` writes
 to the same database file when SQLite is available, otherwise an in-memory store

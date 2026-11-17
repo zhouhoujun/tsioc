@@ -139,6 +139,52 @@ export class WorkflowPluginController {
  * HTTP controller for visual workflows, using the framework's own
  * `@tsdi/service` microservice router and `@tsdi/http-microservice` transport.
  */
+interface MetricsTrendPoint {
+    start: number;
+    end: number;
+    runs: number;
+    failed: number;
+    avgDurationMs: number;
+}
+
+/** Split a time window into evenly sized buckets of run counts. */
+function metricsTrend(
+    snapshots: Array<{ startTime?: number; status?: string }>,
+    since: number,
+    windowMs: number,
+    buckets: number
+): MetricsTrendPoint[] {
+    const size = Math.max(1, Math.floor(windowMs / Math.max(1, buckets)));
+    const points: MetricsTrendPoint[] = Array.from({ length: buckets }, (_, index) => ({
+        start: since + index * size,
+        end: index === buckets - 1 ? since + windowMs : since + (index + 1) * size,
+        runs: 0,
+        failed: 0,
+        avgDurationMs: 0
+    }));
+    const durations: number[][] = points.map(() => []);
+    snapshots.forEach(snapshot => {
+        const start = Number(snapshot.startTime) || 0;
+        const index = Math.max(0, Math.min(buckets - 1, Math.floor((start - since) / size)));
+        points[index].runs += 1;
+        if (snapshot.status === 'failed') {
+            points[index].failed += 1;
+        }
+        const began = Number((snapshot as any).startTime) || 0;
+        const ended = Number((snapshot as any).endTime) || 0;
+        if (began && ended) {
+            durations[index].push(ended - began);
+        }
+    });
+    points.forEach((point, index) => {
+        const values = durations[index];
+        point.avgDurationMs = values.length
+            ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
+            : 0;
+    });
+    return points;
+}
+
 @Controller('/api/workflows')
 export class WorkflowHttpController {
     constructor(
@@ -488,11 +534,17 @@ export class WorkflowHttpController {
         return { cleared: true };
     }
 
-    /** Aggregate run counts/durations computed from persisted + live snapshots. */
+    /**
+     * Aggregate run counts/durations computed from persisted + live snapshots.
+     * `window` (ms) limits the period and `buckets` returns an evenly split
+     * trend so hosts can draw a compact history chart.
+     */
     @Get('/:id/metrics')
     async metrics(
         @RequestPath('id') id: string,
-        @RequestParam('limit', { nullable: true }) limit?: string
+        @RequestParam('limit', { nullable: true }) limit?: string,
+        @RequestParam('window', { nullable: true }) window?: string,
+        @RequestParam('buckets', { nullable: true }) buckets?: string
     ) {
         const definition = await this.store.get(id);
         if (!definition) {
@@ -508,7 +560,11 @@ export class WorkflowHttpController {
             .map(state => toWorkflowExecutionSnapshot(state))
             .forEach(snapshot => snapshots.set(snapshot.executionId, snapshot));
 
-        const all = Array.from(snapshots.values());
+        const windowMs = Math.max(0, Math.round(Number(window) || 0));
+        const bucketCount = Math.max(1, Math.min(60, Number(buckets) || 12));
+        const since = windowMs > 0 ? Date.now() - windowMs : 0;
+        const all = Array.from(snapshots.values())
+            .filter(snapshot => !since || (Number(snapshot.startTime) || 0) >= since);
         const durations = all
             .filter(snapshot => snapshot.startTime && snapshot.endTime)
             .map(snapshot => snapshot.endTime - snapshot.startTime);
@@ -533,6 +589,7 @@ export class WorkflowHttpController {
                 nodes.set(state.nodeId, entry);
             });
         });
+        const trend = since ? metricsTrend(all, since, windowMs, bucketCount) : [];
         return {
             workflowId: id,
             runs: all.length,
@@ -554,7 +611,9 @@ export class WorkflowHttpController {
                         ? Math.round(entry.durationMs / entry.timed)
                         : 0
                 }))
-                .sort((a, b) => b.runs - a.runs)
+                .sort((a, b) => b.runs - a.runs),
+            windowMs: windowMs || undefined,
+            trend
         };
     }
 

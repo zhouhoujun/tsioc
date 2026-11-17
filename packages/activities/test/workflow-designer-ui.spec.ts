@@ -1627,23 +1627,33 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-deployments')).toBeFalsy();
     });
 
-    it('shows execution metrics for the active workflow', async () => {
+    it('shows execution metrics and a windowed trend for the active workflow', async () => {
         const store = new InMemoryWorkflowDefinitionStore();
-        (store as any).getMetrics = async (workflowId: string) => ({
-            workflowId,
-            runs: 4,
-            running: 0,
-            succeeded: 3,
-            failed: 1,
-            cancelled: 0,
-            avgDurationMs: 125,
-            lastRunAt: Date.now(),
-            lastStatus: 'completed',
-            nodes: [
-                { nodeId: 'start_1', runs: 4, failed: 0, avgDurationMs: 2 },
-                { nodeId: 'task_1', runs: 4, failed: 1, avgDurationMs: 120 }
-            ]
-        });
+        const now = Date.now();
+        const queries: any[] = [];
+        (store as any).getMetrics = async (workflowId: string, query: any) => {
+            queries.push(query);
+            return {
+                workflowId,
+                runs: 4,
+                running: 0,
+                succeeded: 3,
+                failed: 1,
+                cancelled: 0,
+                avgDurationMs: 125,
+                lastRunAt: now,
+                lastStatus: 'completed',
+                windowMs: query?.windowMs,
+                nodes: [
+                    { nodeId: 'start_1', runs: 4, failed: 0, avgDurationMs: 2 },
+                    { nodeId: 'task_1', runs: 4, failed: 1, avgDurationMs: 120 }
+                ],
+                trend: [
+                    { start: now - 3600000, end: now - 1800000, runs: 3, failed: 0, avgDurationMs: 100 },
+                    { start: now - 1800000, end: now, runs: 1, failed: 1, avgDurationMs: 200 }
+                ]
+            };
+        };
         ref.instance.store = store;
 
         (root.querySelector('.workflow-global-bar [data-menu-id="metrics"]') as any).click();
@@ -1654,6 +1664,25 @@ describe('Workflow Designer UI', () => {
         expect(text).toContain('75%');
         expect(text).toContain('start_1');
         expect(text).toContain('task_1');
+
+        // Trend bars scale against the busiest bucket in the window.
+        const rows = Array.from(root.querySelectorAll('.workflow-metrics-trend-row')) as any[];
+        expect(rows.length).toBe(2);
+        expect(rows[0].querySelector('.workflow-metrics-trend-fill').getAttribute('style')).toContain('width:100%');
+        expect(rows[1].querySelector('.workflow-metrics-trend-fill').getAttribute('style')).toContain('width:33%');
+        expect(rows[1].textContent).toContain('1 failed');
+        expect(queries[0].windowMs).toBe(86400000);
+
+        // Switching the window refetches with the new window and marks it active.
+        const windows = Array.from(root.querySelectorAll('.workflow-metrics-window')) as any[];
+        expect(windows[1].getAttribute('class') || '').toContain('is-active');
+        windows[0].click();
+        await waitFor(() => queries.length > 1);
+        await flush();
+        expect(queries[1].windowMs).toBe(3600000);
+        const afterSwitch = Array.from(root.querySelectorAll('.workflow-metrics-window')) as any[];
+        expect(afterSwitch[0].getAttribute('class') || '').toContain('is-active');
+        expect(afterSwitch[1].getAttribute('class') || '').not.toContain('is-active');
 
         (root.querySelector('.workflow-metrics .workflow-publish-close') as any).click();
         await flush();

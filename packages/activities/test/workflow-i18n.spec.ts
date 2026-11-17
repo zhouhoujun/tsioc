@@ -72,7 +72,7 @@ describe('Workflow designer translations', () => {
             for (const category of registry.categories()) {
                 expect(messages.category?.[category]).toBeTruthy();
             }
-            for (const key of ['inspectorTitle', 'enabled', 'webhookUrl', 'enableNode', 'disableNode', 'nodesSelected', 'boxSelect', 'copy', 'cut', 'paste', 'alignLeft', 'distributeHorizontal', 'messages', 'debugSearch', 'noMessages', 'runtimeState', 'clearRuntimeState', 'groupSelection', 'ungroup', 'groupSettings', 'groupName', 'groupColor', 'settings', 'runTimeout', 'metrics', 'metricsRuns', 'deployments', 'deploymentsEmpty', 'audit', 'auditEmpty', 'auditUnavailable', 'refresh',
+            for (const key of ['inspectorTitle', 'enabled', 'webhookUrl', 'enableNode', 'disableNode', 'nodesSelected', 'boxSelect', 'copy', 'cut', 'paste', 'alignLeft', 'distributeHorizontal', 'messages', 'debugSearch', 'noMessages', 'runtimeState', 'clearRuntimeState', 'groupSelection', 'ungroup', 'groupSettings', 'groupName', 'groupColor', 'settings', 'runTimeout', 'metrics', 'lastHour', 'lastDay', 'lastWeek', 'metricsRuns', 'deployments', 'deploymentsEmpty', 'audit', 'auditEmpty', 'auditUnavailable', 'refresh',
             'credentials', 'credentialsEmpty', 'credentialsUnavailable',
             'credentialName', 'credentialValue', 'credentialNameRequired', 'credentialValueRequired', 'deploymentStartAll', 'deploymentStopAll', 'deploymentStart', 'deploymentStop', 'running', 'stopped', 'deploymentsUnavailable', 'metricsSuccess', 'metricsAvg', 'metricsLast', 'metricsUnavailable', 'openSubflow', 'quickAdd', 'quickAddPlaceholder', 'quickAddEmpty', 'plugins', 'pluginInstall', 'pluginUninstall', 'name', 'run', 'save']) {
                 expect(messages.ui?.[key]).toBeTruthy();
