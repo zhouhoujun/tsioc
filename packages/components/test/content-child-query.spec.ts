@@ -56,6 +56,22 @@ class DynamicContentParent {
     show = false;
 }
 
+@Component({
+    selector: 'content-initial-parent',
+    imports: [ContentHost, ProjectedItem],
+    template: `<div>
+        <content-host>
+            <div>
+                <template v-if="show"><projected-item #dyn label="D"></projected-item></template>
+            </div>
+        </content-host>
+    </div>`
+})
+class InitialContentParent {
+    @ViewChild(ContentHost) host?: ContentHost;
+    show = true;
+}
+
 @Suite('content child queries')
 export class ContentChildQueryTest {
     @Test('resolves projected content without leaking into the parent view')
@@ -71,6 +87,22 @@ export class ContentChildQueryTest {
             expect(parent.host?.item?.label).toBe('P');
             expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['P', 'Q']);
             expect(parent.leaked).toBeUndefined();
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('resolves content queries for initially visible projected structure')
+    async initialContent() {
+        const ctx = await Application.run(InitialContentParent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(InitialContentParent) as any;
+            const parent = ref.instance as InitialContentParent;
+            await Promise.resolve().then(() => Promise.resolve());
+            expect(parent.host?.dynamic?.label).toBe('D');
+            expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['D']);
         } finally {
             await ctx.close();
         }
