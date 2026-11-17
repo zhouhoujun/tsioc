@@ -4523,3 +4523,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第七十三批（2026-11-16）：
   - gate 增加 ms-admin；修正新测试类型错误。
   - gate ms-gateway/ms-admin/ms-tsc PASS；gateway 140、admin 69。
+
+## 2026-11-16 流式合并回归锁定
+- 新增两条确定性用例：同 tick 多个 text chunk 只触发 0 次行写入，强制 flush 后 1 次且内容完整；切 tab 后 pending flush 不写入旧会话，切回后恢复。
+- 说明：fake host 直接持有行对象，测试先拷贝成 stale 行，模拟真实 state 的快照替换。

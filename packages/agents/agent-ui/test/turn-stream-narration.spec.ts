@@ -6,6 +6,7 @@ import {
     AgentConsoleTurnStreamState,
     consumeStreamChunkView,
     consumeStreamEventChunkView,
+    forceStreamingAssistantMessageFlush,
     runTurnStreamView
 } from '../src/AgentConsoleTurnStreamController';
 import { presentAgentConsoleSessionContent, projectAgentConsoleExecutionMainline } from '../src/AgentConsoleSessionContentPresenter';
@@ -145,6 +146,58 @@ export class TurnStreamNarrationTest {
         expect(textRows(host)).toEqual(['Hello.']);
         expect(toolRows(host).length).toBe(0);
         expect(host.state.messages[host.state.messages.length - 1].content).toBe('Hello.');
+    }
+
+    @Test('coalesces rapid text chunks into one row update per flush')
+    async coalescesStreamingTextChunks() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        state.turnSessionId = host.state.sessionId;
+        let writes = 0;
+        const original = host.state.setMessages.bind(host.state);
+        (host.state as any).setMessages = (next: AgentMessage[], ...rest: any[]) => {
+            writes += 1;
+            original(next, ...rest);
+        };
+        const assistant = startTurn(host);
+        // The fake host stores the row object directly; copy it so a flush has
+        // to replace a stale row (the real state stores copied snapshots).
+        const rowIndex = host.state.messages.findIndex(item => item.id === assistant.id);
+        host.state.messages[rowIndex] = { ...host.state.messages[rowIndex], content: '', metadata: { streaming: true } };
+        const baseline = writes;
+
+        consumeStreamChunkView(host, state, { type: 'text', content: 'a' }, assistant);
+        consumeStreamChunkView(host, state, { type: 'text', content: 'b' }, assistant);
+        consumeStreamChunkView(host, state, { type: 'text', content: 'c' }, assistant);
+        expect(writes - baseline).toEqual(0);
+
+        forceStreamingAssistantMessageFlush(host, state);
+        expect(writes - baseline).toEqual(1);
+        expect(String(assistant.content || '')).toEqual('abc');
+        expect(textRows(host).some(row => row.includes('abc'))).toEqual(true);
+
+        await new Promise(resolve => setTimeout(resolve, 80));
+        expect(writes - baseline).toEqual(1);
+    }
+
+    @Test('a pending flush is skipped while the turn tab is not active')
+    async skipsPendingFlushAfterTabSwitch() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        state.turnSessionId = host.state.sessionId;
+        const assistant = startTurn(host);
+        const rowIndex = host.state.messages.findIndex(item => item.id === assistant.id);
+        host.state.messages[rowIndex] = { ...host.state.messages[rowIndex], content: '', metadata: { streaming: true } };
+        const before = host.state.messages.length;
+
+        consumeStreamChunkView(host, state, { type: 'text', content: 'background text' }, assistant);
+        (host.state as any).sessionId = 'another-session';
+        forceStreamingAssistantMessageFlush(host, state);
+        expect(host.state.messages.length).toEqual(before);
+
+        (host.state as any).sessionId = state.turnSessionId;
+        forceStreamingAssistantMessageFlush(host, state);
+        expect(host.state.messages.some(item => String(item.content || '').includes('background text'))).toEqual(true);
     }
 
     @Test('separates interim narration from the final answer around a tool call')
