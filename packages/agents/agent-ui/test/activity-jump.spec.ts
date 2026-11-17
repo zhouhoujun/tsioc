@@ -50,6 +50,24 @@ export class AgentConsoleActivityJumpTest {
         }
     }
 
+    @Test('category tabs show per-category counts')
+    async categoryTabsShowCounts() {
+        const host = createHost(transcript());
+        let options: Array<{ label: string; value: string }> = [];
+        host.select = async (_title: string, next: Array<{ label: string; value: string }>) => {
+            options = next;
+            return undefined;
+        };
+        await runActivityJumpCommand(host);
+        const labels = options.map(option => option.label);
+        expect(labels).toContain('Tools (1)');
+        expect(labels).toContain('Reasoning (1)');
+        expect(labels).toContain('Plan (1)');
+        expect(labels).toContain('Diff (1)');
+        expect(labels).toContain('Errors (1)');
+        expect(labels).toContain('Final answer (1)');
+    }
+
     @Test('no argument opens the category tabs and jumps to the selection')
     async selectsCategoryWhenCalledBare() {
         const host = createHost(transcript());

@@ -97,11 +97,20 @@ mountAgentWebConsole(document.getElementById('app')!, {
 Core: `/help` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` `/compact`
 Session: `/resume` `/archive` `/fork` `/side` `/share` `/unshare` `/sections` `/threads`
 Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
+Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors/final answer
+Queue: `/queue [list|clear|remove <n>|edit <n>]` while a turn is running
 Input: `/editor` `/stash` `/apps` `/skills` `/mcp` `/plugins` `/voice`
 Review: `/review` `/diff` `/approve`
 Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental`
 Delegation: `/delegation` `/goal` `/usage`
 System: `/ps` `/ide` `/feedback` `/keymap`
+
+## Transcript behavior
+
+- Viewport mode renders the newest `transcriptWindowMessages` (default 40) rows while following the latest message; scrolling up, focusing a message, opening detail, scrollback layout or an older error expands to the full transcript.
+- `/display activity [low|medium|high]` sets activity verbosity. `medium` (default) folds finished tool/command/event runs into one expandable Activity row; `high` shows every step; `low` also folds settled reasoning.
+- `/worktree enter [name]` switches the workspace to a managed worktree (picker when no name is given).
+- `/activity` chooses the latest row of a category; the picker shows per-category counts.
 
 ## License
 

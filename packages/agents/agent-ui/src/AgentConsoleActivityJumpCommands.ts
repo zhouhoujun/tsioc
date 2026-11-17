@@ -71,11 +71,21 @@ function isCategoryMessage(message: AgentMessage, category: AgentConsoleActivity
 export async function runActivityJumpCommand(host: AgentConsoleActivityJumpHost, args?: string): Promise<boolean> {
     const requested = String(args || '').trim().toLowerCase() as AgentConsoleActivityCategory;
     let category = AGENT_CONSOLE_ACTIVITY_CATEGORIES.includes(requested) ? requested : undefined;
+    const messages = host.state.displayMessages || [];
+    const countFor = (value: AgentConsoleActivityCategory): number => {
+        let count = 0;
+        for (const message of messages) {
+            if (isCategoryMessage(message, value)) {
+                count += 1;
+            }
+        }
+        return count;
+    };
     if (!category) {
         const selected = await host.select(
             formatAgentUiNotice(host.translator, 'activityJumpTitle'),
             AGENT_CONSOLE_ACTIVITY_CATEGORIES.map(value => ({
-                label: categoryLabel(host.translator, value),
+                label: `${categoryLabel(host.translator, value)} (${countFor(value)})`,
                 value
             })),
             0,
@@ -86,7 +96,6 @@ export async function runActivityJumpCommand(host: AgentConsoleActivityJumpHost,
         }
         category = selected;
     }
-    const messages = host.state.displayMessages || [];
     let target: AgentMessage | undefined;
     for (let index = messages.length - 1; index >= 0; index -= 1) {
         if (isCategoryMessage(messages[index], category)) {

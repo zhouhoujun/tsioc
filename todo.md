@@ -4453,3 +4453,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 按帧合并后，`replaceStreamingAssistantMessage` 在 finalize 时用普通 `setMessages` 会从消息 metadata 重算 token usage；assistant 行本身可能不带 usage，导致流式 chunk 的用量被清 0（vm-diagnostics 回归）。
 - 修复：该函数属于同一次 live turn，改用 `setMessages(current, true)`，保留 chunk usage 与 command executions。
 - 验证：vm-diagnostics + turn-stream-narration 53 passing。
+
+## 2026-11-16 P2 UX polish：activity tabs 计数 + README
+- `/activity` 无参数选择器的每个分类显示数量（Tools (n) / Reasoning (n) / …），继续用现有分类谓词计数。
+- README 补充：`/activity`、`/queue remove|edit`、`/worktree enter`、activity verbosity 与 viewport 窗口化行为。
+- 测试：activity-jump 新增分类计数用例（5 passing）。
