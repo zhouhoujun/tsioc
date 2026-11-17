@@ -2022,17 +2022,43 @@ function findCaseInsensitiveKey(target: any, prop: string | symbol): string | sy
     if (typeof prop !== 'string') {
         return undefined;
     }
-    const lowerProp = prop.toLowerCase();
     let current = target;
     while (current && current !== Object.prototype) {
-        const keys = Reflect.ownKeys(current);
-        const match = keys.find(key => typeof key === 'string' && key.toLowerCase() === lowerProp);
-        if (match !== undefined) {
-            return match;
+        // String keys only: symbols can never match a string expression.
+        // Compare case-insensitively without allocating a lowercase string per
+        // key, which used to run on every miss (optional fields, streamed data).
+        const keys = Object.getOwnPropertyNames(current);
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            if (key !== prop && equalsIgnoreCase(key, prop)) {
+                return key;
+            }
         }
         current = Object.getPrototypeOf(current);
     }
     return undefined;
+}
+
+function equalsIgnoreCase(left: string, right: string): boolean {
+    if (left.length !== right.length) {
+        return false;
+    }
+    for (let i = 0; i < left.length; i++) {
+        let a = left.charCodeAt(i);
+        let b = right.charCodeAt(i);
+        if (a !== b) {
+            if (a >= 65 && a <= 90) {
+                a += 32;
+            }
+            if (b >= 65 && b <= 90) {
+                b += 32;
+            }
+            if (a !== b) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 function shouldDeferSelectorExpression(expr: string, context: any, injector: NodeInjector): boolean {

@@ -89,4 +89,28 @@ export class VForTailTest {
             await ctx.close();
         }
     }
+
+    @Test('reordered items keep the new list order')
+    async reorder() {
+        const ctx = await Application.run(VForTailComponent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(VForTailComponent) as any;
+            const component = ref.instance as VForTailComponent;
+            const root = ref.hostView.rootNodes[0] as any;
+
+            component.items = [{ label: 'A' }, { label: 'B' }, { label: 'C' }];
+            await Promise.resolve();
+            component.items = [component.items[2], component.items[0], component.items[1]];
+            await Promise.resolve();
+            expect(this.texts(root)).toEqual([
+                '0/3/true/false/C',
+                '1/3/false/false/A',
+                '2/3/false/true/B'
+            ]);
+        } finally {
+            await ctx.close();
+        }
+    }
 }
