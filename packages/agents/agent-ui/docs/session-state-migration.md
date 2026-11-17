@@ -45,6 +45,13 @@ directly in the binding; no forwarding accessors.
    `hub.active` (per-session state) and `v-show` per open session. Track the
    active id via `hub.activeSessionId`. This is the step that removes the
    1k-message reprojection on tab switch.
+   **Step 2 is only correct together with the write path (step 3):** the
+   transcript must read the same state the turn/event writes target. Do not
+   ship a version where controllers write the singleton while the transcript
+   reads `hub.active`; streamed updates would disappear. Land the transcript
+   read path and the agent-runtime write path in the same change; keep the
+   remaining read-only panels on the same `hub.active` in that change or
+   introduce a compatibility read alias, never a hand-written getter.
 3. **Controllers/hosts**: move `AgentConsoleComponent` and host helpers from
    `this.state` to `this.hub.active` (mechanical, per module). Do not add a
    facade; the hub is the stable object.
