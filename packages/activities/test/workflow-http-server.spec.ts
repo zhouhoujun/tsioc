@@ -576,6 +576,74 @@ describe('Workflow HTTP microservice', () => {
         await request(`${base}/api/workflows/child-http`, { method: 'DELETE' });
     });
 
+    it('starts, reports and stops deployed workflow schedules', async () => {
+        const longSchedule = {
+            id: 'schedule-demo',
+            name: 'Schedule demo',
+            nodes: [{
+                id: 'inject_s', name: 'Tick', type: 'inject',
+                position: { x: 0, y: 0 },
+                config: { trigger: 'interval', interval: 10, intervalUnit: 's', repeatCount: 0, payload: {} }
+            }],
+            connections: []
+        };
+        await request(`${base}/api/workflows/schedule-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(longSchedule)
+        });
+        const started = await request(`${base}/api/workflows/schedule-demo/schedule`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: '{}'
+        });
+        expect(started.status).toBe(200);
+        expect(started.body.running).toBe(true);
+
+        const status = await request(`${base}/api/workflows/schedule-demo/schedule`);
+        expect(status.status).toBe(200);
+        expect(status.body.running).toBe(true);
+
+        const stopped = await request(`${base}/api/workflows/schedule-demo/schedule`, { method: 'DELETE' });
+        expect(stopped.body.stopped).toBe(true);
+        expect((await request(`${base}/api/workflows/schedule-demo/schedule`)).status).toBe(404);
+
+        const onceSchedule = {
+            ...longSchedule,
+            id: 'schedule-once',
+            name: 'Schedule once',
+            nodes: [{
+                id: 'inject_s', name: 'Tick', type: 'inject',
+                position: { x: 0, y: 0 },
+                config: { trigger: 'interval', interval: 50, intervalUnit: 'ms', repeatCount: 1, payload: {} }
+            }]
+        };
+        await request(`${base}/api/workflows/schedule-once`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(onceSchedule)
+        });
+        await request(`${base}/api/workflows/schedule-once/schedule`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: '{}'
+        });
+        let executions: any[] = [];
+        for (let attempt = 0; attempt < 40 && !executions.length; attempt++) {
+            const list = await request(`${base}/api/executions?workflowId=schedule-once`);
+            executions = list.body || [];
+            if (!executions.length) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+        }
+        expect(executions.length).toBeGreaterThan(0);
+        const after = await request(`${base}/api/workflows/schedule-once/schedule`);
+        expect(after.body.running).toBe(false);
+
+        await request(`${base}/api/workflows/schedule-demo`, { method: 'DELETE' });
+        await request(`${base}/api/workflows/schedule-once`, { method: 'DELETE' });
+    });
+
     it('exposes per-node runtime state through the HTTP API', async () => {
         const definition = {
             id: 'runtime-demo',

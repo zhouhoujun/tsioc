@@ -774,6 +774,17 @@ are stored as JSON with indexed summary columns, so library queries stay fast.
 When Node's built-in `node:sqlite` is unavailable the server falls back to the
 in-memory store.
 
+The server can keep inject interval/cron/once schedules running after a request:
+
+```text
+POST   /api/workflows/:id/schedule   # start (context/execution options)
+GET    /api/workflows/:id/schedule   # running state and run count
+DELETE /api/workflows/:id/schedule   # stop
+```
+
+Scheduled runs persist execution snapshots, restart automatically when the
+workflow is saved/published, and stop when the workflow is deleted or cleared.
+
 The same server exposes execution inspection and cancellation:
 
 ```text

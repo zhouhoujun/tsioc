@@ -46,6 +46,7 @@ import {
     validateVisualWorkflowDraft
 } from '../src/visual';
 import { toWorkflowExecutionSnapshot, VisualWorkflowService } from '../src/visual/VisualWorkflowService';
+import { WorkflowScheduleManager } from './WorkflowScheduleManager';
 import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowPluginCatalog } from '../src/plugins/catalog';
 import { WorkflowPluginRegistry } from '../src/plugins/plugin-registry';
@@ -129,6 +130,7 @@ export class WorkflowHttpController {
         @Inject(WORKFLOW_EXECUTION_BYTES) private historyBytes: number,
         @Inject(WORKFLOW_VERSION_STORE) private versions: WorkflowVersionStore,
         @Inject(WORKFLOW_EXECUTION_POLICY) private policy: WorkflowExecutionPolicy,
+        private schedules: WorkflowScheduleManager,
         private execution: VisualWorkflowService
     ) {
         this.execution.setDefinitionResolver(id => this.store.get(id));
@@ -172,6 +174,7 @@ export class WorkflowHttpController {
             throw new BadRequestException(validation.errors.join('; '));
         }
         const summary = await this.store.save(definition);
+        this.schedules.restart(id, definition);
         return { summary, definition };
     }
 
@@ -184,6 +187,7 @@ export class WorkflowHttpController {
             throw new BadRequestException(validation.errors.join('; '));
         }
         const summary = await this.store.save(definition);
+        this.schedules.restart(id, definition);
         const version = await this.versions.append(definition, {
             kind: 'save',
             createdBy: (body as any)?.createdBy
@@ -203,6 +207,7 @@ export class WorkflowHttpController {
             throw new BadRequestException(validation.errors.join('; '));
         }
         const summary = await this.store.save(definition);
+        this.schedules.restart(id, definition);
         const version = await this.versions.append(definition, {
             kind: 'publish',
             createdBy: (body as any)?.publishedBy
@@ -279,6 +284,7 @@ export class WorkflowHttpController {
         if (!removed) {
             throw new NotFoundException(`Workflow not found: ${id}`);
         }
+        this.schedules.stop(id);
         await this.history.removeWorkflow(id);
         await this.versions.removeWorkflow(id);
         return { removed: true };
@@ -286,6 +292,7 @@ export class WorkflowHttpController {
 
     @Delete('/')
     async clear() {
+        this.schedules.stopAll();
         await this.store.clear();
         await this.history.clear();
         await this.versions.clear();
@@ -402,6 +409,40 @@ export class WorkflowHttpController {
             executionId: result.data?.executionId,
             error: result.error?.message
         };
+    }
+
+    /** Start the inject interval/cron/once schedule for a deployed workflow. */
+    @Post('/:id/schedule')
+    async startSchedule(
+        @RequestPath('id') id: string,
+        @RequestBody() body: { context?: Record<string, any>; execution?: any } = {}
+    ) {
+        const definition = await this.store.get(id);
+        if (!definition) {
+            throw new NotFoundException(`Workflow not found: ${id}`);
+        }
+        const status = this.schedules.start(id, definition, {
+            context: this.executionContext(body?.context),
+            execution: body?.execution,
+            onResult: (result: any) => {
+                void this.persist(result);
+            }
+        });
+        return status;
+    }
+
+    @Get('/:id/schedule')
+    async getSchedule(@RequestPath('id') id: string) {
+        const status = this.schedules.status(id);
+        if (!status) {
+            throw new NotFoundException(`Workflow is not scheduled: ${id}`);
+        }
+        return status;
+    }
+
+    @Delete('/:id/schedule')
+    async stopSchedule(@RequestPath('id') id: string) {
+        return { stopped: this.schedules.stop(id) };
     }
 
     /** Clear rate-limit/queue state for a workflow. */
@@ -676,6 +717,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             { provide: WORKFLOW_VERSION_STORE, useValue: versionStore },
             ...(options.providers || []),
             WorkflowPluginCatalog,
+            WorkflowScheduleManager,
             ...features,
             // Register MIME providers after the transport feature. The feature
             // also imports MimeModule exports; re-registering here ensures the
