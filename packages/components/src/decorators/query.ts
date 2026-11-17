@@ -42,11 +42,13 @@ export interface ViewChildren {
 export interface ContentChildMetadata<T = any> extends PropertyMetadata<T> {
     selector?: ViewChildSelector;
     read?: ViewChildReadToken;
+    required?: boolean;
 }
 
 export interface ContentChildrenMetadata<T = any> extends PropertyMetadata<T> {
     selector?: ViewChildSelector;
     read?: ViewChildReadToken;
+    required?: boolean;
 }
 
 export interface ContentChild {

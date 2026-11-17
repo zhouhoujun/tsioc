@@ -227,7 +227,12 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     private refreshContentChilds(def: ComponentDef): void {
         const childQueries = def.contentChilds || [];
         childQueries.forEach(query => {
-            (this.instance as any)[query.propertyKey] = this.resolveContentChild(query);
+            const value = this.resolveContentChild(query);
+            if (query.required && value == null) {
+                const selector = query.selector ?? query.type;
+                throw new Error(`ContentChild '${String(selector ?? query.propertyKey)}' not found on ${this.classRef.className}.`);
+            }
+            (this.instance as any)[query.propertyKey] = value;
         });
         const childrenQueries = def.contentChildrens || [];
         if (childrenQueries.length) {
@@ -280,6 +285,10 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
                 (this.instance as any)[query.propertyKey] = list;
             }
             const next = this.resolveContentChildren(query);
+            if (query.required && next.length === 0) {
+                const selector = query.selector ?? query.type;
+                throw new Error(`ContentChildren '${String(selector ?? query.propertyKey)}' not found on ${this.classRef.className}.`);
+            }
             const current = list.toArray();
             if (current.length !== next.length || current.some((value, index) => value !== next[index])) {
                 list.reset(next);
