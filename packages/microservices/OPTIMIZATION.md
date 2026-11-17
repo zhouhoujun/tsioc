@@ -383,6 +383,12 @@
 - `admin.state.ts` 降至约 1191 行；控制器直接写 reactive host，绑定行为不变。
 - 回归：admin 69 passing。
 
+第七十批（Admin routes controller）：
+
+- 新增 `admin/web/admin.routes.controller.ts`：路由列表操作、编辑器字段、校验、applyRoutes。
+- `admin.state.ts` 降至约 1059 行，保留模板箭头处理器作为薄委托。
+- 回归：admin 69 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

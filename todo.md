@@ -4499,3 +4499,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 消息模板输出 `data-message-id`（TUI 忽略），`AgentConsoleRenderedMessageItem` 增加 `messageId`。
 - `revealAgentConsoleMessage` 优先调用 surface 的 `revealMessage(messageId)`；web-console 的 accessor 通过 `[data-message-id]` + `scrollIntoView({block:'center'})` 实现，找不到时回退到 TUI 的行偏移滚动。
 - 修复浏览器里 `/activity` 只选中不滚动的问题；新增 transcript-reveal 单测与 HTML `data-message-id` 断言。
+
+- 微服务框架第七十批（2026-11-16）：
+  - 抽出 admin.routes.controller.ts（列表/编辑器/apply）。
+  - admin.state.ts 1059 行；回归 admin 69。

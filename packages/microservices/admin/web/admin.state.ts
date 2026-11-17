@@ -12,8 +12,9 @@ import { Router, RouterEvent } from '@tsdi/components/router';
 import { AdminLocale, adminMessage } from './admin.i18n';
 import { AdminPage, redirectToAdminLogin } from './routing';
 import { GatewayAdminHttp } from './http';
-import { buildSloAlertsCsv, formatAlertTime, routeMethodsKey, validateRouteFields } from './admin.state.pure';
+import { buildSloAlertsCsv, formatAlertTime, validateRouteFields } from './admin.state.pure';
 import { AdminConfigController } from './admin.config.controller';
+import { AdminRoutesController } from './admin.routes.controller';
 
 /** Structural document view used by the console (keeps decorator metadata DOM-free). */
 interface AdminDocumentLike {
@@ -134,6 +135,7 @@ export class GatewayAdminState {
     private loaded = false;
     private selfRef?: GatewayAdminState;
     private configController?: AdminConfigController;
+    private routesController?: AdminRoutesController;
     private routerSub?: { unsubscribe(): void };
 
     constructor(
@@ -303,6 +305,13 @@ export class GatewayAdminState {
             this.configController = new AdminConfigController(this.self() as any);
         }
         return this.configController;
+    }
+
+    private routesCtl(): AdminRoutesController {
+        if (!this.routesController) {
+            this.routesController = new AdminRoutesController(this.self() as any);
+        }
+        return this.routesController;
     }
 
     get pageTitle(): string {
@@ -936,52 +945,16 @@ export class GatewayAdminState {
     // Event handlers used inside `v-for` rows are arrow properties: the
     // template binds `this` to the row scope, so they must capture the service.
     readonly toggleRoute = (route: GatewayRouteOptions): void => {
-        const self = this.selfRef ?? this;
-        self.routes = self.routes.map(item => item === route
-            ? { ...item, enabled: item.enabled === false }
-            : item);
-        self.routesDirty = true;
-        self.status = self.t('status.routeToggled', {
-            path: route.path,
-            state: route.enabled === false ? self.t('status.enabled') : self.t('status.disabled')
-        });
+        this.routesCtl().toggleRoute(route);
     };
 
     readonly moveRoute = (route: GatewayRouteOptions, delta: number): void => {
-        const self = this.selfRef ?? this;
-        const index = self.routes.indexOf(route);
-        const target = index + delta;
-        if (index < 0 || target < 0 || target >= self.routes.length) {
-            return;
-        }
-        const next = self.routes.slice();
-        [next[index], next[target]] = [next[target], next[index]];
-        self.routes = next;
-        self.routesDirty = true;
-        self.status = self.t('status.routeMoved', { path: route.path });
+        this.routesCtl().moveRoute(route, delta);
     };
 
     readonly duplicateRoute = (route: GatewayRouteOptions): void => {
-        const self = this.selfRef ?? this;
-        const base = String(route.path || '/');
-        const paths = new Set(self.routes.map(item => String(item.path)));
-        let path = `${base}-copy`;
-        let counter = 2;
-        while (paths.has(path)) {
-            path = `${base}-copy-${counter++}`;
-        }
-        const copy = { ...route, path };
-        const index = self.routes.indexOf(route);
-        const next = self.routes.slice();
-        next.splice(index + 1, 0, copy);
-        self.routes = next;
-        self.routesDirty = true;
-        self.status = self.t('status.routeDuplicated', { path });
+        this.routesCtl().duplicateRoute(route);
     };
-
-    private routeMethodsKey(route: GatewayRouteOptions): string {
-        return routeMethodsKey(route);
-    }
 
     validateRoute(route: GatewayRouteOptions, index = -1): Record<string, string> {
         return validateRouteFields(route, {
@@ -992,16 +965,7 @@ export class GatewayAdminState {
     }
 
     validateEditingRoute(): boolean {
-        const self = this.self();
-        const errors = self.validateRoute(self.editingRoute, self.editingIndex);
-        self.routeErrors = errors;
-        const first = Object.values(errors)[0];
-        if (first) {
-            self.error = first;
-            return false;
-        }
-        self.error = '';
-        return true;
+        return this.routesCtl().validateEditingRoute();
     }
 
     async reload(): Promise<void> {
@@ -1061,131 +1025,35 @@ export class GatewayAdminState {
     }
 
     addRoute(): void {
-        const self = this.self();
-        self.editingIndex = -1;
-        self.editingRoute = {
-            path: '/api/new',
-            service: 'my-service',
-            stripPrefix: true,
-            enabled: true
-        } as GatewayRouteOptions;
-        self.routeEditorOpen = true;
+        this.routesCtl().addRoute();
     }
 
     readonly editRoute = (route: GatewayRouteOptions): void => {
-        const self = this.selfRef ?? this;
-        self.editingIndex = self.routes.indexOf(route);
-        self.editingRoute = { ...route };
-        self.routeEditorOpen = true;
+        this.routesCtl().editRoute(route);
     };
 
     closeRouteEditor(): void {
-        const self = this.self();
-        self.routeEditorOpen = false;
-        self.editingRoute = {} as GatewayRouteOptions;
-        self.editingIndex = -1;
-        self.routeErrors = {};
+        this.routesCtl().closeRouteEditor();
     }
 
     editRouteSlo(event: Event, field: 'errorRateThreshold' | 'p95ThresholdMs'): void {
-        const self = this.self();
-        const value = (event.target as HTMLInputElement).value.trim();
-        const slo: Record<string, number> = { ...(self.editingRoute.slo as any ?? {}) };
-        if (!value) {
-            delete slo[field];
-        } else {
-            const numeric = Number(value);
-            if (Number.isFinite(numeric)) {
-                slo[field] = numeric;
-            }
-        }
-        self.editingRoute = {
-            ...self.editingRoute,
-            slo: Object.keys(slo).length ? slo as any : undefined
-        };
+        this.routesCtl().editRouteSlo(event, field);
     }
 
     editRouteField(event: Event): void {
-        const self = this.self();
-        const target = event.target as HTMLInputElement;
-        const key = target.getAttribute('data-field') || '';
-        if (!key) {
-            return;
-        }
-        let value: string | number | boolean | string[] | undefined = target.checked;
-        if (key !== 'stripPrefix' && key !== 'enabled') {
-            value = target.value;
-        }
-        if (key === 'timeout') {
-            value = target.value ? Number(target.value) : undefined;
-        }
-        if (key === 'methods') {
-            value = String(target.value || '')
-                .split(',')
-                .map(item => item.trim().toUpperCase())
-                .filter(Boolean);
-        }
-        (self.editingRoute as unknown as Record<string, unknown>)[key] = value;
-        self.editingRoute = { ...self.editingRoute };
-        if (self.routeErrors[key]) {
-            const next = { ...self.routeErrors };
-            delete next[key];
-            self.routeErrors = next;
-        }
+        this.routesCtl().editRouteField(event);
     }
 
     saveRouteEditor(): void {
-        const self = this.self();
-        if (!self.validateEditingRoute()) {
-            return;
-        }
-        const route = self.editingRoute;
-        self.error = '';
-        if (self.editingIndex >= 0) {
-            const next = self.routes.slice();
-            next[self.editingIndex] = { ...route };
-            self.routes = next;
-        } else {
-            self.routes = [...self.routes, { ...route }];
-        }
-        self.closeRouteEditor();
-        self.routesDirty = true;
-        self.status = self.t('status.routeStaged', { count: self.routes.length });
+        this.routesCtl().saveRouteEditor();
     }
 
     readonly removeRoute = (route: GatewayRouteOptions): void => {
-        const self = this.selfRef ?? this;
-        self.routes = self.routes.filter(item => item !== route);
-        self.routesDirty = true;
-        self.status = self.t('status.routeRemoved', { count: self.routes.length });
+        this.routesCtl().removeRoute(route);
     };
 
     async applyRoutes(): Promise<void> {
-        const self = this.self();
-        self.error = '';
-        try {
-            if (!self.http) {
-                throw new Error('Gateway admin HTTP client is unavailable');
-            }
-            const response = await self.http.updateRoutes(self.routes, self.configVersion);
-            if (response.status === 401) {
-                self.requireLogin();
-                return;
-            }
-            if (response.status === 409) {
-                throw new Error(self.t('error.configConflict'));
-            }
-            if (!response.ok) {
-                throw new Error(self.t('error.applyRoutes', { status: response.status }));
-            }
-            const state = response.body as GatewayAdminApiState;
-            self.routes = (state.routes ?? []).map(route => ({ ...route }));
-            self.services = state.services ?? [];
-            self.configVersion = state.version ?? self.configVersion;
-            self.routesDirty = false;
-            self.status = self.t('status.routesApplied', { count: self.routes.length });
-        } catch (error) {
-            self.error = (error as Error).message;
-        }
+        await this.routesCtl().applyRoutes();
     }
+
 }
