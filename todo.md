@@ -4577,3 +4577,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 状态字段 `state.steerMode` 优先于 host `AgentOptions.ui.steerMode`。
 - i18n 3 个键（总数 715）；命令注册表 input 10→11、总数 102→103。
 - 测试：命令切换/持久化/`isSteerModeEnabled`，vm-submit + registry + i18n 65 passing。
+
+## 2026-11-17 /settings → General：Steer mode
+- General 设置新增 “Steer mode: on/off”，选中即切换并持久化（与 `/steer` 同一逻辑）。
+- 菜单 en/zh 文案同步；settings 选项列表测试更新；新增设置项切换/持久化用例。

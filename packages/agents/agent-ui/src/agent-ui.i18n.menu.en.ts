@@ -200,6 +200,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         timestampsDescription: 'message timestamp visibility',
         activityLabel: 'Activity verbosity: {level}',
         activityDescription: 'collapse finished tool/reasoning runs into one row',
+        steerLabel: 'Steer mode: {state}',
+        steerDescription: 'Enter interrupts the running turn instead of queueing',
         toolOutputLabel: 'Tool output: {state}',
         toolOutputDescription: 'tool output visibility in messages',
         usernameLabel: 'Username: {state}',

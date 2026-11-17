@@ -37,6 +37,7 @@ export function settingsPanelHost(self: any): SettingsPanelHost {
         runThemeCommand: () => self.runThemeCommand(),
         runVimCommand: (args?: string) => self.runVimCommand(args || ''),
         runDisplayCommand: (args?: string) => self.runDisplayCommand(args),
+        runSteerCommand: (args?: string) => self.runSteerCommand(args),
         runLayoutCommand: (args?: string) => self.runLayoutCommand(args),
         runRawModeCommand: () => self.runRawModeCommand(),
         runFastCommand: (args?: string) => self.runFastCommand(args),

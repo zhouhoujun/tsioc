@@ -200,6 +200,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         timestampsDescription: '消息时间戳是否显示',
         activityLabel: '活动详细度：{level}',
         activityDescription: '把已完成的工具/思考步骤合并为一行',
+        steerLabel: '转向模式：{state}',
+        steerDescription: '运行中回车打断当前 turn，而不是排队',
         toolOutputLabel: '工具输出：{state}',
         toolOutputDescription: '消息中是否显示工具输出',
         usernameLabel: '用户名：{state}',

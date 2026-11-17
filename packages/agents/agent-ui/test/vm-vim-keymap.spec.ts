@@ -483,7 +483,7 @@ export class VmVimKeymapTest {
 
             await component.sessionState.confirmSelectMenu('general');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
-            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'yolo', 'timestamps', 'activity', 'tooloutput', 'username', 'title', 'touch']);
+            expect(component.selectMenu?.options.map(option => option.value)).toEqual(['theme', 'language', 'vim', 'raw', 'thinking', 'yolo', 'timestamps', 'activity', 'steer', 'tooloutput', 'username', 'title', 'touch']);
 
             await component.sessionState.confirmSelectMenu('vim');
             await pending;
@@ -521,6 +521,36 @@ export class VmVimKeymapTest {
             expect((component as any).shouldUseTouchMode()).toEqual(true);
             expect(store.saved.touchMode).toEqual(true);
             expect(component.notice).toContain('Touch mode enabled');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('settings general tab toggles steer mode and persists it')
+    async settingsSteerModeToggles() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-steer-'));
+        const store = {
+            saved: undefined as any,
+            async load() { return this.saved; },
+            async save(_workspace: string, value: any) { this.saved = value; }
+        };
+        const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, undefined, undefined, undefined);
+        (component as any).settingsStore = store;
+        (component as any).resolveHistoryWorkspace = () => workspace;
+        await component.onInit();
+        try {
+            expect(component.sessionState.steerMode).toEqual(undefined);
+            const pending = (component as any).handleCommand('/settings');
+            await waitForCondition(() => !!component.selectMenu);
+            await component.sessionState.confirmSelectMenu('general');
+            await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
+            await component.sessionState.confirmSelectMenu('steer');
+            await pending;
+
+            expect(component.sessionState.steerMode).toEqual(true);
+            expect((component as any).isSteerModeEnabled()).toEqual(true);
+            expect(store.saved.steerMode).toEqual(true);
+            expect(component.notice).toContain('Steer mode');
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
