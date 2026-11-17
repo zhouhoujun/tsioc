@@ -182,26 +182,35 @@ export abstract class AbstractInvocation<T = any,
     protected invokeMethod(name: string | symbol, options?: TInj | InvokeOptions, args?: any[], resolveCtx?: RunContext): any {
         const instance = this.instance;
         const [context, destroy, payload] = args ? [this.injector] : this.createInvokeContext(name, options);
-        const isNetRCtx = !resolveCtx;
-        if (isNetRCtx) {
-            resolveCtx = createRunContext(context);
-            if (payload) resolveCtx.setPayload(payload);
-        } else {
-            resolveCtx!.setInjector(context);
-        }
 
         const classRef = this.resolveInvokeClassRef(true);
+
+        // A run context is the resolution scope for the method parameters. When
+        // the method takes none (very common for advice methods) there is
+        // nothing to resolve, so the per-call context and its deferred cleanup
+        // are skipped entirely.
+        const params = args ? undefined : classRef.getParameters(name);
+        const ownCtx = !resolveCtx && !!(params && params.length > 0);
+        if (ownCtx) {
+            resolveCtx = createRunContext(context);
+            if (payload) resolveCtx.setPayload(payload);
+        } else if (resolveCtx) {
+            resolveCtx.setInjector(context);
+        }
+
         if (!args) {
             args = classRef.resolveArguments(name, context, resolveCtx);
         }
 
         const result = classRef.invoke(name, context, instance, args);
 
-        if (destroy || isNetRCtx) {
-            const act = isNetRCtx ? () => {
-                destroy?.();
-                resolveCtx?.onDestroy();
-            } : destroy as (() => void);
+        if (destroy || ownCtx) {
+            const act = ownCtx
+                ? () => {
+                    destroy?.();
+                    resolveCtx?.onDestroy();
+                }
+                : destroy as () => void;
 
             if (isPromise(result)) {
                 return result.then(val => {

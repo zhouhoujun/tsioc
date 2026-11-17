@@ -68,10 +68,21 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         this.records = this[RECORDS] = new Map();
         this._parent = parent;
         this.initScope(scope);
-        parent?.onDestroy(this);
+        if (parent && this.registerToParent()) parent.onDestroy(this);
     }
 
     protected abstract initScope(scope?: InjectorScope): void;
+
+    /**
+     * Whether this injector should be destroyed together with its parent.
+     *
+     * Synthetic per-invocation injectors (e.g. AOP {@link JoinPoint}) opt out:
+     * they are disposed by their creator and must not accumulate destroy
+     * callbacks on long-lived parent injectors.
+     */
+    protected registerToParent(): boolean {
+        return true;
+    }
 
     get ready() {
         return this._readyDefer.promise
@@ -90,7 +101,12 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         if (!(flags & InjectFlags.NonSingleton) && this.getRuntime().has(token)) return true;
         if (!(flags & InjectFlags.SkipSelf) && (this.records.has(token))) return true;
         if (!(flags & InjectFlags.Self)) {
-            return this._parent?.has(token, flags | InjectFlags.NonSingleton) === true
+            const parentFlags = (
+                (flags & InjectFlags.Host)
+                    ? (InjectFlags.Self | InjectFlags.NonSingleton)
+                    : ((flags & ~(InjectFlags.Self | InjectFlags.SkipSelf | InjectFlags.Host)) | InjectFlags.NonSingleton)
+            );
+            return this._parent?.has(token, parentFlags) === true
         }
         return this.hasFinal(token, flags)
     }
@@ -113,7 +129,10 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         }
 
         if (notFoundValue === undefined) {
-            notFoundValue = this.defaultNotFound();
+            // An optional resolution must yield `null` when the token is
+            // missing. Falling back to the internal THROW_FLAGE sentinel would
+            // both leak the sentinel to callers and make parent lookups throw.
+            notFoundValue = (flags & InjectFlags.Optional) ? null : this.defaultNotFound();
         }
 
         if (!(flags & (InjectFlags.SkipSelf | InjectFlags.Host))) {
@@ -127,10 +146,20 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         }
 
         if (this._parent && !(flags & InjectFlags.Self)) {
+            // `Self`/`SkipSelf`/`Host` are local routing flags and must not be
+            // forwarded verbatim: the parent already excludes itself and is
+            // asked to check its own records when `Host` was set. The remaining
+            // bits (Optional/Resolve/Request) are part of the resolution
+            // contract and must survive the delegation.
+            const parentFlags = (
+                (flags & InjectFlags.Host)
+                    ? (InjectFlags.Self | InjectFlags.NonSingleton)
+                    : ((flags & ~(InjectFlags.Self | InjectFlags.SkipSelf | InjectFlags.Host)) | InjectFlags.NonSingleton)
+            );
             const value = this._parent.get(
                 token,
                 notFoundValue,
-                (!(flags & InjectFlags.Host) ? flags : InjectFlags.Self) & InjectFlags.NonSingleton,
+                parentFlags,
                 context);
 
             if (!isNil(value) && value !== THROW_FLAGE) {
@@ -160,17 +189,13 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
 
     protected notFound<T>(token: Token<T>, notFoundValue: any, flags: InjectFlags, context?: RunContext): T {
         // 处理未找到的情况
-        let value: T;
-        if (!(flags & InjectFlags.Optional)) {
-            if (notFoundValue === THROW_FLAGE) {
-                throw new NullInjectorException(token);
+        if (notFoundValue === THROW_FLAGE) {
+            if (flags & InjectFlags.Optional) {
+                return null!;
             }
-            value = notFoundValue ?? null!;
-        } else {
-            value = notFoundValue ?? null!;
+            throw new NullInjectorException(token);
         }
-
-        return value;
+        return (notFoundValue ?? null!) as T;
     }
 
     /**
@@ -282,9 +307,15 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
 
 
     protected clear() {
-        this.scope && this.getRuntime()?.removeInjector(this.scope);
+        const runtime = this.getRuntime();
+        // Only unregister the scope when this injector actually owns it.
+        // Synthetic injectors share names such as 'static' with the real
+        // injector and must not remove it from the runtime.
+        if (this.scope && runtime?.getScopes().get(this.scope) === this) {
+            runtime.removeInjector(this.scope);
+        }
         this.records.forEach(r => {
-            if (r?.type) this.getRuntime().clearTypeProvider(r.type);
+            if (r?.type) runtime?.clearTypeProvider(r.type);
         });
         this.records.clear();
         if (this._parent) {

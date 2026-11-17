@@ -134,6 +134,39 @@ export function invokeTail<T = any, TContext = any>(invoke: (input?: any, arg2?:
 }
 
 /**
+ * Run `action` once a handler result has settled.
+ *
+ * Handle results may be plain values, promises or observables. Cleanup that
+ * releases per-invocation resources must follow the result shape: immediately
+ * for plain values, after settlement for promises, and on
+ * complete/error/unsubscribe for observables.
+ *
+ * @param result the handler result.
+ * @param action cleanup to run when the result can no longer be observed.
+ * @returns the same result, with cleanup attached.
+ */
+export function onSettled<T>(result: T, action: () => void): T {
+    if (isObservable(result)) {
+        return (result as unknown as Observable<any>).pipe(finalize(action)) as T;
+    }
+    if (isPromise(result)) {
+        return (result as Promise<any>).then(
+            res => {
+                action();
+                return res;
+            },
+            err => {
+                action();
+                throw err;
+            }
+        ) as T;
+    }
+    action();
+    return result;
+}
+
+
+/**
  * 处理多个连续的invoke调用
  */
 export function invokeTails<T = any, TContext = any>(invoke: () => any, next: TailNext<any, TContext>, ...nexts: (TailNext<any, TContext> | undefined)[]): T;

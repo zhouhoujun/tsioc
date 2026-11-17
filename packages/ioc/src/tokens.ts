@@ -148,7 +148,15 @@ export enum InjectFlags {
      * Param provide with Request Context.
      */
     Request = 0b10000000,
-    NonSingleton
+
+    /**
+     * Bypass the singleton (runtime) cache and force record resolution.
+     *
+     * Must stay a distinct bit: an implicit enum member here used to inherit
+     * `Request | Host`, which made `get(token, undefined, NonSingleton)` skip
+     * the injector's own records.
+     */
+    NonSingleton = 0b100000000
 }
 
 

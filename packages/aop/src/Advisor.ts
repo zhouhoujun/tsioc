@@ -5,6 +5,15 @@ import { AopDef } from './metadata/ref';
 import { AdviceTypes } from './metadata/meta';
 import { JoinPoint, ProceedingJoinPoint } from './joinpoints/JoinPoint';
 
+const NO_ADVICERS: Advicer[] = [];
+const NO_PROCEEDINGS: AroundProceeding[] = [];
+
+const BEFORE_TYPES: readonly AdviceTypes[] = ['Around', 'Before'];
+const POINTCUT_TYPES: readonly AdviceTypes[] = ['Pointcut'];
+const AFTER_TYPES: readonly AdviceTypes[] = ['Around', 'After'];
+const AFTER_RETURNING_TYPES: readonly AdviceTypes[] = ['Around', 'AfterReturning'];
+const AFTER_THROWING_TYPES: readonly AdviceTypes[] = ['Around', 'AfterThrowing'];
+
 /**
  * for global aop advisor.
  *
@@ -13,6 +22,23 @@ import { JoinPoint, ProceedingJoinPoint } from './joinpoints/JoinPoint';
  */
 export class Advisor implements OnDestroy {
     private advices: Map<AdviceTypes, Advicer[]>;
+
+    /**
+     * Flat view of {@link advices}, used by {@link match} and
+     * {@link hasPointcut} so a property access does not have to walk the
+     * nested per-type arrays.
+     */
+    private allAdvicers: Advicer[] = [];
+
+    private _version = 0;
+
+    /**
+     * Monotonic counter bumped whenever registered advice changes. Consumers
+     * that cache match results (e.g. the AOP proxy) must invalidate on change.
+     */
+    get version(): number {
+        return this._version;
+    }
 
     private proceedings: AroundProceeding[];
     private pendingActivator?: () => void;
@@ -59,6 +85,7 @@ export class Advisor implements OnDestroy {
                         return aspect.invoke(advice.propertyKey!, ctx);
                     }
                 });
+                this.changed();
                 return;
             }
             const adviceType = advice.adviceName!;
@@ -71,12 +98,15 @@ export class Advisor implements OnDestroy {
             if (!advices.some(r => r.advice.type == advice.type
                 && r.advice.propertyKey === advice.propertyKey
                 && r.advice.pointcut === advice.pointcut)) {
-                advices.push({
+                const advicer: Advicer = {
                     advice,
                     match,
                     accessor: advice.accessor,
                     aspect
-                });
+                };
+                advices.push(advicer);
+                this.allAdvicers.push(advicer);
+                this.changed();
             }
         });
 
@@ -87,14 +117,24 @@ export class Advisor implements OnDestroy {
             advices.filter(a => a.aspect.type === aspect.type)
                 .forEach(a => {
                     advices.splice(advices.indexOf(a), 1);
+                    lang.remove(this.allAdvicers, a);
                 })
         });
-        this.proceedings = this.proceedings.filter(r => r.aspect !== aspect || r.aspect.type !== aspect.type)
+        this.proceedings = this.proceedings.filter(r => r.aspect !== aspect || r.aspect.type !== aspect.type);
+        this.changed();
     }
 
     remove(aspect: Invocation) {
         lang.remove(this.aspects, aspect);
         this.unregisterAspect(aspect);
+    }
+
+    /**
+     * Record an advice change so derived caches (the AOP proxy property match
+     * cache) drop their resolved decisions.
+     */
+    private changed(): void {
+        this._version++;
     }
 
     get(type: AbstractType): Invocation | undefined {
@@ -121,12 +161,10 @@ export class Advisor implements OnDestroy {
 
     match(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): boolean {
         this.activatePending();
-        if (!this.advices.size) return false;
-        for (const r of this.advices.values()) {
-            for (let i = 0, len = r.length; i < len; i++) {
-                if (r[i].match(name, fullName, targetRef, target, options)) {
-                    return true;
-                }
+        const advicers = this.allAdvicers;
+        for (let i = 0, len = advicers.length; i < len; i++) {
+            if (advicers[i].match(name, fullName, targetRef, target, options)) {
+                return true;
             }
         }
         return false;
@@ -139,6 +177,9 @@ export class Advisor implements OnDestroy {
 
     hasPointcut(instance: object, typeRef: ClassRef, withConstructor?: boolean): boolean {
         this.activatePending();
+        const advicers = this.allAdvicers;
+        if (!advicers.length) return false;
+
         const className = typeRef?.className ?? getTypeName(instance);
         const names = Object.keys(instance);
         const decorators = typeRef?.getPropertyDescriptors();
@@ -150,67 +191,81 @@ export class Advisor implements OnDestroy {
             }
         }
 
-        if (!this.advices.size) return false;
-        for (const r of this.advices.values()) {
-            for (let i = 0, len = names.length; i < len; i++) {
-                const name = names[i];
-                const fullName = `${className}.${name}`;
-                for (let j = 0, alen = r.length; j < alen; j++) {
-                    if (r[j].match(name, fullName, typeRef, instance, { way: 'root' })) {
-                        return true;
-                    }
+        for (let i = 0, len = names.length; i < len; i++) {
+            const name = names[i];
+            const fullName = `${className}.${name}`;
+            for (let j = 0, alen = advicers.length; j < alen; j++) {
+                if (advicers[j].match(name, fullName, typeRef, instance, { way: 'root' })) {
+                    return true;
                 }
             }
         }
         return false;
     }
 
-    protected getAdvicers(...types: AdviceTypes[]): Advicer[] {
-        if (!types?.length) return [];
-        if (types.length === 1) return this.advices.get(types[0]) ?? [];
-        const result: Advicer[] = [];
+    /**
+     * Resolve advice of the given kinds matching `(name, fullName, options)`,
+     * in registration order.
+     *
+     * Walks the per-kind lists directly and only allocates a result when an
+     * advice actually matches: calls on non-advised properties (the common
+     * case) stay allocation free.
+     *
+     * The returned array must be treated as read-only; when nothing matches a
+     * shared empty array is returned.
+     */
+    private resolve(types: readonly AdviceTypes[], name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
+        let found: Advicer[] | undefined;
         for (let i = 0, len = types.length; i < len; i++) {
             const advicers = this.advices.get(types[i]);
-            if (advicers?.length) {
-                result.push(...advicers);
+            if (!advicers) continue;
+            for (let j = 0, alen = advicers.length; j < alen; j++) {
+                const advicer = advicers[j];
+                if (advicer.match(name, fullName, targetRef, target, options)) {
+                    if (found) {
+                        found.push(advicer);
+                    } else {
+                        found = [advicer];
+                    }
+                }
             }
         }
-        return result;
+        return found ?? NO_ADVICERS;
     }
 
-    getProceeding(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions) {
-        return this.proceedings.filter(adv => adv.match(name, fullName, targetRef, target, options))
+    getProceeding(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): AroundProceeding[] {
+        const proceedings = this.proceedings;
+        if (!proceedings.length) return NO_PROCEEDINGS;
+        return proceedings.filter(adv => adv.match(name, fullName, targetRef, target, options));
     }
 
     getBefore(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
-        return this.getAdvicers('Around', 'Before')
-            .filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.resolve(BEFORE_TYPES, name, fullName, targetRef, target, options);
     }
 
 
     getPointcut(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
-        return this.getAdvicers('Pointcut')
-            .filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.resolve(POINTCUT_TYPES, name, fullName, targetRef, target, options);
     }
 
     getAfter(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
-        return this.getAdvicers('Around', 'After')
-            .filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.resolve(AFTER_TYPES, name, fullName, targetRef, target, options);
     }
 
     getAfterReturning(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
-        return this.getAdvicers('Around', 'AfterReturning')
-            .filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.resolve(AFTER_RETURNING_TYPES, name, fullName, targetRef, target, options);
     }
 
     getAfterThrowing(name: string | symbol, fullName: string, targetRef: ClassRef, target?: object, options?: MatchOptions): Advicer[] {
-        return this.getAdvicers('Around', 'AfterThrowing')
-            .filter(adv => adv.match(name, fullName, targetRef, target, options));
+        return this.resolve(AFTER_THROWING_TYPES, name, fullName, targetRef, target, options);
     }
 
 
     onDestroy(): void {
         this.aspects = [];
-        this.advices.clear()
+        this.advices.clear();
+        this.allAdvicers = [];
+        this.proceedings = [];
+        this.changed();
     }
 }

@@ -3,7 +3,7 @@ import {
     ContextToken, invokeTail, InterceptorLike, isDefined,
     Parameters, ClassRef, proxyTag, isObject, isNil, object2string, getClassify,
     composeHandlers, composeInterceptors, Injector, AbstractInjector, RuntimeContext,
-    EnvironmentInjector
+    EnvironmentInjector, onSettled
 } from '@tsdi/ioc';
 import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
@@ -12,6 +12,17 @@ import { Proceeding } from '../Proceeding';
 import { Advicer } from '../Advicer';
 import { AroundMetadata } from '../metadata/meta';
 const POINTCUT = new ContextToken(() => false);
+
+/**
+ * Resolved pointcut decision for one property of one advised instance.
+ */
+interface PropertyMatch {
+    fullName: string;
+    host: boolean;
+    method: boolean;
+    get: boolean;
+    set: boolean;
+}
 
 /**
  * Proxy method.
@@ -67,20 +78,46 @@ export class ProceedingScope implements Proceeding {
         const descriptors = typeRef?.getPropertyDescriptors();
         const weakMap = new WeakMap();
         const runtime = this.runtime;
+
+        // A property access on an advised instance would otherwise re-run
+        // pointcut matching (host / method / accessor) on every read. Resolve
+        // it once per property and reuse until advice changes.
+        const decisions = new Map<string | symbol, PropertyMatch>();
+        let matchVersion = -1;
+
+        const matchOf = (name: string | symbol): PropertyMatch => {
+            if (matchVersion !== advisor.version) {
+                matchVersion = advisor.version;
+                decisions.clear();
+            }
+            let decision = decisions.get(name);
+            if (!decision) {
+                const fullName = `${prefix}.${name.toString()}`;
+                decision = {
+                    fullName,
+                    host: advisor.match(name, fullName, rootRef, root, { way: 'host' }),
+                    method: advisor.match(name, fullName, rootRef, instance),
+                    get: advisor.match(name, fullName, rootRef, instance, { accessor: 'get' }),
+                    set: advisor.match(name, fullName, rootRef, instance, { accessor: 'set' })
+                };
+                decisions.set(name, decision);
+            }
+            return decision;
+        };
+
         const proxy: any = new Proxy(instance, {
             get: (target, name, receiver) => {
                 if (name === ctorName || name === proxyTag) return target[name];
-                const nameStr = name.toString();
-                const fullName = `${prefix}.${nameStr}`;
 
-                if (advisor.match(name, fullName, rootRef, root, { way: 'host' })) {
+                const decision = matchOf(name);
+                if (decision.host) {
                     const result = target[name];
                     if (!isObject(result)) {
                         return result;
                     }
                     let vpxy = weakMap.get(result);
                     if (!vpxy) {
-                        vpxy = this.createProxy(fullName, rootRef, root, getClassify(result), result, advisor, parent);
+                        vpxy = this.createProxy(decision.fullName, rootRef, root, getClassify(result), result, advisor, parent);
                         weakMap.set(result, vpxy);
                     }
                     return vpxy;
@@ -91,8 +128,8 @@ export class ProceedingScope implements Proceeding {
                     const result = target[name];
                     let cachedFn = weakMap.get(result);
                     if (!cachedFn) {
-                        if (advisor.match(name, fullName, rootRef, instance)) {
-                            cachedFn = this.proxy(result, name, fullName, advisor, receiver ?? proxy, root, rootRef, parent);
+                        if (decision.method) {
+                            cachedFn = this.proxy(result, name, decision.fullName, advisor, receiver ?? proxy, root, rootRef, parent);
                         } else {
                             cachedFn = result;
                         }
@@ -101,11 +138,11 @@ export class ProceedingScope implements Proceeding {
                     return cachedFn;
                 }
 
-                if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'get' })) {
+                if (!decision.get) {
                     return target[name];
                 }
 
-                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, runtime, {
+                return this.handle(rootRef, decision.fullName, name, receiver ?? proxy, advisor, runtime, {
                     target: root,
                     parent,
                     args: [],
@@ -119,15 +156,14 @@ export class ProceedingScope implements Proceeding {
             },
             set: (target, name, newValue, receiver) => {
                 if (name === ctorName || name === proxyTag) return (target[name] = newValue) || true;
-                const nameStr = name.toString();
-                const fullName = `${prefix}.${nameStr}`;
 
-                if (!advisor.match(name, fullName, rootRef, instance, { accessor: 'set' })) {
+                const decision = matchOf(name);
+                if (!decision.set) {
                     return (target[name] = newValue) || true;
                 }
 
                 const oldValue = target[name];
-                return this.handle(rootRef, fullName, name, receiver ?? proxy, advisor, runtime, {
+                return this.handle(rootRef, decision.fullName, name, receiver ?? proxy, advisor, runtime, {
                     target: root,
                     parent,
                     args: [],
@@ -188,11 +224,21 @@ export class ProceedingScope implements Proceeding {
             advisor,
             annotations: targetRef?.getMethodDefines(propertyKey) //?? targetRef?.getPropDefines(propertyKey) //.defines.filter(d => d.propertyKey === propertyKey),
         });
-        if (options.parent) {
-            joinPoint.onDestroy(options.parent)
+
+        // The joinpoint is a synthetic, per-invocation injector and nothing else
+        // owns it (`registerToParent() === false`). Dispose it once the advice
+        // chain settles, otherwise every advised call keeps an injector, its
+        // records and its run context alive for the lifetime of the process.
+        let result: any;
+        try {
+            result = getAdvicesLifeScope(runtime)
+                .handle(joinPoint, runtime as any, options.next ?? (() => joinPoint.returning));
+        } catch (err) {
+            joinPoint.destroy();
+            throw err;
         }
 
-        return getAdvicesLifeScope(runtime).handle(joinPoint, runtime as any, options.next ?? (() => joinPoint.returning));
+        return onSettled(result, () => joinPoint.destroy());
     }
 
 }

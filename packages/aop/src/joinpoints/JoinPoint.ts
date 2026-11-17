@@ -1,6 +1,7 @@
 import {
     token, Injector, ContextInjector, AbstractType, Abstract, getTypeName,
     DecorDefine, Defer, TargetInvokeArguments, ClassRef, HandlerFn, Context, Parameters,
+    InjectorScope,
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advisor } from '../Advisor';
@@ -95,6 +96,22 @@ export class JoinPoint extends ContextInjector {
         this.accessor = options.accessor;
         this.annotations = options.annotations;
         this.state = options.state ?? JoinpointState.Before;
+    }
+
+    /**
+     * JoinPoint injectors are synthetic and per-invocation. They must not be
+     * appended to the runtime injector registry: that registry is scanned
+     * linearly and would grow with every advised call.
+     */
+    protected override initScope(_scope?: InjectorScope): void {
+        this._runtime = this.getParent()!.getRuntime();
+    }
+
+    /**
+     * Owned by the invocation, not by the parent injector.
+     */
+    protected override registerToParent(): boolean {
+        return false;
     }
 
 

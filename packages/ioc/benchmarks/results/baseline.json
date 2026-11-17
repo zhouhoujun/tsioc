@@ -1,0 +1,169 @@
+{
+    "generatedAt": "2026-11-17T13:02:25.415Z",
+    "node": "v24.22.3",
+    "platform": "linux/x64",
+    "results": [
+        {
+            "scenario": "injector.get singleton (same injector)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 14.12,
+            "medianNsPerOp": 20.43,
+            "opsPerSecond": 70841598
+        },
+        {
+            "scenario": "injector.get singleton (child -> parent)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 19.46,
+            "medianNsPerOp": 25.36,
+            "opsPerSecond": 51382181
+        },
+        {
+            "scenario": "injector.get transient (same injector)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 48,
+            "medianNsPerOp": 51.24,
+            "opsPerSecond": 20832465
+        },
+        {
+            "scenario": "injector.get transient (deps chain)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 54.2,
+            "medianNsPerOp": 59.42,
+            "opsPerSecond": 18448823
+        },
+        {
+            "scenario": "injector.has singleton",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 14.15,
+            "medianNsPerOp": 16.26,
+            "opsPerSecond": 70661391
+        },
+        {
+            "scenario": "injector.resolve token",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 380.02,
+            "medianNsPerOp": 384.81,
+            "opsPerSecond": 2631454
+        },
+        {
+            "scenario": "ClassRef.getParameters(ctor)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 12.09,
+            "medianNsPerOp": 12.39,
+            "opsPerSecond": 82699305
+        },
+        {
+            "scenario": "ClassRef.hasMetadata(@Injectable)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 34.3,
+            "medianNsPerOp": 36.4,
+            "opsPerSecond": 29156219
+        },
+        {
+            "scenario": "ClassRef.getDefines(@Injectable)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 153.1,
+            "medianNsPerOp": 157.84,
+            "opsPerSecond": 6531594
+        },
+        {
+            "scenario": "ClassRef.getMethodDefines(doWork)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 16.15,
+            "medianNsPerOp": 17.34,
+            "opsPerSecond": 61911838
+        },
+        {
+            "scenario": "ClassRef.resolveArguments(doWork)",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 72.18,
+            "medianNsPerOp": 74.43,
+            "opsPerSecond": 13854637
+        },
+        {
+            "scenario": "JoinPoint.create",
+            "group": "ioc",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 727.56,
+            "medianNsPerOp": 773.72,
+            "opsPerSecond": 1374457
+        },
+        {
+            "scenario": "plain method call",
+            "group": "aop",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 5.02,
+            "medianNsPerOp": 5.44,
+            "opsPerSecond": 199362041
+        },
+        {
+            "scenario": "advisor.match(doWork)",
+            "group": "aop",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 62.74,
+            "medianNsPerOp": 91.51,
+            "opsPerSecond": 15939303
+        },
+        {
+            "scenario": "advisor.getBefore(doWork)",
+            "group": "aop",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 164.5,
+            "medianNsPerOp": 200.73,
+            "opsPerSecond": 6078880
+        },
+        {
+            "scenario": "advised property read",
+            "group": "aop",
+            "samples": 50000,
+            "rounds": 7,
+            "bestNsPerOp": 64.81,
+            "medianNsPerOp": 81.69,
+            "opsPerSecond": 15429241
+        },
+        {
+            "scenario": "advised method call (before)",
+            "group": "aop",
+            "samples": 10000,
+            "rounds": 7,
+            "bestNsPerOp": 6059.67,
+            "medianNsPerOp": 8153.02,
+            "opsPerSecond": 165025
+        },
+        {
+            "scenario": "advised method call (no-arg before)",
+            "group": "aop",
+            "samples": 10000,
+            "rounds": 7,
+            "bestNsPerOp": 3053.51,
+            "medianNsPerOp": 3213.37,
+            "opsPerSecond": 327492
+        }
+    ]
+}

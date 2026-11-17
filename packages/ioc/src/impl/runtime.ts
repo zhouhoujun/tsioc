@@ -136,7 +136,7 @@ export class DefaultRuntime extends DefaultContext implements Runtime {
         tyRef.extendTypes.forEach(t => {
             const tpd = pdMap.get(t);
             if (tpd) {
-                pdrs.unshift(tpd)
+                pdrs.unshift(...tpd)
             }
         })
         return pdrs
@@ -152,9 +152,9 @@ export class DefaultRuntime extends DefaultContext implements Runtime {
         const pdMap = this.getProviders();
         const prds = pdMap.get(ty);
         if (prds) {
-            prds.push(providers)
+            prds.push(...providers)
         } else {
-            pdMap.set(ty, providers)
+            pdMap.set(ty, providers.slice(0))
         }
     }
 
@@ -167,7 +167,8 @@ export class DefaultRuntime extends DefaultContext implements Runtime {
         const prds = this.getProviders().get(ty);
         if (prds) {
             providers.forEach(p => {
-                prds.splice(prds.indexOf(p), 1);
+                const idx = prds.indexOf(p);
+                if (idx >= 0) prds.splice(idx, 1);
             })
         }
 
