@@ -113,4 +113,28 @@ describe('GatewayWebhook', () => {
         }), request, response);
         expect(calls).toBe(1);
     });
+
+    it('disables redirect following and rejects non-http protocols when allowlisted', async () => {
+        const calls: Array<{ init: any }> = [];
+        const webhook = new GatewayWebhook(() => (async (_url: any, init: any) => {
+            calls.push({ init });
+            return {} as any;
+        }) as any);
+
+        await webhook.dispatch(route({
+            enabled: true,
+            url: 'https://hooks.example.com/notify',
+            async: false,
+            allowedHosts: ['hooks.example.com']
+        }), request, response);
+        expect(calls[0].init.redirect).toBe('manual');
+
+        await expect(webhook.dispatch(route({
+            enabled: true,
+            url: 'file:///etc/passwd',
+            async: false,
+            allowedHosts: ['hooks.example.com']
+        }), request, response)).rejects.toThrow(/protocol 'file:' is not allowed/);
+        expect(calls.length).toBe(1);
+    });
 });

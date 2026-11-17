@@ -501,6 +501,11 @@
 - `useMetrics` / `MetricsModule` 默认启用，`includeEventLoopLag:false` 可关闭。
 - 回归：metrics 63 passing。
 
+第八十九批（webhook SSRF 加固）：
+
+- allowlist 模式下仅允许 http/https，并设置 `redirect:'manual'`，防止 3xx 跳转到内网地址绕过白名单。
+- `webhook.spec.ts` 增加协议/重定向断言；gateway 149 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

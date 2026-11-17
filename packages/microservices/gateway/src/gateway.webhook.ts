@@ -59,8 +59,13 @@ export class GatewayWebhook {
         response: GatewayForwardResult
     ): Promise<void> {
         const target = new URL(webhook.url);
-        if (webhook.allowedHosts?.length && !hostAllowed(target.hostname, webhook.allowedHosts)) {
-            throw new Error(`webhook host '${target.hostname}' is not in the allowlist`);
+        if (webhook.allowedHosts?.length) {
+            if (!/^https?:$/.test(target.protocol)) {
+                throw new Error(`webhook protocol '${target.protocol}' is not allowed`);
+            }
+            if (!hostAllowed(target.hostname, webhook.allowedHosts)) {
+                throw new Error(`webhook host '${target.hostname}' is not in the allowlist`);
+            }
         }
         const headers = typeof webhook.headers === 'function'
             ? webhook.headers(request, response)
@@ -92,7 +97,10 @@ export class GatewayWebhook {
                         ...headers
                     },
                     body: payload,
-                    signal: controller.signal
+                    signal: controller.signal,
+                    // An allowlist must not be bypassed by a redirect to an
+                    // internal address; surface 3xx as a delivery failure.
+                    ...(webhook.allowedHosts?.length ? { redirect: 'manual' as const } : {})
                 });
                 return;
             } catch (error) {

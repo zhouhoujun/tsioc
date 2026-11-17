@@ -692,7 +692,7 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 
 | 项目 | 结果 |
 |---|---|
-| metrics 单位 | 新增 `recordDuration`，http/client/gateway 延迟指标双发 `*_ms` + `*_seconds` |
+| metrics 单位 | 新增 `recordDuration`，http/client/gateway 延迟指标双发 `*_ms` + `*_seconds`；新增 event-loop lag p99/max |
 | defineService | `defineService` / `describeService`；示例见 `examples/http-quickstart.ts` |
 | OpenAPI | swagger 暴露 `GET /{prefix}/openapi.json` |
 | 契约兼容 | `compareContracts` / `assertCompatible` + CLI `--compat`，breaking 变化 exit 1 |
@@ -716,7 +716,7 @@ ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
 ms-examples ms-tsc ms-brokers package-deps package-publish
 ```
 
-全部 PASS。soak 30s：37,942 请求、0 失败、heap -1MB、句柄回落到 2。最终计数：gateway 148、admin 81、metrics 61。
+全部 PASS。soak 30s：37,942 请求、0 失败、heap -1MB、句柄回落到 2。最终计数：gateway 149、admin 81、metrics 63。
 
 外部验证未完成（Docker registry 无法访问，镜像拉取超时）：
 OTLP Collector 实机导出、Consul/Nacos/Eureka 实机容器。
