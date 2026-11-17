@@ -453,6 +453,12 @@
 - MQTT fake client 支持 `publish(topic, payload, options, callback)` 签名。
 - `MS_BROKER_PROFILE=1 ms-brokers` PASS：Kafka 81、NATS 59、AMQP 63、MQTT 87、Redis 73。
 
+第八十一批（Admin 视图/壳层拆分）：
+
+- 新增 `admin.view.controller.ts`（派生视图/统计）、`admin.menu.controller.ts`（语言/主题菜单）、`admin.shell.controller.ts`（初始化/路由/跳转/登录重定向）。
+- 公开接口类型移到 `admin.types.ts` 并由 `admin.state.ts` 继续 re-export。
+- `admin.state.ts` 从 839 行降到 593 行，低于 600 行目标；admin 72 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

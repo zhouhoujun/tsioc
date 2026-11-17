@@ -1,16 +1,13 @@
 import { noReact } from '@tsdi/components';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import {
-    MenuBarGroup,
-    installMenuBarStyles,
-} from '@tsdi/components/common/menu-bar';
+import { installMenuBarStyles } from '@tsdi/components/common/menu-bar';
 import { installTabBarStyles } from '@tsdi/components/common/tab-bar';
 import { DOCUMENT } from '@tsdi/common';
 import { GatewayConfigDiff, GatewayConfigHistoryEntry, GatewayMatchPreview, GatewayRouteOptions, GatewayRuntimeSnapshot } from '@tsdi/gateway';
 import { WorkflowDefinitionSummary } from '@tsdi/activities/visual';
-import { Router, RouterEvent } from '@tsdi/components/router';
+import { Router } from '@tsdi/components/router';
 import { AdminLocale, adminMessage } from './admin.i18n';
-import { AdminPage, redirectToAdminLogin } from './routing';
+import { AdminPage } from './routing';
 import { GatewayAdminHttp } from './http';
 import { buildSloAlertsCsv, formatAlertTime, validateRouteFields } from './admin.state.pure';
 import { AdminConfigController } from './admin.config.controller';
@@ -18,6 +15,9 @@ import { AdminRoutesController } from './admin.routes.controller';
 import { AdminRulesController } from './admin.rules.controller';
 import { AdminRoutesTransferController } from './admin.routes-transfer.controller';
 import { AdminDiagnosticsController } from './admin.diagnostics.controller';
+import { AdminViewController } from './admin.view.controller';
+import { AdminMenuController } from './admin.menu.controller';
+import { AdminShellController } from './admin.shell.controller';
 
 /** Structural document view used by the console (keeps decorator metadata DOM-free). */
 interface AdminDocumentLike {
@@ -25,59 +25,8 @@ interface AdminDocumentLike {
     documentElement?: { setAttribute(name: string, value: string): void } | null;
 }
 
-export interface GatewayAdminRuleCondition {
-    field?: string;
-    name?: string;
-    operator?: string;
-    value?: unknown;
-}
-
-export interface GatewayAdminRuleSummary {
-    id?: string;
-    name?: string;
-    priority?: number;
-    when?: GatewayAdminRuleCondition[];
-    action?: { type?: string };
-}
-
-export interface GatewayAdminApiState {
-    routes?: GatewayRouteOptions[];
-    rules?: GatewayAdminRuleSummary[];
-    services?: string[];
-    dynamic?: { routes?: unknown[]; rules?: unknown[] };
-    version?: number;
-    auth?: { enabled: boolean; mode: 'none' | 'oidc' | 'oauth2' | 'service' };
-}
-
-export interface GatewayAdminConfigEntry {
-    version: number;
-    timestamp: string;
-    source?: string;
-    actor?: string;
-    diff?: GatewayConfigDiff;
-}
-
-export interface GatewayAdminServiceSummary {
-    name: string;
-    routes: number;
-    enabled: number;
-}
-
-export interface GatewayAdminServiceEndpoint {
-    id: string;
-    address: string;
-    protocol?: string;
-    port?: number;
-    status?: string;
-    weight?: number;
-    version?: string;
-    tags?: string[];
-}
-
-export interface GatewayAdminServiceDetail {
-    name: string;
-    endpoints: GatewayAdminServiceEndpoint[];
-}
+import type { GatewayAdminRuleCondition, GatewayAdminRuleSummary, GatewayAdminApiState, GatewayAdminConfigEntry, GatewayAdminServiceSummary, GatewayAdminServiceEndpoint, GatewayAdminServiceDetail } from './admin.types';
+export type { GatewayAdminRuleCondition, GatewayAdminRuleSummary, GatewayAdminApiState, GatewayAdminConfigEntry, GatewayAdminServiceSummary, GatewayAdminServiceEndpoint, GatewayAdminServiceDetail } from './admin.types';
 
 /**
  * Shared console state (Angular service pattern).
@@ -135,14 +84,15 @@ export class GatewayAdminState {
     /** Set by the routed layout; the rules page calls it to open the designer. */
     openDesigner?: () => Promise<void>;
 
-    private loaded = false;
     private selfRef?: GatewayAdminState;
     private configController?: AdminConfigController;
     private routesController?: AdminRoutesController;
     private rulesController?: AdminRulesController;
     private routesTransferController?: AdminRoutesTransferController;
     private diagnosticsController?: AdminDiagnosticsController;
-    private routerSub?: { unsubscribe(): void };
+    private viewController?: AdminViewController;
+    private menuController?: AdminMenuController;
+    private shellController?: AdminShellController;
 
     constructor(
         @Optional() @Inject(DOCUMENT) private documentRef?: AdminDocumentLike,
@@ -162,144 +112,35 @@ export class GatewayAdminState {
 
     init(): void {
         this.selfRef = this;
-        try {
-            const locale = this.storage()?.getItem('tsdi-gateway-admin-locale');
-            if (locale === 'zh-CN' || locale === 'en') {
-                this.locale = locale;
-            } else if (String(globalThis.navigator?.language || '').toLowerCase().startsWith('zh')) {
-                this.locale = 'zh-CN';
-            }
-            const theme = this.storage()?.getItem('tsdi-gateway-admin-theme');
-            if (theme === 'dark' || theme === 'light') {
-                this.theme = theme;
-            }
-        } catch {
-            // Private mode/storage failures keep the defaults.
-        }
-        this.status = this.t('status.loading');
-        this.applyTheme();
+        this.shell().init();
     }
 
     async start(): Promise<void> {
-        if (this.loaded) {
-            return;
-        }
-        this.loaded = true;
-        this.applyTheme();
-        const win = this.documentRef?.defaultView;
-        if (this.router) {
-            const initialPage = this.router.data?.page as AdminPage | undefined;
-            if (initialPage) {
-                this.page = initialPage;
-            }
-            this.routerSub = this.router.events.subscribe(event => this.handleRouterEvent(event));
-            const initial = win?.location?.hash
-                ? String(win.location.hash).replace(/^#/, '')
-                : '/';
-            await this.router.navigateByUrl(initial || '/');
-        }
-        await this.reload();
+        await this.shell().start();
     }
 
     destroy(): void {
-        this.routerSub?.unsubscribe();
-        this.routerSub = undefined;
+        this.shell().destroy();
     }
 
     t(key: string, params?: Record<string, unknown>): string {
         return adminMessage(this.locale, key, params);
     }
 
-    private storage(): Storage | undefined {
-        try {
-            return this.documentRef?.defaultView?.localStorage
-                ?? (globalThis as { localStorage?: Storage }).localStorage;
-        } catch {
-            return undefined;
-        }
-    }
-
-    private applyTheme(): void {
-        const doc = this.documentRef
-            ?? (globalThis as { document?: AdminDocumentLike }).document;
-        if (doc?.documentElement) {
-            doc.documentElement.setAttribute('data-theme', this.theme);
-        }
-    }
-
-    private globalMenuCache?: { locale: AdminLocale; theme: string; groups: MenuBarGroup[] };
-
-    get globalMenuGroups(): MenuBarGroup[] {
-        const cache = this.globalMenuCache;
-        if (cache && cache.locale === this.locale && cache.theme === this.theme) {
-            return cache.groups;
-        }
-        const groups: MenuBarGroup[] = [
-            {
-                items: [
-                    {
-                        id: 'menu:language',
-                        label: this.t('top.language'),
-                        icon: '🌐',
-                        children: [
-                            { id: 'language:en', label: 'English', checked: this.locale === 'en' },
-                            { id: 'language:zh-CN', label: '中文', checked: this.locale === 'zh-CN' }
-                        ]
-                    },
-                    {
-                        id: 'menu:theme',
-                        label: this.t('top.theme'),
-                        icon: '◐',
-                        children: [
-                            { id: 'theme:light', label: this.t('theme.light'), checked: this.theme === 'light' },
-                            { id: 'theme:dark', label: this.t('theme.dark'), checked: this.theme === 'dark' }
-                        ]
-                    }
-                ]
-            }
-        ];
-        this.globalMenuCache = { locale: this.locale, theme: this.theme, groups };
-        return groups;
+    get globalMenuGroups() {
+        return this.menu().groups;
     }
 
     readonly globalMenuSelect = (id: string): void => {
-        if (id === 'language:en' || id === 'language:zh-CN') {
-            this.setLocale(id.slice('language:'.length) as AdminLocale);
-            return;
-        }
-        if (id === 'theme:light' || id === 'theme:dark') {
-            this.setTheme(id.slice('theme:'.length) as 'light' | 'dark');
-        }
+        this.menu().select(id);
     };
 
-    private setLocale(locale: AdminLocale): void {
-        const self = this.self();
-        if (self.locale === locale) {
-            return;
-        }
-        self.locale = locale;
-        self.globalMenuCache = undefined;
-        try {
-            self.storage()?.setItem('tsdi-gateway-admin-locale', locale);
-            (self.documentRef ?? (globalThis as { document?: AdminDocumentLike }).document)?.documentElement?.setAttribute('lang', locale);
-        } catch {
-            // ignore storage failures
-        }
-        if (self.loaded) {
-            void self.reload();
-        }
+    setLocale(locale: AdminLocale): void {
+        this.shell().setLocale(locale);
     }
 
-    private setTheme(theme: 'light' | 'dark'): void {
-        const self = this.self();
-        self.theme = theme === 'dark' ? 'dark' : 'light';
-        self.applyTheme();
-        self.globalMenuCache = undefined;
-        try {
-            self.storage()?.setItem('tsdi-gateway-admin-theme', self.theme);
-        } catch {
-            // ignore storage failures
-        }
+    setTheme(theme: 'light' | 'dark'): void {
+        this.shell().setTheme(theme);
     }
 
     private self(): GatewayAdminState {
@@ -341,157 +182,109 @@ export class GatewayAdminState {
         return this.diagnosticsController;
     }
 
-    get pageTitle(): string {
-        switch (this.page) {
-            case 'routes': return this.t('page.routes.title');
-            case 'rules': return this.t('page.rules.title');
-            case 'not-found': return this.t('page.notFound.title');
-            default: return this.t('page.overview.title');
+    private view(): AdminViewController {
+        if (!this.viewController) {
+            this.viewController = new AdminViewController(this.self() as any);
         }
+        return this.viewController;
     }
 
-    get pageSubtitle(): string {
-        switch (this.page) {
-            case 'routes': return this.t('page.routes.subtitle');
-            case 'rules': return this.t('page.rules.subtitle');
-            case 'not-found': return this.t('page.notFound.subtitle');
-            default: return this.t('page.overview.subtitle');
+    private shell(): AdminShellController {
+        if (!this.shellController) {
+            this.shellController = new AdminShellController(this.self() as any);
         }
+        return this.shellController;
     }
 
-    get enabledRoutes(): number {
-        return this.routes.filter(route => route.enabled !== false).length;
+    private menu(): AdminMenuController {
+        if (!this.menuController) {
+            this.menuController = new AdminMenuController(this.self() as any);
+        }
+        return this.menuController;
     }
+
+    get pageTitle(): string { return this.view().pageTitle; }
+
+    get pageSubtitle(): string { return this.view().pageSubtitle; }
+
+    get enabledRoutes(): number { return this.view().enabledRoutes; }
 
     get filteredRoutes(): GatewayRouteOptions[] {
-        const query = String(this.routeQuery || '').trim().toLowerCase();
-        let list = this.routes;
-        if (this.routeFilter === 'enabled') {
-            list = list.filter(route => route.enabled !== false);
-        } else if (this.routeFilter === 'disabled') {
-            list = list.filter(route => route.enabled === false);
-        }
-        if (!query) {
-            return list;
-        }
-        return list.filter(route => [route.path, route.service, route.targetUrl, route.targetPath]
-            .some(value => String(value || '').toLowerCase().includes(query)));
+        return this.view().filteredRoutes;
     }
 
     readonly setRouteFilter = (event: Event): void => {
-        const self = this.selfRef ?? this;
-        const value = String((event.target as HTMLSelectElement).value);
-        self.routeFilter = value === 'enabled' || value === 'disabled' ? value : 'all';
+        this.view().setRouteFilter(event);
     };
 
     endpointsFor(name: string): GatewayAdminServiceEndpoint[] {
-        return this.serviceDetails.find(service => service.name === name)?.endpoints ?? [];
+        return this.view().endpointsFor(name);
     }
 
     endpointSummary(name: string): string {
-        return this.endpointsFor(name).map(endpoint => endpoint.address).join(', ');
+        return this.view().endpointSummary(name);
     }
 
-    get dashboardNavClass(): string {
-        return `ga-nav-item${this.page === 'dashboard' ? ' is-active' : ''}`;
-    }
+    get dashboardNavClass(): string { return this.view().dashboardNavClass; }
 
-    get routesNavClass(): string {
-        return `ga-nav-item${this.page === 'routes' ? ' is-active' : ''}`;
-    }
+    get routesNavClass(): string { return this.view().routesNavClass; }
 
-    get rulesNavClass(): string {
-        return `ga-nav-item${this.page === 'rules' ? ' is-active' : ''}`;
-    }
+    get rulesNavClass(): string { return this.view().rulesNavClass; }
 
     goDashboard(): void {
-        this.navigate('dashboard');
+        this.shell().navigate('dashboard');
     }
 
     goRoutes(): void {
-        this.navigate('routes');
+        this.shell().navigate('routes');
     }
 
     goRules(): void {
-        this.navigate('rules');
+        this.shell().navigate('rules');
     }
 
-    private navigate(page: AdminPage): void {
-        const self = this.self();
-        if (self.needsLogin) {
-            self.redirectToLogin();
-            return;
-        }
-        if (self.router) {
-            void self.router.navigateByUrl(`/${page}`);
-            return;
-        }
-        self.page = page;
-    }
-
-    private handleRouterEvent(event: RouterEvent): void {
-        const self = this.self();
-        if (event.type !== 'NavigationEnd' || !event.snapshot) {
-            return;
-        }
-        const page = (this.router?.data?.page || event.snapshot.data?.page) as AdminPage;
-        if (page) {
-            self.page = page;
-        }
-    }
-
-    private redirectToLogin(): void {
-        const win = this.documentRef?.defaultView ?? (globalThis as { window?: Window }).window;
-        redirectToAdminLogin(win ?? undefined);
+    redirectToLogin(): void {
+        this.shell().redirectToLogin();
     }
 
     searchRoutes(event: Event): void {
-        this.self().routeQuery = (event.target as HTMLInputElement).value;
+        this.view().searchRoutes(event);
     }
 
     conditionSummary(rule: GatewayAdminRuleSummary): string {
-        const when = rule?.when ?? [];
-        if (!when.length) {
-            return this.t('rules.matchesEvery');
-        }
-        return when.map(condition => [
-            condition.field,
-            condition.name ? `(${condition.name})` : '',
-            condition.operator || 'equals',
-            condition.value ?? ''
-        ].filter(Boolean).join(' ')).join(' · ');
+        return this.view().conditionSummary(rule);
     }
 
     routeMethods(route: GatewayRouteOptions): string {
-        return (route.methods ?? []).join(', ');
+        return this.view().routeMethods(route);
     }
 
     ruleActionType(rule: GatewayAdminRuleSummary): string {
-        return rule?.action?.type || 'route';
+        return this.view().ruleActionType(rule);
     }
 
     ruleActionLabel(rule: GatewayAdminRuleSummary): string {
-        return this.t(this.ruleActionType(rule) === 'deny' ? 'rule.deny' : 'rule.route');
+        return this.view().ruleActionLabel(rule);
     }
 
     ruleTone(rule: GatewayAdminRuleSummary): string {
-        return rule?.action?.type === 'deny' ? 'ga-status-dot is-danger' : 'ga-status-dot';
+        return this.view().ruleTone(rule);
     }
 
     rulePriority(rule: GatewayAdminRuleSummary): number {
-        return rule?.priority ?? 0;
+        return this.view().rulePriority(rule);
     }
 
     ruleConditionCount(rule: GatewayAdminRuleSummary): number {
-        return rule?.when?.length || 0;
+        return this.view().ruleConditionCount(rule);
     }
 
     get openCircuitCount(): number {
-        return this.diagnostics?.circuits?.filter(circuit => circuit.open).length ?? 0;
+        return this.view().openCircuitCount;
     }
 
     get recentSloAlerts() {
-        return (this.diagnostics?.alerts ?? []).slice(0, 5);
+        return this.view().recentSloAlerts;
     }
 
     formatAlertTime(timestamp: number): string {
@@ -512,21 +305,19 @@ export class GatewayAdminState {
     };
 
     get routeSloRows() {
-        return [...(this.diagnostics?.routes ?? [])]
-            .sort((a, b) => b.requests - a.requests)
-            .slice(0, 5);
+        return this.view().routeSloRows;
     }
 
     get bulkheadActive(): number {
-        return (this.diagnostics?.bulkheads ?? []).reduce((sum, item) => sum + (item.active ?? 0), 0);
+        return this.view().bulkheadActive;
     }
 
     get bulkheadQueued(): number {
-        return (this.diagnostics?.bulkheads ?? []).reduce((sum, item) => sum + (item.queued ?? 0), 0);
+        return this.view().bulkheadQueued;
     }
 
     get adaptiveBulkheadCount(): number {
-        return (this.diagnostics?.bulkheads ?? []).filter(item => item.adaptive === true).length;
+        return this.view().adaptiveBulkheadCount;
     }
 
     async loadServices(): Promise<void> {
@@ -538,60 +329,23 @@ export class GatewayAdminState {
     }
 
     get routeDetailJson(): string {
-        if (!this.routeDetail) {
-            return '';
-        }
-        return JSON.stringify(this.routeDetail, null, 2);
+        return this.view().routeDetailJson;
     }
 
     get serviceSummaries(): GatewayAdminServiceSummary[] {
-        const byService = new Map<string, GatewayAdminServiceSummary>();
-        this.routes.forEach(route => {
-            const name = String(route.service || '').trim();
-            if (!name) {
-                return;
-            }
-            const entry = byService.get(name) ?? { name, routes: 0, enabled: 0 };
-            entry.routes += 1;
-            if (route.enabled !== false) {
-                entry.enabled += 1;
-            }
-            byService.set(name, entry);
-        });
-        return Array.from(byService.values()).sort((a, b) => a.name.localeCompare(b.name));
+        return this.view().serviceSummaries;
     }
 
     get policyCounts(): { auth: number; rateLimit: number; circuitBreaker: number; cache: number; mock: number; canary: number } {
-        return this.routes.reduce((counts, route) => {
-            if (route.auth) counts.auth += 1;
-            if (route.rateLimit !== undefined && route.rateLimit !== false) counts.rateLimit += 1;
-            if (route.circuitBreaker) counts.circuitBreaker += 1;
-            if (route.cache) counts.cache += 1;
-            if (route.mock) counts.mock += 1;
-            if (route.canary) counts.canary += 1;
-            return counts;
-        }, { auth: 0, rateLimit: 0, circuitBreaker: 0, cache: 0, mock: 0, canary: 0 });
+        return this.view().policyCounts;
     }
 
     get policyRows(): Array<{ key: string; label: string; value: number }> {
-        const counts = this.policyCounts;
-        return [
-            { key: 'auth', label: this.t('policy.auth'), value: counts.auth },
-            { key: 'rateLimit', label: this.t('policy.rateLimit'), value: counts.rateLimit },
-            { key: 'circuitBreaker', label: this.t('policy.circuitBreaker'), value: counts.circuitBreaker },
-            { key: 'cache', label: this.t('policy.cache'), value: counts.cache },
-            { key: 'mock', label: this.t('policy.mock'), value: counts.mock },
-            { key: 'canary', label: this.t('policy.canary'), value: counts.canary }
-        ];
+        return this.view().policyRows;
     }
 
     get authModeLabel(): string {
-        switch (this.authMode) {
-            case 'oidc': return this.t('auth.oidc');
-            case 'oauth2': return this.t('auth.oauth2');
-            case 'service': return this.t('auth.service');
-            default: return this.t('auth.none');
-        }
+        return this.view().authModeLabel;
     }
 
     readonly openRouteDetail = (route: GatewayRouteOptions): void => {

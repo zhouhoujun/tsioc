@@ -4601,3 +4601,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `Shift+G`（最后一条提问）复用同一 `isUserPrompt` 判定。
 - which-key 归类到 Navigate；en/zh 标签 `jump to previous/next prompt`、`跳到上一个/下一个提问`。
 - 测试：pager 默认绑定 + 前后跳转/跳过/钳制，keymap-context 69 passing。
+
+- 微服务框架第八十一批（2026-11-16）：
+  - Admin view/menu/shell controller 拆分，admin.state.ts 593 行。
+  - 回归：admin 72。
