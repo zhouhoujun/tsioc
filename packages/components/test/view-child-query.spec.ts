@@ -8,11 +8,13 @@ import { ConsoleTemplateModule } from '../console/src';
 
 @Component({
     selector: 'query-child',
-    template: `<span class="child">{{label}}</span><span #inner></span>`
+    template: `<div><span class="child">{{label}}</span><span #inner></span><template v-if="enabled"><span #innerIf></span></template></div>`
 })
 class QueryChild {
     @Attribute() label = '';
+    enabled = true;
     @ViewChild('inner') inner?: ElementRef;
+    @ViewChild('innerIf') innerIf?: ElementRef;
 }
 
 @Component({
@@ -37,6 +39,7 @@ class QueryParent {
     @ViewChildren('row') rows?: QueryList<QueryChild>;
     @ViewChildren(QueryChild) allChildren?: QueryList<QueryChild>;
     @ViewChild('inner') leakedInner?: ElementRef;
+    @ViewChild('innerIf') leakedInnerIf?: ElementRef;
     show = false;
     items = ['a', 'b'];
 }
@@ -60,7 +63,9 @@ export class ViewChildQueryTest {
             expect(parent.rows?.toArray().map(item => item.label)).toEqual(['a', 'b']);
             expect(typeof (parent.container as any)?.get).toBe('function');
             expect(parent.leakedInner).toBeUndefined();
+            expect(parent.leakedInnerIf).toBeUndefined();
             expect(parent.first?.inner).toBeTruthy();
+            expect(parent.first?.innerIf).toBeTruthy();
 
             let rowChanges = 0;
             parent.rows?.changes.subscribe(() => { rowChanges += 1; });

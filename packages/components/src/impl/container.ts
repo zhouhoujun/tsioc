@@ -30,6 +30,35 @@ class ViewContainerRefImpl implements ViewContainerRef {
      * @memberof ViewContainerRefImpl
      */
     private views: Array<ViewRef> = [];
+    private viewIndex = new Map<ViewRef, number>();
+
+    private reindex(from = 0): void {
+        for (let i = from; i < this.views.length; i++) {
+            this.viewIndex.set(this.views[i], i);
+        }
+    }
+
+    private removeViewNodes(viewRef: ViewRef): void {
+        const viewNodes = viewRef.rootNodes;
+        const nativeElement = this.element.nativeElement;
+        const parentNode = this.resolveContainerParent();
+        if (this.injector.destroyed) {
+            return;
+        }
+        if (this.isElementContainer && parentNode) {
+            viewNodes.forEach(node => {
+                if (node.parentNode === parentNode) {
+                    this.renderer.removeChild(parentNode, node);
+                }
+            });
+        } else {
+            viewNodes.forEach(node => {
+                if (node.parentNode === nativeElement) {
+                    this.renderer.removeChild(nativeElement, node);
+                }
+            });
+        }
+    }
 
     private _isElementContainer?: boolean;
     protected get isElementContainer(): boolean {
@@ -86,9 +115,14 @@ class ViewContainerRefImpl implements ViewContainerRef {
      * @memberof ViewContainerRefImpl
      */
     clear(): void {
-        while (this.views.length > 0) {
-            this.remove(0);
-        }
+        const views = this.views.splice(0);
+        this.viewIndex.clear();
+        views.forEach(view => {
+            this.removeViewNodes(view);
+            if ('destroy' in view) {
+                (view as any).destroy();
+            }
+        });
     }
 
     /**
@@ -177,6 +211,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const nextSibling = this.getNextSibling(insertIndex);
         // Insert view into views array
         this.views.splice(insertIndex, 0, viewRef);
+        this.reindex(insertIndex);
 
         // Insert DOM nodes
         const nativeElement = this.element.nativeElement;
@@ -237,63 +272,23 @@ class ViewContainerRefImpl implements ViewContainerRef {
      * @memberof ViewContainerRefImpl
      */
     move(viewRef: ViewRef, newIndex: number): ViewRef {
-        const oldIndex = this.views.indexOf(viewRef);
-        if (oldIndex < 0 || oldIndex >= this.views.length || newIndex < 0 || newIndex >= this.views.length || oldIndex === newIndex) {
+        const oldIndex = this.indexOf(viewRef);
+        if (oldIndex < 0 || newIndex < 0) {
+            return viewRef;
+        }
+        const targetIndex = Math.min(newIndex, this.views.length - 1);
+        if (oldIndex === targetIndex) {
             return viewRef;
         }
 
-        const nextSibling = this.getNextSibling(newIndex);
-        // Remove view from old position
+        // Remove first, then insert through the normal path so nextSibling is
+        // computed against the post-removal order (a previous implementation
+        // computed it before removal and swapped the order for forward moves).
+        this.removeViewNodes(viewRef);
         this.views.splice(oldIndex, 1);
-
-        // Insert view into new position
-        this.views.splice(newIndex, 0, viewRef);
-
-        // Move DOM nodes
-        const nativeElement = this.element.nativeElement;
-        const viewNodes = viewRef.rootNodes;
-        const parentNode = this.resolveContainerParent();
-
-        // Remove nodes from their current position
-        if (this.isElementContainer && parentNode) {
-            viewNodes.forEach(node => {
-                if (node.parentNode === parentNode) {
-                    parentNode.removeChild(node);
-                }
-            });
-        } else {
-            viewNodes.forEach(node => {
-                if (node.parentNode === nativeElement) {
-                    nativeElement.removeChild(node);
-                }
-            });
-        }
-
-        // Insert nodes at new position
-        if (this.isElementContainer) {
-            if (parentNode) {
-                if (nextSibling) {
-                    viewNodes.forEach(node => {
-                        parentNode.insertBefore(node, nextSibling);
-                    });
-                } else {
-                    viewNodes.forEach(node => {
-                        parentNode.insertBefore(node, nativeElement);
-                    });
-                }
-            }
-        } else {
-            if (nextSibling) {
-                viewNodes.forEach(node => {
-                    nativeElement.insertBefore(node, nextSibling);
-                });
-            } else {
-                viewNodes.forEach(node => {
-                    nativeElement.appendChild(node);
-                });
-            }
-        }
-
+        this.viewIndex.delete(viewRef);
+        this.reindex(oldIndex);
+        this.insert(viewRef, targetIndex);
         return viewRef;
     }
 
@@ -306,7 +301,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
      * @memberof ViewContainerRefImpl
      */
     indexOf(viewRef: ViewRef): number {
-        return this.views.indexOf(viewRef);
+        return this.viewIndex.get(viewRef) ?? -1;
     }
 
     /**
@@ -323,31 +318,16 @@ class ViewContainerRefImpl implements ViewContainerRef {
         }
 
         const viewRef = this.views[removeIndex];
-        const viewNodes = viewRef.rootNodes;
-        const nativeElement = this.element.nativeElement;
-        const parentNode = this.resolveContainerParent();
 
         // Remove DOM nodes. Guard: on a destroyed injector the lazy renderer
         // getter throws (assertNotDestroyed) during directive onDestroy; the
         // teardown DOM removal is then handled by detachNodes the parent.
-        if (!this.injector.destroyed) {
-            if (this.isElementContainer && parentNode) {
-                viewNodes.forEach(node => {
-                    if (node.parentNode === parentNode) {
-                        this.renderer.removeChild(parentNode, node);
-                    }
-                });
-            } else {
-                viewNodes.forEach(node => {
-                    if (node.parentNode === nativeElement) {
-                        this.renderer.removeChild(nativeElement, node);
-                    }
-                });
-            }
-        }
+        this.removeViewNodes(viewRef);
 
         // Remove view from views array
         this.views.splice(removeIndex, 1);
+        this.viewIndex.delete(viewRef);
+        this.reindex(removeIndex);
 
         // Destroy the view
         if ('destroy' in viewRef) {
