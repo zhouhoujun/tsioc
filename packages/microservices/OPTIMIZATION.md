@@ -428,6 +428,13 @@
 - CLI 支持 `--compat <previous.json>`，breaking 变化 exit 1。
 - 回归：contract 23 passing。
 
+第七十七批（可运行示例 + examples gate）：
+
+- 新增 `examples/http-quickstart.ts`（defineService + HTTP + health + drain）与 `examples/smoke.ts`。
+- gate 新增 `ms-examples` stage 与 ALL_STAGES，真实启动 3215 端口验证 `/hello`、`/health/readiness`、关闭。
+- `ExecptionLogger` 的 Logger 改为 nullable，避免未导入 LoggerModule 时请求直接 500。
+- 回归：service 85；gate ms-examples PASS。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

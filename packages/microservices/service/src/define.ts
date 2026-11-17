@@ -55,6 +55,10 @@ export function describeService(options: DefineServiceOptions): ServiceCapabilit
  *
  * Throws an actionable error when no transport is supplied, mirroring
  * `provideService` but earlier (at definition time).
+ *
+ * Request logger filters are off by default because transports already log
+ * the request lifecycle; pass `logger: true` (and the matching formatter
+ * providers) to opt in.
  */
 export function defineService(options: DefineServiceOptions): AbstractType {
     const transports = (Array.isArray(options.transport) ? options.transport : [options.transport])
@@ -64,7 +68,9 @@ export function defineService(options: DefineServiceOptions): AbstractType {
             'defineService requires at least one transport, e.g. useHttpTransport({ listenOpts: { port: 3000 } }).'
         );
     }
-    const featureOptions: ServiceFeatureOptions = { ...options };
+    // Transports already log request lifecycle; opt-in filters keep the
+    // default wiring minimal and free of formatter dependencies.
+    const featureOptions: ServiceFeatureOptions = { logger: false, execptionLogger: false, ...options };
     delete (featureOptions as any).transport;
     delete (featureOptions as any).controllers;
     delete (featureOptions as any).imports;

@@ -19,7 +19,7 @@ const defaultOptions: ExecptionLoggerOptions = {
 export class ExecptionLogger<TInput = any, TOutput = any, TContext extends RequestContext = RequestContext> extends RequestExceptionFilter<TInput, TOutput, TContext> {
 
     constructor(
-        @Inject(Logger) private logger: Logger,
+        @Inject(Logger, { nullable: true }) private logger?: Logger,
         @Inject(SERVICE_EXECEPTION_LOGGER_OPTIONS as any, { nullable: true }) private options?: ExecptionLoggerOptions
     ) {
         super();
@@ -27,7 +27,9 @@ export class ExecptionLogger<TInput = any, TOutput = any, TContext extends Reque
 
     catchError(_input: TInput, err: any, _context: TContext): Observable<TOutput> {
         const level = (this.options?.level ?? defaultOptions.level) as Level;
-        (this.logger[level] ?? this.logger.error).call(this.logger, err);
+        if (this.logger) {
+            (this.logger[level] ?? this.logger.error).call(this.logger, err);
+        }
         return throwError(() => err);
     }
 }

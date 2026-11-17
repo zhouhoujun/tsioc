@@ -30,7 +30,7 @@
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
 #            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
-#            ms-brokers ms-tsc ms-bench
+#            ms-brokers ms-tsc ms-bench ms-examples
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -282,6 +282,19 @@ run_ms_group() {
     fi
 }
 
+# run_ms_examples — boots the quickstart example against a real HTTP port.
+run_ms_examples() {
+    local log="$LOG_DIR/ms-examples.log"
+    if (cd "$ROOT_DIR" && timeout 180 npx ts-node -r tsconfig-paths/register \
+        packages/microservices/examples/smoke.ts >"$log" 2>&1); then
+        stage_pass ms-examples 'microservice quickstart smoke'
+    else
+        echo "--- ms-examples tail (last 30 lines) ---" >&2
+        tail -30 "$log" >&2
+        stage_fail ms-examples 'microservice quickstart smoke'
+    fi
+}
+
 # run_ms_brokers — broker suites need real middleware (Docker). Opt-in only, and
 # reported as an explicit SKIP when the profile is not enabled (never fake pass).
 run_ms_brokers() {
@@ -414,6 +427,7 @@ run_stage() {
         ms-http)          run_ms_group ms-http '@tsdi/http-microservice unit tests' packages/microservices/http ;;
         ms-brokers)       run_ms_brokers ;;
         ms-tsc)           run_ms_tsc ;;
+        ms-examples)      run_ms_examples ;;
         ms-bench)         run_ms_bench ;;
         diff-check)       run_diff_check ;;
         *)
@@ -430,7 +444,7 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             build-agent-ui-web dom-gate tui-gate gate-regression
             pty-acceptance diff-check source-size
             ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
-            ms-brokers ms-tsc ms-bench
+            ms-brokers ms-tsc ms-bench ms-examples
             package-deps package-publish publish-dry-run"
 
 if [ "$#" -gt 0 ]; then
