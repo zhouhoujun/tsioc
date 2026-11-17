@@ -114,6 +114,8 @@ export abstract class ViewContainerRef<T = any> {
         index?: number,
         injector?: Injector,
         inputs?: Partial<C>,
+        /** Optional local ref name used by string ViewChild/ViewChildren queries. */
+        ref?: string,
         onError?: (error: unknown) => void,
     }): ComponentRef<C>;
 

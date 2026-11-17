@@ -34,7 +34,9 @@ class DynamicChild {
 class DynamicContainerComponent {
     @ViewChild('anchor', ViewContainerRef) vcr?: ViewContainerRef;
     @ViewChild(DynamicChild) first?: DynamicChild;
+    @ViewChild('dyn', DynamicChild) refChild?: DynamicChild;
     @ViewChildren(DynamicChild) children?: QueryList<DynamicChild>;
+    @ViewChildren('dyn') refChildren?: QueryList<DynamicChild>;
 }
 
 @Suite('view container ref')
@@ -102,16 +104,20 @@ export class ViewContainerRefTest {
         try {
             const ref = ctx.runners.getRef(DynamicContainerComponent) as any;
             const component = ref.instance as DynamicContainerComponent;
-            component.vcr!.createComponent(DynamicChild, { inputs: { label: 'D' } as any });
+            component.vcr!.createComponent(DynamicChild, { ref: 'dyn', inputs: { label: 'D' } as any });
             await Promise.resolve().then(() => Promise.resolve()).then(() => Promise.resolve());
 
             expect(component.first?.label).toBe('D');
+            expect(component.refChild?.label).toBe('D');
             expect(component.children?.toArray().map(item => item.label)).toEqual(['D']);
+            expect(component.refChildren?.toArray().map(item => item.label)).toEqual(['D']);
 
             component.vcr!.remove(0);
             await Promise.resolve().then(() => Promise.resolve());
             expect(component.first).toBeUndefined();
+            expect(component.refChild).toBeUndefined();
             expect(component.children?.length ?? 0).toBe(0);
+            expect(component.refChildren?.length ?? 0).toBe(0);
         } finally {
             await ctx.close();
         }

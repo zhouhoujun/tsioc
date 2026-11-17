@@ -147,23 +147,56 @@ export class ViewQueryIndex {
     }
 
     /** Add a component created imperatively through ViewContainerRef. */
-    addComponentRef(componentRef: ComponentRef<any>): void {
+    addComponentRef(componentRef: ComponentRef<any>, refName?: string): void {
         const node = componentRef?.elementRef?.nativeElement as RNode | undefined;
         if (!node) {
             return;
         }
-        if (this.allEntries.some(entry => entry.componentRef === componentRef)) {
-            return;
+        let changed = false;
+        if (!this.allEntries.some(entry => entry.componentRef === componentRef)) {
+            this.allEntries.push({ node, componentRef });
+            changed = true;
         }
-        this.allEntries.push({ node, componentRef });
-        this.touch();
+        if (refName) {
+            const key = refName.replace(/^#/, '').trim().toLowerCase();
+            if (key) {
+                const nodes = this.refs.get(key);
+                if (!nodes) {
+                    this.refs.set(key, [node]);
+                    changed = true;
+                } else if (!nodes.includes(node)) {
+                    nodes.push(node);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            this.touch();
+        }
     }
 
     /** Remove a dynamically created component after its view is detached/destroyed. */
     removeComponentRef(componentRef: ComponentRef<any>): void {
+        const node = componentRef?.elementRef?.nativeElement as RNode | undefined;
+        let changed = false;
         const index = this.allEntries.findIndex(entry => entry.componentRef === componentRef);
         if (index >= 0) {
             this.allEntries.splice(index, 1);
+            changed = true;
+        }
+        if (node) {
+            this.refs.forEach((nodes, key) => {
+                const refIndex = nodes.indexOf(node);
+                if (refIndex >= 0) {
+                    nodes.splice(refIndex, 1);
+                    changed = true;
+                    if (!nodes.length) {
+                        this.refs.delete(key);
+                    }
+                }
+            });
+        }
+        if (changed) {
             this.touch();
         }
     }

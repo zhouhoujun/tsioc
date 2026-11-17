@@ -33,6 +33,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
     private views: Array<ViewRef> = [];
     private viewIndex = new Map<ViewRef, number>();
     private componentRefs = new Map<ViewRef, ComponentRef<any>>();
+    private componentRefNames = new Map<ViewRef, string | undefined>();
 
     private reindex(from = 0): void {
         for (let i = from; i < this.views.length; i++) {
@@ -130,6 +131,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const index = this.queryIndex();
         this.componentRefs.forEach(componentRef => index?.removeComponentRef(componentRef));
         this.componentRefs.clear();
+        this.componentRefNames.clear();
         views.forEach(view => {
             this.removeViewNodes(view);
             if ('destroy' in view) {
@@ -175,6 +177,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         index?: number,
         injector?: NodeInjector,
         inputs?: Partial<C>,
+        ref?: string,
         onError?: (error: unknown) => void,
     }): ComponentRef<C> {
         const def = isFunction(componentType) ? getDef(componentType) : componentType;
@@ -186,7 +189,6 @@ class ViewContainerRefImpl implements ViewContainerRef {
             compiler
         } as any) as ComponentRef<C>;
         this.injector.attachComponent(componentRef);
-        this.queryIndex()?.addComponentRef(componentRef);
         if (options?.inputs) {
             Object.assign(componentRef.instance as object, options.inputs);
         }
@@ -204,6 +206,8 @@ class ViewContainerRefImpl implements ViewContainerRef {
                 }
                 this.injector.attachComponent(componentRef);
                 this.componentRefs.set(hostView, componentRef);
+                this.componentRefNames.set(hostView, options?.ref);
+                this.queryIndex()?.addComponentRef(componentRef, options?.ref);
                 const index = Math.max(0, Math.min(insertIndex, this.views.length));
                 this.insert(hostView, index);
             })
@@ -291,7 +295,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
 
         const componentRef = this.componentRefs.get(viewRef);
         if (componentRef) {
-            this.queryIndex()?.addComponentRef(componentRef);
+            this.queryIndex()?.addComponentRef(componentRef, this.componentRefNames.get(viewRef));
         }
         this.notifyQueryIndex();
         return viewRef;
@@ -366,6 +370,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
         if (componentRef) {
             this.queryIndex()?.removeComponentRef(componentRef);
             this.componentRefs.delete(viewRef);
+            this.componentRefNames.delete(viewRef);
         }
 
         // Destroy the view
