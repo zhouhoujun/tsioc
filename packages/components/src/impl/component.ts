@@ -381,11 +381,15 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         }
 
         const entries = index?.queryByType(selector as AbstractType) ?? [];
-        if (entries.length) {
-            return entries.map(entry => this.readNodeValue(entry.node, query, propertyType));
+        const results = entries.map(entry => this.readNodeValue(entry.node, query, propertyType));
+        const fallback = this._hostView.queryAll(selector as any) || [];
+        for (const found of fallback) {
+            const value = this.readResolvedValue(found, query, propertyType);
+            if (value != null && !results.includes(value)) {
+                results.push(value);
+            }
         }
-        const found = this._hostView.queryAll(selector as any) || [];
-        return found.map(result => this.readResolvedValue(result, query, propertyType));
+        return results;
     }
 
     private subscribeViewQueries(): void {

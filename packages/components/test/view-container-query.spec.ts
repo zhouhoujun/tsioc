@@ -1,7 +1,9 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { Component, ComponentsModule, TemplateRef, ViewChild, ViewContainerRef } from '../src';
+import {
+    Attribute, Component, ComponentsModule, QueryList, TemplateRef, ViewChild, ViewChildren, ViewContainerRef
+} from '../src';
 import { ConsoleTemplateModule } from '../console/src';
 
 @Component({
@@ -14,6 +16,25 @@ import { ConsoleTemplateModule } from '../console/src';
 class VcrContainerComponent {
     @ViewChild('tpl') tpl?: TemplateRef<any>;
     @ViewChild('anchor', ViewContainerRef) vcr?: ViewContainerRef;
+}
+
+@Component({
+    selector: 'dynamic-child',
+    template: `<span class="dynamic">{{label}}</span>`
+})
+class DynamicChild {
+    @Attribute() label = '';
+}
+
+@Component({
+    selector: 'dynamic-container-test',
+    imports: [DynamicChild],
+    template: `<div><span #anchor></span></div>`
+})
+class DynamicContainerComponent {
+    @ViewChild('anchor', ViewContainerRef) vcr?: ViewContainerRef;
+    @ViewChild(DynamicChild) first?: DynamicChild;
+    @ViewChildren(DynamicChild) children?: QueryList<DynamicChild>;
 }
 
 @Suite('view container ref')
@@ -68,6 +89,29 @@ export class ViewContainerRefTest {
             vcr.clear();
             expect(vcr.length).toBe(0);
             expect(labels()).toEqual([]);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('refreshes view queries after createComponent and remove')
+    async dynamicComponentQueries() {
+        const ctx = await Application.run(DynamicContainerComponent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(DynamicContainerComponent) as any;
+            const component = ref.instance as DynamicContainerComponent;
+            component.vcr!.createComponent(DynamicChild, { inputs: { label: 'D' } as any });
+            await Promise.resolve().then(() => Promise.resolve()).then(() => Promise.resolve());
+
+            expect(component.first?.label).toBe('D');
+            expect(component.children?.toArray().map(item => item.label)).toEqual(['D']);
+
+            component.vcr!.remove(0);
+            await Promise.resolve().then(() => Promise.resolve());
+            expect(component.first).toBeUndefined();
+            expect(component.children?.length ?? 0).toBe(0);
         } finally {
             await ctx.close();
         }

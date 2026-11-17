@@ -11,6 +11,7 @@ import { RNode } from '../renderer/Node';
 import { NodeInjector } from '../refs/injector';
 import { noReact, ReactiveEffect } from '../effect';
 import { isStructuralContainer } from './structural-container';
+import { lookupQueryIndex } from './query-index';
 
 /**
  * View container ref implement.
@@ -31,6 +32,7 @@ class ViewContainerRefImpl implements ViewContainerRef {
      */
     private views: Array<ViewRef> = [];
     private viewIndex = new Map<ViewRef, number>();
+    private componentRefs = new Map<ViewRef, ComponentRef<any>>();
 
     private reindex(from = 0): void {
         for (let i = from; i < this.views.length; i++) {
@@ -99,6 +101,14 @@ class ViewContainerRefImpl implements ViewContainerRef {
         const actualParent = nativeElement.parentNode;
         return actualParent || storedParent || null;
     }
+
+    private queryIndex(): import('./query-index').ViewQueryIndex | undefined {
+        return lookupQueryIndex(this.element.nativeElement as RNode);
+    }
+
+    private notifyQueryIndex(): void {
+        this.queryIndex()?.notifyChanged();
+    }
     /**
      * Returns the number of views currently attached to this container.
      *
@@ -117,12 +127,16 @@ class ViewContainerRefImpl implements ViewContainerRef {
     clear(): void {
         const views = this.views.splice(0);
         this.viewIndex.clear();
+        const index = this.queryIndex();
+        this.componentRefs.forEach(componentRef => index?.removeComponentRef(componentRef));
+        this.componentRefs.clear();
         views.forEach(view => {
             this.removeViewNodes(view);
             if ('destroy' in view) {
                 (view as any).destroy();
             }
         });
+        this.notifyQueryIndex();
     }
 
     /**
@@ -171,6 +185,8 @@ class ViewContainerRefImpl implements ViewContainerRef {
             renderer,
             compiler
         } as any) as ComponentRef<C>;
+        this.injector.attachComponent(componentRef);
+        this.queryIndex()?.addComponentRef(componentRef);
         if (options?.inputs) {
             Object.assign(componentRef.instance as object, options.inputs);
         }
@@ -186,10 +202,13 @@ class ViewContainerRefImpl implements ViewContainerRef {
                 if (this.indexOf(hostView) >= 0) {
                     return;
                 }
+                this.injector.attachComponent(componentRef);
+                this.componentRefs.set(hostView, componentRef);
                 const index = Math.max(0, Math.min(insertIndex, this.views.length));
                 this.insert(hostView, index);
             })
             .catch(error => {
+                this.queryIndex()?.removeComponentRef(componentRef);
                 try {
                     (componentRef as any).destroy?.();
                 } catch {
@@ -270,6 +289,11 @@ class ViewContainerRefImpl implements ViewContainerRef {
             }
         }
 
+        const componentRef = this.componentRefs.get(viewRef);
+        if (componentRef) {
+            this.queryIndex()?.addComponentRef(componentRef);
+        }
+        this.notifyQueryIndex();
         return viewRef;
     }
 
@@ -338,11 +362,17 @@ class ViewContainerRefImpl implements ViewContainerRef {
         this.views.splice(removeIndex, 1);
         this.viewIndex.delete(viewRef);
         this.reindex(removeIndex);
+        const componentRef = this.componentRefs.get(viewRef);
+        if (componentRef) {
+            this.queryIndex()?.removeComponentRef(componentRef);
+            this.componentRefs.delete(viewRef);
+        }
 
         // Destroy the view
         if ('destroy' in viewRef) {
             (viewRef as any).destroy();
         }
+        this.notifyQueryIndex();
     }
 
     detach(index: number): ViewRef | null {
@@ -354,6 +384,11 @@ class ViewContainerRefImpl implements ViewContainerRef {
         this.views.splice(index, 1);
         this.viewIndex.delete(viewRef);
         this.reindex(index);
+        const componentRef = this.componentRefs.get(viewRef);
+        if (componentRef) {
+            this.queryIndex()?.removeComponentRef(componentRef);
+        }
+        this.notifyQueryIndex();
         return viewRef;
     }
 

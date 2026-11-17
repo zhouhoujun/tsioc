@@ -256,7 +256,9 @@ export class PanelComponent {
 - `indexOf` is O(1); `insert`, `remove`, `move`, `detach`, `reattach`,
   `getHostElement` keep the internal view index and DOM order aligned.
 - `createComponent` clamps stale insertion indexes, destroys the ref when the
-  container disappears, and cleans up after render failures.
+  container disappears, and cleans up after render failures. Dynamically
+  created components are registered in the owning view query index, so
+  `ViewChild`/`ViewChildren` refresh after insertion/removal.
 - `ContainerRef` is an exported alias for `ViewContainerRef`.
 - Declarative child `render()` promises are tracked by the parent; a child
   render failure rejects the parent render and therefore `Application.run`.

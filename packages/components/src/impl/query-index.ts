@@ -146,6 +146,28 @@ export class ViewQueryIndex {
         return undefined;
     }
 
+    /** Add a component created imperatively through ViewContainerRef. */
+    addComponentRef(componentRef: ComponentRef<any>): void {
+        const node = componentRef?.elementRef?.nativeElement as RNode | undefined;
+        if (!node) {
+            return;
+        }
+        if (this.allEntries.some(entry => entry.componentRef === componentRef)) {
+            return;
+        }
+        this.allEntries.push({ node, componentRef });
+        this.touch();
+    }
+
+    /** Remove a dynamically created component after its view is detached/destroyed. */
+    removeComponentRef(componentRef: ComponentRef<any>): void {
+        const index = this.allEntries.findIndex(entry => entry.componentRef === componentRef);
+        if (index >= 0) {
+            this.allEntries.splice(index, 1);
+            this.touch();
+        }
+    }
+
     queryByType(type: any): ViewQueryEntry[] {
         this.refreshTypes();
         const matches = (entry: ViewQueryEntry): boolean =>
@@ -161,6 +183,11 @@ export class ViewQueryIndex {
     onChange(listener: () => void): () => void {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
+    }
+
+    /** Mark this view's query results dirty (e.g. a container inserted a view). */
+    notifyChanged(): void {
+        this.touch();
     }
 
     clear(): void {

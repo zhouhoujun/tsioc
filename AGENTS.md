@@ -133,7 +133,7 @@
 
 **ViewContainerRef / ContainerRef**
 - `ViewContainerRefImpl` 必须维护 `viewIndex` Map，`indexOf` O(1)；`insert`/`remove`/`move`/`detach`/`reattach` 必须同步更新索引、`views` 数组与 DOM 顺序。`move` 必须先移除再按移除后的顺序重算 nextSibling。
-- `createComponent` 必须 clamp 过期 index、在容器销毁或 render 失败时销毁 ComponentRef；`detach` 不销毁视图与 scope，`reattach` 复用。
+- `createComponent` 必须 clamp 过期 index、在容器销毁或 render 失败时销毁 ComponentRef；成功渲染后必须 `attachComponent` 并把动态组件登记到所属 `ViewQueryIndex`，插入/移除时刷新 ViewChild/ViewChildren。`detach` 不销毁视图与 scope，`reattach` 复用。
 - 声明式子组件 `render()` Promise 必须登记到父 injector 的 render task，父 render 在查询/AfterViewInit 前 await；子组件失败必须 reject `Application.run`，不得成为 unhandled rejection。
 - `ContainerRef` 是 `ViewContainerRef` 的公共别名；ViewChild read token 必须可用。
 
@@ -243,7 +243,7 @@
 cd packages/<包名>            # 例：components、components/common、components/html、components/console、agents/agent-ui
 npm run test                  # 等价于: ts-node -r tsconfig-paths/register unit.ts
 ```
-- 已知基线（2026-11）：components **186 passing**、components/common **79 passing**、components/console **169 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
+- 已知基线（2026-11）：components **187 passing**、components/common **79 passing**、components/console **169 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
 - components 查询/投影/容器改动必须同时回归 components、components/common、components/html、components/console、components/xml、components/json；`npm run bench:check`（或 `RUN_COMPONENTS_BENCH=1 bash scripts/agents-gate.sh components-bench`）不得回退。
 - runner 会把 summary 打印两遍，属正常（unit-console 行为），以 EXIT code 为准。
 - `npm run test:coverage` 可用（NODE_V8_COVERAGE=.nyc_output）。
