@@ -928,6 +928,31 @@ export class VmSubmitTest {
         expect(calls).toEqual([{ action: 'remove', name: 'other', force: false }]);
     }
 
+    @Test('/worktree merge and remove pick a worktree when no name is given')
+    async worktreeMergeAndRemovePick() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        const calls: any[] = [];
+        state.worktreeCommand = async (request: any) => {
+            if (request.action === 'list') {
+                return { action: 'list', items: [{ path: '/w/.worktrees/feature', branch: 'wt/feature' }] };
+            }
+            calls.push(request);
+            return { action: request.action };
+        };
+        const answers = ['/w/.worktrees/feature', '/w/.worktrees/feature', 'remove'];
+        (component as any).select = async () => answers.shift();
+
+        await (component as any).handleCommand('/worktree merge');
+        expect(calls[0]).toEqual({ action: 'merge', name: 'feature', force: false });
+        expect(state.notice).toContain('Merged worktree feature.');
+
+        calls.length = 0;
+        await (component as any).handleCommand('/worktree remove');
+        expect(calls[0]).toEqual({ action: 'remove', name: 'feature', force: false });
+        expect(state.notice).toContain('Removed worktree feature.');
+    }
+
     @Test('unsetting escape disables the configured interrupt binding but Esc still interrupts a running turn')
     async unsettingEscapeDisablesInterrupt() {
         const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());

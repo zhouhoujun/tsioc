@@ -109,7 +109,7 @@ System: `/ps` `/ide` `/feedback` `/keymap`
 
 - Viewport mode renders the newest `transcriptWindowMessages` (default 40) rows while following the latest message; scrolling up, focusing a message, opening detail, scrollback layout or an older error expands to the full transcript.
 - `/display activity [low|medium|high]` sets activity verbosity. `medium` (default) folds finished tool/command/event runs into one expandable Activity row; `high` shows every step; `low` also folds settled reasoning.
-- `/worktree enter [name]` switches the workspace to a managed worktree (picker when no name is given). `/worktree remove <name>` asks for confirmation; `--yes` skips it.
+- `/worktree enter [name]` switches the workspace to a managed worktree (picker when no name is given). `/worktree remove [name]` and `/worktree merge [name]` open a picker when no name is given; removal asks for confirmation (`--yes` skips it).
 - `/activity` chooses the latest row of a category; the picker shows per-category counts.
 
 ## License

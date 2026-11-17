@@ -44,7 +44,8 @@ export async function runWorktreeCommand(ctx: CommandHandlerContext, args: strin
         return true;
     }
     const request = parseWorktreeArgs(args);
-    if (request.action !== 'list' && request.action !== 'enter' && !request.name) {
+    const pickable = request.action === 'enter' || request.action === 'merge' || request.action === 'remove';
+    if (request.action !== 'list' && !request.name && !pickable) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeUsage'));
         return true;
     }
@@ -92,6 +93,28 @@ export async function runWorktreeCommand(ctx: CommandHandlerContext, args: strin
                 path: targetPath
             }));
             return true;
+        }
+        if ((request.action === 'merge' || request.action === 'remove') && !request.name) {
+            const list = await ctx.state.worktreeCommand({ action: 'list' });
+            const items = list.items || [];
+            if (!items.length) {
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeListEmpty'));
+                return true;
+            }
+            const selected = await ctx.select(
+                formatAgentUiNotice(ctx.translator, 'worktreePickTitle'),
+                items.map(item => ({
+                    label: `${worktreeBaseName(item.path)}${item.branch ? `  [${item.branch}]` : ''}`,
+                    value: item.path,
+                    description: item.path
+                })),
+                0,
+                formatAgentUiNotice(ctx.translator, 'worktreeSelectHint')
+            );
+            if (!selected) {
+                return true;
+            }
+            request.name = worktreeBaseName(selected);
         }
         if (request.action === 'remove' && !request.yes) {
             const confirmed = await ctx.select(

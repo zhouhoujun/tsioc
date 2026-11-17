@@ -4511,3 +4511,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第七十二批（2026-11-16）：
   - 抽出 admin.routes-transfer.controller.ts / admin.diagnostics.controller.ts / admin.download.ts。
   - admin.state.ts 839 行；回归 admin 69。
+
+## 2026-11-16 worktree merge/remove 选择器
+- `/worktree merge` / `remove` 无参数时打开工作树选择器（remove 随后仍确认）；`enter` 行为不变。
+- usage/README/en-zh 文案同步；i18n 总数 711。测试覆盖 merge/remove 选择 + 确认，51 passing。
