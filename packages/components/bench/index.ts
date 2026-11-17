@@ -1,5 +1,5 @@
 import { Application } from '@tsdi/core';
-import { Component, ComponentsModule, reactive } from '../src';
+import { Component, ComponentsModule, QueryList, ViewChild, ViewChildren, reactive } from '../src';
 import { DefaultReactiveEffect } from '../src/impl/effect';
 import { XmlTemplateModule } from '../xml/src';
 
@@ -136,6 +136,47 @@ async function benchList(): Promise<void> {
 }
 
 @Component({
+    selector: 'bench-query-list',
+    template: `<div><ul><li v-for="item in items" #row>{{item.n}}</li></ul></div>`
+})
+class BenchQueryList {
+    @ViewChild('row') first?: any;
+    @ViewChildren('row') rows?: QueryList<any>;
+    items: Array<{ n: number }> = [];
+}
+
+async function benchViewQueries(): Promise<void> {
+    const size = 1000;
+    const ctx = await Application.run(BenchQueryList, { deps: [XmlTemplateModule, ComponentsModule] });
+    try {
+        const ref = ctx.runners.getRef(BenchQueryList) as any;
+        const component = ref.instance as BenchQueryList;
+        component.items = Array.from({ length: size }, (_, n) => ({ n }));
+        await Promise.resolve();
+
+        const index = ref.hostView.queryIndex;
+        const lookups = 200_000;
+        let found = 0;
+        const startLookup = process.hrtime.bigint();
+        for (let i = 0; i < lookups; i++) {
+            if (index?.queryFirstByName('row')) {
+                found += 1;
+            }
+        }
+        report('viewchild lookups', ms(startLookup), `${lookups} hits (${found})`);
+
+        const startAppend = process.hrtime.bigint();
+        for (let i = 0; i < 50; i++) {
+            component.items = [...component.items, { n: size + i }];
+            await Promise.resolve();
+        }
+        report('viewchildren append', ms(startAppend), `50 rows @ ${size}`);
+    } finally {
+        await ctx.close();
+    }
+}
+
+@Component({
     selector: 'bench-toggle',
     template: `<div><h1>{{title}}</h1><template v-if="show"><p>{{title}}</p><p>{{title}}</p><p>{{title}}</p><p>{{title}}</p><p>{{title}}</p></template></div>`
 })
@@ -173,6 +214,7 @@ async function main(): Promise<void> {
     await benchBindings();
     await benchComputed();
     await benchList();
+    await benchViewQueries();
     await benchToggleWrites();
 }
 

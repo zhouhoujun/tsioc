@@ -111,6 +111,41 @@ export class ViewQueryIndex {
         return found;
     }
 
+    queryFirstByName(name: string): RNode | undefined {
+        const normalized = (name.startsWith('#') ? name.slice(1) : name).toLowerCase();
+        if (!normalized) {
+            return undefined;
+        }
+        const own = this.refs.get(normalized);
+        if (own?.length) {
+            return own[0];
+        }
+        for (const child of this.children) {
+            const found = child.queryFirstByName(normalized);
+            if (found) {
+                return found;
+            }
+        }
+        return undefined;
+    }
+
+    queryFirstByType(type: any): ViewQueryEntry | undefined {
+        this.refreshTypes();
+        const own = this.allEntries.find(entry =>
+            entry.componentRef?.instance instanceof type
+            || entry.directiveRef?.instance instanceof type);
+        if (own) {
+            return own;
+        }
+        for (const child of this.children) {
+            const found = child.queryFirstByType(type);
+            if (found) {
+                return found;
+            }
+        }
+        return undefined;
+    }
+
     queryByType(type: any): ViewQueryEntry[] {
         this.refreshTypes();
         const matches = (entry: ViewQueryEntry): boolean =>

@@ -27,6 +27,8 @@ const budgets = {
     'v-for middle insert': 400,
     'v-for middle remove': 400,
     'v-for reorder': 1000,
+    'viewchild lookups': 1500,
+    'viewchildren append': 800,
     'writes after 500 toggles': 100
 };
 

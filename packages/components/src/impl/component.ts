@@ -385,10 +385,11 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         }
         const index = this._hostView.queryIndex;
         if (typeof selector === 'string') {
-            // Local refs are indexed per view; duplicates keep document order.
-            const refNodes = index?.queryByName(selector) ?? [];
-            if (refNodes.length) {
-                return this.readNodeValue(refNodes[0], query, propertyType);
+            // Local refs are indexed per view; first match stops at the first
+            // child view instead of collecting every v-for row.
+            const refNode = index?.queryFirstByName(selector);
+            if (refNode) {
+                return this.readNodeValue(refNode, query, propertyType);
             }
             // Also supports tag/attribute/CSS selectors such as `probe-child`.
             const found = this._hostView.query(selector);
@@ -401,9 +402,9 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
             return undefined;
         }
 
-        const entries = index?.queryByType(selector as AbstractType) ?? [];
-        if (entries.length) {
-            return this.readNodeValue(entries[0].node, query, propertyType);
+        const entry = index?.queryFirstByType(selector as AbstractType);
+        if (entry) {
+            return this.readNodeValue(entry.node, query, propertyType);
         }
 
         const result = this._hostView.query(selector as any);
