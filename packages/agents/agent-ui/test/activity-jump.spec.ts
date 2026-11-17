@@ -64,6 +64,16 @@ export class AgentConsoleActivityJumpTest {
         expect(host.notices.at(-1)).toContain('Jumped to latest');
     }
 
+    @Test('an unknown category reports usage instead of opening the picker')
+    async rejectsUnknownCategory() {
+        const host = createHost(transcript());
+        let opened = 0;
+        host.select = async () => { opened += 1; return undefined; };
+        await runActivityJumpCommand(host, 'nonsense');
+        expect(opened).toEqual(0);
+        expect(host.notices.at(-1)).toContain('Usage: /activity');
+    }
+
     @Test('category tabs show per-category counts')
     async categoryTabsShowCounts() {
         const host = createHost(transcript());

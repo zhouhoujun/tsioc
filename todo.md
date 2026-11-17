@@ -4565,3 +4565,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 ## 2026-11-16 流式清理取消 pending flush
 - `clearStreamingMessageState` 现在取消未触发的 rAF/timeout、清空 `flushPending/flushMessage`；避免 turn 结束/销毁后迟到写入旧文本或持有旧对象。
 - 新增回归：scheduled 后 clear，等待 80ms 不再有行写入（turn-stream-narration 11 passing）。
+
+## 2026-11-17 /activity 参数校验
+- 非法类别（如 `/activity toolsx`）不再静默打开选择器，给出 usage 提示；无参数仍打开计数选择器。
+- en/zh 文案与 i18n 计数同步（712）；activity-jump 新增用例。
+- 方向修正：per-session state 不采用手写 get/set 或自定义 Proxy facade，必须使用 `@tsdi/components` 的 reactive Proxy/绑定事件。

@@ -178,6 +178,7 @@ export const AGENT_UI_NOTICE_ZH_PART3: NestedMessages = {
   activityVerbosityHigh: "活动详细度：高（显示每个步骤）。",
   activityVerbosityUsage: "用法：/display activity [low|medium|high]",
   activityVerbositySaveFailed: "保存活动详细度失败。",
+  activityJumpUsage: "用法：/activity [tools|reasoning|plan|diff|errors|answer]",
   activityJumpTitle: "跳转到活动",
   activityJumpHint: "回车跳转 · esc 关闭",
   activityJumpNone: "当前转录中没有{category}。",

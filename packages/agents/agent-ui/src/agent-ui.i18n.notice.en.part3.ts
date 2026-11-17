@@ -178,6 +178,7 @@ export const AGENT_UI_NOTICE_EN_PART3: NestedMessages = {
   activityVerbosityHigh: "Activity verbosity: high (every step is shown).",
   activityVerbosityUsage: "Usage: /display activity [low|medium|high]",
   activityVerbositySaveFailed: "Failed to save activity verbosity.",
+  activityJumpUsage: "Usage: /activity [tools|reasoning|plan|diff|errors|answer]",
   activityJumpTitle: "Jump to activity",
   activityJumpHint: "enter jump   esc close",
   activityJumpNone: "No {category} activity in this transcript.",

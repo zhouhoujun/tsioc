@@ -71,8 +71,14 @@ function isCategoryMessage(message: AgentMessage, category: AgentConsoleActivity
  * With no argument it opens the category tabs as a select menu.
  */
 export async function runActivityJumpCommand(host: AgentConsoleActivityJumpHost, args?: string): Promise<boolean> {
-    const requested = String(args || '').trim().toLowerCase() as AgentConsoleActivityCategory;
-    let category = AGENT_CONSOLE_ACTIVITY_CATEGORIES.includes(requested) ? requested : undefined;
+    const raw = String(args || '').trim();
+    const requested = raw.toLowerCase() as AgentConsoleActivityCategory;
+    if (raw && !AGENT_CONSOLE_ACTIVITY_CATEGORIES.includes(requested)) {
+        // A typo must not silently open the category menu.
+        host.notify(formatAgentUiNotice(host.translator, 'activityJumpUsage'));
+        return true;
+    }
+    let category = raw ? requested : undefined;
     const messages = host.state.displayMessages || [];
     const countFor = (value: AgentConsoleActivityCategory): number => {
         let count = 0;
