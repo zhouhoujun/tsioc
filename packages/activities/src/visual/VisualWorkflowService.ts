@@ -103,6 +103,7 @@ export class VisualWorkflowService {
     private readonly globalContext: Record<string, any> = {};
     private readonly nodeRuntime = new Map<string, Record<string, any>>();
     private definitionResolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
+    private credentialResolver?: (name: string) => Promise<string | undefined> | string | undefined;
     private readonly registry: WorkflowNodeRegistry;
     private readonly pathInterceptor = new VisualExecutionPathInterceptor();
     private readonly policyInterceptor = new WorkflowNodePolicyInterceptor();
@@ -374,6 +375,13 @@ export class VisualWorkflowService {
     }
 
     /** Host store/library lookup used by sub-workflow/loop nodes. */
+    /** Host credential lookup used by nodes with `{{credential:name}}` values. */
+    setCredentialResolver(
+        resolver?: (name: string) => Promise<string | undefined> | string | undefined
+    ): void {
+        this.credentialResolver = resolver;
+    }
+
     setDefinitionResolver(
         resolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined
     ): void {
@@ -446,7 +454,8 @@ export class VisualWorkflowService {
             msg,
             flow: (context as any)?.flow || {},
             global: (context as any)?.global || this.globalContext,
-            env: (context as any)?.env || options.env || {}
+            env: (context as any)?.env || options.env || {},
+            resolveCredential: (name: string) => this.credentialResolver?.(name)
         };
     }
 

@@ -381,7 +381,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "Timeout",
                 "authType": "Authentication",
                 "username": "Username",
-                "password": "Password"
+                "password": "Password",
+                "token": "Bearer token"
             },
             "assign": {
                 "values": "Values (JSON)"
@@ -1010,9 +1011,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "retry": "automatic retries after a failed request",
                 "retryDelay": "wait time between retries",
                 "timeout": "maximum wait time for the request",
-                "authType": "choose whether to send a Basic authorization header",
-                "username": "Basic authentication user name",
-                "password": "Basic authentication password"
+                "authType": "Optional HTTP authentication.",
+                "username": "Basic authentication username.",
+                "password": "Basic authentication password. Use {{credential:name}} to read a stored credential.",
+                "token": "Bearer token. Use {{credential:name}} to read a stored credential."
             },
             "assign": {
                 "values": "JSON object merged into flow variables"
@@ -1355,7 +1357,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "key": "Keys object",
             "parallel": "Run every message",
             "restart": "Restart pending delay",
-            "timeout": "Wait with timeout"
+            "timeout": "Wait with timeout",
+            "bearer": "Bearer token"
         }
     },
     "zh-CN": {
@@ -1731,9 +1734,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "retry": "重试次数",
                 "retryDelay": "重试间隔",
                 "timeout": "超时",
-                "authType": "认证",
+                "authType": "认证方式",
                 "username": "用户名",
-                "password": "密码"
+                "password": "密码",
+                "token": "Bearer Token"
             },
             "assign": {
                 "values": "值（JSON）"
@@ -2346,9 +2350,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "retry": "请求失败后的自动重试次数。",
                 "retryDelay": "两次重试之间的等待时间。",
                 "timeout": "请求的最长等待时间。",
-                "authType": "选择是否发送 Basic 认证头。",
+                "authType": "可选的 HTTP 认证方式。",
                 "username": "Basic 认证用户名。",
-                "password": "Basic 认证密码。"
+                "password": "Basic 认证密码；使用 {{credential:name}} 读取已保存的凭据。",
+                "token": "Bearer Token；使用 {{credential:name}} 读取已保存的凭据。"
             },
             "assign": {
                 "values": "合并到流程变量的 JSON 对象。"
@@ -2691,7 +2696,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "key": "按键聚合",
             "parallel": "每条消息都执行",
             "restart": "重启等待中的延迟",
-            "timeout": "超时后继续"
+            "timeout": "超时后继续",
+            "bearer": "Bearer Token"
         }
     }
 };

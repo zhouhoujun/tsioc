@@ -59,6 +59,12 @@ import {
     WorkflowExecutionStore
 } from './WorkflowExecutionStore';
 import {
+    InMemoryWorkflowCredentialStore,
+    SqliteWorkflowCredentialStore,
+    WORKFLOW_CREDENTIAL_STORE,
+    WorkflowCredentialStore
+} from './WorkflowCredentialStore';
+import {
     InMemoryWorkflowAuditStore,
     SqliteWorkflowAuditStore,
     WORKFLOW_AUDIT_LIMIT,
@@ -144,9 +150,11 @@ export class WorkflowHttpController {
         @Inject(WORKFLOW_EXECUTION_POLICY) private policy: WorkflowExecutionPolicy,
         private schedules: WorkflowScheduleManager,
         private audit: WorkflowAuditService,
+        @Inject(WORKFLOW_CREDENTIAL_STORE) private credentials: WorkflowCredentialStore,
         private execution: VisualWorkflowService
     ) {
         this.execution.setDefinitionResolver(id => this.store.get(id));
+        this.execution.setCredentialResolver(name => this.credentials.get(name));
     }
 
     private executionContext(context: Record<string, any> = {}): Record<string, any> {
@@ -778,6 +786,40 @@ export class WorkflowDeploymentController {
     }
 }
 
+/** Secret storage API. Values are never returned, only names. */
+@Controller('/api/credentials')
+export class WorkflowCredentialController {
+    constructor(
+        @Inject(WORKFLOW_CREDENTIAL_STORE) private store: WorkflowCredentialStore,
+        private audit: WorkflowAuditService
+    ) { }
+
+    @Get('/')
+    list() {
+        return this.store.list();
+    }
+
+    @Put('/:name')
+    async set(@RequestPath('name') name: string, @RequestBody() body: { value?: string }) {
+        if (typeof body?.value !== 'string') {
+            throw new BadRequestException('Credential value is required');
+        }
+        await this.store.set(name, body.value);
+        await this.audit.record('credential-set', undefined, undefined, { name });
+        return { saved: true, name };
+    }
+
+    @Delete('/:name')
+    async remove(@RequestPath('name') name: string) {
+        const removed = await this.store.remove(name);
+        if (!removed) {
+            throw new NotFoundException(`Credential not found: ${name}`);
+        }
+        await this.audit.record('credential-delete', undefined, undefined, { name });
+        return { removed: true };
+    }
+}
+
 /** Read-only audit history for configuration, deployment and plugin changes. */
 @Controller('/api/audit')
 export class WorkflowAuditController {
@@ -810,6 +852,10 @@ export interface WorkflowHttpServerOptions {
     auditStore?: WorkflowAuditStore;
     /** Audit entries kept on disk (default 2000). */
     auditHistoryLimit?: number;
+    /** Credential store override (encrypted SQLite by default when a key exists). */
+    credentialStore?: WorkflowCredentialStore;
+    /** Encryption key; defaults to WORKFLOW_CREDENTIAL_KEY. */
+    credentialKey?: string;
     /** Version/release store; defaults to SQLite next to the definition store. */
     versionStore?: WorkflowVersionStore;
     /** Draft-save versions kept per workflow (default 20; published ones persist). */
@@ -840,6 +886,25 @@ export interface WorkflowHttpServerOptions {
     cookies?: boolean;
     /** Enable JSON request/response handling. */
     json?: boolean;
+}
+
+function createServerCredentialStore(options: WorkflowHttpServerOptions): WorkflowCredentialStore {
+    if (options.credentialStore) {
+        return options.credentialStore;
+    }
+    const key = options.credentialKey
+        || (globalThis as { process?: { env?: Record<string, string | undefined> } })
+            .process?.env?.WORKFLOW_CREDENTIAL_KEY;
+    if (key && (options.databaseFile || options.store instanceof SqliteWorkflowDefinitionStore
+        || (!options.store && isSqliteAvailable()))) {
+        return new SqliteWorkflowCredentialStore({
+            file: options.store instanceof SqliteWorkflowDefinitionStore
+                ? options.store.databaseFile
+                : options.databaseFile,
+            key
+        });
+    }
+    return new InMemoryWorkflowCredentialStore();
 }
 
 function createServerAuditStore(options: WorkflowHttpServerOptions): WorkflowAuditStore {
@@ -910,6 +975,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
     const store = createServerWorkflowStore(options);
     const executionStore = createServerExecutionStore(options);
     const auditStore = createServerAuditStore(options);
+    const credentialStore = createServerCredentialStore(options);
     const versionStore = createServerVersionStore(options);
     const features: any[] = [
         provideService(
@@ -933,6 +999,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
         declarations: [
             WorkflowHttpController,
             WorkflowPluginController,
+            WorkflowCredentialController,
             WorkflowExecutionController,
             WorkflowDeploymentController,
             WorkflowAuditController,
@@ -943,6 +1010,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             { provide: WORKFLOW_EXECUTION_STORE, useValue: executionStore },
             { provide: WORKFLOW_EXECUTION_LIMIT, useValue: options.executionHistoryLimit ?? 200 },
             { provide: WORKFLOW_AUDIT_STORE, useValue: auditStore },
+            { provide: WORKFLOW_CREDENTIAL_STORE, useValue: credentialStore },
             { provide: WORKFLOW_AUDIT_LIMIT, useValue: options.auditHistoryLimit ?? 2000 },
             WorkflowAuditService,
             {

@@ -8,6 +8,7 @@ import { createWorkflowHttpModule } from '../server';
 import { InMemoryWorkflowDefinitionStore } from '../src/visual/workflow-store';
 import { InMemoryWorkflowExecutionStore } from '../server/WorkflowExecutionStore';
 import { InMemoryWorkflowAuditStore } from '../server/WorkflowAuditStore';
+import { InMemoryWorkflowCredentialStore } from '../server/WorkflowCredentialStore';
 
 function freePort(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -55,6 +56,7 @@ describe('Workflow HTTP microservice', () => {
     let staticRoot: string;
     let executionStore: InMemoryWorkflowExecutionStore;
     let auditStore: InMemoryWorkflowAuditStore;
+    let credentialStore: InMemoryWorkflowCredentialStore;
 
     before(async () => {
         staticRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-workflow-static-'));
@@ -63,12 +65,14 @@ describe('Workflow HTTP microservice', () => {
         base = `http://127.0.0.1:${port}`;
         executionStore = new InMemoryWorkflowExecutionStore();
         auditStore = new InMemoryWorkflowAuditStore();
+        credentialStore = new InMemoryWorkflowCredentialStore();
         ctx = await Application.run(createWorkflowHttpModule({
             port,
             host: '127.0.0.1',
             store: new InMemoryWorkflowDefinitionStore(),
             executionStore,
             auditStore,
+            credentialStore,
             staticRoot,
             workspaceRoot: staticRoot
         }));
@@ -616,6 +620,32 @@ describe('Workflow HTTP microservice', () => {
         expect((await request(`${base}/api/workflows/missing/metrics`)).status).toBe(404);
 
         await request(`${base}/api/workflows/metrics-demo`, { method: 'DELETE' });
+    });
+
+    it('stores credentials without returning their values', async () => {
+        const saved = await request(`${base}/api/credentials/api-token`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ value: 'super-secret' })
+        });
+        expect(saved.status).toBe(200);
+        expect(saved.body.saved).toBe(true);
+        expect(await credentialStore.get('api-token')).toBe('super-secret');
+
+        const list = await request(`${base}/api/credentials`);
+        expect(list.body).toEqual(['api-token']);
+
+        const invalid = await request(`${base}/api/credentials/bad`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        expect(invalid.status).toBe(400);
+
+        const removed = await request(`${base}/api/credentials/api-token`, { method: 'DELETE' });
+        expect(removed.body.removed).toBe(true);
+        expect(await request(`${base}/api/credentials`).then(response => response.body)).toEqual([]);
+        expect((await request(`${base}/api/credentials/api-token`, { method: 'DELETE' })).status).toBe(404);
     });
 
     it('records configuration, deployment and plugin audit entries', async () => {

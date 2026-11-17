@@ -5,6 +5,7 @@ import { WorkflowNodeRegistry } from '../src/visual/node-registry';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { VisualWorkflowDefinition } from '../src/visual/types';
 import { nextCronTime, parseCron } from '../src/visual/workflow-cron';
+import * as http from 'node:http';
 
 describe('Workflow data & trigger nodes', () => {
     let injector: Injector;
@@ -151,6 +152,43 @@ describe('Workflow data & trigger nodes', () => {
         ]), {});
         expect(result.success).toBe(true);
         expect(result.data?.executionState?.nodeStates.log_1.result?.data?.message).toBe('42');
+    });
+
+    it('resolves HTTP authentication from stored credentials', async () => {
+        const server = http.createServer((request, response) => {
+            response.setHeader('content-type', 'text/plain');
+            response.end(String(request.headers.authorization || ''));
+        });
+        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', () => resolve()));
+        const port = (server.address() as any).port;
+        service.setCredentialResolver(name => name === 'api-token' ? 'secret-token' : undefined);
+        try {
+            const url = `http://127.0.0.1:${port}`;
+            const authorized = await service.execute(chain([
+                {
+                    type: 'http-request',
+                    config: {
+                        url,
+                        authType: 'bearer',
+                        token: '{{credential:api-token}}',
+                        responseType: 'text'
+                    }
+                }
+            ]), {});
+            expect(authorized.data?.executionState?.nodeStates['http-request_0'].result?.data?.body)
+                .toBe('Bearer secret-token');
+
+            const missing = await service.execute(chain([
+                {
+                    type: 'http-request',
+                    config: { url, authType: 'bearer', token: '{{credential:missing}}' }
+                }
+            ]), {});
+            expect(missing.success).toBe(false);
+            expect(String(missing.error?.message || '')).toContain('Credential not found');
+        } finally {
+            await new Promise<void>(resolve => server.close(() => resolve()));
+        }
     });
 
     it('parses HTTP responses as auto, JSON or text', async () => {

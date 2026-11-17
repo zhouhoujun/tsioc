@@ -59,6 +59,32 @@ export interface VisualNodeRuntimeHost {
 }
 
 /**
+ * Resolve `{{credential:name}}` / `credential:name` values through the host
+ * credential resolver. Plain values stay untouched for backwards compatibility.
+ */
+export async function resolveCredentialValue(
+    value: any,
+    context: ActivityContext
+): Promise<any> {
+    const text = String(value ?? '').trim();
+    const match = /^\{\{\s*credential:([^}]+?)\s*\}\}$/.exec(text)
+        || /^credential:([A-Za-z0-9_.-]+)$/.exec(text);
+    if (!match) {
+        return value;
+    }
+    const name = match[1].trim();
+    const resolver = (context as any).resolveCredential;
+    if (typeof resolver !== 'function') {
+        throw new Error(`Credential "${name}" is not available in this host. Configure a credential store.`);
+    }
+    const resolved = await resolver(name);
+    if (resolved === undefined) {
+        throw new Error(`Credential not found: ${name}`);
+    }
+    return resolved;
+}
+
+/**
  * Resolve a dotted path (`input.approved`, `$.input.approved`) against the
  * workflow context. Literals (quoted strings, numbers, booleans, null) are
  * returned as-is so node configs remain JSON friendly.
@@ -591,12 +617,18 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
     }
     try {
         const headers: Record<string, any> = coerceJson(config.headers) || {};
-        if (String(config.authType || 'none') === 'basic' && config.username) {
-            const raw = `${config.username}:${config.password || ''}`;
+        const authType = String(config.authType || 'none');
+        if (authType === 'basic') {
+            const username = String(await resolveCredentialValue(config.username, context) ?? '');
+            const password = String(await resolveCredentialValue(config.password, context) ?? '');
+            const raw = `${username}:${password}`;
             const encoded = typeof btoa === 'function'
                 ? btoa(raw)
                 : (globalThis as any).Buffer?.from(raw).toString('base64') || '';
             headers.Authorization = `Basic ${encoded}`;
+        } else if (authType === 'bearer') {
+            const token = String(await resolveCredentialValue(config.token, context) ?? '');
+            headers.Authorization = `Bearer ${token}`;
         }
         const response = await fetchImpl(String(url), {
             method: String(config.method || 'GET').toUpperCase(),

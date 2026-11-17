@@ -881,6 +881,21 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         fields: [
             configField({ key: 'url', label: 'URL', type: 'url', required: true, typed: true, placeholder: 'https://api.example.com', group: 'Request', description: 'Absolute endpoint or a path resolved by the host.',}),
             configField({
+                key: 'authType',
+                label: 'Authentication',
+                type: 'select',
+                defaultValue: 'none',
+                options: [
+                    { label: 'None', value: 'none' },
+                    { label: 'Basic', value: 'basic' },
+                    { label: 'Bearer token', value: 'bearer' }
+                ],
+                group: 'Authentication'
+            }),
+            configField({ key: 'username', label: 'Username', type: 'text', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' } }),
+            configField({ key: 'password', label: 'Password', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'token', label: 'Bearer token', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'bearer' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({
                 key: 'method',
                 label: 'Method',
                 type: 'select',

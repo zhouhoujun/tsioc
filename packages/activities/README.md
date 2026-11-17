@@ -797,6 +797,19 @@ POST /api/deployments/start   # start all schedulable workflows (or workflowIds)
 POST /api/deployments/stop    # stop all or the given workflowIds
 ```
 
+Credentials are stored outside workflow definitions and never returned by the API:
+
+```text
+GET    /api/credentials           # names only
+PUT    /api/credentials/:name     # { "value": "..." }
+DELETE /api/credentials/:name
+```
+
+Use `{{credential:name}}` in node fields (for example HTTP basic/bearer auth).
+SQLite storage encrypts values with AES-256-GCM using `WORKFLOW_CREDENTIAL_KEY`
+(or the `credentialKey` option); without a key the server falls back to an
+in-memory store so secrets are never written unencrypted.
+
 Configuration, deployment and plugin changes are recorded in an audit trail:
 
 ```text
