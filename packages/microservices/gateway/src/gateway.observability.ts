@@ -1,7 +1,7 @@
 import { Transport } from '@tsdi/common';
 import { HttpRequestMessage } from '@tsdi/http-microservice';
 import { Logger } from '@tsdi/logger';
-import { MetricsCollector } from '@tsdi/metrics';
+import { MetricsCollector, recordDuration } from '@tsdi/metrics';
 import { Span, Tracer } from '@tsdi/tracing';
 import { GatewayOptions, ResolvedGatewayRoute } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
@@ -114,7 +114,7 @@ export class GatewayObservability {
         }
         const labels = this.buildMetricsLabels(route, request, status, meta);
         this.metrics.increment('gateway_requests_total', 1, labels);
-        this.metrics.timing('gateway_request_duration_ms', duration, labels);
+        recordDuration(this.metrics, 'gateway_request_duration_ms', duration, labels);
         if (meta?.errorType) {
             this.metrics.increment('gateway_errors_total', 1, labels);
         }

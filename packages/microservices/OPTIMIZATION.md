@@ -408,6 +408,13 @@
 - 修正新测试在非 transpile-only 下的类型错误（options 需 `as any`、expect 泛型、Error.headers）。
 - `npm run test`（gateway）140 passing；gate `ms-gateway ms-admin ms-tsc` PASS。
 
+第七十四批（metrics 秒单位双发 + HTTP 测试隔离）：
+
+- 新增 `metrics/src/timing.ts` 的 `recordDuration`：`*_ms` 同时输出 `*_seconds`。
+- http latency、client、gateway 三处延迟指标接入双发。
+- `in-flight-drain.spec.ts` 使用 `agent: false`，避免 Node keep-alive 复用已关闭 server 的 socket。
+- 回归：metrics 57、client 88、gateway 140、http 默认 50 / 全量 199。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

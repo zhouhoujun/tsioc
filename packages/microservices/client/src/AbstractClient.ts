@@ -2,7 +2,7 @@ import { Abstract, ArgumentException, Context, getTypeName, Injector } from '@ts
 import { Shutdown } from '@tsdi/core';
 import { Pattern, RequestOptions, createRequestContext, RequestContext, REQUEST, ResponseAs } from '@tsdi/common';
 import { defer, Observable, throwError, catchError, finalize, mergeMap, of, concatMap, tap } from 'rxjs';
-import { MetricsCollector } from '@tsdi/metrics';
+import { MetricsCollector, recordDuration } from '@tsdi/metrics';
 import { Tracer } from '@tsdi/tracing';
 import { ClientHandler } from './ClientHandler';
 import { ClientDiscoveryStrategy } from './strategies/ClientDiscoveryStrategy';
@@ -141,7 +141,7 @@ export abstract class AbstractClient<
         }
         const finalLabels = { ...labels, status: String(status) };
         metrics.increment('client_requests_total', 1, finalLabels);
-        metrics.timing('client_request_duration_ms', Date.now() - startedAt, finalLabels);
+        recordDuration(metrics, 'client_request_duration_ms', Date.now() - startedAt, finalLabels);
         if (error) {
             metrics.increment('client_errors_total', 1, {
                 ...finalLabels,

@@ -32,7 +32,9 @@ class InFlightModule { }
 
 function get(path: string): Promise<{ status: number; body: string }> {
     return new Promise((resolve, reject) => {
-        const req = http.get({ host: '127.0.0.1', port: PORT, path }, res => {
+        // Keep-alive pooling would reuse sockets from a previous server instance
+        // in this suite; each request must own a fresh connection.
+        const req = http.get({ host: '127.0.0.1', port: PORT, path, agent: false }, res => {
             const chunks: Buffer[] = [];
             res.on('data', chunk => chunks.push(chunk));
             res.on('end', () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString('utf8') }));

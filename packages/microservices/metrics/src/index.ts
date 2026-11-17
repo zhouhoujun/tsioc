@@ -1,5 +1,6 @@
 export * from './metrics';
 export * from './collector';
+export * from './timing';
 export * from './registry';
 export * from './interceptors';
 export * from './exporters';

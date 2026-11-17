@@ -1,5 +1,6 @@
 import { Injectable } from '@tsdi/ioc';
 import { MetricsCollector } from '../collector';
+import { recordDuration } from '../timing';
 
 /**
  * Latency histogram.
@@ -15,7 +16,7 @@ export class LatencyHistogram {
     }
 
     recordLatency(method: string, path: string, status: number, duration: number): void {
-        this.collector.timing('http_request_duration_ms', duration, {
+        recordDuration(this.collector, 'http_request_duration_ms', duration, {
             method,
             path,
             status: String(status)
