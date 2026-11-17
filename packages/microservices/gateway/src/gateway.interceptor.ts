@@ -19,78 +19,9 @@ import { resolveRetryBackoff } from './retry-policy';
 import { HttpAuthService, HttpAuthOptions, HmacSignatureService } from '@tsdi/security';
 import { Tracer, Span } from '@tsdi/tracing';
 import { Logger } from '@tsdi/logger';
+import { GatewayObservability } from './gateway.observability';
+import { GatewayErrorType, GatewayForwardMeta, GatewayForwardResult, classifyGatewayError } from './gateway.types';
 
-interface GatewayForwardResult {
-    status: number;
-    statusText: string;
-    payload: any;
-    headers?: Record<string, string>;
-    meta?: GatewayForwardMeta;
-}
-
-interface GatewayForwardMeta {
-    endpoint?: string;
-    cacheStatus?: 'HIT' | 'MISS' | 'SKIP';
-    outcome?: 'upstream' | 'aggregate' | 'cache' | 'mock' | 'fallback' | 'rejected' | 'error';
-    canary?: boolean;
-    errorType?: GatewayErrorType;
-    streaming?: boolean;
-}
-
-/**
- * Stable gateway error categories used by access logs, metrics and the
- * `x-gateway-error-type` response header.
- */
-export type GatewayErrorType =
-    | 'rate_limited'
-    | 'bulkhead_full'
-    | 'circuit_open'
-    | 'unauthorized'
-    | 'forbidden'
-    | 'validation'
-    | 'timeout'
-    | 'network'
-    | 'upstream'
-    | 'client'
-    | 'internal';
-
-export function classifyGatewayError(error: any): GatewayErrorType {
-    const status = error?.statusCode ?? error?.status;
-    const message = String(error?.message ?? '');
-    if (status === 429) {
-        return 'rate_limited';
-    }
-    if (status === 503 && /bulkhead/i.test(message)) {
-        return 'bulkhead_full';
-    }
-    if (/circuit breaker/i.test(message)) {
-        return 'circuit_open';
-    }
-    if (status === 401) {
-        return 'unauthorized';
-    }
-    if (status === 403) {
-        return 'forbidden';
-    }
-    if (status === 400 || status === 422) {
-        return 'validation';
-    }
-    if (status === 504 || error?.name === 'AbortError' || /timeout/i.test(message)) {
-        return 'timeout';
-    }
-    if (['ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET'].includes(error?.code)) {
-        return 'network';
-    }
-    if (status >= 500) {
-        return 'upstream';
-    }
-    if (status >= 400) {
-        return 'client';
-    }
-    return 'internal';
-}
-
-/** Request used by the admin console to preview gateway matching. */
 export interface GatewayMatchPreviewRequest {
     method?: string;
     path?: string;
@@ -153,6 +84,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private ruleEngine?: GatewayRuleEngine;
     private ruleEngineRevision = -1;
     private ruleEngineRules?: GatewayRuleOptions[];
+    private observability: GatewayObservability;
 
     constructor(
         @Inject(GATEWAY_OPTIONS) private options: GatewayOptions,
@@ -171,6 +103,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.authService = this.injector.get(HttpAuthService, null) ?? new HttpAuthService();
         this.signatureService = this.injector.get(HmacSignatureService, null) ?? new HmacSignatureService();
         this.logger = this.injector.get(Logger, null) ?? null;
+        this.observability = new GatewayObservability(this.options, this.runtime, this.metrics, this.logger, this.tracer);
         if (this.endpointResolver && typeof (this.endpointResolver as any).resolve !== 'function') {
             this.endpointResolver = null;
         }
@@ -297,7 +230,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     private async denyByRule(rule: GatewayRuleOptions, request: HttpRequestMessage, context: RequestContext): Promise<any> {
         const startedAt = Date.now();
-        const trace = this.startTrace(request);
+        const trace = this.observability.startTrace(request);
         try {
             const status = rule.action.status ?? 403;
             const message = rule.action.message ?? 'Forbidden';
@@ -359,20 +292,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return this.routeTable;
     }
 
-    private tagGatewayError(error: any, adapter: any): GatewayErrorType {
-        const errorType = classifyGatewayError(error);
-        try {
-            error.errorType = errorType;
-        } catch {
-            // frozen error objects are still classified for logs/metrics
-        }
-        adapter?.setHeader?.('x-gateway-error-type', errorType);
-        return errorType;
-    }
-
     private async forward(route: ResolvedGatewayRoute, request: HttpRequestMessage, context: RequestContext): Promise<any> {
         const startedAt = Date.now();
-        const trace = this.startTrace(request);
+        const trace = this.observability.startTrace(request);
         const traceHeaders = trace.headers;
         try {
         await this.applyGlobalRateLimit(request, context);
@@ -412,8 +334,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         try {
             releaseBulkhead = await this.runtime.acquireBulkhead(`${route.service}:${route.path}`, route.bulkhead);
         } catch (error: any) {
-            const errorType = this.tagGatewayError(error, adapter);
-            this.recordGatewayError(route, request, startedAt, error, traceHeaders, {
+            const errorType = this.observability.tagError(error, adapter);
+            this.observability.recordError(route, request, startedAt, error, traceHeaders, {
                 cacheStatus: cacheKey ? 'MISS' : 'SKIP',
                 outcome: 'rejected',
                 canary: !!route.canary,
@@ -430,8 +352,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                     statusCode: 503,
                     statusMessage: 'Service Unavailable'
                 });
-                const errorType = this.tagGatewayError(error, adapter);
-                this.recordGatewayError(route, request, startedAt, error, traceHeaders, {
+                const errorType = this.observability.tagError(error, adapter);
+                this.observability.recordError(route, request, startedAt, error, traceHeaders, {
                     cacheStatus: cacheKey ? 'MISS' : 'SKIP',
                     outcome: 'rejected',
                     canary: !!route.canary,
@@ -444,7 +366,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         }
 
         try {
-            const result = await this.runInTrace(trace, () =>
+            const result = await this.observability.runInTrace(trace, () =>
                 route.aggregate?.enabled
                     ? this.forwardAggregate(route, request, traceHeaders)
                     : this.isHttpRoute(route)
@@ -484,13 +406,13 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             return this.sendResponse(route, request, context, result, startedAt, adapter, response, upstreamError);
         } catch (error: any) {
             await this.runtime.recordFailure(routeKey, route.circuitBreaker);
-            const errorType = this.tagGatewayError(error, adapter);
+            const errorType = this.observability.tagError(error, adapter);
             const fallback = this.resolveFallbackPayload(route, request, error);
             if (fallback) {
                 await this.dispatchWebhook(route, request, fallback);
                 return this.sendResponse(route, request, context, fallback, startedAt, adapter, response);
             }
-            this.recordGatewayError(route, request, startedAt, error, traceHeaders, {
+            this.observability.recordError(route, request, startedAt, error, traceHeaders, {
                 cacheStatus: cacheKey ? 'MISS' : 'SKIP',
                 outcome: 'error',
                 canary: !!route.canary,
@@ -921,8 +843,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             duration,
             route.slo ?? this.options.slo
         );
-        this.recordGatewayMetrics(route, request, compressed.status, duration, compressed.meta);
-        this.recordAccessLog(route, request, compressed.status, duration, compressed.meta, error);
+        this.observability.recordMetrics(route, request, compressed.status, duration, compressed.meta);
+        this.observability.recordAccessLog(route, request, compressed.status, duration, compressed.meta, error);
 
         if (adapter) {
             adapter.setPayload(payload);
@@ -1707,199 +1629,6 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         } else {
             await runner();
         }
-    }
-
-    private startTrace(request: HttpRequestMessage): {
-        headers: Record<string, string>;
-        span?: Span;
-        error?: any;
-        finish(error?: any): void;
-    } {
-        const carrier: Record<string, string> = {};
-        const existingTrace = this.getHeaderValue(request, 'x-trace-id');
-        const existingSpan = this.getHeaderValue(request, 'x-span-id');
-        if (existingTrace && existingSpan) {
-            carrier['x-trace-id'] = existingTrace;
-            carrier['x-span-id'] = existingSpan;
-            carrier['x-request-id'] = this.getHeaderValue(request, 'x-request-id') ?? existingTrace;
-            return { headers: carrier, finish: () => undefined };
-        }
-        let finish: (error?: any) => void = () => undefined;
-        let span: Span | undefined;
-        if (this.tracer) {
-            const activeSpan = this.tracer.startSpan(
-                `gateway ${request.method ?? 'GET'} ${this.normalizeRequestUrl(request.url ?? '/')}`,
-                { kind: 'SERVER' }
-            );
-            span = activeSpan;
-            this.tracer.injectContext(activeSpan.context(), carrier);
-            finish = (error?: any) => {
-                if (error) {
-                    activeSpan.setStatus('ERROR');
-                    activeSpan.recordError(error instanceof Error ? error : new Error(String(error?.message ?? error)));
-                } else {
-                    activeSpan.setStatus('OK');
-                }
-                activeSpan.finish();
-            };
-        } else {
-            carrier['x-trace-id'] = this.generateTraceId();
-            carrier['x-span-id'] = this.generateTraceId().slice(0, 16);
-        }
-        const requestId = this.getHeaderValue(request, 'x-request-id') ?? carrier['x-trace-id'];
-        carrier['x-request-id'] = requestId;
-        return {
-            headers: carrier,
-            span,
-            finish
-        };
-    }
-
-    /**
-     * Run an upstream call inside the gateway server span so downstream client
-     * spans inherit it as parent without leaking into concurrent requests.
-     */
-    private runInTrace<T>(trace: { span?: Span }, run: () => Promise<T>): Promise<T> {
-        return trace.span && this.tracer ? this.tracer.runWithSpan(trace.span, run) : run();
-    }
-
-    private recordGatewayError(
-        route: ResolvedGatewayRoute,
-        request: HttpRequestMessage,
-        startedAt: number,
-        error: any,
-        traceHeaders: Record<string, string>,
-        meta: GatewayForwardMeta
-    ): void {
-        const duration = Date.now() - startedAt;
-        const status = error?.statusCode ?? 500;
-        this.runtime.recordRouteOutcome(
-            `${route.service}:${route.path}:${route.transport ?? Transport.HTTP}`,
-            status,
-            duration,
-            route.slo ?? this.options.slo
-        );
-        this.recordGatewayMetrics(route, request, status, duration, meta);
-        this.recordAccessLog(route, request, status, duration, meta, error, traceHeaders);
-    }
-
-    private recordGatewayMetrics(
-        route: ResolvedGatewayRoute,
-        request: HttpRequestMessage,
-        status: number,
-        duration: number,
-        meta?: GatewayForwardMeta
-    ): void {
-        if (!this.metrics) {
-            return;
-        }
-        const observability = this.runtime.getOption('observability', this.options.observability);
-        if (observability === false || observability?.metrics?.enabled === false) {
-            return;
-        }
-        const labels = this.buildMetricsLabels(route, request, status, meta);
-        this.metrics.increment('gateway_requests_total', 1, labels);
-        this.metrics.timing('gateway_request_duration_ms', duration, labels);
-        if (meta?.errorType) {
-            this.metrics.increment('gateway_errors_total', 1, labels);
-        }
-    }
-
-    private buildMetricsLabels(
-        route: ResolvedGatewayRoute,
-        request: HttpRequestMessage,
-        status: number,
-        meta?: GatewayForwardMeta
-    ): Record<string, string> {
-        const observability = this.runtime.getOption('observability', this.options.observability);
-        const metricsOptions = observability ? observability.metrics : undefined;
-        const labels: Record<string, string> = {
-            route: route.path,
-            service: route.service,
-            method: request.method ?? 'GET',
-            status: String(status),
-            transport: Transport[route.transport ?? Transport.HTTP]
-        };
-        if ((metricsOptions?.includeCacheStatus ?? true) && meta?.cacheStatus) {
-            labels.cache = meta.cacheStatus;
-        }
-        if ((metricsOptions?.includeOutcome ?? true) && meta?.outcome) {
-            labels.outcome = meta.outcome;
-        }
-        if ((metricsOptions?.includeErrorType ?? true) && meta?.errorType) {
-            labels.error_type = meta.errorType;
-        }
-        if ((metricsOptions?.includeCanary ?? true) && meta?.canary !== undefined) {
-            labels.canary = String(meta.canary);
-        }
-        if (metricsOptions?.includeEndpoint && meta?.endpoint) {
-            labels.endpoint = meta.endpoint;
-        }
-        return labels;
-    }
-
-    private recordAccessLog(
-        route: ResolvedGatewayRoute,
-        request: HttpRequestMessage,
-        status: number,
-        duration: number,
-        meta?: GatewayForwardMeta,
-        error?: any,
-        traceHeaders?: Record<string, string>
-    ): void {
-        const observability = this.runtime.getOption('observability', this.options.observability);
-        const accessLog = observability === false ? false : observability?.accessLog;
-        const enabled = accessLog === true || (typeof accessLog === 'object' && accessLog.enabled !== false);
-        if (!enabled || !this.logger) {
-            return;
-        }
-        const options = typeof accessLog === 'object' ? accessLog : {};
-        const headers = options.includeHeaders?.length
-            ? Object.fromEntries(options.includeHeaders
-                .map(name => [name, this.getHeaderValue(request, name)] as const)
-                .filter(([, value]) => value != null))
-            : undefined;
-        const traceId = this.getHeaderValue(request, 'x-trace-id')
-            ?? traceHeaders?.['x-trace-id']
-            ?? request.headers?.['x-trace-id'] as string | undefined;
-        const requestId = this.getHeaderValue(request, 'x-request-id')
-            ?? traceHeaders?.['x-request-id']
-            ?? traceId;
-        const entry = {
-            event: 'gateway.access',
-            route: route.path,
-            service: route.service,
-            transport: Transport[route.transport ?? Transport.HTTP],
-            method: request.method ?? 'GET',
-            path: this.normalizeRequestUrl(request.url ?? '/'),
-            status,
-            duration,
-            host: this.getRequestHost(request) || undefined,
-            clientIp: this.getClientIp(request) || undefined,
-            endpoint: meta?.endpoint,
-            cache: meta?.cacheStatus,
-            outcome: meta?.outcome,
-            canary: meta?.canary,
-            errorType: meta?.errorType,
-            traceId,
-            requestId,
-            query: options.includeQuery ? { ...(request.query ?? {}) } : undefined,
-            headers,
-            error: error ? {
-                message: error.message,
-                statusCode: error.statusCode,
-                statusMessage: error.statusMessage
-            } : undefined
-        };
-        if (error) {
-            this.logger.error('gateway.access', entry);
-        } else {
-            this.logger.info('gateway.access', entry);
-        }
-    }
-
-    private generateTraceId(): string {
-        return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
     }
 
     private generateEtag(payload: any): string {

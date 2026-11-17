@@ -339,6 +339,13 @@
 - 验证 `useFeatures({ extraFeatures: [useTracing(...)] })` 可装配 tracing interceptor。
 - 保持 @tsdi/service 不反向依赖 @tsdi/tracing。
 
+第六十三批（Gateway observability 拆分）：
+
+- 新增 `gateway.types.ts`（`GatewayForwardMeta/Result`、`GatewayErrorType`、`classifyGatewayError`）。
+- 新增 `gateway.observability.ts`：trace scope、error tag、route outcome/metrics/access log。
+- `GatewayInterceptor` 从 2062 行降到约 1791 行，只保留编排。
+- 新增 `observability.spec.ts` 10 个模块级测试；gateway 110、admin 63 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

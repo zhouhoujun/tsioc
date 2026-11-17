@@ -4463,3 +4463,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `remove` 默认弹出确认（回车确认 / esc 取消，默认选项为取消）；`--yes` 跳过确认，供脚本使用。`--force` 仍传给运行时。
 - 发现/usage/README 同步；i18n 新增 5 个键（总数 710）。
 - 测试：确认、取消、`--yes` 三条路径，vm-submit + i18n 48 passing。
+
+- 微服务框架第六十三批（2026-11-16）：
+  - 抽出 gateway.observability.ts 与 gateway.types.ts。
+  - 回归：gateway 110、admin 63。
