@@ -126,7 +126,7 @@
 - QueryList 属性必须保持同一实例（`changes` 订阅不能因刷新丢失），不得每次查询新建 QueryList。
 
 **投影 `<v-content>`**
-- 支持 `<v-content>` / `<ng-content>`；多个 outlet 先注册、host view 创建后统一 flush，按 `slot` → `select`（CSS/属性）→ 默认 outlet 顺序分发，默认 outlet 接收剩余内容。
+- 支持 `<v-content>` / `<ng-content>`；多个 outlet 先注册、host view 创建后统一 flush，按 `slot` → `select`（CSS/属性）→ 默认 outlet 顺序分发，默认 outlet 接收剩余内容。重复 outlet selector 每个 host 只告警一次，首个匹配 outlet 生效。
 - 投影节点必须保留在 `PROJECTION_NODES` 中，移动 DOM 后 ContentChild 查询仍可用；不得为投影渲染清空该数组。
 - HTML 使用原生 `matches`；Console 的 `matches` 支持 tag/class/attribute、逗号列表以及后代（`a b`）/子代（`a > b`）组合，新增 Console selector 能力必须在 `components/console` 通用层实现，不得在 agent-ui 兜底。
 - 根级 `v-if`/`v-for` 与多根模板通过编译期根节点替换（`rootStructuralContainers`）支持；不得要求用户给子组件模板额外包一层根节点。
@@ -243,7 +243,7 @@
 cd packages/<包名>            # 例：components、components/common、components/html、components/console、agents/agent-ui
 npm run test                  # 等价于: ts-node -r tsconfig-paths/register unit.ts
 ```
-- 已知基线（2026-11）：components **187 passing**、components/common **79 passing**、components/console **169 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
+- 已知基线（2026-11）：components **188 passing**、components/common **79 passing**、components/console **169 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
 - components 查询/投影/容器改动必须同时回归 components、components/common、components/html、components/console、components/xml、components/json；`npm run bench:check`（或 `RUN_COMPONENTS_BENCH=1 bash scripts/agents-gate.sh components-bench`）不得回退。
 - runner 会把 summary 打印两遍，属正常（unit-console 行为），以 EXIT code 为准。
 - `npm run test:coverage` 可用（NODE_V8_COVERAGE=.nyc_output）。

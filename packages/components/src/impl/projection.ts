@@ -40,6 +40,7 @@ export function flushProjectionOutlets(host: any, renderer: Renderer): void {
     if (!outlets?.length) {
         return;
     }
+    warnDuplicateOutlets(host, outlets);
     const nodes = host[PROJECTION_NODES] as RNode[] | undefined;
     if (!nodes?.length) {
         host[PROJECTION_OUTLETS] = undefined;
@@ -85,8 +86,29 @@ export function flushProjectionOutlets(host: any, renderer: Renderer): void {
     host[PROJECTION_OUTLETS] = undefined;
 }
 
-function getProjectedSlot(node: RNode, renderer: Renderer): string | undefined {
-    try {
+const warnedHosts = new WeakSet<object>();
+
+function warnDuplicateOutlets(host: object, outlets: ProjectionOutlet[]): void {
+    if (warnedHosts.has(host)) {
+        return;
+    }
+    const seen = new Set<string>();
+    for (const outlet of outlets) {
+        const key = outlet.slot
+            ? `slot:${outlet.slot}`
+            : outlet.select
+                ? `select:${outlet.select.trim()}` // normalize? keep simple for now
+                : 'default';
+        if (seen.has(key)) {
+            warnedHosts.add(host);
+            console.warn(`[components] duplicate <v-content> outlet selector "${key}"; the first matching outlet receives the content.`);
+            return;
+        }
+        seen.add(key);
+    }
+}
+
+function getProjectedSlot(node: RNode, renderer: Renderer): string | undefined {    try {
         const attrs = renderer.getAttributes(node) || [];
         return attrs.find(attr => attr.name === 'slot')?.value;
     } catch {

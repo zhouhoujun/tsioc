@@ -239,7 +239,8 @@ export class PanelComponent {
   outlet order does not matter.
 - Matching order: `slot`, then `select` (CSS/attribute), then the default outlet
   receives leftovers. If no default outlet exists, the first outlet receives
-  leftovers so content is not silently dropped.
+  leftovers so content is not silently dropped. Duplicate outlet selectors log
+  a warning once per host and the first matching outlet wins.
 - HTML uses native `matches`; the console renderer supports tag/class/attribute,
   comma lists, descendant (`a b`) and child (`a > b`) combinators.
 - Projected nodes stay in `PROJECTION_NODES`, so `ContentChild` queries keep
