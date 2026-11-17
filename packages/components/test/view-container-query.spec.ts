@@ -112,6 +112,19 @@ export class ViewContainerRefTest {
             expect(component.children?.toArray().map(item => item.label)).toEqual(['D']);
             expect(component.refChildren?.toArray().map(item => item.label)).toEqual(['D']);
 
+            const detached = component.vcr!.detach(0);
+            await Promise.resolve().then(() => Promise.resolve());
+            expect(component.first).toBeUndefined();
+            expect(component.refChild).toBeUndefined();
+            expect(component.children?.length ?? 0).toBe(0);
+            expect(component.refChildren?.length ?? 0).toBe(0);
+
+            component.vcr!.reattach(detached!);
+            await Promise.resolve().then(() => Promise.resolve());
+            expect(component.first?.label).toBe('D');
+            expect(component.refChild?.label).toBe('D');
+            expect(component.refChildren?.toArray().map(item => item.label)).toEqual(['D']);
+
             component.vcr!.remove(0);
             await Promise.resolve().then(() => Promise.resolve());
             expect(component.first).toBeUndefined();
