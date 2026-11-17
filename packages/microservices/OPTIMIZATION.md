@@ -483,6 +483,12 @@
 - 复用 `/api/gateway-admin/state`；401/5xx 可操作错误。
 - 回归：admin 81 passing。
 
+第八十六批（Gateway 实例故障恢复）：
+
+- 新增 `gateway/test/chaos-recovery.spec.ts`：两个真实 HTTP 实例，kill 一个后网关在 <30s 内全部切到存活实例。
+- 断言 dead endpoint 的 per-endpoint circuit 打开，后续请求保持健康且 <5s。
+- 回归：gateway 142 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

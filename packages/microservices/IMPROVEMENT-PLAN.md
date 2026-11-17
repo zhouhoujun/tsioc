@@ -697,6 +697,7 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 | 契约兼容 | `compareContracts` / `assertCompatible` + CLI `--compat`，breaking 变化 exit 1 |
 | 可运行示例 | quickstart + smoke，gate `ms-examples` 真实启动端口 |
 | soak | 新增 `examples/soak.ts` 与 opt-in gate `ms-soak`（heap/句柄稳定） |
+| chaos | `gateway/test/chaos-recovery.spec.ts`：真实实例 kill 后 <30s failover，dead endpoint circuit 打开 |
 | 每包 README | 21 个缺失包补齐（共 26 个包） |
 | 发布 | `ms-admin` / `ms-examples` / `ms-soak` 接入 gate；publish 分片与 payload 校验 |
 

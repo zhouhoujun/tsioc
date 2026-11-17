@@ -4622,3 +4622,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第八十五批（2026-11-16）：
   - admin routes CLI（--url/--token/--json）。
   - 回归：admin 81。
+
+- 微服务框架第八十六批（2026-11-16）：
+  - Gateway chaos 恢复测试（实例 kill <30s failover）。
+  - 回归：gateway 142。
