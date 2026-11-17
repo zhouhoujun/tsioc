@@ -10,8 +10,8 @@ import {
 
 /** Secret values stored outside workflow definitions. */
 export interface WorkflowCredentialStore {
-    set(name: string, value: string): Promise<void>;
-    get(name: string): Promise<string | undefined>;
+    setCredential(name: string, value: string): Promise<void>;
+    getCredential(name: string): Promise<string | undefined>;
     list(): Promise<string[]>;
     remove(name: string): Promise<boolean>;
     close?(): void;
@@ -58,11 +58,11 @@ export class InMemoryWorkflowCredentialStore implements WorkflowCredentialStore 
     [noReact] = true;
     private readonly values = new Map<string, string>();
 
-    async set(name: string, value: string): Promise<void> {
+    async setCredential(name: string, value: string): Promise<void> {
         this.values.set(String(name), String(value));
     }
 
-    async get(name: string): Promise<string | undefined> {
+    async getCredential(name: string): Promise<string | undefined> {
         return this.values.get(String(name));
     }
 
@@ -100,7 +100,7 @@ export class SqliteWorkflowCredentialStore implements WorkflowCredentialStore {
         this.key = credentialKey(options.key);
     }
 
-    async set(name: string, value: string): Promise<void> {
+    async setCredential(name: string, value: string): Promise<void> {
         const encrypted = encrypt(String(value), this.key);
         this.database().prepare(`
             INSERT INTO workflow_credentials (name, data, iv, tag, updated_at)
@@ -113,7 +113,7 @@ export class SqliteWorkflowCredentialStore implements WorkflowCredentialStore {
         `).run(String(name), encrypted.data, encrypted.iv, encrypted.tag, Date.now());
     }
 
-    async get(name: string): Promise<string | undefined> {
+    async getCredential(name: string): Promise<string | undefined> {
         const row = this.database()
             .prepare('SELECT name, data, iv, tag FROM workflow_credentials WHERE name = ?')
             .get(String(name)) as unknown as CredentialRow | undefined;

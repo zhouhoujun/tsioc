@@ -121,6 +121,13 @@ export interface WorkflowDefinitionStore {
     stopDeployments?(workflowIds?: string[]): Promise<number>;
     /** Optional audit history for configuration/deployment changes. */
     listAudit?(filter?: { workflowId?: string; action?: string; limit?: number }): Promise<WorkflowAuditEntry[]>;
+    /**
+     * Optional secret storage. Values are write-only: hosts only ever return
+     * credential names so secrets never travel back to the browser.
+     */
+    listCredentials?(): Promise<string[]>;
+    setCredential?(name: string, value: string): Promise<void>;
+    removeCredential?(name: string): Promise<boolean>;
 }
 
 export interface WorkflowStoreSaveOptions {
@@ -499,6 +506,33 @@ export class HttpWorkflowDefinitionStore implements WorkflowDefinitionStore {
         params.push(`limit=${Math.max(1, filter.limit || 100)}`);
         const result = await this.request(`audit?${params.join('&')}`, { method: 'GET' });
         return result.ok && Array.isArray(result.body) ? result.body as WorkflowAuditEntry[] : [];
+    }
+
+    async listCredentials(): Promise<string[]> {
+        const result = await this.request('credentials', { method: 'GET' });
+        return result.ok && Array.isArray(result.body) ? result.body.map(String) : [];
+    }
+
+    async setCredential(name: string, value: string): Promise<void> {
+        const result = await this.request(`credentials/${encodeURIComponent(name)}`, {
+            method: 'PUT',
+            body: JSON.stringify({ value }),
+            headers: { 'content-type': 'application/json' }
+        });
+        if (!result.ok) {
+            throw new Error(`Failed to save credential ${name}: HTTP ${result.status}`);
+        }
+    }
+
+    async removeCredential(name: string): Promise<boolean> {
+        const result = await this.request(`credentials/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        if (result.status === 404) {
+            return false;
+        }
+        if (!result.ok) {
+            throw new Error(`Failed to remove credential ${name}: HTTP ${result.status}`);
+        }
+        return true;
     }
 
     async listDeployments(): Promise<WorkflowDeploymentStatus[]> {

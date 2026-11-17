@@ -808,7 +808,9 @@ DELETE /api/credentials/:name
 Use `{{credential:name}}` in node fields (for example HTTP basic/bearer auth).
 SQLite storage encrypts values with AES-256-GCM using `WORKFLOW_CREDENTIAL_KEY`
 (or the `credentialKey` option); without a key the server falls back to an
-in-memory store so secrets are never written unencrypted.
+in-memory store so secrets are never written unencrypted. The designer's
+**Credentials** dialog lists stored names, adds or replaces a secret and deletes
+entries through the same API; stored values are never sent back to the browser.
 
 Configuration, deployment and plugin changes are recorded in an audit trail:
 

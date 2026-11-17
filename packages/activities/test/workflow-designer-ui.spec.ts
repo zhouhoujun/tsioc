@@ -1513,6 +1513,65 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.executionHistory.length).toBe(0);
     });
 
+    it('manages stored credentials from the designer', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        const names = ['api-token'];
+        const saved: Array<[string, string]> = [];
+        const removed: string[] = [];
+        (store as any).listCredentials = async () => [...names];
+        (store as any).setCredential = async (name: string, value: string) => {
+            saved.push([name, value]);
+            if (!names.includes(name)) {
+                names.push(name);
+            }
+        };
+        (store as any).removeCredential = async (name: string) => {
+            removed.push(name);
+            const index = names.indexOf(name);
+            if (index >= 0) {
+                names.splice(index, 1);
+            }
+            return true;
+        };
+        ref.instance.store = store;
+
+        (root.querySelector('.workflow-global-bar [data-menu-id="credentials"]') as any).click();
+        await waitFor(() => !!root.querySelector('.workflow-credential-row'));
+        expect(root.querySelectorAll('.workflow-credential-row').length).toBe(1);
+        expect(root.querySelector('.workflow-credential-row')?.getAttribute('data-credential-name')).toBe('api-token');
+        // Secrets are never rendered, only names.
+        expect(root.querySelector('.workflow-credentials')?.textContent || '').not.toContain('super-secret');
+
+        // Labels come from bindings, so a locale change re-renders them.
+        ref.instance.locale = 'en';
+        await flush();
+        expect(root.querySelector('.workflow-credentials .workflow-publish-title')?.textContent)
+            .toContain('Credentials');
+        ref.instance.locale = 'zh-CN';
+        await flush();
+        expect(root.querySelector('.workflow-credentials .workflow-publish-title')?.textContent)
+            .toContain('凭据');
+
+        const nameInput = root.querySelector('.workflow-credential-name-input') as any;
+        const valueInput = root.querySelector('.workflow-credential-value-input') as any;
+        nameInput.value = 'new-token';
+        nameInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        valueInput.value = 'super-secret';
+        valueInput.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        (root.querySelector('.workflow-credential-save') as any).click();
+        await waitFor(() => root.querySelectorAll('.workflow-credential-row').length === 2);
+        expect(saved).toEqual([['new-token', 'super-secret']]);
+
+        (root.querySelector('[data-credential-name="api-token"] .workflow-credential-remove') as any).click();
+        await waitFor(() => root.querySelectorAll('.workflow-credential-row').length === 1);
+        expect(removed).toEqual(['api-token']);
+
+        (root.querySelector('.workflow-credentials .workflow-publish-close') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-credentials')).toBeFalsy();
+    });
+
     it('shows audit entries for the active workflow', async () => {
         const store = new InMemoryWorkflowDefinitionStore();
         const now = Date.now();

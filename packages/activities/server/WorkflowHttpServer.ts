@@ -154,7 +154,7 @@ export class WorkflowHttpController {
         private execution: VisualWorkflowService
     ) {
         this.execution.setDefinitionResolver(id => this.store.get(id));
-        this.execution.setCredentialResolver(name => this.credentials.get(name));
+        this.execution.setCredentialResolver(name => this.credentials.getCredential(name));
     }
 
     private executionContext(context: Record<string, any> = {}): Record<string, any> {
@@ -804,7 +804,7 @@ export class WorkflowCredentialController {
         if (typeof body?.value !== 'string') {
             throw new BadRequestException('Credential value is required');
         }
-        await this.store.set(name, body.value);
+        await this.store.setCredential(name, body.value);
         await this.audit.record('credential-set', undefined, undefined, { name });
         return { saved: true, name };
     }

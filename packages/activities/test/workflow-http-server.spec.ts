@@ -630,7 +630,7 @@ describe('Workflow HTTP microservice', () => {
         });
         expect(saved.status).toBe(200);
         expect(saved.body.saved).toBe(true);
-        expect(await credentialStore.get('api-token')).toBe('super-secret');
+        expect(await credentialStore.getCredential('api-token')).toBe('super-secret');
 
         const list = await request(`${base}/api/credentials`);
         expect(list.body).toEqual(['api-token']);

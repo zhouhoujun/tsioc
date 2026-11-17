@@ -95,9 +95,9 @@ interface WorkflowDocumentTab {
         <div class="workflow-publish workflow-audit" v-if="showAudit">
             <div class="workflow-publish-panel workflow-audit-panel">
                 <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{auditTitle}}</span>
+                    <span class="workflow-publish-title">{{tr('audit', 'Audit log')}}</span>
                     <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeAudit">✕</button>
+                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeAudit">✕</button>
                 </div>
                 <div class="workflow-publish-error" v-if="auditError">{{auditError}}</div>
                 <div class="workflow-audit-list" v-if="auditItems.length">
@@ -108,10 +108,44 @@ interface WorkflowDocumentTab {
                         <span class="workflow-audit-actor" v-if="entry.actor">{{entry.actor}}</span>
                     </div>
                 </div>
-                <div class="workflow-audit-empty" v-else>{{auditEmpty}}</div>
+                <div class="workflow-audit-empty" v-else>{{tr('auditEmpty', 'No audit entries for this workflow.')}}</div>
                 <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" [disabled]="auditBusy" @click="refreshAudit">{{auditRefresh}}</button>
-                    <button class="workflow-btn" type="button" @click="closeAudit">{{closeLabel}}</button>
+                    <button class="workflow-btn" type="button" [disabled]="auditBusy" @click="refreshAudit">{{tr('refresh', 'Refresh')}}</button>
+                    <button class="workflow-btn" type="button" @click="closeAudit">{{tr('close', 'Close')}}</button>
+                </div>
+            </div>
+        </div>
+        <div class="workflow-publish workflow-credentials" v-if="showCredentials">
+            <div class="workflow-publish-panel workflow-credentials-panel">
+                <div class="workflow-publish-head">
+                    <span class="workflow-publish-title">{{tr('credentials', 'Credentials')}}</span>
+                    <button class="workflow-btn workflow-publish-close" type="button"
+                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeCredentials">✕</button>
+                </div>
+                <div class="workflow-publish-error" v-if="credentialError">{{credentialError}}</div>
+                <div class="workflow-credentials-list" v-if="credentialNames.length">
+                    <div class="workflow-credential-row" v-for="name in credentialNames" data-credential-name="{{name}}">
+                        <span class="workflow-credential-name">{{name}}</span>
+                        <button class="workflow-btn workflow-credential-remove" type="button"
+                            [disabled]="credentialBusy" @click="removeCredential(name)">{{tr('remove', 'Delete')}}</button>
+                    </div>
+                </div>
+                <div class="workflow-credential-empty" v-else>{{tr('credentialsEmpty', 'No credentials stored yet.')}}</div>
+                <label class="workflow-group-field">
+                    <span>{{tr('credentialName', 'Name')}}</span>
+                    <input class="workflow-credential-name-input" type="text" [value]="credentialName"
+                        placeholder="api-token" @input="credentialNameInput" />
+                </label>
+                <label class="workflow-group-field">
+                    <span>{{tr('credentialValue', 'Secret value')}}</span>
+                    <input class="workflow-credential-value-input" type="password" [value]="credentialValue"
+                        @input="credentialValueInput" />
+                </label>
+                <div class="workflow-publish-actions">
+                    <button class="workflow-btn" type="button" [disabled]="credentialBusy" @click="refreshCredentials">{{tr('refresh', 'Refresh')}}</button>
+                    <button class="workflow-btn" type="button" @click="closeCredentials">{{tr('close', 'Close')}}</button>
+                    <button class="workflow-btn workflow-btn-primary workflow-credential-save" type="button"
+                        [disabled]="credentialBusy" @click="saveCredential">{{saveLabel}}</button>
                 </div>
             </div>
         </div>
@@ -120,7 +154,7 @@ interface WorkflowDocumentTab {
                 <div class="workflow-publish-head">
                     <span class="workflow-publish-title">{{deploymentsTitle}}</span>
                     <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeDeployments">✕</button>
+                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeDeployments">✕</button>
                 </div>
                 <div class="workflow-publish-error" v-if="deploymentError">{{deploymentError}}</div>
                 <div class="workflow-deployments-actions">
@@ -142,7 +176,7 @@ interface WorkflowDocumentTab {
                 </div>
                 <div class="workflow-deployments-empty" v-else>{{deploymentsEmpty}}</div>
                 <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" @click="closeDeployments">{{closeLabel}}</button>
+                    <button class="workflow-btn" type="button" @click="closeDeployments">{{tr('close', 'Close')}}</button>
                 </div>
             </div>
         </div>
@@ -151,25 +185,25 @@ interface WorkflowDocumentTab {
                 <div class="workflow-publish-head">
                     <span class="workflow-publish-title">{{metricsTitle}}</span>
                     <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeMetrics">✕</button>
+                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeMetrics">✕</button>
                 </div>
                 <div class="workflow-metrics-error" v-if="metricsError">{{metricsError}}</div>
                 <div class="workflow-metrics-summary" v-if="metricsData">
                     <div class="workflow-metrics-stat">
-                        <span>{{metricsRunsLabel}}</span><strong>{{metricsData.runs}}</strong>
+                        <span>{{metricsRunsLabel}}</span><strong>{{metricsData?.runs}}</strong>
                     </div>
                     <div class="workflow-metrics-stat">
                         <span>{{metricsSuccessLabel}}</span><strong>{{metricsSuccessRate}}%</strong>
                     </div>
                     <div class="workflow-metrics-stat">
-                        <span>{{metricsAvgLabel}}</span><strong>{{metricsData.avgDurationMs}} ms</strong>
+                        <span>{{metricsAvgLabel}}</span><strong>{{metricsData?.avgDurationMs}} ms</strong>
                     </div>
                     <div class="workflow-metrics-stat">
-                        <span>{{metricsLastLabel}}</span><strong>{{metricsData.lastStatus || '-'}}</strong>
+                        <span>{{metricsLastLabel}}</span><strong>{{metricsData?.lastStatus || '-'}}</strong>
                     </div>
                 </div>
                 <div class="workflow-metrics-nodes" v-if="metricsData && metricsData.nodes.length">
-                    <div class="workflow-metrics-node" v-for="node in metricsData.nodes" data-node-id="{{node.nodeId}}">
+                    <div class="workflow-metrics-node" v-for="node in (metricsData?.nodes || [])" data-node-id="{{node.nodeId}}">
                         <span class="workflow-metrics-node-id">{{node.nodeId}}</span>
                         <span>{{node.runs}} runs</span>
                         <span v-if="node.failed">{{node.failed}} failed</span>
@@ -177,7 +211,7 @@ interface WorkflowDocumentTab {
                     </div>
                 </div>
                 <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" @click="closeMetrics">{{closeLabel}}</button>
+                    <button class="workflow-btn" type="button" @click="closeMetrics">{{tr('close', 'Close')}}</button>
                 </div>
             </div>
         </div>
@@ -186,7 +220,7 @@ interface WorkflowDocumentTab {
                 <div class="workflow-publish-head">
                     <span class="workflow-publish-title">{{settingsTitle}}</span>
                     <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeSettings">✕</button>
+                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeSettings">✕</button>
                 </div>
                 <label class="workflow-group-field">
                     <span>{{descriptionLabel}}</span>
@@ -299,6 +333,12 @@ export class WorkflowDesignerComponent implements OnDestroy {
     showVersions = false;
     showPublish = false;
     publishError = '';
+    showCredentials = false;
+    credentialNames: string[] = [];
+    credentialName = '';
+    credentialValue = '';
+    credentialError = '';
+    credentialBusy = false;
     showAudit = false;
     auditItems: WorkflowAuditEntry[] = [];
     auditError = '';
@@ -716,8 +756,15 @@ export class WorkflowDesignerComponent implements OnDestroy {
     get renameConfirmLabel(): string { return this.t('renameConfirm', 'Rename'); }
     get cancelLabel(): string { return this.t('cancel', 'Cancel'); }
 
+    /** Template-facing translate helper (bindings cannot call the private method). */
+    readonly tr = (key: string, fallback: string): string => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        return self.t(key, fallback);
+    };
+
     private t(key: string, fallback: string, params?: Record<string, any>): string {
-        return translateWorkflow(this.translator, this.localeValue, `workflow.ui.${key}`, fallback, params);
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        return translateWorkflow(self.translator, self.localeValue, `workflow.ui.${key}`, fallback, params);
     }
 
     readonly clearAutosaveTimer = (): void => {
@@ -922,6 +969,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.openAudit();
             return;
         }
+        if (action === 'credentials') {
+            void self.openCredentials();
+            return;
+        }
         if (action === 'plugins') {
             void self.openPlugins();
             return;
@@ -1096,9 +1147,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     /** Open the rename overlay for the active workflow document. */
-    get auditTitle(): string { return this.t('audit', 'Audit log'); }
-    get auditEmpty(): string { return this.t('auditEmpty', 'No audit entries for this workflow.'); }
-    get auditRefresh(): string { return this.t('refresh', 'Refresh'); }
 
     readonly formatAuditTime = (at: number): string => {
         const date = new Date(at);
@@ -1137,6 +1185,101 @@ export class WorkflowDesignerComponent implements OnDestroy {
             self.auditError = (error as Error).message;
         } finally {
             self.auditBusy = false;
+        }
+    };
+
+
+    readonly credentialNameInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.credentialName = String(event?.target?.value ?? '');
+        self.credentialError = '';
+    };
+
+    readonly credentialValueInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.credentialValue = String(event?.target?.value ?? '');
+        self.credentialError = '';
+    };
+
+    readonly openCredentials = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showCredentials = true;
+        self.credentialError = '';
+        self.credentialName = '';
+        self.credentialValue = '';
+        await self.refreshCredentials();
+    };
+
+    readonly closeCredentials = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showCredentials = false;
+        self.credentialError = '';
+        // The typed secret never lingers once the dialog closes.
+        self.credentialValue = '';
+    };
+
+    readonly refreshCredentials = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.store?.listCredentials) {
+            self.credentialNames = [];
+            self.credentialError = self.t('credentialsUnavailable', 'This host does not expose credential storage.');
+            return;
+        }
+        self.credentialBusy = true;
+        self.credentialError = '';
+        try {
+            self.credentialNames = await self.store.listCredentials();
+        } catch (error) {
+            self.credentialError = (error as Error).message;
+        } finally {
+            self.credentialBusy = false;
+        }
+    };
+
+    readonly saveCredential = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const name = self.credentialName.trim();
+        if (!self.store?.setCredential) {
+            self.credentialError = self.t('credentialsUnavailable', 'This host does not expose credential storage.');
+            return;
+        }
+        if (!name) {
+            self.credentialError = self.t('credentialNameRequired', 'Enter a credential name.');
+            return;
+        }
+        if (!self.credentialValue) {
+            self.credentialError = self.t('credentialValueRequired', 'Enter the secret value to store.');
+            return;
+        }
+        self.credentialBusy = true;
+        self.credentialError = '';
+        try {
+            await self.store.setCredential(name, self.credentialValue);
+            self.credentialValue = '';
+            self.credentialName = '';
+            await self.refreshCredentials();
+        } catch (error) {
+            self.credentialError = (error as Error).message;
+        } finally {
+            self.credentialBusy = false;
+        }
+    };
+
+    readonly removeCredential = async (name: string): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        const id = String(name || '').trim();
+        if (!id || !self.store?.removeCredential) {
+            return;
+        }
+        self.credentialBusy = true;
+        self.credentialError = '';
+        try {
+            await self.store.removeCredential(id);
+            await self.refreshCredentials();
+        } catch (error) {
+            self.credentialError = (error as Error).message;
+        } finally {
+            self.credentialBusy = false;
         }
     };
 

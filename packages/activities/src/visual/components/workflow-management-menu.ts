@@ -106,6 +106,7 @@ export class WorkflowManagementMenuComponent {
                     { id: 'metrics', label: t('metrics', 'Execution metrics') },
                     { id: 'deployments', label: t('deployments', 'Deployments') },
                     { id: 'audit', label: t('audit', 'Audit log') },
+                    { id: 'credentials', label: t('credentials', 'Credentials') },
                     { id: 'open-library', label: t('library', 'Workflows') },
                     ...(model.subflowParent
                         ? [{ id: 'back-subflow', label: t('backSubflow', 'Back to parent workflow') }]

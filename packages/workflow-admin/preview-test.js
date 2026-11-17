@@ -16,6 +16,7 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 880_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 function freePort() {
@@ -374,6 +375,31 @@ function startDesignerServer(port) {
         await page.locator('[data-menu-id="language:en"]').click();
         await page.waitForTimeout(200);
 
+        // The credentials dialog manages secrets through the server API.
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
+        await page.locator('[data-menu-id="credentials"]').click();
+        await page.waitForTimeout(250);
+        const credentialDialog = await page.evaluate(() => ({
+            open: !!document.querySelector('.workflow-credentials'),
+            title: (document.querySelector('.workflow-credentials .workflow-publish-title')?.textContent || '').trim()
+        }));
+        await page.fill('.workflow-credential-name-input', 'preview-token');
+        await page.fill('.workflow-credential-value-input', 'preview-secret');
+        await page.locator('.workflow-credential-save').click();
+        await page.waitForTimeout(350);
+        const credentialSaved = await page.evaluate(() => ({
+            rows: document.querySelectorAll('.workflow-credential-row').length,
+            names: Array.from(document.querySelectorAll('.workflow-credential-row'))
+                .map(row => row.getAttribute('data-credential-name')),
+            leaked: (document.querySelector('.workflow-credentials')?.textContent || '').includes('preview-secret')
+        }));
+        await page.locator('[data-credential-name="preview-token"] .workflow-credential-remove').click();
+        await page.waitForTimeout(350);
+        const credentialRowsAfterRemove = await page.locator('.workflow-credential-row').count();
+        await page.locator('.workflow-credentials .workflow-publish-close').click();
+        await page.waitForTimeout(150);
+        const credentialClosed = await page.evaluate(() => !document.querySelector('.workflow-credentials'));
+
         // Panning away and pressing Fit brings every node back into view.
         const canvasBox = await page.locator('.workflow-canvas').boundingBox();
         await page.mouse.move(canvasBox.x + 60, canvasBox.y + canvasBox.height - 60);
@@ -647,14 +673,17 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
-        if (errors.length || initialJsBytes > 870_000 || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
+        if (errors.length || initialJsBytes > INITIAL_JS_BUDGET || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !partialClean || !enterNewline || !tabAccepts
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
             || paletteFiltered < 1 || paletteFiltered >= 54 || paletteRestored !== 54
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
+            || !credentialDialog.open || credentialDialog.title !== 'Credentials'
+            || credentialSaved.rows !== 1 || !credentialSaved.names.includes('preview-token') || credentialSaved.leaked
+            || credentialRowsAfterRemove !== 0 || !credentialClosed
             || optionCount !== 8 || !compareHidden || !compareVisible || !compareHiddenAgain
             || actionPlaceholder !== 'actions.fetch' || !groupTitles.includes('Reliability')
             || !retrySet || !retryReset

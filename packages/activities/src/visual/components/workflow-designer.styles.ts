@@ -633,6 +633,54 @@ export const WORKFLOW_DESIGNER_CSS = `
     font-size: 11px;
 }
 
+.workflow-credentials-panel {
+    width: min(480px, 100%);
+}
+
+.workflow-credentials-list {
+    max-height: 38vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.workflow-credential-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--wf-theme-border, #e2e8f0);
+    font-size: 12px;
+}
+
+.workflow-credential-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-credential-remove {
+    flex: 0 0 auto;
+    font-size: 11px;
+    padding: 2px 8px;
+}
+
+.workflow-credential-empty {
+    padding: 8px;
+    color: var(--wf-theme-muted, #94a3b8);
+    font-size: 11px;
+}
+
+.workflow-credentials-panel .workflow-group-field input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .workflow-deployments-panel {
     width: min(520px, 100%);
 }
