@@ -365,6 +365,12 @@
 - `GatewayInterceptor` 降至约 1258 行，销毁时统一释放 limiter。
 - 新增 `rate-limit.spec.ts` 6 个模块级测试；gateway 131 passing。
 
+第六十七批（Gateway upstream 拆分）：
+
+- 新增 `gateway.upstream.ts`：retry/failover、endpoint 发现与选择、HTTP/微服务转发、聚合、bulkhead 记账与 webhook。
+- `GatewayInterceptor` 降至约 436 行，仅保留匹配、preview、路由解析与 HTTP pool 生命周期。
+- 新增 `upstream.spec.ts` 9 个模块级测试；gateway 140 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
