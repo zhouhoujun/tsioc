@@ -4515,3 +4515,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 ## 2026-11-16 worktree merge/remove 选择器
 - `/worktree merge` / `remove` 无参数时打开工作树选择器（remove 随后仍确认）；`enter` 行为不变。
 - usage/README/en-zh 文案同步；i18n 总数 711。测试覆盖 merge/remove 选择 + 确认，51 passing。
+
+## 2026-11-16 /activity answer 覆盖流式 partial
+- `answer` 类别同时匹配 `assistant-final` 与 `assistant-partial`，流式进行中不再误报“没有最终回答”。
+- 新增 activity-jump 流式 partial 用例（6 passing）。

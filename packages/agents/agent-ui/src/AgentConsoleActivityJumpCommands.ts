@@ -59,7 +59,9 @@ function isCategoryMessage(message: AgentMessage, category: AgentConsoleActivity
     if (category === 'reasoning') {
         return kind === 'thought';
     }
-    return kind === 'assistant-final';
+    // While the turn streams there is no final row yet; jump to the live
+    // partial answer instead of reporting "no answer".
+    return kind === 'assistant-final' || kind === 'assistant-partial';
 }
 
 /**

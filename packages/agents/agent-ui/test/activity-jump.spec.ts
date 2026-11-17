@@ -50,6 +50,20 @@ export class AgentConsoleActivityJumpTest {
         }
     }
 
+    @Test('answer also jumps to a streaming partial answer')
+    async jumpsToStreamingAnswer() {
+        const host = createHost([
+            message('u1', 'user', 'hello', 1),
+            message('p1', 'assistant', 'partial answer', 2, { streaming: true })
+        ]);
+        const revealed: string[] = [];
+        host.state.revealMessageAction = (id: string) => { revealed.push(id); return true; };
+        await runActivityJumpCommand(host, 'answer');
+        expect(host.state.selectedMessageId).toEqual('p1');
+        expect(revealed).toEqual(['p1']);
+        expect(host.notices.at(-1)).toContain('Jumped to latest');
+    }
+
     @Test('category tabs show per-category counts')
     async categoryTabsShowCounts() {
         const host = createHost(transcript());
