@@ -459,6 +459,12 @@
 - 公开接口类型移到 `admin.types.ts` 并由 `admin.state.ts` 继续 re-export。
 - `admin.state.ts` 从 839 行降到 593 行，低于 600 行目标；admin 72 passing。
 
+第八十二批（soak 稳定性门禁）：
+
+- 新增 `examples/soak.ts`：预热后固定并发压测，GC 后校验 heap 增长、句柄回落与失败数；RSS 默认只报告，可显式设限。
+- gate 新增 opt-in `ms-soak` stage（`MS_SOAK_PROFILE=1`；nightly 可用 `MS_SOAK_MS=1800000`）。
+- 30s 实测：37,942 请求、0 失败、heap -1MB、句柄回落到 2。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

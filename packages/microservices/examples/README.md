@@ -32,3 +32,23 @@ npx ts-node -r tsconfig-paths/register \
 ```
 
 The `ms-examples` gate stage runs this smoke test.
+
+## Soak smoke
+
+`soak.ts` keeps 8 concurrent callers busy (configurable), then checks that
+heap usage is stable and sockets/handles return to the boot baseline:
+
+```bash
+NODE_OPTIONS=--expose-gc MS_SOAK_MS=30000 \
+  npx ts-node -r tsconfig-paths/register \
+  packages/microservices/examples/soak.ts
+```
+
+- `MS_SOAK_MS` — load window (CI nightly uses `1800000` for 30 minutes).
+- `MS_SOAK_CONCURRENCY` — parallel callers (default 8).
+- `MS_SOAK_HEAP_LIMIT_MB` — post-GC heap growth budget (default 64MB).
+- `MS_SOAK_RSS_LIMIT_MB` — optional RSS growth budget; RSS is otherwise only
+  reported because Node/V8 can retain allocator pages after a burst.
+- `MS_SOAK_HANDLE_LIMIT` — handles above the pre-boot baseline (default 4).
+
+Run it through the gate with `MS_SOAK_PROFILE=1 bash scripts/agents-gate.sh ms-soak`.

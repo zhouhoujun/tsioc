@@ -30,7 +30,7 @@
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
 #            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
-#            ms-brokers ms-tsc ms-bench ms-examples
+#            ms-brokers ms-tsc ms-bench ms-examples ms-soak ms-soak
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -282,6 +282,25 @@ run_ms_group() {
     fi
 }
 
+# run_ms_soak — opt-in soak smoke (heap/handle stability under HTTP load).
+run_ms_soak() {
+    local id="ms-soak" label="microservice soak (heap/handle stability)"
+    if [ "${MS_SOAK_PROFILE:-0}" != "1" ]; then
+        stage_skip "$id" "$label (opt-in; set MS_SOAK_PROFILE=1, optionally MS_SOAK_MS=1800000)"
+        return
+    fi
+    local log="$LOG_DIR/ms-soak.log"
+    local duration="${MS_SOAK_MS:-30000}"
+    if (cd "$ROOT_DIR" && NODE_OPTIONS=--expose-gc MS_SOAK_MS="$duration" timeout 600 \
+        npx ts-node -r tsconfig-paths/register packages/microservices/examples/soak.ts >"$log" 2>&1); then
+        stage_pass "$id" "$label"
+    else
+        echo "--- ms-soak tail (last 30 lines) ---" >&2
+        tail -30 "$log" >&2
+        stage_fail "$id" "$label"
+    fi
+}
+
 # run_ms_examples — boots the quickstart example against a real HTTP port.
 run_ms_examples() {
     local log="$LOG_DIR/ms-examples.log"
@@ -428,6 +447,7 @@ run_stage() {
         ms-brokers)       run_ms_brokers ;;
         ms-tsc)           run_ms_tsc ;;
         ms-examples)      run_ms_examples ;;
+        ms-soak)          run_ms_soak ;;
         ms-bench)         run_ms_bench ;;
         diff-check)       run_diff_check ;;
         *)

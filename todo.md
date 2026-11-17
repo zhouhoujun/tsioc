@@ -4606,3 +4606,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Admin view/menu/shell controller 拆分，admin.state.ts 593 行。
   - 回归：admin 72。
 - 浏览器端 `[` / `]` 与 TUI 走同一契约（`handleBrowserGlobalKeyInput`），新增跨平台用例，keymap-context 70 passing。
+
+- 微服务框架第八十二批（2026-11-16）：
+  - soak.ts + gate ms-soak（heap/句柄稳定）。
+  - 30s：37,942 请求、0 失败、heap -1MB、句柄 2。
