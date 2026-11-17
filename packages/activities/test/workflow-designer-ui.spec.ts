@@ -1513,6 +1513,38 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.executionHistory.length).toBe(0);
     });
 
+    it('lists and stops hosted deployments', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        let deployments = [{
+            workflowId: 'flow-a',
+            running: true,
+            startedAt: Date.now(),
+            runs: 3
+        }];
+        let stoppedAll = false;
+        (store as any).listDeployments = async () => deployments;
+        (store as any).startDeployments = async () => deployments;
+        (store as any).stopDeployments = async () => {
+            stoppedAll = true;
+            deployments = deployments.map(item => ({ ...item, running: false }));
+            return 1;
+        };
+        ref.instance.store = store;
+
+        (root.querySelector('.workflow-global-bar [data-menu-id="deployments"]') as any).click();
+        await waitFor(() => !!root.querySelector('.workflow-deployment-row[data-workflow-id="flow-a"]'));
+        expect(root.querySelector('.workflow-deployments')?.textContent).toContain('flow-a');
+        expect(root.querySelector('.workflow-deployment-row')?.textContent).toContain('运行中');
+
+        (root.querySelectorAll('.workflow-deployments-actions .workflow-btn')[1] as any).click();
+        await waitFor(() => stoppedAll && String(root.querySelector('.workflow-deployment-row')?.textContent || '').includes('已停止'));
+        expect(stoppedAll).toBe(true);
+
+        (root.querySelector('.workflow-deployments .workflow-publish-close') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-deployments')).toBeFalsy();
+    });
+
     it('shows execution metrics for the active workflow', async () => {
         const store = new InMemoryWorkflowDefinitionStore();
         (store as any).getMetrics = async (workflowId: string) => ({

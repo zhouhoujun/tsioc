@@ -17,7 +17,8 @@ import {
     WorkflowRelease,
     WorkflowVersionSummary,
     createDefaultWorkflowDefinitionStore,
-    WorkflowMetrics
+    WorkflowMetrics,
+    WorkflowDeploymentStatus
 } from '../workflow-store';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 import { WorkflowDesignerPreviewComponent } from './workflow-designer-preview.component';
@@ -90,6 +91,37 @@ interface WorkflowDocumentTab {
             :restoreAction="restoreVersion" :compareAction="compareVersion"
             :releaseAction="releaseVersion"
             :closeDiffAction="closeVersionDiff" :closeAction="closeVersions"></workflow-version-panel>
+        <div class="workflow-publish workflow-deployments" v-if="showDeployments">
+            <div class="workflow-publish-panel workflow-deployments-panel">
+                <div class="workflow-publish-head">
+                    <span class="workflow-publish-title">{{deploymentsTitle}}</span>
+                    <button class="workflow-btn workflow-publish-close" type="button"
+                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeDeployments">✕</button>
+                </div>
+                <div class="workflow-publish-error" v-if="deploymentError">{{deploymentError}}</div>
+                <div class="workflow-deployments-actions">
+                    <button class="workflow-btn workflow-btn-primary" type="button"
+                        [disabled]="deploymentBusy" @click="startAllDeployments">{{deploymentStartAll}}</button>
+                    <button class="workflow-btn" type="button"
+                        [disabled]="deploymentBusy" @click="stopAllDeployments">{{deploymentStopAll}}</button>
+                </div>
+                <div class="workflow-deployments-list" v-if="deploymentItems.length">
+                    <div class="workflow-deployment-row" v-for="item in deploymentItems"
+                        data-workflow-id="{{item.workflowId}}">
+                        <span class="workflow-deployment-id">{{item.workflowId}}</span>
+                        <span class="workflow-deployment-state"
+                            [class]="item.running ? 'is-running' : 'is-stopped'">{{item.running ? runningLabel : stoppedLabel}}</span>
+                        <span class="workflow-deployment-runs">{{item.runs}}</span>
+                        <button class="workflow-btn" type="button" [disabled]="deploymentBusy"
+                            @click="toggleDeployment(item)">{{item.running ? deploymentStop : deploymentStart}}</button>
+                    </div>
+                </div>
+                <div class="workflow-deployments-empty" v-else>{{deploymentsEmpty}}</div>
+                <div class="workflow-publish-actions">
+                    <button class="workflow-btn" type="button" @click="closeDeployments">{{closeLabel}}</button>
+                </div>
+            </div>
+        </div>
         <div class="workflow-publish workflow-metrics" v-if="showMetrics">
             <div class="workflow-publish-panel workflow-metrics-panel">
                 <div class="workflow-publish-head">
@@ -243,6 +275,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
     showVersions = false;
     showPublish = false;
     publishError = '';
+    showDeployments = false;
+    deploymentItems: WorkflowDeploymentStatus[] = [];
+    deploymentError = '';
+    deploymentBusy = false;
     showMetrics = false;
     metricsData?: WorkflowMetrics;
     metricsError = '';
@@ -850,6 +886,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.openMetrics();
             return;
         }
+        if (action === 'deployments') {
+            void self.openDeployments();
+            return;
+        }
         if (action === 'plugins') {
             void self.openPlugins();
             return;
@@ -1024,6 +1064,94 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     /** Open the rename overlay for the active workflow document. */
+    get deploymentsTitle(): string { return this.t('deployments', 'Deployments'); }
+    get deploymentsEmpty(): string { return this.t('deploymentsEmpty', 'No workflows are deployed.'); }
+    get deploymentStartAll(): string { return this.t('deploymentStartAll', 'Start all'); }
+    get deploymentStopAll(): string { return this.t('deploymentStopAll', 'Stop all'); }
+    get deploymentStart(): string { return this.t('deploymentStart', 'Start'); }
+    get deploymentStop(): string { return this.t('deploymentStop', 'Stop'); }
+    get runningLabel(): string { return this.t('running', 'Running'); }
+    get stoppedLabel(): string { return this.t('stopped', 'Stopped'); }
+
+    readonly openDeployments = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showDeployments = true;
+        self.deploymentError = '';
+        await self.refreshDeployments();
+    };
+
+    readonly closeDeployments = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showDeployments = false;
+        self.deploymentError = '';
+    };
+
+    private async refreshDeployments(): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.store?.listDeployments) {
+            self.deploymentItems = [];
+            self.deploymentError = self.t('deploymentsUnavailable', 'This host does not expose a deployment manager.');
+            return;
+        }
+        try {
+            self.deploymentItems = await self.store.listDeployments();
+        } catch (error) {
+            self.deploymentError = (error as Error).message;
+        }
+    }
+
+    readonly startAllDeployments = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.store?.startDeployments) {
+            return;
+        }
+        self.deploymentBusy = true;
+        self.deploymentError = '';
+        try {
+            await self.store.startDeployments();
+            await self.refreshDeployments();
+        } catch (error) {
+            self.deploymentError = (error as Error).message;
+        } finally {
+            self.deploymentBusy = false;
+        }
+    };
+
+    readonly stopAllDeployments = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.store?.stopDeployments) {
+            return;
+        }
+        self.deploymentBusy = true;
+        self.deploymentError = '';
+        try {
+            await self.store.stopDeployments();
+            await self.refreshDeployments();
+        } catch (error) {
+            self.deploymentError = (error as Error).message;
+        } finally {
+            self.deploymentBusy = false;
+        }
+    };
+
+    readonly toggleDeployment = async (item: WorkflowDeploymentStatus): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.deploymentBusy = true;
+        self.deploymentError = '';
+        try {
+            if (item.running) {
+                await self.store.stopDeployments?.([item.workflowId]);
+            } else {
+                await self.store.startDeployments?.([item.workflowId]);
+            }
+            await self.refreshDeployments();
+        } catch (error) {
+            self.deploymentError = (error as Error).message;
+        } finally {
+            self.deploymentBusy = false;
+        }
+    };
+
     get metricsTitle(): string { return this.t('metrics', 'Execution metrics'); }
     get metricsRunsLabel(): string { return this.t('metricsRuns', 'Runs'); }
     get metricsSuccessLabel(): string { return this.t('metricsSuccess', 'Success'); }

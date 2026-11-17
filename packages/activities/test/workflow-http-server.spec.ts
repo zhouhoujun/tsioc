@@ -614,6 +614,51 @@ describe('Workflow HTTP microservice', () => {
         await request(`${base}/api/workflows/metrics-demo`, { method: 'DELETE' });
     });
 
+    it('manages deployments for every schedulable workflow', async () => {
+        const scheduled = {
+            id: 'deploy-a',
+            name: 'Deploy A',
+            nodes: [{
+                id: 'inject_d', name: 'Tick', type: 'inject',
+                position: { x: 0, y: 0 },
+                config: { trigger: 'interval', interval: 10, intervalUnit: 's', payload: {} }
+            }],
+            connections: []
+        };
+        const plain = {
+            id: 'deploy-b',
+            name: 'Deploy B',
+            nodes: [{ id: 'task_d', name: 'Task', type: 'task', position: { x: 0, y: 0 } }],
+            connections: []
+        };
+        for (const definition of [scheduled, plain]) {
+            await request(`${base}/api/workflows/${definition.id}`, {
+                method: 'PUT',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(definition)
+            });
+        }
+        expect((await request(`${base}/api/deployments`)).body).toEqual([]);
+
+        const started = await request(`${base}/api/deployments/start`, {
+            method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+        });
+        expect(started.status).toBe(200);
+        expect(started.body.started.map((item: any) => item.workflowId)).toEqual(['deploy-a']);
+        const listed = await request(`${base}/api/deployments`);
+        expect(listed.body.length).toBe(1);
+        expect(listed.body[0].running).toBe(true);
+
+        const stopped = await request(`${base}/api/deployments/stop`, {
+            method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+        });
+        expect(stopped.body.stopped).toBe(1);
+        expect((await request(`${base}/api/deployments`)).body).toEqual([]);
+
+        await request(`${base}/api/workflows/deploy-a`, { method: 'DELETE' });
+        await request(`${base}/api/workflows/deploy-b`, { method: 'DELETE' });
+    });
+
     it('starts, reports and stops deployed workflow schedules', async () => {
         const longSchedule = {
             id: 'schedule-demo',

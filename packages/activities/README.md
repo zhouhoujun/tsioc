@@ -788,6 +788,15 @@ DELETE /api/workflows/:id/schedule   # stop
 Scheduled runs persist execution snapshots, restart automatically when the
 workflow is saved/published, and stop when the workflow is deleted or cleared.
 
+Batch deployment endpoints and the designer **Deployments** dialog manage every
+stored workflow with an interval/once/cron inject:
+
+```text
+GET  /api/deployments         # running schedules
+POST /api/deployments/start   # start all schedulable workflows (or workflowIds)
+POST /api/deployments/stop    # stop all or the given workflowIds
+```
+
 The same server exposes execution inspection and cancellation:
 
 ```text

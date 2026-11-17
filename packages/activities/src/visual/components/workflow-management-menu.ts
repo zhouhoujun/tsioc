@@ -104,6 +104,7 @@ export class WorkflowManagementMenuComponent {
                     { id: 'rename', label: t('rename', 'Rename workflow'), icon: 'rename' },
                     { id: 'settings', label: t('settings', 'Workflow settings') },
                     { id: 'metrics', label: t('metrics', 'Execution metrics') },
+                    { id: 'deployments', label: t('deployments', 'Deployments') },
                     { id: 'open-library', label: t('library', 'Workflows') },
                     ...(model.subflowParent
                         ? [{ id: 'back-subflow', label: t('backSubflow', 'Back to parent workflow') }]

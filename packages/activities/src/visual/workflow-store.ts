@@ -36,6 +36,13 @@ export interface WorkflowRelease {
     publishedBy?: string;
 }
 
+export interface WorkflowDeploymentStatus {
+    workflowId: string;
+    running: boolean;
+    startedAt: number;
+    runs: number;
+}
+
 export interface WorkflowNodeMetrics {
     nodeId: string;
     runs: number;
@@ -99,6 +106,10 @@ export interface WorkflowDefinitionStore {
     clearExecutions?(workflowId?: string): Promise<void>;
     /** Optional aggregated execution metrics for a workflow. */
     getMetrics?(workflowId: string, limit?: number): Promise<WorkflowMetrics | undefined>;
+    /** Optional deployment manager: list/start/stop hosted schedules. */
+    listDeployments?(): Promise<WorkflowDeploymentStatus[]>;
+    startDeployments?(workflowIds?: string[], context?: Record<string, any>): Promise<WorkflowDeploymentStatus[]>;
+    stopDeployments?(workflowIds?: string[]): Promise<number>;
 }
 
 export interface WorkflowStoreSaveOptions {
@@ -460,6 +471,38 @@ export class HttpWorkflowDefinitionStore implements WorkflowDefinitionStore {
         if (!result.ok) {
             throw new Error(`Failed to clear workflows: HTTP ${result.status}`);
         }
+    }
+
+    async listDeployments(): Promise<WorkflowDeploymentStatus[]> {
+        const result = await this.request('deployments', { method: 'GET' });
+        return result.ok && Array.isArray(result.body) ? result.body as WorkflowDeploymentStatus[] : [];
+    }
+
+    async startDeployments(
+        workflowIds?: string[],
+        context?: Record<string, any>
+    ): Promise<WorkflowDeploymentStatus[]> {
+        const result = await this.request('deployments/start', {
+            method: 'POST',
+            body: JSON.stringify({ workflowIds, context }),
+            headers: { 'content-type': 'application/json' }
+        });
+        if (!result.ok) {
+            throw new Error(`Failed to start deployments: HTTP ${result.status}`);
+        }
+        return Array.isArray(result.body?.started) ? result.body.started : [];
+    }
+
+    async stopDeployments(workflowIds?: string[]): Promise<number> {
+        const result = await this.request('deployments/stop', {
+            method: 'POST',
+            body: JSON.stringify({ workflowIds }),
+            headers: { 'content-type': 'application/json' }
+        });
+        if (!result.ok) {
+            throw new Error(`Failed to stop deployments: HTTP ${result.status}`);
+        }
+        return Number(result.body?.stopped) || 0;
     }
 
     async getMetrics(workflowId: string, limit = 200): Promise<WorkflowMetrics | undefined> {

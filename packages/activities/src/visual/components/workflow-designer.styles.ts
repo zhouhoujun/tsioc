@@ -587,6 +587,57 @@ export const WORKFLOW_DESIGNER_CSS = `
     color: var(--wf-theme-muted, #64748b);
 }
 
+.workflow-deployments-panel {
+    width: min(520px, 100%);
+}
+
+.workflow-deployments-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.workflow-deployments-list {
+    max-height: 42vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.workflow-deployment-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 6px;
+    border-bottom: 1px solid var(--wf-theme-border, #e2e8f0);
+    font-size: 11px;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-deployment-id {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--wf-theme-text, #0f172a);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.workflow-deployment-state.is-running {
+    color: #047857;
+}
+
+.workflow-deployment-state.is-stopped {
+    color: #94a3b8;
+}
+
+.workflow-deployments-empty {
+    padding: 8px;
+    color: var(--wf-theme-muted, #94a3b8);
+    font-size: 11px;
+}
+
 .workflow-metrics-panel {
     width: min(520px, 100%);
 }

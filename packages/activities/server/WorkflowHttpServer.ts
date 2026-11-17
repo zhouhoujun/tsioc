@@ -40,6 +40,7 @@ import {
     VisualWorkflowDefinition,
     WorkflowDefinitionStore,
     WorkflowExecutionSnapshot,
+    WorkflowDeploymentStatus,
     InMemoryWorkflowDefinitionStore,
     createDefaultWorkflowDefinitionStore,
     validateVisualWorkflow,
@@ -654,6 +655,95 @@ export class WorkflowExecutionController {
     }
 }
 
+/**
+ * Deployment manager for hosted schedules. Starts every stored workflow with an
+ * interval/once/cron inject trigger, or an explicit subset.
+ */
+@Controller('/api/deployments')
+export class WorkflowDeploymentController {
+    constructor(
+        @Inject(WORKFLOW_DEFINITION_STORE) private store: WorkflowDefinitionStore,
+        @Inject(WORKFLOW_EXECUTION_STORE) private history: WorkflowExecutionStore,
+        @Inject(WORKFLOW_EXECUTION_LIMIT) private historyLimit: number,
+        @Inject(WORKFLOW_EXECUTION_POLICY) private policy: WorkflowExecutionPolicy,
+        private schedules: WorkflowScheduleManager
+    ) { }
+
+    @Get('/')
+    list(): WorkflowDeploymentStatus[] {
+        return this.schedules.list();
+    }
+
+    @Post('/start')
+    async start(
+        @RequestBody() body: { workflowIds?: string[]; context?: Record<string, any>; execution?: any } = {}
+    ): Promise<{ started: WorkflowDeploymentStatus[] }> {
+        const requested = Array.isArray(body?.workflowIds) && body.workflowIds.length
+            ? body.workflowIds.map(String)
+            : (await this.store.list()).map(item => item.id);
+        const started: WorkflowDeploymentStatus[] = [];
+        for (const id of requested) {
+            const definition = await this.store.get(id);
+            if (!definition || !this.isSchedulable(definition)) {
+                continue;
+            }
+            started.push(this.schedules.start(id, definition, {
+                context: this.executionContext(body?.context),
+                execution: body?.execution,
+                onResult: result => {
+                    void this.persist(result);
+                }
+            }));
+        }
+        return { started };
+    }
+
+    @Post('/stop')
+    stop(@RequestBody() body: { workflowIds?: string[] } = {}): { stopped: number } {
+        const ids = Array.isArray(body?.workflowIds) ? body.workflowIds.map(String) : [];
+        if (!ids.length) {
+            const count = this.schedules.list().length;
+            this.schedules.stopAll();
+            return { stopped: count };
+        }
+        return { stopped: ids.filter(id => this.schedules.stop(id)).length };
+    }
+
+    private isSchedulable(definition: VisualWorkflowDefinition): boolean {
+        return (definition.nodes || []).some(node => {
+            if (node.type !== 'inject') {
+                return false;
+            }
+            const trigger = String(node.config?.trigger || 'manual');
+            return trigger === 'interval' || trigger === 'once' || trigger === 'cron';
+        });
+    }
+
+    private executionContext(context: Record<string, any> = {}): Record<string, any> {
+        const merged = { ...(context || {}) };
+        if (this.policy?.workspaceRoot) {
+            merged.workspaceRoot = this.policy.workspaceRoot;
+        }
+        if (this.policy?.allowedCommands?.length) {
+            merged.allowedCommands = [...this.policy.allowedCommands];
+        }
+        return merged;
+    }
+
+    private async persist(result: Awaited<ReturnType<VisualWorkflowService['execute']>>): Promise<void> {
+        const snapshot = result.data?.executionState as WorkflowExecutionSnapshot | undefined;
+        if (!snapshot?.executionId) {
+            return;
+        }
+        try {
+            await this.history.save(snapshot);
+            await this.history.prune(snapshot.workflowId, Math.max(1, Number(this.historyLimit) || 200));
+        } catch {
+            // Scheduling must survive history persistence failures.
+        }
+    }
+}
+
 export interface WorkflowHttpServerOptions {
     port?: number;
     host?: string;
@@ -770,6 +860,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             WorkflowHttpController,
             WorkflowPluginController,
             WorkflowExecutionController,
+            WorkflowDeploymentController,
             ...(options.declarations || [])
         ],
         providers: [
