@@ -115,7 +115,7 @@
 - 每个 host/embedded view 拥有独立 `ViewQueryIndex`（`src/impl/query-index.ts`）：本地 `#ref`、组件/指令 ref 按视图作用域索引；嵌套结构视图作为子 index 挂在父 index 下。禁止恢复“全局 first-wins localRef”作为 ViewChild 数据源。
 - 同名 `#ref` 在索引中保留全部节点（文档顺序）；`@ViewChild` 取首个，`@ViewChildren` 取全部。组件边界通过 node 归属与 boundary 隔离：父组件 `ViewChild` 不得看到子组件模板内部 ref，子组件 ContentChild 不得泄漏到父视图。
 - 没有 view/content 查询的组件不创建索引（`queryEnabled`）；`ViewChild` 使用 `queryFirstByName`/`queryFirstByType` 首匹配，禁止为第一个命中收集全部 v-for 行。
-- 查询结果在结构变化后的微任务中更新（`ComponentRefImpl.scheduleViewChildResolve` / `scheduleContentResolve`）；测试断言结构变化后的 ViewChild/ContentChild 必须 await 微任务。QueryList 内容立即可读，`changes` 每微任务最多通知一次。
+- 查询结果在结构变化后的微任务中更新（`ComponentRefImpl.scheduleViewChildResolve` / `scheduleContentResolve`）；测试断言结构变化后的 ViewChild/ContentChild 必须 await 微任务。QueryList 内容立即可读，`changes` 每微任务最多通知一次；组件销毁时必须清空 QueryList 并 `complete()` changes，销毁后的 reset 不得再通知。
 - 新增查询能力必须落到 `ViewQueryIndex`/`ViewContainerRef` 已有路径，不得在模板绑定里做全树 `findNodeByLocalRef` 或每次查询遍历 DOM。
 
 **@ViewChild / @ViewChildren / @ContentChild / @ContentChildren**
@@ -243,7 +243,7 @@
 cd packages/<包名>            # 例：components、components/common、components/html、components/console、agents/agent-ui
 npm run test                  # 等价于: ts-node -r tsconfig-paths/register unit.ts
 ```
-- 已知基线（2026-11）：components **188 passing**、components/common **79 passing**、components/console **169 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
+- 已知基线（2026-11）：components **190 passing**、components/common **79 passing**、components/console **169 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
 - components 查询/投影/容器改动必须同时回归 components、components/common、components/html、components/console、components/xml、components/json；`npm run bench:check`（或 `RUN_COMPONENTS_BENCH=1 bash scripts/agents-gate.sh components-bench`）不得回退。
 - runner 会把 summary 打印两遍，属正常（unit-console 行为），以 EXIT code 为准。
 - `npm run test:coverage` 可用（NODE_V8_COVERAGE=.nyc_output）。

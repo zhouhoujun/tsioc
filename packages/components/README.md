@@ -208,7 +208,9 @@ export class PanelComponent {
 - Queries update after `v-if` / `v-for` structural changes in a microtask.
   Tests should await a microtask before asserting on a changed query.
 - `QueryList` contents (`length`, `first`, `last`, `toArray()`, iteration) update
-  immediately; `changes` is coalesced to one notification per microtask.
+  immediately; `changes` is coalesced to one notification per microtask. When
+  the owning component is destroyed, QueryList clears its items and completes
+  `changes`; later resets are ignored.
 - Child/embedded view refs inside a child component are not visible to the
   parent's `ViewChild`; each component has its own query scope.
 

@@ -96,4 +96,18 @@ export class ViewChildQueryTest {
             await ctx.close();
         }
     }
+
+    @Test('completes ViewChildren QueryList on component destroy')
+    async completesOnDestroy() {
+        const ctx = await Application.run(QueryParent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        const ref = ctx.runners.getRef(QueryParent) as any;
+        const parent = ref.instance as QueryParent;
+        await settle();
+        let completed = 0;
+        parent.rows?.changes.subscribe({ complete: () => { completed += 1; } });
+        await ctx.close();
+        expect(completed).toBe(1);
+    }
 }

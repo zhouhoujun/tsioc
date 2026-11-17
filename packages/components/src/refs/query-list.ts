@@ -8,6 +8,7 @@ import { EventEmitter } from '../EventEmitter';
 export class QueryList<T> implements Iterable<T> {
     private items: T[] = [];
     private notifyScheduled = false;
+    private destroyed = false;
     readonly changes = new EventEmitter<QueryList<T>>();
 
     get length(): number {
@@ -31,20 +32,37 @@ export class QueryList<T> implements Iterable<T> {
     }
 
     reset(items: T[]): void {
+        if (this.destroyed) {
+            return;
+        }
         this.items = items;
         // Coalesce structural churn into one notification per microtask while
         // the list contents stay immediately readable.
         this.scheduleNotify();
     }
 
+    /** Complete the change stream when the owning component is destroyed. */
+    destroy(): void {
+        if (this.destroyed) {
+            return;
+        }
+        this.destroyed = true;
+        this.items = [];
+        if (!this.changes.closed) {
+            this.changes.complete();
+        }
+    }
+
     private scheduleNotify(): void {
-        if (this.notifyScheduled) {
+        if (this.destroyed || this.notifyScheduled) {
             return;
         }
         this.notifyScheduled = true;
         Promise.resolve().then(() => {
             this.notifyScheduled = false;
-            this.changes.emit(this);
+            if (!this.destroyed) {
+                this.changes.emit(this);
+            }
         });
     }
 

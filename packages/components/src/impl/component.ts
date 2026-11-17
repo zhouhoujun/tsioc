@@ -529,6 +529,13 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         this.queryUnsubscribe = undefined;
         this.contentUnsubscribe?.();
         this.contentUnsubscribe = undefined;
+        const def = this.def;
+        [...(def.viewChildrens || []), ...(def.contentChildrens || [])].forEach(query => {
+            const list = (this.instance as any)[query.propertyKey];
+            if (list instanceof QueryList) {
+                list.destroy();
+            }
+        });
         this.contentQueryIndex?.clear();
         this.contentQueryIndex = undefined;
         (this.instance as OnDestroy)?.onDestroy?.();
