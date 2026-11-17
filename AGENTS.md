@@ -69,12 +69,15 @@
 **组件实例封装**
 - `ComponentRefImpl.createInstance` 用 `reactive(instance, injector.get(ReactiveEffect), computeds)` 把组件实例包成 proxy；`DefaultReactiveEffect` 由 `ComponentsModule` 提供，组件/指令注入器沿用父级实例（`createInjector` 在 `injector.has(ReactiveEffect)` 时直接 `setValue(injector.get(ReactiveEffect))`），**同一组件树/应用默认共享同一个 effect 与 depsMap**；只有找不到祖先 effect 的节点才新建一个。
 - 组件属性对象（如 `sessionState`、嵌套对象）在**读取时**经 get trap 懒封装：`canReactive(res)` 通过则 `reactive(res, effect)` 包成嵌套 proxy；函数属性原样返回（非 native 不 bind）。
-- 同一 raw 对象由 `proxyCache` 复用**同一个** proxy（不重复包装），`REACT_FlAG`（`Symbol('__REACT')`，不可枚举、不可配置）定义在 **raw target** 上：`hasReactiveFlag` 用 `hasOwnProperty` 判断，所以 proxy 自身也会被视为已代理，`canReactive` 返回 false（不套层）。同一 raw 对象不要跨应用/跨 root 共享，否则会复用绑定在另一个 effect 上的 proxy。
+- `proxyCache` 按 **raw 对象 + effect** 复用 proxy（`WeakMap<target, WeakMap<effect, proxy>>`）：同一 raw 对象可被多个 Application/root 使用，每个 effect 拥有自己的 proxy 与依赖；写入通过 `targetEffects` 通知所有仍活跃的 effect。`getReactiveProxy(target, effect)` 取指定 effect 的 proxy（无 effect 时回退最近创建的 proxy）。`REACT_FlAG`（`Symbol('__REACT')`，不可枚举、不可配置）定义在 **raw target** 上，`isReactive`/`canReactive` 仍按 raw target 判断。
 
 **依赖追踪（DefaultReactiveEffect）**
 - 绑定更新在 `effect.run(fn)` 内读取状态：`run` 维护 `activeEffects` 集合与 `runningDepth`；`track(target, key)` 在 `activeEffects` 为空时直接返回，否则把 `activeEffects` 中的**绑定函数**注册进 `depsMap[target][key]`。
 - `trigger(target, key)` 执行 `depsMap[target][key]` 中所有绑定函数（同一 effect 内跨组件同样生效）；`run` 最外层结束时冲刷 `pendingEffects`。
 - `batchReactiveUpdates(fn)` 把 `fn` 内的多次写入合并为一轮绑定重跑（tab 切换等整屏替换场景使用）。
+- **视图依赖作用域**：每个 embedded view 创建独立 `ReactiveScope`，绑定函数登记到该 scope；`EmbeddedViewRefImpl.destroy()` 调用 `scope.dispose()`，只删除本视图注册的依赖，禁止再让销毁视图的绑定留在 `depsMap`。
+- **分支依赖清理**：每次绑定运行在函数自身上记录本次读取的 `(target,key)`；运行结束后移除该分支不再读取的依赖。绑定抛错时恢复旧依赖并合并本次已读依赖，保证后续写入仍能重试。
+- **调度**：默认同步重跑；可通过 `REACTIVE_EFFECT_OPTIONS = { schedule: 'microtask' }` 让 application 的依赖在微任务合并执行，状态读取仍立即生效。`QueryList.changes` 同样合并到微任务，但列表内容立即可读。
 
 **外部事件源（可选，不是状态同步机制）**
 - 仅当被读取的对象自身实现了 `subscribe(listener)`（外部事件源/服务），get trap 才为每个 effect 建立订阅（`subscribableEffects`：`WeakMap<target, WeakMap<effect, unsubscribe>>`），外部通知时 `trigger(target, SUBSCRIBABLE_NOTIFY)` 重跑绑定；普通对象/数组**不需要也不应该**再实现订阅。
@@ -105,6 +108,43 @@
 
 **收尾纪律**
 - 临时诊断 instrumentation（trigger 计数、`[TURN-TRACE]` 等）**不得**进入提交，也不得留在 `reactive.ts`/`effect.ts`/`DefaultAgentRuntime.ts` 等核心文件。
+
+### 3.1 视图查询、引用、投影与容器（2026-11 用户确认）
+
+**查询索引**
+- 每个 host/embedded view 拥有独立 `ViewQueryIndex`（`src/impl/query-index.ts`）：本地 `#ref`、组件/指令 ref 按视图作用域索引；嵌套结构视图作为子 index 挂在父 index 下。禁止恢复“全局 first-wins localRef”作为 ViewChild 数据源。
+- 同名 `#ref` 在索引中保留全部节点（文档顺序）；`@ViewChild` 取首个，`@ViewChildren` 取全部。组件边界通过 node 归属与 boundary 隔离：父组件 `ViewChild` 不得看到子组件模板内部 ref，子组件 ContentChild 不得泄漏到父视图。
+- 没有 view/content 查询的组件不创建索引（`queryEnabled`）；`ViewChild` 使用 `queryFirstByName`/`queryFirstByType` 首匹配，禁止为第一个命中收集全部 v-for 行。
+- 查询结果在结构变化后的微任务中更新（`ComponentRefImpl.scheduleViewChildResolve` / `scheduleContentResolve`）；测试断言结构变化后的 ViewChild/ContentChild 必须 await 微任务。QueryList 内容立即可读，`changes` 每微任务最多通知一次。
+- 新增查询能力必须落到 `ViewQueryIndex`/`ViewContainerRef` 已有路径，不得在模板绑定里做全树 `findNodeByLocalRef` 或每次查询遍历 DOM。
+
+**@ViewChild / @ViewChildren / @ContentChild / @ContentChildren**
+- `read` 支持 `ElementRef`、`TemplateRef`、`ComponentRef`、`DirectiveRef`、`ViewContainerRef` 以及 provider token；未指定 `read` 时组件/指令类型返回实例，普通元素回退 `ElementRef`。
+- 支持 `static: true`（初始解析后冻结；首次未命中允许下一次结构变化补值）与 `required: true`（未命中抛可诊断错误）。ContentChild/ContentChildren/ViewChildren 的 `required` 同样必须抛错。
+- 组件类型 DI 注入统一返回实例；需要 Ref 时显式注入 `ComponentRef`/`DirectiveRef`。
+- 投影内容查询基于 `PROJECTION_NODES`，不进入子组件模板作用域；内容结构变化必须刷新 ContentChild/ContentChildren。
+- QueryList 属性必须保持同一实例（`changes` 订阅不能因刷新丢失），不得每次查询新建 QueryList。
+
+**投影 `<v-content>`**
+- 支持 `<v-content>` / `<ng-content>`；多个 outlet 先注册、host view 创建后统一 flush，按 `slot` → `select`（CSS/属性）→ 默认 outlet 顺序分发，默认 outlet 接收剩余内容。
+- 投影节点必须保留在 `PROJECTION_NODES` 中，移动 DOM 后 ContentChild 查询仍可用；不得为投影渲染清空该数组。
+- HTML 使用原生 `matches`；Console 的 `matches` 支持 tag/class/attribute 与逗号列表（不支持后代组合），新增 Console selector 能力必须在 `components/console` 通用层实现，不得在 agent-ui 兜底。
+- 根级 `v-if`/`v-for` 与多根模板通过编译期根节点替换（`rootStructuralContainers`）支持；不得要求用户给子组件模板额外包一层根节点。
+
+**ViewContainerRef / ContainerRef**
+- `ViewContainerRefImpl` 必须维护 `viewIndex` Map，`indexOf` O(1)；`insert`/`remove`/`move`/`detach`/`reattach` 必须同步更新索引、`views` 数组与 DOM 顺序。`move` 必须先移除再按移除后的顺序重算 nextSibling。
+- `createComponent` 必须 clamp 过期 index、在容器销毁或 render 失败时销毁 ComponentRef；`detach` 不销毁视图与 scope，`reattach` 复用。
+- 声明式子组件 `render()` Promise 必须登记到父 injector 的 render task，父 render 在查询/AfterViewInit 前 await；子组件失败必须 reject `Application.run`，不得成为 unhandled rejection。
+- `ContainerRef` 是 `ViewContainerRef` 的公共别名；ViewChild read token 必须可用。
+
+**v-for / 属性**
+- 默认 index trackBy：尾部增删、连续中间增删走增量；等长重排/分散修改原地更新行字段。自定义 `trackBy` 必须按身份复用并重排容器；`trackBy` 普通属性必须写入指令 setter。
+- 普通（无 `:`/`@`/`v-` 前缀）`@Attribute` 属性按属性名或 kebab-case 写入 setter；框架前缀属性继续走各自绑定语义。
+- 任何查询/投影/容器改动必须保持已有 ViewChild/ContentChild/v-for/WorkspaceLayout 行为，不得用“跳过未变面板”规避。
+
+**性能与门禁**
+- 查询索引仅在声明查询的组件启用；`npm run bench` 覆盖 proxy/get、computed、v-for、ViewChild/ViewChildren。`npm run bench:check` 或 `RUN_COMPONENTS_BENCH=1 bash scripts/agents-gate.sh components-bench` 必须通过。
+- 新增查询/投影基准时必须保持预算；不得用单测耗时替代真实 TUI/agent-ui 路径验证。
 
 ### 4. 代码体量与单一职责（ratchet 必守，2026-09 用户确认）
 
@@ -203,7 +243,8 @@
 cd packages/<包名>            # 例：components、components/common、components/html、components/console、agents/agent-ui
 npm run test                  # 等价于: ts-node -r tsconfig-paths/register unit.ts
 ```
-- 已知基线：components 110 通过；components/common 5 通过；components/console 77 通过；components/html 117 通过；agents/agent-ui 以当前 runner 输出为准。
+- 已知基线（2026-11）：components **186 passing**、components/common **79 passing**、components/console **168 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
+- components 查询/投影/容器改动必须同时回归 components、components/common、components/html、components/console、components/xml、components/json；`npm run bench:check`（或 `RUN_COMPONENTS_BENCH=1 bash scripts/agents-gate.sh components-bench`）不得回退。
 - runner 会把 summary 打印两遍，属正常（unit-console 行为），以 EXIT code 为准。
 - `npm run test:coverage` 可用（NODE_V8_COVERAGE=.nyc_output）。
 - 共享 components 或 agent-ui 改动必须按影响范围覆盖 components、components/common、components/html、components/console 与 agent-ui；统一 agents gate 必须单独包含这四个 components 包。

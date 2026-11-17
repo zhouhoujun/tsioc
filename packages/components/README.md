@@ -164,13 +164,123 @@ Rules and limits:
   re-run once (used for whole-screen swaps such as tab switches).
 - `@NoReactive()` marks a property/accessor/method (or a whole class) as
   "do not track". Only use it for internals that must not drive the view.
-- One raw object gets exactly one proxy (`getReactiveProxy(raw)`), so do not
-  share the same state object between two applications/roots.
+- Proxies are cached **per raw object + effect**, so one state object can be
+  shared by more than one application/root; writes notify every active effect.
+  `getReactiveProxy(raw, effect)` returns the proxy for a specific effect.
+- Computed properties collect their dependencies dynamically, including nested
+  fields and array indices; the cache stores a dependency value snapshot and is
+  invalidated when any of them changes.
+- Bindings created for an embedded view are owned by a view scope. Destroying
+  the view removes exactly those dependency functions; a branch that stops
+  reading a key also drops it on the next run.
 - Helpers `reactive()`, `isReactive()` and `canReactive()` are exported from
   `@tsdi/components` for debugging why a binding did or did not update.
 
 Animations and elapsed time are not data state: subscribe to the shared
 `AnimationClock` instead of starting a private timer.
+
+## View queries, refs and containers
+
+### `@ViewChild` / `@ViewChildren`
+
+```typescript
+export class PanelComponent {
+  @ViewChild('editor') editor?: EditorComponent;
+  @ViewChild('editor', ElementRef) editorElement?: ElementRef;
+  @ViewChild(EditorComponent) firstEditor?: EditorComponent;
+  @ViewChild({ selector: 'editor', static: true }) staticEditor?: EditorComponent;
+  @ViewChild({ selector: 'required', required: true }) requiredChild?: ChildComponent;
+  @ViewChildren('row') rows?: QueryList<RowComponent>;
+}
+```
+
+- Selectors: `#name` / `name` local ref, component/directive type, tag and
+  CSS/attribute selectors. Local refs are indexed per view; duplicate refs keep
+  document order (`ViewChild` takes the first, `ViewChildren` sees all).
+- `read` accepts `ElementRef`, `TemplateRef`, `ComponentRef`, `DirectiveRef`,
+  `ViewContainerRef`, or a provider token; without `read`, component/directive
+  types resolve to the **instance**, and plain elements fall back to
+  `ElementRef`.
+- `required: true` throws a descriptive error when the query is empty.
+- `static: true` resolves on the initial pass and keeps that value; later
+  structural changes do not refresh it (if the initial pass found nothing it may
+  fill once on the next change). The default is dynamic.
+- Queries update after `v-if` / `v-for` structural changes in a microtask.
+  Tests should await a microtask before asserting on a changed query.
+- `QueryList` contents (`length`, `first`, `last`, `toArray()`, iteration) update
+  immediately; `changes` is coalesced to one notification per microtask.
+- Child/embedded view refs inside a child component are not visible to the
+  parent's `ViewChild`; each component has its own query scope.
+
+### `@ContentChild` / `@ContentChildren`
+
+```typescript
+@ContentChild('pc') item?: ProjectedItem;
+@ContentChildren(ProjectedItem) items?: QueryList<ProjectedItem>;
+```
+
+- Queries run against the nodes exposed through `PROJECTION_NODES`; they never
+  enter the child component's own template scope.
+- Projected structure changes (`v-if` / `v-for` in projected content) refresh
+  content queries in a microtask.
+- `required: true` throws when no projected match exists.
+
+### Projection: `<v-content>`
+
+```html
+<div class="panel-header"><v-content slot="header"></v-content></div>
+<div class="panel-body">
+  <v-content select=".body-item"></v-content>
+  <v-content></v-content> <!-- default: leftover content -->
+</div>
+```
+
+- Outlets are registered first and flushed after the host view is created, so
+  outlet order does not matter.
+- Matching order: `slot`, then `select` (CSS/attribute), then the default outlet
+  receives leftovers. If no default outlet exists, the first outlet receives
+  leftovers so content is not silently dropped.
+- HTML uses native `matches`; the console renderer supports tag/class/attribute
+  and comma lists (descendant combinators are not supported there).
+- Projected nodes stay in `PROJECTION_NODES`, so `ContentChild` queries keep
+  working after the content has been moved into an outlet.
+- Root-level structural directives in multi-root component templates are
+  supported by replacing the root node with its container anchor.
+
+### `ViewContainerRef` / `ContainerRef`
+
+```typescript
+@ViewChild('anchor', ViewContainerRef) vcr?: ViewContainerRef;
+```
+
+- `indexOf` is O(1); `insert`, `remove`, `move`, `detach`, `reattach`,
+  `getHostElement` keep the internal view index and DOM order aligned.
+- `createComponent` clamps stale insertion indexes, destroys the ref when the
+  container disappears, and cleans up after render failures.
+- `ContainerRef` is an exported alias for `ViewContainerRef`.
+- Declarative child `render()` promises are tracked by the parent; a child
+  render failure rejects the parent render and therefore `Application.run`.
+
+### `v-for` updates
+
+- Default `trackBy` is the item index: appends/removals and contiguous
+  insert/remove at the middle update only the affected range; equal-length
+  reorder/scattered edits update row fields in place.
+- `trackBy="id"` (custom identity) reuses views by key and reorders the
+  container to match the new list.
+- Root-level `v-if` / `v-for` and multi-root templates are supported.
+
+### Performance harness
+
+```bash
+cd packages/components
+npm run bench         # local measurements
+npm run bench:check   # budgets (proxy/get, computed, v-for, ViewChild)
+```
+
+The query index is only created for components that actually declare view or
+content queries. `ViewChild` uses first-match lookups, so large `v-for` lists do
+not collect every row on each query.
 
 ## components
 *  `@Component`  Component decorator, define a class as a component with a template.
@@ -178,7 +288,9 @@ Animations and elapsed time are not data state: subscribe to the shared
 *  `@Attribute`  Attribute decorator, define a property or param as a component/directive binding field (input).
 *  `@Computed`  Computed decorator, define a derived property with dependencies and cache.
 *  `@NoReactive`  NoReactive decorator, mark a member or class as not tracked by the reactive proxy.
-*  `@ViewChild`  ViewChild decorator, select a child component/element/template and inject it to the property in component.
+*  `@ViewChild`  ViewChild decorator, select a child component/element/template/container and inject it to the property in component.
+*  `@ViewChildren`  Query all matching view descendants as a `QueryList`.
+*  `@ContentChild` / `@ContentChildren`  Query projected content (`PROJECTION_NODES`), optionally required.
 
 ## @Directive decorator
 
