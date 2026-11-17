@@ -550,6 +550,56 @@ export class ConsoleElement extends ConsoleNode implements RElement {
 }
 
 function matchesConsoleSelector(node: ConsoleElement, matcher: string): boolean {
+    const tokens = matcher
+        .replace(/\s*>\s*/g, ' > ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+    if (!tokens.length) {
+        return false;
+    }
+
+    let current: ConsoleElement = node;
+    let position = tokens.length - 1;
+    if (!matchesConsoleCompound(current, tokens[position])) {
+        return false;
+    }
+    position -= 1;
+
+    while (position >= 0) {
+        if (tokens[position] === '>') {
+            position -= 1;
+            if (position < 0) {
+                return false;
+            }
+            const parent = current.parentNode;
+            if (!(parent instanceof ConsoleElement) || !matchesConsoleCompound(parent, tokens[position])) {
+                return false;
+            }
+            current = parent;
+            position -= 1;
+            continue;
+        }
+
+        let ancestor: any = current.parentNode;
+        let found = false;
+        while (ancestor) {
+            if (ancestor instanceof ConsoleElement && matchesConsoleCompound(ancestor, tokens[position])) {
+                current = ancestor;
+                found = true;
+                break;
+            }
+            ancestor = ancestor.parentNode;
+        }
+        if (!found) {
+            return false;
+        }
+        position -= 1;
+    }
+    return true;
+}
+
+function matchesConsoleCompound(node: ConsoleElement, matcher: string): boolean {
     let rest = matcher;
     let matched = false;
     const tag = /^[a-zA-Z][\w-]*/.exec(rest)?.[0];
