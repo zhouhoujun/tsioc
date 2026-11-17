@@ -4553,3 +4553,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第七十九批（2026-11-16）：
   - 21 个包补齐 README。
   - gate package-publish PASS。
+
+## 2026-11-16 per-session state hub/facade 实验（已实测并回退）
+- 实现：`AgentConsoleSessionStateHub`（每 session 一个 state + 全局/会话字段分类 + facade Proxy + subscribable 广播），接入模块 DI、openSession/缓存切换激活、forget 释放。
+- 功能：完整 agent-ui **2165 passing**，tab 隔离/草稿/滚动/缓存帧全部通过——架构方向可行。
+- **性能否决**：4 tabs × 1000 messages，切换 sync p50 **52ms → 168–237ms**，单帧 render **28.7ms → 62–87ms**。
+  - 根因：facade 的 Proxy get 位于每次 state 读取路径（reactive 包装之外再加一层），且每次读取都会触发 `isSubscribable`/subscribe 探测；activation 广播也覆盖全部绑定。
+- 按「未经实测提升的改动不得保留」回退 hub/module/open/ui-state/bootstrap 改动，主干恢复原性能。
+- 结论：若继续 per-session state，必须先把 facade 改成**生成式 accessor（无 Proxy get trap）**或让缓存按 session state 取键，并重新实测达到 ≤ 当前基线后才可保留。
