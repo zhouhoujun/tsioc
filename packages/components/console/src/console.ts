@@ -193,31 +193,22 @@ export class ConsoleNode implements RNode {
 
     querySelectorAll(selector: string): ConsoleNode[] | null {
         const results: ConsoleNode[] = [];
-        const matchers = selector
-            .split(',')
-            .map(item => item.trim())
-            .filter(Boolean);
-        const matches = (node: ConsoleElement, matcher: string): boolean => {
-            if (matcher.startsWith('.')) {
-                const className = matcher.slice(1);
-                return node.classList.values().includes(className);
-            }
-            if (matcher.startsWith('[') && matcher.endsWith(']')) {
-                const attrName = matcher.slice(1, -1).trim();
-                return attrName ? node.hasAttribute(attrName) : false;
-            }
-            return node.tagName === matcher;
-        };
         const walk = (node: ConsoleNode) => {
-            if (node instanceof ConsoleElement) {
-                if (matchers.some(matcher => matches(node, matcher))) {
-                    results.push(node);
-                }
+            if (node instanceof ConsoleElement && node.matches(selector)) {
+                results.push(node);
             }
             node.childNodes.forEach(child => walk(child));
         };
         walk(this);
         return results.length ? results : null;
+    }
+
+    matches(selector: string): boolean {
+        return String(selector || '')
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean)
+            .some(matcher => matchesConsoleSelector(this as any, matcher));
     }
 
     addEventListener(type: string, listener: EventListener): void {
@@ -558,6 +549,52 @@ export class ConsoleElement extends ConsoleNode implements RElement {
     }
 }
 
+function matchesConsoleSelector(node: ConsoleElement, matcher: string): boolean {
+    let rest = matcher;
+    let matched = false;
+    const tag = /^[a-zA-Z][\w-]*/.exec(rest)?.[0];
+    if (tag) {
+        if (String(node.tagName).toLowerCase() !== tag.toLowerCase()) {
+            return false;
+        }
+        matched = true;
+        rest = rest.slice(tag.length);
+    }
+    while (rest.length) {
+        if (rest.startsWith('.')) {
+            const name = /^\.([\w-]+)/.exec(rest)?.[1];
+            if (!name || !node.classList.values().includes(name)) {
+                return false;
+            }
+            matched = true;
+            rest = rest.slice(name.length + 1);
+            continue;
+        }
+        if (rest.startsWith('[')) {
+            const end = rest.indexOf(']');
+            if (end < 0) {
+                return false;
+            }
+            const body = rest.slice(1, end).trim();
+            const eq = body.indexOf('=');
+            if (eq >= 0) {
+                const name = body.slice(0, eq).trim();
+                const value = body.slice(eq + 1).trim().replace(/^['"]|['"]$/g, '');
+                if (node.getAttribute(name) !== value) {
+                    return false;
+                }
+            } else if (!body || !node.hasAttribute(body)) {
+                return false;
+            }
+            matched = true;
+            rest = rest.slice(end + 1);
+            continue;
+        }
+        return false;
+    }
+    return matched;
+}
+
 @Injectable()
 export class ConsoleRenderer implements Renderer {
     [noReact] = true;
@@ -652,7 +689,11 @@ export class ConsoleRenderer implements Renderer {
         node.removeAttribute(name);
     }
 
-    getAttributes(el: RNode): RAttr[] {
+    matchesSelector(node: RNode, selector: string): boolean {
+    return node instanceof ConsoleElement ? node.matches(selector) : false;
+  }
+
+  getAttributes(el: RNode): RAttr[] {
         return Array.from((el as ConsoleElement).attributes.values());
     }
 

@@ -17,7 +17,7 @@ class ProjectedItem {
 @Component({
     selector: 'content-host',
     imports: [ProjectedItem],
-    template: `<div class="slot"><v-content slot="header" class="header-slot"></v-content><v-content class="body-slot"></v-content></div>`
+    template: `<div class="slot"><v-content slot="header" class="header-slot"></v-content><v-content select=".body-item" class="body-slot"></v-content><v-content class="default-slot"></v-content></div>`
 })
 class ContentHost {
     @ContentChild('pc') item?: ProjectedItem;
@@ -31,7 +31,7 @@ class ContentHost {
     template: `<div>
         <content-host>
             <projected-item #pc label="P" slot="header"></projected-item>
-            <projected-item label="Q"></projected-item>
+            <projected-item label="Q" class="body-item"></projected-item>
         </content-host>
     </div>`
 })
@@ -105,6 +105,7 @@ export class ContentChildQueryTest {
             const root = ref.hostView.rootNodes[0] as any;
             expect((root.querySelector('.header-slot') as any)?.querySelectorAll('.projected')[0]?.textContent).toBe('P');
             expect((root.querySelector('.body-slot') as any)?.querySelectorAll('.projected')[0]?.textContent).toBe('Q');
+            expect((root.querySelector('.default-slot') as any)?.querySelectorAll?.('.projected')?.length || 0).toBe(0);
         } finally {
             await ctx.close();
         }
@@ -121,6 +122,8 @@ export class ContentChildQueryTest {
             await Promise.resolve().then(() => Promise.resolve());
             expect(parent.host?.dynamic?.label).toBe('D');
             expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['D']);
+            const root = ref.hostView.rootNodes[0] as any;
+            expect((root.querySelector('.default-slot') as any)?.querySelectorAll('.projected')[0]?.textContent).toBe('D');
         } finally {
             await ctx.close();
         }
@@ -156,6 +159,8 @@ export class ContentChildQueryTest {
             await Promise.resolve().then(() => Promise.resolve()).then(() => Promise.resolve());
             expect(parent.host?.dynamic?.label).toBe('D');
             expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['D']);
+            const root = ref.hostView.rootNodes[0] as any;
+            expect((root.querySelector('.default-slot') as any)?.querySelectorAll('.projected')[0]?.textContent).toBe('D');
 
             parent.show = false;
             await Promise.resolve().then(() => Promise.resolve()).then(() => Promise.resolve());
