@@ -48,6 +48,9 @@ const outputSubscriptions = new WeakMap<object, Map<string, Subscription>>();
 const outputSubscriptionCleanup = new WeakSet<object>();
 const compiledExpressionCache = new Map<string, CompiledExpression>();
 const simplePathExpression = /^[_$a-zA-Z][_$a-zA-Z0-9]*(?:\.[_$a-zA-Z][_$a-zA-Z0-9]*)*$/;
+// Root-level structural directives have no parent to insert their v-container
+// into; remember the replacement so the root node list can be rewritten.
+const rootStructuralContainers = new WeakMap<RNode, RNode>();
 
 function extractLocalRefs(attrs: RAttr[]): string[] {
     return (attrs || [])
@@ -662,6 +665,17 @@ export function generateNodeBindings<C>(
 
     // 为每个节点创建绑定工厂
     nodesForBindings(nodes, renderer, delimiter);
+
+    // Root-level v-if/v-for replace themselves with a container anchor.
+    for (let i = 0; i < nodes.length; i++) {
+        let node = nodes[i];
+        let replacement = rootStructuralContainers.get(node);
+        while (replacement) {
+            node = replacement;
+            replacement = rootStructuralContainers.get(node);
+        }
+        nodes[i] = node;
+    }
 }
 
 function findDirectiveNodes(rootNodes: RNode[], directive: DirectiveDef, renderer: Renderer): RNode[] | null {
@@ -1233,6 +1247,8 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
     if (parent) {
         renderer.insertBefore(parent, container, el);
         renderer.removeChild(parent, el);
+    } else {
+        rootStructuralContainers.set(el, container);
     }
 
     selectors.forEach(selector => {
@@ -1261,6 +1277,8 @@ export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selector
     if (parent) {
         renderer.insertBefore(parent, container, el);
         renderer.removeChild(parent, el);
+    } else {
+        rootStructuralContainers.set(el, container);
     }
 
     selectors.forEach(selector => {
