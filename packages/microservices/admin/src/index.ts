@@ -5,3 +5,4 @@ export * from './server';
 export * from './auth';
 export * from './config';
 export * from './oidc-service';
+export * from './doctor';

@@ -7,6 +7,7 @@
     "build:web": "ts-node -r tsconfig-paths/register build-web.ts",
     "start": "npm run build:web && ts-node -r tsconfig-paths/register serve.ts",
     "serve": "ts-node -r tsconfig-paths/register serve.ts",
+    "doctor": "ts-node -r tsconfig-paths/register src/doctor.ts",
     "preview": "npm run build:web && node web/preview-test.js",
     "test": "ts-node -r tsconfig-paths/register unit.ts",
     "test:coverage": "NODE_V8_COVERAGE=.nyc_output ts-node -r tsconfig-paths/register unit.ts -c"

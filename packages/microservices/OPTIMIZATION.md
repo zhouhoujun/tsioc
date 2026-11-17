@@ -471,6 +471,12 @@
 - gateway 增加默认 label 集合断言（不含 endpoint/error_type）。
 - 回归：metrics 61、gateway 141。
 
+第八十四批（admin doctor CLI）：
+
+- 新增 `admin/src/doctor.ts`：`npm run doctor -- --url http://127.0.0.1:3000 [--token ...] [--json]`。
+- 复用 `/api/gateway-admin/doctor`；401/5xx 给出可操作错误，warn 状态 exit 1。
+- 回归：admin 76 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

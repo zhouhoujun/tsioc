@@ -17,6 +17,25 @@ import { GATEWAY_ADMIN_AUTH_OPTIONS, GatewayAdminAuthOptions } from './auth';
  */
 export const GATEWAY_RULES_STORE = token<WorkflowDefinitionStore>('GATEWAY_RULES_STORE');
 
+export type GatewayDoctorCheckStatus = 'ok' | 'warn';
+
+export interface GatewayDoctorCheck {
+    id: string;
+    status: GatewayDoctorCheckStatus;
+    message: string;
+}
+
+export interface GatewayDoctorReport {
+    status: GatewayDoctorCheckStatus;
+    version: number;
+    generatedAt: string;
+    routes: number;
+    services: string[];
+    openCircuits: number;
+    alerts: number;
+    checks: GatewayDoctorCheck[];
+}
+
 export interface GatewayAdminState {
     routes: GatewayRouteOptions[];
     rules: GatewayRuleOptions[];
@@ -108,12 +127,12 @@ export class GatewayAdminController {
      * open circuits, active SLO alerts).
      */
     @Get('/doctor')
-    async doctor() {
+    async doctor(): Promise<GatewayDoctorReport> {
         const snapshot = await this.runtime.snapshot();
         const routes = this.options?.routes ?? [];
         const services = uniqueServices(routes, this.options?.rules ?? []);
         const openCircuits = snapshot.circuits.filter(circuit => circuit.open).length;
-        const checks: Array<{ id: string; status: 'ok' | 'warn'; message: string }> = [
+        const checks: GatewayDoctorCheck[] = [
             {
                 id: 'routes',
                 status: routes.length ? 'ok' : 'warn',
