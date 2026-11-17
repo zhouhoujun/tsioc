@@ -395,6 +395,13 @@
 - `admin.state.ts` 降至约 969 行，reload 仍复用同一 `loadRuleWorkflows` 委托。
 - 回归：admin 69 passing。
 
+第七十二批（Admin transfer + diagnostics controller）：
+
+- 新增 `admin/web/admin.routes-transfer.controller.ts`：路由详情 JSON、导入/导出、reset。
+- 新增 `admin/web/admin.diagnostics.controller.ts`：diagnostics/services 加载与 SLO JSON/CSV 导出。
+- 新增 `admin/web/admin.download.ts` 统一浏览器下载。
+- `admin.state.ts` 降至约 839 行；回归 admin 69 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

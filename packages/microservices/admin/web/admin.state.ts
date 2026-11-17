@@ -16,6 +16,8 @@ import { buildSloAlertsCsv, formatAlertTime, validateRouteFields } from './admin
 import { AdminConfigController } from './admin.config.controller';
 import { AdminRoutesController } from './admin.routes.controller';
 import { AdminRulesController } from './admin.rules.controller';
+import { AdminRoutesTransferController } from './admin.routes-transfer.controller';
+import { AdminDiagnosticsController } from './admin.diagnostics.controller';
 
 /** Structural document view used by the console (keeps decorator metadata DOM-free). */
 interface AdminDocumentLike {
@@ -138,6 +140,8 @@ export class GatewayAdminState {
     private configController?: AdminConfigController;
     private routesController?: AdminRoutesController;
     private rulesController?: AdminRulesController;
+    private routesTransferController?: AdminRoutesTransferController;
+    private diagnosticsController?: AdminDiagnosticsController;
     private routerSub?: { unsubscribe(): void };
 
     constructor(
@@ -323,6 +327,20 @@ export class GatewayAdminState {
         return this.rulesController;
     }
 
+    private transferCtl(): AdminRoutesTransferController {
+        if (!this.routesTransferController) {
+            this.routesTransferController = new AdminRoutesTransferController(this.self() as any);
+        }
+        return this.routesTransferController;
+    }
+
+    private diagnosticsCtl(): AdminDiagnosticsController {
+        if (!this.diagnosticsController) {
+            this.diagnosticsController = new AdminDiagnosticsController(this.self() as any);
+        }
+        return this.diagnosticsController;
+    }
+
     get pageTitle(): string {
         switch (this.page) {
             case 'routes': return this.t('page.routes.title');
@@ -481,20 +499,7 @@ export class GatewayAdminState {
     }
 
     readonly exportSloAlerts = (): void => {
-        const self = this.selfRef ?? this;
-        const data = JSON.stringify(self.diagnostics?.alerts ?? [], null, 2);
-        const doc = (self.documentRef ?? (globalThis as { document?: Document }).document) as Document | undefined;
-        const createUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
-        if (doc && createUrl && typeof Blob !== 'undefined') {
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = doc.createElement('a');
-            link.href = url;
-            link.download = 'gateway-slo-alerts.json';
-            link.click();
-            URL.revokeObjectURL(url);
-        }
-        self.status = self.t('status.sloExported');
+        this.diagnosticsCtl().exportSloAlerts();
     };
 
     sloAlertsCsv(): string {
@@ -503,20 +508,7 @@ export class GatewayAdminState {
     }
 
     readonly exportSloAlertsCsv = (): void => {
-        const self = this.selfRef ?? this;
-        const csv = self.sloAlertsCsv();
-        const doc = (self.documentRef ?? (globalThis as { document?: Document }).document) as Document | undefined;
-        const createUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
-        if (doc && createUrl && typeof Blob !== 'undefined') {
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = doc.createElement('a');
-            link.href = url;
-            link.download = 'gateway-slo-alerts.csv';
-            link.click();
-            URL.revokeObjectURL(url);
-        }
-        self.status = self.t('status.sloExported');
+        this.diagnosticsCtl().exportSloAlertsCsv();
     };
 
     get routeSloRows() {
@@ -538,25 +530,11 @@ export class GatewayAdminState {
     }
 
     async loadServices(): Promise<void> {
-        const self = this.selfRef ?? this;
-        if (!self.http) {
-            return;
-        }
-        const response = await self.http.services();
-        if (response.ok) {
-            self.serviceDetails = Array.isArray(response.body) ? response.body : [];
-        }
+        await this.diagnosticsCtl().loadServices();
     }
 
     async loadDiagnostics(): Promise<void> {
-        const self = this.selfRef ?? this;
-        if (!self.http) {
-            return;
-        }
-        const response = await self.http.diagnostics();
-        if (response.ok) {
-            self.diagnostics = response.body;
-        }
+        await this.diagnosticsCtl().loadDiagnostics();
     }
 
     get routeDetailJson(): string {
@@ -617,69 +595,27 @@ export class GatewayAdminState {
     }
 
     readonly openRouteDetail = (route: GatewayRouteOptions): void => {
-        const self = this.selfRef ?? this;
-        self.routeDetail = { ...route };
-        self.routeDetailIndex = self.routes.indexOf(route);
-        self.routeJsonOpen = false;
-        self.routeJsonError = '';
+        this.transferCtl().openRouteDetail(route);
     };
 
     readonly closeRouteDetail = (): void => {
-        const self = this.selfRef ?? this;
-        self.routeDetail = undefined;
-        self.routeDetailIndex = -1;
-        self.routeJsonOpen = false;
-        self.routeJsonText = '';
-        self.routeJsonError = '';
+        this.transferCtl().closeRouteDetail();
     };
 
     readonly editRouteDetailJson = (): void => {
-        const self = this.selfRef ?? this;
-        self.routeJsonText = JSON.stringify(self.routeDetail ?? {}, null, 2);
-        self.routeJsonOpen = true;
-        self.routeJsonError = '';
+        this.transferCtl().editRouteDetailJson();
     };
 
     readonly cancelRouteDetailJson = (): void => {
-        const self = this.selfRef ?? this;
-        self.routeJsonOpen = false;
-        self.routeJsonError = '';
+        this.transferCtl().cancelRouteDetailJson();
     };
 
     readonly setRouteJson = (event: Event): void => {
-        const self = this.selfRef ?? this;
-        self.routeJsonText = (event.target as HTMLTextAreaElement).value;
+        this.transferCtl().setRouteJson(event);
     };
 
     readonly saveRouteDetailJson = (): void => {
-        const self = this.selfRef ?? this;
-        let parsed: unknown;
-        try {
-            parsed = JSON.parse(self.routeJsonText);
-        } catch {
-            self.routeJsonError = self.t('import.invalidJson');
-            return;
-        }
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-            self.routeJsonError = self.t('import.invalidRoute');
-            return;
-        }
-        const route = parsed as GatewayRouteOptions;
-        const errors = self.validateRoute(route, self.routeDetailIndex);
-        const first = Object.values(errors)[0];
-        if (first) {
-            self.routeJsonError = first;
-            return;
-        }
-        if (self.routeDetailIndex < 0 || self.routeDetailIndex >= self.routes.length) {
-            return;
-        }
-        const next = self.routes.slice();
-        next[self.routeDetailIndex] = { ...route };
-        self.routes = next;
-        self.routesDirty = true;
-        self.closeRouteDetail();
-        self.status = self.t('status.routeStaged', { count: self.routes.length });
+        this.transferCtl().saveRouteDetailJson();
     };
 
     readonly openRuleDetail = (rule: GatewayAdminRuleSummary): void => {
@@ -695,93 +631,27 @@ export class GatewayAdminState {
     }
 
     readonly openImport = (): void => {
-        const self = this.selfRef ?? this;
-        self.importOpen = true;
-        self.importError = '';
+        this.transferCtl().openImport();
     };
 
     readonly closeImport = (): void => {
-        const self = this.selfRef ?? this;
-        self.importOpen = false;
-        self.importText = '';
-        self.importError = '';
+        this.transferCtl().closeImport();
     };
 
     readonly setImportText = (event: Event): void => {
-        const self = this.selfRef ?? this;
-        self.importText = (event.target as HTMLTextAreaElement).value;
+        this.transferCtl().setImportText(event);
     };
 
     readonly exportRoutes = (): void => {
-        const self = this.selfRef ?? this;
-        const data = JSON.stringify(self.routes, null, 2);
-        const doc = (self.documentRef ?? (globalThis as { document?: Document }).document) as Document | undefined;
-        const createUrl = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
-        if (!doc || !createUrl || typeof Blob === 'undefined') {
-            self.importText = data;
-            self.importOpen = true;
-            return;
-        }
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = doc.createElement('a');
-        link.href = url;
-        link.download = 'gateway-routes.json';
-        link.click();
-        URL.revokeObjectURL(url);
-        self.status = self.t('status.routesExported');
+        this.transferCtl().exportRoutes();
     };
 
     readonly importRoutes = (): void => {
-        const self = this.selfRef ?? this;
-        const text = String(self.importText || '').trim();
-        let parsed: unknown;
-        try {
-            parsed = JSON.parse(text);
-        } catch {
-            self.importError = self.t('import.invalidJson');
-            return;
-        }
-        const list = Array.isArray(parsed)
-            ? parsed
-            : (parsed && typeof parsed === 'object' && Array.isArray((parsed as { routes?: unknown[] }).routes)
-                ? (parsed as { routes: unknown[] }).routes
-                : undefined);
-        if (!Array.isArray(list)) {
-            self.importError = self.t('import.invalidShape');
-            return;
-        }
-        const invalid = list.find(route => {
-            const entry = route as GatewayRouteOptions;
-            return !entry || typeof entry.path !== 'string' || !entry.path.startsWith('/')
-                || (!entry.service && !entry.targetUrl);
-        });
-        if (invalid) {
-            self.importError = self.t('import.invalidRoute');
-            return;
-        }
-        self.routes = list.map(route => ({ ...(route as GatewayRouteOptions) }));
-        self.routesDirty = true;
-        self.closeImport();
-        self.status = self.t('status.routesImported', { count: self.routes.length });
+        this.transferCtl().importRoutes();
     };
 
     readonly resetRoutes = async (): Promise<void> => {
-        const self = this.selfRef ?? this;
-        if (!self.http) {
-            return;
-        }
-        const response = await self.http.resetRoutes();
-        if (response.status === 401) {
-            self.requireLogin();
-            return;
-        }
-        if (!response.ok) {
-            self.error = self.t('error.resetRoutes', { status: response.status });
-            return;
-        }
-        await self.reload();
-        self.status = self.t('status.routesReset');
+        await this.transferCtl().resetRoutes();
     };
 
     diffFields(diff: GatewayConfigDiff | undefined, kind: 'routes' | 'rules', key: string): string {
