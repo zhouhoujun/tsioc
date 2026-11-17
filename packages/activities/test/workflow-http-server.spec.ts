@@ -7,6 +7,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { createWorkflowHttpModule } from '../server';
 import { InMemoryWorkflowDefinitionStore } from '../src/visual/workflow-store';
 import { InMemoryWorkflowExecutionStore } from '../server/WorkflowExecutionStore';
+import { InMemoryWorkflowAuditStore } from '../server/WorkflowAuditStore';
 
 function freePort(): Promise<number> {
     return new Promise((resolve, reject) => {
@@ -53,6 +54,7 @@ describe('Workflow HTTP microservice', () => {
     let base: string;
     let staticRoot: string;
     let executionStore: InMemoryWorkflowExecutionStore;
+    let auditStore: InMemoryWorkflowAuditStore;
 
     before(async () => {
         staticRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-workflow-static-'));
@@ -60,11 +62,13 @@ describe('Workflow HTTP microservice', () => {
         const port = await freePort();
         base = `http://127.0.0.1:${port}`;
         executionStore = new InMemoryWorkflowExecutionStore();
+        auditStore = new InMemoryWorkflowAuditStore();
         ctx = await Application.run(createWorkflowHttpModule({
             port,
             host: '127.0.0.1',
             store: new InMemoryWorkflowDefinitionStore(),
             executionStore,
+            auditStore,
             staticRoot,
             workspaceRoot: staticRoot
         }));
@@ -612,6 +616,46 @@ describe('Workflow HTTP microservice', () => {
         expect((await request(`${base}/api/workflows/missing/metrics`)).status).toBe(404);
 
         await request(`${base}/api/workflows/metrics-demo`, { method: 'DELETE' });
+    });
+
+    it('records configuration, deployment and plugin audit entries', async () => {
+        const definition = {
+            id: 'audit-demo',
+            name: 'Audit demo',
+            nodes: [{
+                id: 'inject_a', name: 'Tick', type: 'inject',
+                position: { x: 0, y: 0 },
+                config: { trigger: 'interval', interval: 10, intervalUnit: 's', payload: {} }
+            }],
+            connections: []
+        };
+        await request(`${base}/api/workflows/audit-demo`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        await request(`${base}/api/workflows/audit-demo/publish`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        await request(`${base}/api/workflows/audit-demo/schedule`, {
+            method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+        });
+        await request(`${base}/api/workflows/audit-demo/schedule`, { method: 'DELETE' });
+        await request(`${base}/api/workflows/audit-demo`, { method: 'DELETE' });
+
+        const entries = await request(`${base}/api/audit?workflowId=audit-demo&limit=20`);
+        expect(entries.status).toBe(200);
+        const actions = entries.body.map((entry: any) => entry.action);
+        expect(actions).toContain('save');
+        expect(actions).toContain('publish');
+        expect(actions).toContain('schedule-start');
+        expect(actions).toContain('schedule-stop');
+        expect(actions).toContain('delete');
+
+        const published = await request(`${base}/api/audit?action=publish`);
+        expect(published.body.every((entry: any) => entry.action === 'publish')).toBe(true);
     });
 
     it('manages deployments for every schedulable workflow', async () => {

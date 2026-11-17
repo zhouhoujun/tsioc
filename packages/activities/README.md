@@ -797,6 +797,18 @@ POST /api/deployments/start   # start all schedulable workflows (or workflowIds)
 POST /api/deployments/stop    # stop all or the given workflowIds
 ```
 
+Configuration, deployment and plugin changes are recorded in an audit trail:
+
+```text
+GET /api/audit?workflowId=...&action=...&limit=100
+```
+
+Entries include save/publish/restore/delete, schedule and deployment start/stop,
+runtime-state clears and plugin installs. The audit store defaults to SQLite next
+to the workflow database (in-memory when the definition store is in-memory) and
+keeps the newest 2000 entries; override with `auditStore` /
+`auditHistoryLimit`.
+
 The same server exposes execution inspection and cancellation:
 
 ```text

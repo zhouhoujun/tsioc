@@ -59,6 +59,14 @@ import {
     WorkflowExecutionStore
 } from './WorkflowExecutionStore';
 import {
+    InMemoryWorkflowAuditStore,
+    SqliteWorkflowAuditStore,
+    WORKFLOW_AUDIT_LIMIT,
+    WORKFLOW_AUDIT_STORE,
+    WorkflowAuditService,
+    WorkflowAuditStore
+} from './WorkflowAuditStore';
+import {
     InMemoryWorkflowVersionStore,
     SqliteWorkflowVersionStore,
     WorkflowVersionStore
@@ -84,7 +92,8 @@ export interface WorkflowExecutionPolicy {
 export class WorkflowPluginController {
     constructor(
         private plugins: WorkflowPluginRegistry,
-        private catalog: WorkflowPluginCatalog
+        private catalog: WorkflowPluginCatalog,
+        private audit: WorkflowAuditService
     ) { }
 
     @Get('/')
@@ -102,6 +111,7 @@ export class WorkflowPluginController {
             throw new NotFoundException(`Workflow plugin not found: ${id}`);
         }
         const installed = await this.plugins.install(plugin);
+        await this.audit.record('plugin-install', undefined, undefined, { plugin: id, installed });
         return {
             installed,
             plugin: this.plugins.list().find(item => item.id === id)
@@ -114,6 +124,7 @@ export class WorkflowPluginController {
         if (!removed) {
             throw new NotFoundException(`Workflow plugin not installed: ${id}`);
         }
+        await this.audit.record('plugin-uninstall', undefined, undefined, { plugin: id });
         return { removed: true };
     }
 }
@@ -132,6 +143,7 @@ export class WorkflowHttpController {
         @Inject(WORKFLOW_VERSION_STORE) private versions: WorkflowVersionStore,
         @Inject(WORKFLOW_EXECUTION_POLICY) private policy: WorkflowExecutionPolicy,
         private schedules: WorkflowScheduleManager,
+        private audit: WorkflowAuditService,
         private execution: VisualWorkflowService
     ) {
         this.execution.setDefinitionResolver(id => this.store.get(id));
@@ -176,6 +188,7 @@ export class WorkflowHttpController {
         }
         const summary = await this.store.save(definition);
         this.schedules.restart(id, definition);
+        await this.audit.record('save', id, (body as any)?.updatedBy);
         return { summary, definition };
     }
 
@@ -189,6 +202,7 @@ export class WorkflowHttpController {
         }
         const summary = await this.store.save(definition);
         this.schedules.restart(id, definition);
+        await this.audit.record('save-version', id, (body as any)?.createdBy);
         const version = await this.versions.append(definition, {
             kind: 'save',
             createdBy: (body as any)?.createdBy
@@ -209,6 +223,7 @@ export class WorkflowHttpController {
         }
         const summary = await this.store.save(definition);
         this.schedules.restart(id, definition);
+        await this.audit.record('publish', id, (body as any)?.publishedBy);
         const version = await this.versions.append(definition, {
             kind: 'publish',
             createdBy: (body as any)?.publishedBy
@@ -240,6 +255,7 @@ export class WorkflowHttpController {
             throw new NotFoundException(`Workflow version not found: ${id} v${version}`);
         }
         const release = await this.versions.publish(id, number);
+        await this.audit.record('publish-version', id, undefined, { version: number });
         return { release };
     }
 
@@ -251,6 +267,7 @@ export class WorkflowHttpController {
             throw new NotFoundException(`Workflow version not found: ${id} v${version}`);
         }
         const summary = await this.store.save(definition);
+        await this.audit.record('restore-version', id, undefined, { version: Number(version) });
         return { summary, definition };
     }
 
@@ -288,6 +305,7 @@ export class WorkflowHttpController {
         this.schedules.stop(id);
         await this.history.removeWorkflow(id);
         await this.versions.removeWorkflow(id);
+        await this.audit.record('delete', id);
         return { removed: true };
     }
 
@@ -297,6 +315,7 @@ export class WorkflowHttpController {
         await this.store.clear();
         await this.history.clear();
         await this.versions.clear();
+        await this.audit.record('clear');
         return { cleared: true };
     }
 
@@ -429,6 +448,7 @@ export class WorkflowHttpController {
                 void this.persist(result);
             }
         });
+        await this.audit.record('schedule-start', id, undefined, { context: body?.context });
         return status;
     }
 
@@ -443,7 +463,9 @@ export class WorkflowHttpController {
 
     @Delete('/:id/schedule')
     async stopSchedule(@RequestPath('id') id: string) {
-        return { stopped: this.schedules.stop(id) };
+        const stopped = this.schedules.stop(id);
+        await this.audit.record('schedule-stop', id);
+        return { stopped };
     }
 
     /** Clear rate-limit/queue state for a workflow. */
@@ -454,6 +476,7 @@ export class WorkflowHttpController {
             throw new NotFoundException(`Workflow not found: ${id}`);
         }
         this.execution.clearNodeRuntimeState(id);
+        await this.audit.record('runtime-clear', id);
         return { cleared: true };
     }
 
@@ -666,7 +689,8 @@ export class WorkflowDeploymentController {
         @Inject(WORKFLOW_EXECUTION_STORE) private history: WorkflowExecutionStore,
         @Inject(WORKFLOW_EXECUTION_LIMIT) private historyLimit: number,
         @Inject(WORKFLOW_EXECUTION_POLICY) private policy: WorkflowExecutionPolicy,
-        private schedules: WorkflowScheduleManager
+        private schedules: WorkflowScheduleManager,
+        private audit: WorkflowAuditService
     ) { }
 
     @Get('/')
@@ -695,18 +719,28 @@ export class WorkflowDeploymentController {
                 }
             }));
         }
+        await this.audit.record('deployment-start', undefined, undefined, {
+            workflows: started.map(item => item.workflowId)
+        });
         return { started };
     }
 
     @Post('/stop')
     stop(@RequestBody() body: { workflowIds?: string[] } = {}): { stopped: number } {
         const ids = Array.isArray(body?.workflowIds) ? body.workflowIds.map(String) : [];
+        let stopped = 0;
         if (!ids.length) {
             const count = this.schedules.list().length;
             this.schedules.stopAll();
-            return { stopped: count };
+            stopped = count;
+        } else {
+            stopped = ids.filter(id => this.schedules.stop(id)).length;
         }
-        return { stopped: ids.filter(id => this.schedules.stop(id)).length };
+        void this.audit.record('deployment-stop', undefined, undefined, {
+            workflows: ids.length ? ids : 'all',
+            stopped
+        });
+        return { stopped };
     }
 
     private isSchedulable(definition: VisualWorkflowDefinition): boolean {
@@ -744,6 +778,25 @@ export class WorkflowDeploymentController {
     }
 }
 
+/** Read-only audit history for configuration, deployment and plugin changes. */
+@Controller('/api/audit')
+export class WorkflowAuditController {
+    constructor(private audit: WorkflowAuditService) { }
+
+    @Get('/')
+    list(
+        @RequestParam('workflowId', { nullable: true }) workflowId?: string,
+        @RequestParam('action', { nullable: true }) action?: string,
+        @RequestParam('limit', { nullable: true }) limit?: string
+    ) {
+        return this.audit.list({
+            workflowId: workflowId || undefined,
+            action: action || undefined,
+            limit: Math.max(1, Math.min(1000, Number(limit) || 100))
+        });
+    }
+}
+
 export interface WorkflowHttpServerOptions {
     port?: number;
     host?: string;
@@ -753,6 +806,10 @@ export interface WorkflowHttpServerOptions {
     store?: WorkflowDefinitionStore;
     /** Execution history store; defaults to SQLite next to the definition store. */
     executionStore?: WorkflowExecutionStore;
+    /** Audit history store; defaults to SQLite next to the definition store. */
+    auditStore?: WorkflowAuditStore;
+    /** Audit entries kept on disk (default 2000). */
+    auditHistoryLimit?: number;
     /** Version/release store; defaults to SQLite next to the definition store. */
     versionStore?: WorkflowVersionStore;
     /** Draft-save versions kept per workflow (default 20; published ones persist). */
@@ -783,6 +840,22 @@ export interface WorkflowHttpServerOptions {
     cookies?: boolean;
     /** Enable JSON request/response handling. */
     json?: boolean;
+}
+
+function createServerAuditStore(options: WorkflowHttpServerOptions): WorkflowAuditStore {
+    if (options.auditStore) {
+        return options.auditStore;
+    }
+    if (options.store instanceof SqliteWorkflowDefinitionStore) {
+        return new SqliteWorkflowAuditStore({ file: options.store.databaseFile });
+    }
+    if (options.store) {
+        return new InMemoryWorkflowAuditStore();
+    }
+    if (options.databaseFile || isSqliteAvailable()) {
+        return new SqliteWorkflowAuditStore({ file: options.databaseFile });
+    }
+    return new InMemoryWorkflowAuditStore();
 }
 
 function createServerExecutionStore(options: WorkflowHttpServerOptions): WorkflowExecutionStore {
@@ -836,6 +909,7 @@ function createServerWorkflowStore(options: WorkflowHttpServerOptions): Workflow
 export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}): Type<any> {
     const store = createServerWorkflowStore(options);
     const executionStore = createServerExecutionStore(options);
+    const auditStore = createServerAuditStore(options);
     const versionStore = createServerVersionStore(options);
     const features: any[] = [
         provideService(
@@ -861,12 +935,16 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             WorkflowPluginController,
             WorkflowExecutionController,
             WorkflowDeploymentController,
+            WorkflowAuditController,
             ...(options.declarations || [])
         ],
         providers: [
             { provide: WORKFLOW_DEFINITION_STORE, useValue: store },
             { provide: WORKFLOW_EXECUTION_STORE, useValue: executionStore },
             { provide: WORKFLOW_EXECUTION_LIMIT, useValue: options.executionHistoryLimit ?? 200 },
+            { provide: WORKFLOW_AUDIT_STORE, useValue: auditStore },
+            { provide: WORKFLOW_AUDIT_LIMIT, useValue: options.auditHistoryLimit ?? 2000 },
+            WorkflowAuditService,
             {
                 provide: WORKFLOW_EXECUTION_POLICY,
                 useValue: {

@@ -4,3 +4,4 @@ export * from './WorkflowExecutionStore';
 export * from './WorkflowVersionStore';
 export * from './WorkflowInboundRunner';
 export * from './WorkflowScheduleManager';
+export * from './WorkflowAuditStore';
