@@ -76,7 +76,17 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
                 if (typeof context === 'object' && context !== null) {
                     const parentContext = this.options.context;
                     if (parentContext && context !== parentContext) {
-                        resolvedContext = Object.assign({}, context);
+                        // Copy property descriptors, not values: v-for row
+                        // contexts expose $count/$last as non-enumerable
+                        // accessors over a shared reactive meta object. A plain
+                        // Object.assign would drop them (or freeze their value).
+                        resolvedContext = Object.create(Object.getPrototypeOf(context));
+                        Reflect.ownKeys(context).forEach(key => {
+                            const descriptor = Object.getOwnPropertyDescriptor(context, key);
+                            if (descriptor) {
+                                Object.defineProperty(resolvedContext, key, descriptor);
+                            }
+                        });
                         Object.defineProperty(resolvedContext, TEMPLATE_SCOPE_PARENT, {
                             value: parentContext,
                             configurable: true,
@@ -96,17 +106,22 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         // 响应式处理上下文
         context = isReactive(resolvedContext) ? resolvedContext : reactive(resolvedContext, effect);
 
+        // Every embedded view owns a dependency scope. Bindings register their
+        // functions through it, so destroy() can remove exactly those functions
+        // instead of leaving dead work in the effect dependency map.
+        const scope = effect.createScope();
+
         // 默认处理抽象节点
         let rootNodes: RNode[];
         if (this._rootNodesFactory) {
-            rootNodes = this._rootNodesFactory(renderer, injector, context as C, effect);
+            rootNodes = scope.run(() => this._rootNodesFactory!(renderer, injector, context as C, effect));
         } else {
             rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
-            rootNodes.forEach(node => this.bindings(node, context!, effect, injector));
+            scope.run(() => rootNodes.forEach(node => this.bindings(node, context!, effect, injector)));
         }
 
         // 创建嵌入式视图
-        const embeddedView = createEmbeddedViewRef(rootNodes, context!, injector, effect);
+        const embeddedView = createEmbeddedViewRef(rootNodes, context!, injector, effect, scope);
 
         return embeddedView;
     }

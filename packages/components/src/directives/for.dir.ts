@@ -4,6 +4,7 @@ import { ViewContainerRef } from '../refs/container';
 import { Attribute } from '../decorators/atteribute';
 import { DirectiveType } from '../refs/directive';
 import { ReactiveEffect, noReact } from '../effect';
+import { reactive, unwrapReactive } from '../reactive';
 import { ViewRef } from '../refs/view';
 
 /**
@@ -29,6 +30,16 @@ export class VForDirective {
     private _effect: ReactiveEffect; // 响应式副作用
     private _context: any = null; // 模板上下文
     private _trackByFn: (item: any, index: number) => any = (item, index) => index; // 跟踪函数
+    private _useIndexTrackBy = true; // 默认按 index 跟踪，可走追加/截断快路径
+    // 所有行共享一份 count/$last 依赖，追加时只更新这一次，避免 O(n) 写入。
+    private _meta?: any;
+
+    private get meta(): any {
+        if (!this._meta) {
+            this._meta = reactive({ count: 0 }, this._effect);
+        }
+        return this._meta;
+    }
 
     constructor(
         private viewContainer: ViewContainerRef,
@@ -69,6 +80,7 @@ export class VForDirective {
     set trackBy(trackByExpr: string) {
         if (trackByExpr) {
             this._trackByFn = this.createTrackByFunction(trackByExpr);
+            this._useIndexTrackBy = trackByExpr.trim() === '$index';
         }
     }
 
@@ -105,6 +117,7 @@ export class VForDirective {
             return;
         }
 
+        const previous = this._prevCollection;
         this._prevCollection = collection;
 
         if (!collection) {
@@ -114,7 +127,7 @@ export class VForDirective {
 
         // 根据集合类型进行不同的处理
         if (Array.isArray(collection)) {
-            this.updateArrayView(collection);
+            this.updateArrayView(collection, previous);
         } else if (collection instanceof Map) {
             this.updateMapView(collection);
         } else if (collection instanceof Set) {
@@ -141,13 +154,69 @@ export class VForDirective {
     }
 
     // 处理数组类型
-    private updateArrayView(collection: any[]) {
+    private updateArrayView(collection: any[], previous: any) {
+        // 默认 trackBy(index) 且前缀引用未变时，追加/截断只需要处理尾部：
+        // 流式消息列表每来一条都会替换数组引用，全量重建会造成 O(n²)。
+        if (this._useIndexTrackBy && Array.isArray(previous) && this.updateArrayTail(previous, collection)) {
+            return;
+        }
+
         const contexts = collection.map((item, index) => {
             const context = this.createContext(item, index);
             return context;
         });
 
         this.updateViewsWithTrackBy(contexts);
+    }
+
+    /**
+     * Fast path for the common append/remove-tail case. Returns false when the
+     * shared prefix changed (then the caller falls back to the keyed update).
+     */
+    private updateArrayTail(previous: any[], collection: any[]): boolean {
+        // Walk the raw arrays: indexing a reactive proxy array here costs a
+        // full get-trap per element, which made append O(n) at ~1us/item.
+        const previousRaw = unwrapReactive<any[]>(previous);
+        const collectionRaw = unwrapReactive<any[]>(collection);
+        const shared = Math.min(previousRaw.length, collectionRaw.length);
+        for (let i = 0; i < shared; i++) {
+            const left = previousRaw[i];
+            const right = collectionRaw[i];
+            // Streaming appends usually reuse the same proxy items, so this
+            // identity check is all that is needed on the hot path.
+            if (left !== right && unwrapReactive(left) !== unwrapReactive(right)) {
+                return false;
+            }
+        }
+        if (previousRaw.length === collectionRaw.length) {
+            return true;
+        }
+
+        // One write for the shared count; $last derives from it on read.
+        if (collectionRaw.length > previousRaw.length) {
+            for (let i = previousRaw.length; i < collectionRaw.length; i++) {
+                const context = this.createContext(collection[i], i);
+                const view = this.createView(context);
+                if (view) {
+                    this._viewRefs.push(view);
+                }
+            }
+            this.meta.count = collectionRaw.length;
+            return true;
+        }
+
+        for (let i = this._viewRefs.length - 1; i >= collectionRaw.length; i--) {
+            const view = this._viewRefs[i];
+            const index = this.viewContainer.indexOf(view);
+            if (index >= 0) {
+                this.viewContainer.remove(index);
+            } else if (view && typeof view.destroy === 'function') {
+                view.destroy();
+            }
+        }
+        this._viewRefs.length = collectionRaw.length;
+        this.meta.count = collectionRaw.length;
+        return true;
     }
 
     // 处理Map类型
@@ -191,12 +260,27 @@ export class VForDirective {
             $item: item,            // Vue风格：当前项
             $index: index,          // 当前索引
             $first: index === 0,    // 是否为第一项
-            $last: false,           // 将在后续设置
             $even: index % 2 === 0, // 是否为偶数项
             $odd: index % 2 === 1,  // 是否为奇数项
-            $key: key,              // Map/Object的键
-            $count: 0               // 总数量（将在后续设置）
+            $key: key               // Map/Object的键
         };
+
+        // $count/$last 是共享 meta 的派生值：追加/删除时只写一次 count，
+        // 不再对每一行做 O(n) 赋值。
+        const meta = this.meta;
+        Object.defineProperties(context, {
+            $meta: { value: meta, enumerable: false, writable: false, configurable: true },
+            $count: {
+                get() { return this.$meta.count; },
+                enumerable: false,
+                configurable: true
+            },
+            $last: {
+                get() { return this.$index === this.$meta.count - 1; },
+                enumerable: false,
+                configurable: true
+            }
+        });
 
         // 设置用户定义的循环变量名
         this.setUserDefinedVariables(context, item, index, key);
@@ -246,12 +330,8 @@ export class VForDirective {
         const newViewRefs: any[] = [];
         const oldViewRefs = new Map(this._viewRefs.map((ref, index) => [this._trackByFn(ref.context, index), ref]));
 
-        // 设置$last和$count属性
-        const totalCount = contexts.length;
-        contexts.forEach((context, index) => {
-            context.$last = index === totalCount - 1;
-            context.$count = totalCount;
-        });
+        // $count/$last derive from this single shared value.
+        this.meta.count = contexts.length;
 
         for (let i = 0; i < contexts.length; i++) {
             const context = contexts[i];
@@ -347,6 +427,9 @@ export class VForDirective {
             }
         });
         this._viewRefs = [];
+        if (this._meta) {
+            this._meta.count = 0;
+        }
     }
 
     onInit() {

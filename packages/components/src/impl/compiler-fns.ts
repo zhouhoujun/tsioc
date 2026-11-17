@@ -1376,26 +1376,29 @@ export function shouldEvaluateDirectiveAttribute(name: string, dirType?: Directi
  * @param delimiter 分隔符正则表达式
  */
 export function evaluateDelimiterExpression(text: string, context: any, effect: ReactiveEffect<any>, matches: RegExpExecArray[], update: (text: string) => void, injector: NodeInjector, delimiter: RegExp): void {
-    const segments: (string | { expr: string, value: any })[] = [];
+    const segments: (string | { expr: string })[] = [];
     let lastIndex = 0;
 
     matches.forEach(match => {
-        segments.push(text.slice(lastIndex, match.index));
-        segments.push({ expr: match[1].trim(), value: null });
+        if (match.index > lastIndex) {
+            segments.push(text.slice(lastIndex, match.index));
+        }
+        segments.push({ expr: match[1].trim() });
         lastIndex = match.index! + match[0].length;
     });
-    segments.push(text.slice(lastIndex));
+    if (lastIndex < text.length) {
+        segments.push(text.slice(lastIndex));
+    }
 
-    segments.forEach(segment => {
-        if (typeof segment !== 'string') {
-            effect.run(() => {
-                segment.value = evaluateExpression(segment.expr, context, injector, delimiter);
-                const updatedText = segments.map(s =>
-                    typeof s === 'string' ? s : s.value
-                ).join('');
-                update(updatedText);
-            });
-        }
+    // One binding per text node: every expression is evaluated in the same
+    // effect pass, and the node is written exactly once.
+    effect.run(() => {
+        const updatedText = segments.map(segment =>
+            typeof segment === 'string'
+                ? segment
+                : evaluateExpression(segment.expr, context, injector, delimiter)
+        ).join('');
+        update(updatedText);
     });
 }
 
@@ -1452,7 +1455,7 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
         return effect.run(() => {
             const resolved = resolvePath(context, propPath);
             const handler = resolved.value;
-            return handler.bind(resolveEventOwner(context, resolved, propPath.join('.')));
+            return handler.bind(resolveEventOwner(context, resolved, propPath.join('.'), effect));
         });
     }
 
@@ -1465,7 +1468,7 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
         if (typeof func !== 'function') {
             throw new Error(`Event handler ${funcPath} is not a function`);
         }
-        const owner = resolveEventOwner(context, resolved, funcPath);
+        const owner = resolveEventOwner(context, resolved, funcPath, effect);
 
         return (event: Event) => {
             // Arguments must be evaluated when the event fires: v-for reuses a
@@ -1494,7 +1497,8 @@ export function parseEventExpression(expr: string, context: any, effect: Reactiv
 function resolveEventOwner(
     context: any,
     resolved: { owner: any; value: any },
-    funcPath: string
+    funcPath: string,
+    effect?: ReactiveEffect
 ): any {
     const owner = resolved.owner ?? context;
     const memberOf = (target: any): any => funcPath.split('.').reduce(
@@ -1532,10 +1536,10 @@ function resolveEventOwner(
         }
     }
     if (resolvedCandidate) {
-        return getReactiveProxy(resolvedCandidate) ?? resolvedCandidate;
+        return getReactiveProxy(resolvedCandidate, effect) ?? resolvedCandidate;
     }
     // Item-local handlers (for example `item.action`) keep their owner.
-    return getReactiveProxy(owner) ?? owner;
+    return getReactiveProxy(owner, effect) ?? owner;
 }
 
 function resolvePath(context: any, path: string[]): { owner: any; value: any } {

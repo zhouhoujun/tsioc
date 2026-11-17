@@ -1,5 +1,5 @@
 import { Type } from '@tsdi/ioc';
-import { ReactiveEffect, noReact } from '../effect';
+import { ReactiveEffect, ReactiveScope, noReact } from '../effect';
 import { ComponentRef } from '../refs/component';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { RNode } from '../renderer/Node';
@@ -43,7 +43,8 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         readonly rootNodes: RNode[],
         readonly context: C,
         readonly injector: NodeInjector,
-        effect?: ReactiveEffect
+        effect?: ReactiveEffect,
+        private scope?: ReactiveScope
     ) {
         this.effect = effect ?? injector.get(ReactiveEffect);
         injector.onDestroy(this);
@@ -76,6 +77,10 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         // 执行所有销毁回调
         this._destroyCallbacks.forEach(callback => callback());
         this._destroyCallbacks = [];
+
+        // Remove the dependency functions registered by this view's bindings.
+        this.scope?.dispose();
+        this.scope = undefined;
 
     }
 
@@ -135,7 +140,8 @@ export function createEmbeddedViewRef<C>(
     rootNodes: RNode[],
     context: C,
     injector: NodeInjector,
-    effect?: ReactiveEffect) {
-    return new EmbeddedViewRefImpl(rootNodes, context, injector, effect)
+    effect?: ReactiveEffect,
+    scope?: ReactiveScope) {
+    return new EmbeddedViewRefImpl(rootNodes, context, injector, effect, scope)
 
 }

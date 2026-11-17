@@ -1,0 +1,64 @@
+import expect = require('expect');
+import { Suite, Test } from '@tsdi/unit';
+import { Application } from '@tsdi/core';
+import { Component, ComponentsModule } from '../src';
+import { ConsoleTemplateModule } from '../console/src';
+
+interface Row { label: string; }
+
+@Component({
+    selector: 'vfor-tail-comp',
+    template: `<div><span class="row" v-for="item in items">{{$index}}/{{$count}}/{{$last}}/{{item.label}}</span></div>`
+})
+class VForTailComponent {
+    items: Row[] = [{ label: 'A' }, { label: 'B' }];
+}
+
+@Suite('v-for tail updates')
+export class VForTailTest {
+    private texts(root: any): string[] {
+        return root.querySelectorAll('.row').map((node: any) => node.textContent);
+    }
+
+    @Test('append and remove from the tail keep $index/$count/$last current')
+    async appendAndRemoveTail() {
+        const ctx = await Application.run(VForTailComponent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(VForTailComponent) as any;
+            const component = ref.instance as VForTailComponent;
+            const root = ref.hostView.rootNodes[0] as any;
+
+            expect(this.texts(root)).toEqual(['0/2/false/A', '1/2/true/B']);
+
+            component.items = [...component.items, { label: 'C' }];
+            await Promise.resolve();
+            expect(this.texts(root)).toEqual(['0/3/false/A', '1/3/false/B', '2/3/true/C']);
+
+            component.items = component.items.slice(0, 2);
+            await Promise.resolve();
+            expect(this.texts(root)).toEqual(['0/2/false/A', '1/2/true/B']);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('middle insertion falls back to the keyed update')
+    async middleInsertion() {
+        const ctx = await Application.run(VForTailComponent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(VForTailComponent) as any;
+            const component = ref.instance as VForTailComponent;
+            const root = ref.hostView.rootNodes[0] as any;
+
+            component.items = [component.items[0], { label: 'X' }, component.items[1]];
+            await Promise.resolve();
+            expect(this.texts(root)).toEqual(['0/3/false/A', '1/3/false/X', '2/3/true/B']);
+        } finally {
+            await ctx.close();
+        }
+    }
+}
