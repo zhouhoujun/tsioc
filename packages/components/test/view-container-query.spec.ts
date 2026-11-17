@@ -2,20 +2,22 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import {
-    Attribute, Component, ComponentsModule, QueryList, TemplateRef, ViewChild, ViewChildren, ViewContainerRef
+    Attribute, Component, ComponentsModule, ElementRef, QueryList, TemplateRef, ViewChild, ViewChildren, ViewContainerRef
 } from '../src';
 import { ConsoleTemplateModule } from '../console/src';
 
 @Component({
     selector: 'vcr-container-test',
     template: `<div>
-        <v-template #tpl><span class="item">{{label}}</span></v-template>
+        <v-template #tpl><span class="item" #dynItem>{{label}}</span></v-template>
         <span #anchor></span>
     </div>`
 })
 class VcrContainerComponent {
     @ViewChild('tpl') tpl?: TemplateRef<any>;
     @ViewChild('anchor', ViewContainerRef) vcr?: ViewContainerRef;
+    @ViewChild('dynItem', ElementRef) firstItem?: ElementRef;
+    @ViewChildren('dynItem') itemList?: QueryList<ElementRef>;
 }
 
 @Component({
@@ -58,8 +60,11 @@ export class ViewContainerRefTest {
             const b = vcr.createEmbeddedView(tpl, { label: 'B' } as any);
             const c = vcr.createEmbeddedView(tpl, { label: 'C' } as any);
 
+            await Promise.resolve().then(() => Promise.resolve()).then(() => Promise.resolve());
             expect(vcr.length).toBe(3);
             expect(labels()).toEqual(['A', 'B', 'C']);
+            expect(component.firstItem).toBeTruthy();
+            expect(component.itemList?.length).toBe(3);
             expect(vcr.indexOf(a)).toBe(0);
             expect(vcr.indexOf(b)).toBe(1);
             expect(vcr.indexOf(c)).toBe(2);
@@ -74,6 +79,7 @@ export class ViewContainerRefTest {
             expect(vcr.indexOf(c)).toBe(2);
 
             vcr.remove(1);
+            await Promise.resolve().then(() => Promise.resolve());
             expect(labels()).toEqual(['A', 'C']);
             expect(vcr.indexOf(b)).toBe(-1);
             expect(vcr.length).toBe(2);
@@ -89,7 +95,10 @@ export class ViewContainerRefTest {
             expect((vcr.getHostElement(0) as any)?.tagName).toBe('span');
 
             vcr.clear();
+            await Promise.resolve().then(() => Promise.resolve());
             expect(vcr.length).toBe(0);
+            expect(component.firstItem).toBeUndefined();
+            expect(component.itemList?.length ?? 0).toBe(0);
             expect(labels()).toEqual([]);
         } finally {
             await ctx.close();
