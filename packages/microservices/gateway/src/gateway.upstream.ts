@@ -13,6 +13,7 @@ import { GatewayAuth } from './gateway.auth';
 import { GatewayResponse } from './gateway.response';
 import { GatewayRateLimiter } from './gateway.rate-limit';
 import { GatewayForwardResult } from './gateway.types';
+import { GatewayWebhook } from './gateway.webhook';
 import { getHeaderValue, getRequestHost, normalizeGatewayUrl } from './gateway.http';
 import { resolveRetryBackoff } from './retry-policy';
 
@@ -22,6 +23,7 @@ export interface GatewayUpstreamDeps {
     response: GatewayResponse;
     rateLimiter: GatewayRateLimiter;
     getFetch: () => typeof fetch | undefined;
+    webhook?: GatewayWebhook;
 }
 
 /**
@@ -38,6 +40,7 @@ export class GatewayUpstream {
     private readonly responsePipeline: GatewayResponse;
     private readonly rateLimiter: GatewayRateLimiter;
     private readonly getFetch: () => typeof fetch | undefined;
+    private readonly webhook: GatewayWebhook;
 
     constructor(
         private readonly options: GatewayOptions,
@@ -53,6 +56,7 @@ export class GatewayUpstream {
         this.responsePipeline = deps.response;
         this.rateLimiter = deps.rateLimiter;
         this.getFetch = deps.getFetch ?? (() => undefined);
+        this.webhook = deps.webhook ?? new GatewayWebhook(this.getFetch);
     }
 
     private normalizeRequestUrl(url: string): string {
@@ -162,7 +166,7 @@ export class GatewayUpstream {
                 ...(upstreamFailed ? { outcome: 'error' as const, errorType: 'upstream' as const } : {})
             };
             if (result.meta?.streaming !== true) {
-                await this.dispatchWebhook(route, request, result);
+                await this.webhook.dispatch(route, request, result);
             }
             const upstreamError = upstreamFailed
                 ? Object.assign(new Error(`Upstream responded with ${result.status}`), {
@@ -177,7 +181,7 @@ export class GatewayUpstream {
             const errorType = this.observability.tagError(error, adapter);
             const fallback = this.responsePipeline.resolveFallbackPayload(route, request, error);
             if (fallback) {
-                await this.dispatchWebhook(route, request, fallback);
+                await this.webhook.dispatch(route, request, fallback);
                 return this.sendResponse(route, request, context, fallback, startedAt, adapter, response);
             }
             this.observability.recordError(route, request, startedAt, error, traceHeaders, {
@@ -848,43 +852,4 @@ export class GatewayUpstream {
         return typeof body === 'function' ? body(request) : body;
     }
 
-    private async dispatchWebhook(route: ResolvedGatewayRoute, request: HttpRequestMessage, response: GatewayForwardResult): Promise<void> {
-        const webhook = route.webhook;
-        if (!webhook?.enabled) {
-            return;
-        }
-        if (webhook.onSuccess === true && !(response.status >= 200 && response.status < 300)) {
-            return;
-        }
-        const runner = async () => {
-            const headers = typeof webhook.headers === 'function'
-                ? webhook.headers(request, response)
-                : (webhook.headers ?? {});
-            const body = webhook.body === undefined
-                ? {
-                    request: {
-                        url: request.url,
-                        method: request.method,
-                        headers: request.headers,
-                        query: request.query,
-                        body: request.body ?? null
-                    },
-                    response
-                }
-                : (typeof webhook.body === 'function' ? webhook.body(request, response) : webhook.body);
-            await fetch(webhook.url, {
-                method: webhook.method ?? 'POST',
-                headers: {
-                    'content-type': 'application/json',
-                    ...headers
-                },
-                body: typeof body === 'string' || Buffer.isBuffer(body) ? body as any : JSON.stringify(body)
-            });
-        };
-        if (webhook.async !== false) {
-            void runner().catch(() => undefined);
-        } else {
-            await runner();
-        }
-    }
 }

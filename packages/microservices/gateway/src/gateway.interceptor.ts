@@ -20,6 +20,7 @@ import { GatewayAuth } from './gateway.auth';
 import { GatewayResponse } from './gateway.response';
 import { GatewayRateLimiter } from './gateway.rate-limit';
 import { GatewayUpstream } from './gateway.upstream';
+import { GatewayWebhook } from './gateway.webhook';
 import { getClientIp, getHeaderValue, getRequestHost, normalizeGatewayUrl } from './gateway.http';
 import { GatewayErrorType, GatewayForwardMeta, GatewayForwardResult, classifyGatewayError } from './gateway.types';
 
@@ -119,7 +120,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             auth: this.gatewayAuth,
             response: this.responsePipeline,
             rateLimiter: this.rateLimiter,
-            getFetch: () => this.httpFetch
+            getFetch: () => this.httpFetch,
+            webhook: new GatewayWebhook(() => this.httpFetch)
         });
         this.setupHttpPool();
         this.lifecycle?.start();

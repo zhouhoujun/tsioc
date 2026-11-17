@@ -661,7 +661,8 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 | `gateway.auth.ts` | JWT/API key/HMAC/claims/IP ACL | `auth.spec.ts` 6 个 |
 | `gateway.response.ts` | rewrite/cache/etag/compression/fallback | `response.spec.ts` 9 个 |
 | `gateway.rate-limit.ts` | 路由/全局限流与共享窗口 | `rate-limit.spec.ts` 6 个 |
-| `gateway.upstream.ts` | retry/failover、endpoint、HTTP/微服务/聚合转发、webhook | `upstream.spec.ts` 9 个 |
+| `gateway.upstream.ts` | retry/failover、endpoint、HTTP/微服务/聚合转发 | `upstream.spec.ts` 9 个 |
+| `gateway.webhook.ts` | 异步 webhook、timeout、有限重试、SSRF allowlist | `webhook.spec.ts` 6 个 |
 
 `GatewayInterceptor` 仅保留 intercept/preview、规则与路由表缓存、canary/header 匹配、`resolveRoute` 与 HTTP pool 生命周期，已满足 < 500 行目标。
 

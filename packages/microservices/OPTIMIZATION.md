@@ -489,6 +489,12 @@
 - 断言 dead endpoint 的 per-endpoint circuit 打开，后续请求保持健康且 <5s。
 - 回归：gateway 142 passing。
 
+第八十七批（Gateway webhook 模块）：
+
+- 新增 `gateway.webhook.ts`：超时、有限重试、可选 SSRF host allowlist（支持 `*.domain`）。
+- `gateway.upstream.ts` 不再内联 webhook，改为注入 `GatewayWebhook`。
+- 新增 `webhook.spec.ts` 6 个测试；gateway 148 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
