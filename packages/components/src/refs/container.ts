@@ -4,6 +4,7 @@ import { ElementRef } from './element';
 import { TemplateRef } from './template';
 import { EmbeddedViewRef, ViewRef } from './view';
 import { noReact, ReactiveEffect } from '../effect';
+import { RNode } from '../renderer/Node';
 
 
 /**
@@ -148,6 +149,22 @@ export abstract class ViewContainerRef<T = any> {
      * If not specified, the last view in the container is removed.
      */
     abstract remove(index?: number): void;
+
+    /**
+     * Detaches a view from this container without destroying it. The view can
+     * be attached again with `reattach`.
+     */
+    abstract detach(index: number): ViewRef | null;
+
+    /**
+     * Re-attaches a previously detached view.
+     */
+    abstract reattach(viewRef: ViewRef, index?: number): ViewRef;
+
+    /**
+     * Returns the first root node of the view at `index`.
+     */
+    abstract getHostElement(index: number): RNode | null;
 
 }
 

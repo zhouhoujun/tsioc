@@ -179,12 +179,22 @@ class ViewContainerRefImpl implements ViewContainerRef {
         renderTask
             .then(() => {
                 const hostView = componentRef.hostView;
-                if (this.injector.destroyed || !hostView || hostView.destroyed || this.indexOf(hostView) >= 0) {
+                if (this.injector.destroyed || !hostView || hostView.destroyed) {
+                    (componentRef as any).destroy?.();
                     return;
                 }
-                this.insert(hostView, insertIndex);
+                if (this.indexOf(hostView) >= 0) {
+                    return;
+                }
+                const index = Math.max(0, Math.min(insertIndex, this.views.length));
+                this.insert(hostView, index);
             })
             .catch(error => {
+                try {
+                    (componentRef as any).destroy?.();
+                } catch {
+                    // The render failure is the actionable error below.
+                }
                 if (options?.onError) {
                     options.onError(error);
                     return;
@@ -333,6 +343,29 @@ class ViewContainerRefImpl implements ViewContainerRef {
         if ('destroy' in viewRef) {
             (viewRef as any).destroy();
         }
+    }
+
+    detach(index: number): ViewRef | null {
+        if (index < 0 || index >= this.views.length) {
+            return null;
+        }
+        const viewRef = this.views[index];
+        this.removeViewNodes(viewRef);
+        this.views.splice(index, 1);
+        this.viewIndex.delete(viewRef);
+        this.reindex(index);
+        return viewRef;
+    }
+
+    reattach(viewRef: ViewRef, index?: number): ViewRef {
+        if (this.viewIndex.has(viewRef)) {
+            return viewRef;
+        }
+        return this.insert(viewRef, index);
+    }
+
+    getHostElement(index: number): RNode | null {
+        return this.views[index]?.rootNodes?.[0] ?? null;
     }
 
 

@@ -55,6 +55,16 @@ export class ViewContainerRefTest {
             expect(vcr.indexOf(b)).toBe(-1);
             expect(vcr.length).toBe(2);
 
+            const detached = vcr.detach(0);
+            expect(detached).toBe(a);
+            expect(labels()).toEqual(['C']);
+            expect(vcr.length).toBe(1);
+
+            vcr.reattach(detached!, 0);
+            expect(labels()).toEqual(['A', 'C']);
+            expect(vcr.indexOf(a)).toBe(0);
+            expect((vcr.getHostElement(0) as any)?.tagName).toBe('span');
+
             vcr.clear();
             expect(vcr.length).toBe(0);
             expect(labels()).toEqual([]);
