@@ -1370,11 +1370,17 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
             } else {
                 directiveInstance[propertyKey] = attr.value;
             }
-        } else if (propertyKey === 'trackBy') {
-            // Plain @Attribute-style directive properties (currently trackBy).
+        } else if (isPlainDirectiveAttribute(attr.name, name)) {
+            // Plain @Attribute-style directive properties such as `trackBy`.
             directiveInstance[propertyKey] = attr.value;
         }
     });
+}
+
+function isPlainDirectiveAttribute(attrName: string, name: string): boolean {
+    const normalized = String(attrName).toLowerCase();
+    return normalized === String(name).toLowerCase()
+        || normalized === camelToKebab(String(name)).toLowerCase();
 }
 
 /** Plain custom-directive attributes are literals; only explicit framework syntax is executable. */

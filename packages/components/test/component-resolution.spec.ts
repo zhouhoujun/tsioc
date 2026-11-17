@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
-import { Component, ComponentsModule, Directive, ViewChild } from '../src';
+import { Attribute, Component, ComponentsModule, Directive, ViewChild } from '../src';
 import { ConsoleTemplateModule } from '../console/src';
 
 @Component({
@@ -16,6 +16,11 @@ class InjectChild {
 @Directive({ selector: '[probe]' })
 class ProbeDirective {
     constructor(public child: InjectChild) { }
+}
+
+@Directive({ selector: '[plain]' })
+class PlainAttributeDirective {
+    @Attribute() mode = '';
 }
 
 @Injectable()
@@ -32,13 +37,14 @@ class ServiceChild { }
 
 @Component({
     selector: 'inject-parent',
-    imports: [InjectChild, ProbeDirective, ServiceChild],
-    template: `<div><inject-child probe></inject-child><service-child #serviceChild></service-child></div>`
+    imports: [InjectChild, ProbeDirective, ServiceChild, PlainAttributeDirective],
+    template: `<div><inject-child probe></inject-child><service-child #serviceChild></service-child><div plain mode="abc"></div></div>`
 })
 class InjectParent {
     @ViewChild(ProbeDirective) probe?: ProbeDirective;
     @ViewChild(InjectChild) child?: InjectChild;
     @ViewChild('serviceChild', ChildService) service?: ChildService;
+    @ViewChild(PlainAttributeDirective) plainDirective?: PlainAttributeDirective;
 }
 
 @Suite('component object resolution')
@@ -57,6 +63,7 @@ export class ComponentResolutionTest {
             expect(parent.probe?.child).toBe(parent.child);
             expect(parent.service).toBeInstanceOf(ChildService);
             expect(parent.service?.value).toBe('service');
+            expect(parent.plainDirective?.mode).toBe('abc');
         } finally {
             await ctx.close();
         }
