@@ -4,7 +4,6 @@ import * as zlib from 'zlib';
 import { Readable } from 'node:stream';
 import { ServiceDiscovery, ServiceEndpoint, EndpointResolver } from '@tsdi/discovery';
 import { HttpMessageAdapter, HTTP_AUTH_RESULT, HTTP_RESPONSE, HttpRequestMessage } from '@tsdi/http-microservice';
-import { ApiRateLimiter } from '@tsdi/service';
 import { Incoming, RequestContext, RequestHandler, RequestInterceptor, Transport, TransferSide } from '@tsdi/common';
 import { Observable, from, lastValueFrom } from 'rxjs';
 import { GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayAggregateSource, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayRuleConditionOptions, GatewayRuleOptions, GatewayWebhookOptions, ResolvedGatewayRoute } from './gateway.options';
@@ -22,6 +21,7 @@ import { Logger } from '@tsdi/logger';
 import { GatewayObservability } from './gateway.observability';
 import { GatewayAuth } from './gateway.auth';
 import { GatewayResponse } from './gateway.response';
+import { GatewayRateLimiter } from './gateway.rate-limit';
 import { getClientIp, getHeaderValue, getRequestHost, normalizeGatewayUrl } from './gateway.http';
 import { GatewayErrorType, GatewayForwardMeta, GatewayForwardResult, classifyGatewayError } from './gateway.types';
 
@@ -71,8 +71,6 @@ export interface GatewayMatchPreview {
 
 @Injectable()
 export class GatewayInterceptor implements RequestInterceptor<any, any, RequestContext>, OnDestroy {
-    private limiters = new Map<string, ApiRateLimiter>();
-    private globalLimiter?: ApiRateLimiter;
     private authService: HttpAuthService;
     private signatureService: HmacSignatureService;
     private logger: Logger | null;
@@ -90,6 +88,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private observability: GatewayObservability;
     private gatewayAuth: GatewayAuth;
     private responsePipeline: GatewayResponse;
+    private rateLimiter: GatewayRateLimiter;
 
     constructor(
         @Inject(GATEWAY_OPTIONS) private options: GatewayOptions,
@@ -111,6 +110,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         this.observability = new GatewayObservability(this.options, this.runtime, this.metrics, this.logger, this.tracer);
         this.gatewayAuth = new GatewayAuth(this.options, this.runtime, this.authService, this.signatureService);
         this.responsePipeline = new GatewayResponse(this.options, this.runtime, this.observability);
+        this.rateLimiter = new GatewayRateLimiter(this.options, this.runtime);
         if (this.endpointResolver && typeof (this.endpointResolver as any).resolve !== 'function') {
             this.endpointResolver = null;
         }
@@ -304,8 +304,8 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         const trace = this.observability.startTrace(request);
         const traceHeaders = trace.headers;
         try {
-        await this.applyGlobalRateLimit(request, context);
-        await this.applyRateLimit(route, request, context);
+        await this.rateLimiter.applyGlobal(request, context);
+        await this.rateLimiter.applyRoute(route, request, context);
         await this.gatewayAuth.authorize(route, request, context);
         this.gatewayAuth.validateApiKey(route, request);
         await this.gatewayAuth.validateSignature(route, request);
@@ -1033,66 +1033,6 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
         return route.transport == null || route.transport === Transport.HTTP;
     }
 
-    private async applyRateLimit(route: ResolvedGatewayRoute, input: any, context: RequestContext): Promise<void> {
-        const defaultRateLimit = this.runtime.getOption('rateLimit', this.options.rateLimit);
-        const rateLimit = route.rateLimit === false ? false : (route.rateLimit ?? defaultRateLimit);
-        if (!rateLimit) {
-            return;
-        }
-        if (this.useSharedRateLimit(rateLimit)) {
-            const decision = await this.runtime.incrementRateLimit(
-                `${route.path}:${getClientIp(input)}`,
-                rateLimit.windowMs!
-            );
-            if (decision && decision.count > rateLimit.limit!) {
-                throw rateLimitError(decision.resetAt - Date.now());
-            }
-            return;
-        }
-        let limiter = this.limiters.get(route.path);
-        if (!limiter) {
-            limiter = new ApiRateLimiter(rateLimit);
-            this.limiters.set(route.path, limiter);
-        }
-        if (!limiter.check(input, context)) {
-            const rejection = limiter.rejection(input, context);
-            throw rateLimitError(rejection.retryAfterMs, rejection.message);
-        }
-    }
-
-    private async applyGlobalRateLimit(input: any, context: RequestContext): Promise<void> {
-        const rateLimit = this.runtime.getOption('globalRateLimit', this.options.globalRateLimit);
-        if (!rateLimit) {
-            return;
-        }
-        if (this.useSharedRateLimit(rateLimit)) {
-            const decision = await this.runtime.incrementRateLimit(
-                `global:${getClientIp(input)}`,
-                rateLimit.windowMs!
-            );
-            if (decision && decision.count > rateLimit.limit!) {
-                throw rateLimitError(decision.resetAt - Date.now());
-            }
-            return;
-        }
-        if (!this.globalLimiter) {
-            this.globalLimiter = new ApiRateLimiter(rateLimit);
-        }
-        if (!this.globalLimiter.check(input, context)) {
-            const rejection = this.globalLimiter.rejection(input, context);
-            throw rateLimitError(rejection.retryAfterMs, rejection.message);
-        }
-    }
-
-    private useSharedRateLimit(options: any): boolean {
-        return this.runtime.hasSharedState()
-            && typeof options === 'object'
-            && Number.isFinite(options.limit)
-            && Number.isFinite(options.windowMs)
-            && !options.quota
-            && !options.throttle;
-    }
-
     private normalizeRequestUrl(url: string): string {
         const defaults = this.runtime.getOption('defaults', this.options.defaults);
         return normalizeGatewayUrl(url, defaults?.prefix);
@@ -1278,12 +1218,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     }
 
     onDestroy(): void {
-        this.globalLimiter?.destroy();
-        this.globalLimiter = undefined;
-        for (const limiter of Array.from(this.limiters.values())) {
-            limiter.destroy();
-        }
-        this.limiters.clear();
+        this.rateLimiter.destroy();
         try {
             void this.httpDispatcher?.close?.();
         } catch {
@@ -1320,12 +1255,4 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             this.httpFetch = undefined;
         }
     }
-}
-
-function rateLimitError(retryAfterMs: number, message = 'Rate limit exceeded'): Error {
-    return Object.assign(new Error(message), {
-        statusCode: 429,
-        statusMessage: 'Too Many Requests',
-        headers: { 'Retry-After': String(Math.max(1, Math.ceil(Math.max(0, retryAfterMs) / 1000))) }
-    });
 }

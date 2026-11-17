@@ -359,6 +359,12 @@
 - `GatewayInterceptor` 降至约 1331 行，`sendResponse` 只做转发。
 - 新增 `response.spec.ts` 9 个模块级测试；gateway 125 passing。
 
+第六十六批（Gateway rate limit 拆分）：
+
+- 新增 `gateway.rate-limit.ts`：路由/全局限流、共享状态窗口与 `rateLimitError`。
+- `GatewayInterceptor` 降至约 1258 行，销毁时统一释放 limiter。
+- 新增 `rate-limit.spec.ts` 6 个模块级测试；gateway 131 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
