@@ -512,6 +512,13 @@
 - metrics 新增 `ConsumerMetricsRecorder`：started/completed/failed/retried、in-flight gauge、处理耗时 ms/seconds 双发。
 - 回归：service 88、metrics 67；broker 套件保持 Kafka 81/NATS 59/AMQP 63/MQTT 87。
 
+第九十一批（Admin UI 响应式/性能审计）：
+
+- 按 components 响应式契约审查 admin web：绑定数组均为整体替换（`map/filter/slice` 后赋值），未使用 `push/splice` 后依赖 `v-for` 刷新；无手动 render/forceUpdate/状态订阅。
+- 修复 `editRouteField` 的“先改代理再替换”双触发，改为构造一次新对象赋值。
+- `AdminViewController` 增加按引用失效的派生缓存：`filteredRoutes`/`enabledRoutes`、service/policy 汇总、diagnostics 投影、route detail JSON；避免每个模板绑定重复 filter/sort/Map/JSON。
+- 新增 `admin-view-cache.spec.ts` 4 个测试；admin 85 passing。bundle 待 activities 并发改动稳定后重建。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

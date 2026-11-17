@@ -4648,3 +4648,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第九十批（2026-11-16）：
   - ConsumerRuntime metrics sink + broker 注入；consumer 指标。
   - 回归：service 88、metrics 67，brokers 不变。
+
+- 微服务框架第九十一批（2026-11-16）：
+  - Admin UI 响应式契约审计；派生视图按引用缓存；editRouteField 单次赋值。
+  - 回归：admin 85。

@@ -140,8 +140,12 @@ export class AdminRoutesController {
                 .map(item => item.trim().toUpperCase())
                 .filter(Boolean);
         }
-        (self.editingRoute as unknown as Record<string, unknown>)[key] = value;
-        self.editingRoute = { ...self.editingRoute };
+        // Build the next object once: mutating the proxy and then replacing it
+        // would run the same bindings twice per keystroke.
+        self.editingRoute = {
+            ...self.editingRoute,
+            [key]: value
+        } as GatewayRouteOptions;
         if (self.routeErrors[key]) {
             const next = { ...self.routeErrors };
             delete next[key];
