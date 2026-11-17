@@ -154,14 +154,6 @@ export class CompilerTemplateBuilder {
         );
     }
 
-    addAnnotationCompile(directive?: ConditionalDirective): this {
-        return this.addActivity(
-            require('./activities/AnnotationCompileActivity').AnnotationCompileActivity,
-            { src: '{{options.src}}', outDir: '{{options.outDir}}', exclude: '{{options.exclude}}' },
-            directive
-        );
-    }
-
     addEsbuildBuild(directive?: ConditionalDirective): this {
         return this.addActivity(
             require('./activities/EsbuildBuildActivity').EsbuildBuildActivity,
@@ -252,7 +244,6 @@ export function createDefaultCompilerTemplate(name: string = 'Default Compiler')
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
         .addAotAspectCompile({ if: CompilerDirectives.ifAot })
         .addAotCompile({ if: CompilerDirectives.ifAot })
-        .addAnnotationCompile({ if: CompilerDirectives.ifNoAot })
         .addEsbuildBuild({ if: CompilerDirectives.ifNoAot })
         .addDeclarationGenerate({ if: CompilerDirectives.ifNoAotDeclaration })
         .build();
@@ -266,7 +257,6 @@ export function createProductionCompilerTemplate(): CompilerTemplate {
         .addSourceFiles()
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
         .addAotAspectCompile({ if: CompilerDirectives.ifAot })
-        .addAnnotationCompile({ if: CompilerDirectives.ifNoAot })
         .addEsbuildBuild({ if: CompilerDirectives.ifBundle })
         .addDeclarationGenerate({ if: CompilerDirectives.ifDeclaration })
         .build();
@@ -281,7 +271,6 @@ export function createDevelopmentCompilerTemplate(): CompilerTemplate {
         .addComponentParse({ if: CompilerDirectives.ifHasComponents })
         .addAotAspectCompile({ if: CompilerDirectives.ifAot })
         .addAotCompile({ if: CompilerDirectives.ifAot })
-        .addAnnotationCompile({ if: CompilerDirectives.ifNoAot })
         .addEsbuildBuild({ if: CompilerDirectives.ifNoAot })
         .addDeclarationGenerate({ if: CompilerDirectives.ifNoAotDeclaration })
         .build();

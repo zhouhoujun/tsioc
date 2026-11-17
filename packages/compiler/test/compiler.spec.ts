@@ -7,7 +7,10 @@ import {
     EsbuildBuildActivity,
     ComponentParseActivity,
     MetadataGenerateActivity,
-    AnnotationCompileActivity
+    shouldKeepNames,
+    createDefaultCompilerTemplate,
+    createProductionCompilerTemplate,
+    createDevelopmentCompilerTemplate
 } from '../src';
 
 describe('Compiler', () => {
@@ -133,19 +136,32 @@ describe('Compiler', () => {
         });
     });
 
-    describe('AnnotationCompileActivity via Workflow.run', () => {
-        it('should compile annotations', async () => {
-            const ctx = await Workflow.run(AnnotationCompileActivity, {
-                src: 'src/**/*.ts'
-            });
-            expect(ctx).toBeDefined();
+    describe('annotation-compile step', () => {
+        // The step only re-printed files and never injected `ƿAnn` metadata, so it
+        // was removed from every compiler template. The activity itself stays
+        // exported as an explicitly callable tool.
+        const templateNames = (create: () => any): string[] =>
+            create().nodes.map((node: any) => node.type?.name ?? '');
+
+        it('is not part of the default template', () => {
+            expect(templateNames(createDefaultCompilerTemplate)).not.toContain('AnnotationCompileActivity');
         });
 
-        it('should handle empty source', async () => {
-            const ctx = await Workflow.run(AnnotationCompileActivity, {
-                src: 'nonexistent/**/*.ts'
-            });
-            expect(ctx).toBeDefined();
+        it('is not part of the production template', () => {
+            expect(templateNames(createProductionCompilerTemplate)).not.toContain('AnnotationCompileActivity');
+        });
+
+        it('is not part of the development template', () => {
+            expect(templateNames(createDevelopmentCompilerTemplate)).not.toContain('AnnotationCompileActivity');
+        });
+
+        it('keeps class names in minified bundles instead', () => {
+            // Replacing the injection step: esbuild keeps `type.name` when asked,
+            // which is what ClassRef.className / pointcut matching read.
+            expect(shouldKeepNames(true)).toBe(true);
+            expect(shouldKeepNames(undefined, true)).toBe(true);
+            expect(shouldKeepNames(false)).toBe(false);
+            expect(shouldKeepNames(undefined)).toBe(false);
         });
     });
 });

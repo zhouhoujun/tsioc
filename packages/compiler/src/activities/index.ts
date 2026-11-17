@@ -3,7 +3,6 @@ export * from './EsbuildBuildActivity';
 export * from './DeclarationGenerateActivity';
 export * from './ComponentParseActivity';
 export * from './MetadataGenerateActivity';
-export * from './AnnotationCompileActivity';
 export * from './AotAspectCompileActivity';
 export * from './AotCompileActivity';
 export * from './AotTransform';

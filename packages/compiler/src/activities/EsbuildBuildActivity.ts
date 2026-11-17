@@ -43,6 +43,16 @@ export interface BuildOutput {
 
 export type OutputStyle = 'esm2020' | 'esm2022' | 'fesm2020' | 'fesm2022';
 
+/**
+ * Class names are part of the runtime contract: `ClassRef.className`,
+ * `execution(...)` pointcut matching and diagnostics all read `type.name`.
+ * esbuild renames classes when minifying unless `keepNames` is enabled, so any
+ * minified build (and the always-minified FESM build) must keep them.
+ */
+export function shouldKeepNames(minify: boolean | undefined, forceMinify = false): boolean {
+    return !!minify || forceMinify;
+}
+
 @Directive({ selector: 'esbuild-build' })
 export class EsbuildBuildActivity extends Activity {
 
@@ -172,6 +182,7 @@ export class EsbuildBuildActivity extends Activity {
             target: `es${version}`,
             sourcemap: this.sourcemap,
             minify: isFesm ? (this.minify || true) : this.minify,
+            keepNames: shouldKeepNames(this.minify, isFesm),
             splitting: false,
             external: this.external,
             define: {
@@ -270,6 +281,7 @@ export class EsbuildBuildActivity extends Activity {
                     target: this.target,
                     sourcemap: this.sourcemap,
                     minify: this.minify,
+                    keepNames: shouldKeepNames(this.minify),
                     external: this.external,
                     define: this.define,
                     write: true
@@ -283,6 +295,7 @@ export class EsbuildBuildActivity extends Activity {
                     target: this.target,
                     sourcemap: this.sourcemap,
                     minify: this.minify,
+                    keepNames: shouldKeepNames(this.minify),
                     external: this.external,
                     define: this.define,
                     write: true
@@ -347,6 +360,7 @@ export class EsbuildBuildActivity extends Activity {
                 target: this.target,
                 sourcemap: this.sourcemap,
                 minify: this.minify,
+                keepNames: shouldKeepNames(this.minify),
                 external: this.external,
                 define: this.define,
                 metafile: true,

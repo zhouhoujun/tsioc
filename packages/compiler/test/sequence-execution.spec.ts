@@ -5,7 +5,7 @@ import { SourceFilesActivity } from '../src/activities/SourceFilesActivity';
 import { EsbuildBuildActivity } from '../src/activities/EsbuildBuildActivity';
 import { ComponentParseActivity } from '../src/activities/ComponentParseActivity';
 import { MetadataGenerateActivity } from '../src/activities/MetadataGenerateActivity';
-import { AnnotationCompileActivity } from '../src/activities/AnnotationCompileActivity';
+import { DeclarationGenerateActivity } from '../src/activities/DeclarationGenerateActivity';
 
 interface TestContext extends ActivityContext {
     step1Done?: boolean;
@@ -167,9 +167,9 @@ describe('Sequence Execution Order Tests', () => {
                         return { success: true };
                     }
                 }),
-                Object.assign(new AnnotationCompileActivity(), {
+                Object.assign(new DeclarationGenerateActivity(), {
                     async execute(ctx: ActivityContext) {
-                        order.push('annotation-compile');
+                        order.push('declaration-generate');
                         return { success: true };
                     }
                 }),
@@ -192,7 +192,7 @@ describe('Sequence Execution Order Tests', () => {
             expect(order).toEqual([
                 'source-files',
                 'component-parse',
-                'annotation-compile',
+                'declaration-generate',
                 'esbuild-build',
                 'metadata-generate'
             ]);
