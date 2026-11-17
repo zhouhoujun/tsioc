@@ -435,6 +435,12 @@
 - `ExecptionLogger` 的 Logger 改为 nullable，避免未导入 LoggerModule 时请求直接 500。
 - 回归：service 85；gate ms-examples PASS。
 
+第七十八批（admin doctor 端点）：
+
+- `GET /api/gateway-admin/doctor` 汇总路由、发现、熔断与 SLO 告警检查，返回 ok/warn。
+- `curl` 即可做本地体检，后续可被 CLI 直接消费。
+- 回归：admin 72 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

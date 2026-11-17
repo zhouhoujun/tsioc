@@ -66,3 +66,41 @@ describe('GatewayAdminController', () => {
         expect(runtime.getRules([])).toEqual([]);
     });
 });
+
+describe('GatewayAdminController doctor', () => {
+    function createController(options: GatewayOptions) {
+        const runtime = new GatewayRuntime();
+        return { controller: new GatewayAdminController(runtime, options, new InMemoryWorkflowDefinitionStore()), runtime };
+    }
+
+    it('reports ok when routes and runtime are healthy', async () => {
+        const { controller } = createController({
+            routes: [{ path: '/api/users', service: 'users-service' }]
+        });
+        const report = await controller.doctor();
+        expect(report.status).toBe('warn'); // no discovery provider for the configured service
+        expect(report.routes).toBe(1);
+        expect(report.services).toEqual(['users-service']);
+        expect(report.checks.find(check => check.id === 'routes')?.status).toBe('ok');
+        expect(report.checks.find(check => check.id === 'discovery')?.message).toContain('no discovery provider');
+    });
+
+    it('warns when no routes are configured', async () => {
+        const { controller } = createController({ routes: [] });
+        const report = await controller.doctor();
+        expect(report.status).toBe('warn');
+        expect(report.checks.find(check => check.id === 'routes')).toMatchObject({ status: 'warn', message: 'no routes configured' });
+        expect(report.checks.find(check => check.id === 'discovery')?.status).toBe('ok');
+    });
+
+    it('warns about open circuits', async () => {
+        const { controller, runtime } = createController({ routes: [{ path: '/api/users', service: 'users-service' }] });
+        await runtime.recordFailure('users-service:/api/users:2', {
+            failureThreshold: 1,
+            resetTimeout: 60_000
+        });
+        const report = await controller.doctor();
+        expect(report.openCircuits).toBe(1);
+        expect(report.checks.find(check => check.id === 'circuits')).toMatchObject({ status: 'warn' });
+    });
+});

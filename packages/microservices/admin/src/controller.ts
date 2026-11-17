@@ -100,6 +100,55 @@ export class GatewayAdminController {
         return this.runtime.snapshot();
     }
 
+    /**
+     * Startup/ops health summary for `curl /api/gateway-admin/doctor`.
+     *
+     * Reports configuration gaps that do not crash the gateway but usually
+     * mean traffic is silently falling through (no routes, no discovery,
+     * open circuits, active SLO alerts).
+     */
+    @Get('/doctor')
+    async doctor() {
+        const snapshot = await this.runtime.snapshot();
+        const routes = this.options?.routes ?? [];
+        const services = uniqueServices(routes, this.options?.rules ?? []);
+        const openCircuits = snapshot.circuits.filter(circuit => circuit.open).length;
+        const checks: Array<{ id: string; status: 'ok' | 'warn'; message: string }> = [
+            {
+                id: 'routes',
+                status: routes.length ? 'ok' : 'warn',
+                message: routes.length ? `${routes.length} route(s) configured` : 'no routes configured'
+            },
+            {
+                id: 'discovery',
+                status: !services.length || this.discovery ? 'ok' : 'warn',
+                message: !services.length
+                    ? 'no downstream services'
+                    : this.discovery ? 'discovery provider configured' : 'no discovery provider for configured services'
+            },
+            {
+                id: 'circuits',
+                status: openCircuits ? 'warn' : 'ok',
+                message: openCircuits ? `${openCircuits} circuit(s) open` : 'no open circuits'
+            },
+            {
+                id: 'slo',
+                status: snapshot.alerts.length ? 'warn' : 'ok',
+                message: snapshot.alerts.length ? `${snapshot.alerts.length} SLO alert(s)` : 'no active SLO alerts'
+            }
+        ];
+        return {
+            status: checks.some(check => check.status === 'warn') ? 'warn' : 'ok',
+            version: this.configService?.getVersion() ?? this.runtime.configRevision,
+            generatedAt: new Date().toISOString(),
+            routes: routes.length,
+            services,
+            openCircuits,
+            alerts: snapshot.alerts.length,
+            checks
+        };
+    }
+
     @Put('/routes')
     updateRoutes(@RequestBody() body: { routes?: GatewayRouteOptions[]; expectedVersion?: number; mergeRoutes?: boolean } | GatewayRouteOptions[]) {
         const routes = Array.isArray(body) ? body : body?.routes;
