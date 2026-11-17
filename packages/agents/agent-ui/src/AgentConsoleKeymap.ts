@@ -17,6 +17,9 @@ export const AGENT_CONSOLE_PAGER_DEFAULT_KEYMAP: Record<string, AgentConsoleGlob
     home: 'message-first',
     end: 'message-last',
     'shift+g': 'message-last-user',
+    /** Turn anchors: skip to the previous/next user prompt. */
+    '[': 'message-prev-user',
+    ']': 'message-next-user',
     'ctrl+u': 'message-half-page-up',
     'ctrl+d': 'message-half-page-down',
     'ctrl+n': 'message-line-up',
@@ -79,7 +82,8 @@ export function isAgentConsoleMessageNavigationAction(action: string): boolean {
         || action === 'message-half-page-up' || action === 'message-half-page-down'
         || action === 'message-line-up' || action === 'message-line-down'
         || action === 'message-first' || action === 'message-last'
-        || action === 'message-last-user';
+        || action === 'message-last-user'
+        || action === 'message-prev-user' || action === 'message-next-user';
 }
 
 export function fuzzyMatchAgentConsoleCommand(command: string, query: string): boolean {

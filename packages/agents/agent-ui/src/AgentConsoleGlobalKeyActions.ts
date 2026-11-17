@@ -92,6 +92,14 @@ export async function executeGlobalKeyActionView(
         host.transcriptNavigationController.selectLastUser();
         return true;
     }
+    if (action === 'message-prev-user') {
+        host.transcriptNavigationController.selectPreviousUser();
+        return true;
+    }
+    if (action === 'message-next-user') {
+        host.transcriptNavigationController.selectNextUser();
+        return true;
+    }
     if (action === 'model-favorite-toggle') {
         await host.toggleModelFavorite();
         return true;
@@ -144,7 +152,7 @@ export async function executeGlobalKeyActionView(
         host.state.setInput('', 0);
         return true;
     }
-    const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode' | 'queue-follow-up' | 'clear-scrollback' | 'clear-input'>, string> = {
+    const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'message-prev-user' | 'message-next-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode' | 'queue-follow-up' | 'clear-scrollback' | 'clear-input'>, string> = {
         'new-session': '/new',
         compact: '/compact',
         export: '/export',

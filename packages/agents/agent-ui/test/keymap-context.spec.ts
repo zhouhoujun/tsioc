@@ -465,6 +465,8 @@ export class AgentConsoleThreadNavigationTest {
         expect(keymap.resolve('home', 'pager')).toEqual('message-first');
         expect(keymap.resolve('end', 'pager')).toEqual('message-last');
         expect(keymap.resolve('shift+g', 'pager')).toEqual('message-last-user');
+        expect(keymap.resolve('[', 'pager')).toEqual('message-prev-user');
+        expect(keymap.resolve(']', 'pager')).toEqual('message-next-user');
     }
 
     @Test('message navigation defaults are scoped to the pager context')
@@ -570,6 +572,34 @@ export class AgentConsoleThreadNavigationTest {
         navigationFor(state).setFocused(true);
         expect(await (component as any).handleGlobalKeyInput('G')).toEqual(true);
         expect(state.selectedMessage?.id).toEqual('m1');
+    }
+
+    @Test('bracket keys jump to the previous/next user prompt')
+    async bracketsJumpBetweenUserPrompts() {
+        const { state, component } = createKeymapConsoleParts();
+        state.setMessages([
+            { id: 'm1', role: 'user', content: '1', createdAt: 1 } as any,
+            { id: 'm2', role: 'assistant', content: '2', createdAt: 2 } as any,
+            { id: 'm3', role: 'user', content: 'steer payload', createdAt: 3, metadata: { kind: 'steer' } } as any,
+            { id: 'm4', role: 'assistant', content: '4', createdAt: 4 } as any,
+            { id: 'm5', role: 'user', content: '5', createdAt: 5 } as any,
+            { id: 'm6', role: 'assistant', content: '6', createdAt: 6 } as any,
+            { id: 'm7', role: 'user', content: '   ', createdAt: 7 } as any
+        ]);
+        navigationFor(state).setFocused(true);
+        state.setSelectedMessageId('m7');
+
+        expect(await (component as any).handleGlobalKeyInput('[')).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m5');
+        expect(await (component as any).handleGlobalKeyInput('[')).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m1');
+        expect(await (component as any).handleGlobalKeyInput('[')).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m1');
+
+        expect(await (component as any).handleGlobalKeyInput(']')).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m5');
+        expect(await (component as any).handleGlobalKeyInput(']')).toEqual(true);
+        expect(state.selectedMessage?.id).toEqual('m5');
     }
 
     @Test('PageUp from an empty composer enters transcript navigation')

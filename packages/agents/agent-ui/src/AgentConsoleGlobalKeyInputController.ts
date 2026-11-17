@@ -12,9 +12,8 @@ export interface AgentConsoleGlobalKeyInputHost {
     translator?: AgentUiTranslator | null;
     transcriptNavigationController: {
         movePage(delta: number, pageSize?: number): void;
-        selectFirst(): void;
-        selectLast(): void;
-        selectLastUser(): void;
+        selectFirst(): void; selectLast(): void; selectLastUser(): void;
+        selectPreviousUser(): void; selectNextUser(): void;
     };
     dismissFocusLayer(): Promise<boolean>;
     handleFocusKey(key: string): Promise<boolean>;

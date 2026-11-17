@@ -224,6 +224,8 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         actionMessageFirst: '跳到开头',
         actionMessageLast: '跳到末尾',
         actionMessageLastUser: '跳到最近提问',
+        actionMessagePrevUser: '跳到上一个提问',
+        actionMessageNextUser: '跳到下一个提问',
         actionModelFavoriteToggle: '收藏模型',
         actionModelCycleRecent: '下一个最近模型',
         actionModelCycleRecentBack: '上一个最近模型',

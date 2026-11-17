@@ -112,6 +112,7 @@ System: `/ps` `/ide` `/feedback` `/keymap`
 - `/display activity [low|medium|high]` sets activity verbosity. `medium` (default) folds finished tool/command/event runs into one expandable Activity row; `high` shows every step; `low` also folds settled reasoning.
 - `/worktree enter [name]` switches the workspace to a managed worktree (picker when no name is given). `/worktree remove [name]` and `/worktree merge [name]` open a picker when no name is given; removal asks for confirmation (`--yes` skips it).
 - `/activity` chooses the latest row of a category; the picker shows per-category counts.
+- In transcript navigation (`PageUp` from an empty composer), `[` / `]` jump to the previous/next user prompt; `Shift+G` jumps to the last prompt.
 
 ## License
 

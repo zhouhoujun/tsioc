@@ -224,6 +224,8 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         actionMessageFirst: 'jump to start',
         actionMessageLast: 'jump to end',
         actionMessageLastUser: 'jump to last prompt',
+        actionMessagePrevUser: 'jump to previous prompt',
+        actionMessageNextUser: 'jump to next prompt',
         actionModelFavoriteToggle: 'favorite model',
         actionModelCycleRecent: 'next recent model',
         actionModelCycleRecentBack: 'previous recent model',

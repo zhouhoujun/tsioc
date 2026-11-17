@@ -60,11 +60,38 @@ export abstract class AgentConsoleTranscriptNavigationController {
     selectLastUser(): void {
         const messages = this.state.displayMessages;
         for (let index = messages.length - 1; index >= 0; index -= 1) {
-            const message = messages[index];
-            if (String(message.role || '').toLowerCase() === 'user' && message.metadata?.kind !== 'steer' && String(message.content || '').trim()) {
-                this.select(message.id); return;
+            if (this.isUserPrompt(messages[index])) {
+                this.select(messages[index].id); return;
             }
         }
+    }
+
+    /** Jump to the previous user prompt (turn anchor); clamps at the first one. */
+    selectPreviousUser(): void {
+        this.selectUser(-1);
+    }
+
+    /** Jump to the next user prompt (turn anchor); clamps at the last one. */
+    selectNextUser(): void {
+        this.selectUser(1);
+    }
+
+    private selectUser(direction: -1 | 1): void {
+        const messages = this.state.displayMessages;
+        if (!messages.length) return;
+        const current = messages.findIndex(item => item.id === this.state.selectedMessageId);
+        const anchor = current < 0 ? (direction < 0 ? messages.length : -1) : current;
+        for (let index = anchor + direction; index >= 0 && index < messages.length; index += direction) {
+            if (this.isUserPrompt(messages[index])) {
+                this.select(messages[index].id); return;
+            }
+        }
+    }
+
+    private isUserPrompt(message: AgentMessage): boolean {
+        return String(message?.role || '').toLowerCase() === 'user'
+            && message.metadata?.kind !== 'steer'
+            && !!String(message.content || '').trim();
     }
 
     scroll(delta: number): boolean {

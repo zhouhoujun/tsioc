@@ -4595,3 +4595,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - steer 模式开启时 Working 行提示变为 `esc to interrupt · enter steers`（zh：`按 esc 中断 · 回车转向`），关闭后恢复。
 - README 的 Queue 段补 `/steer [on|off]` 说明。
 - 测试：console-renderer 新增 switch on/off 断言，106 passing。
+
+## 2026-11-17 长会话 turn 跳转：[ / ]
+- 转录导航（空输入框 PageUp 进入）新增 `[` / `]`：跳到上一个/下一个用户提问（turn 锚点），跳过 steer 消息、空内容与非 user 消息，首尾钳制不循环。
+- `Shift+G`（最后一条提问）复用同一 `isUserPrompt` 判定。
+- which-key 归类到 Navigate；en/zh 标签 `jump to previous/next prompt`、`跳到上一个/下一个提问`。
+- 测试：pager 默认绑定 + 前后跳转/跳过/钳制，keymap-context 69 passing。
