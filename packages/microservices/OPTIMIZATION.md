@@ -465,6 +465,12 @@
 - gate 新增 opt-in `ms-soak` stage（`MS_SOAK_PROFILE=1`；nightly 可用 `MS_SOAK_MS=1800000`）。
 - 30s 实测：37,942 请求、0 失败、heap -1MB、句柄回落到 2。
 
+第八十三批（指标低基数回归）：
+
+- 新增 `metrics/test/label-cardinality.spec.ts`：route pattern 优先、UUID/数字段归一、query 去除、超长截断。
+- gateway 增加默认 label 集合断言（不含 endpoint/error_type）。
+- 回归：metrics 61、gateway 141。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

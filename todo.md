@@ -4610,3 +4610,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第八十二批（2026-11-16）：
   - soak.ts + gate ms-soak（heap/句柄稳定）。
   - 30s：37,942 请求、0 失败、heap -1MB、句柄 2。
+
+- 微服务框架第八十三批（2026-11-16）：
+  - metrics label 低基数测试；gateway 默认 labels 断言。
+  - 回归：metrics 61、gateway 141。

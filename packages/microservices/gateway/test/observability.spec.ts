@@ -184,6 +184,27 @@ describe('GatewayObservability', () => {
         expect(labels.endpoint).toBe('10.0.0.1:8080');
     });
 
+    it('uses a bounded default label set without endpoints or errors', () => {
+        const metrics = createMetrics();
+        const observability = new GatewayObservability({
+            observability: { metrics: { enabled: true } }
+        } as any, new GatewayRuntime(), metrics, null, null);
+
+        observability.recordMetrics(route, createRequest(), 200, 10, {
+            endpoint: '10.0.0.1:8080',
+            cacheStatus: 'MISS',
+            outcome: 'upstream',
+            canary: false
+        });
+
+        const labels = metrics.counters[0].labels;
+        expect(Object.keys(labels).sort()).toEqual([
+            'cache', 'canary', 'method', 'outcome', 'route', 'service', 'status', 'transport'
+        ]);
+        expect(labels.endpoint).toBe(undefined);
+        expect(labels.error_type).toBe(undefined);
+    });
+
     it('counts error metrics and honours disabled observability', () => {
         const metrics = createMetrics();
         const enabled = new GatewayObservability({} as any, new GatewayRuntime(), metrics, null, null);
