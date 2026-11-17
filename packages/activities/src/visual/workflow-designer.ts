@@ -1638,6 +1638,37 @@ export class WorkflowDesigner {
     // Execution
     // ---------------------------------------------------------------------
 
+    get defaultTimeout(): number {
+        return Math.max(0, Number((this.definition.metadata as any)?.timeout) || 0);
+    }
+
+    /** Edit document-level description and default run timeout. */
+    updateSettings(patch: { description?: string; timeout?: number }): boolean {
+        const timeout = patch.timeout === undefined
+            ? this.defaultTimeout
+            : Number(patch.timeout);
+        if (!Number.isFinite(timeout) || timeout < 0) {
+            return false;
+        }
+        const description = patch.description === undefined
+            ? this.definition.description
+            : String(patch.description);
+        this.commit(current => {
+            const metadata = { ...(current.metadata || {}) } as Record<string, any>;
+            if (timeout > 0) {
+                metadata.timeout = timeout;
+            } else {
+                delete metadata.timeout;
+            }
+            return {
+                ...current,
+                description,
+                metadata: { ...metadata, updatedAt: new Date().toISOString() }
+            };
+        });
+        return true;
+    }
+
     async run(options: WorkflowDesignerRunOptions = {}): Promise<ActivityResult> {
         if (this.running) {
             return { success: false, error: new Error('workflow.error.running') };
@@ -1663,6 +1694,7 @@ export class WorkflowDesigner {
         try {
             const result = await this.service.execute(this.definition, options.context || {}, {
                 ...options,
+                timeout: options.timeout ?? (this.defaultTimeout || undefined),
                 onEvent: (event: WorkflowExecutionEvent) => {
                     this.activeExecutionId = event.executionId;
                     this.execution = event.snapshot;

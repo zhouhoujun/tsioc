@@ -1513,6 +1513,25 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.executionHistory.length).toBe(0);
     });
 
+    it('edits workflow description and run timeout from settings', async () => {
+        (root.querySelector('.workflow-global-bar [data-menu-id="settings"]') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-settings')).toBeTruthy();
+
+        const description = root.querySelector('.workflow-settings-description') as any;
+        description.value = 'Nightly approval flow';
+        description.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        const timeout = root.querySelector('.workflow-settings-timeout') as any;
+        timeout.value = '1500';
+        timeout.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        (root.querySelector('.workflow-settings-save') as any).click();
+        await flush();
+
+        expect(ref.instance.designer.definition.description).toBe('Nightly approval flow');
+        expect((ref.instance.designer.definition.metadata as any).timeout).toBe(1500);
+        expect(root.querySelector('.workflow-settings')).toBeFalsy();
+    });
+
     it('publishes the active workflow from the menu and records a release', async () => {
         const store = new InMemoryWorkflowDefinitionStore();
         ref.instance.store = store;

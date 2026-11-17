@@ -604,6 +604,9 @@ Features:
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
 - searchable palette: filter 54 registered node types by label, description or type,
+- workflow settings (menu → Settings) edit the document description and a
+  default run timeout stored in `metadata.timeout`; the timeout applies to
+  designer runs and server run/resume/hook executions,
 - `Ctrl+K` opens a quick-add overlay that searches every registered node and
   inserts the selected one at the viewport center (arrow keys + Enter),
 - inspector property editing is rendered by the shared JSON-configured

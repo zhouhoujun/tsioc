@@ -89,6 +89,31 @@ interface WorkflowDocumentTab {
             :restoreAction="restoreVersion" :compareAction="compareVersion"
             :releaseAction="releaseVersion"
             :closeDiffAction="closeVersionDiff" :closeAction="closeVersions"></workflow-version-panel>
+        <div class="workflow-publish workflow-settings" v-if="showSettings">
+            <div class="workflow-publish-panel workflow-settings-panel">
+                <div class="workflow-publish-head">
+                    <span class="workflow-publish-title">{{settingsTitle}}</span>
+                    <button class="workflow-btn workflow-publish-close" type="button"
+                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeSettings">✕</button>
+                </div>
+                <label class="workflow-group-field">
+                    <span>{{descriptionLabel}}</span>
+                    <textarea class="workflow-settings-description" rows="3"
+                        [value]="settingsDescription" @input="settingsDescriptionInput"></textarea>
+                </label>
+                <label class="workflow-group-field">
+                    <span>{{runTimeoutLabel}}</span>
+                    <input class="workflow-settings-timeout" type="number" min="0" step="100"
+                        [value]="settingsTimeout" @input="settingsTimeoutInput" />
+                </label>
+                <div class="workflow-publish-error" v-if="settingsError">{{settingsError}}</div>
+                <div class="workflow-publish-actions">
+                    <button class="workflow-btn" type="button" @click="closeSettings">{{cancelLabel}}</button>
+                    <button class="workflow-btn workflow-btn-primary workflow-settings-save" type="button"
+                        @click="saveSettings">{{saveLabel}}</button>
+                </div>
+            </div>
+        </div>
         <div class="workflow-publish workflow-plugins" v-if="showPlugins">
             <div class="workflow-publish-panel workflow-plugins-panel">
                 <div class="workflow-publish-head">
@@ -182,6 +207,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
     showVersions = false;
     showPublish = false;
     publishError = '';
+    showSettings = false;
+    settingsDescription = '';
+    settingsTimeout = '';
+    settingsError = '';
     showPlugins = false;
     pluginItems: Array<WorkflowPluginManifest & { installed: boolean }> = [];
     pluginError = '';
@@ -774,6 +803,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             }
             return;
         }
+        if (action === 'settings') {
+            self.openSettings();
+            return;
+        }
         if (action === 'plugins') {
             void self.openPlugins();
             return;
@@ -948,6 +981,56 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     /** Open the rename overlay for the active workflow document. */
+    get settingsTitle(): string { return this.t('settings', 'Workflow settings'); }
+    get descriptionLabel(): string { return this.t('description', 'Description'); }
+    get runTimeoutLabel(): string { return this.t('runTimeout', 'Run timeout'); }
+    get saveLabel(): string { return this.t('save', 'Save'); }
+
+    readonly openSettings = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.settingsDescription = self.designer?.definition.description || '';
+        self.settingsTimeout = String(self.designer?.defaultTimeout || 0);
+        self.settingsError = '';
+        self.showSettings = true;
+    };
+
+    readonly closeSettings = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showSettings = false;
+        self.settingsError = '';
+    };
+
+    readonly settingsDescriptionInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.settingsDescription = String(event?.target?.value ?? '');
+        self.settingsError = '';
+    };
+
+    readonly settingsTimeoutInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.settingsTimeout = String(event?.target?.value ?? '0');
+        self.settingsError = '';
+    };
+
+    readonly saveSettings = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (!self.designer) {
+            return;
+        }
+        const timeout = Number(self.settingsTimeout || 0);
+        if (!Number.isFinite(timeout) || timeout < 0) {
+            self.settingsError = self.t('timeoutInvalid', 'Enter a timeout of 0 or more milliseconds');
+            return;
+        }
+        self.designer.updateSettings({
+            description: self.settingsDescription,
+            timeout
+        });
+        self.showSettings = false;
+        self.settingsError = '';
+        self.scheduleAutosave();
+    };
+
     readonly openRename = (): void => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         self.renameValue = self.designer?.definition?.name || '';

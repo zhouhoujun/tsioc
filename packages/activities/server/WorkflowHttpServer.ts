@@ -298,7 +298,10 @@ export class WorkflowHttpController {
         @RequestBody() body: { context?: Record<string, any>; timeout?: number } = {}
     ) {
         const definition = await this.definitionToRun(id);
-        const timeout = Math.max(0, Number(body?.timeout) || 0);
+        const timeout = Math.max(
+            0,
+            Number(body?.timeout) || Number((definition.metadata as any)?.timeout) || 0
+        );
         const result = await this.execution.execute(definition, this.executionContext(body?.context), {
             timeout: timeout || undefined
         });
@@ -368,6 +371,7 @@ export class WorkflowHttpController {
         const queryPath = typeof query.path === 'string' && query.path ? query.path : '';
         const requestedPath = pathOverride || queryPath || '/hook';
         const response: { statusCode?: number; headers?: Record<string, any>; body?: any } = {};
+        const timeout = Math.max(0, Number((definition.metadata as any)?.timeout) || 0);
         const result = await this.execution.execute(definition, this.executionContext({
             request: {
                 method,
@@ -377,7 +381,9 @@ export class WorkflowHttpController {
                 body: adapter.read('body')
             },
             response
-        }) as any);
+        }) as any, {
+            timeout: timeout || undefined
+        });
         await this.persist(result);
 
         const status = Number(response.statusCode) || (result.success ? 200 : 500);
@@ -428,8 +434,10 @@ export class WorkflowHttpController {
         if (!body?.checkpoint) {
             throw new BadRequestException('checkpoint is required');
         }
+        const timeout = Math.max(0, Number((definition.metadata as any)?.timeout) || 0);
         const result = await this.execution.execute(definition, this.executionContext(body?.context), {
-            resumeFrom: body.checkpoint
+            resumeFrom: body.checkpoint,
+            timeout: timeout || undefined
         });
         await this.persist(result);
         return this.serializeResult(result);

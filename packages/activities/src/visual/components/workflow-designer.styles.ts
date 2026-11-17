@@ -587,6 +587,29 @@ export const WORKFLOW_DESIGNER_CSS = `
     color: var(--wf-theme-muted, #64748b);
 }
 
+.workflow-settings-panel {
+    width: min(420px, 100%);
+}
+
+.workflow-group-field textarea {
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    resize: vertical;
+    background: var(--wf-theme-surface, #ffffff);
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-group-field input[type="number"] {
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    background: var(--wf-theme-surface, #ffffff);
+    color: var(--wf-theme-text, #0f172a);
+}
+
 .workflow-group-field input[type="text"] {
     border: 1px solid var(--wf-theme-border, #e2e8f0);
     border-radius: 6px;

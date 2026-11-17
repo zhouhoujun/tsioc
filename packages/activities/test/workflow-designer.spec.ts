@@ -475,6 +475,35 @@ describe('Visual Workflow Designer', () => {
             expect(local.validate().valid).toBe(false);
         });
 
+        it('stores workflow description and default timeout', async () => {
+            const local = new WorkflowDesigner({ registry, service });
+            expect(local.updateSettings({ description: 'Runs nightly', timeout: 1200 })).toBe(true);
+            expect(local.definition.description).toBe('Runs nightly');
+            expect((local.definition.metadata as any).timeout).toBe(1200);
+            expect(local.defaultTimeout).toBe(1200);
+            expect(local.updateSettings({ timeout: -1 })).toBe(false);
+            expect(local.updateSettings({ timeout: 0 })).toBe(true);
+            expect((local.definition.metadata as any).timeout).toBeUndefined();
+
+            const definition = {
+                id: 'timeout-settings',
+                name: 'Timeout settings',
+                nodes: [
+                    registry.createNode('start', { x: 0, y: 0 }, { id: 'start_ts' }),
+                    registry.createNode('delay', { x: 200, y: 0 }, { id: 'delay_ts', config: { delay: 300 } })
+                ],
+                connections: [{
+                    id: 'ts1', sourceNodeId: 'start_ts', sourcePort: 'out',
+                    targetNodeId: 'delay_ts', targetPort: 'in'
+                }]
+            };
+            const timed = new WorkflowDesigner({ registry, service, definition });
+            timed.updateSettings({ timeout: 50 });
+            const result = await timed.run({ context: {} });
+            expect(result.success).toBe(false);
+            expect(result.data?.status).toBe('cancelled');
+        });
+
         it('renames and recolors groups', () => {
             const local = new WorkflowDesigner({ registry, service });
             local.selectNodes(['task_1', 'task_2']);
