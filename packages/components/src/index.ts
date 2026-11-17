@@ -16,6 +16,7 @@ export * from './refs/container';
 export * from './refs/element';
 export * from './refs/template';
 export * from './refs/view';
+export * from './refs/query-list';
 
 export * from './renderer/Node';
 export * from './renderer/Renderer';

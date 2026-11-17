@@ -23,9 +23,8 @@ import { noReact, ReactiveEffect } from '../effect';
  */
 @Abstract()
 export abstract class ViewContainerRef<T = any> {
-   
     [noReact] = true;
-    
+
     /**
      * Anchor element that specifies the location of this container in the containing view.
      * Each view container can have only one anchor element, and each anchor element
@@ -151,3 +150,6 @@ export abstract class ViewContainerRef<T = any> {
     abstract remove(index?: number): void;
 
 }
+
+/** Public alias used by ViewChild read tokens and host code. */
+export { ViewContainerRef as ContainerRef };

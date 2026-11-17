@@ -13,9 +13,12 @@ import { EmbeddedViewRef } from '../refs/view';
 import { ElementRef } from '../refs/element';
 import { Renderer } from '../renderer/Renderer';
 import { TemplateRef, TemplateFactory } from '../refs/template';
-import { LOCAL_REFS, RNode } from '../renderer/Node';
+import { RNode } from '../renderer/Node';
 import { DirectiveRef } from '../refs/directive';
-import { ViewChildMetadata } from '../decorators/query';
+import { ViewChildMetadata, ViewChildrenMetadata } from '../decorators/query';
+import { QueryList } from '../refs/query-list';
+import { ViewContainerRef } from '../refs/container';
+import { markQueryBoundary } from './query-index';
 import { mergeTemplateSchemas } from '../template/schema';
 import { TEMPLATE_SCHEMAS } from '../template/schema-provider';
 import { DefaultReactiveEffect } from './effect';
@@ -44,6 +47,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     private _elementRef?: ElementRef<any>;
     private initCalled = false;
     private afterViewInitCalled = false;
+    private queryUnsubscribe?: () => void;
+    private queryResolveScheduled = false;
     constructor(
         _classRef: ClassRef<T>,
         context: NodeInjector,
@@ -100,6 +105,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
             this.injector.setValue(ElementRef, this._elementRef);
         }
         this.injector.setPayload(this._elementRef);
+        markQueryBoundary(this._elementRef?.nativeElement as RNode);
         if (!this.initCalled) {
             this.initCalled = true;
             const initResult = (this.instance as OnInit).onInit?.();
@@ -138,11 +144,18 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
             tempFacs.set(compiler, factory);
         }
         this._hostView?.destroy();
+        this.queryUnsubscribe?.();
+        this.queryUnsubscribe = undefined;
         const host = this._elementRef;
         const templateRef = factory(host, this.injector);
         this.injector.setValue(TemplateRef, templateRef);
-        this._hostView = templateRef.createEmbeddedView(this.instance, this.injector);
+        this._hostView = templateRef.createEmbeddedView(this.instance, this.injector, undefined, {
+            queryRoot: true,
+            queryEnabled: !!(def.viewChilds?.length || def.viewChildrens?.length)
+        });
+        markQueryBoundary(this._elementRef?.nativeElement as RNode, this._hostView.queryIndex);
         this.attachHostViewToElement();
+        this.subscribeViewQueries();
         this.resolveViewChilds(def);
         if (!this.afterViewInitCalled) {
             this.afterViewInitCalled = true;
@@ -179,11 +192,76 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
 
     protected resolveViewChilds(def: ComponentDef): void {
         const queries = def.viewChilds || [];
-        if (!queries.length) {
-            return;
-        }
         queries.forEach(query => {
             (this.instance as any)[query.propertyKey] = this.resolveViewChild(query);
+        });
+        const childrenQueries = def.viewChildrens || [];
+        if (childrenQueries.length) {
+            this.resolveViewChildrens(childrenQueries);
+        }
+    }
+
+    protected resolveViewChildrens(queries: ViewChildrenMetadata[]): void {
+        queries.forEach(query => {
+            let list = (this.instance as any)[query.propertyKey] as QueryList<any>;
+            if (!(list instanceof QueryList)) {
+                list = new QueryList<any>();
+                (this.instance as any)[query.propertyKey] = list;
+            }
+            const next = this.resolveViewChildren(query);
+            const current = list.toArray();
+            if (current.length !== next.length || current.some((value, index) => value !== next[index])) {
+                list.reset(next);
+            }
+        });
+    }
+
+    protected resolveViewChildren(query: ViewChildrenMetadata): any[] {
+        const propertyType = query.type as AbstractType | undefined;
+        const selector = query.selector ?? propertyType;
+        if (!selector || !this._hostView) {
+            return [];
+        }
+        const index = this._hostView.queryIndex;
+        if (typeof selector === 'string') {
+            const nodes = index?.queryByName(selector) ?? [];
+            if (nodes.length) {
+                return nodes.map(node => this.readNodeValue(node, query, propertyType));
+            }
+            const found = this._hostView.queryAll(selector) || [];
+            return found.map(result => result instanceof ElementRef
+                ? this.readNodeValue(result.nativeElement as RNode, query, propertyType)
+                : this.readResolvedValue(result, query, propertyType));
+        }
+
+        const entries = index?.queryByType(selector as AbstractType) ?? [];
+        if (entries.length) {
+            return entries.map(entry => this.readNodeValue(entry.node, query, propertyType));
+        }
+        const found = this._hostView.queryAll(selector as any) || [];
+        return found.map(result => this.readResolvedValue(result, query, propertyType));
+    }
+
+    private subscribeViewQueries(): void {
+        this.queryUnsubscribe?.();
+        const index = this._hostView?.queryIndex;
+        if (!index) {
+            return;
+        }
+        this.queryUnsubscribe = index.onChange(() => this.scheduleViewChildResolve());
+    }
+
+    private scheduleViewChildResolve(): void {
+        if (this.queryResolveScheduled) {
+            return;
+        }
+        this.queryResolveScheduled = true;
+        Promise.resolve().then(() => {
+            this.queryResolveScheduled = false;
+            if (this.injector.destroyed || !this._hostView || this._hostView.destroyed) {
+                return;
+            }
+            this.resolveViewChilds(this.def);
         });
     }
 
@@ -193,72 +271,43 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         if (!selector || !this._hostView) {
             return undefined;
         }
+        const index = this._hostView.queryIndex;
         if (typeof selector === 'string') {
-            const node = this.resolveViewChildNode(selector);
-            if (!node) {
-                return undefined;
+            // Local refs are indexed per view; duplicates keep document order.
+            const refNodes = index?.queryByName(selector) ?? [];
+            if (refNodes.length) {
+                return this.readNodeValue(refNodes[0], query, propertyType);
             }
-            return this.readNodeValue(node, query, propertyType);
+            // Also supports tag/attribute/CSS selectors such as `probe-child`.
+            const found = this._hostView.query(selector);
+            if (found) {
+                if (found instanceof ElementRef) {
+                    return this.readNodeValue(found.nativeElement as RNode, query, propertyType);
+                }
+                return this.readResolvedValue(found, query, propertyType);
+            }
+            return undefined;
         }
+
+        const entries = index?.queryByType(selector as AbstractType) ?? [];
+        if (entries.length) {
+            return this.readNodeValue(entries[0].node, query, propertyType);
+        }
+
         const result = this._hostView.query(selector as any);
         return this.readResolvedValue(result, query, propertyType);
     }
 
-    protected resolveViewChildNode(selector: string): RNode | null {
-        const normalizedRefName = selector.startsWith('#') ? selector.slice(1) : selector;
-        const refNode = this._hostView?.injector.getLocalRefNode(normalizedRefName) ?? this.findNodeByLocalRef(selector);
-        if (refNode) {
-            return refNode;
-        }
-        if (this.isSelectorExpression(selector)) {
-            const found = this._hostView?.query(selector);
-            return (found instanceof ElementRef
-                ? found.nativeElement
-                : ((found as any)?.elementRef?.nativeElement || null)) as RNode | null;
-        }
-        return null;
-    }
-
-    protected isSelectorExpression(selector: string): boolean {
-        return /^[#.[\s>:*]/.test(selector) || selector.includes('[') || selector.includes(' ');
-    }
-
-    protected findNodeByLocalRef(refName: string): RNode | null {
-        const normalizedRefName = refName.startsWith('#') ? refName.slice(1) : refName;
-        const walk = (node: RNode): RNode | null => {
-            const localRefs = (node as any)[LOCAL_REFS] as string[] | undefined;
-            if (localRefs?.includes(normalizedRefName)) {
-                return node;
-            }
-            const children = (node as any)?.childNodes as RNode[] | undefined;
-            if (!children?.length) {
-                return null;
-            }
-            for (const child of children) {
-                const found = walk(child);
-                if (found) {
-                    return found;
-                }
-            }
-            return null;
-        };
-
-        for (const node of this._hostView?.rootNodes || []) {
-            const found = walk(node);
-            if (found) {
-                return found;
-            }
-        }
-        return null;
-    }
-
-    protected readNodeValue(node: RNode, query: ViewChildMetadata, propertyType?: AbstractType): any {
+    protected readNodeValue(node: RNode, query: ViewChildMetadata | ViewChildrenMetadata, propertyType?: AbstractType): any {
         const read = query.read as any;
         if (read === TemplateRef || propertyType === TemplateRef) {
             return this._hostView?.injector.getTemplateRef(node) ?? undefined;
         }
         if (read === ElementRef || propertyType === ElementRef) {
             return this._hostView?.injector.getElementRef(node) ?? undefined;
+        }
+        if (read === ViewContainerRef || propertyType === ViewContainerRef) {
+            return this._hostView?.injector.getViewContainerRef(node) ?? undefined;
         }
         const componentRef = this._hostView?.injector.getComponentRefByNode(node) ?? null;
         if (read === ComponentRef || propertyType === ComponentRef) {
@@ -318,6 +367,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     }
 
     protected override clean(): void {
+        this.queryUnsubscribe?.();
+        this.queryUnsubscribe = undefined;
         (this.instance as OnDestroy)?.onDestroy?.();
         super.clean();
         this.hostView?.destroy();

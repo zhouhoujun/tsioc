@@ -51,7 +51,7 @@ export abstract class TemplateRef<C = any> {
      * @param effect ReactiveEffect to be used for the embedded view.
      * @returns The new embedded view object.
      */
-    abstract createEmbeddedView(context: C, injector?: NodeInjector, effect?: ReactiveEffect): EmbeddedViewRef<C>;
+    abstract createEmbeddedView(context: C, injector?: NodeInjector, effect?: ReactiveEffect, options?: { queryRoot?: boolean; queryEnabled?: boolean }): EmbeddedViewRef<C>;
 
 }
 

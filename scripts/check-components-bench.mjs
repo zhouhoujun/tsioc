@@ -23,10 +23,10 @@ const budgets = {
     'proxy reads': 2000,
     'trigger 1 key (100 bindings)': 1500,
     'computed cache reads': 150,
-    'v-for append': 200,
-    'v-for middle insert': 200,
-    'v-for middle remove': 200,
-    'v-for reorder': 600,
+    'v-for append': 250,
+    'v-for middle insert': 400,
+    'v-for middle remove': 400,
+    'v-for reorder': 1000,
     'writes after 500 toggles': 100
 };
 

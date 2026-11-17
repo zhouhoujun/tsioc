@@ -6,9 +6,10 @@ import { NodeInjector } from '../refs/injector';
 import { DirectiveDef } from '../refs/directive';
 import { ComponentDef } from '../refs/component';
 import { NodeType, RNode, RText, RElement, RAttr, RComment, BINDINGS, DIRECTIVES, COMPONENTDEF, CUSTOM_ELEMENTS, LOCAL_REFS } from '../renderer/Node';
-import { noReact, ReactiveEffect } from '../effect';
+import { ReactiveScope, noReact, ReactiveEffect } from '../effect';
 import { Renderer } from '../renderer/Renderer';
 import { createEmbeddedViewRef } from './view';
+import { ViewQueryIndex, lookupQueryIndex, runWithQueryIndex } from './query-index';
 import { isReactive, reactive } from '../reactive';
 import { isStructuralContainer } from './structural-container';
 
@@ -63,7 +64,7 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
      * @param injector NodeInjector to be used within the embedded view.
      * @returns The new embedded view object.
      */
-    createEmbeddedView(context?: C, injector?: NodeInjector, effect?: ReactiveEffect): EmbeddedViewRef<C> {
+    createEmbeddedView(context?: C, injector?: NodeInjector, effect?: ReactiveEffect, options?: { queryRoot?: boolean; queryEnabled?: boolean }): EmbeddedViewRef<C> {
         injector = injector || this.options?.injector;
         if (!injector) throw new Exception('NodeInjector is required');
 
@@ -111,17 +112,35 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         // instead of leaving dead work in the effect dependency map.
         const scope = effect.createScope();
 
+        // Query index belongs to this view. Nested views created while this
+        // view's bindings run mount themselves under it through the reactive run.
+        const parentIndex = options?.queryRoot ? undefined : lookupQueryIndex(this.elementRef?.nativeElement as RNode);
+        const queryEnabled = !!options?.queryEnabled || !!parentIndex;
+        const queryIndex = queryEnabled ? new ViewQueryIndex(parentIndex) : undefined;
+
         // 默认处理抽象节点
         let rootNodes: RNode[];
         if (this._rootNodesFactory) {
-            rootNodes = scope.run(() => this._rootNodesFactory!(renderer, injector, context as C, effect));
+            rootNodes = runWithQueryIndex(queryIndex,
+                () => scope.run(() => this._rootNodesFactory!(renderer, injector, context as C, effect)));
         } else {
             rootNodes = this.rootNodes.map(n => this.clone(n, renderer));
-            scope.run(() => rootNodes.forEach(node => this.bindings(node, context!, effect, injector)));
         }
 
+        // Index this view before bindings create nested views, so nested nodes
+        // are owned by their own index and never double-counted here.
+        queryIndex?.rebuild(rootNodes, injector);
+
+        if (!this._rootNodesFactory) {
+            runWithQueryIndex(queryIndex, () => scope.run(
+                () => rootNodes.forEach(node => this.bindings(node, context!, effect, injector))
+            ));
+        }
+        queryIndex?.refreshTypes();
+        parentIndex?.mount(queryIndex!);
+
         // 创建嵌入式视图
-        const embeddedView = createEmbeddedViewRef(rootNodes, context!, injector, effect, scope);
+        const embeddedView = createEmbeddedViewRef(rootNodes, context!, injector, effect, scope, queryIndex);
 
         return embeddedView;
     }
@@ -160,7 +179,10 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         cloned[DIRECTIVES] = node[DIRECTIVES]?.slice(0);
         cloned[CUSTOM_ELEMENTS] = node[CUSTOM_ELEMENTS]?.slice(0);
         cloned[COMPONENTDEF] = node[COMPONENTDEF];
-        cloned[LOCAL_REFS] = node[LOCAL_REFS]?.slice(0);
+        const localRefs = node[LOCAL_REFS]?.slice(0);
+        if (localRefs?.length) {
+            cloned[LOCAL_REFS] = localRefs;
+        }
         if (node.childNodes?.length) {
             node.childNodes.forEach(n => {
                 cloned.appendChild(this.clone(n, renderer));
@@ -196,13 +218,20 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
         }
 
         const attributes = renderer.getAttributes(element);
+        const localRefs: string[] = [];
         if (attributes?.length) {
             attributes.forEach((attr: RAttr) => {
                 if (!attr?.name) {
                     return;
                 }
+                if (attr.name.startsWith('#') && attr.name.length > 1) {
+                    localRefs.push(attr.name.slice(1));
+                }
                 renderer.setAttribute(clonedElement, attr.name, attr.value, attr.namespace);
             });
+        }
+        if (localRefs.length) {
+            clonedElement[LOCAL_REFS] = localRefs;
         }
 
         return clonedElement;

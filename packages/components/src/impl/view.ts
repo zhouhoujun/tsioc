@@ -1,6 +1,7 @@
 import { Type } from '@tsdi/ioc';
 import { ReactiveEffect, ReactiveScope, noReact } from '../effect';
 import { ComponentRef } from '../refs/component';
+import { ViewQueryIndex } from './query-index';
 import { EmbeddedViewRef, ViewRef } from '../refs/view';
 import { RNode } from '../renderer/Node';
 import { DirectiveRef } from '../refs/directive';
@@ -44,7 +45,8 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         readonly context: C,
         readonly injector: NodeInjector,
         effect?: ReactiveEffect,
-        private scope?: ReactiveScope
+        private scope?: ReactiveScope,
+        readonly queryIndex: ViewQueryIndex | undefined = undefined
     ) {
         this.effect = effect ?? injector.get(ReactiveEffect);
         injector.onDestroy(this);
@@ -81,6 +83,12 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
         // Remove the dependency functions registered by this view's bindings.
         this.scope?.dispose();
         this.scope = undefined;
+
+        // Detach from the parent query index and release our own entries.
+        if (this.queryIndex) {
+            this.queryIndex.parent?.unmount(this.queryIndex);
+            this.queryIndex.clear();
+        }
 
     }
 
@@ -141,7 +149,8 @@ export function createEmbeddedViewRef<C>(
     context: C,
     injector: NodeInjector,
     effect?: ReactiveEffect,
-    scope?: ReactiveScope) {
-    return new EmbeddedViewRefImpl(rootNodes, context, injector, effect, scope)
+    scope?: ReactiveScope,
+    queryIndex?: ViewQueryIndex) {
+    return new EmbeddedViewRefImpl(rootNodes, context, injector, effect, scope, queryIndex)
 
 }

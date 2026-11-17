@@ -5,6 +5,7 @@ import { TemplateRef } from './template';
 import { ElementRef } from './element';
 import { NodeInjector } from './injector';
 import { noReact, ReactiveEffect } from '../effect';
+import type { ViewQueryIndex } from '../impl/query-index';
 
 
 
@@ -108,6 +109,9 @@ export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
    * The injector context for this view.
    */
   abstract get injector(): NodeInjector;
+
+  /** Per-view local ref/component index used by ViewChild queries. */
+  abstract get queryIndex(): ViewQueryIndex | undefined;
 
   // 添加计算属性缓存
   abstract get computedCache(): Map<string, { value: any, deps: Set<any> }>;
