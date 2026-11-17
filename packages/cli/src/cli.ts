@@ -54,7 +54,6 @@ program
                 console.log(chalk.gray('init activity project...'));
                 cmds = [
                     '@tsdi/ioc',
-                    '@tsdi/annotations',
                     '@tsdi/aop',
                     '@tsdi/logger',
                     '@tsdi/core',
@@ -63,11 +62,9 @@ program
                 if (options.browser) {
                     cmds.push('@tsdi/platform-browser');
                     cmds.push('@tsdi/platform-browser-boot');
-                    cmds.push('@tsdi/platform-browser/activities');
                 } else {
                     cmds.push('@tsdi/platform-server');
                     cmds.push('@tsdi/platform-server-boot');
-                    cmds.push('@tsdi/platform-server/activities');
                 }
                 initcmds = `npm install ${initcmds} ${cmds.join(version) + version} --save${options.dev ? '-dev' : ''}`;
                 console.log(initcmds);
@@ -77,13 +74,11 @@ program
                 console.log(chalk.gray('init pack project...'));
                 cmds = [
                     '@tsdi/ioc',
-                    '@tsdi/annotations',
                     '@tsdi/aop',
                     '@tsdi/logger',
                     '@tsdi/core',
                     '@tsdi/platform-server',
                     '@tsdi/activities',
-                    '@tsdi/platform-server/activities',
                     '@tsdi/pack',
                     '@tsdi/unit',
                     '@tsdi/unit-console'
@@ -96,7 +91,6 @@ program
                 console.log(chalk.gray('init boot project...'));
                 cmds = [
                     '@tsdi/ioc',
-                    '@tsdi/annotations',
                     '@tsdi/aop',
                     '@tsdi/core',
                     '@tsdi/logger'
@@ -115,7 +109,6 @@ program
                 cmds = [
                     '@tsdi/ioc',
                     '@tsdi/core',
-                    '@tsdi/annotations',
                     '@tsdi/aop',
                     '@tsdi/logger'
                 ];
