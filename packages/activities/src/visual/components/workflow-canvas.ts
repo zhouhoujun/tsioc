@@ -457,6 +457,10 @@ export class WorkflowCanvasComponent implements AfterViewInit {
         if (['Delete', 'Backspace', 'Escape', 'z', 'Z', 'y', 'Y', 'd', 'D'].includes(key)) {
             event?.preventDefault?.();
         }
+        if ((event?.ctrlKey || event?.metaKey) && ['f', 'F', 'k', 'K'].includes(key)) {
+            // Keep the browser's find bar / search box from stealing these.
+            event?.preventDefault?.();
+        }
         this.emit({
             type: 'key-down',
             event,

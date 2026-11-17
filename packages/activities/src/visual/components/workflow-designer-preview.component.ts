@@ -54,6 +54,22 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
  * adds multi-document tabs and the workflow library on top; products such as
  * the microservice admin embed this component directly for a single document.
  */
+/** Compare a model cache key without building a string per read. */
+function sameModelKey(previous: any[], next: any[]): boolean {
+    if (previous === next) {
+        return true;
+    }
+    if (!previous || !next || previous.length !== next.length) {
+        return false;
+    }
+    for (let index = 0; index < next.length; index++) {
+        if (previous[index] !== next[index]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 @Component({
     selector: 'workflow-designer-preview',
     template: `
@@ -116,6 +132,23 @@ import { installWorkflowDesignerStyles } from './workflow-designer.styles';
                         <span class="workflow-quick-add-category">{{item.category}}</span>
                     </button>
                     <div class="workflow-quick-add-empty" v-if="!quickAddItems.length">{{quickAddEmpty}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="workflow-quick-add workflow-find" v-if="showFind" @click="closeFind">
+            <div class="workflow-quick-add-panel workflow-find-panel" @click="stopShortcutClick">
+                <input class="workflow-find-input" type="search"
+                    placeholder="{{tr('findPlaceholder', 'Find a node by name, id or type')}}" [value]="findQuery"
+                    @input="findInput" @keydown="findKey" />
+                <div class="workflow-quick-add-list">
+                    <button v-for="(item, index) in findResults" type="button"
+                        class="workflow-quick-add-item workflow-find-item" data-find-node="{{item.id}}"
+                        [class]="findItemClass(index)"
+                        @click="chooseFind(index)">
+                        <span class="workflow-quick-add-label">{{item.label}}</span>
+                        <span class="workflow-quick-add-category">{{item.type}}</span>
+                    </button>
+                    <div class="workflow-quick-add-empty" v-if="!findResults.length">{{tr('findEmpty', 'No matching nodes.')}}</div>
                 </div>
             </div>
         </div>
@@ -211,6 +244,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     showShortcuts = false;
     showNodeMenu = false;
     selectionBox: { x: number; y: number; width: number; height: number } | undefined = undefined;
+    showFind = false;
+    findQuery = '';
+    findIndex = 0;
+    findResults: Array<{ id: string; label: string; type: string }> = [];
     showQuickAdd = false;
     quickAddQuery = '';
     quickAddIndex = 0;
@@ -250,7 +287,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         revision: number;
         model: ReturnType<typeof buildWorkflowCanvasModel>;
     };
-    @NoReactive() private toolbarModelCache?: { key: string; model: ReturnType<typeof buildWorkflowToolbarModel> };
+    @NoReactive() private toolbarModelCache?: { key: any[]; model: ReturnType<typeof buildWorkflowToolbarModel> };
     @NoReactive() private inspectorModelCache?: {
         nodeId: string;
         name: string;
@@ -275,7 +312,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         locale: string;
         model: ReturnType<typeof buildWorkflowRunHistory>;
     };
-    @NoReactive() private statusModelCache?: { key: string; model: ReturnType<typeof buildWorkflowStatusModel> };
+    @NoReactive() private statusModelCache?: { key: any[]; model: ReturnType<typeof buildWorkflowStatusModel> };
     @NoReactive() private paletteCache?: { key: string; groups: WorkflowPaletteGroup[] };
     @NoReactive() private runLogsCache?: { execution: any; logs: any[] };
     @NoReactive() private codeSuggestionCache?: {
@@ -362,8 +399,15 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return this.localeValue === 'zh-CN';
     }
 
+    /** Template-facing translate helper (bindings cannot call the private method). */
+    readonly tr = (key: string, fallback: string): string => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        return self.t(key, fallback);
+    };
+
     private t(key: string, fallback: string): string {
-        return translateWorkflow(this.translator, this.localeValue, `workflow.ui.${key}`, fallback);
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        return translateWorkflow(self.translator, self.localeValue, `workflow.ui.${key}`, fallback);
     }
 
     get nodeWord(): string {
@@ -515,6 +559,113 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 self.chooseQuickAdd(item.type);
             }
         }
+    };
+
+    /** Match nodes on the canvas by name, id or type. */
+    protected matchNodes(query: string): Array<{ id: string; label: string; type: string }> {
+        const term = String(query || '').trim().toLowerCase();
+        return this.designer.nodes
+            .filter(node => {
+                if (!term) {
+                    return true;
+                }
+                return [node.id, node.name, node.type, node.description]
+                    .some(value => String(value || '').toLowerCase().includes(term));
+            })
+            .slice(0, 40)
+            .map(node => ({
+                id: node.id,
+                label: node.name || node.id,
+                type: node.type
+            }));
+    }
+
+    findItemClass(index: number): Record<string, boolean> {
+        return {
+            'workflow-quick-add-item': true,
+            'is-active': index === this.findIndex
+        };
+    }
+
+    readonly refreshFind = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.findResults = self.matchNodes(self.findQuery);
+        self.findIndex = 0;
+    };
+
+    readonly openFind = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.showFind = true;
+        self.findQuery = '';
+        self.refreshFind();
+        setTimeout(() => {
+            const document = (globalThis as { document?: Document }).document;
+            (document?.querySelector?.('.workflow-find-input') as any)?.focus?.();
+        }, 0);
+    };
+
+    readonly closeFind = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.showFind = false;
+        self.findQuery = '';
+        self.findIndex = 0;
+        self.findResults = [];
+    };
+
+    readonly findInput = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.findQuery = String(event?.target?.value ?? '');
+        self.refreshFind();
+    };
+
+    readonly findKey = (event: any): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        const key = String(event?.key || '');
+        const items = self.findResults;
+        if (key === 'ArrowDown') {
+            event?.preventDefault?.();
+            self.findIndex = Math.min(Math.max(0, items.length - 1), self.findIndex + 1);
+            return;
+        }
+        if (key === 'ArrowUp') {
+            event?.preventDefault?.();
+            self.findIndex = Math.max(0, self.findIndex - 1);
+            return;
+        }
+        if (key === 'Escape') {
+            event?.preventDefault?.();
+            self.closeFind();
+            return;
+        }
+        if (key === 'Enter') {
+            event?.preventDefault?.();
+            self.chooseFind(self.findIndex);
+        }
+    };
+
+    /** Select the matched node and bring it to the middle of the viewport. */
+    readonly chooseFind = (index: number): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        const item = self.findResults[index] || self.findResults[0];
+        if (!item) {
+            return;
+        }
+        const node = self.designer.nodes.find(entry => entry.id === item.id);
+        if (!node) {
+            return;
+        }
+        self.designer.selectNode(node.id);
+        const viewport = self.canvasViewport();
+        if (viewport) {
+            const frame = workflowNodeFrame(node);
+            const zoom = self.designer.zoom || 1;
+            self.designer.pan = {
+                x: Math.round(viewport.width / 2 - (node.position.x + frame.width / 2) * zoom),
+                y: Math.round(viewport.height / 2 - (node.position.y + frame.height / 2) * zoom)
+            };
+        }
+        self.closeFind();
+        self.notifyChange();
     };
 
     readonly chooseQuickAdd = (type: string): void => {
@@ -774,6 +925,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             { action: this.t('save', 'Save'), keys: 'Ctrl+S' },
             { action: this.t('library', 'Workflows'), keys: 'Ctrl+O' },
             { action: this.t('run', 'Run'), keys: 'Ctrl+Enter' },
+            { action: this.t('findNode', 'Find node'), keys: 'Ctrl+F' },
             { action: this.t('undo', 'Undo'), keys: 'Ctrl+Z' },
             { action: this.t('redo', 'Redo'), keys: 'Ctrl+Y' },
             { action: this.t('duplicate', 'Duplicate'), keys: 'Ctrl+D' },
@@ -913,7 +1065,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     get toolbarModel() {
         const key = this.toolbarModelKey();
         const cache = this.toolbarModelCache;
-        if (cache && cache.key === key) {
+        if (cache && sameModelKey(cache.key, key)) {
             return cache.model;
         }
         const model = { ...buildWorkflowToolbarModel(this.designer, this.localeValue, this.translator), scheduling: this.scheduling };
@@ -924,7 +1076,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     get statusModel() {
         const key = this.statusModelKey();
         const cache = this.statusModelCache;
-        if (cache && cache.key === key) {
+        if (cache && sameModelKey(cache.key, key)) {
             return cache.model;
         }
         const model = buildWorkflowStatusModel(this.designer, this.localeValue, this.translator);
@@ -1090,44 +1242,45 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return values;
     }
 
-    private toolbarModelKey(): string {
+    private toolbarModelKey(): any[] {
         const designer = this.designer;
         return [
             this.localeValue,
             designer.definition?.name || '',
             designer.nodes?.length || 0,
             designer.connections?.length || 0,
-            designer.selection?.nodeId || '',
-            (designer.selectedNodeIds || []).join(','),
-            designer.selection?.connectionId || '',
-            designer.canUndo ? 1 : 0,
-            designer.canRedo ? 1 : 0,
-            designer.canResume ? 1 : 0,
-            designer.running ? 1 : 0,
-            this.scheduling ? 1 : 0,
+            // `selection` is replaced immutably, so its identity covers the
+            // primary node, the multi-selection and the selected connection.
+            // Reading `selectedNodeIds` here would allocate on every read.
+            designer.selection,
+            designer.canUndo,
+            designer.canRedo,
+            designer.canResume,
+            designer.running,
+            this.scheduling,
             designer.zoom,
             designer.execution?.status || ''
-        ].join('|');
+        ];
     }
 
-    private statusModelKey(): string {
+    private statusModelKey(): any[] {
         const designer = this.designer;
         const selected = designer.selectedNode;
         return [
             this.localeValue,
             designer.message || '',
-            JSON.stringify(designer.messageParams || {}),
+            designer.messageParams,
             designer.error || '',
-            JSON.stringify(designer.errorParams || {}),
-            designer.running ? 1 : 0,
+            designer.errorParams,
+            designer.running,
             designer.nodes?.length || 0,
             selected?.id || '',
             selected?.name || '',
             selected?.type || '',
-            String(this.registry.revision),
+            this.registry.revision,
             designer.zoom,
             designer.execution?.status || ''
-        ].join('|');
+        ];
     }
 
     readonly notifyChange = (): void => {
@@ -1903,6 +2056,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'k' || key === 'K')) {
             this.openQuickAdd();
+            return;
+        }
+        if ((payload.ctrlKey || payload.metaKey) && (key === 'f' || key === 'F')) {
+            this.openFind();
             return;
         }
         if ((payload.ctrlKey || payload.metaKey) && (key === 'g' || key === 'G')) {

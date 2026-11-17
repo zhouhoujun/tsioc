@@ -490,6 +490,22 @@ export const WORKFLOW_DESIGNER_CSS = `
     background: var(--wf-theme-overlay, rgba(15, 23, 42, 0.42));
 }
 
+.workflow-find-panel {
+    width: min(460px, 92vw);
+}
+
+.workflow-find-panel .workflow-quick-add-item {
+    gap: 8px;
+}
+
+.workflow-find-item .workflow-quick-add-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .workflow-quick-add-panel {
     width: min(480px, 92vw);
     display: flex;

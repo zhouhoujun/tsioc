@@ -16,7 +16,7 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 880_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 895_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 function freePort() {
@@ -528,6 +528,28 @@ function startDesignerServer(port) {
         await page.waitForTimeout(120);
         const metricsClosed = await page.evaluate(() => !document.querySelector('.workflow-metrics'));
 
+        // Ctrl+F finds a node on the canvas and centres it.
+        await page.locator('.workflow-canvas').focus();
+        await page.keyboard.press('Control+f');
+        await page.waitForTimeout(220);
+        const findOpened = await page.evaluate(() => ({
+            open: !!document.querySelector('.workflow-find'),
+            count: document.querySelectorAll('.workflow-find-item').length
+        }));
+        await page.fill('.workflow-find-input', 'task_2');
+        await page.waitForTimeout(180);
+        const findFiltered = await page.evaluate(() => ({
+            count: document.querySelectorAll('.workflow-find-item').length,
+            first: document.querySelector('.workflow-find-item')?.getAttribute('data-find-node')
+        }));
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(280);
+        const findSelected = await page.evaluate(() => ({
+            closed: !document.querySelector('.workflow-find'),
+            selected: Array.from(document.querySelectorAll('.workflow-node.is-selected'))
+                .map(el => el.getAttribute('data-node-id'))
+        }));
+
         // Verify the library list is backed by the HTTP service.
         await page.evaluate(() => window.workflowDesigner.toolbarAction('open-library'));
         await page.waitForSelector('.workflow-library-row', { timeout: 5000 });
@@ -704,7 +726,7 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, metricsTrend, metricsWindowSwitch, metricsClosed, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, metricsTrend, metricsWindowSwitch, metricsClosed, findOpened, findFiltered, findSelected, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > INITIAL_JS_BUDGET || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !partialClean || !enterNewline || !tabAccepts
@@ -718,6 +740,9 @@ function startDesignerServer(port) {
             || metricsTrend.windows !== 3 || metricsTrend.rows !== 12
             || !metricsTrend.widths.some(width => /width:(?!0%)\d+%/.test(width))
             || metricsWindowSwitch.rows !== 12 || metricsWindowSwitch.active !== 'Last hour' || !metricsClosed
+            || !findOpened.open || findOpened.count < 6
+            || findFiltered.count !== 1 || findFiltered.first !== 'task_2'
+            || !findSelected.closed || !findSelected.selected.includes('task_2')
             || optionCount !== 8 || !compareHidden || !compareVisible || !compareHiddenAgain
             || actionPlaceholder !== 'actions.fetch' || !groupTitles.includes('Reliability')
             || !retrySet || !retryReset

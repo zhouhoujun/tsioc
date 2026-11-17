@@ -340,8 +340,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     private workflowTabs: WorkflowDocumentTab[] = [];
     private activeTabId = '';
-    private tabVersion = 0;
-    private tabSourceCache?: TabBarSource;
+    private tabSourceCache?: { key: string; source: TabBarSource };
     private reactiveEffect?: ReactiveEffect;
     private menuClickHandler?: (event: any) => void;
     saveState: 'saved' | 'dirty' | 'saving' | 'error' = 'saved';
@@ -398,8 +397,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @NoReactive() private keyHandler?: (event: any) => void;
     @NoReactive() private documentRef?: any;
     @NoReactive() private actionBusUnsubscribe?: () => void;
-    @NoReactive() private readonly subflowParents = new Map<string, string>();
-    private subflowVersion = 0;
+    /** Subflow tab -> parent workflow id; replaced (not mutated) on write. */
+    private subflowParents: Record<string, string> = {};
 
     readonly registry: WorkflowNodeRegistry;
     private readonly service?: VisualWorkflowService;
@@ -507,27 +506,28 @@ export class WorkflowDesignerComponent implements OnDestroy {
         if (!model) {
             return model;
         }
-        // Read the version so breadcrumb menu changes are re-rendered after a
-        // subflow tab is opened.
-        void this.subflowVersion;
-        const parent = this.subflowParents.get(this.designer.definition.id);
+        // `subflowParents` is replaced on write, so this read is tracked and the
+        // breadcrumb updates without a manual invalidation counter.
+        const parent = this.subflowParents[this.designer?.definition.id];
         return parent ? { ...model, subflowParent: parent } : model;
     }
 
     get workflowTabSource(): TabBarSource {
-        // Read the revision so tab changes invalidate template bindings. The
-        // source object itself must stay stable between changes; returning a
-        // new object on every read feeds the tab-bar loop and its parent effect.
-        this.tabVersion;
-        if (this.tabSourceCache) {
-            return this.tabSourceCache;
+        // The source object must stay stable between changes (a new object on
+        // every read feeds the tab-bar loop and its parent effect), so cache it
+        // against the label signature; renaming or switching a tab changes the
+        // signature and the binding re-renders.
+        const key = this.tabSourceKey();
+        const cache = this.tabSourceCache;
+        if (cache && cache.key === key) {
+            return cache.source;
         }
         const labels = this.workflowTabs.map(tab => ({
             id: tab.id,
             label: tab.designer.definition.name || this.t('newWorkflow', 'New workflow'),
             active: tab.id === this.activeTabId
         }));
-        this.tabSourceCache = {
+        const source: TabBarSource = {
             visible: true,
             items: labels,
             showCreate: true,
@@ -536,12 +536,24 @@ export class WorkflowDesignerComponent implements OnDestroy {
             close: id => { void this.closeWorkflowTab(id); },
             create: () => { void this.createWorkflowTab(); }
         };
-        return this.tabSourceCache;
+        this.tabSourceCache = { key, source };
+        return source;
     }
 
     get openWorkflowCount(): number {
-        this.tabVersion;
         return this.workflowTabs.length;
+    }
+
+    private tabSourceKey(): string {
+        return `${this.activeTabId}|${this.workflowTabs
+            .map(tab => `${tab.id}:${tab.designer?.definition?.name || ''}`)
+            .join('|')}`;
+    }
+
+    /** Replace the tab list: array identity is what bindings observe. */
+    private setWorkflowTabs(tabs: WorkflowDocumentTab[]): void {
+        this.workflowTabs = tabs;
+        this.tabSourceCache = undefined;
     }
 
     /** Create a blank workflow in a new tab. */
@@ -554,7 +566,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         );
         definition.id = self.nextWorkflowId();
         const tab = self.createTab(definition);
-        self.workflowTabs.push(tab);
+        self.setWorkflowTabs([...self.workflowTabs, tab]);
         self.setActiveTab(tab);
         self.emitTabs();
     }
@@ -575,7 +587,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
             }
             await self.persistActiveTab();
             const tab = self.createTab(definition, true);
-            self.workflowTabs.push(tab);
+            self.setWorkflowTabs([...self.workflowTabs, tab]);
             self.setActiveTab(tab);
             self.emitTabs();
             return true;
@@ -611,7 +623,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         if (!loaded.length) {
             return false;
         }
-        self.workflowTabs = loaded;
+        self.setWorkflowTabs(loaded);
         const active = loaded.find(tab => tab.id === activeId) || loaded[0];
         self.setActiveTab(active);
         self.emitTabs();
@@ -663,8 +675,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         this.activeTabId = tab.id;
         this.designer = tab.designer;
         this.saveState = tab.designer.dirty ? 'dirty' : 'saved';
-        this.tabSourceCache = undefined;
-        this.tabVersion += 1;
     }
 
     private activeTab(): WorkflowDocumentTab | undefined {
@@ -688,7 +698,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
         if (index < 0) {
             return;
         }
-        const [tab] = self.workflowTabs.splice(index, 1);
+        const tab = self.workflowTabs[index];
+        self.setWorkflowTabs(self.workflowTabs.filter((_, position) => position !== index));
         if (self.autosave && tab.designer.dirty) {
             try {
                 await self.saveTab(tab);
@@ -756,8 +767,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     private emitTabs(): void {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        self.tabSourceCache = undefined;
-        self.tabVersion += 1;
         const persisted = self.workflowTabs.filter(tab => tab.persisted);
         const active = self.activeTab();
         self.tabChangeAction?.({
@@ -973,7 +982,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
             return;
         }
         if (action === 'back-subflow') {
-            const parent = self.subflowParents.get(self.designer.definition.id);
+            const parent = self.subflowParents[self.designer.definition.id];
             if (parent) {
                 void self.openWorkflowTab(parent);
             }
@@ -1011,8 +1020,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         const parent = self.designer?.definition.id;
         const opened = await self.openWorkflowTab(id);
         if (opened && parent && parent !== id) {
-            self.subflowParents.set(id, parent);
-            self.subflowVersion += 1;
+            self.subflowParents = { ...self.subflowParents, [id]: parent };
         } else if (!opened) {
             self.designer.error = self.libraryError || self.t(
                 'notFound',

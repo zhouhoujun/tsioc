@@ -7,6 +7,7 @@ import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowDesignerComponent } from '../src/visual/components/workflow-designer.component';
 import { InMemoryWorkflowDefinitionStore } from '../src/visual/workflow-store';
 import { createDefaultWorkflowDefinition } from '../src/visual/workflow-designer';
+import { workflowNodeFrame } from '../src/visual/workflow-geometry';
 import { WORKFLOW_ACTION_BUS } from '../src/visual/workflow-action-bus';
 
 async function flush(): Promise<void> {
@@ -1625,6 +1626,69 @@ describe('Workflow Designer UI', () => {
         (root.querySelector('.workflow-deployments .workflow-publish-close') as any).click();
         await flush();
         expect(root.querySelector('.workflow-deployments')).toBeFalsy();
+    });
+
+    it('finds nodes by name, id or type and centres the match', async () => {
+        const canvas = root.querySelector('.workflow-canvas') as any;
+        // JSDOM has no layout, so give the canvas a viewport for centring.
+        canvas.getBoundingClientRect = () => ({
+            x: 0, y: 0, top: 0, left: 0, right: 900, bottom: 600,
+            width: 900, height: 600,
+            toJSON: () => ({})
+        });
+        const press = (key: string, options: Record<string, any> = {}) =>
+            canvas.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+                key, bubbles: true, cancelable: true, ...options
+            }));
+
+        press('f', { ctrlKey: true });
+        await waitFor(() => !!root.querySelector('.workflow-find'));
+        expect(root.querySelectorAll('.workflow-find-item').length).toBe(6);
+
+        const input = root.querySelector('.workflow-find-input') as any;
+        input.value = 'task';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(root.querySelectorAll('.workflow-find-item').length).toBe(3);
+
+        input.value = 'task_3';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        const items = Array.from(root.querySelectorAll('.workflow-find-item')) as any[];
+        expect(items.length).toBe(1);
+        expect(items[0].getAttribute('data-find-node')).toBe('task_3');
+
+        const node = ref.instance.designer.nodes.find(entry => entry.id === 'task_3')!;
+        const before = { ...ref.instance.designer.pan };
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', {
+            key: 'Enter', bubbles: true, cancelable: true
+        }));
+        await waitFor(() => !root.querySelector('.workflow-find'));
+
+        expect(ref.instance.designer.selectedNodeIds).toEqual(['task_3']);
+        expect(ref.instance.designer.pan).not.toEqual(before);
+        // The centred node sits in the middle of the 900x600 viewport.
+        const frame = workflowNodeFrame(node);
+        expect(ref.instance.designer.pan.x)
+            .toBe(Math.round(450 - (node.position.x + frame.width / 2) * ref.instance.designer.zoom));
+        expect(ref.instance.designer.pan.y)
+            .toBe(Math.round(300 - (node.position.y + frame.height / 2) * ref.instance.designer.zoom));
+        await flush();
+        expect(root.querySelector('.workflow-node[data-node-id="task_3"]')?.getAttribute('class') || '')
+            .toContain('is-selected');
+
+        // Escape closes without changing the selection.
+        press('f', { ctrlKey: true });
+        await waitFor(() => !!root.querySelector('.workflow-find'));
+        input.value = 'zzzz';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        expect(root.querySelectorAll('.workflow-find-item').length).toBe(0);
+        (root.querySelector('.workflow-find-input') as any).dispatchEvent(
+            new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+        );
+        await waitFor(() => !root.querySelector('.workflow-find'));
+        expect(ref.instance.designer.selectedNodeIds).toEqual(['task_3']);
     });
 
     it('shows execution metrics and a windowed trend for the active workflow', async () => {
