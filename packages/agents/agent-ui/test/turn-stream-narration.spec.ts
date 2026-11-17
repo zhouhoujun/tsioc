@@ -10,6 +10,7 @@ import {
     runTurnStreamView
 } from '../src/AgentConsoleTurnStreamController';
 import { presentAgentConsoleSessionContent, projectAgentConsoleExecutionMainline } from '../src/AgentConsoleSessionContentPresenter';
+import { clearStreamingMessageState } from '../src/AgentConsoleTurnBackground';
 
 /**
  * Regression coverage for the narration/final-answer fusion defect.
@@ -198,6 +199,28 @@ export class TurnStreamNarrationTest {
         (host.state as any).sessionId = state.turnSessionId;
         forceStreamingAssistantMessageFlush(host, state);
         expect(host.state.messages.some(item => String(item.content || '').includes('background text'))).toEqual(true);
+    }
+
+    @Test('clearing a stream cancels the pending coalesced flush')
+    async clearingCancelsPendingFlush() {
+        const host = createFakeHost();
+        const state = newStreamState();
+        state.turnSessionId = host.state.sessionId;
+        let writes = 0;
+        const original = host.state.setMessages.bind(host.state);
+        (host.state as any).setMessages = (next: AgentMessage[], ...rest: any[]) => {
+            writes += 1;
+            original(next, ...rest);
+        };
+        const assistant = startTurn(host);
+        const rowIndex = host.state.messages.findIndex(item => item.id === assistant.id);
+        host.state.messages[rowIndex] = { ...host.state.messages[rowIndex], content: '', metadata: { streaming: true } };
+        const baseline = writes;
+
+        consumeStreamChunkView(host, state, { type: 'text', content: 'late text' }, assistant);
+        clearStreamingMessageState(state);
+        await new Promise(resolve => setTimeout(resolve, 80));
+        expect(writes - baseline).toEqual(0);
     }
 
     @Test('separates interim narration from the final answer around a tool call')

@@ -3,6 +3,19 @@ import { appendReasoningText } from './AgentConsoleTurnReasoning';
 
 /** Reset per-turn scratch state (including the owning session/row refs). */
 export function clearStreamingMessageState(state: AgentConsoleTurnStreamState): void {
+    // Cancel a coalesced flush that has not fired yet; otherwise it would write
+    // the previous turn's text after this state was reset (or after destroy).
+    if (state.flushTimer !== undefined) {
+        if (state.flushRaf && typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(state.flushTimer);
+        } else if (typeof clearTimeout === 'function') {
+            clearTimeout(state.flushTimer);
+        }
+        state.flushTimer = undefined;
+    }
+    state.flushRaf = false;
+    state.flushPending = false;
+    state.flushMessage = undefined;
     state.turnSessionId = undefined;
     state.assistantMessage = undefined;
     state.streamMessageText = '';

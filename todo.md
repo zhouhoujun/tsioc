@@ -4561,3 +4561,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 根因：facade 的 Proxy get 位于每次 state 读取路径（reactive 包装之外再加一层），且每次读取都会触发 `isSubscribable`/subscribe 探测；activation 广播也覆盖全部绑定。
 - 按「未经实测提升的改动不得保留」回退 hub/module/open/ui-state/bootstrap 改动，主干恢复原性能。
 - 结论：若继续 per-session state，必须先把 facade 改成**生成式 accessor（无 Proxy get trap）**或让缓存按 session state 取键，并重新实测达到 ≤ 当前基线后才可保留。
+
+## 2026-11-16 流式清理取消 pending flush
+- `clearStreamingMessageState` 现在取消未触发的 rAF/timeout、清空 `flushPending/flushMessage`；避免 turn 结束/销毁后迟到写入旧文本或持有旧对象。
+- 新增回归：scheduled 后 clear，等待 80ms 不再有行写入（turn-stream-narration 11 passing）。
