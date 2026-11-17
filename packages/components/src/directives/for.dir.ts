@@ -460,6 +460,18 @@ export class VForDirective {
         }
 
         this._viewRefs = newViewRefs;
+
+        // Reorder the container when a custom trackBy reuses views by identity.
+        // Default index tracking already updates positionally.
+        if (!this._useIndexTrackBy) {
+            for (let i = 0; i < newViewRefs.length; i++) {
+                const view = newViewRefs[i];
+                if (!view || this.viewContainer.indexOf(view) === i) {
+                    continue;
+                }
+                this.viewContainer.move(view, i);
+            }
+        }
     }
 
     // 深度比较两个集合是否相等

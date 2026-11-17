@@ -14,6 +14,18 @@ class VForTailComponent {
     items: Row[] = [{ label: 'A' }, { label: 'B' }];
 }
 
+@Component({
+    selector: 'vfor-keyed-comp',
+    template: `<div><span class="keyed" v-for="item in items" trackBy="id">{{item.label}}</span></div>`
+})
+class VForKeyedComponent {
+    items = [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B' },
+        { id: 'c', label: 'C' }
+    ];
+}
+
 @Suite('v-for tail updates')
 export class VForTailTest {
     private texts(root: any): string[] {
@@ -109,6 +121,31 @@ export class VForTailTest {
                 '1/3/false/false/A',
                 '2/3/false/true/B'
             ]);
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('custom trackBy reorders views by identity')
+    async keyedReorder() {
+        const ctx = await Application.run(VForKeyedComponent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(VForKeyedComponent) as any;
+            const component = ref.instance as VForKeyedComponent;
+            const root = ref.hostView.rootNodes[0] as any;
+            const labels = () => root.querySelectorAll('.keyed').map((node: any) => node.textContent);
+
+            expect(labels()).toEqual(['A', 'B', 'C']);
+
+            component.items = [component.items[2], component.items[0], component.items[1]];
+            await Promise.resolve();
+            expect(labels()).toEqual(['C', 'A', 'B']);
+
+            component.items = [component.items[0], component.items[2]];
+            await Promise.resolve();
+            expect(labels()).toEqual(['C', 'B']);
         } finally {
             await ctx.close();
         }

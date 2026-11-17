@@ -1370,6 +1370,9 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
             } else {
                 directiveInstance[propertyKey] = attr.value;
             }
+        } else if (propertyKey === 'trackBy') {
+            // Plain @Attribute-style directive properties (currently trackBy).
+            directiveInstance[propertyKey] = attr.value;
         }
     });
 }
