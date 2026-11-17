@@ -10,6 +10,7 @@ export interface AgentConsoleSettingsData {
     showTimestamps?: boolean;
     showToolOutput?: boolean;
     showUsername?: boolean;
+    steerMode?: boolean;
     activityVerbosity?: 'low' | 'medium' | 'high';
     timelineMode?: boolean;
     timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
@@ -138,6 +139,7 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         showTimestamps: typeof parsed?.showTimestamps === 'boolean' ? parsed.showTimestamps : undefined,
         showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
         showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
+        steerMode: typeof parsed?.steerMode === 'boolean' ? parsed.steerMode : undefined,
         activityVerbosity: parsed?.activityVerbosity === 'low'
             ? 'low'
             : parsed?.activityVerbosity === 'medium'
@@ -206,6 +208,7 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.showTimestamps === 'boolean' ? { showTimestamps: data.showTimestamps } : {}),
             ...(typeof data.showToolOutput === 'boolean' ? { showToolOutput: data.showToolOutput } : {}),
             ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
+            ...(typeof data.steerMode === 'boolean' ? { steerMode: data.steerMode } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),
             ...(data.messageLayout ? { messageLayout: data.messageLayout } : {}),

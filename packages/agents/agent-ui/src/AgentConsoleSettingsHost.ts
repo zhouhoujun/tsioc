@@ -31,6 +31,7 @@ import {
     runPersonalityCommand as runPersonalityCommandView
 } from './AgentConsolePreferenceCommands';
 import { runQueueCommand as runQueueCommandView } from './AgentConsoleRpcCommands';
+import { runSteerCommand as runSteerCommandView } from './AgentConsoleSteerCommands';
 import { runStashCommand as runStashCommandView } from './AgentConsoleStashCommands';
 import {
     preferenceCommandHost,
@@ -238,6 +239,15 @@ export abstract class AgentConsoleSettingsHost extends AgentConsoleIntegrationHo
 
     protected async runDisplayCommand(args?: string): Promise<boolean> {
         return runDisplayCommand(args, this.state, (message: string) => this.notify(message), (patch: Record<string, any>) => this.persistSettings(patch), this.translator);
+    }
+
+    protected async runSteerCommand(args?: string): Promise<boolean> {
+        return runSteerCommandView({
+            state: this.state,
+            translator: this.translator,
+            notify: (message: string) => this.notify(message),
+            persistSettings: (patch: Record<string, any>) => this.persistSettings(patch)
+        }, args);
     }
 
     protected async runLayoutCommand(args?: string): Promise<boolean> {

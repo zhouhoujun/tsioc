@@ -59,6 +59,7 @@ export function buildCommandContext(self: any, abortSignal?: AbortSignal): Comma
             runRawModeCommand: (a) => self.runRawModeCommand(a),
             runStashCommand: (a) => self.runStashCommand(a),
             runQueueCommand: (a) => self.runQueueCommand(a),
+            runSteerCommand: (a) => self.runSteerCommand(a),
             runActivityCommand: (a) => runActivityJumpCommand(self, a),
             runStatuslineCommand: (a) => self.runStatuslineCommand(a),
             runHooksCommand: () => self.runHooksCommand(),

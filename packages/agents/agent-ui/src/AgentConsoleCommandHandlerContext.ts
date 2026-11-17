@@ -143,6 +143,7 @@ export interface CommandHandlerContext {
     runRawModeCommand(args: string): Promise<boolean>;
     runStashCommand(args: string): Promise<boolean>;
     runQueueCommand(args?: string): Promise<boolean>;
+    runSteerCommand(args?: string): Promise<boolean>;
     runActivityCommand(args?: string): Promise<boolean>;
     runStatuslineCommand(args: string): Promise<boolean>;
     runHooksCommand(): Promise<boolean>;

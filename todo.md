@@ -4570,3 +4570,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 非法类别（如 `/activity toolsx`）不再静默打开选择器，给出 usage 提示；无参数仍打开计数选择器。
 - en/zh 文案与 i18n 计数同步（712）；activity-jump 新增用例。
 - 方向修正：per-session state 不采用手写 get/set 或自定义 Proxy facade，必须使用 `@tsdi/components` 的 reactive Proxy/绑定事件。
+
+## 2026-11-17 P1 queue/steer：/steer 开关
+- 新增 `/steer [on|off]`：运行中 Enter 选择“打断当前 turn 并开新 turn”（steer）或排队；无参数切换。
+- 作为 workspace 偏好持久化到 settings.json 的 `steerMode`，启动/attach/web 通过同一 settings store 恢复。
+- 状态字段 `state.steerMode` 优先于 host `AgentOptions.ui.steerMode`。
+- i18n 3 个键（总数 715）；命令注册表 input 10→11、总数 102→103。
+- 测试：命令切换/持久化/`isSteerModeEnabled`，vm-submit + registry + i18n 65 passing。

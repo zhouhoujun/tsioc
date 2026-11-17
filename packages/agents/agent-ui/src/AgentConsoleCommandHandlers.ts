@@ -143,6 +143,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/raw': (ctx, args, meta) => ctx.runRawModeCommand(canonicalArgsOf(meta, args)),
     '/stash': (ctx, args, meta) => ctx.runStashCommand(canonicalArgsOf(meta, args)),
     '/queue': (ctx, args, meta) => ctx.runQueueCommand(canonicalArgsOf(meta, args)),
+    '/steer': (ctx, args, meta) => ctx.runSteerCommand(canonicalArgsOf(meta, args)),
     '/activity': (ctx, args, meta) => ctx.runActivityCommand(canonicalArgsOf(meta, args)),
     '/jump': (ctx, args, meta) => ctx.runActivityCommand(canonicalArgsOf(meta, args)),
     '/statusline': (ctx, args, meta) => ctx.runStatuslineCommand(canonicalArgsOf(meta, args)),

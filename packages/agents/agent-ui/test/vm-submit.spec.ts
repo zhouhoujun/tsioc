@@ -953,6 +953,29 @@ export class VmSubmitTest {
         expect(state.notice).toContain('Removed worktree feature.');
     }
 
+    @Test('/steer toggles and persists the steer mode')
+    async steerCommandTogglesAndPersists() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        const persisted: any[] = [];
+        (component as any).persistSettings = async (patch: any) => { persisted.push(patch); };
+
+        expect((component as any).isSteerModeEnabled()).toEqual(false);
+        await (component as any).handleCommand('/steer on');
+        expect(state.steerMode).toEqual(true);
+        expect((component as any).isSteerModeEnabled()).toEqual(true);
+        expect(persisted).toEqual([{ steerMode: true }]);
+        expect(state.notice).toContain('Steer mode');
+
+        await (component as any).handleCommand('/steer off');
+        expect(state.steerMode).toEqual(false);
+        expect((component as any).isSteerModeEnabled()).toEqual(false);
+
+        await (component as any).handleCommand('/steer');
+        expect(state.steerMode).toEqual(true);
+        expect(persisted.at(-1)).toEqual({ steerMode: true });
+    }
+
     @Test('unsetting escape disables the configured interrupt binding but Esc still interrupts a running turn')
     async unsettingEscapeDisablesInterrupt() {
         const { state, component, sessionService } = createConsoleParts(new RuntimeStub(), new SchedulerStub());

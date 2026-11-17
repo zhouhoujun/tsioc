@@ -97,6 +97,9 @@ export async function restoreSettings(self: any): Promise<void> {
         if (typeof persisted.showUsername === 'boolean') {
             self.state.setShowUsername(persisted.showUsername);
         }
+        if (typeof persisted.steerMode === 'boolean') {
+            self.state.setSteerMode(persisted.steerMode);
+        }
         if (persisted.activityVerbosity) {
             self.state.setActivityVerbosity(persisted.activityVerbosity);
         }
