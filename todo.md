@@ -4458,3 +4458,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `/activity` 无参数选择器的每个分类显示数量（Tools (n) / Reasoning (n) / …），继续用现有分类谓词计数。
 - README 补充：`/activity`、`/queue remove|edit`、`/worktree enter`、activity verbosity 与 viewport 窗口化行为。
 - 测试：activity-jump 新增分类计数用例（5 passing）。
+
+## 2026-11-16 P2 安全 UX：/worktree remove 二次确认
+- `remove` 默认弹出确认（回车确认 / esc 取消，默认选项为取消）；`--yes` 跳过确认，供脚本使用。`--force` 仍传给运行时。
+- 发现/usage/README 同步；i18n 新增 5 个键（总数 710）。
+- 测试：确认、取消、`--yes` 三条路径，vm-submit + i18n 48 passing。

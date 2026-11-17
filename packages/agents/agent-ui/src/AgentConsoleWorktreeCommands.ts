@@ -5,6 +5,8 @@ export interface AgentConsoleWorktreeRequest {
     action: 'create' | 'list' | 'merge' | 'remove' | 'enter';
     name?: string;
     force?: boolean;
+    /** Skip the interactive confirmation for destructive actions. */
+    yes?: boolean;
 }
 
 export interface AgentConsoleWorktreeResult {
@@ -24,7 +26,8 @@ export function parseWorktreeArgs(args: string): AgentConsoleWorktreeRequest {
     return {
         action: action as AgentConsoleWorktreeRequest['action'],
         name: tokens.find(token => !token.startsWith('--')),
-        force: tokens.includes('--force')
+        force: tokens.includes('--force'),
+        yes: tokens.includes('--yes')
     };
 }
 
@@ -87,7 +90,23 @@ export async function runWorktreeCommand(ctx: CommandHandlerContext, args: strin
             }));
             return true;
         }
-        const result = await ctx.state.worktreeCommand(request);
+        if (request.action === 'remove' && !request.yes) {
+            const confirmed = await ctx.select(
+                formatAgentUiNotice(ctx.translator, 'worktreeRemoveTitle', { name: request.name ?? '' }),
+                [
+                    { label: formatAgentUiNotice(ctx.translator, 'worktreeRemoveConfirm'), value: 'remove' },
+                    { label: formatAgentUiNotice(ctx.translator, 'worktreeRemoveCancel'), value: 'cancel' }
+                ],
+                1,
+                formatAgentUiNotice(ctx.translator, 'worktreeRemoveHint')
+            );
+            if (confirmed !== 'remove') {
+                ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeRemoveCancelled'));
+                return true;
+            }
+        }
+        const { yes: _skipConfirm, ...runtimeRequest } = request;
+        const result = await ctx.state.worktreeCommand(runtimeRequest);
         if (result.action === 'list') {
             if (!result.items?.length) {
                 ctx.notify(formatAgentUiNotice(ctx.translator, 'worktreeListEmpty'));
