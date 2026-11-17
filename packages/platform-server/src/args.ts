@@ -4,7 +4,8 @@ import * as os from 'os';
 
 
 const isArg = /^--/;
-const isNum = /^\d+(.\d+)?$/;
+// The dot must be escaped: an unescaped `.` also accepted `1a2` as a number.
+const isNum = /^\d+(\.\d+)?$/;
 
 const DEFAULT_MODE: AppMode = 'development';
 const DEFAULT_PLATFORM: AppPlatform = 'server';
@@ -162,7 +163,9 @@ export class ServerApplicationArguments extends ApplicationArguments {
             if (isArg.test(arg)) {
                 const [k, val] = arg.slice(2).split('=');
                 if (isNum.test(val)) {
-                    argr[k] = val.indexOf('.') ? parseFloat(val) : parseInt(val)
+                    // `indexOf('.')` is -1 (truthy) for integers and 0 for
+                    // values like `.5`, so test the match instead of the index.
+                    argr[k] = val.includes('.') ? parseFloat(val) : parseInt(val, 10)
                 } else if (val) {
                     argr[k] = val
                 } else {
@@ -177,7 +180,15 @@ export class ServerApplicationArguments extends ApplicationArguments {
 
     protected tryGetSignls() {
         const sigs = this.env.signls || this._args.signls;
-        return sigs ? (isString(sigs) ? sigs.split(',') : signls) : []
+        if (!sigs) {
+            return [];
+        }
+        // A caller-provided list must be honoured; the previous implementation
+        // returned the module-level default list instead.
+        if (isString(sigs)) {
+            return sigs.split(',').map(sig => sig.trim()).filter(Boolean);
+        }
+        return Array.isArray(sigs) ? sigs as unknown as string[] : signls;
     }
 }
 
