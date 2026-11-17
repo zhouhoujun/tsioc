@@ -21,6 +21,7 @@ class ProjectedItem {
 })
 class ContentHost {
     @ContentChild('pc') item?: ProjectedItem;
+    @ContentChild('dyn') dynamic?: ProjectedItem;
     @ContentChildren(ProjectedItem) items?: QueryList<ProjectedItem>;
 }
 
@@ -39,6 +40,22 @@ class ContentParent {
     @ViewChild('pc') leaked?: ProjectedItem;
 }
 
+@Component({
+    selector: 'content-dynamic-parent',
+    imports: [ContentHost, ProjectedItem],
+    template: `<div>
+        <content-host>
+            <div>
+                <template v-if="show"><projected-item #dyn label="D"></projected-item></template>
+            </div>
+        </content-host>
+    </div>`
+})
+class DynamicContentParent {
+    @ViewChild(ContentHost) host?: ContentHost;
+    show = false;
+}
+
 @Suite('content child queries')
 export class ContentChildQueryTest {
     @Test('resolves projected content without leaking into the parent view')
@@ -54,6 +71,32 @@ export class ContentChildQueryTest {
             expect(parent.host?.item?.label).toBe('P');
             expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['P', 'Q']);
             expect(parent.leaked).toBeUndefined();
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('updates content queries after projected structure changes')
+    async dynamicContent() {
+        const ctx = await Application.run(DynamicContentParent, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(DynamicContentParent) as any;
+            const parent = ref.instance as DynamicContentParent;
+            await Promise.resolve();
+            expect(parent.host?.dynamic).toBeUndefined();
+            expect(parent.host?.items?.length ?? 0).toBe(0);
+
+            parent.show = true;
+            await Promise.resolve().then(() => Promise.resolve()).then(() => Promise.resolve());
+            expect(parent.host?.dynamic?.label).toBe('D');
+            expect(parent.host?.items?.toArray().map(item => item.label)).toEqual(['D']);
+
+            parent.show = false;
+            await Promise.resolve().then(() => Promise.resolve()).then(() => Promise.resolve());
+            expect(parent.host?.dynamic).toBeUndefined();
+            expect(parent.host?.items?.length ?? 0).toBe(0);
         } finally {
             await ctx.close();
         }

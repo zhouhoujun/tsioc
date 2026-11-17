@@ -52,6 +52,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     private queryResolveScheduled = false;
     private contentQueryIndex?: ViewQueryIndex;
     private contentInjector?: NodeInjector;
+    private contentUnsubscribe?: () => void;
+    private contentResolveScheduled = false;
     constructor(
         _classRef: ClassRef<T>,
         context: NodeInjector,
@@ -207,18 +209,44 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         if (!childQueries.length && !childrenQueries.length) {
             return;
         }
-        const projected = (this._elementRef?.nativeElement as any)?.[PROJECTION_NODES] as RNode[] | undefined;
-        if (!this.contentQueryIndex) {
-            this.contentQueryIndex = new ViewQueryIndex();
+        this.ensureContentIndex();
+        this.refreshContentChilds(def);
+    }
+
+    private ensureContentIndex(): void {
+        if (this.contentQueryIndex) {
+            return;
         }
+        const projected = (this._elementRef?.nativeElement as any)?.[PROJECTION_NODES] as RNode[] | undefined;
+        this.contentQueryIndex = new ViewQueryIndex();
         this.contentInjector = this.injector.getParentInjector() ?? this.injector;
         this.contentQueryIndex.rebuild(projected || [], this.contentInjector);
+        this.contentUnsubscribe = this.contentQueryIndex.onChange(() => this.scheduleContentResolve());
+    }
+
+    private refreshContentChilds(def: ComponentDef): void {
+        const childQueries = def.contentChilds || [];
         childQueries.forEach(query => {
             (this.instance as any)[query.propertyKey] = this.resolveContentChild(query);
         });
+        const childrenQueries = def.contentChildrens || [];
         if (childrenQueries.length) {
             this.resolveContentChildrens(childrenQueries);
         }
+    }
+
+    private scheduleContentResolve(): void {
+        if (this.contentResolveScheduled) {
+            return;
+        }
+        this.contentResolveScheduled = true;
+        Promise.resolve().then(() => {
+            this.contentResolveScheduled = false;
+            if (this.injector.destroyed) {
+                return;
+            }
+            this.refreshContentChilds(this.def);
+        });
     }
 
     protected resolveContentChild(query: ContentChildMetadata): any {
@@ -460,6 +488,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
     protected override clean(): void {
         this.queryUnsubscribe?.();
         this.queryUnsubscribe = undefined;
+        this.contentUnsubscribe?.();
+        this.contentUnsubscribe = undefined;
         this.contentQueryIndex?.clear();
         this.contentQueryIndex = undefined;
         (this.instance as OnDestroy)?.onDestroy?.();
