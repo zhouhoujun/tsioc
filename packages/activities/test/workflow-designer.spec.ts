@@ -102,6 +102,27 @@ describe('Visual Workflow Designer', () => {
             expect(designer.nodes.length).toBe(6);
         });
 
+        it('replaces undo/redo stacks so reactive reads observe the change', () => {
+            const stack = () => (designer as any).undoStack as any[];
+            const redo = () => (designer as any).redoStack as any[];
+            const beforeUndo = stack();
+            const beforeRedo = redo();
+
+            designer.addNode('log', { x: 900, y: 500 });
+            expect(stack()).not.toBe(beforeUndo);
+            expect(redo()).not.toBe(beforeRedo);
+            expect(designer.canUndo).toBe(true);
+
+            const afterEdit = stack();
+            expect(designer.undo()).toBe(true);
+            expect(stack()).not.toBe(afterEdit);
+            expect(redo().length).toBeGreaterThan(beforeRedo.length);
+
+            const afterUndo = stack();
+            expect(designer.redo()).toBe(true);
+            expect(stack()).not.toBe(afterUndo);
+        });
+
         it('prevents a second singleton start node', () => {
             const added = designer.addNode('start', { x: 0, y: 0 });
             expect(added).toBeUndefined();

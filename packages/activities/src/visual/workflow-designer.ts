@@ -891,11 +891,12 @@ export class WorkflowDesigner {
     }
 
     undo(): boolean {
-        const previous = this.undoStack.pop();
+        const previous = this.undoStack[this.undoStack.length - 1];
         if (!previous) {
             return false;
         }
-        this.redoStack.push(this.definition);
+        this.undoStack = this.undoStack.slice(0, -1);
+        this.redoStack = [...this.redoStack, this.definition];
         this.applyDefinition(previous);
         this.pruneSelection();
         this.dirty = true;
@@ -904,11 +905,12 @@ export class WorkflowDesigner {
     }
 
     redo(): boolean {
-        const next = this.redoStack.pop();
+        const next = this.redoStack[this.redoStack.length - 1];
         if (!next) {
             return false;
         }
-        this.undoStack.push(this.definition);
+        this.redoStack = this.redoStack.slice(0, -1);
+        this.undoStack = [...this.undoStack, this.definition];
         this.applyDefinition(next);
         this.pruneSelection();
         this.dirty = true;
@@ -1827,10 +1829,12 @@ export class WorkflowDesigner {
     }
 
     private pushHistory(definition: VisualWorkflowDefinition): void {
-        this.undoStack.push(definition);
-        if (this.undoStack.length > HISTORY_LIMIT) {
-            this.undoStack.shift();
-        }
+        // Replace the array (never push/shift in place): bindings and the
+        // toolbar cache observe the reference, not the contents.
+        const next = [...this.undoStack, definition];
+        this.undoStack = next.length > HISTORY_LIMIT
+            ? next.slice(next.length - HISTORY_LIMIT)
+            : next;
     }
 
     private recordExecution(snapshot: WorkflowExecutionSnapshot): void {
