@@ -649,12 +649,34 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 
 匹配耗时不再随路由数线性增长（10k 路由 p99 从 32.6ms 降到 0.0165ms）。改造前基线保留在 `benchmarks/results/baseline-pre-route-table.json`，当前 `baseline.json` 为重跑结果。
 
-S2 待办（按计划顺序）：
+### 11.4 Gateway 拆分完成（2026-11-16）
 
-- `gateway.observability.ts`（trace/metrics/access log/错误分类）→ `gateway.auth.ts` → `gateway.response.ts` → `gateway.upstream.ts`；
-- interceptor 目标 < 500 行（当前约 2060 行，需继续拆分）；
-- 每步保持现有 gateway 测试全绿并新增模块级单测；
-- 指标 label 预编译与 `*_seconds` 双发（S3）。
+按 11.1 的顺序继续拆分，`GatewayInterceptor` 从 2062 行降到 436 行：
+
+| 模块 | 职责 | 模块级测试 |
+|---|---|---|
+| `gateway.types.ts` | `GatewayForwardResult/Meta`、错误分类 | `observability.spec.ts` |
+| `gateway.http.ts` | header/host/client ip/prefix/claim/CIDR 纯函数 | `auth.spec.ts` |
+| `gateway.observability.ts` | trace scope、error tag、metrics、access log | `observability.spec.ts` 10 个 |
+| `gateway.auth.ts` | JWT/API key/HMAC/claims/IP ACL | `auth.spec.ts` 6 个 |
+| `gateway.response.ts` | rewrite/cache/etag/compression/fallback | `response.spec.ts` 9 个 |
+| `gateway.rate-limit.ts` | 路由/全局限流与共享窗口 | `rate-limit.spec.ts` 6 个 |
+| `gateway.upstream.ts` | retry/failover、endpoint、HTTP/微服务/聚合转发、webhook | `upstream.spec.ts` 9 个 |
+
+`GatewayInterceptor` 仅保留 intercept/preview、规则与路由表缓存、canary/header 匹配、`resolveRoute` 与 HTTP pool 生命周期，已满足 < 500 行目标。
+
+验证：gateway 140 passing、admin 69 passing；每步均通过 `tsc --noEmit`。
+
+### 11.5 Admin 状态拆分（进行中）
+
+- 新增 `admin/web/admin.state.pure.ts`：告警时间、SLO CSV、config diff、方法 key、路由校验；
+- `admin.state.ts` 1343 → 1255 行，页面行为与 63 个既有测试不变（新增 6 个纯函数测试，共 69）。
+
+S2 剩余：
+
+- 继续拆 `admin.state.ts`：路由编辑器/配置历史/规则工作流控制器（目标 < 600 行）；
+- 指标 label 预编译与 `*_seconds` 双发（S3）；
+- webhook 独立模块（当前保留在 `gateway.upstream.ts`，无行为变化）。
 
 ---
 
