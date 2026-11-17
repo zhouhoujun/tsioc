@@ -4519,3 +4519,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 ## 2026-11-16 /activity answer 覆盖流式 partial
 - `answer` 类别同时匹配 `assistant-final` 与 `assistant-partial`，流式进行中不再误报“没有最终回答”。
 - 新增 activity-jump 流式 partial 用例（6 passing）。
+
+- 微服务框架第七十三批（2026-11-16）：
+  - gate 增加 ms-admin；修正新测试类型错误。
+  - gate ms-gateway/ms-admin/ms-tsc PASS；gateway 140、admin 69。

@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Transport } from '@tsdi/common';
 import { GatewayObservability } from '../src/gateway.observability';
 import { GatewayRuntime } from '../src/gateway.runtime';
-import { GatewayErrorType, classifyGatewayError } from '../src/gateway.types';
+import { classifyGatewayError } from '../src/gateway.types';
 
 describe('GatewayObservability', () => {
     function createRequest(overrides: any = {}) {
@@ -60,7 +60,7 @@ describe('GatewayObservability', () => {
                 throw new Error('should not start a span when trace headers exist');
             }
         } as any;
-        const observability = new GatewayObservability({}, new GatewayRuntime(), null, null, tracer);
+        const observability = new GatewayObservability({} as any, new GatewayRuntime(), null, null, tracer);
         const trace = observability.startTrace(createRequest({
             headers: { 'x-trace-id': 'trace-1', 'x-span-id': 'span-1', 'x-request-id': 'req-1' }
         }));
@@ -73,7 +73,7 @@ describe('GatewayObservability', () => {
     });
 
     it('generates ids when no tracer is configured', () => {
-        const observability = new GatewayObservability({}, new GatewayRuntime(), null, null, null);
+        const observability = new GatewayObservability({} as any, new GatewayRuntime(), null, null, null);
         const trace = observability.startTrace(createRequest());
 
         expect(typeof trace.headers['x-trace-id']).toBe('string');
@@ -116,7 +116,7 @@ describe('GatewayObservability', () => {
                 return run();
             }
         } as any;
-        const observability = new GatewayObservability({}, new GatewayRuntime(), null, null, tracer);
+        const observability = new GatewayObservability({} as any, new GatewayRuntime(), null, null, tracer);
         const trace = observability.startTrace(createRequest());
 
         expect(trace.headers['x-trace-id']).toBe('trace-2');
@@ -143,13 +143,13 @@ describe('GatewayObservability', () => {
                 headers[name] = value;
             }
         };
-        const observability = new GatewayObservability({}, new GatewayRuntime(), null, null, null);
+        const observability = new GatewayObservability({} as any, new GatewayRuntime(), null, null, null);
 
         const errorType = observability.tagError({ statusCode: 429, message: 'too many' }, adapter);
-        expect(errorType).toBe<GatewayErrorType>('rate_limited');
+        expect(errorType).toBe('rate_limited');
         expect(headers['x-gateway-error-type']).toBe('rate_limited');
 
-        const tolerant = new GatewayObservability({}, new GatewayRuntime(), null, null, null);
+        const tolerant = new GatewayObservability({} as any, new GatewayRuntime(), null, null, null);
         expect(() => tolerant.tagError({ statusCode: 500 }, null)).not.toThrow();
     });
 
@@ -159,7 +159,7 @@ describe('GatewayObservability', () => {
             observability: {
                 metrics: { enabled: true, includeEndpoint: true }
             }
-        }, new GatewayRuntime(), metrics, null, null);
+        } as any, new GatewayRuntime(), metrics, null, null);
 
         observability.recordMetrics(
             route,
@@ -186,15 +186,15 @@ describe('GatewayObservability', () => {
 
     it('counts error metrics and honours disabled observability', () => {
         const metrics = createMetrics();
-        const enabled = new GatewayObservability({}, new GatewayRuntime(), metrics, null, null);
+        const enabled = new GatewayObservability({} as any, new GatewayRuntime(), metrics, null, null);
         enabled.recordMetrics(route, createRequest(), 502, 5, { errorType: 'upstream' });
-        expect(metrics.counters.map(entry => entry.name)).toEqual(['gateway_requests_total', 'gateway_errors_total']);
+        expect(metrics.counters.map((entry: any) => entry.name)).toEqual(['gateway_requests_total', 'gateway_errors_total']);
         expect(metrics.counters[1].labels.error_type).toBe('upstream');
 
         const before = metrics.counters.length;
         const disabled = new GatewayObservability({
             observability: { metrics: { enabled: false } }
-        }, new GatewayRuntime(), metrics, null, null);
+        } as any, new GatewayRuntime(), metrics, null, null);
         disabled.recordMetrics(route, createRequest(), 502, 5, { errorType: 'upstream' });
         expect(metrics.counters.length).toBe(before);
     });
@@ -206,7 +206,7 @@ describe('GatewayObservability', () => {
             observability: {
                 accessLog: { enabled: true, includeQuery: true, includeHeaders: ['user-agent'] }
             }
-        }, new GatewayRuntime(), null, logger, null);
+        } as any, new GatewayRuntime(), null, logger, null);
 
         observability.recordAccessLog(
             route,
@@ -236,7 +236,7 @@ describe('GatewayObservability', () => {
         const logger = createLogger();
         const observability = new GatewayObservability({
             observability: { accessLog: true }
-        }, new GatewayRuntime(), null, logger, null);
+        } as any, new GatewayRuntime(), null, logger, null);
 
         observability.recordAccessLog(
             route,
@@ -256,7 +256,7 @@ describe('GatewayObservability', () => {
         const disabledLogger = createLogger();
         const disabled = new GatewayObservability({
             observability: { accessLog: { enabled: false } }
-        }, new GatewayRuntime(), null, disabledLogger, null);
+        } as any, new GatewayRuntime(), null, disabledLogger, null);
         disabled.recordAccessLog(route, createRequest(), 200, 1, undefined);
         expect(disabledLogger.entries.length).toBe(0);
     });
@@ -265,7 +265,7 @@ describe('GatewayObservability', () => {
         const runtime = new GatewayRuntime();
         const metrics = createMetrics();
         const logger = createLogger();
-        const observability = new GatewayObservability({ observability: { accessLog: true } }, runtime, metrics, logger, null);
+        const observability = new GatewayObservability({ observability: { accessLog: true } } as any, runtime, metrics, logger, null);
 
         observability.recordError(
             route,
@@ -278,7 +278,7 @@ describe('GatewayObservability', () => {
 
         const snapshot = await runtime.snapshot();
         expect(snapshot.routes.some(entry => entry.key.includes('users-service:/api/users'))).toBe(true);
-        expect(metrics.counters.some(entry => entry.name === 'gateway_errors_total')).toBe(true);
+        expect(metrics.counters.some((entry: any) => entry.name === 'gateway_errors_total')).toBe(true);
         expect(logger.entries[0].level).toBe('error');
     });
 

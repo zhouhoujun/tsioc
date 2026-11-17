@@ -81,7 +81,7 @@ describe('GatewayAuth', () => {
             signature: { secret: 'gateway-secret', preventReplay: true, maxSkew: 60_000 }
         } as any;
         const runtimeWithNonce = new GatewayRuntime();
-        const newAuth = new GatewayAuth({}, runtimeWithNonce, new HttpAuthService(), signatureService);
+        const newAuth = new GatewayAuth({} as any, runtimeWithNonce, new HttpAuthService(), signatureService);
 
         const ts = String(Date.now());
         const nonce = 'nonce-1';

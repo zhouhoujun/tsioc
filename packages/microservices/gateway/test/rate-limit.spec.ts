@@ -19,7 +19,7 @@ describe('GatewayRateLimiter', () => {
     it('enforces route-level windows and exposes retry-after', async () => {
         const limiter = new GatewayRateLimiter({
             rateLimit: { limit: 2, windowMs: 60_000 }
-        }, new GatewayRuntime());
+        } as any, new GatewayRuntime());
 
         await limiter.applyRoute(route, createRequest(), context);
         await limiter.applyRoute(route, createRequest(), context);
@@ -42,7 +42,7 @@ describe('GatewayRateLimiter', () => {
         const limiter = new GatewayRateLimiter({
             rateLimit: { limit: 1, windowMs: 60_000 },
             globalRateLimit: { limit: 1, windowMs: 60_000 }
-        }, new GatewayRuntime());
+        } as any, new GatewayRuntime());
 
         await limiter.applyRoute({ ...route, rateLimit: false }, createRequest(), context);
         await limiter.applyRoute({ ...route, rateLimit: false }, createRequest(), context);
@@ -66,7 +66,7 @@ describe('GatewayRateLimiter', () => {
         const limiter = new GatewayRateLimiter({
             rateLimit: { limit: 1, windowMs: 60_000 },
             globalRateLimit: { limit: 1, windowMs: 60_000 }
-        }, runtime);
+        } as any, runtime);
 
         await expect(limiter.applyRoute(route, createRequest('10.0.0.7'), context))
             .rejects.toMatchObject({ statusCode: 429 });
@@ -88,7 +88,7 @@ describe('GatewayRateLimiter', () => {
         } as any;
         const limiter = new GatewayRateLimiter({
             rateLimit: { limit: 5, windowMs: 60_000, quota: { limit: 100, windowMs: 60_000 } }
-        }, runtime);
+        } as any, runtime);
 
         await limiter.applyRoute(route, createRequest('10.0.0.8'), context);
         expect(sharedCalls).toBe(0);
@@ -98,7 +98,7 @@ describe('GatewayRateLimiter', () => {
     it('recreates local windows after destroy', async () => {
         const limiter = new GatewayRateLimiter({
             rateLimit: { limit: 1, windowMs: 60_000 }
-        }, new GatewayRuntime());
+        } as any, new GatewayRuntime());
 
         await limiter.applyRoute(route, createRequest('10.0.0.9'), context);
         await expect(limiter.applyRoute(route, createRequest('10.0.0.9'), context))
@@ -109,8 +109,8 @@ describe('GatewayRateLimiter', () => {
     });
 
     it('builds rate limit errors with a minimum one second retry-after', () => {
-        expect(rateLimitError(0).headers['Retry-After']).toBe('1');
-        expect(rateLimitError(2_100).headers['Retry-After']).toBe('3');
+        expect((rateLimitError(0) as any).headers['Retry-After']).toBe('1');
+        expect((rateLimitError(2_100) as any).headers['Retry-After']).toBe('3');
         expect(rateLimitError(500, 'slow down').message).toBe('slow down');
     });
 });

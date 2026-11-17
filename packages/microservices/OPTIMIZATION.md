@@ -402,6 +402,12 @@
 - 新增 `admin/web/admin.download.ts` 统一浏览器下载。
 - `admin.state.ts` 降至约 839 行；回归 admin 69 passing。
 
+第七十三批（Gate 覆盖 admin 与类型回归）：
+
+- `scripts/agents-gate.sh` 新增 `ms-admin` stage 并加入 ALL_STAGES。
+- 修正新测试在非 transpile-only 下的类型错误（options 需 `as any`、expect 泛型、Error.headers）。
+- `npm run test`（gateway）140 passing；gate `ms-gateway ms-admin ms-tsc` PASS。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

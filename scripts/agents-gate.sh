@@ -29,7 +29,7 @@
 #            tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
-#            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-http
+#            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
 #            ms-brokers ms-tsc ms-bench
 set -u
 
@@ -410,6 +410,7 @@ run_stage() {
                               packages/microservices/ws \
                               packages/microservices/coap ;;
         ms-gateway)       run_ms_group ms-gateway '@tsdi/gateway unit tests' packages/microservices/gateway ;;
+        ms-admin)         run_ms_group ms-admin '@tsdi gateway admin console tests' packages/microservices/admin ;;
         ms-http)          run_ms_group ms-http '@tsdi/http-microservice unit tests' packages/microservices/http ;;
         ms-brokers)       run_ms_brokers ;;
         ms-tsc)           run_ms_tsc ;;
@@ -428,7 +429,7 @@ ALL_STAGES="agent agent-channels agent-cli agent-gateway agent-providers
             tsc-agent tsc-agent-ui tsc-agent-gateway tsc-agent-tools
             build-agent-ui-web dom-gate tui-gate gate-regression
             pty-acceptance diff-check source-size
-            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-http
+            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
             ms-brokers ms-tsc ms-bench
             package-deps package-publish publish-dry-run"
 

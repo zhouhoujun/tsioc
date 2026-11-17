@@ -665,7 +665,7 @@ S2 按"先拆路由匹配、再拆其余职责"的顺序推进。已完成前两
 
 `GatewayInterceptor` 仅保留 intercept/preview、规则与路由表缓存、canary/header 匹配、`resolveRoute` 与 HTTP pool 生命周期，已满足 < 500 行目标。
 
-验证：gateway 140 passing、admin 69 passing；每步均通过 `tsc --noEmit`。
+验证：gateway 140 passing、admin 69 passing；每步均通过 `tsc --noEmit`；`bash scripts/agents-gate.sh ms-gateway ms-admin ms-tsc` PASS（gate 已新增 `ms-admin` stage）。
 
 ### 11.5 Admin 状态拆分（进行中）
 
