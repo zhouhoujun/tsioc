@@ -16,7 +16,8 @@ import {
     WorkflowDefinitionSummary,
     WorkflowRelease,
     WorkflowVersionSummary,
-    createDefaultWorkflowDefinitionStore
+    createDefaultWorkflowDefinitionStore,
+    WorkflowMetrics
 } from '../workflow-store';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 import { WorkflowDesignerPreviewComponent } from './workflow-designer-preview.component';
@@ -89,6 +90,41 @@ interface WorkflowDocumentTab {
             :restoreAction="restoreVersion" :compareAction="compareVersion"
             :releaseAction="releaseVersion"
             :closeDiffAction="closeVersionDiff" :closeAction="closeVersions"></workflow-version-panel>
+        <div class="workflow-publish workflow-metrics" v-if="showMetrics">
+            <div class="workflow-publish-panel workflow-metrics-panel">
+                <div class="workflow-publish-head">
+                    <span class="workflow-publish-title">{{metricsTitle}}</span>
+                    <button class="workflow-btn workflow-publish-close" type="button"
+                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeMetrics">✕</button>
+                </div>
+                <div class="workflow-metrics-error" v-if="metricsError">{{metricsError}}</div>
+                <div class="workflow-metrics-summary" v-if="metricsData">
+                    <div class="workflow-metrics-stat">
+                        <span>{{metricsRunsLabel}}</span><strong>{{metricsData.runs}}</strong>
+                    </div>
+                    <div class="workflow-metrics-stat">
+                        <span>{{metricsSuccessLabel}}</span><strong>{{metricsSuccessRate}}%</strong>
+                    </div>
+                    <div class="workflow-metrics-stat">
+                        <span>{{metricsAvgLabel}}</span><strong>{{metricsData.avgDurationMs}} ms</strong>
+                    </div>
+                    <div class="workflow-metrics-stat">
+                        <span>{{metricsLastLabel}}</span><strong>{{metricsData.lastStatus || '-'}}</strong>
+                    </div>
+                </div>
+                <div class="workflow-metrics-nodes" v-if="metricsData && metricsData.nodes.length">
+                    <div class="workflow-metrics-node" v-for="node in metricsData.nodes" data-node-id="{{node.nodeId}}">
+                        <span class="workflow-metrics-node-id">{{node.nodeId}}</span>
+                        <span>{{node.runs}} runs</span>
+                        <span v-if="node.failed">{{node.failed}} failed</span>
+                        <span>{{node.avgDurationMs}} ms</span>
+                    </div>
+                </div>
+                <div class="workflow-publish-actions">
+                    <button class="workflow-btn" type="button" @click="closeMetrics">{{closeLabel}}</button>
+                </div>
+            </div>
+        </div>
         <div class="workflow-publish workflow-settings" v-if="showSettings">
             <div class="workflow-publish-panel workflow-settings-panel">
                 <div class="workflow-publish-head">
@@ -207,6 +243,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
     showVersions = false;
     showPublish = false;
     publishError = '';
+    showMetrics = false;
+    metricsData?: WorkflowMetrics;
+    metricsError = '';
     showSettings = false;
     settingsDescription = '';
     settingsTimeout = '';
@@ -807,6 +846,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             self.openSettings();
             return;
         }
+        if (action === 'metrics') {
+            void self.openMetrics();
+            return;
+        }
         if (action === 'plugins') {
             void self.openPlugins();
             return;
@@ -981,6 +1024,43 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     /** Open the rename overlay for the active workflow document. */
+    get metricsTitle(): string { return this.t('metrics', 'Execution metrics'); }
+    get metricsRunsLabel(): string { return this.t('metricsRuns', 'Runs'); }
+    get metricsSuccessLabel(): string { return this.t('metricsSuccess', 'Success'); }
+    get metricsAvgLabel(): string { return this.t('metricsAvg', 'Average'); }
+    get metricsLastLabel(): string { return this.t('metricsLast', 'Last status'); }
+    get metricsSuccessRate(): number {
+        const runs = this.metricsData?.runs || 0;
+        return runs ? Math.round(((this.metricsData?.succeeded || 0) / runs) * 100) : 0;
+    }
+
+    readonly openMetrics = async (): Promise<void> => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.metricsError = '';
+        self.metricsData = undefined;
+        self.showMetrics = true;
+        if (!self.store?.getMetrics) {
+            self.metricsError = self.t('metricsUnavailable', 'This host does not expose execution metrics.');
+            return;
+        }
+        try {
+            self.metricsData = await self.store.getMetrics(self.designer.definition.id, 200);
+            if (!self.metricsData) {
+                self.metricsError = self.t('metricsUnavailable', 'This host does not expose execution metrics.');
+            }
+        } catch (error) {
+            self.metricsError = (error as Error).message;
+        }
+        self.saveState = self.saveState;
+    };
+
+    readonly closeMetrics = (): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        self.showMetrics = false;
+        self.metricsError = '';
+        self.metricsData = undefined;
+    };
+
     get settingsTitle(): string { return this.t('settings', 'Workflow settings'); }
     get descriptionLabel(): string { return this.t('description', 'Description'); }
     get runTimeoutLabel(): string { return this.t('runTimeout', 'Run timeout'); }

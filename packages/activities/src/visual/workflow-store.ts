@@ -36,6 +36,26 @@ export interface WorkflowRelease {
     publishedBy?: string;
 }
 
+export interface WorkflowNodeMetrics {
+    nodeId: string;
+    runs: number;
+    failed: number;
+    avgDurationMs: number;
+}
+
+export interface WorkflowMetrics {
+    workflowId: string;
+    runs: number;
+    running: number;
+    succeeded: number;
+    failed: number;
+    cancelled: number;
+    avgDurationMs: number;
+    lastRunAt?: number;
+    lastStatus?: string;
+    nodes: WorkflowNodeMetrics[];
+}
+
 export interface WorkflowVersionList {
     items: WorkflowVersionSummary[];
     release?: WorkflowRelease;
@@ -77,6 +97,8 @@ export interface WorkflowDefinitionStore {
     restoreVersion?(workflowId: string, version: number): Promise<VisualWorkflowDefinition | undefined>;
     /** Drop persisted run history (one workflow, or all when omitted). */
     clearExecutions?(workflowId?: string): Promise<void>;
+    /** Optional aggregated execution metrics for a workflow. */
+    getMetrics?(workflowId: string, limit?: number): Promise<WorkflowMetrics | undefined>;
 }
 
 export interface WorkflowStoreSaveOptions {
@@ -438,6 +460,20 @@ export class HttpWorkflowDefinitionStore implements WorkflowDefinitionStore {
         if (!result.ok) {
             throw new Error(`Failed to clear workflows: HTTP ${result.status}`);
         }
+    }
+
+    async getMetrics(workflowId: string, limit = 200): Promise<WorkflowMetrics | undefined> {
+        const result = await this.request(
+            `workflows/${encodeURIComponent(workflowId)}/metrics?limit=${Math.max(1, limit)}`,
+            { method: 'GET' }
+        );
+        if (result.status === 404) {
+            return undefined;
+        }
+        if (!result.ok) {
+            throw new Error(`Failed to load workflow metrics ${workflowId}: HTTP ${result.status}`);
+        }
+        return result.body as WorkflowMetrics;
     }
 
     async listExecutions(workflowId: string, limit = 20): Promise<WorkflowExecutionSnapshot[]> {

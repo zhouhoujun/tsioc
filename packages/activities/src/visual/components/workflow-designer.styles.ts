@@ -587,6 +587,62 @@ export const WORKFLOW_DESIGNER_CSS = `
     color: var(--wf-theme-muted, #64748b);
 }
 
+.workflow-metrics-panel {
+    width: min(520px, 100%);
+}
+
+.workflow-metrics-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.workflow-metrics-stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 7px;
+    color: var(--wf-theme-muted, #64748b);
+    font-size: 11px;
+}
+
+.workflow-metrics-stat strong {
+    color: var(--wf-theme-text, #0f172a);
+    font-size: 12px;
+}
+
+.workflow-metrics-nodes {
+    max-height: 40vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.workflow-metrics-node {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--wf-theme-border, #e2e8f0);
+    font-size: 11px;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-metrics-node-id {
+    flex: 1;
+    color: var(--wf-theme-text, #0f172a);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.workflow-metrics-error {
+    color: #b91c1c;
+    font-size: 11px;
+}
+
 .workflow-settings-panel {
     width: min(420px, 100%);
 }

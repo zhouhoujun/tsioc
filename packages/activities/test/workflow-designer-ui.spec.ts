@@ -1513,6 +1513,39 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.executionHistory.length).toBe(0);
     });
 
+    it('shows execution metrics for the active workflow', async () => {
+        const store = new InMemoryWorkflowDefinitionStore();
+        (store as any).getMetrics = async (workflowId: string) => ({
+            workflowId,
+            runs: 4,
+            running: 0,
+            succeeded: 3,
+            failed: 1,
+            cancelled: 0,
+            avgDurationMs: 125,
+            lastRunAt: Date.now(),
+            lastStatus: 'completed',
+            nodes: [
+                { nodeId: 'start_1', runs: 4, failed: 0, avgDurationMs: 2 },
+                { nodeId: 'task_1', runs: 4, failed: 1, avgDurationMs: 120 }
+            ]
+        });
+        ref.instance.store = store;
+
+        (root.querySelector('.workflow-global-bar [data-menu-id="metrics"]') as any).click();
+        await waitFor(() => !!root.querySelector('.workflow-metrics-nodes'));
+
+        const text = root.querySelector('.workflow-metrics')?.textContent || '';
+        expect(text).toContain('4');
+        expect(text).toContain('75%');
+        expect(text).toContain('start_1');
+        expect(text).toContain('task_1');
+
+        (root.querySelector('.workflow-metrics .workflow-publish-close') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-metrics')).toBeFalsy();
+    });
+
     it('edits workflow description and run timeout from settings', async () => {
         (root.querySelector('.workflow-global-bar [data-menu-id="settings"]') as any).click();
         await flush();
