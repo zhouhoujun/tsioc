@@ -73,6 +73,14 @@ function packet(header: number, ...parts: Buffer[]): Buffer {
     return Buffer.concat([Buffer.from([header]), encodeVarint(body.length), body]);
 }
 
+export interface MqttTlsOptions {
+    ca?: string;
+    cert?: string;
+    key?: string;
+    servername?: string;
+    rejectUnauthorized?: boolean;
+}
+
 export interface MqttConnectOptions {
     url: string;
     clientId?: string;
@@ -81,6 +89,8 @@ export interface MqttConnectOptions {
     keepalive?: number;
     /** Reject self-signed certificates (mqtts only). */
     rejectUnauthorized?: boolean;
+    /** Client certificate / CA options from a TLS config node. */
+    tls?: MqttTlsOptions;
 }
 
 export interface MqttPublishOptions {
@@ -235,8 +245,11 @@ export class WorkflowMqttClient {
                 ? tls.connect({
                     host: parts.host,
                     port: parts.port,
-                    servername: parts.host,
-                    rejectUnauthorized: this.options.rejectUnauthorized !== false
+                    servername: this.options.tls?.servername || parts.host,
+                    rejectUnauthorized: (this.options.tls?.rejectUnauthorized ?? this.options.rejectUnauthorized) !== false,
+                    ...(this.options.tls?.ca ? { ca: this.options.tls.ca } : {}),
+                    ...(this.options.tls?.cert ? { cert: this.options.tls.cert } : {}),
+                    ...(this.options.tls?.key ? { key: this.options.tls.key } : {})
                 })
                 : net.connect({ host: parts.host, port: parts.port });
             this.socket = socket;
@@ -471,8 +484,15 @@ export class WorkflowMqttTransport implements OnDestroy {
         clientId?: string;
         username?: string;
         password?: string;
+        tls?: MqttTlsOptions;
     }): Promise<void> {
-        const client = this.pool.client({ url: message.url, clientId: message.clientId, username: message.username, password: message.password });
+        const client = this.pool.client({
+            url: message.url,
+            clientId: message.clientId,
+            username: message.username,
+            password: message.password,
+            tls: message.tls
+        });
         await client.publish({
             topic: message.topic,
             payload: message.payload,
@@ -491,7 +511,13 @@ export class WorkflowMqttPool {
     private readonly clients = new Map<string, WorkflowMqttClient>();
 
     client(options: MqttConnectOptions): WorkflowMqttClient {
-        const key = [options.url, options.username || '', options.password || '', options.clientId || ''].join('|');
+        const key = [
+            options.url,
+            options.username || '',
+            options.password || '',
+            options.clientId || '',
+            options.tls ? JSON.stringify(options.tls) : ''
+        ].join('|');
         let client = this.clients.get(key);
         if (!client) {
             client = new WorkflowMqttClient(options);

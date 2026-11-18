@@ -59,6 +59,37 @@ export interface VisualNodeRuntimeHost {
 }
 
 /**
+ * Resolve the TLS options referenced by a node's `tls` field. The referenced
+ * `tls` config node lives in the workflow definition and is exposed to the
+ * runtime through `context.configNodes`.
+ */
+export async function resolveTlsOptions(
+    config: Record<string, any>,
+    context: ActivityContext
+): Promise<{ ca?: string; cert?: string; key?: string; servername?: string; rejectUnauthorized?: boolean } | undefined> {
+    const id = String(config?.tls || '').trim();
+    if (!id) {
+        return undefined;
+    }
+    const nodes = (context as any)?.configNodes || {};
+    const entry = nodes[id];
+    if (!entry) {
+        throw new Error(`TLS config not found: ${id}. Add a TLS config node or clear the reference.`);
+    }
+    const read = async (value: any) => {
+        const resolved = await resolveCredentialValue(value, context);
+        return resolved === undefined || resolved === null || resolved === '' ? undefined : String(resolved);
+    };
+    return {
+        ca: await read(entry.ca),
+        cert: await read(entry.cert),
+        key: await read(entry.key),
+        servername: entry.servername ? String(entry.servername) : undefined,
+        rejectUnauthorized: entry.rejectUnauthorized !== false
+    };
+}
+
+/**
  * Resolve `{{credential:name}}` / `credential:name` values through the host
  * credential resolver. Plain values stay untouched for backwards compatibility.
  */
@@ -972,6 +1003,69 @@ export async function executeVisualNode(
                 }
             };
         }
+        case 'tcp-out':
+        case 'udp-out':
+        case 'websocket-out': {
+            const transport = node.type === 'tcp-out' ? 'tcp' : node.type === 'udp-out' ? 'udp' : 'websocket';
+            const sender = transport === 'tcp'
+                ? (context as any).tcpSend
+                : transport === 'udp'
+                    ? (context as any).udpSend
+                    : (context as any).webSocketSend;
+            if (typeof sender !== 'function') {
+                return {
+                    success: false,
+                    error: new Error(
+                        `${transport.toUpperCase()} sending requires a workflow host with network access. `
+                        + 'Run the workflow with `tsdi-agent serve` or inject a transport.'
+                    ),
+                    data: { nodeId: node.id, transport }
+                };
+            }
+            const value = resolveWorkflowValue(config.payload === undefined ? 'payload' : config.payload, context);
+            const body = typeof value === 'string' ? value : JSON.stringify(value ?? null);
+            const timeoutMs = Math.max(0, Number(config.timeout) || 0) || undefined;
+            try {
+                if (transport === 'websocket') {
+                    const url = String(await resolveCredentialValue(config.url, context) ?? '').trim();
+                    if (!url) {
+                        return {
+                            success: false,
+                            error: new Error('WebSocket out needs a ws:// or wss:// URL.'),
+                            data: { nodeId: node.id }
+                        };
+                    }
+                    const tls = await resolveTlsOptions(config, context);
+                    await sender({ url, payload: body, timeoutMs, tls });
+                    return { success: true, data: { nodeId: node.id, transport, url, bytes: body.length } };
+                }
+                const host = String(await resolveCredentialValue(config.host, context) ?? '').trim();
+                const port = Math.max(0, Math.min(65535, Number(config.port) || 0));
+                if (!host || !port) {
+                    return {
+                        success: false,
+                        error: new Error(`${transport.toUpperCase()} out needs a host and a port.`),
+                        data: { nodeId: node.id }
+                    };
+                }
+                if (transport === 'udp') {
+                    await sender({ host, port, payload: body, timeoutMs });
+                    return { success: true, data: { nodeId: node.id, transport, host, port, bytes: body.length } };
+                }
+                const tls = await resolveTlsOptions(config, context);
+                await sender({ host, port, payload: body, timeoutMs, tls });
+                return { success: true, data: { nodeId: node.id, transport, host, port, bytes: body.length } };
+            } catch (error) {
+                return { success: false, error: error as Error, data: { nodeId: node.id, transport } };
+            }
+        }
+        case 'tls': {
+            // Config node: it only carries TLS options for other nodes.
+            return {
+                success: true,
+                data: { nodeId: node.id, config: true, skipped: true, reason: 'TLS config is consumed by outbound nodes' }
+            };
+        }
         case 'mqtt-out': {
             const publish = (context as any).mqttPublish;
             const url = String(await resolveCredentialValue(config.url, context) ?? '').trim();
@@ -997,6 +1091,7 @@ export async function executeVisualNode(
             const payload = typeof value === 'string' ? value : JSON.stringify(value ?? null);
             const username = String(await resolveCredentialValue(config.username, context) ?? '');
             const password = String(await resolveCredentialValue(config.password, context) ?? '');
+            const tls = await resolveTlsOptions(config, context);
             await publish({
                 url,
                 topic,
@@ -1005,7 +1100,8 @@ export async function executeVisualNode(
                 retain: config.retain === true,
                 clientId: config.clientId ? String(config.clientId) : undefined,
                 username: username || undefined,
-                password: password || undefined
+                password: password || undefined,
+                tls
             });
             return {
                 success: true,

@@ -295,6 +295,22 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "mqtt-out": {
                 "label": "MQTT out",
                 "description": "Publish the message to an MQTT broker"
+            },
+            "tcp-out": {
+                "label": "TCP out",
+                "description": "Send the message to a TCP endpoint"
+            },
+            "udp-out": {
+                "label": "UDP out",
+                "description": "Send the message as a UDP datagram"
+            },
+            "websocket-out": {
+                "label": "WebSocket out",
+                "description": "Send the message to a WebSocket endpoint"
+            },
+            "tls": {
+                "label": "TLS config",
+                "description": "Reusable TLS options for outbound nodes"
             }
         },
         "field": {
@@ -714,7 +730,33 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "retain": "Retain",
                 "clientId": "Client id",
                 "username": "Username",
-                "password": "Password"
+                "password": "Password",
+                "tls": "TLS config"
+            },
+            "tcp-out": {
+                "host": "Host",
+                "port": "Port",
+                "payload": "Payload path",
+                "timeout": "Timeout",
+                "tls": "TLS config"
+            },
+            "udp-out": {
+                "host": "Host",
+                "port": "Port",
+                "payload": "Payload path"
+            },
+            "websocket-out": {
+                "url": "URL",
+                "payload": "Payload path",
+                "timeout": "Timeout",
+                "tls": "TLS config"
+            },
+            "tls": {
+                "ca": "CA certificate",
+                "cert": "Client certificate",
+                "key": "Client key",
+                "servername": "Server name",
+                "rejectUnauthorized": "Verify certificate"
             }
         },
         "fieldPlaceholder": {
@@ -958,7 +1000,22 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "mqtt-out": {
                 "url": "mqtt://broker:1883",
                 "topic": "sensors/temp",
-                "clientId": "auto"
+                "clientId": "auto",
+                "tls": "tls_1"
+            },
+            "tcp-out": {
+                "host": "127.0.0.1",
+                "tls": "tls_1"
+            },
+            "udp-out": {
+                "host": "127.0.0.1"
+            },
+            "websocket-out": {
+                "url": "ws://host:port/path",
+                "tls": "tls_1"
+            },
+            "tls": {
+                "servername": "broker.example.com"
             }
         },
         "fieldDescription": {
@@ -1321,7 +1378,25 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "retain": "Ask the broker to keep the last message on the topic.",
                 "clientId": "Optional client id; generated when empty.",
                 "username": "Broker username.",
-                "password": "Broker password. Use {{credential:name}} to read a stored credential."
+                "password": "Broker password. Use {{credential:name}} to read a stored credential.",
+                "tls": "Id of a TLS config node; mqtts:// already encrypts the connection."
+            },
+            "tcp-out": {
+                "payload": "Context path used as the payload.",
+                "tls": "Id of a TLS config node; leave empty for plain TCP."
+            },
+            "udp-out": {
+                "payload": "Context path used as the datagram payload."
+            },
+            "websocket-out": {
+                "url": "ws:// or wss:// endpoint.",
+                "payload": "Context path used as the message payload.",
+                "tls": "Id of a TLS config node; leave empty for plain WebSocket."
+            },
+            "tls": {
+                "ca": "PEM chain; use {{credential:name}} to read a stored secret.",
+                "cert": "PEM certificate; use {{credential:name}} to read a stored secret.",
+                "key": "PEM private key; use {{credential:name}} to read a stored secret."
             }
         },
         "group": {
@@ -1712,6 +1787,22 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "mqtt-out": {
                 "label": "MQTT 输出",
                 "description": "把消息发布到 MQTT Broker"
+            },
+            "tcp-out": {
+                "label": "TCP 输出",
+                "description": "把消息发送到 TCP 端点"
+            },
+            "udp-out": {
+                "label": "UDP 输出",
+                "description": "把消息作为 UDP 数据报发送"
+            },
+            "websocket-out": {
+                "label": "WebSocket 输出",
+                "description": "把消息发送到 WebSocket 端点"
+            },
+            "tls": {
+                "label": "TLS 配置",
+                "description": "供出站节点复用的 TLS 选项"
             }
         },
         "field": {
@@ -2131,7 +2222,33 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "retain": "保留消息",
                 "clientId": "客户端 ID",
                 "username": "用户名",
-                "password": "密码"
+                "password": "密码",
+                "tls": "TLS 配置"
+            },
+            "tcp-out": {
+                "host": "主机",
+                "port": "端口",
+                "payload": "载荷路径",
+                "timeout": "超时",
+                "tls": "TLS 配置"
+            },
+            "udp-out": {
+                "host": "主机",
+                "port": "端口",
+                "payload": "载荷路径"
+            },
+            "websocket-out": {
+                "url": "URL",
+                "payload": "载荷路径",
+                "timeout": "超时",
+                "tls": "TLS 配置"
+            },
+            "tls": {
+                "ca": "CA 证书",
+                "cert": "客户端证书",
+                "key": "客户端私钥",
+                "servername": "服务端名称",
+                "rejectUnauthorized": "校验证书"
             }
         },
         "fieldPlaceholder": {
@@ -2359,7 +2476,22 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "mqtt-out": {
                 "url": "mqtt://broker:1883",
                 "topic": "sensors/temp",
-                "clientId": "auto"
+                "clientId": "auto",
+                "tls": "tls_1"
+            },
+            "tcp-out": {
+                "host": "127.0.0.1",
+                "tls": "tls_1"
+            },
+            "udp-out": {
+                "host": "127.0.0.1"
+            },
+            "websocket-out": {
+                "url": "ws://host:port/path",
+                "tls": "tls_1"
+            },
+            "tls": {
+                "servername": "broker.example.com"
             }
         },
         "fieldDescription": {
@@ -2722,7 +2854,25 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "retain": "要求 Broker 保留该主题的最后一条消息。",
                 "clientId": "可选的客户端 ID；留空时自动生成。",
                 "username": "Broker 用户名。",
-                "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。"
+                "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。",
+                "tls": "TLS 配置节点 id；mqtts:// 本身已加密连接。"
+            },
+            "tcp-out": {
+                "payload": "作为载荷的上下文路径。",
+                "tls": "TLS 配置节点 id；留空表示明文 TCP。"
+            },
+            "udp-out": {
+                "payload": "作为数据报载荷的上下文路径。"
+            },
+            "websocket-out": {
+                "url": "ws:// 或 wss:// 端点。",
+                "payload": "作为消息载荷的上下文路径。",
+                "tls": "TLS 配置节点 id；留空表示明文 WebSocket。"
+            },
+            "tls": {
+                "ca": "PEM 证书链；使用 {{credential:name}} 读取已保存的凭据。",
+                "cert": "PEM 证书；使用 {{credential:name}} 读取已保存的凭据。",
+                "key": "PEM 私钥；使用 {{credential:name}} 读取已保存的凭据。"
             }
         },
         "group": {

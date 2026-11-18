@@ -53,7 +53,7 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 930_000);
 // measured size (no headroom at all), and the ioc/aop correctness + AOP hot-path
 // work (joinpoint disposal, optional resolution, advisor resolution rewrite)
 // adds ~5.7 KB gzip to the bundled framework code.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 236_000);
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 240_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

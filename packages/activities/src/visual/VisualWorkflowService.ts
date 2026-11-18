@@ -97,6 +97,51 @@ export function toWorkflowExecutionSnapshot(state: WorkflowExecutionState): Work
  *  - retained execution history for post-run inspection,
  *  - pluggable generic node definitions through {@link WorkflowNodeRegistry}.
  */
+/** TLS options resolved from a `tls` config node. */
+export interface WorkflowTlsOptions {
+    ca?: string;
+    cert?: string;
+    key?: string;
+    rejectUnauthorized?: boolean;
+    servername?: string;
+}
+
+/** Payload handed to the host TCP transport by `tcp-out`. */
+export interface WorkflowTcpSendRequest {
+    host: string;
+    port: number;
+    payload: string;
+    timeoutMs?: number;
+    tls?: WorkflowTlsOptions;
+}
+
+/** Payload handed to the host UDP transport by `udp-out`. */
+export interface WorkflowUdpSendRequest {
+    host: string;
+    port: number;
+    payload: string;
+    timeoutMs?: number;
+}
+
+/** Payload handed to the host WebSocket transport by `websocket-out`. */
+export interface WorkflowWebSocketSendRequest {
+    url: string;
+    payload: string;
+    timeoutMs?: number;
+    tls?: WorkflowTlsOptions;
+}
+
+/** Config nodes (`tls`, ...) available to the runtime by id. */
+export function configNodeMap(definition: VisualWorkflowDefinition | undefined): Record<string, any> {
+    const nodes: Record<string, any> = {};
+    (definition?.nodes || []).forEach(node => {
+        if (node && node.id && node.type === 'tls') {
+            nodes[node.id] = node.config || {};
+        }
+    });
+    return nodes;
+}
+
 /** Payload handed to the host MQTT transport by `mqtt-out`. */
 export interface WorkflowMqttPublishRequest {
     url: string;
@@ -107,6 +152,7 @@ export interface WorkflowMqttPublishRequest {
     clientId?: string;
     username?: string;
     password?: string;
+    tls?: WorkflowTlsOptions;
 }
 
 @Injectable()
@@ -117,6 +163,9 @@ export class VisualWorkflowService {
     private definitionResolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
     private credentialResolver?: (name: string) => Promise<string | undefined> | string | undefined;
     private mqttPublisher?: (message: WorkflowMqttPublishRequest) => Promise<void> | void;
+    private tcpSender?: (message: WorkflowTcpSendRequest) => Promise<void> | void;
+    private udpSender?: (message: WorkflowUdpSendRequest) => Promise<void> | void;
+    private webSocketSender?: (message: WorkflowWebSocketSendRequest) => Promise<void> | void;
     private readonly registry: WorkflowNodeRegistry;
     private readonly pathInterceptor = new VisualExecutionPathInterceptor();
     private readonly policyInterceptor = new WorkflowNodePolicyInterceptor();
@@ -178,7 +227,7 @@ export class VisualWorkflowService {
         const executionId = options.executionId
             || options.resumeFrom?.executionId
             || this.generateExecutionId();
-        const runtimeContext = this.withMessageContext(this.withPluginServices(context), options);
+        const runtimeContext = this.withMessageContext(this.withPluginServices(context), options, definition);
         const state = options.resumeFrom
             ? this.createStateFromCheckpoint(definition, options.resumeFrom, executionId)
             : this.createState(definition, executionId);
@@ -405,6 +454,19 @@ export class VisualWorkflowService {
         this.mqttPublisher = publisher;
     }
 
+    /** Host transports for the outbound network nodes. */
+    setTcpSender(sender?: (message: WorkflowTcpSendRequest) => Promise<void> | void): void {
+        this.tcpSender = sender;
+    }
+
+    setUdpSender(sender?: (message: WorkflowUdpSendRequest) => Promise<void> | void): void {
+        this.udpSender = sender;
+    }
+
+    setWebSocketSender(sender?: (message: WorkflowWebSocketSendRequest) => Promise<void> | void): void {
+        this.webSocketSender = sender;
+    }
+
     setDefinitionResolver(
         resolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined
     ): void {
@@ -455,7 +517,8 @@ export class VisualWorkflowService {
      */
     private withMessageContext(
         context: ActivityContext,
-        options: WorkflowExecutionOptions
+        options: WorkflowExecutionOptions,
+        definition?: VisualWorkflowDefinition
     ): ActivityContext {
         const existing = (context as any)?.msg;
         const payload = existing?.payload !== undefined
@@ -481,7 +544,17 @@ export class VisualWorkflowService {
             resolveCredential: (name: string) => this.credentialResolver?.(name),
             mqttPublish: this.mqttPublisher
                 ? (message: WorkflowMqttPublishRequest) => this.mqttPublisher!(message)
-                : undefined
+                : undefined,
+            tcpSend: this.tcpSender
+                ? (message: WorkflowTcpSendRequest) => this.tcpSender!(message)
+                : undefined,
+            udpSend: this.udpSender
+                ? (message: WorkflowUdpSendRequest) => this.udpSender!(message)
+                : undefined,
+            webSocketSend: this.webSocketSender
+                ? (message: WorkflowWebSocketSendRequest) => this.webSocketSender!(message)
+                : undefined,
+            configNodes: configNodeMap(definition)
         };
     }
 

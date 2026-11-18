@@ -275,6 +275,40 @@ describe('Workflow MQTT transport', () => {
         }
     });
 
+    it('passes a resolved TLS config node to the MQTT transport', async () => {
+        const injector: Injector = createInjector();
+        InjectUtil.use(injector, WorkflowModule);
+        const registry = injector.get(WorkflowNodeRegistry);
+        const service = injector.get(VisualWorkflowService);
+        const published: any[] = [];
+        service.setMqttPublisher(message => {
+            published.push(message);
+        });
+        service.setCredentialResolver(name => name === 'mqtt-ca' ? 'CA-PEM' : undefined);
+        const tlsNode = registry.createNode('tls', { x: 0, y: 0 }, {
+            id: 'tls_1',
+            config: { ca: '{{credential:mqtt-ca}}', servername: 'mqtt.example.com', rejectUnauthorized: false }
+        });
+        const outNode = registry.createNode('mqtt-out', { x: 200, y: 0 }, {
+            id: 'mqtt_out',
+            config: { url: 'mqtts://mqtt.example.com:8883', topic: 'a/b', payload: 'payload', tls: 'tls_1' }
+        });
+        const result = await service.execute({
+            id: 'mqtt-tls',
+            name: 'MQTT TLS',
+            nodes: [tlsNode, outNode],
+            connections: []
+        }, { payload: 'x' });
+        expect(result.success).toBe(true);
+        expect(published[0].tls).toEqual({
+            ca: 'CA-PEM',
+            cert: undefined,
+            key: undefined,
+            servername: 'mqtt.example.com',
+            rejectUnauthorized: false
+        });
+    });
+
     it('reports a clear error when the host has no MQTT transport', async () => {
         const injector: Injector = createInjector();
         InjectUtil.use(injector, WorkflowModule);

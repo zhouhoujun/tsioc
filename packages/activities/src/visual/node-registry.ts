@@ -760,6 +760,88 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { url: 'mqtt://localhost:1883', topic: '#', qos: '0' }
     },
     {
+        type: 'tcp-out',
+        label: 'TCP out',
+        description: 'Send the message to a TCP endpoint',
+        category: 'action',
+        icon: '⇄',
+        color: '#0f766e',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [
+            port('out', 'out', 'output', 'Output'),
+            port('error', 'error', 'output', 'Error')
+        ],
+        fields: [
+            configField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1' }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the payload.' }),
+            configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 5000, min: 0, step: 1000, unit: 'ms' }),
+            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; leave empty for plain TCP.' })
+        ],
+        defaultConfig: { host: '127.0.0.1', port: 0, payload: 'payload', timeout: 5000 }
+    },
+    {
+        type: 'udp-out',
+        label: 'UDP out',
+        description: 'Send the message as a UDP datagram',
+        category: 'action',
+        icon: '⇆',
+        color: '#0d9488',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [
+            port('out', 'out', 'output', 'Output'),
+            port('error', 'error', 'output', 'Error')
+        ],
+        fields: [
+            configField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1' }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the datagram payload.' })
+        ],
+        defaultConfig: { host: '127.0.0.1', port: 0, payload: 'payload' }
+    },
+    {
+        type: 'websocket-out',
+        label: 'WebSocket out',
+        description: 'Send the message to a WebSocket endpoint',
+        category: 'action',
+        icon: '⌁',
+        color: '#0ea5e9',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [
+            port('out', 'out', 'output', 'Output'),
+            port('error', 'error', 'output', 'Error')
+        ],
+        fields: [
+            configField({ key: 'url', label: 'URL', type: 'url', required: true, placeholder: 'ws://host:port/path', description: 'ws:// or wss:// endpoint.' }),
+            configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
+            configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 5000, min: 0, step: 1000, unit: 'ms' }),
+            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; leave empty for plain WebSocket.' })
+        ],
+        defaultConfig: { url: '', payload: 'payload', timeout: 5000 }
+    },
+    {
+        type: 'tls',
+        label: 'TLS config',
+        description: 'Reusable TLS options for outbound nodes',
+        category: 'advanced',
+        icon: '⛨',
+        color: '#475569',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [],
+        fields: [
+            configField({ key: 'ca', label: 'CA certificate', type: 'textarea', rows: 4, description: 'PEM chain; use {{credential:name}} to read a stored secret.' }),
+            configField({ key: 'cert', label: 'Client certificate', type: 'textarea', rows: 4, description: 'PEM certificate; use {{credential:name}} to read a stored secret.' }),
+            configField({ key: 'key', label: 'Client key', type: 'password', description: 'PEM private key; use {{credential:name}} to read a stored secret.' }),
+            configField({ key: 'servername', label: 'Server name', type: 'text', placeholder: 'broker.example.com' }),
+            configField({ key: 'rejectUnauthorized', label: 'Verify certificate', type: 'boolean', defaultValue: true })
+        ],
+        defaultConfig: { rejectUnauthorized: true }
+    },
+    {
         type: 'mqtt-out',
         label: 'MQTT out',
         description: 'Publish the message to an MQTT broker',
@@ -781,6 +863,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 { label: '1', value: '1' }
             ] }),
             configField({ key: 'retain', label: 'Retain', type: 'boolean', defaultValue: false }),
+            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; mqtts:// already encrypts the connection.' }),
             configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto' }),
             configField({ key: 'username', label: 'Username', type: 'text' }),
             configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' })

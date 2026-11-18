@@ -59,6 +59,7 @@ import {
     WorkflowExecutionStore
 } from './WorkflowExecutionStore';
 import { WorkflowMqttTransport } from './WorkflowMqtt';
+import { WorkflowNetTransport } from './WorkflowNetTransport';
 import {
     InMemoryWorkflowCredentialStore,
     SqliteWorkflowCredentialStore,
@@ -199,11 +200,15 @@ export class WorkflowHttpController {
         private audit: WorkflowAuditService,
         @Inject(WORKFLOW_CREDENTIAL_STORE) private credentials: WorkflowCredentialStore,
         private mqtt: WorkflowMqttTransport,
+        private netTransport: WorkflowNetTransport,
         private execution: VisualWorkflowService
     ) {
         this.execution.setDefinitionResolver(id => this.store.get(id));
         this.execution.setCredentialResolver(name => this.credentials.getCredential(name));
         this.execution.setMqttPublisher(message => this.mqtt.publish(message));
+        this.execution.setTcpSender(message => this.netTransport.sendTcp(message));
+        this.execution.setUdpSender(message => this.netTransport.sendUdp(message));
+        this.execution.setWebSocketSender(message => this.netTransport.sendWebSocket(message));
     }
 
     private executionContext(context: Record<string, any> = {}): Record<string, any> {
@@ -1088,6 +1093,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             WorkflowPluginCatalog,
             WorkflowScheduleManager,
             WorkflowMqttTransport,
+            WorkflowNetTransport,
             ...features,
             // Register MIME providers after the transport feature. The feature
             // also imports MimeModule exports; re-registering here ensures the

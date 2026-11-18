@@ -603,7 +603,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 56 registered node types by label, description or type,
+- searchable palette: filter 60 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -812,6 +812,33 @@ POST /api/deployments/stop    # stop all or the given workflowIds
   silent no-op.
 - `qos` supports 0 and 1; incoming QoS 1 messages are acknowledged, and
   subscriptions are re-established after a reconnect.
+
+### Outbound network nodes
+
+`tcp-out`, `udp-out`, `websocket-out` (and `mqtt-out`) publish from the runtime
+through host transports:
+
+- the HTTP server installs them (`WorkflowNetTransport`, `WorkflowMqttTransport`);
+  browser-only hosts get a clear error instead of a silent no-op
+- `payload` is a context path; non-string values are JSON-encoded
+- `timeout` bounds connect/send operations
+
+### TLS config
+
+`tls` is a config node: it never executes, it only carries options that other
+nodes reference by id.
+
+```json
+{ "id": "tls_1", "type": "tls",
+  "config": { "ca": "{{credential:tls-ca}}", "cert": "{{credential:tls-cert}}",
+              "key": "{{credential:tls-key}}", "servername": "broker.example.com",
+              "rejectUnauthorized": true } }
+```
+
+Referenced by `tcp-out` / `websocket-out` / `mqtt-out` through `"tls": "tls_1"`.
+The runtime resolves the node from the definition, resolves `{{credential:name}}`
+values, and hands the result to the transport. A missing id fails the node with
+`TLS config not found: <id>`.
 
 ### Sub-workflow ports
 
