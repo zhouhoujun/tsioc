@@ -211,8 +211,8 @@ The selector column lists the legacy short name; every widget also accepts its
 | Selector | Component / module | Purpose and main attributes |
 | --- | --- | --- |
 | `panel` | `PanelComponent` / `PanelModule` | Collapsible detail panel. `summary`, `meta`, `selection`, `hint`, `items` (`PanelItem[]`), `expanded` + `expandedChange` (also emitted when a host writes `expanded`), `styles` per-part skin, `locale`, `expandText`/`collapseText`. Project slots with `<panel-header>`, `<panel-summary>`, `<panel-body>` children; clicking the header/summary/toggle flips `expanded`. |
-| `list` | `ListComponent` / `ListModule` | Windowed list with paging. `items`, `cursor`, `hasMore`, `hasPrevious`, `loading`, `error`, `emptyLabel` (`empty` alias), labels (`loadingLabel`/`moreLabel`/`olderLabel`), `loadPage`/`loadPreviousPage`, `selectAction`/`selectValueAction`/`closeAction`, `visibleItems`, `windowOffset`, detail props (`detailLines`, `contextLines`). |
-| `select-list` | `SelectComponent` / `SelectModule` | Select menu overlay. `options` (`SelectOption[]`), `selectedIndex`, `visibleCount`, `title`, `hint`, `detailLines`, `suggestion`, `fitContent`, `maxWidth`/`minWidth`, `ariaLabel` (`accessibilityLabel` alias), `selectAction`, `closeAction`, `keydownAction`. |
+| `list` | `ListComponent` / `ListModule` | Windowed list with paging. `items`, `cursor`, `hasMore`, `hasPrevious`, `loading`, `error`, `emptyLabel` (`empty` alias), labels (`loadingLabel`/`moreLabel`/`olderLabel`), `loadPage`/`loadPreviousPage`, `selectAction`/`selectValueAction`/`closeAction`, `visibleItems`, `windowOffset`, `maxHeight` (60vh scroll guard), detail props (`detailLines`, `contextLines`). |
+| `select-list` | `SelectComponent` / `SelectModule` | Select menu overlay. `options` (`SelectOption[]`), `selectedIndex`, `visibleCount`, `title`, `hint`, `detailLines`, `suggestion`, `fitContent`, `maxWidth`/`minWidth`, `ariaLabel` (`accessibilityLabel` alias), `selectAction`, `closeAction`, `keydownAction`, `maxHeight` (60vh scroll guard). |
 | `dialog-panel` | `DialogComponent` / `DialogModule` | Dialog chrome: `title`, `lines`, `hint`, `ariaLabel`, `closeLabel`, `closeAction`, `maxWidth`/`minWidth`, `horizontalChrome`. |
 | `alert-dialog` | `AlertDialogComponent` / `AlertDialogModule` (`AlertModule` alias) | Dialog with semantic tone and primary action: adds `tone` (`info`/`success`/`warning`/`error`), `actionLabel`, `acceptAction`. |
 | `toast-stack` | `ToastStackComponent` / `ToastModule` | Renders `ToastEntry[]`; the host provides `ToastService` (queue: `show`, `dismiss`, `clear`, `subscribe`) and feeds `items` to the stack. Derived `rows` carry the padded display text (`entries` alias). |
@@ -299,6 +299,14 @@ contract:
 <ui-empty icon="search" title="Nothing found" hint="Try another query"
   actionLabel="Clear" :action="clear"></ui-empty>
 ```
+
+### Popup viewport guard
+
+`select-list` and `list` apply an inline `max-height: 60vh` + `overflow-y: auto`
+scroll box to their option/row area, so a long menu never grows past the
+viewport in a DOM host. Set `maxHeight=""` to let the host own the constraint,
+or pass a different value (`40vh`, `18rem`, ...). Terminal hosts keep their
+existing windowing/`visibleCount` behavior.
 
 ## Styling
 

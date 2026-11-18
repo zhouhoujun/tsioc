@@ -30,7 +30,7 @@ export interface SelectOption {
                 optionActiveClass="select-option is-selected"
                 @keydown="emitKeydown($event)"
                 @select-option="emitSelection($event)"></select>
-            <div class="select-rows" role="listbox" aria-label="{{ariaLabel}}">
+            <div class="select-rows" role="listbox" aria-label="{{ariaLabel}}" [style]="scrollStyle">
                 <label class="select-title" v-if="title">{{title}}</label>
                 <label class="select-meta" v-if="meta">{{meta}}</label>
                 <label class="{{option.className}}" role="option" aria-selected="{{option.selected}}" v-for="option in visibleOptions" trackBy="index" @click="choose(option.index)">
@@ -60,6 +60,8 @@ export class SelectComponent {
     @Attribute() suggestion = false;
     /** Content-fit the blocking menu instead of spanning the terminal. */
     @Attribute() fitContent = false;
+    /** Browser-side viewport guard; empty disables the inline scroll box. */
+    @Attribute() maxHeight = '60vh';
     @Attribute() maxWidth = 88;
     @Attribute() minWidth = 28;
     /** Unfiltered title used for width (live filter text must not resize the card). */
@@ -71,6 +73,16 @@ export class SelectComponent {
     @Attribute() keydownAction?: (event: KeyboardEvent) => void;
 
     @Computed()
+    get scrollStyle(): Record<string, string> {
+        return this.maxHeight
+            ? {
+                'max-height': String(this.maxHeight),
+                'overflow-y': 'auto',
+                'overscroll-behavior': 'contain'
+            }
+            : {};
+    }
+
     get widthClass(): string {
         return this.fitContent ? `dialog-w-${this.resolveContentWidth()}` : '';
     }

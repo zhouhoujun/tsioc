@@ -160,7 +160,7 @@ export class ListPager<T extends { id: string } = ListItem> {
         <label class="list-panel-meta" v-show="context">{{context}}</label>
         <label class="list-panel-meta" v-show="meta">{{meta}}</label>
         <label class="list-panel-context" v-for="line in contextLines">{{line}}</label>
-        <div class="list" role="listbox" aria-label="{{listLabel}}">
+        <div class="list" role="listbox" aria-label="{{listLabel}}" [style]="scrollStyle">
             <label class="list-more list-previous" v-show="hasPrevious || windowStart > 0" @click="onReachStart">{{olderLabel}}</label>
             <div id="{{item.id}}" class="list-row {{item.className}}" role="option" aria-selected="{{item.selected}}" v-for="item in renderedItems" trackBy="id" @click="selectItem(item)">
                 <span class="list-label">{{item.label}}</span>
@@ -178,6 +178,8 @@ export class ListPager<T extends { id: string } = ListItem> {
 })
 export class ListComponent {
     @Attribute() items: ListItem[] = [];
+    /** Browser-side viewport guard; empty disables the inline scroll box. */
+    @Attribute() maxHeight = '60vh';
     @Attribute() cursor?: string;
     @Attribute() hasMore = true;
     @Attribute() loading = false;
@@ -224,6 +226,16 @@ export class ListComponent {
         if (this.autoLoad && !this.items.length && this.loadPage) {
             void this.loadMore();
         }
+    }
+
+    get scrollStyle(): Record<string, string> {
+        return this.maxHeight
+            ? {
+                'max-height': String(this.maxHeight),
+                'overflow-y': 'auto',
+                'overscroll-behavior': 'contain'
+            }
+            : {};
     }
 
     /** Index of the first painted row after clamping to the loaded items. */

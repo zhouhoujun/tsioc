@@ -74,6 +74,9 @@ export class CommonWidgetsDomTest {
         const host = ref.instance as CommonWidgetsHostComponent;
         const root = ref.hostView.rootNodes[0] as HTMLElement;
 
+        const listBox = root.querySelector('.list') as HTMLElement;
+        expect(listBox.style.maxHeight).toEqual('60vh');
+        expect(listBox.style.overflowY).toEqual('auto');
         expect(root.querySelector('.list-empty')).toBeTruthy();
         expect(root.textContent).toContain('Alpha');
         (root.querySelectorAll('.list-row')[1] as HTMLElement).click();
@@ -95,6 +98,9 @@ export class CommonWidgetsDomTest {
         expect(select.instance.ariaLabel).toEqual('Picker');
         expect(select.instance.accessibilityLabel).toEqual('Picker');
         expect(select.instance.widthClass).toEqual('dialog-w-28');
+        const rows = select.hostView.rootNodes[0].querySelector('.select-rows') as HTMLElement;
+        expect(rows.style.maxHeight).toEqual('60vh');
+        expect(rows.style.overflowY).toEqual('auto');
         expect(root.textContent).toContain('Two');
         // visibleCount=2 around index 1 still shows the selected row only once.
         expect(root.querySelectorAll('.select-option')).toHaveLength(2);
