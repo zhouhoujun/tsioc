@@ -25,6 +25,7 @@ import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
 import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './approval-chunk';
 import { SessionAggregationDeps, getTodoPlan, getTodoPlans, listCodingTasks } from './session-aggregation';
 import { applyConsoleUiSettings, readConsoleStore, readConsoleUiSettings, writeConsoleStore } from './console-ui-settings';
+import { resolveAgentHooksTrustState } from '@tsdi/agent';
 
 @Injectable()
 export class AppRpcServer {
@@ -455,6 +456,10 @@ export class AppRpcServer {
                 return this.decideApproval(params, context, false);
             case 'tools.list':
                 return this.tools.getToolDefinitions(optionalSessionId(params));
+            case 'hooks.trust.list':
+                // Declared hooks (hooks.json) with the trust state of their
+                // current definition hash; settings pages show this.
+                return resolveAgentHooksTrustState(String(this.options.workspace || this.resolveWorkspace() || ''));
             case 'hooks.list':
                 // Attach/web clients cannot read the gateway runtime directly;
                 // /hooks used to fall back to an empty client-side summary.

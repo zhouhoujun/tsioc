@@ -48,13 +48,23 @@ export async function showAgentConsoleSkillsDetail(host: AgentConsoleSettingsDet
     openDetail(host, `${title} · ${picked}`, text, () => { void showAgentConsoleSkillsDetail(host); });
 }
 
-/** Hooks: runtime/RPC summary in a scrollable overlay instead of command output. */
+/**
+ * Hooks: declared hooks with their trust state (when the gateway can read
+ * `hooks.json`/`hooks.trusted.json`), else the runtime hook summary.
+ */
 export async function showAgentConsoleHooksDetail(host: AgentConsoleSettingsDetailHost): Promise<void> {
     let summary: Array<{ stage: string; commands: string[]; functions: string[] }> = [];
+    let trust: Array<{ stage: string; name?: string; trusted: boolean; trustedAt?: number }> = [];
     if (host.appRpc) {
-        const result = await host.appRpc.request('hooks.list', {}, host.rpcRequestContext?.()).catch(() => null);
-        if (Array.isArray(result)) {
-            summary = result;
+        const [listed, trusted] = await Promise.all([
+            host.appRpc.request('hooks.list', {}, host.rpcRequestContext?.()).catch(() => null),
+            host.appRpc.request('hooks.trust.list', {}, host.rpcRequestContext?.()).catch(() => null)
+        ]);
+        if (Array.isArray(listed)) {
+            summary = listed;
+        }
+        if (Array.isArray(trusted)) {
+            trust = trusted;
         }
     }
     if (!summary.length) {
@@ -62,18 +72,35 @@ export async function showAgentConsoleHooksDetail(host: AgentConsoleSettingsDeta
     }
     const stages = summary.filter(entry => entry.commands.length > 0 || entry.functions.length > 0);
     const title = formatAgentUiNotice(host.translator, 'hooksRegisteredTitle');
-    if (!stages.length) {
+    if (!stages.length && !trust.length) {
         host.notify(formatAgentUiNotice(host.translator, 'hooksRegisteredConfigure'));
         return;
     }
-    const text = stages.map(entry => {
-        const commands = entry.commands.length ? `cmd: ${entry.commands.join('; ')}` : '';
-        const functions = entry.functions.length ? `fn: ${entry.functions.join(', ')}` : '';
-        return `${entry.stage}${commands ? ` [${commands}]` : ''}${functions ? ` [${functions}]` : ''}`;
-    }).join('\n');
+    const lines: string[] = [];
+    if (trust.length) {
+        const trustedCount = trust.filter(entry => entry.trusted).length;
+        lines.push(settingsCenterLabel(host.translator, 'agent.menu.settings.hooksTrustSummary',
+            'trusted {trusted}/{total}', { trusted: trustedCount, total: trust.length }));
+        for (const entry of trust) {
+            const state = entry.trusted
+                ? settingsCenterLabel(host.translator, 'agent.menu.settings.hooksTrusted', 'trusted')
+                : settingsCenterLabel(host.translator, 'agent.menu.settings.hooksUntrusted', 'untrusted');
+            lines.push(`[${state}] ${entry.stage}${entry.name ? ` · ${entry.name}` : ''}`);
+        }
+    }
+    if (stages.length) {
+        if (lines.length) {
+            lines.push('');
+        }
+        for (const entry of stages) {
+            const commands = entry.commands.length ? `cmd: ${entry.commands.join('; ')}` : '';
+            const functions = entry.functions.length ? `fn: ${entry.functions.join(', ')}` : '';
+            lines.push(`${entry.stage}${commands ? ` [${commands}]` : ''}${functions ? ` [${functions}]` : ''}`);
+        }
+    }
     // No back link: Esc must close the overlay (a back that reopens the same
     // view would make the dismiss key appear broken).
-    openDetail(host, title, text);
+    openDetail(host, title, lines.join('\n'));
 }
 
 /** One plugin's manifest/contributions in the detail overlay. */

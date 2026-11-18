@@ -337,6 +337,9 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         pagerSizeDescription: 'rows moved by page up/down in transcript navigation',
         pagerSizeTitle: 'Settings · Message page size',
         pagerSizeOption: 'jump {count} messages per page',
+        hooksTrustSummary: 'trusted {trusted}/{total}',
+        hooksTrusted: 'trusted',
+        hooksUntrusted: 'untrusted',
         thinkingLevelTitle: 'Settings · Thinking Level',
         thinkingLevelDescription: 'reasoning effort for the active model'
     },

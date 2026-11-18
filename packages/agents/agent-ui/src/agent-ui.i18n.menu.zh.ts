@@ -337,6 +337,9 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         pagerSizeDescription: '转录导航中 PageUp/PageDown 一次移动的行数',
         pagerSizeTitle: '设置 · 消息翻页大小',
         pagerSizeOption: '每次翻 {count} 条消息',
+        hooksTrustSummary: '已信任 {trusted}/{total}',
+        hooksTrusted: '已信任',
+        hooksUntrusted: '未信任',
         thinkingLevelTitle: '设置 · 思考强度',
         thinkingLevelDescription: '当前模型的推理强度'
     },

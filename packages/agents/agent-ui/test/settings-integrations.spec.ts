@@ -141,13 +141,23 @@ export class AgentConsoleSettingsIntegrationsTest {
         host.appRpc = {
             request: async (method: string) => {
                 host.calls.push({ method });
+                if (method === 'hooks.trust.list') {
+                    return [
+                        { stage: 'beforeTurn', name: 'npm test', trusted: true },
+                        { stage: 'beforeTurn', name: 'npm run lint', trusted: false }
+                    ];
+                }
                 return [{ stage: 'beforeTurn', commands: ['npm test'], functions: [] }];
             }
         };
         await showAgentConsoleHooksDetail(host);
         expect(host.overlays.length).toEqual(1);
-        expect(host.overlays[0].lines.join('\n')).toContain('beforeTurn');
-        expect(host.overlays[0].lines.join('\n')).toContain('npm test');
+        const text = host.overlays[0].lines.join('\n');
+        expect(text).toContain('beforeTurn');
+        expect(text).toContain('npm test');
+        expect(text).toContain('trusted 1/2');
+        expect(text).toContain('[trusted] beforeTurn · npm test');
+        expect(text).toContain('[untrusted] beforeTurn · npm run lint');
         // No back link: Esc closes the overlay instead of reopening it.
         expect(host.overlays[0].back).toEqual(undefined);
     }
