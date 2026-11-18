@@ -4820,3 +4820,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增 `message-projection.spec.ts`（首次过滤、复用引用、新数组仍过滤）。
 - `navFilteredSessions` 按 (sessions 引用 + 过滤值) 缓存：500 会话 + 文本/项目过滤下，2000 次读取 493ms → 1.7ms。
   - 新增 session-picker 缓存失效用例（改过滤/换列表）。
+
+## 2026-11-18 P2 收尾：弹窗开关批量写入 + @Computed 评估
+- `dismissBackgroundPanels` / `openSelectMenu` / `closeSelectMenu` 包进 `batchReactiveUpdates`：
+  打开一个对话框最多关闭 14 个面板，原先每个写入各触发一轮绑定。
+  - A/B（1k 消息、state-only、36 次 open+close）：p90 19.6/19.9/31.9ms（A）vs 26.2/21.6/37.4ms（B），p50 基本持平；保留。
+  - 行为回归：dialog-exclusivity / dialog-regressions / console-renderer / settings-center / session-picker / vm-panels / overlay-composer 共 188 passing。
+- `@Computed` 评估：对 `sessionItems` 等热点 getter 做了 500 会话 profile，热点在响应式 removeDeps/track（每键 ~4ms）与 `v-for` 行重建，
+  `get sessionItems` 仅 13.8ms/40 次；转 `@Computed` 不会减少主要成本，未改动（避免无收益优化）。

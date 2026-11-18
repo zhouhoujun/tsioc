@@ -1,3 +1,4 @@
+import { batchReactiveUpdates } from '@tsdi/components';
 import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type { AgentConsoleSelectMenu, AgentConsoleSelectOption, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { getAgentConsoleCommandDefinition } from './AgentConsoleCommandRegistry';
@@ -14,6 +15,10 @@ export function selectAsync(state: AgentConsoleSessionState, title: string, opti
     }
 
 export function openSelectMenu(state: AgentConsoleSessionState, title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void {
+        batchReactiveUpdates(() => openSelectMenuNow(state, title, options, selectedIndex, hint, kind));
+    }
+
+function openSelectMenuNow(state: AgentConsoleSessionState, title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): void {
         dismissBackgroundPanels(state);
         const currentMenu = state.selectMenu;
         const currentAction = state.selectMenuAction;
@@ -33,9 +38,11 @@ export function openSelectMenu(state: AgentConsoleSessionState, title: string, o
     }
 
 export function closeSelectMenu(state: AgentConsoleSessionState): void {
-        state.selectMenu = undefined;
-        state.selectMenuTouched = false;
-        state.syncDerivedInputFocus();
+        batchReactiveUpdates(() => {
+            state.selectMenu = undefined;
+            state.selectMenuTouched = false;
+            state.syncDerivedInputFocus();
+        });
     }
 
 export async function dismissSelectMenuLayer(state: AgentConsoleSessionState): Promise<void> {

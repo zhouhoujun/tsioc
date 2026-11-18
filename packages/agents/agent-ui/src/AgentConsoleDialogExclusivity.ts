@@ -1,3 +1,4 @@
+import { batchReactiveUpdates } from '@tsdi/components';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 
 export type AgentConsolePanelKey =
@@ -11,6 +12,12 @@ export type AgentConsolePanelKey =
  * alone so their intentional parent/submenu chain keeps working.
  */
 export function dismissBackgroundPanels(state: AgentConsoleSessionState, except?: AgentConsolePanelKey): void {
+    // Opening a dialog can close a dozen transient panels at once; coalesce
+    // those writes into one binding pass instead of one pass per panel.
+    batchReactiveUpdates(() => dismissBackgroundPanelsNow(state, except));
+}
+
+function dismissBackgroundPanelsNow(state: AgentConsoleSessionState, except?: AgentConsolePanelKey): void {
     const keep = (key: AgentConsolePanelKey): boolean => key === except;
     if (!keep('sessions')) state.sessionsFocused = false;
     if (!keep('tools')) state.toolsFocused = false;
