@@ -301,6 +301,7 @@ export const UI_CSS = `
     padding: 0 0.2ch;
 }
 .ui-field-hint { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+.ui-search-field .ui-field-icon { color: var(--ui-muted-fg, inherit); }
 
 .ui-avatar {
     position: relative;
