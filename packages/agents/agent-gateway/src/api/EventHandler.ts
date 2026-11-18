@@ -1,4 +1,5 @@
 import * as http from 'http';
+import { GatewayEventStream, stringifyGatewayEvent } from './GatewayEventStream';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
 import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentBackgroundTaskCompletedEvent, AgentBackgroundTaskFailedEvent, AgentBackgroundTaskStartedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentPlanCompletedEvent, AgentPlanCreatedEvent, AgentPlanStepBlockedEvent, AgentPlanStepCompletedEvent, AgentPlanStepStartedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent, TimelineEventRecord, TimelineHistoryStore, TimelineEventType } from '@tsdi/agent';
@@ -23,7 +24,7 @@ const MAX_EVENT_HISTORY = 200;
 
 @Injectable()
 export class EventHandler {
-    private clients = new Map<string, Set<http.ServerResponse>>();
+    private readonly stream = new GatewayEventStream();
     private listeners = new Map<string, Set<(record: GatewayEventRecord) => void>>();
     private history: GatewayEventRecord[] = [];
 
@@ -55,36 +56,7 @@ export class EventHandler {
             'Cache-Control': 'no-cache',
             Connection: 'keep-alive'
         });
-        res.write(`event: connected\ndata: ${JSON.stringify({ sessionId })}\n\n`);
-
-        // Reconnect support (Codex-style): replay buffered events after the
-        // client's Last-Event-ID so a dropped connection does not lose rows.
-        const lastEventId = String(
-            (req.headers && (req.headers['last-event-id'] ?? req.headers['Last-Event-ID'])) || ''
-        ).trim();
-        if (lastEventId) {
-            const index = this.history.findIndex(record => record.id === lastEventId);
-            for (const record of index >= 0 ? this.history.slice(index + 1) : []) {
-                if (record.sessionId !== sessionId) {
-                    continue;
-                }
-                try {
-                    res.write(`${record.id ? `id: ${record.id}\n` : ''}event: ${record.type}\ndata: ${this.safeStringify(record)}\n\n`);
-                } catch {
-                    break;
-                }
-            }
-        }
-
-        const clients = this.clients.get(sessionId) ?? new Set<http.ServerResponse>();
-        clients.add(res);
-        this.clients.set(sessionId, clients);
-        res.on('close', () => {
-            clients.delete(res);
-            if (!clients.size) {
-                this.clients.delete(sessionId);
-            }
-        });
+        this.stream.connect(sessionId, req, res, this.history);
     };
 
     @OnEvent(AgentTurnStartedEvent)
@@ -474,24 +446,7 @@ export class EventHandler {
 
     /** Broadcast an event to connected SSE clients for one session */
     broadcast(sessionId: string, event: string, data: any): void {
-        const eventId = data && typeof data === 'object' ? String((data as any).id || '').trim() : '';
-        const payload = `${eventId ? `id: ${eventId}\n` : ''}event: ${event}\ndata: ${this.safeStringify(data)}\n\n`;
-        const clients = this.clients.get(sessionId);
-        if (!clients?.size) {
-            return;
-        }
-        const dead: http.ServerResponse[] = [];
-        for (const client of clients) {
-            try {
-                client.write(payload);
-            } catch {
-                dead.push(client);
-            }
-        }
-        dead.forEach(client => clients.delete(client));
-        if (!clients.size) {
-            this.clients.delete(sessionId);
-        }
+        this.stream.broadcast(sessionId, event, data);
     }
 
     subscribe(sessionId: string, listener: (record: GatewayEventRecord) => void): () => void {
@@ -552,27 +507,12 @@ export class EventHandler {
 
     private normalizeValue(value: any): any {
         try {
-            return JSON.parse(this.safeStringify(value));
+            return JSON.parse(stringifyGatewayEvent(value));
         } catch {
             return { value: '[unserializable]' };
         }
     }
 
-    private safeStringify(value: any): string {
-        const seen = new WeakSet<object>();
-        return JSON.stringify(value, (_key, current) => {
-            if (typeof current === 'bigint') {
-                return current.toString();
-            }
-            if (current && typeof current === 'object') {
-                if (seen.has(current)) {
-                    return '[circular]';
-                }
-                seen.add(current);
-            }
-            return current;
-        });
-    }
 
     getRoutes(): GatewayRoute[] {
         const historyHandler: RouteHandler = async (req, res) => {
