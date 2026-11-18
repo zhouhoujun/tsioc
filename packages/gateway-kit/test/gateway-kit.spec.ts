@@ -160,4 +160,24 @@ export class GatewayKitStaticOpenApiTest {
         expect(document.paths['/health'].get.security).toBeUndefined();
         expect(document.paths['/api/sessions/{id}'].get.security).toEqual([{ bearerAuth: [] }]);
     }
+
+    @Test('prefix routes match longer paths and honour host/accept predicates')
+    prefixAndPredicates() {
+        const router = new GatewayRouter<string>();
+        router.add({ method: 'GET', path: '/api/users', handler: 'prefix', matchMode: 'prefix' });
+        router.add({ method: 'GET', path: '/api/users/:id', handler: 'param' });
+
+        expect(router.match('GET', '/api/users/1')?.route.handler).toEqual('param');
+        expect(router.match('GET', '/api/users/1/profile')).toEqual({
+            route: expect.objectContaining({ handler: 'prefix' }),
+            params: { '*': '1/profile' }
+        });
+
+        const canary = new GatewayRouter<string>();
+        canary.add({ method: 'GET', path: '/api/a', handler: 'canary', hosts: ['a.example'] });
+        expect(canary.match('GET', '/api/a', { host: 'b.example' })).toEqual(null);
+        expect(canary.match('GET', '/api/a', { host: 'a.example' })?.route.handler).toEqual('canary');
+        expect(canary.match('GET', '/api/a', { accept: () => false })).toEqual(null);
+        expect(canary.match('GET', '/api/a', { accept: () => true })?.route.handler).toEqual('canary');
+    }
 }

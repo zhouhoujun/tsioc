@@ -1,3 +1,4 @@
+import { GatewayRouter, type GatewayRouteDefinition } from '@tsdi/gateway-kit';
 import { GatewayRouteOptions, ResolvedGatewayRoute } from './gateway.options';
 
 /**
@@ -52,31 +53,38 @@ export interface GatewayRouteMatchRequest {
     accepts?(route: ResolvedGatewayRoute): boolean;
 }
 
-interface TrieNode {
-    /** routes whose pattern ends exactly at this node */
-    routes: CompiledGatewayRoute[];
-    /** routes ending with `*` at this node */
-    wildcard: CompiledGatewayRoute[];
-    statics: Map<string, TrieNode>;
-    param?: TrieNode;
-}
-
-function createNode(): TrieNode {
-    return { routes: [], wildcard: [], statics: new Map() };
+function splitPath(path: string): string[] {
+    return path.split('/').filter(Boolean);
 }
 
 /**
- * Segment-aware prefix match, implemented with a static/param trie.
+ * Higher is more specific: static segments beat parameters, longer paths beat
+ * shorter ones, wildcards are least specific.
+ */
+function specificity(segments: readonly string[]): number {
+    return segments.reduce((score, segment) => {
+        if (segment === '*') {
+            return score + 1;
+        }
+        if (segment.startsWith(':')) {
+            return score + 10;
+        }
+        return score + 100 + segment.length;
+    }, 0);
+}
+
+/**
+ * Segment-aware prefix match shared with the agent gateway.
  *
  * A route path is a prefix of the request path (so `/api/users` matches
  * `/api/users/profile`) but must align on segment boundaries (so it does not
- * match `/api/users2`). `:name` captures one segment and a trailing `*`
- * matches the remainder.
+ * match `/api/users2`). `:name` captures one segment; sorting (specificity,
+ * then declaration order) and matching now come from `@tsdi/gateway-kit`.
  */
 export class GatewayRouteTable {
     readonly version: number;
     private readonly compiled: CompiledGatewayRoute[] = [];
-    private readonly root = createNode();
+    private readonly router = new GatewayRouter<ResolvedGatewayRoute>();
 
     private constructor(private readonly options: GatewayRouteTableOptions) {
         this.version = options.version ?? 0;
@@ -90,7 +98,7 @@ export class GatewayRouteTable {
             }
             const compiled = table.compileRoute(route, index);
             table.compiled.push(compiled);
-            table.insert(compiled);
+            table.router.add(table.routeDefinition(compiled));
         });
         return table;
     }
@@ -120,16 +128,25 @@ export class GatewayRouteTable {
             return null;
         }
 
-        const parts = splitPath(url);
-        const candidates: CompiledGatewayRoute[] = [];
-        this.collect(this.root, parts, 0, candidates);
-        candidates.sort((a, b) => b.specificity - a.specificity || a.index - b.index);
-        for (const candidate of candidates) {
-            if (this.accepts(candidate, request)) {
-                return candidate.resolved;
-            }
-        }
-        return null;
+        const matched = this.router.match(request.method, url, {
+            host: request.host ?? '',
+            accept: route => !request.accepts || request.accepts(route.handler)
+        });
+        return matched ? matched.route.handler : null;
+    }
+
+    private routeDefinition(compiled: CompiledGatewayRoute): GatewayRouteDefinition<ResolvedGatewayRoute> {
+        return {
+            id: String(compiled.index),
+            method: '*',
+            path: `/${compiled.segments.join('/')}`,
+            handler: compiled.resolved,
+            methods: compiled.methods ? [...compiled.methods] : undefined,
+            hosts: compiled.hosts ? [...compiled.hosts] : undefined,
+            // Use this table's historical specificity so ordering is identical.
+            priority: compiled.specificity,
+            matchMode: 'prefix'
+        };
     }
 
     private compileRoute(route: GatewayRouteOptions, index: number): CompiledGatewayRoute {
@@ -148,47 +165,6 @@ export class GatewayRouteTable {
         };
     }
 
-    private insert(route: CompiledGatewayRoute): void {
-        let node = this.root;
-        for (const segment of route.segments) {
-            if (segment === '*') {
-                node.wildcard.push(route);
-                return;
-            }
-            if (segment.startsWith(':')) {
-                node.param ??= createNode();
-                node = node.param;
-                continue;
-            }
-            let child = node.statics.get(segment);
-            if (!child) {
-                child = createNode();
-                node.statics.set(segment, child);
-            }
-            node = child;
-        }
-        node.routes.push(route);
-    }
-
-    private collect(node: TrieNode, parts: string[], index: number, out: CompiledGatewayRoute[]): void {
-        if (node.routes.length) {
-            out.push(...node.routes);
-        }
-        if (node.wildcard.length) {
-            out.push(...node.wildcard);
-        }
-        if (index >= parts.length) {
-            return;
-        }
-        const child = node.statics.get(parts[index]);
-        if (child) {
-            this.collect(child, parts, index + 1, out);
-        }
-        if (node.param) {
-            this.collect(node.param, parts, index + 1, out);
-        }
-    }
-
     private accepts(route: CompiledGatewayRoute, request: GatewayRouteMatchRequest): boolean {
         if (route.methods && !route.methods.has(request.method)) {
             return false;
@@ -198,24 +174,4 @@ export class GatewayRouteTable {
         }
         return request.accepts ? request.accepts(route.resolved) : true;
     }
-}
-
-function splitPath(path: string): string[] {
-    return path.split('/').filter(Boolean);
-}
-
-/**
- * Higher is more specific: static segments beat parameters, longer paths beat
- * shorter ones, wildcards are least specific.
- */
-function specificity(segments: readonly string[]): number {
-    return segments.reduce((score, segment) => {
-        if (segment === '*') {
-            return score + 1;
-        }
-        if (segment.startsWith(':')) {
-            return score + 10;
-        }
-        return score + 100 + segment.length;
-    }, 0);
 }

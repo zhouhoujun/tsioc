@@ -4771,3 +4771,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - P1 待做：microservices/gateway 内部复用 kit（route table/rate limit/error），保持其 140+ 测试与上游管线不变。
 - P1 评审：微服务路由（前缀命中/hosts/accepts）、限流（quota/throttle/共享 store）、错误分类（bulkhead/circuit）
   超出 kit 当前语义，已把扩展点与迁移顺序写入设计文档，避免直接替换造成能力降级。
+- Gateway P1(a)(b)：kit router 增加 prefix 匹配、hosts 过滤、accepts 谓词与显式 priority（priority 取代 computed specificity）；
+  microservices `GatewayRouteTable` 内部改为 kit adapter（对外 API/legacy 模式/顺序语义不变），gateway 全套 149 passing。

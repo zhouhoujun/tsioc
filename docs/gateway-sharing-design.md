@@ -140,7 +140,11 @@ agent-gateway 全套 **388 passing** 不变。
 >    kit 的 `gatewayErrorTypeForStatus` 只覆盖状态码类别。扩展：允许调用方传入 error type
 >    （`GatewayErrorOptions.type`），现有分类器保留在微服务侧。
 >
-> 迁移顺序（每步独立提交 + 回归）：
+> 已完成（2026-11-18）：a) kit router 增加 `matchMode: 'prefix'`、`hosts`、`accepts`、显式 `priority`（同分按声明顺序），
+> 并有对照用例；b) `gateway.route-table.ts` 内部改为 kit adapter（`legacy` 分支与 `version`/`size` 不变），
+> microservices gateway 全套 149 passing。
+>
+> 剩余：
 > a) kit router 增加 prefix/hosts/accepts 并加对照测试（同一路由夹具对比旧/新命中结果）；
 > b) `gateway.route-table.ts` 内部改为 kit adapter（对外 `GatewayRouteTable` API/`version` 不变）；
 > c) kit limiter 增加 quota/throttle，`gateway.rate-limit.ts` 内部替换（保留共享 store 分支）；

@@ -15,6 +15,13 @@ export interface GatewayRouteDefinition<THandler = unknown> {
     priority?: number;
     /** Optional allowed methods when one route handles several (microservice adapters). */
     methods?: string[];
+    /**
+     * 'exact' (default) requires the whole path to match; 'prefix' lets a route
+     * match when all of its segments are consumed (microservice route table).
+     */
+    matchMode?: 'exact' | 'prefix';
+    /** Optional request host allowlist (microservice canary/host rules). */
+    hosts?: string[];
 }
 
 export interface GatewayRouteMatch<THandler = unknown> {
@@ -81,11 +88,18 @@ export class GatewayRouter<THandler = unknown> {
         return this;
     }
 
-    match(method: string, pathname: string): GatewayRouteMatch<THandler> | null {
+    match(
+        method: string,
+        pathname: string,
+        request: { host?: string; accept?: (route: GatewayRouteDefinition<THandler>) => boolean } = {}
+    ): GatewayRouteMatch<THandler> | null {
         if (!this.sorted) {
             this.compiled.sort((left, right) => {
-                const priority = Number(right.route.priority ?? 0) - Number(left.route.priority ?? 0);
-                return priority || right.specificity - left.specificity || left.order - right.order;
+                // An explicit priority replaces the computed specificity (the
+                // microservice table passes its own score for parity).
+                const leftScore = left.route.priority ?? left.specificity;
+                const rightScore = right.route.priority ?? right.specificity;
+                return (rightScore - leftScore) || (left.order - right.order);
             });
             this.sorted = true;
         }
@@ -95,7 +109,13 @@ export class GatewayRouter<THandler = unknown> {
             if (!this.acceptsMethod(entry.route, requestMethod)) {
                 continue;
             }
-            const params = this.matchSegments(entry.segments, parts);
+            if (entry.route.hosts?.length && request.host !== undefined && !entry.route.hosts.includes(request.host)) {
+                continue;
+            }
+            if (request.accept && !request.accept(entry.route)) {
+                continue;
+            }
+            const params = this.matchSegments(entry.segments, parts, entry.route.matchMode === 'prefix');
             if (params) {
                 return { route: entry.route, params };
             }
@@ -104,17 +124,18 @@ export class GatewayRouter<THandler = unknown> {
     }
 
     private acceptsMethod(route: GatewayRouteDefinition<THandler>, method: string): boolean {
+        const methods = (route.methods || []).map(item => String(item).toUpperCase());
+        if (methods.length) {
+            // A method allowlist wins over the catch-all marker.
+            return methods.includes(method);
+        }
         if (route.method === '*') {
             return true;
         }
-        if (String(route.method).toUpperCase() === method) {
-            return true;
-        }
-        const methods = (route.methods || []).map(item => String(item).toUpperCase());
-        return methods.includes(method);
+        return String(route.method).toUpperCase() === method;
     }
 
-    private matchSegments(pattern: string[], path: string[]): Record<string, string> | null {
+    private matchSegments(pattern: string[], path: string[], prefix = false): Record<string, string> | null {
         const params: Record<string, string> = {};
         let index = 0;
         for (; index < pattern.length; index++) {
@@ -139,6 +160,14 @@ export class GatewayRouter<THandler = unknown> {
                 return null;
             }
         }
-        return index === path.length ? params : null;
+        if (index === path.length) {
+            return params;
+        }
+        if (!prefix) {
+            return null;
+        }
+        // Prefix mode: the route matched its segments; the rest stays addressable.
+        params['*'] = path.slice(index).join('/');
+        return params;
     }
 }
