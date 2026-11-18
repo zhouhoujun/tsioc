@@ -13,6 +13,8 @@ import { ViewQueryIndex, lookupQueryIndex, runWithQueryIndex } from './query-ind
 import { isReactive, reactive } from '../reactive';
 import { isStructuralContainer } from './structural-container';
 
+const CLONED_ATTRS = Symbol('__clone_attrs');
+
 export const TEMPLATE_SCOPE_PARENT = Symbol('__template_scope_parent');
 
 /**
@@ -217,7 +219,22 @@ class TemplateRefImpl<C = any> implements TemplateRef<C> {
             // Real DOM nodes have read-only nodeType, skip
         }
 
-        const attributes = renderer.getAttributes(element);
+        // Template nodes are immutable after compilation and reused by every
+        // embedded view, so the parsed attribute list is cached per node
+        // instead of re-reading DOM attributes on every clone.
+        let attributes = (element as any)[CLONED_ATTRS];
+        if (!attributes) {
+            attributes = renderer.getAttributes(element);
+            try {
+                Object.defineProperty(element, CLONED_ATTRS, {
+                    value: attributes,
+                    configurable: true,
+                    enumerable: false
+                });
+            } catch {
+                // Frozen/read-only nodes keep the uncached path.
+            }
+        }
         const localRefs: string[] = [];
         if (attributes?.length) {
             attributes.forEach((attr: RAttr) => {

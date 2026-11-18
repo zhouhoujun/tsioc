@@ -38,6 +38,7 @@ const budgets = {
     'viewchild lookups': 1500,
     'viewchildren append': 800,
     'writes after 500 toggles': 100,
+    'render designer tree': 900,
     'common display width (ansi)': 60,
     'common slice width (ansi/cjk)': 60
 };

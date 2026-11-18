@@ -1,7 +1,9 @@
 import { Application } from '@tsdi/core';
-import { Component, ComponentsModule, QueryList, ViewChild, ViewChildren, reactive } from '../src';
+import { Attribute, Component, ComponentFactory, ComponentRef, ComponentsModule, QueryList, ViewChild, ViewChildren, reactive } from '../src';
 import { DefaultReactiveEffect } from '../src/impl/effect';
 import { XmlTemplateModule } from '../xml/src';
+import { HtmlTemplateModule } from '../html/src';
+import { DOCUMENT } from '@tsdi/common';
 import { getDisplayWidth, sliceByDisplayWidth } from '../common/src/display-width';
 
 /**
@@ -286,6 +288,77 @@ async function benchCommonWidth(): Promise<void> {
     }
 }
 
+@Component({
+    selector: 'bench-render-child',
+    template: `<span class="child"><i class="glyph">{{glyph}}</i><b class="label">{{label}}</b></span>`
+})
+class BenchRenderChild {
+    @Attribute() glyph = '';
+    @Attribute() label = '';
+}
+
+/**
+ * Designer-shaped tree: header/tabs, a 60-entry palette of child components, a
+ * canvas with nodes and a status footer. Mirrors the workflow designer's
+ * element/component mix so first-render regressions show up here.
+ */
+@Component({
+    selector: 'bench-render-host',
+    imports: [BenchRenderChild],
+    template: `
+    <div class="root">
+        <header class="bar">
+            <span class="title">{{title}}</span>
+            <nav class="tabs"><span class="tab" v-for="tab in tabs">{{tab}}</span></nav>
+        </header>
+        <section class="body">
+            <aside class="palette">
+                <bench-render-child v-for="item in items" :glyph="item.glyph" :label="item.label"></bench-render-child>
+            </aside>
+            <main class="canvas">
+                <div class="grid"></div>
+                <div class="node" v-for="node in nodes" data-id="{{node.id}}">
+                    <span class="node-name">{{node.name}}</span>
+                    <span class="node-type">{{node.type}}</span>
+                </div>
+            </main>
+        </section>
+        <footer class="status"><span>{{status}}</span><span>{{zoom}}%</span></footer>
+    </div>`
+})
+class BenchRenderHost {
+    title = 'Workflow';
+    tabs = ['One', 'Two', 'Three'];
+    items = Array.from({ length: 60 }, (_, index) => ({ glyph: `g${index}`, label: `Node ${index}` }));
+    nodes = Array.from({ length: 12 }, (_, index) => ({ id: `n${index}`, name: `Node ${index}`, type: 'task' }));
+    status = 'Ready';
+    zoom = 100;
+}
+
+async function benchRender(): Promise<void> {
+    const { JSDOM } = require('jsdom');
+    const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+    const ctx = await Application.run(BenchRenderHost, {
+        deps: [HtmlTemplateModule, ComponentsModule],
+        providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+    });
+    try {
+        const factory = ctx.get(ComponentFactory);
+        (ctx.runners.getRef(BenchRenderHost) as any)?.destroy?.();
+        const renders = 5;
+        const start = now();
+        for (let i = 0; i < renders; i++) {
+            const ref = factory.create(BenchRenderHost, { injector: ctx }) as ComponentRef<BenchRenderHost>;
+            await ref.render();
+            await ref.destroy();
+        }
+        report('render designer tree', ms(start), `${renders} renders (60 children)`);
+    } finally {
+        await ctx.close();
+        dom.window.close();
+    }
+}
+
 const ROUNDS = Math.max(1, Math.floor(Number(process.env.COMPONENTS_BENCH_ROUNDS || '3')) || 1);
 
 async function main(): Promise<void> {
@@ -298,6 +371,7 @@ async function main(): Promise<void> {
         await benchList();
         await benchViewQueries();
         await benchToggleWrites();
+        await benchRender();
         await benchCommonWidth();
     }
     printResults();
