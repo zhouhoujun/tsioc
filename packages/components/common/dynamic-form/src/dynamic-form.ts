@@ -13,6 +13,7 @@ import { buildDynamicValidators, dynamicFormMessage } from './dynamic-form.valid
 import { DYNAMIC_FORM_TEMPLATE } from './dynamic-form.template';
 import { createDynamicFormClasses, DynamicFormClasses } from './dynamic-form.classes';
 import * as editor from './dynamic-form.editors';
+import * as fields from './dynamic-form.fields';
 
 function normalizeField(field: any): DynamicFormField {
     return {
@@ -63,10 +64,6 @@ function conditionMatches(actual: any, condition: DynamicFormCondition): boolean
     return true;
 }
 
-function hasOwn(value: any, key: string): boolean {
-    return !!value && Object.prototype.hasOwnProperty.call(value, key);
-}
-
 let dynamicFormSequence = 0;
 
 /**
@@ -100,19 +97,19 @@ export class DynamicFormComponent implements OnDestroy {
     @Attribute() resetAction?: (value: Record<string, any>) => void;
     @Attribute() validityAction?: (valid: boolean, errors: Record<string, any> | null) => void;
 
-    protected _schema: DynamicFormSchema = { fields: [] };
+    _schema: DynamicFormSchema = { fields: [] };
     protected _rawSchema?: any;
-    protected _value: Record<string, any> = {};
+    _value: Record<string, any> = {};
     protected _contextKey = '';
-    protected form?: FormGroup;
+    form?: FormGroup;
     protected formSignature = '';
     protected schemaSignature = '';
     protected valueSignature = '';
     protected schemaError = '';
-    protected validationErrors: Record<string, Record<string, any> | null> = {};
-    protected ruleMessages: Record<string, Record<string, string>> = {};
-    protected submitAttempted = false;
-    protected valueVersion = 0;
+    validationErrors: Record<string, Record<string, any> | null> = {};
+    ruleMessages: Record<string, Record<string, string>> = {};
+    submitAttempted = false;
+    valueVersion = 0;
     protected destroyed = false;
     protected syncQueued = false;
     protected syncMode: 'none' | 'soft' | 'force' = 'none';
@@ -315,45 +312,14 @@ export class DynamicFormComponent implements OnDestroy {
         this.validationErrors = next;
     }
 
-    fieldDisplayValue(field: DynamicFormField, value: any): any {
-        if (field.type === 'json') {
-            if (typeof value === 'string') {
-                return value;
-            }
-            return value === undefined || value === null ? '' : JSON.stringify(value, null, 2);
-        }
-        if (field.type === 'checkbox' || field.type === 'switch') {
-            return !!value;
-        }
-        return value === undefined || value === null ? '' : value;
-    }
+    fieldDisplayValue(field: DynamicFormField, value: any): any { return fields.fieldDisplayValue(field, value); }
 
-    protected initialValue(field: DynamicFormField): any {
-        const source = this._value || {};
-        const value = hasOwn(source, field.key) ? source[field.key] : field.defaultValue;
-        if (field.type === 'json') {
-            return value;
-        }
-        return this.fieldDisplayValue(field, value);
-    }
+    protected initialValue(field: DynamicFormField): any { return fields.initialValue(this, field); }
 
     /** Default value used by the per-field and whole-form reset actions. */
-    protected resetValue(field: DynamicFormField): any {
-        if (field.type === 'json') {
-            return field.defaultValue;
-        }
-        return this.fieldDisplayValue(field, field.defaultValue);
-    }
+    protected resetValue(field: DynamicFormField): any { return fields.resetValue(field); }
 
-    coerceValue(field: DynamicFormField, value: any): any {
-        if (field.type === 'checkbox' || field.type === 'switch') {
-            return !!value;
-        }
-        if (field.type === 'number' || field.type === 'range') {
-            return value === '' || value === undefined || value === null ? '' : Number(value);
-        }
-        return value;
-    }
+    coerceValue(field: DynamicFormField, value: any): any { return fields.coerceValue(field, value); }
 
     updateValue(field: DynamicFormField, raw: any): void {
         const control = this.form?.get(field.key);
@@ -631,111 +597,40 @@ export class DynamicFormComponent implements OnDestroy {
         return conditionMatches(actual, field.visibleWhen);
     }
 
-    fieldLabel(field: DynamicFormField): string {
-        return field.label || field.key;
-    }
+    fieldLabel(field: DynamicFormField): string { return fields.fieldLabel(field); }
 
-    fieldValue(field: DynamicFormField): any {
-        void this.valueVersion;
-        return this.form?.get(field.key)?.value ?? this.initialValue(field);
-    }
+    fieldValue(field: DynamicFormField): any { return fields.fieldValue(this, field); }
 
-    fieldChecked(field: DynamicFormField): boolean {
-        return this.fieldValue(field) === true;
-    }
+    fieldChecked(field: DynamicFormField): boolean { return fields.fieldChecked(this, field); }
 
-    isRequired(field: DynamicFormField): boolean {
-        return field.required === true
-            || (field.rules || []).some(rule => {
-                const type = typeof rule === 'string' ? rule : rule?.type;
-                return type === 'required' || type === 'requiredTrue';
-            });
-    }
+    isRequired(field: DynamicFormField): boolean { return fields.isRequired(field); }
 
-    canReset(field: DynamicFormField): boolean {
-        return field.defaultValue !== undefined && !field.readonly && !field.disabled;
-    }
+    canReset(field: DynamicFormField): boolean { return fields.canReset(field); }
 
-    errorFor(field: DynamicFormField): string {
-        // Read the snapshot unconditionally so the binding subscribes even while
-        // the control is still valid (the first failing edit must repaint).
-        const errors = this.validationErrors[field.key];
-        const control = this.form?.get(field.key);
-        if (!control || control.valid || !(control.dirty || control.touched || this.submitAttempted)) {
-            return '';
-        }
-        const messages = { ...(this._schema?.messages || {}), ...(this.messages || {}) };
-        return dynamicFormMessage(field, errors, this.ruleMessages[field.key], messages);
-    }
+    errorFor(field: DynamicFormField): string { return fields.errorFor(this, field); }
 
-    encodeValue(field: DynamicFormField): string {
-        return encodeURIComponent(String(this.fieldValue(field) ?? ''));
-    }
+    encodeValue(field: DynamicFormField): string { return fields.encodeValue(this, field); }
 
-    suggestionData(field: DynamicFormField): string {
-        return encodeURIComponent(JSON.stringify(field.suggestions || []));
-    }
+    suggestionData(field: DynamicFormField): string { return fields.suggestionData(field); }
 
-    htmlType(field: DynamicFormField): string {
-        switch (field.type) {
-            case 'number':
-                return 'number';
-            case 'range':
-                return 'range';
-            case 'password':
-            case 'email':
-            case 'url':
-            case 'tel':
-            case 'search':
-            case 'date':
-            case 'time':
-            case 'datetime-local':
-            case 'month':
-            case 'week':
-            case 'color':
-                return field.type;
-            default:
-                return 'text';
-        }
-    }
+    htmlType(field: DynamicFormField): string { return fields.htmlType(field); }
 
-    isTextInput(field: DynamicFormField): boolean {
-        return [
-            'text', 'password', 'email', 'url', 'tel', 'search',
-            'date', 'time', 'datetime-local', 'month', 'week', 'color'
-        ].includes(field.type);
-    }
+    isTextInput(field: DynamicFormField): boolean { return fields.isTextInput(field); }
 
-    isNumberInput(field: DynamicFormField): boolean {
-        return field.type === 'number' || field.type === 'range';
-    }
+    isNumberInput(field: DynamicFormField): boolean { return fields.isNumberInput(field); }
 
-    isBooleanInput(field: DynamicFormField): boolean {
-        return field.type === 'checkbox' || field.type === 'switch';
-    }
+    isBooleanInput(field: DynamicFormField): boolean { return fields.isBooleanInput(field); }
 
-    isSelectInput(field: DynamicFormField): boolean {
-        return field.type === 'select';
-    }
+    isSelectInput(field: DynamicFormField): boolean { return fields.isSelectInput(field); }
 
-    isRadioInput(field: DynamicFormField): boolean {
-        return field.type === 'radio';
-    }
+    isRadioInput(field: DynamicFormField): boolean { return fields.isRadioInput(field); }
 
     /** @deprecated use `isSelectInput`/`isRadioInput`; kept for host templates. */
-    isOptionInput(field: DynamicFormField): boolean {
-        return this.isSelectInput(field) || this.isRadioInput(field);
-    }
+    isOptionInput(field: DynamicFormField): boolean { return fields.isOptionInput(field); }
 
-    isTypedInput(field: DynamicFormField): boolean {
-        return field.typed === true;
-    }
+    isTypedInput(field: DynamicFormField): boolean { return fields.isTypedInput(field); }
 
-    typedType(field: DynamicFormField): string {
-        const value = String(this.fieldValue(field) ?? '');
-        const match = /^(msg|flow|global|env)\./.exec(value);
-        return match ? match[1] : 'literal';
-    }
+    typedType(field: DynamicFormField): string { return fields.typedType(this, field); }
 
     changeTypedType(field: DynamicFormField, event: any): void {
         const next = String(event?.target?.value || 'literal');
@@ -744,13 +639,9 @@ export class DynamicFormComponent implements OnDestroy {
         this.updateValue(field, next === 'literal' ? text : `${next}.${text}`);
     }
 
-    isTextareaInput(field: DynamicFormField): boolean {
-        return field.type === 'textarea';
-    }
+    isTextareaInput(field: DynamicFormField): boolean { return fields.isTextareaInput(field); }
 
-    isCodeInput(field: DynamicFormField): boolean {
-        return field.type === 'code';
-    }
+    isCodeInput(field: DynamicFormField): boolean { return fields.isCodeInput(field); }
 
     // -----------------------------------------------------------------
     // Class helpers (keep skins configurable through `classPrefix`)
