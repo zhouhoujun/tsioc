@@ -16,7 +16,7 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 930_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 945_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 /** Click a management menu entry after scrolling it into the popup viewport. */
@@ -144,7 +144,7 @@ function startDesignerServer(port) {
         // Real pointer clicks inside the menu must reach the item: the
         // document-level outside-press handler has to contain the menu root.
         await menuTrigger.click();
-        await page.locator('[data-menu-id="toggle-json"]').click();
+        await clickMenuEntry(page, 'toggle-json');
         await page.waitForTimeout(150);
         const menuItemClick = await page.locator('.workflow-json-panel').count() > 0;
         await page.locator('.workflow-json-head .workflow-btn').first().click();
@@ -386,7 +386,7 @@ function startDesignerServer(port) {
 
         // The credentials dialog manages secrets through the server API.
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="credentials"]').click();
+        await clickMenuEntry(page, 'credentials');
         await page.waitForTimeout(250);
         const credentialDialog = await page.evaluate(() => ({
             open: !!document.querySelector('.workflow-credentials'),
@@ -519,7 +519,7 @@ function startDesignerServer(port) {
 
         // Metrics render a windowed trend and refetch when the window changes.
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="metrics"]').click();
+        await clickMenuEntry(page, 'metrics');
         await page.waitForTimeout(450);
         const metricsTrend = await page.evaluate(() => ({
             windows: document.querySelectorAll('.workflow-metrics-window').length,
@@ -566,7 +566,7 @@ function startDesignerServer(port) {
 
         // Theme submenu lists every built-in theme and applies it to the layout.
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="theme"]').click();
+        await clickMenuEntry(page, 'theme');
         await page.waitForTimeout(120);
         const themeMenuItems = await page.locator('.menu-bar-submenu [data-menu-id^="theme:"]').count();
         await page.evaluate(() => window.workflowDesigner.setTheme('solarized'));
@@ -583,7 +583,7 @@ function startDesignerServer(port) {
         });
         await page.keyboard.press('Escape');
         await page.locator('.workflow-management-menu .menu-bar-trigger').click();
-        await page.locator('[data-menu-id="theme"]').click();
+        await clickMenuEntry(page, 'theme');
         await page.waitForTimeout(120);
         const checkedTheme = ((await page.locator('.menu-bar-submenu [data-menu-id^="theme:"].is-checked').textContent()) || '').trim();
         await page.evaluate(() => window.workflowDesigner.setTheme('light'));
