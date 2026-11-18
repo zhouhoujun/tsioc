@@ -4777,3 +4777,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   内部改用 kit（route/global、rateLimit:false、destroy 重建语义不变）；gateway 149、agent-gateway 388、gateway-kit 9 全绿。
 - Gateway P1(d)：错误分类法统一到 `@tsdi/gateway-kit`（补 bulkhead/circuit/network/upstream），microservices 直接复用类型；
   envelope 写入保留各自兼容形态；gateway 149、kit 9 通过。
+- Gateway kit 加固：静态路径对畸形百分号编码返回 forbidden（不再抛未捕获异常）；限流拒绝按维度给出正确 resetAt
+  （limit/quota/throttle）；新增 2 个健壮性用例，kit 11、gateway 149、agent-gateway 388 全绿。

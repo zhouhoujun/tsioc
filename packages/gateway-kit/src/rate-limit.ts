@@ -191,11 +191,16 @@ export class GatewayRateLimiter {
 
     private rejectionDecision(key: string, reason: GatewayRateLimitReason, retryAfterMs: number, now: number): GatewayRateLimitDecision {
         const entry = this.windows.get(key);
-        void now;
+        const windowMs = this.policy.windowMs ?? DEFAULT_WINDOW_MS;
+        const resetAt = reason === 'quota'
+            ? (entry?.quotaStart ?? now) + (this.policy.quota?.windowMs ?? windowMs)
+            : reason === 'throttle'
+                ? now + Math.max(0, retryAfterMs)
+                : (entry?.windowStart ?? now) + windowMs;
         return {
             allowed: false,
             count: entry?.count ?? 0,
-            resetAt: entry ? entry.windowStart + (this.policy.windowMs ?? DEFAULT_WINDOW_MS) : Date.now(),
+            resetAt,
             retryAfterMs,
             reason,
             message: this.rejectionMessage(reason)

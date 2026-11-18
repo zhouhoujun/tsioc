@@ -30,7 +30,13 @@ export function gatewayContentType(filePath: string): string {
 /** Resolve a URL path inside a static root; null when it escapes the root. */
 export function resolveGatewayStaticPath(rootDir: string, pathname: string): string | null {
     const root = path.resolve(rootDir);
-    const decoded = decodeURIComponent(String(pathname || '/'));
+    let decoded: string;
+    try {
+        decoded = decodeURIComponent(String(pathname || '/'));
+    } catch {
+        // Malformed percent-encoding must never escape as an unhandled error.
+        return null;
+    }
     const relative = decoded === '/' ? 'index.html' : decoded.replace(/^\/+/, '');
     const resolved = path.resolve(root, relative);
     if (resolved !== root && !resolved.startsWith(root + path.sep)) {

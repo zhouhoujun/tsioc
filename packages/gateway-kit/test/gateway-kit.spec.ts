@@ -182,3 +182,42 @@ export class GatewayKitStaticOpenApiTest {
         expect(canary.match('GET', '/api/a', { accept: () => true })?.route.handler).toEqual('canary');
     }
 }
+
+@Suite('gateway kit robustness')
+export class GatewayKitRobustnessTest {
+    @Test('malformed percent-encoding cannot escape the static root')
+    malformedPath() {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gateway-kit-static-'));
+        try {
+            expect(resolveGatewayStaticPath(root, '/%E0%A4%A')).toEqual(null);
+            expect(resolveGatewayStaticPath(root, '/assets/%ZZ')).toEqual(null);
+        } finally {
+            fs.rmSync(root, { recursive: true, force: true });
+        }
+    }
+
+    @Test('rejections expose per-dimension reset times')
+    resetAtPerReason() {
+        const quota = new GatewayRateLimiter({ quota: { limit: 1, windowMs: 60000 } });
+        try {
+            expect(quota.check('k').allowed).toEqual(true);
+            const blocked = quota.check('k');
+            expect(blocked.allowed).toEqual(false);
+            expect(blocked.reason).toEqual('quota');
+            expect(blocked.resetAt).toBeGreaterThan(Date.now() + 55_000);
+        } finally {
+            quota.dispose();
+        }
+        const throttle = new GatewayRateLimiter({ throttle: { minIntervalMs: 60000 } });
+        try {
+            expect(throttle.check('k').allowed).toEqual(true);
+            const blocked = throttle.check('k');
+            expect(blocked.allowed).toEqual(false);
+            expect(blocked.reason).toEqual('throttle');
+            expect(blocked.retryAfterMs).toBeGreaterThan(55_000);
+            expect(blocked.resetAt).toBeGreaterThan(Date.now() + 55_000);
+        } finally {
+            throttle.dispose();
+        }
+    }
+}
