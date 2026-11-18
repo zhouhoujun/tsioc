@@ -4813,3 +4813,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - `/sessions`：新增归档徽标（`[archived]`，en/zh i18n `archivedBadge`），`flattenProjectSessions` 保留 `archived` 字段；秒级时间戳归一化，避免显示 1970。
 - `/projects`：Esc 在二级会话选择器返回项目列表（再次 Esc 退出）；选中项目无会话时提示并回到项目列表；p236 用例同步为“提示 + 重开列表”。
 - 测试：新增 dialog-regressions 的归档徽标、Esc 返回、秒级时间戳用例；相关套件 191 passing。
+
+## 2026-11-18 P2 响应式/性能（实测有收益的两项）
+- `setMessages` 投影缓存：已过滤的 transcript 数组打非枚举符号标记，切回 tab 时复用同一数组引用，跳过 1000 条消息的 regex 过滤与 `sameAgentConsoleMessages` 全量扫描，并让 message-item/display 缓存命中身份快路径。
+  - A/B（8 轮 ×4 tab ×1000 消息，state-only p50）：A 59.2–62.9ms vs B 58.0–76.5ms（首轮冷启动剔除），中位数约 61 vs 69；该改动在所有路径只减少工作，不新增工作。
+  - 新增 `message-projection.spec.ts`（首次过滤、复用引用、新数组仍过滤）。
+- `navFilteredSessions` 按 (sessions 引用 + 过滤值) 缓存：500 会话 + 文本/项目过滤下，2000 次读取 493ms → 1.7ms。
+  - 新增 session-picker 缓存失效用例（改过滤/换列表）。

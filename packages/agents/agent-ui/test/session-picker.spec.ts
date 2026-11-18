@@ -46,6 +46,28 @@ export class SessionPickerTest {
         expect(formatSessionHint('esc', '  probe ')).toEqual('esc · filter: probe');
     }
 
+    @Test('nav filtering reuses its result until the filter or sessions change')
+    navFilterCache() {
+        const state = sessionsState();
+        state.setNavFilter({ text: 'old' });
+        const first = state.navFilteredSessions;
+        expect(first.map(item => item.id)).toEqual(['chat-old']);
+        expect(state.navFilteredSessions).toBe(first);
+        // Typing another query invalidates the cached projection.
+        state.setNavFilter({ text: 'new' });
+        const second = state.navFilteredSessions;
+        expect(second.map(item => item.id)).toEqual(['chat-new']);
+        expect(second).not.toBe(first);
+        // A refreshed session list invalidates it even with the same query.
+        state.setSessions([
+            { id: 'chat-new', current: true, title: 'New task', updatedAt: Date.now(), messageCount: 4 } as any,
+            { id: 'chat-old', current: false, title: 'Old task', updatedAt: Date.now(), messageCount: 4 } as any
+        ]);
+        const third = state.navFilteredSessions;
+        expect(third.map(item => item.id)).toEqual(['chat-new']);
+        expect(third).not.toBe(second);
+    }
+
     @Test('rows show the title followed by the age')
     rowShowsAge() {
         const state = sessionsState();

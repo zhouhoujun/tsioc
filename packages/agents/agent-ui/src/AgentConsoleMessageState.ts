@@ -3,6 +3,42 @@ import { resolveTokenUsageFromMessages, resolveUsagePayload } from './AgentConso
 import { trackMessagesNewCount } from './AgentConsoleTranscriptLayout';
 import type { AgentMessage } from '@tsdi/agent';
 
+/**
+ * Marks arrays that already passed the transcript sanitizing filter. Tab
+ * switches re-apply a session's cached transcript array; re-filtering it scans
+ * every message with a regex and allocates a new array, and it also breaks the
+ * identity fast path in the message-item cache.
+ */
+const PROJECTED_MESSAGES = Symbol('__agentConsoleProjectedMessages');
+
+function projectConsoleMessages(messages: AgentMessage[]): AgentMessage[] {
+    if (!Array.isArray(messages)) {
+        return [];
+    }
+    if ((messages as any)[PROJECTED_MESSAGES] === true) {
+        return messages;
+    }
+    const projected = messages.filter(message => {
+        if (!message || typeof message.content !== 'string') return false;
+        const content = message.content;
+        const roleMarkers = content.match(/(?:^|\|\s*)(?:assistant|tool|user):/g) || [];
+        return !(roleMarkers.length >= 2
+            || (roleMarkers.length >= 1
+                && (content.includes('truncated') || content.includes('"path"') || content.includes('path":"'))));
+    });
+    try {
+        Object.defineProperty(projected, PROJECTED_MESSAGES, {
+            value: true,
+            enumerable: false,
+            configurable: true
+        });
+    } catch {
+        // Frozen/array-like input: fall back to filtering on the next write.
+    }
+    return projected;
+}
+
+
 export interface AgentConsoleMessageState {
     messages: AgentMessage[];
     setMessages(messages: AgentMessage[], preserveCommandExecutionMessages?: boolean): void;
@@ -100,14 +136,7 @@ export function setMessagesInState(state: AgentConsoleMessageCollectionState, me
 
 function setMessagesProjection(state: AgentConsoleMessageCollectionState, messages: AgentMessage[], preserveCommandExecutionMessages: boolean): void {
     const previousCount = state.messages.length;
-    state.messages = messages.filter(message => {
-        if (!message || typeof message.content !== 'string') return false;
-        const content = message.content;
-        const roleMarkers = content.match(/(?:^|\|\s*)(?:assistant|tool|user):/g) || [];
-        return !(roleMarkers.length >= 2
-            || (roleMarkers.length >= 1
-                && (content.includes('truncated') || content.includes('"path"') || content.includes('path":"'))));
-    });
+    state.messages = projectConsoleMessages(messages);
     if (!preserveCommandExecutionMessages && state.commandExecutionMessages.length) {
         state.commandExecutionMessages = [];
     }

@@ -2,6 +2,16 @@ import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type { AgentConsoleSessionItem, AgentConsoleSessionState } from './AgentConsoleSessionState';
 
 /** Session-list filtering, focus restoration and keyboard navigation. */
+const navFilteredCache = new WeakMap<object, {
+    sessions: AgentConsoleSessionItem[];
+    text: string;
+    workspace: string;
+    projectId: string;
+    threadId: string;
+    pinnedOnly: boolean;
+    result: AgentConsoleSessionItem[];
+}>();
+
 export function resolveNavFilteredSessions(state: AgentConsoleSessionState): AgentConsoleSessionItem[] {
     const filter = state.navFilter;
     if (!filter || (!filter.text && !filter.workspace && !filter.projectId && !filter.threadId && !filter.pinnedOnly)) {
@@ -11,7 +21,21 @@ export function resolveNavFilteredSessions(state: AgentConsoleSessionState): Age
     const workspace = String(filter.workspace || '').trim();
     const projectId = String(filter.projectId || '').trim();
     const threadId = String(filter.threadId || '').trim();
-    return state.sessions.filter(session => {
+    const pinnedOnly = !!filter.pinnedOnly;
+    const sessions = state.sessions;
+    // The sessions panel, sidebar and dialogs all read this getter; filtering
+    // and lowercasing every row per read is wasteful once a query is active.
+    const cached = navFilteredCache.get(state);
+    if (cached
+        && cached.sessions === sessions
+        && cached.text === text
+        && cached.workspace === workspace
+        && cached.projectId === projectId
+        && cached.threadId === threadId
+        && cached.pinnedOnly === pinnedOnly) {
+        return cached.result;
+    }
+    const result = sessions.filter(session => {
         if (text) {
             const haystack = [
                 session.id,
@@ -40,6 +64,16 @@ export function resolveNavFilteredSessions(state: AgentConsoleSessionState): Age
         }
         return true;
     });
+    navFilteredCache.set(state, {
+        sessions,
+        text,
+        workspace,
+        projectId,
+        threadId,
+        pinnedOnly,
+        result
+    });
+    return result;
 }
 
 export function clampSessionSelectionToFilter(state: AgentConsoleSessionState): void {
