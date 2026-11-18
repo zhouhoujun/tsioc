@@ -94,7 +94,7 @@ mountAgentWebConsole(document.getElementById('app')!, {
 
 ## TUI commands (~70)
 
-Core: `/help` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` `/compact`
+Core: `/help` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` (settings center; `/settings menu` for the classic tabs) `/compact`
 Session: `/resume` `/archive` `/fork` `/side` `/share` `/unshare` `/sections` `/threads`
 Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
 Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors/final answer
@@ -112,6 +112,11 @@ System: `/ps` `/ide` `/feedback` `/keymap`
 - `/display activity [low|medium|high]` sets activity verbosity. `medium` (default) folds finished tool/command/event runs into one expandable Activity row; `high` shows every step; `low` also folds settled reasoning.
 - `/worktree enter [name]` switches the workspace to a managed worktree (picker when no name is given). `/worktree remove [name]` and `/worktree merge [name]` open a picker when no name is given; removal asks for confirmation (`--yes` skips it).
 - `/activity` chooses the latest row of a category; the picker shows per-category counts.
+- `/settings` opens the schema-driven settings center: sections (General, Model, Permissions, Agents,
+  Integrations, Keybinds, Data & tooling), `up/down` move, `left/right` switch section, `enter` applies,
+  `ctrl+r` restores a toggle default, typing filters every setting and `/settings <query>` deep-links.
+  Rows show scope (workspace/global/session) and effect (immediate/next turn). `/settings menu` keeps the
+  legacy tab menu.
 - In transcript navigation (`PageUp` from an empty composer), `[` / `]` jump to the previous/next user prompt; `Shift+G` jumps to the last prompt.
 
 ## License

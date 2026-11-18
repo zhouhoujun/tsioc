@@ -4727,3 +4727,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   本地直接调用 runtime；持久化 `approvalTimeoutMs`，启动恢复时重新应用。
 - 测试：agent 1076 passing（新增 manager 超时/夹取与 runtime 共享用例），gateway 384 passing（持久化/夹取），
   settings-center 11 passing（应用 60s + 持久化 + 行值显示）。
+
+## 2026-11-18 设置中心收尾：hooks RPC + 文档
+- gateways 新增 `hooks.list` RPC（返回 runtime.getHookSummary），修复 attach/web 下 `/hooks` 无数据。
+- README 增补设置中心用法（分区/搜索/`ctrl+r`/`/settings menu`）；设置方案文档更新 P2/P3 状态。
+- 测试：gateway hooks-rpc 2 passing。

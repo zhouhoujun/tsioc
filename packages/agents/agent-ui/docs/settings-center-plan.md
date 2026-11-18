@@ -245,9 +245,20 @@ export interface AgentConsoleSettingField {
 - 渲染与样式：设置页使用 console panel 语义 + 纯文本徽标（`ui-badge` 依赖 `IconModule`，在当前
   console 模板导入路径下无法解析，故 P1 用语义 span；P2 在 Web 端可换用组件）。
 
-### P2 待做
+### P2 已完成
 
-- Web 设置页（同一面板 + `settings.store.set`/`settings.ui.set`），补新字段 RPC 白名单；
-- Integrations 的插件 activate/remove/install 交互与 MCP 工具启停；
-- 新字段：queue mode、transcript window、pager size、approval timeout、workspace trust；
-- 文档、`/help`、which-key、真实 TUI/浏览器手测。
+- Web/HTML 复用同一面板（`html-console` 渲染用例），浏览器键盘先交给设置页；
+- Integrations：插件 activate / inspect / remove（确认），MCP 工具 `tools.activate`；
+- 新字段：queue mode、transcript window（持久化 + 恢复）。
+
+### P3 已完成
+
+- Permissions：workspace trust（只读 + 确认后 trust）、approval timeout（15/30/60/120s，
+  `ApprovalManager.setDefaultTimeout` / `Runtime.setApprovalTimeout` / gateway `settings.ui.set` 持久化并立即生效）；
+- `hooks.list` RPC：attach/web 的 `/hooks` 不再回退到空的客户端摘要；
+- Web 皮肤：`web/console.css` 使用主题变量的设置页样式。
+
+### 待做
+
+- skills 详情内联视图、hooks 信任状态（依赖 agent-cli 的 trust 哈希，需先在公共层暴露）；
+- 设置页 pager size、真实浏览器手测。

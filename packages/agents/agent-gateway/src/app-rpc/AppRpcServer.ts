@@ -455,6 +455,10 @@ export class AppRpcServer {
                 return this.decideApproval(params, context, false);
             case 'tools.list':
                 return this.tools.getToolDefinitions(optionalSessionId(params));
+            case 'hooks.list':
+                // Attach/web clients cannot read the gateway runtime directly;
+                // /hooks used to fall back to an empty client-side summary.
+                return (this.runtime as any).getHookSummary?.() ?? [];
             case 'tools.activate':
                 return this.activateTool(params, context);
             case 'tools.invoke':
