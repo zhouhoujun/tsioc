@@ -528,6 +528,22 @@ export const UI_CSS = `
     padding: 0 0.15ch;
 }
 .ui-select-arrow { flex: none; color: var(--ui-muted-fg, inherit); }
+
+.ui-kbd { display: inline-flex; align-items: center; gap: 0.2ch; }
+.ui-kbd-node { display: contents; }
+.ui-kbd-key {
+    display: inline-block;
+    min-width: 1.4em;
+    padding: 0 0.35ch;
+    border: 1px solid var(--ui-border, currentColor);
+    border-radius: var(--ui-radius, 3px);
+    background: var(--ui-kbd-bg, transparent);
+    color: inherit;
+    font-family: var(--ui-mono-font, monospace);
+    font-size: 0.85em;
+    text-align: center;
+}
+.ui-kbd-separator { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
 `;
 
 export function installUiStyles(doc?: Document | null): void {

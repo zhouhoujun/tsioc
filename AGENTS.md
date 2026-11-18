@@ -243,7 +243,7 @@
 cd packages/<包名>            # 例：components、components/common、components/html、components/console、agents/agent-ui
 npm run test                  # 等价于: ts-node -r tsconfig-paths/register unit.ts
 ```
-- 已知基线（2026-11）：components **190 passing**、components/common **113 passing**、components/console **170 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
+- 已知基线（2026-11）：components **190 passing**、components/common **114 passing**、components/console **170 passing**、components/html **146 passing**、components/xml **120 passing**、components/json **141 passing**；agents/agent-ui 以当前 runner 输出为准。
 - components 查询/投影/容器改动必须同时回归 components、components/common、components/html、components/console、components/xml、components/json；`npm run bench:check`（或 `RUN_COMPONENTS_BENCH=1 bash scripts/agents-gate.sh components-bench`）不得回退。
 - runner 会把 summary 打印两遍，属正常（unit-console 行为），以 EXIT code 为准。
 - `npm run test:coverage` 可用（NODE_V8_COVERAGE=.nyc_output）。

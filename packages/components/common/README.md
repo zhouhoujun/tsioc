@@ -47,7 +47,7 @@ Rules this layer must keep (see the root `AGENTS.md`):
 | `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
-| `@tsdi/components/common/<widget>` | one widget package: `alert`, `alert-notice`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `data-table`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `progress`, `radio-group`, `search-field`, `select`, `select-trigger`, `skeleton`, `stat`, `status-list`, `steps`, `switch`, `tab-bar`, `tabs`, `text-field`, `timeline`, `toast`, `toolbar`, `tree` |
+| `@tsdi/components/common/<widget>` | one widget package: `alert`, `alert-notice`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `data-table`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `kbd`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `progress`, `radio-group`, `search-field`, `select`, `select-trigger`, `skeleton`, `stat`, `status-list`, `steps`, `switch`, `tab-bar`, `tabs`, `text-field`, `timeline`, `toast`, `toolbar`, `tree` |
 
 ## Naming conventions
 
@@ -242,6 +242,7 @@ fields. Actions are callback attributes (`selectAction`, `closeAction`,
 | `ui-radio-group` | `RadioGroupComponent` / `RadioGroupModule` | Radio list with descriptions and keyboard navigation. `options` (`RadioOption[]`), `value`, `disabled`, `changeAction`. |
 | `ui-alert` | `AlertNoticeComponent` / `AlertNoticeModule` | Inline alert/callout (not a modal). `title`, `lines`, `tone`, `icon`, `actionLabel`/`action`, `dismissible`/`closeAction`; error tones use `role="alert"`. |
 | `ui-select-trigger` | `SelectTriggerComponent` / `SelectTriggerModule` | Combobox trigger for a host-owned dropdown. `value`/`label`, `placeholder`, `icon`, `open`, `disabled`, `clearable`, `action`, `clearAction`. |
+| `ui-kbd` | `KbdComponent` / `KbdModule` | Keyboard shortcut hint. `keys` (`string[]`), `separator`, `size`, `tone`, `ariaLabel`; DOM renders `<kbd>` boxes. |
 
 ### Projection example (`panel`)
 
@@ -268,7 +269,7 @@ land in a microtask.
 `ui-progress`, `ui-breadcrumb`, `ui-toolbar`, `ui-steps`, `ui-timeline`,
 `ui-skeleton`, `ui-search-field`, `ui-avatar`, `ui-pagination`,
 `ui-data-table`, `ui-tree`, `ui-text-field`, `ui-checkbox`, `ui-switch`,
-`ui-radio-group`, `ui-alert` and `ui-select-trigger` form the shared base layer. They use the same
+`ui-radio-group`, `ui-alert`, `ui-select-trigger` and `ui-kbd` form the shared base layer. They use the same
 contract:
 
 - `tone` (`default` / `info` / `success` / `warning` / `danger` / `error` /

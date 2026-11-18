@@ -6,16 +6,18 @@ import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { AlertNoticeComponent, AlertNoticeModule } from '../alert-notice';
 import { SelectTriggerComponent, SelectTriggerModule } from '../select-trigger';
+import { KbdComponent, KbdModule } from '../kbd';
 
 @Component({
     selector: 'p4-ui-host',
-    imports: [AlertNoticeComponent, SelectTriggerComponent],
+    imports: [AlertNoticeComponent, SelectTriggerComponent, KbdComponent],
     template: `
     <ui-alert title="Heads up" :lines="['First', 'Second']" tone="warning"
         actionLabel="Retry" dismissible :action="onAction" :closeAction="onClose"></ui-alert>
     <ui-alert title="Failed" tone="danger" :lines="['Again']"></ui-alert>
     <ui-select-trigger value="basic" label="Basic" clearable
-        :action="onOpen" :clearAction="onClear"></ui-select-trigger>`
+        :action="onOpen" :clearAction="onClear"></ui-select-trigger>
+    <ui-kbd :keys="['Ctrl', 'K']"></ui-kbd>`
 })
 class P4UiHostComponent {
     actions = 0;
@@ -35,7 +37,7 @@ export class P4UiWidgetsTest {
     @Before()
     async init() {
         this.ctx = await Application.run(P4UiHostComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule, AlertNoticeModule, SelectTriggerModule],
+            deps: [HtmlTemplateModule, ComponentsModule, AlertNoticeModule, SelectTriggerModule, KbdModule],
             providers: [{
                 provide: DOCUMENT,
                 useFactory: () => {
@@ -100,5 +102,16 @@ export class P4UiWidgetsTest {
         expect(trigger.instance.value).toEqual('');
         expect(trigger.instance.label).toEqual('');
         expect(root.textContent).toContain('Select…');
+    }
+
+    @Test('keyboard hint renders one kbd per key and the separator')
+    async kbd() {
+        const ref = await this.mount();
+        const kbd = ref.hostView.query(KbdComponent) as ComponentRef<KbdComponent>;
+        const root = kbd.hostView.rootNodes[0] as HTMLElement;
+        expect(root.querySelectorAll('kbd').length).toEqual(2);
+        expect(root.textContent).toContain('Ctrl');
+        expect(root.textContent).toContain('K');
+        expect(root.textContent).toContain('+');
     }
 }
