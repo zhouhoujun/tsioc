@@ -101,8 +101,11 @@ export function getDef<T extends TypeDef>(type: AbstractType): Partial<T> {
                 name: type.name,
                 type
             } as Partial<T>;
-            Reflect.defineMetadata(TYEP_DEF, tagAnn, type);
         }
+        // Cache either source. A precompiled `ƿAnn()` provider may return a
+        // fresh object each call; without this write every getDef() would invoke
+        // it again even though the definition is immutable.
+        Reflect.defineMetadata(TYEP_DEF, tagAnn, type);
     }
     return tagAnn as T
 }

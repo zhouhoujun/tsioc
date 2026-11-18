@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Observable } from 'rxjs';
 import { getDef } from './type.def';
 import { AnnotationType, Type } from '../types';
@@ -125,10 +126,18 @@ export function getType(target: any): Type {
  * @param {} target
  * @returns {string}
  */
+const TYPE_NAME = Symbol('TYPE_NAME');
+
 export function getTypeName(target: any): string {
     const classType = getType(target);
     if (!classType) {
         return ''
     }
-    return (classType as AnnotationType).ƿAnn?.()?.name ?? classType.name
+    const cached = Reflect.getMetadata(TYPE_NAME, classType) as string | undefined;
+    if (cached != null) {
+        return cached;
+    }
+    const name = (classType as AnnotationType).ƿAnn?.()?.name ?? classType.name;
+    Reflect.defineMetadata(TYPE_NAME, name, classType);
+    return name
 }
