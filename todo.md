@@ -4775,3 +4775,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   microservices `GatewayRouteTable` 内部改为 kit adapter（对外 API/legacy 模式/顺序语义不变），gateway 全套 149 passing。
 - Gateway P1(c)：kit 限流器补齐 quota/throttle/rejection 与共享 store（短窗口），microservices `gateway.rate-limit.ts`
   内部改用 kit（route/global、rateLimit:false、destroy 重建语义不变）；gateway 149、agent-gateway 388、gateway-kit 9 全绿。
+- Gateway P1(d)：错误分类法统一到 `@tsdi/gateway-kit`（补 bulkhead/circuit/network/upstream），microservices 直接复用类型；
+  envelope 写入保留各自兼容形态；gateway 149、kit 9 通过。

@@ -3,11 +3,14 @@ import type { ServerResponse } from 'http';
 /** Stable gateway error categories shared by logs, metrics and headers. */
 export type GatewayErrorType =
     | 'rate_limited'
+    | 'bulkhead_full'
+    | 'circuit_open'
     | 'unauthorized'
     | 'forbidden'
     | 'not_found'
     | 'validation'
     | 'timeout'
+    | 'network'
     | 'upstream'
     | 'client'
     | 'internal';

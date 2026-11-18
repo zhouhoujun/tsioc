@@ -147,6 +147,9 @@ agent-gateway 全套 **388 passing** 不变。
 > 已完成（2026-11-18）：c) kit 限流器补齐 `quota`/`throttle`、`rejection(key)` 与共享 store（仅短窗口共享），
 > `gateway.rate-limit.ts` 内部改用 kit（保留 route/global、禁用路由、destroy 语义）；gateway 149、agent-gateway 388、kit 9 全绿。
 >
+> 已完成（2026-11-18）：d) 错误分类法统一到 kit（含 bulkhead/circuit/network/upstream），
+> microservices `GatewayErrorType` 改为共享类型别名；envelope 写入仍各自保留（微服务兼容 `statusCode`/`message`）。
+>
 > 剩余：
 > a) kit router 增加 prefix/hosts/accepts 并加对照测试（同一路由夹具对比旧/新命中结果）；
 > b) `gateway.route-table.ts` 内部改为 kit adapter（对外 `GatewayRouteTable` API/`version` 不变）；

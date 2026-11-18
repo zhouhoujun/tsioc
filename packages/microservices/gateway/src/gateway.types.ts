@@ -17,20 +17,11 @@ export interface GatewayForwardResult {
 
 /**
  * Stable gateway error categories used by access logs, metrics and the
- * `x-gateway-error-type` response header.
+ * `x-gateway-error-type` response header. The taxonomy is shared with the
+ * agent gateway through `@tsdi/gateway-kit`.
  */
-export type GatewayErrorType =
-    | 'rate_limited'
-    | 'bulkhead_full'
-    | 'circuit_open'
-    | 'unauthorized'
-    | 'forbidden'
-    | 'validation'
-    | 'timeout'
-    | 'network'
-    | 'upstream'
-    | 'client'
-    | 'internal';
+import type { GatewayErrorType as SharedGatewayErrorType } from '@tsdi/gateway-kit';
+export type GatewayErrorType = SharedGatewayErrorType;
 
 export function classifyGatewayError(error: any): GatewayErrorType {
     const status = error?.statusCode ?? error?.status;
