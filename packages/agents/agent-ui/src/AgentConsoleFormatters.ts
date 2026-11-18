@@ -278,9 +278,14 @@ export function buildTurnDiagnosticsRecordOption(record: Record<string, any>, tr
 
 /** Compact session age for list rows: ` · 3h`, ` · 2d`, or the ISO date for older sessions. */
 export function formatSessionAge(updatedAt?: number, now = Date.now()): string {
-    const time = Number(updatedAt || 0);
+    let time = Number(updatedAt || 0);
     if (!time || time <= 0) {
         return '';
+    }
+    // Some stores persist seconds instead of milliseconds; normalize so old
+    // sessions do not render as 1970.
+    if (time < 1e12) {
+        time *= 1000;
     }
     const minutes = Math.floor(Math.max(0, now - time) / 60000);
     if (minutes < 1) {

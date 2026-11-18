@@ -4807,3 +4807,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 框架优化实验：`removeDeps` 记录 deps Set（三元组）在 state-only A/B 中**变慢**（103/68 vs 67/52），已回退。
   - console 样式快路径（getStyleMap 免拷贝、mergeStyles var 检查、animation delete 保护）paint A/B 无差异（min 24.9 vs 25.0），已回退。
   - 结论：当前没有可测的"框架没用好"的简单收益；剩余成本集中在 proxy get/track、样式解析与每次切换的消息投影。
+
+## 2026-11-18 弹窗契约（全宽贴输入框）+ /sessions、/projects 收尾（P1）
+- 契约：阻塞式 select/dialog 改为与输入区同宽（`menuFitContent=false`），底部仍贴输入框顶边；console-renderer 的 3 个用例按新契约更新（宽度断言、点击外部改为点顶部行、scrollback 打开时浮层可覆盖最新行但关闭后流完整）。
+- `/sessions`：新增归档徽标（`[archived]`，en/zh i18n `archivedBadge`），`flattenProjectSessions` 保留 `archived` 字段；秒级时间戳归一化，避免显示 1970。
+- `/projects`：Esc 在二级会话选择器返回项目列表（再次 Esc 退出）；选中项目无会话时提示并回到项目列表；p236 用例同步为“提示 + 重开列表”。
+- 测试：新增 dialog-regressions 的归档徽标、Esc 返回、秒级时间戳用例；相关套件 191 passing。

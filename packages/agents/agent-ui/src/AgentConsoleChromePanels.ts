@@ -254,8 +254,8 @@ export class AgentConsoleSelectPanelComponent {
 
     get menuHintText(): string { const menu = this.menu; return !menu || isAgentConsoleSuggestionMenu(menu) ? '' : (menu.hint || ''); }
 
-    /** Blocking menus are content-fit popup cards; suggestions stay composer-wide. */
-    get menuFitContent(): boolean { return !!this.menu && !isAgentConsoleSuggestionMenu(this.menu); }
+    /** Blocking menus share the composer width (AGENTS overlay contract); suggestions too. */
+    get menuFitContent(): boolean { return false; }
 
     /** Only the inline slash/mention palette keeps the composer rails. */
     get menuIsSuggestion(): boolean { return !!this.menu && isAgentConsoleSuggestionMenu(this.menu); }

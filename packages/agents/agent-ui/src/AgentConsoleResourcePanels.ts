@@ -134,9 +134,10 @@ export class AgentConsoleSessionsPanelComponent {
             const workspacePrefix = workspace ? `[${workspace}] ` : '';
             const name = this.sessionRowTitle(session);
             const pinned = session.pinned ? ' 📌' : '';
+            const archived = session.archived ? ` [${panelLabel(this.translator, 'sessions', 'archivedBadge', 'archived')}]` : '';
             rows.push({
                 id: session.id,
-                label: `${marker} ${workspacePrefix}${name}${formatSessionAge(session.updatedAt)}${current}${count}${pinned}`,
+                label: `${marker} ${workspacePrefix}${name}${formatSessionAge(session.updatedAt)}${current}${count}${pinned}${archived}`,
                 style: selected
                     ? this.activeThemeStyles.sessionsSelected
                     : this.activeThemeStyles.statusValue,

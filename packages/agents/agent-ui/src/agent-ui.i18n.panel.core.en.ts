@@ -6,6 +6,7 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         summary: 'sessions {total} · {index}/{total}',
         emptyFilter: 'no sessions match "{filter}"',
         current: 'current',
+        archivedBadge: 'archived',
         projectOne: 'project {name} · {count} session',
         projectMany: 'project {name} · {count} sessions',
         searchTitle: 'Search: "{query}" ({count})',

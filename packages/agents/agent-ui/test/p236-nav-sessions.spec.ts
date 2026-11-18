@@ -423,11 +423,11 @@ export class ProjectsHandlerNavWiringTest {
         expect(rec.opened).toEqual('a2');
     }
 
-    @Test('/projects with no sessions in the picked project notifies and writes nothing')
+    @Test('/projects with no sessions in the picked project notifies and reopens the list')
     async testNoSessionsInProject() {
         const projects = [{ key: 'k-b', label: 'B', sessionCount: 2 }];
         const sessions = [sessionsFixture()[0]];
-        const { ctx, rec } = buildMockCtx(projects, sessions, ['k-b', 'a2']);
+        const { ctx, rec } = buildMockCtx(projects, sessions, ['k-b', undefined]);
         const ok = await COMMAND_HANDLERS['/projects'](ctx, '', { command: '/projects', matches: [] });
         expect(ok).toBe(true);
         expect(rec.notified).toEqual(['No sessions in this project.']);

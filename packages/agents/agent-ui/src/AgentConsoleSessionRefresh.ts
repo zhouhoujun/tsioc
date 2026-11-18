@@ -11,6 +11,9 @@ export interface AgentConsoleSessionRefreshHost {
         updatedAt?: number;
         messageCount?: number;
         summary?: string;
+        title?: string;
+        pinned?: boolean;
+        archived?: boolean;
         projectKey?: string;
         projectId?: string;
         primaryThreadId?: string;

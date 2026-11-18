@@ -20,6 +20,7 @@ export class SessionProjectDialogsTest {
     surface!: TuiTerminalSurface;
     instance!: any;
     state!: any;
+    projectGroups: any[] = [];
 
     @Before()
     async init() {
@@ -30,23 +31,24 @@ export class SessionProjectDialogsTest {
         await this.ref.render();
         this.instance = this.ref.instance;
         this.state = this.instance.sessionState;
+        this.projectGroups = [{
+            projectKey: 'proj-a', projectId: 'proj-a', label: 'Project A', workspace: '/w',
+            sessionCount: 2, lastActiveAt: 2000,
+            sessions: [
+                { id: 's0', current: true, title: 'Fix login flow', messageCount: 12, lastActiveAt: 2000 },
+                { id: 's1', current: false, title: 'Refactor runtime', messageCount: 8, lastActiveAt: 1500 }
+            ]
+        }, {
+            projectKey: 'proj-b', projectId: 'proj-b', label: 'Project B', workspace: '/w',
+            sessionCount: 1, lastActiveAt: 1000,
+            sessions: [{ id: 's2', current: false, title: 'Docs pass', messageCount: 5, lastActiveAt: 1000 }]
+        }];
         this.instance.sessionService = new Proxy({}, {
             get: (_target, prop: string) => {
                 const stub: any = {
                     ensureSession: async (id?: string) => ({ id: id || 's0', archived: false, workspace: '/w' }),
                     loadMessagesPage: async () => ({ messages: [], hasMore: false }),
-                    listProjectSessions: async () => ([{
-                        projectKey: 'proj-a', projectId: 'proj-a', label: 'Project A', workspace: '/w',
-                        sessionCount: 2, lastActiveAt: 2000,
-                        sessions: [
-                            { id: 's0', current: true, title: 'Fix login flow', messageCount: 12, lastActiveAt: 2000 },
-                            { id: 's1', current: false, title: 'Refactor runtime', messageCount: 8, lastActiveAt: 1500 }
-                        ]
-                    }, {
-                        projectKey: 'proj-b', projectId: 'proj-b', label: 'Project B', workspace: '/w',
-                        sessionCount: 1, lastActiveAt: 1000,
-                        sessions: [{ id: 's2', current: false, title: 'Docs pass', messageCount: 5, lastActiveAt: 1000 }]
-                    }] as any),
+                    listProjectSessions: async () => this.projectGroups,
                     listSessions: async () => [],
                     listSections: async () => [],
                     listUserMessages: async () => [],
@@ -116,7 +118,44 @@ export class SessionProjectDialogsTest {
         // The second picker names the project label, not its raw key.
         expect(this.state.selectMenu?.title).toEqual('Sessions in Project A');
         expect((this.state.selectMenu?.options || []).map((option: any) => option.value)).toEqual(['s0', 's1']);
+        // Esc in the session picker returns to the project list, so close the
+        // remaining project picker to finish the flow.
         await this.state.cancelSelectMenu();
+        await settle();
+        await this.state.cancelSelectMenu();
+        await settle();
+    }
+
+    @Test('archived sessions carry a badge in the /sessions panel')
+    async archivedBadge() {
+        this.projectGroups[0].sessions[1].archived = true;
+        await this.instance.handleCommand('/sessions');
+        await settle();
+        this.surface.render();
+        const frame = this.surface.lastRenderedLines.join('\n');
+        expect(frame).toContain('Refactor runtime');
+        expect(frame).toContain('[archived]');
+    }
+
+    @Test('/projects: Esc in the session picker returns to the project list')
+    async projectsEscReturnsToProjects() {
+        const pending = this.instance.handleCommand('/projects');
+        await settle();
+        expect(this.state.selectMenu?.title).toEqual('Projects');
+        await this.state.confirmSelectMenu('proj-a');
+        await settle();
+        expect(this.state.selectMenu?.title).toEqual('Sessions in Project A');
+        // Esc (cancel) in the second picker goes back one level instead of
+        // closing the whole /projects flow.
+        await this.state.cancelSelectMenu();
+        await settle();
+        expect(this.state.selectMenu?.title).toEqual('Projects');
+        expect((this.state.selectMenu?.options || []).map((option: any) => option.value))
+            .toEqual(['proj-a', 'proj-b']);
+        // Esc again closes the flow.
+        await this.state.cancelSelectMenu();
+        expect(await pending).toEqual(true);
+        expect(this.state.selectMenu).toBeUndefined();
     }
 
     @Test('project groups without a sessions array do not crash the picker')

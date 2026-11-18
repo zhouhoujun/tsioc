@@ -36,6 +36,7 @@ export function flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]
     summary?: string;
     title?: string;
     pinned?: boolean;
+    archived?: boolean;
     projectKey?: string;
     projectId?: string;
     primaryThreadId?: string;
@@ -63,6 +64,7 @@ export function flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]
             summary: item.summary,
             title: item.title,
             pinned: !!item.pinned,
+            archived: !!item.archived,
             projectKey,
             projectId,
             primaryThreadId: item.primaryThreadId || primaryThreadId,

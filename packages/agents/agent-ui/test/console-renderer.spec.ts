@@ -1033,10 +1033,14 @@ export class AgentConsoleMessagesRendererTest {
             const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
             expect(titleRow).toBeGreaterThan(0);
             expect(inputRow).toBeGreaterThan(titleRow);
-            // Framed card, content-fit width, and its bottom border rests on
-            // the composer's top padding row without covering the input row.
+            // Framed card spans the composer width, and its bottom border rests
+            // on the composer's top padding row without covering the input row.
             expect(lines.some(line => line.includes('╭') || line.includes('╰'))).toEqual(true);
             expect(lines[titleRow].indexOf('Security level')).toBeGreaterThan(0);
+            // Same width as the composer (120 columns), not a content-fit card.
+            const boxTop = lines.findIndex(line => line.trimStart().startsWith('╭'));
+            expect(boxTop).toBeGreaterThan(0);
+            expect(lines[boxTop].trimEnd().length).toBeGreaterThanOrEqual(118);
             const hintRow = lines.findIndex(line => line.includes('up/down move'));
             expect(lines[inputRow - 1].trim()).toEqual('│');
             expect(lines[inputRow - 2].trim().endsWith('╯')).toEqual(true);
@@ -1044,7 +1048,7 @@ export class AgentConsoleMessagesRendererTest {
             expect(hintRow).toBeLessThan(inputRow);
             expect(inputRow).not.toContain('Security level');
             expect(inputRow).not.toContain('up/down move');
-            expect(lines[hintRow].trimEnd().length).toBeLessThan(112);
+            expect(lines[hintRow].trimEnd().length).toBeLessThanOrEqual(120);
         } finally {
             surface?.destroy();
             await tuiCtx.close();
@@ -1118,9 +1122,10 @@ export class AgentConsoleMessagesRendererTest {
             const lines = surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
             const titleRow = lines.findIndex(line => line.includes('Security level'));
             expect(titleRow).toBeGreaterThan(0);
-            // Primary click outside the popup columns (1-based terminal cells).
-            surface.dispatchMouse({ button: 0, x: 1, y: titleRow + 1, release: false });
-            surface.dispatchMouse({ button: 0, x: 1, y: titleRow + 1, release: true });
+            // The dialog spans the composer width, so "outside" means a row
+            // outside its band: click the top transcript row.
+            surface.dispatchMouse({ button: 0, x: 1, y: 1, release: false });
+            surface.dispatchMouse({ button: 0, x: 1, y: 1, release: true });
             await settleDynamicMessages(consoleRef);
             expect(state.selectMenu).toBeUndefined();
         } finally {
@@ -1282,7 +1287,8 @@ export class AgentConsoleMessagesRendererTest {
             // The transcript is longer than the screen, so the overlay must be
             // painted inside the visible window rather than at the stream top.
             expect(boxRow).toBeGreaterThanOrEqual(lines.length - 30);
-            expect(lines.some(line => line.includes('message 40'))).toEqual(true);
+            // The full-width overlay may cover the newest rows while open; the
+            // stream itself keeps them (asserted after closing below).
 
             // Closing repaints the rows the popup covered without changing the
             // stream length (no transient transcript rows were added/removed).

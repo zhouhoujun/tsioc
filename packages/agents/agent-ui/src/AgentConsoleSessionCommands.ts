@@ -128,7 +128,8 @@ export async function handleProjects(ctx: CommandHandlerContext, _args: string, 
     }
     ctx.state.closeReview();
     ctx.state.closeGitSnapshotDetail();
-    {
+    // Esc in the session picker returns to the project list; Esc there exits.
+    while (true) {
         const project = await ctx.select(
             panelLabel(ctx.translator, 'sessions', 'projectsTitle', 'Projects'),
             ctx.state.projects.map(p => ({
@@ -145,7 +146,7 @@ export async function handleProjects(ctx: CommandHandlerContext, _args: string, 
         );
         if (!projectSessions.length) {
             ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsProject'));
-            return true;
+            continue;
         }
         const projectLabel = String(ctx.state.projects.find(item => item.key === project)?.label || project).trim();
         const sessionId = await ctx.select(
@@ -158,7 +159,7 @@ export async function handleProjects(ctx: CommandHandlerContext, _args: string, 
             0,
             ctx.state.consoleOptions.selectHint
         );
-        if (!sessionId) return true;
+        if (!sessionId) continue;
         // P236: share selection/filter store with /sessions for restore on switch.
         const canonicalProjectId = String(projectSessions.find(s => String(s.projectId || '').trim())?.projectId || '').trim();
         const projectIndex = Math.max(0, projectSessions.findIndex(s => s.id === sessionId));
@@ -166,8 +167,8 @@ export async function handleProjects(ctx: CommandHandlerContext, _args: string, 
         ctx.state.setNavViewScroll('sessions', projectIndex);
         ctx.state.setNavSelection({ type: 'session', id: sessionId, index: projectIndex });
         await ctx.openSession(sessionId);
+        return true;
     }
-    return true;
 }
 
 // ── /threads ─────────────────────────────────────────────────────────────────

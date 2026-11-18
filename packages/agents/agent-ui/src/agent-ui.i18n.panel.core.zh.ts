@@ -6,6 +6,7 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         summary: '会话 {total} · {index}/{total}',
         emptyFilter: '没有匹配“{filter}”的会话',
         current: '当前',
+        archivedBadge: '已归档',
         projectOne: '项目 {name} · {count} 个会话',
         projectMany: '项目 {name} · {count} 个会话',
         searchTitle: '搜索："{query}"（{count}）',

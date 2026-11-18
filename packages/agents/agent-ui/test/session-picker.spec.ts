@@ -32,6 +32,14 @@ export class SessionPickerTest {
         expect(formatSessionAge(now - 30 * 24 * HOUR, now)).toEqual(' · 2026-09-27');
     }
 
+    @Test('seconds-based timestamps are normalized instead of rendering 1970')
+    secondsTimestamp() {
+        const now = Date.UTC(2026, 9, 27, 12, 0, 0);
+        const seconds = Math.floor((now - 5 * 60_000) / 1000);
+        expect(formatSessionAge(seconds, now)).toEqual(' · 5m');
+        expect(formatSessionAge(seconds, now)).not.toContain('1970');
+    }
+
     @Test('appends the active filter to the hint')
     sessionHint() {
         expect(formatSessionHint('esc', undefined)).toEqual('esc');
