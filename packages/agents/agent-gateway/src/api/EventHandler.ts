@@ -1,5 +1,5 @@
 import * as http from 'http';
-import { GatewayEventStream, stringifyGatewayEvent } from './GatewayEventStream';
+import { GatewayEventStream, stringifyGatewayEvent, type GatewayEventStreamRecord } from '@tsdi/gateway-kit';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { EventHandler as OnEvent } from '@tsdi/core';
 import { AgentApprovalCompletedEvent, AgentApprovalFailedEvent, AgentApprovalRequestedEvent, AgentBackgroundTaskCompletedEvent, AgentBackgroundTaskFailedEvent, AgentBackgroundTaskStartedEvent, AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentPlanCompletedEvent, AgentPlanCreatedEvent, AgentPlanStepBlockedEvent, AgentPlanStepCompletedEvent, AgentPlanStepStartedEvent, AgentStreamChunkEvent, AgentToolCompletedEvent, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent, TimelineEventRecord, TimelineHistoryStore, TimelineEventType } from '@tsdi/agent';
@@ -24,7 +24,7 @@ const MAX_EVENT_HISTORY = 200;
 
 @Injectable()
 export class EventHandler {
-    private readonly stream = new GatewayEventStream();
+    private readonly stream = new GatewayEventStream<GatewayEventRecord & GatewayEventStreamRecord>();
     private listeners = new Map<string, Set<(record: GatewayEventRecord) => void>>();
     private history: GatewayEventRecord[] = [];
 

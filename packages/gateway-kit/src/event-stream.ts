@@ -1,5 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import type { GatewayEventRecord } from './EventHandler';
+
+/** Minimal record shape shared by SSE broadcasters. */
+export interface GatewayEventStreamRecord {
+    id: string;
+    type: string;
+    sessionId?: string;
+    data?: any;
+}
 
 /** JSON stringify that survives bigint and circular payloads. */
 export function stringifyGatewayEvent(value: any): string {
@@ -19,20 +26,20 @@ export function stringifyGatewayEvent(value: any): string {
 }
 
 /**
- * SSE client registry for agent events.
+ * Server-Sent Events hub shared by gateway packages.
  *
- * Frames carry `id:` so a reconnecting client can pass `Last-Event-ID` and
- * receive the buffered events it missed (session-filtered); the live stream
- * then continues on the same response.
+ * Every frame carries `id:` so a reconnecting client can send
+ * `Last-Event-ID` and receive the buffered events it missed (session-scoped);
+ * the live stream then continues on the same response.
  */
-export class GatewayEventStream {
+export class GatewayEventStream<T extends GatewayEventStreamRecord = GatewayEventStreamRecord> {
     private readonly clients = new Map<string, Set<ServerResponse>>();
 
     connect(
         sessionId: string,
         req: Pick<IncomingMessage, 'headers'>,
         res: Pick<ServerResponse, 'write' | 'on'>,
-        history: readonly GatewayEventRecord[]
+        history: readonly T[]
     ): void {
         const headers: any = req.headers || {};
         res.write(`event: connected\ndata: ${JSON.stringify({ sessionId })}\n\n`);
@@ -61,7 +68,7 @@ export class GatewayEventStream {
         });
     }
 
-    broadcast(sessionId: string, event: string, data: any): void {
+    broadcast(sessionId: string, event: string, data: T): void {
         const eventId = data && typeof data === 'object' ? String((data as any).id || '').trim() : '';
         const payload = `${eventId ? `id: ${eventId}\n` : ''}event: ${event}\ndata: ${stringifyGatewayEvent(data)}\n\n`;
         const clients = this.clients.get(sessionId);

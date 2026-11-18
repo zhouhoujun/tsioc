@@ -10,6 +10,7 @@ import { applyGatewayCorsHeaders, handleGatewayCorsPreflight } from '../src/cors
 import { serveGatewayStaticFile, resolveGatewayStaticPath } from '../src/static';
 import { buildGatewayOpenApi } from '../src/openapi';
 import { GatewayCapabilityRegistry } from '../src/capabilities';
+import { GatewayEventStream } from '../src/event-stream';
 
 @Suite('gateway kit router')
 export class GatewayKitRouterTest {
@@ -235,5 +236,49 @@ export class GatewayKitCapabilitiesTest {
         expect(registry.get('app.ping')?.summary).toEqual('ping');
         expect(registry.has('missing')).toEqual(false);
         expect(registry.list().length).toEqual(3);
+    }
+}
+
+@Suite('gateway kit event stream')
+export class GatewayKitEventStreamTest {
+    @Test('replays after Last-Event-ID and stamps live ids')
+    replayAndIds() {
+        const stream = new GatewayEventStream();
+        const writes: string[] = [];
+        const res = {
+            write: (chunk: any) => { writes.push(String(chunk)); return true; },
+            on: () => undefined
+        } as any;
+        const history = [
+            { id: 'e1', type: 'turn_started', sessionId: 's1', data: { n: 1 } },
+            { id: 'e2', type: 'stream_chunk', sessionId: 's1', data: { n: 2 } },
+            { id: 'e3', type: 'turn_started', sessionId: 's2', data: { n: 3 } },
+            { id: 'e4', type: 'turn_done', sessionId: 's1', data: { n: 4 } }
+        ];
+        stream.connect('s1', { headers: { 'last-event-id': 'e1' } } as any, res, history);
+        const replayed = writes.join('');
+        expect(replayed).toContain('event: connected');
+        expect(replayed).toContain('id: e2');
+        expect(replayed).toContain('id: e4');
+        expect(replayed).not.toContain('id: e1');
+        expect(replayed).not.toContain('id: e3');
+
+        writes.length = 0;
+        stream.broadcast('s1', 'tool_invoked', { id: 'e5', type: 'tool_invoked', sessionId: 's1', data: {} });
+        expect(writes.join('')).toContain('id: e5');
+        expect(writes.join('')).toContain('event: tool_invoked');
+    }
+
+    @Test('serializes bigint and circular payloads safely')
+    safeSerialization() {
+        const stream = new GatewayEventStream();
+        const writes: string[] = [];
+        stream.connect('s1', { headers: {} } as any, { write: (chunk: any) => { writes.push(String(chunk)); }, on: () => undefined } as any, []);
+        const circular: any = { id: 'c1', type: 'circular', sessionId: 's1' };
+        circular.data = { self: circular, big: BigInt(7) };
+        stream.broadcast('s1', 'circular', circular);
+        const text = writes.join('');
+        expect(text).toContain('[circular]');
+        expect(text).toContain('"7"');
     }
 }

@@ -4789,3 +4789,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   新增 events-sse 用例（重放/实时 id/全新连接），agent-gateway 391 passing。
 - Gateway P2(e)：`createAgentAppRpcClient` typed transport 封装（编译期校验方法名），OpenAPI 文档新增 `x-rpc-methods`
   （JSON-RPC 契约与 REST 路径同文档）；agent-gateway 392 passing。
+- Gateway P2(f)：SSE hub 下沉到 `@tsdi/gateway-kit`（`GatewayEventStream` + `stringifyGatewayEvent`），
+  agent-gateway 复用（删除本地实现）；kit 新增重放/实时 id/循环与 bigint 序列化用例，kit 14、agent-gateway 392。
