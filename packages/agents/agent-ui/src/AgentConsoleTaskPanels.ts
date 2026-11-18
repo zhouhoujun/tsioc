@@ -68,7 +68,7 @@ export * from './AgentConsoleOverlayPanels';
     selector: 'agent-console-tasks-panel',
     imports: [ListComponent],
     template: `
-    <list :header="tasksSummaryLabel" :contextLines="backgroundTaskFeedLines" :hint="tasksHintLabel" :items="taskDisplayItems" :detailLines="selectedTaskDetailLines" :ariaLabel="accessibilityLabel" :showClose="false"></list>
+    <list :header="tasksSummaryLabel" :contextLines="backgroundTaskFeedLines" :hint="tasksHintLabel" :items="taskDisplayItems" :detailLines="selectedTaskDetailLines" :ariaLabel="accessibilityLabel" :hasMore="false" :showClose="false"></list>
     `
 })
 export class AgentConsoleTasksPanelComponent extends AgentConsoleTaskPanelDetailHost {

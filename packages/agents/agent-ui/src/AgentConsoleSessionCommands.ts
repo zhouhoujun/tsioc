@@ -147,8 +147,9 @@ export async function handleProjects(ctx: CommandHandlerContext, _args: string, 
             ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsProject'));
             return true;
         }
+        const projectLabel = String(ctx.state.projects.find(item => item.key === project)?.label || project).trim();
         const sessionId = await ctx.select(
-            panelLabel(ctx.translator, 'sessions', 'sessionsIn', 'Sessions in {name}', { name: project }),
+            panelLabel(ctx.translator, 'sessions', 'sessionsIn', 'Sessions in {name}', { name: projectLabel }),
             projectSessions.map(s => ({
                 label: `${String(s.title || '').trim() || s.id}${s.current ? ` [${panelLabel(ctx.translator, 'sessions', 'current', 'current')}]` : ''} (${s.messageCount ?? '?'})${s.pinned ? ' 📌' : ''}`,
                 value: s.id,

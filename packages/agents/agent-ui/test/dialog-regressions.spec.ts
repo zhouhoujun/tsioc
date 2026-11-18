@@ -1,0 +1,127 @@
+import expect = require('expect');
+import { After, Before, Suite, Test } from '@tsdi/unit';
+import { Application, ApplicationContext } from '@tsdi/core';
+import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
+import { TuiRenderer, TuiTerminalSurface, TuiTemplateModule } from '@tsdi/components/console';
+import { AgentModule } from '@tsdi/agent';
+import { AgentConsoleComponent, AgentUiModule } from '../src';
+import { flattenProjectSessions } from '../src/AgentConsoleProjectProjection';
+
+async function settle(times = 64): Promise<void> {
+    for (let index = 0; index < times; index++) {
+        await Promise.resolve();
+    }
+}
+
+@Suite('session/project dialogs')
+export class SessionProjectDialogsTest {
+    ctx!: ApplicationContext;
+    ref!: ComponentRef<AgentConsoleComponent>;
+    surface!: TuiTerminalSurface;
+    instance!: any;
+    state!: any;
+
+    @Before()
+    async init() {
+        this.ctx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        this.ref = this.ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: this.ctx });
+        await this.ref.render();
+        this.instance = this.ref.instance;
+        this.state = this.instance.sessionState;
+        this.instance.sessionService = new Proxy({}, {
+            get: (_target, prop: string) => {
+                const stub: any = {
+                    ensureSession: async (id?: string) => ({ id: id || 's0', archived: false, workspace: '/w' }),
+                    loadMessagesPage: async () => ({ messages: [], hasMore: false }),
+                    listProjectSessions: async () => ([{
+                        projectKey: 'proj-a', projectId: 'proj-a', label: 'Project A', workspace: '/w',
+                        sessionCount: 2, lastActiveAt: 2000,
+                        sessions: [
+                            { id: 's0', current: true, title: 'Fix login flow', messageCount: 12, lastActiveAt: 2000 },
+                            { id: 's1', current: false, title: 'Refactor runtime', messageCount: 8, lastActiveAt: 1500 }
+                        ]
+                    }, {
+                        projectKey: 'proj-b', projectId: 'proj-b', label: 'Project B', workspace: '/w',
+                        sessionCount: 1, lastActiveAt: 1000,
+                        sessions: [{ id: 's2', current: false, title: 'Docs pass', messageCount: 5, lastActiveAt: 1000 }]
+                    }] as any),
+                    listSessions: async () => [],
+                    listSections: async () => [],
+                    listUserMessages: async () => [],
+                    listApprovals: async () => [],
+                    listCodingTasks: async () => [],
+                    loadTodoPlan: async () => []
+                };
+                return stub[prop] || (async () => undefined);
+            }
+        });
+        this.state.configure({ sessionId: 's0', workspace: '/w' });
+        this.surface = new TuiTerminalSurface({
+            renderer: this.ctx.get(TuiRenderer),
+            root: this.ref.elementRef.nativeElement,
+            width: 100,
+            height: 32,
+            nativeScrollback: false,
+            scrollViewport: true,
+            scrollRegionId: 'transcript',
+            footerRegionId: 'footer',
+            output: { write() {} }
+        });
+        this.instance.surfaceAccessor = {
+            getViewportScrollOffset: () => this.surface.viewportScrollOffset,
+            isViewportFollowing: () => this.surface.viewportFollowing,
+            scrollViewport: (delta: number) => this.surface.scrollViewport(delta),
+            scrollViewportToRow: (row: number) => this.surface.scrollViewportToRow(row),
+            scrollViewportToOffset: (offset: number) => this.surface.scrollViewportToOffset(offset),
+            queueViewportOffset: (offset: number) => this.surface.queueViewportOffset(offset),
+            scrollViewportToEdge: (edge: 'start' | 'end') => this.surface.scrollViewportToEdge(edge),
+            invalidateRenderCache: () => this.surface.invalidateRenderCache(),
+            beginRenderBatch: () => this.surface.beginRenderBatch(),
+            endRenderBatch: () => this.surface.endRenderBatch(),
+            getLastRenderedLines: () => this.surface.lastRenderedLines,
+            getTerminalSize: () => ({ cols: 100, rows: 32 })
+        };
+    }
+
+    @After()
+    async clean() {
+        this.surface?.destroy();
+        await this.ctx?.close();
+    }
+
+    @Test('/sessions lists the project sessions without a dead load-more row')
+    async sessionsPanel() {
+        await this.instance.handleCommand('/sessions');
+        await settle();
+        this.surface.render();
+        const frame = this.surface.lastRenderedLines.join('\n');
+        expect(frame).toContain('Fix login flow');
+        expect(frame).toContain('Refactor runtime');
+        expect(frame).toContain('Project A');
+        expect(frame).not.toContain('Load more');
+    }
+
+    @Test('/projects offers every project and no load-more row')
+    async projectsDialog() {
+        void this.instance.handleCommand('/projects');
+        await settle();
+        this.surface.render();
+        const options = (this.state.selectMenu?.options || []).map((option: any) => option.label);
+        expect(options).toEqual(['Project A (2)', 'Project B (1)']);
+        expect(this.surface.lastRenderedLines.join('\n')).not.toContain('Load more');
+        await this.state.confirmSelectMenu('proj-a');
+        await settle();
+        // The second picker names the project label, not its raw key.
+        expect(this.state.selectMenu?.title).toEqual('Sessions in Project A');
+        expect((this.state.selectMenu?.options || []).map((option: any) => option.value)).toEqual(['s0', 's1']);
+        await this.state.cancelSelectMenu();
+    }
+
+    @Test('project groups without a sessions array do not crash the picker')
+    async tolerantGroups() {
+        expect(flattenProjectSessions([{ projectKey: 'x', label: 'X', workspace: '/w', sessionCount: 0, lastActiveAt: 1 } as any]))
+            .toEqual([]);
+    }
+}

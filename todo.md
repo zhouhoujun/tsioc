@@ -4795,3 +4795,15 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   OpenAPI（不再只有 agent 侧有文档）；route-table/openapi 用例新增，gateway 150 passing。
 - Gateway P2(h)：admin 增加 `GET /api/gateway-admin/openapi`（由 `GatewayInterceptor.openApiDocument()` 生成），
   微服务侧 OpenAPI 现在可直接消费；admin 87、gateway 150 passing。
+
+## 2026-11-18 修复 /sessions、/projects 弹窗 + 切换性能核查
+- 弹窗缺陷（已修）：
+  - 所有面板 `<list>` 未传 `hasMore`，导致 sessions/tools/jobs/tasks/toolRuns/command-outputs/pending-question 一直显示无效的 `[ Load more ]`；统一改为 `:hasMore="false"`（这些列表已全量加载）。
+  - `flattenProjectSessions` 对缺少 `sessions` 数组的项目组直接崩溃；改为容错并回退空列表。
+  - `/projects` 的项目内会话选择器标题使用 project key（如 `Sessions in proj-a`），改为项目 label（`Sessions in Project A`）。
+  - 新增 `dialog-regressions.spec.ts`（3 用例：sessions 无 Load more、projects 选项/二级标题、缺失 sessions 不崩溃）。
+- 性能核查（1000 消息 ×4 tab，同一 harness）：
+  - 切换 p50 87–140ms（负载 2–4 波动；此前记录 98–138ms），拆分：state ~52–67ms + paint ~25–56ms；195ms 为负载尖峰。
+  - 框架优化实验：`removeDeps` 记录 deps Set（三元组）在 state-only A/B 中**变慢**（103/68 vs 67/52），已回退。
+  - console 样式快路径（getStyleMap 免拷贝、mergeStyles var 检查、animation delete 保护）paint A/B 无差异（min 24.9 vs 25.0），已回退。
+  - 结论：当前没有可测的"框架没用好"的简单收益；剩余成本集中在 proxy get/track、样式解析与每次切换的消息投影。

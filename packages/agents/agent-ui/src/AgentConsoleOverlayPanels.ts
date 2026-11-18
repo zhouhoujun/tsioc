@@ -131,7 +131,7 @@ export class AgentConsoleTextOverlayPanelComponent {
     selector: 'agent-console-outputs-panel',
     imports: [ListComponent],
     template: `
-    <list :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId"></list>
+    <list :header="panelTitle" :meta="filterLabel" :items="entryItems" :empty="emptyLabel" :hint="hintLabel" :hasMore="false" :showClose="false" :ariaLabel="accessibilityLabel" :listLabel="'Command output history'" :activeOptionId="activeOptionId"></list>
     `
 })
 export class AgentConsoleCommandOutputsPanelComponent {
@@ -227,7 +227,7 @@ export class AgentConsoleCommandOutputsPanelComponent {
     selector: 'agent-console-pending-question-panel',
     imports: [ListComponent],
     template: `
-    <list panelClass="question-panel dialog-panel" :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectValueAction="onPendingQuestionOptionClick"></list>
+    <list panelClass="question-panel dialog-panel" :header="pendingQuestionHeader" :title="pendingQuestionTitle" :context="pendingQuestionContext" :meta="pendingQuestionExpiryHint" :hint="pendingQuestionSelectionHint" :secondaryHint="pendingQuestionCustomHint" :items="pendingQuestionOptionItems" :hasMore="false" :showClose="true" :closeLabel="'✕'" :ariaLabel="accessibilityLabel" :listLabel="'Question options'" :activeOptionId="activeOptionId" @closeAction="closeQuestion" @selectValueAction="onPendingQuestionOptionClick"></list>
     `
 })
 export class AgentConsolePendingQuestionPanelComponent {

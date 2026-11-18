@@ -53,7 +53,8 @@ export function flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]
         const primaryThreadId = String(group.primaryThreadId || '').trim() || undefined;
         const rootRequest = String(group.rootRequest || '').trim() || undefined;
         const focusSummary = String(group.focusSummary || '').trim() || undefined;
-        return group.sessions.map(item => ({
+        const sessions = Array.isArray(group.sessions) ? group.sessions : [];
+        return sessions.map(item => ({
             id: item.id,
             current: !!item.current,
             workspace: item.workspace || group.workspace,

@@ -73,7 +73,7 @@ export * from './AgentConsoleTaskPanels';
     selector: 'agent-console-sessions-panel',
     imports: [ListComponent],
     template: `
-    <list :header="sessionsSummaryLabel" :items="sessionItems" :showClose="false"></list>
+    <list :header="sessionsSummaryLabel" :items="sessionItems" :hasMore="false" :showClose="false"></list>
     `
 })
 export class AgentConsoleSessionsPanelComponent {
@@ -219,7 +219,7 @@ export class AgentConsoleSessionsPanelComponent {
     selector: 'agent-console-jobs-panel',
     imports: [ListComponent],
     template: `
-    <list :header="jobsSummaryLabel" :hint="jobsHintLabel" :items="jobItems" :detailLines="selectedJobDetailLines" :showClose="false"></list>
+    <list :header="jobsSummaryLabel" :hint="jobsHintLabel" :items="jobItems" :detailLines="selectedJobDetailLines" :hasMore="false" :showClose="false"></list>
     `
 })
 export class AgentConsoleJobsPanelComponent {
@@ -362,7 +362,7 @@ export { AgentConsoleApprovalsPanelComponent } from './AgentConsoleApprovalPanel
     selector: 'agent-console-tools-panel',
     imports: [ListComponent],
     template: `
-    <list :header="toolsSummaryLabel" :hint="toolsHintLabel" :items="toolItems" :detailLines="selectedToolDetailLines" :showClose="false"></list>
+    <list :header="toolsSummaryLabel" :hint="toolsHintLabel" :items="toolItems" :detailLines="selectedToolDetailLines" :hasMore="false" :showClose="false"></list>
     `
 })
 export class AgentConsoleToolsPanelComponent {
