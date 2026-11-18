@@ -10,6 +10,7 @@ export * from './contracts/SessionInfo';
 export * from './contracts/PairingCode';
 export * from './contracts/AppRpc';
 
+export * from './app-rpc/capabilities';
 export * from './gateway/GatewayServer';
 export * from './gateway/GatewayBootstrap';
 export * from './gateway/RouteMatcher';

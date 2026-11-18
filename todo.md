@@ -4783,3 +4783,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   的 146 个方法移入 `app-rpc/capabilities.ts` 单一注册表（响应不变）；kit 12、agent-gateway 388 通过。
 - Gateway P2(b)：`app.capabilities` 增加 `protocolVersion`、`features`（sse/ws/approvals/queue）与 `descriptors`
   （来自 kit `GatewayCapabilityRegistry`；`methods` 排序/内容不变）；agent-gateway 388 passing。
+- Gateway P2(c)：能力表改为 `as const` 字面量，导出 `AgentAppRpcMethod` 联合类型（typed client），
+  运行时仍由 kit registry 生成 methods/descriptors；agent-gateway 389 passing。

@@ -6,6 +6,7 @@ import * as path from 'path';
 import { RandomUuidGenerator } from '@tsdi/core';
 import { AGENT_HOOKS_FILE, AGENT_HOOKS_TRUST_FILE, hashAgentHook } from '@tsdi/agent';
 import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
+import { AGENT_APP_RPC_METHODS, type AgentAppRpcMethod } from '../src/app-rpc/capabilities';
 
 function buildServer(runtime: any, options?: any) {
     return new AppRpcServer(
@@ -72,5 +73,12 @@ export class HooksRpcTest {
         expect(capabilities.descriptors.find((entry: any) => entry.id === 'hooks.list')).toEqual({
             id: 'hooks.list', kind: 'rpc'
         });
+    }
+
+    @Test('exposes a literal method union for typed clients')
+    async typedMethodUnion() {
+        const method: AgentAppRpcMethod = 'session.sandbox_mode.set';
+        expect(AGENT_APP_RPC_METHODS).toContain(method);
+        expect(AGENT_APP_RPC_METHODS.length).toEqual(146);
     }
 }
