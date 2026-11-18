@@ -17,7 +17,7 @@ export interface MarkdownTableCell {
  * agent-ui.
  */
 @Component({
-    selector: 'markdown-table',
+    selector: 'markdown-table, ui-markdown-table',
     template: `
     <div class="markdown-table" role="table">
         <div class="markdown-row markdown-head" role="row">
@@ -35,7 +35,7 @@ export class MarkdownTableComponent {
 
 /** Semantic code shell; hosts own the surrounding language/copy chrome. */
 @Component({
-    selector: 'markdown-code',
+    selector: 'markdown-code, ui-markdown-code',
     template: `
     <pre class="markdown-code"><code><span class="markdown-code-line" v-for="line in lines"><span class="markdown-code-token" data-tone="{{token.tone}}" v-for="token in line">{{token.text}}</span></span></code></pre>`
 })

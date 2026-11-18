@@ -27,7 +27,7 @@ type RenderedNode = any;
  * as `icon`/`glyph` are resolved to their registered vector when one exists.
  */
 @Directive({
-    selector: 'icon',
+    selector: 'icon, ui-icon',
     dirType: DirectiveType.Normal
 })
 export class IconDirective implements OnInit, OnDestroy {

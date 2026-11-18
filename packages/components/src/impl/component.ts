@@ -108,7 +108,11 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
                 throw new Exception('Template module renderer not initialized. Verify TemplateModule is properly configured with deps.');
             }
             
-            this._elementRef = this.injector.getElementRef(renderer.createElement(def.selector ?? this.classRef.className));
+            // A component may declare several selectors (for example a legacy
+            // name plus a `ui-` alias). The host element must use one tag name,
+            // not the comma-separated selector list.
+            const hostSelector = String(def.selector ?? this.classRef.className).split(',')[0].trim();
+            this._elementRef = this.injector.getElementRef(renderer.createElement(hostSelector));
             this.injector.setValue(ElementRef, this._elementRef);
         }
         this.injector.setPayload(this._elementRef);

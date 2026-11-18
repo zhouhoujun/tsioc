@@ -7,7 +7,7 @@ import { getDisplayWidth } from '../../src/display-width';
  * not have to clone modal markup for notices and confirmations.
  */
 @Component({
-    selector: 'alert-dialog',
+    selector: 'alert-dialog, ui-alert-dialog',
     template: `
     <div class="console-panel dialog-panel alert-dialog {{widthClass}}" role="alertdialog" data-tone="{{tone}}" aria-label="{{ariaLabel}}">
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>

@@ -38,7 +38,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
  * here so the DOM and terminal renderers paint the same structure.
  */
 @Component({
-    selector: 'tab-bar',
+    selector: 'tab-bar, ui-tab-bar',
     template: `
     <p class="tab-bar" role="tablist" v-show="visible">
         <span class="tab" role="tab" aria-selected="{{tab.active}}" data-disabled="{{tab.disabled}}" data-hover-group="true" v-for="tab in items" trackBy="id" @click="select(tab.id, $event)">

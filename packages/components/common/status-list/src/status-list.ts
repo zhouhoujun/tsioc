@@ -16,7 +16,7 @@ export interface StatusListItem {
  * own item semantics/localization; TUI and DOM renderers own the skin.
  */
 @Component({
-    selector: 'status-list',
+    selector: 'status-list, ui-status-list',
     template: `
     <div class="console-panel status-list">
         <label class="status-list-title">{{title}}</label>

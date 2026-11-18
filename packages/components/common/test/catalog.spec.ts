@@ -58,6 +58,30 @@ export class CommonCatalogTest {
         expect(violations).toEqual([]);
     }
 
+    @Test('every widget exposes a ui- selector alias')
+    uiSelectorAliases() {
+        const missing: string[] = [];
+        for (const name of widgetNames()) {
+            const srcDir = join(ROOT, name, 'src');
+            const files = readdirSync(srcDir, { withFileTypes: true })
+                .filter(entry => entry.isFile() && entry.name.endsWith('.ts'))
+                .map(entry => join(srcDir, entry.name));
+            const selectors: string[] = [];
+            for (const file of files) {
+                const source = readFileSync(file, 'utf8');
+                for (const match of source.matchAll(/selector\s*:\s*['"`]([^'"`]+)['"`]/g)) {
+                    selectors.push(match[1]);
+                }
+            }
+            for (const selector of selectors) {
+                if (!selector.split(',').some(part => part.trim().startsWith('ui-'))) {
+                    missing.push(`${name}: ${selector}`);
+                }
+            }
+        }
+        expect(missing).toEqual([]);
+    }
+
     @Test('the shared UI skin covers every base primitive')
     uiSkinCoverage() {
         const missing = BASE_SELECTORS.filter(selector => !UI_CSS.includes(`.${selector}`));

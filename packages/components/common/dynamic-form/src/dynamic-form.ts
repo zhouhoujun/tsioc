@@ -75,7 +75,7 @@ let dynamicFormSequence = 0;
  * editing state and error messages.
  */
 @Component({
-    selector: 'dynamic-form',
+    selector: 'dynamic-form, ui-dynamic-form',
     template: DYNAMIC_FORM_TEMPLATE
 })
 export class DynamicFormComponent implements OnDestroy {

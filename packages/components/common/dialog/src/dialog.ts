@@ -7,7 +7,7 @@ import { getDisplayWidth } from '../../src/display-width';
  * own the visual chrome.
  */
 @Component({
-    selector: 'dialog-panel',
+    selector: 'dialog-panel, ui-dialog-panel',
     template: `
     <div class="console-panel dialog-panel {{widthClass}}" role="dialog" aria-label="{{ariaLabel}}">
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>

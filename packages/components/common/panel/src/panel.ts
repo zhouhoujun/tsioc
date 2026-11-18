@@ -42,7 +42,7 @@ export interface PanelStyles {
 }
 
 @Component({
-    selector: 'panel',
+    selector: 'panel, ui-panel',
     template: `
     <div class="console-panel console-base-panel" [style]="shellStyle">
         <label class="panel-header" [style]="headerStyle" @click="toggle" v-for="index in headerIndexes">{{headerLineAt(index)}}</label>

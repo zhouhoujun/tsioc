@@ -151,7 +151,7 @@ export class ListPager<T extends { id: string } = ListItem> {
  * viewport/scroll boundary (or let the user click the load buttons).
  */
 @Component({
-    selector: 'list',
+    selector: 'list, ui-list',
     template: `
     <div class="console-panel list-panel {{panelClass}}" role="dialog" aria-label="{{ariaLabel}}" aria-activedescendant="{{activeOptionId}}">
         <label class="dialog-close" data-cell-width="2" v-show="showClose" @click="close">{{closeLabel}}</label>

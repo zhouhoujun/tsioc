@@ -35,7 +35,7 @@ function toCount(value: number | string | undefined, fallback = 1): number {
  * Projected children are mounted into the grid container in declaration order.
  */
 @Component({
-    selector: 'grid-layout',
+    selector: 'grid-layout, ui-grid-layout',
     template: `
     <div class="grid-layout" [class]="layoutClass" [style]="gridStyle">
         <div class="grid-layout-items"><v-content></v-content></div>
@@ -113,7 +113,7 @@ export class GridLayoutComponent {
  * Optional grid item wrapper with declarative span/area placement.
  */
 @Component({
-    selector: 'grid-item',
+    selector: 'grid-item, ui-grid-item',
     template: `
     <div class="grid-item" [style]="itemStyle">
         <div class="grid-item-content"><v-content></v-content></div>

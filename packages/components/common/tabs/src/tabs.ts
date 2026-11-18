@@ -32,7 +32,7 @@ export type TabsSource = TabBarSource;
  * `<tabs strip-only>`.
  */
 @Component({
-    selector: 'tabs',
+    selector: 'tabs, ui-tabs',
     imports: [TabBarComponent],
     template: `
     <div class="tabs" data-active-tab="{{syncKey}}">

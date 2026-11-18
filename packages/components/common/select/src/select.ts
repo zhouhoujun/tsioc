@@ -14,7 +14,7 @@ export interface SelectOption {
  * how `<select>` is painted and how pointer rows are hit-tested.
  */
 @Component({
-    selector: 'select-list',
+    selector: 'select-list, ui-select-list',
     template: `
     <div class="console-panel select-list {{widthClass}}" role="dialog" aria-label="{{ariaLabel}}">
         <div class="select-shell {{suggestion ? 'select-suggestions' : 'select-card'}}">

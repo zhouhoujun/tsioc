@@ -41,7 +41,7 @@ const MAX_BOTTOM_RATIO = 0.7;
  * ```
  */
 @Component({
-    selector: 'workspace-layout',
+    selector: 'workspace-layout, ui-workspace-layout',
     template: `
     <div class="workspace-layout" #layoutRoot [style]="layoutStyle">
         <div class="workspace-layout-main">

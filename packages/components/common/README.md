@@ -61,6 +61,10 @@ Rules this layer must keep (see the root `AGENTS.md`):
   aliases exported from the same entry points.
 - **Component names name the feature**; the selector may add a role suffix to
   avoid native tags (`dialog-panel`, `select-list`). Selectors are kebab-case.
+- **Canonical selector namespace is `ui-*`**. Every widget declares a `ui-`
+  selector alias; existing short names (`panel`, `list`, `icon`, ...) remain in
+  the same comma-separated selector for compatibility. New widgets must expose
+  `ui-*`; the catalog spec enforces this.
 - **Data types**: `*Item` for rendered rows (`ListItem`, `TabItem`,
   `MenuBarItem`), `*Option` for choices (`SelectOption`), `*Entry` for queue /
   persisted records (`ToastEntry`), `*Source` for injected providers
@@ -200,6 +204,9 @@ All widgets are renderer-neutral and expose their state through `@Attribute()`
 fields. Actions are callback attributes (`selectAction`, `closeAction`,
 `changeAction`, ...); value-change notifications use `EventEmitter` fields
 (e.g. `panel.expandedChange`).
+
+The selector column lists the legacy short name; every widget also accepts its
+`ui-` alias (for example `panel` / `ui-panel`, `icon` / `ui-icon`).
 
 | Selector | Component / module | Purpose and main attributes |
 | --- | --- | --- |

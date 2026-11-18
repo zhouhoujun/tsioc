@@ -18,7 +18,7 @@ export interface ToastRow {
  * affordance and (through the service) an auto-dismiss timer.
  */
 @Component({
-    selector: 'toast-stack',
+    selector: 'toast-stack, ui-toast-stack',
     template: `
     <div class="console-toast-stack" role="status" aria-live="polite" v-show="visible">
         <div class="console-toast-card">

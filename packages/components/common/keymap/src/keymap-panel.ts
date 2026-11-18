@@ -17,7 +17,7 @@ export interface KeymapGroup {
  * chrome out of business components.
  */
 @Component({
-    selector: 'keymap-panel',
+    selector: 'keymap-panel, ui-keymap-panel',
     template: `
     <div class="console-panel keymap-panel">
         <label class="keymap-title">{{title}}</label>

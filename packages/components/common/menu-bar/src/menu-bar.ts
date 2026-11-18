@@ -60,7 +60,7 @@ interface MenuBarEntryView {
  * ```
  */
 @Component({
-    selector: 'menu-bar',
+    selector: 'menu-bar, ui-menu-bar',
     template: `
     <div #menuRoot class="menu-bar menu-bar-align-{{align}}" data-open="{{openText}}" role="menubar">
         <button class="menu-bar-trigger" type="button"
