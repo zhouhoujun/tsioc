@@ -4745,3 +4745,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Hooks：RPC/runtime 摘要 → `textOverlay`；无注册时提示；
   - Plugins inspect：`plugins inspect` 的 manifest/contributions → `textOverlay`。
   不再把详情塞进命令输出历史；settings-integrations 9 passing，相关套件 134 passing。
+- 设置页可点击区域补齐 TUI hover：行、分区标签、关闭按钮加 `data-hover="fade"`；console-renderer 断言 hover 目标数量。

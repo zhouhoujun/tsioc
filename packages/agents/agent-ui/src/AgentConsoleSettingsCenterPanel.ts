@@ -17,15 +17,15 @@ import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
     imports: [BadgeModule],
     template: `
     <div class="console-panel settings-center-panel" role="dialog" aria-label="{{title}}">
-        <label class="dialog-close" data-cell-width="2" @click="close">✕</label>
+        <label class="dialog-close" data-cell-width="2" data-hover="fade" @click="close">✕</label>
         <label class="settings-title">{{title}}</label>
         <label class="settings-meta">{{windowMeta}}</label>
         <div class="settings-sections">
-            <span class="settings-section" v-for="entry in sectionEntries" aria-selected="{{entry.active}}" @click="pickSection(entry.id)">{{entry.active ? '[' + entry.label + ']' : entry.label}}<span class="settings-section-sep" v-if="!entry.last"> · </span></span>
+            <span class="settings-section" v-for="entry in sectionEntries" data-hover="fade" aria-selected="{{entry.active}}" @click="pickSection(entry.id)">{{entry.active ? '[' + entry.label + ']' : entry.label}}<span class="settings-section-sep" v-if="!entry.last"> · </span></span>
         </div>
         <label class="settings-query" v-if="query">{{query}}</label>
         <div class="settings-rows">
-            <label class="settings-row" v-for="row in visibleRows" aria-selected="{{row.selected}}" @click="pick(row.id)">
+            <label class="settings-row" v-for="row in visibleRows" data-hover="fade" aria-selected="{{row.selected}}" @click="pick(row.id)">
                 <span class="settings-label">{{row.label}}</span>
                 <span class="settings-value" v-if="row.value">: {{row.value}}</span>
                 <ui-badge class="settings-scope" :label="row.scope" tone="muted" variant="outline"></ui-badge>

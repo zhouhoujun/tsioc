@@ -1516,6 +1516,16 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(text).toContain('workspace');
         expect(text).toContain('[General]');
         expect(text).toContain('Permissions');
+        // Clickable rows/sections keep mouse hover feedback in the TUI.
+        const hoverTargets: any[] = [];
+        const collect = (node: any) => {
+            for (const child of node.childNodes || []) {
+                if (child.getAttribute?.('data-hover') === 'fade') hoverTargets.push(child);
+                collect(child);
+            }
+        };
+        collect(panel.hostView.rootNodes[0]);
+        expect(hoverTargets.length).toBeGreaterThan(3);
     }
 
     @Test('renders working line with token usage while running')
