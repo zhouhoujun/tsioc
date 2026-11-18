@@ -11,13 +11,17 @@ const { spawnSync } = require('node:child_process');
 
 const heapMb = String(process.env.ACTIVITIES_TEST_HEAP_MB || '4096');
 const tsNode = require.resolve('ts-node/dist/bin.js');
+// First argument selects the entry file (`unit-ui.ts` for the designer UI
+// suite); anything else is forwarded to the runner (e.g. `-c` for coverage).
+const rest = process.argv.slice(2);
+const entry = rest[0] && rest[0].endsWith('.ts') ? rest.shift() : 'unit.ts';
 const args = [
     `--max-old-space-size=${heapMb}`,
     tsNode,
     '-r',
     'tsconfig-paths/register',
-    'unit.ts',
-    ...process.argv.slice(2)
+    entry,
+    ...rest
 ];
 // Type checking is covered by the tsc gate; skipping it here removes a
 // per-process TS program build from every test run (ts-node otherwise

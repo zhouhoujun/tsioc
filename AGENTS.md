@@ -247,6 +247,7 @@ npm run test                  # 等价于: ts-node -r tsconfig-paths/register un
 - components 查询/投影/容器改动必须同时回归 components、components/common、components/html、components/console、components/xml、components/json；`npm run bench:check`（或 `RUN_COMPONENTS_BENCH=1 bash scripts/agents-gate.sh components-bench`）不得回退。
 - runner 会把 summary 打印两遍，属正常（unit-console 行为），以 EXIT code 为准。
 - `npm run test:coverage` 可用（NODE_V8_COVERAGE=.nyc_output）。
+- **activities 的 UI spec 单独跑**：`packages/activities/test/workflow-designer-ui.spec.ts` 每个用例都启动真实 JSDOM 应用（约 3 s/用例、约 5 分钟），已从默认 `npm run test`（389 passing，约 6 s）中排除；改动设计器 UI 时必须额外跑 `npm run test:ui`（85 passing，约 5 分钟），或用 `npm run test:all` 一次跑完两者。
 - 共享 components 或 agent-ui 改动必须按影响范围覆盖 components、components/common、components/html、components/console 与 agent-ui；统一 agents gate 必须单独包含这四个 components 包。
 
 ### 跑单个 spec（targeted 验证）

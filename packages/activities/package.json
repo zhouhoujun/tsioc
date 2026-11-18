@@ -1,46 +1,48 @@
 {
-  "name": "@tsdi/activities",
-  "version": "6.0.31",
-  "description": "Type workflow frameworks, base on AOP, Ioc container, via @tsdi",
-  "scripts": {
-    "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "test": "node run-tests.js",
-    "test:coverage": "node run-tests.js -c"
-  },
-  "keywords": [
-    "activities",
-    "activity",
-    "workflow",
-    "task",
-    "framework",
-    "AOP",
-    "aop",
-    "tsdi",
-    "@tsdi",
-    "tsioc",
-    "ioc",
-    "IoC",
-    "type",
-    "container",
-    "dependency",
-    "injection"
-  ],
-  "author": "houjun",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/zhouhoujun/tsioc/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zhouhoujun/tsioc.git"
-  },
-  "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
-  "dependencies": {},
-  "optionalDependencies": {
-    "mqtt": "^4.3.8",
-    "ioredis": "^5.4.1",
-    "nats": "^2.28.2",
-    "coap": "^1.4.1",
-    "ws": "^8.5.0"
-  }
+    "name": "@tsdi/activities",
+    "version": "6.0.31",
+    "description": "Type workflow frameworks, base on AOP, Ioc container, via @tsdi",
+    "scripts": {
+        "build": "ts-node -r tsconfig-paths/register taskfile.ts",
+        "test": "node run-tests.js",
+        "test:coverage": "node run-tests.js -c",
+        "test:ui": "node run-tests.js unit-ui.ts",
+        "test:all": "npm run test && npm run test:ui"
+    },
+    "keywords": [
+        "activities",
+        "activity",
+        "workflow",
+        "task",
+        "framework",
+        "AOP",
+        "aop",
+        "tsdi",
+        "@tsdi",
+        "tsioc",
+        "ioc",
+        "IoC",
+        "type",
+        "container",
+        "dependency",
+        "injection"
+    ],
+    "author": "houjun",
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/zhouhoujun/tsioc/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zhouhoujun/tsioc.git"
+    },
+    "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
+    "dependencies": {},
+    "optionalDependencies": {
+        "mqtt": "^4.3.8",
+        "ioredis": "^5.4.1",
+        "nats": "^2.28.2",
+        "coap": "^1.4.1",
+        "ws": "^8.5.0"
+    }
 }
