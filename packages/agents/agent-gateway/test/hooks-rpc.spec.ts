@@ -6,7 +6,7 @@ import * as path from 'path';
 import { RandomUuidGenerator } from '@tsdi/core';
 import { AGENT_HOOKS_FILE, AGENT_HOOKS_TRUST_FILE, hashAgentHook } from '@tsdi/agent';
 import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
-import { AGENT_APP_RPC_METHODS, type AgentAppRpcMethod } from '../src/app-rpc/capabilities';
+import { AGENT_APP_RPC_METHODS, createAgentAppRpcClient, type AgentAppRpcMethod } from '../src/app-rpc/capabilities';
 
 function buildServer(runtime: any, options?: any) {
     return new AppRpcServer(
@@ -80,5 +80,19 @@ export class HooksRpcTest {
         const method: AgentAppRpcMethod = 'session.sandbox_mode.set';
         expect(AGENT_APP_RPC_METHODS).toContain(method);
         expect(AGENT_APP_RPC_METHODS.length).toEqual(146);
+    }
+
+    @Test('typed client forwards only known methods')
+    async typedClient() {
+        const calls: Array<{ method: string; params: any }> = [];
+        const client = createAgentAppRpcClient({
+            request: async (method, params) => { calls.push({ method, params }); return { ok: true }; }
+        });
+        const response = await client.request('session.list', {});
+        expect(response).toEqual({ ok: true });
+        expect(calls[0]).toEqual({ method: 'session.list', params: {} });
+        expect(client.has('hooks.trust.list')).toEqual(true);
+        expect(client.has('does.not.exist')).toEqual(false);
+        expect(client.methods.length).toEqual(146);
     }
 }

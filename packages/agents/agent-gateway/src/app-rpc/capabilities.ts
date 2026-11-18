@@ -166,6 +166,29 @@ export const AGENT_APP_RPC_CAPABILITIES = new GatewayCapabilityRegistry(
 /** Ordered method ids for `app.capabilities`. */
 export const AGENT_APP_RPC_METHODS: string[] = AGENT_APP_RPC_CAPABILITIES.methods();
 
+/** Minimal transport a typed client talks to (HTTP JSON-RPC, stdio, WS). */
+export interface AgentAppRpcTransport {
+    request(method: string, params?: any): Promise<any>;
+}
+
+export interface AgentAppRpcClient {
+    request<M extends AgentAppRpcMethod>(method: M, params?: unknown): Promise<any>;
+    readonly methods: readonly AgentAppRpcMethod[];
+    has(method: string): boolean;
+}
+
+/**
+ * Typed wrapper around a JSON-RPC transport: method names are checked at
+ * compile time against `AgentAppRpcMethod` while the transport stays generic.
+ */
+export function createAgentAppRpcClient(transport: AgentAppRpcTransport): AgentAppRpcClient {
+    return {
+        request: (method, params) => transport.request(method, params),
+        methods: AGENT_APP_RPC_METHODS as readonly AgentAppRpcMethod[],
+        has: method => AGENT_APP_RPC_CAPABILITIES.has(method)
+    };
+}
+
 /**
  * `app.capabilities` payload: protocol/version/features plus the registry
  * descriptors. `methods` keeps the historical shape clients already parse.

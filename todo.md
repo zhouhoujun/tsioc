@@ -4787,3 +4787,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   运行时仍由 kit registry 生成 methods/descriptors；agent-gateway 389 passing。
 - Gateway P2(d)：SSE 重连支持 —— 广播事件带 `id:`，连接时按 `Last-Event-ID` 从 history 重放该会话后续事件；
   新增 events-sse 用例（重放/实时 id/全新连接），agent-gateway 391 passing。
+- Gateway P2(e)：`createAgentAppRpcClient` typed transport 封装（编译期校验方法名），OpenAPI 文档新增 `x-rpc-methods`
+  （JSON-RPC 契约与 REST 路径同文档）；agent-gateway 392 passing。
