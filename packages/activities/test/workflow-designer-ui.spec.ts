@@ -59,7 +59,7 @@ describe('Workflow Designer UI', () => {
 
     it('renders palette, canvas, edges, inspector and status bar', () => {
         expect(root.matches('.workflow-designer')).toBe(true);
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(60);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(61);
         expect(root.querySelectorAll('.workflow-node').length).toBe(6);
         expect(root.querySelectorAll('.workflow-edge').length).toBe(6);
         expect(root.querySelector('.workflow-inspector')).toBeTruthy();
@@ -116,7 +116,7 @@ describe('Workflow Designer UI', () => {
     it('filters palette components by search query', async () => {
         const input = root.querySelector('.workflow-palette-search-input') as any;
         expect(input).toBeTruthy();
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(60);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(61);
 
         input.value = 'http';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
@@ -137,7 +137,7 @@ describe('Workflow Designer UI', () => {
 
         input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         await flush();
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(60);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(61);
     });
 
     it('disables selection actions until something is selected', async () => {

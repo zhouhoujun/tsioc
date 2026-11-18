@@ -737,6 +737,26 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { host: '0.0.0.0', port: 0, path: '', reply: false }
     },
     {
+        type: 'mqtt',
+        label: 'MQTT broker',
+        description: 'Shared MQTT broker connection for MQTT nodes',
+        category: 'advanced',
+        icon: '◉',
+        color: '#6d28d9',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [],
+        fields: [
+            configField({ key: 'url', label: 'Broker URL', type: 'text', required: true, defaultValue: 'mqtt://localhost:1883', placeholder: 'mqtt://broker:1883', description: 'mqtt:// or mqtts:// (TLS) broker URL.' }),
+            configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto' }),
+            configField({ key: 'username', label: 'Username', type: 'text' }),
+            configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node for client certificates.' }),
+            configField({ key: 'keepalive', label: 'Keepalive', type: 'number', defaultValue: 60, min: 0, step: 10, unit: 's' })
+        ],
+        defaultConfig: { url: 'mqtt://localhost:1883', keepalive: 60 }
+    },
+    {
         type: 'mqtt-in',
         label: 'MQTT in',
         description: 'Start the flow from an MQTT message',
@@ -747,7 +767,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Message')],
         fields: [
-            configField({ key: 'url', label: 'Broker URL', type: 'text', required: true, defaultValue: 'mqtt://localhost:1883', placeholder: 'mqtt://broker:1883', description: 'mqtt:// or mqtts:// (TLS) broker URL.' }),
+            configField({ key: 'mqtt', label: 'Broker config', type: 'text', placeholder: 'mqtt_1', description: 'Id of an MQTT broker config node shared by every MQTT node; inline settings below override it.' }),
+            configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', description: 'Inline override; prefer an MQTT broker config node.' }),
             configField({ key: 'topic', label: 'Topic', type: 'text', required: true, defaultValue: '#', placeholder: 'sensors/+/temp', description: 'Subscription filter; + and # wildcards are supported.' }),
             configField({ key: 'qos', label: 'QoS', type: 'select', defaultValue: '0', options: [
                 { label: '0', value: '0' },
@@ -757,7 +778,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'username', label: 'Username', type: 'text' }),
             configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' })
         ],
-        defaultConfig: { url: 'mqtt://localhost:1883', topic: '#', qos: '0' }
+        defaultConfig: { url: '', topic: '#', qos: '0' }
     },
     {
         type: 'tcp-out',
@@ -855,7 +876,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'url', label: 'Broker URL', type: 'text', required: true, defaultValue: 'mqtt://localhost:1883', placeholder: 'mqtt://broker:1883', description: 'mqtt:// or mqtts:// (TLS) broker URL.' }),
+            configField({ key: 'mqtt', label: 'Broker config', type: 'text', placeholder: 'mqtt_1', description: 'Id of an MQTT broker config node shared by every MQTT node; inline settings below override it.' }),
+            configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', description: 'Inline override; prefer an MQTT broker config node.' }),
             configField({ key: 'topic', label: 'Topic', type: 'text', required: true, placeholder: 'sensors/temp' }),
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
             configField({ key: 'qos', label: 'QoS', type: 'select', defaultValue: '0', options: [
@@ -868,7 +890,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'username', label: 'Username', type: 'text' }),
             configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' })
         ],
-        defaultConfig: { url: 'mqtt://localhost:1883', topic: '', payload: 'payload', qos: '0', retain: false }
+        defaultConfig: { url: '', topic: '', payload: 'payload', qos: '0', retain: false }
     },
     {
         type: 'trigger',

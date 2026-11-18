@@ -131,11 +131,11 @@ export interface WorkflowWebSocketSendRequest {
     tls?: WorkflowTlsOptions;
 }
 
-/** Config nodes (`tls`, ...) available to the runtime by id. */
+/** Config nodes (`tls`, `mqtt`) available to the runtime by id. */
 export function configNodeMap(definition: VisualWorkflowDefinition | undefined): Record<string, any> {
     const nodes: Record<string, any> = {};
     (definition?.nodes || []).forEach(node => {
-        if (node && node.id && node.type === 'tls') {
+        if (node && node.id && (node.type === 'tls' || node.type === 'mqtt')) {
             nodes[node.id] = node.config || {};
         }
     });

@@ -603,7 +603,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 60 registered node types by label, description or type,
+- searchable palette: filter 61 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -802,6 +802,29 @@ POST /api/deployments/stop    # stop all or the given workflowIds
 
 `mqtt-in` and `mqtt-out` speak MQTT 3.1.1 over `mqtt://` (1883) or `mqtts://`
 (8883, TLS) with optional username/password (`{{credential:name}}` works).
+
+Broker settings live in an **`mqtt` config node** so they are configured once:
+
+```json
+{ "id": "mqtt_1", "type": "mqtt",
+  "config": { "url": "mqtts://broker:8883", "clientId": "workflows",
+              "username": "{{credential:mqtt-user}}", "password": "{{credential:mqtt-pass}}",
+              "tls": "tls_1", "keepalive": 60 } }
+```
+
+`mqtt-in` / `mqtt-out` reference it with `"mqtt": "mqtt_1"` and only carry the
+per-node topic/payload. Inline `url`/credentials still work and override the
+config node, so existing workflows keep running.
+
+Sharing semantics (mirrors the microservice subscriber):
+
+- one broker connection per config node, shared by every `mqtt-in`/`mqtt-out`
+  (and by the inbound runner and the host publisher)
+- one broker subscription per `(config, topic)`; multiple listeners on the same
+  topic receive messages through handler fan-out
+- the subscription is released (UNSUBSCRIBE) only when the last listener stops
+- a connection timeout (`connectTimeout`, default 10s) fails fast instead of
+  hanging when the broker is unreachable
 
 - `mqtt-in` is a host listener: `WorkflowInboundRunner` connects, subscribes and
   starts one run per message with `context.inbound = { transport: 'mqtt', topic,

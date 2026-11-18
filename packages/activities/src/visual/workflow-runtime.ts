@@ -58,6 +58,53 @@ export interface VisualNodeRuntimeHost {
     resolveDefinition?(id: string): Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
 }
 
+export interface WorkflowMqttSettings {
+    url: string;
+    topic: string;
+    qos: number;
+    clientId?: string;
+    username?: string;
+    password?: string;
+    tls?: { ca?: string; cert?: string; key?: string; servername?: string; rejectUnauthorized?: boolean };
+}
+
+/**
+ * Resolve MQTT settings for a node. Prefer a shared `mqtt` config node
+ * (`config.mqtt = '<id>'`) so the broker URL, identity and TLS are configured
+ * once; node-level values still win when present (backwards compatible with
+ * workflows that inline the URL).
+ */
+export async function resolveMqttConfig(
+    config: Record<string, any>,
+    context: ActivityContext
+): Promise<WorkflowMqttSettings> {
+    const id = String(config?.mqtt || '').trim();
+    const nodes = (context as any)?.configNodes || {};
+    const shared = id ? nodes[id] : undefined;
+    if (id && !shared) {
+        throw new Error(`MQTT config not found: ${id}. Add an mqtt config node or inline the broker settings.`);
+    }
+    const pick = (key: string): any => {
+        const local = config?.[key];
+        if (local !== undefined && local !== null && local !== '') {
+            return local;
+        }
+        return shared?.[key];
+    };
+    const url = String(await resolveCredentialValue(pick('url'), context) ?? '').trim();
+    const topic = String(await resolveCredentialValue(pick('topic'), context) ?? '').trim();
+    const tlsId = String(pick('tls') || '').trim();
+    return {
+        url,
+        topic,
+        qos: Number(pick('qos')) || 0,
+        clientId: pick('clientId') ? String(pick('clientId')) : undefined,
+        username: String(await resolveCredentialValue(pick('username'), context) ?? '') || undefined,
+        password: String(await resolveCredentialValue(pick('password'), context) ?? '') || undefined,
+        tls: tlsId ? await resolveTlsOptions({ tls: tlsId }, context) : undefined
+    };
+}
+
 /**
  * Resolve the TLS options referenced by a node's `tls` field. The referenced
  * `tls` config node lives in the workflow definition and is exposed to the
@@ -1059,17 +1106,29 @@ export async function executeVisualNode(
                 return { success: false, error: error as Error, data: { nodeId: node.id, transport } };
             }
         }
+        case 'mqtt':
         case 'tls': {
-            // Config node: it only carries TLS options for other nodes.
+            // Config node: it only carries settings for other nodes.
             return {
                 success: true,
-                data: { nodeId: node.id, config: true, skipped: true, reason: 'TLS config is consumed by outbound nodes' }
+                data: {
+                    nodeId: node.id,
+                    config: true,
+                    skipped: true,
+                    reason: `${node.type} config is consumed by other nodes`
+                }
             };
         }
         case 'mqtt-out': {
             const publish = (context as any).mqttPublish;
-            const url = String(await resolveCredentialValue(config.url, context) ?? '').trim();
-            const topic = String(await resolveCredentialValue(config.topic, context) ?? '').trim();
+            let settings: WorkflowMqttSettings;
+            try {
+                settings = await resolveMqttConfig(config, context);
+            } catch (error) {
+                return { success: false, error: error as Error, data: { nodeId: node.id } };
+            }
+            const url = settings.url;
+            const topic = settings.topic;
             if (typeof publish !== 'function') {
                 return {
                     success: false,
@@ -1089,19 +1148,16 @@ export async function executeVisualNode(
             }
             const value = resolveWorkflowValue(config.payload === undefined ? 'payload' : config.payload, context);
             const payload = typeof value === 'string' ? value : JSON.stringify(value ?? null);
-            const username = String(await resolveCredentialValue(config.username, context) ?? '');
-            const password = String(await resolveCredentialValue(config.password, context) ?? '');
-            const tls = await resolveTlsOptions(config, context);
             await publish({
                 url,
                 topic,
                 payload,
-                qos: Number(config.qos) || 0,
+                qos: settings.qos,
                 retain: config.retain === true,
-                clientId: config.clientId ? String(config.clientId) : undefined,
-                username: username || undefined,
-                password: password || undefined,
-                tls
+                clientId: settings.clientId,
+                username: settings.username,
+                password: settings.password,
+                tls: settings.tls
             });
             return {
                 success: true,

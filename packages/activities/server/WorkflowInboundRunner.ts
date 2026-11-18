@@ -3,7 +3,9 @@ import * as net from 'node:net';
 import { ActivityContext, ActivityResult } from '../src/activities/Activity';
 import { VisualWorkflowDefinition, WorkflowExecutionOptions } from '../src/visual/types';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
-import { WorkflowMqttClient } from './WorkflowMqtt';
+import { sharedMqttRegistry, WorkflowMqttRegistry } from './WorkflowMqtt';
+import { resolveMqttConfig } from '../src/visual/workflow-runtime';
+import { configNodeMap } from '../src/visual/VisualWorkflowService';
 
 /** Message delivered to a `tcp-in` / `udp-in` node through `context.inbound`. */
 export interface WorkflowInboundMessage {
@@ -24,6 +26,12 @@ export interface WorkflowInboundOptions {
     execution?: WorkflowExecutionOptions;
     onResult?: (result: ActivityResult, message: WorkflowInboundMessage) => void;
     onError?: (error: Error, message?: WorkflowInboundMessage) => void;
+    /** Config nodes (`mqtt`, `tls`) from the workflow definition. */
+    configNodes?: Record<string, any>;
+    /** Credential lookup for `{{credential:name}}` values in config nodes. */
+    credentialResolver?: (name: string) => Promise<string | undefined> | string | undefined;
+    /** Share one broker connection across listeners (defaults to the process registry). */
+    mqttRegistry?: WorkflowMqttRegistry;
 }
 
 export interface WorkflowInboundHandle {
@@ -138,7 +146,9 @@ export class WorkflowInboundRunner {
             }
         };
 
-        const mqttClients: WorkflowMqttClient[] = [];
+        const mqttRegistry = options.mqttRegistry || sharedMqttRegistry;
+        const configNodes = options.configNodes || configNodeMap(definition);
+        const mqttUnsubscribes: Array<() => Promise<void>> = [];
         const inboundNodes = (definition.nodes || []).filter(node =>
             node.type === 'tcp-in' || node.type === 'udp-in'
             || node.type === 'websocket-in' || node.type === 'mqtt-in'
@@ -182,23 +192,31 @@ export class WorkflowInboundRunner {
                     throw error;
                 }
             } else if (node.type === 'mqtt-in') {
-                const url = String(config.url || '').trim();
-                const topic = String(config.topic || '').trim();
-                if (!url || !topic) {
+                let settings;
+                try {
+                    settings = await resolveMqttConfig(config, {
+                        ...(options.context || {}),
+                        configNodes,
+                        resolveCredential: options.credentialResolver
+                    } as any);
+                } catch (error) {
                     await this.stopListeners(listeners, sockets);
-                    mqttClients.forEach(client => client.close());
+                    for (const off of mqttUnsubscribes) {
+                        await off().catch(() => undefined);
+                    }
+                    throw error;
+                }
+                if (!settings.url || !settings.topic) {
+                    await this.stopListeners(listeners, sockets);
+                    for (const off of mqttUnsubscribes) {
+                        await off().catch(() => undefined);
+                    }
                     throw new Error('MQTT in needs a broker URL and a topic.');
                 }
-                const client = new WorkflowMqttClient({
-                    url,
-                    clientId: config.clientId ? String(config.clientId) : undefined,
-                    username: config.username ? String(config.username) : undefined,
-                    password: config.password ? String(config.password) : undefined
-                });
                 try {
-                    // `subscribe` connects and waits for SUBACK so `start()`
-                    // only resolves once the listener is really active.
-                    await client.subscribe(topic, Number(config.qos) === 1 ? 1 : 0, message => {
+                    // One broker subscription per topic; listeners sharing the
+                    // same config reuse the connection and fan out here.
+                    const off = await mqttRegistry.subscribe(settings, settings.topic, settings.qos === 1 ? 1 : 0, message => {
                         void dispatch(
                             node.id,
                             'mqtt',
@@ -208,16 +226,22 @@ export class WorkflowInboundRunner {
                             message.topic
                         );
                     });
+                    mqttUnsubscribes.push(off);
                 } catch (error) {
-                    client.close();
                     await this.stopListeners(listeners, sockets);
-                    mqttClients.forEach(entry => entry.close());
+                    for (const entry of mqttUnsubscribes) {
+                        await entry().catch(() => undefined);
+                    }
                     throw error;
                 }
-                mqttClients.push(client);
                 listeners.push({
                     port: 0,
-                    close: async () => client.close()
+                    close: async () => {
+                        const off = mqttUnsubscribes.shift();
+                        if (off) {
+                            await off();
+                        }
+                    }
                 });
             } else if (node.type === 'websocket-in') {
                 let WebSocketServer: any;

@@ -4,6 +4,7 @@ import { createInjector, Injector, InjectUtil } from '@tsdi/ioc';
 import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowNodeRegistry } from '../src/visual/node-registry';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
+import { WorkflowMqttRegistry, WorkflowMqttTransport } from '../server/WorkflowMqtt';
 import {
     connectPacket,
     decodePublish,
@@ -40,6 +41,8 @@ function frame(header: number, ...parts: Buffer[]): Buffer {
 interface FakeBroker {
     url: string;
     port: number;
+    connections: number;
+    unsubscribes: number;
     publishes: Array<{ topic: string; payload: string }>;
     subscriptions: string[];
     send(topic: string, payload: string): void;
@@ -51,7 +54,9 @@ async function startBroker(): Promise<FakeBroker> {
     const publishes: Array<{ topic: string; payload: string }> = [];
     const subscriptions: string[] = [];
     const sockets = new Set<net.Socket>();
+    const counters = { connections: 0, unsubscribes: 0 };
     const server = net.createServer(socket => {
+        counters.connections += 1;
         sockets.add(socket);
         socket.on('close', () => sockets.delete(socket));
         socket.on('error', () => sockets.delete(socket));
@@ -83,6 +88,8 @@ async function startBroker(): Promise<FakeBroker> {
                     socket.write(frame(0x90, Buffer.from([
                         (packetId >> 8) & 0xff, packetId & 0xff, 0x01
                     ])));
+                } else if (type === 10) { // UNSUBSCRIBE
+                    counters.unsubscribes += 1;
                 } else if (type === 3) { // PUBLISH
                     const message = decodePublish(packet);
                     publishes.push({ topic: message.topic, payload: message.payload });
@@ -100,6 +107,12 @@ async function startBroker(): Promise<FakeBroker> {
     return {
         url: `mqtt://127.0.0.1:${port}`,
         port,
+        get connections() {
+            return counters.connections;
+        },
+        get unsubscribes() {
+            return counters.unsubscribes;
+        },
         publishes,
         subscriptions,
         send(topic: string, payload: string) {
@@ -307,6 +320,126 @@ describe('Workflow MQTT transport', () => {
             servername: 'mqtt.example.com',
             rejectUnauthorized: false
         });
+    });
+
+    it('shares one broker connection for nodes referencing the same config', async () => {
+        const broker = await startBroker();
+        const registry = new WorkflowMqttRegistry();
+        const injector: Injector = createInjector();
+        InjectUtil.use(injector, WorkflowModule);
+        const nodeRegistry = injector.get(WorkflowNodeRegistry);
+        const service = injector.get(VisualWorkflowService);
+        const transport = new WorkflowMqttTransport(registry);
+        service.setMqttPublisher(message => transport.publish(message));
+        const seen: any[] = [];
+        const runner = new WorkflowInboundRunner(service);
+        const definition = {
+            id: 'shared-mqtt',
+            name: 'Shared MQTT',
+            nodes: [
+                nodeRegistry.createNode('mqtt', { x: 0, y: 0 }, {
+                    id: 'mqtt_1',
+                    config: { url: broker.url, clientId: 'shared-client' }
+                }),
+                nodeRegistry.createNode('mqtt-in', { x: 0, y: 0 }, {
+                    id: 'mqtt_in',
+                    config: { mqtt: 'mqtt_1', topic: 'sensors/#', qos: '0' }
+                }),
+                nodeRegistry.createNode('task', { x: 200, y: 0 }, {
+                    id: 'capture',
+                    config: { action: 'capture' }
+                }),
+                nodeRegistry.createNode('mqtt-out', { x: 0, y: 200 }, {
+                    id: 'mqtt_out',
+                    config: { mqtt: 'mqtt_1', topic: 'out/result', payload: 'payload' }
+                })
+            ],
+            connections: [{
+                id: 'c1',
+                sourceNodeId: 'mqtt_in',
+                sourcePort: 'out',
+                targetNodeId: 'capture',
+                targetPort: 'in'
+            }]
+        };
+        const handle = await runner.start(definition, {
+            mqttRegistry: registry,
+            context: {
+                actions: {
+                    capture: (ctx: any) => {
+                        seen.push(ctx.payload);
+                        return ctx.payload;
+                    }
+                }
+            }
+        });
+        try {
+            // Inbound subscription and outbound publish share one connection.
+            expect(registry.connectionCount).toBe(1);
+            expect(broker.connections).toBe(1);
+            const published = await service.execute(definition, { payload: { ok: 1 } }, {});
+            expect(published.success).toBe(true);
+            await withTimeout(new Promise<void>(resolve => {
+                const tick = () => broker.publishes.length ? resolve() : setTimeout(tick, 10);
+                tick();
+            }));
+            expect(broker.connections).toBe(1);
+            expect(broker.publishes).toContainEqual({ topic: 'out/result', payload: '{"ok":1}' });
+
+            broker.send('sensors/a', '1');
+            await withTimeout(new Promise<void>(resolve => {
+                const tick = () => seen.length ? resolve() : setTimeout(tick, 10);
+                tick();
+            }));
+            expect(seen[0]).toBe(1);
+        } finally {
+            await handle.stop();
+            transport.onDestroy();
+            registry.close();
+            await broker.close();
+        }
+    });
+
+    it('deduplicates subscriptions for nodes listening on the same topic', async () => {
+        const broker = await startBroker();
+        const registry = new WorkflowMqttRegistry();
+        const injector: Injector = createInjector();
+        InjectUtil.use(injector, WorkflowModule);
+        const nodeRegistry = injector.get(WorkflowNodeRegistry);
+        const service = injector.get(VisualWorkflowService);
+        const hits: string[] = [];
+        const runner = new WorkflowInboundRunner(service);
+        const definition = {
+            id: 'shared-topic',
+            name: 'Shared topic',
+            nodes: [
+                nodeRegistry.createNode('mqtt-in', { x: 0, y: 0 }, {
+                    id: 'in_a', config: { url: broker.url, topic: 'sensors/temp' }
+                }),
+                nodeRegistry.createNode('mqtt-in', { x: 0, y: 120 }, {
+                    id: 'in_b', config: { url: broker.url, topic: 'sensors/temp' }
+                })
+            ],
+            connections: []
+        };
+        const handle = await runner.start(definition, {
+            mqttRegistry: registry,
+            onResult: (_result, message) => hits.push(message.nodeId)
+        });
+        try {
+            // Both listeners ride the same broker subscription.
+            expect(broker.subscriptions).toEqual(['sensors/temp']);
+            broker.send('sensors/temp', '21');
+            await withTimeout(new Promise<void>(resolve => {
+                const tick = () => hits.length >= 2 ? resolve() : setTimeout(tick, 10);
+                tick();
+            }));
+            expect(hits.sort()).toEqual(['in_a', 'in_b']);
+        } finally {
+            await handle.stop();
+            registry.close();
+            await broker.close();
+        }
     });
 
     it('reports a clear error when the host has no MQTT transport', async () => {

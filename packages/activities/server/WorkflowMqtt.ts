@@ -87,6 +87,8 @@ export interface MqttConnectOptions {
     username?: string;
     password?: string;
     keepalive?: number;
+    /** Milliseconds to wait for the broker before failing (default 10000). */
+    connectTimeout?: number;
     /** Reject self-signed certificates (mqtts only). */
     rejectUnauthorized?: boolean;
     /** Client certificate / CA options from a TLS config node. */
@@ -254,7 +256,17 @@ export class WorkflowMqttClient {
                 : net.connect({ host: parts.host, port: parts.port });
             this.socket = socket;
             this.buffer = Buffer.alloc(0);
+            const timeoutMs = Math.max(0, Number(this.options.connectTimeout) || 10000);
+            const connectTimer = timeoutMs
+                ? setTimeout(() => fail(new Error(`MQTT connection timed out after ${timeoutMs}ms (${parts.host}:${parts.port})`)), timeoutMs)
+                : undefined;
+            const clearConnectTimer = () => {
+                if (connectTimer) {
+                    clearTimeout(connectTimer);
+                }
+            };
             const fail = (error: Error) => {
+                clearConnectTimer();
                 this.cleanupSocket();
                 reject(error);
             };
@@ -270,6 +282,7 @@ export class WorkflowMqttClient {
                 socket.write(connectPacket(this.options));
                 this.awaitAck(0).then(
                     () => {
+                        clearConnectTimer();
                         this.startKeepalive();
                         void this.resubscribeAll();
                         resolve();
@@ -293,6 +306,29 @@ export class WorkflowMqttClient {
         } else {
             // Extra handlers for the same filter still receive messages.
             this.subscriptions.push({ filter: topic, handler });
+        }
+    }
+
+    /** Stop delivering to one handler for a filter. */
+    async unsubscribe(topic: string, handler?: (message: MqttMessage) => void): Promise<void> {
+        const before = this.subscriptions.length;
+        for (let index = this.subscriptions.length - 1; index >= 0; index--) {
+            const entry = this.subscriptions[index];
+            if (entry.filter !== topic) {
+                continue;
+            }
+            if (handler && entry.handler !== handler) {
+                continue;
+            }
+            this.subscriptions.splice(index, 1);
+        }
+        if (before === this.subscriptions.length) {
+            return;
+        }
+        const stillUsed = this.subscriptions.some(entry => entry.filter === topic);
+        if (!stillUsed && this.socket && !this.socket.destroyed) {
+            const packetId = this.packetId();
+            this.socket.write(packet(0xa2, Buffer.from([(packetId >> 8) & 0xff, packetId & 0xff]), encodeString(topic)));
         }
     }
 
@@ -470,10 +506,94 @@ export class WorkflowMqttClient {
     }
 }
 
+/**
+ * Shared MQTT connections and topic subscriptions.
+ *
+ * Node-RED keeps one broker connection per config node and fans messages out to
+ * every node listening on a topic; this registry does the same: one client per
+ * (url, identity, TLS) key, one broker subscription per topic, and handler
+ * fan-out. Inbound listeners and outbound publishes therefore share a socket
+ * instead of dialing the broker once per node or per run.
+ */
+export class WorkflowMqttRegistry {
+    private readonly subscriptions = new Map<string, Map<string, Set<(message: MqttMessage) => void>>>();
+
+    constructor(private readonly pool: WorkflowMqttPool = new WorkflowMqttPool()) { }
+
+    get connectionCount(): number {
+        return this.pool.size;
+    }
+
+    /** Use (and lazily connect) the shared client for these options. */
+    client(options: MqttConnectOptions): WorkflowMqttClient {
+        return this.pool.client(options);
+    }
+
+    /** Subscribe once per topic, fanning messages out to every handler. */
+    async subscribe(
+        options: MqttConnectOptions,
+        topic: string,
+        qos: 0 | 1,
+        handler: (message: MqttMessage) => void
+    ): Promise<() => Promise<void>> {
+        const client = this.pool.client(options);
+        await client.connect();
+        const key = mqttPoolKey(options);
+        let topics = this.subscriptions.get(key);
+        if (!topics) {
+            topics = new Map();
+            this.subscriptions.set(key, topics);
+        }
+        let handlers = topics.get(topic);
+        if (!handlers) {
+            handlers = new Set();
+            topics.set(topic, handlers);
+            await client.subscribe(topic, qos, message => {
+                const listeners = topics!.get(topic);
+                if (!listeners) {
+                    return;
+                }
+                for (const listener of [...listeners]) {
+                    try {
+                        listener(message);
+                    } catch {
+                        // A throwing node must not break the shared socket.
+                    }
+                }
+            });
+        }
+        handlers.add(handler);
+        return async () => {
+            const current = this.subscriptions.get(key)?.get(topic);
+            if (!current) {
+                return;
+            }
+            current.delete(handler);
+            if (current.size) {
+                return;
+            }
+            this.subscriptions.get(key)?.delete(topic);
+            if (!this.subscriptions.get(key)?.size) {
+                this.subscriptions.delete(key);
+            }
+            await client.unsubscribe(topic);
+        };
+    }
+
+    async publish(options: MqttConnectOptions, message: MqttPublishOptions): Promise<void> {
+        await this.pool.client(options).publish(message);
+    }
+
+    close(): void {
+        this.pool.close();
+        this.subscriptions.clear();
+    }
+}
+
 /** Host transport for `mqtt-out`; closes its client pool with the app. */
 @Injectable()
 export class WorkflowMqttTransport implements OnDestroy {
-    private readonly pool = new WorkflowMqttPool();
+    constructor(private readonly registry: WorkflowMqttRegistry = sharedMqttRegistry) { }
 
     async publish(message: {
         url: string;
@@ -486,14 +606,13 @@ export class WorkflowMqttTransport implements OnDestroy {
         password?: string;
         tls?: MqttTlsOptions;
     }): Promise<void> {
-        const client = this.pool.client({
+        await this.registry.publish({
             url: message.url,
             clientId: message.clientId,
             username: message.username,
             password: message.password,
             tls: message.tls
-        });
-        await client.publish({
+        }, {
             topic: message.topic,
             payload: message.payload,
             qos: Number(message.qos) === 1 ? 1 : 0,
@@ -502,22 +621,31 @@ export class WorkflowMqttTransport implements OnDestroy {
     }
 
     onDestroy(): void {
-        this.pool.close();
+        this.registry.close();
     }
+}
+
+/** Stable key for one shared connection (url + identity + TLS). */
+export function mqttPoolKey(options: MqttConnectOptions): string {
+    return [
+        options.url,
+        options.username || '',
+        options.password || '',
+        options.clientId || '',
+        options.tls ? JSON.stringify(options.tls) : ''
+    ].join('|');
 }
 
 /** Reuse one client per URL/credential pair for outbound publishes. */
 export class WorkflowMqttPool {
     private readonly clients = new Map<string, WorkflowMqttClient>();
 
+    get size(): number {
+        return this.clients.size;
+    }
+
     client(options: MqttConnectOptions): WorkflowMqttClient {
-        const key = [
-            options.url,
-            options.username || '',
-            options.password || '',
-            options.clientId || '',
-            options.tls ? JSON.stringify(options.tls) : ''
-        ].join('|');
+        const key = mqttPoolKey(options);
         let client = this.clients.get(key);
         if (!client) {
             client = new WorkflowMqttClient(options);
@@ -533,3 +661,6 @@ export class WorkflowMqttPool {
         this.clients.clear();
     }
 }
+
+/** Process-wide registry shared by the inbound runner and outbound nodes. */
+export const sharedMqttRegistry = new WorkflowMqttRegistry();

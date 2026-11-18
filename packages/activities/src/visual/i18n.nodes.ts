@@ -311,6 +311,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "tls": {
                 "label": "TLS config",
                 "description": "Reusable TLS options for outbound nodes"
+            },
+            "mqtt": {
+                "label": "MQTT broker",
+                "description": "Shared MQTT broker connection for MQTT nodes"
             }
         },
         "field": {
@@ -720,7 +724,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "qos": "QoS",
                 "clientId": "Client id",
                 "username": "Username",
-                "password": "Password"
+                "password": "Password",
+                "mqtt": "Broker config"
             },
             "mqtt-out": {
                 "url": "Broker URL",
@@ -731,7 +736,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "clientId": "Client id",
                 "username": "Username",
                 "password": "Password",
-                "tls": "TLS config"
+                "tls": "TLS config",
+                "mqtt": "Broker config"
             },
             "tcp-out": {
                 "host": "Host",
@@ -757,6 +763,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "key": "Client key",
                 "servername": "Server name",
                 "rejectUnauthorized": "Verify certificate"
+            },
+            "mqtt": {
+                "url": "Broker URL",
+                "clientId": "Client id",
+                "username": "Username",
+                "password": "Password",
+                "tls": "TLS config",
+                "keepalive": "Keepalive"
             }
         },
         "fieldPlaceholder": {
@@ -995,13 +1009,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "mqtt-in": {
                 "url": "mqtt://broker:1883",
                 "topic": "sensors/+/temp",
-                "clientId": "auto"
+                "clientId": "auto",
+                "mqtt": "mqtt_1"
             },
             "mqtt-out": {
                 "url": "mqtt://broker:1883",
                 "topic": "sensors/temp",
                 "clientId": "auto",
-                "tls": "tls_1"
+                "tls": "tls_1",
+                "mqtt": "mqtt_1"
             },
             "tcp-out": {
                 "host": "127.0.0.1",
@@ -1016,6 +1032,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "tls": {
                 "servername": "broker.example.com"
+            },
+            "mqtt": {
+                "url": "mqtt://broker:1883",
+                "clientId": "auto",
+                "tls": "tls_1"
             }
         },
         "fieldDescription": {
@@ -1363,15 +1384,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "reply": "Send the final node result back to the client."
             },
             "mqtt-in": {
-                "url": "mqtt:// broker, or mqtts:// for TLS.",
+                "url": "Inline override; prefer an MQTT broker config node.",
                 "topic": "Subscription filter; + and # wildcards are supported.",
                 "qos": "Delivery guarantee for the subscription.",
                 "clientId": "Optional client id; generated when empty.",
                 "username": "Broker username.",
-                "password": "Broker password. Use {{credential:name}} to read a stored credential."
+                "password": "Broker password. Use {{credential:name}} to read a stored credential.",
+                "mqtt": "Id of an MQTT broker config node shared by every MQTT node; inline settings below override it."
             },
             "mqtt-out": {
-                "url": "mqtt:// broker, or mqtts:// for TLS.",
+                "url": "Inline override; prefer an MQTT broker config node.",
                 "topic": "Topic to publish to.",
                 "payload": "Context path used as the message payload.",
                 "qos": "Delivery guarantee for the publish.",
@@ -1379,7 +1401,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "clientId": "Optional client id; generated when empty.",
                 "username": "Broker username.",
                 "password": "Broker password. Use {{credential:name}} to read a stored credential.",
-                "tls": "Id of a TLS config node; mqtts:// already encrypts the connection."
+                "tls": "Id of a TLS config node; mqtts:// already encrypts the connection.",
+                "mqtt": "Id of an MQTT broker config node shared by every MQTT node; inline settings below override it."
             },
             "tcp-out": {
                 "payload": "Context path used as the payload.",
@@ -1397,6 +1420,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "ca": "PEM chain; use {{credential:name}} to read a stored secret.",
                 "cert": "PEM certificate; use {{credential:name}} to read a stored secret.",
                 "key": "PEM private key; use {{credential:name}} to read a stored secret."
+            },
+            "mqtt": {
+                "url": "mqtt:// broker, or mqtts:// for TLS.",
+                "clientId": "Optional client id; generated when empty.",
+                "username": "Broker username.",
+                "password": "Broker password. Use {{credential:name}} to read a stored credential.",
+                "tls": "Id of a TLS config node for client certificates.",
+                "keepalive": "Seconds between keepalive pings."
             }
         },
         "group": {
@@ -1803,6 +1834,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "tls": {
                 "label": "TLS 配置",
                 "description": "供出站节点复用的 TLS 选项"
+            },
+            "mqtt": {
+                "label": "MQTT Broker",
+                "description": "供 MQTT 节点共用的 Broker 连接"
             }
         },
         "field": {
@@ -2212,7 +2247,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "qos": "QoS",
                 "clientId": "客户端 ID",
                 "username": "用户名",
-                "password": "密码"
+                "password": "密码",
+                "mqtt": "Broker 配置"
             },
             "mqtt-out": {
                 "url": "Broker 地址",
@@ -2223,7 +2259,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "clientId": "客户端 ID",
                 "username": "用户名",
                 "password": "密码",
-                "tls": "TLS 配置"
+                "tls": "TLS 配置",
+                "mqtt": "Broker 配置"
             },
             "tcp-out": {
                 "host": "主机",
@@ -2249,6 +2286,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "key": "客户端私钥",
                 "servername": "服务端名称",
                 "rejectUnauthorized": "校验证书"
+            },
+            "mqtt": {
+                "url": "Broker 地址",
+                "clientId": "客户端 ID",
+                "username": "用户名",
+                "password": "密码",
+                "tls": "TLS 配置",
+                "keepalive": "心跳间隔"
             }
         },
         "fieldPlaceholder": {
@@ -2471,13 +2516,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "mqtt-in": {
                 "url": "mqtt://broker:1883",
                 "topic": "sensors/+/temp",
-                "clientId": "auto"
+                "clientId": "auto",
+                "mqtt": "mqtt_1"
             },
             "mqtt-out": {
                 "url": "mqtt://broker:1883",
                 "topic": "sensors/temp",
                 "clientId": "auto",
-                "tls": "tls_1"
+                "tls": "tls_1",
+                "mqtt": "mqtt_1"
             },
             "tcp-out": {
                 "host": "127.0.0.1",
@@ -2492,6 +2539,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "tls": {
                 "servername": "broker.example.com"
+            },
+            "mqtt": {
+                "url": "mqtt://broker:1883",
+                "clientId": "auto",
+                "tls": "tls_1"
             }
         },
         "fieldDescription": {
@@ -2839,15 +2891,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "reply": "把最终节点结果回写给客户端。"
             },
             "mqtt-in": {
-                "url": "mqtt:// 地址；TLS 使用 mqtts://。",
+                "url": "内联覆盖项；建议改用 MQTT Broker 配置节点。",
                 "topic": "订阅过滤器，支持 + 与 # 通配符。",
                 "qos": "订阅的投递保证级别。",
                 "clientId": "可选的客户端 ID；留空时自动生成。",
                 "username": "Broker 用户名。",
-                "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。"
+                "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。",
+                "mqtt": "供所有 MQTT 节点共用的 Broker 配置节点 id；下方内联字段作为覆盖项。"
             },
             "mqtt-out": {
-                "url": "mqtt:// 地址；TLS 使用 mqtts://。",
+                "url": "内联覆盖项；建议改用 MQTT Broker 配置节点。",
                 "topic": "发布到的主题。",
                 "payload": "作为消息载荷的上下文路径。",
                 "qos": "发布的投递保证级别。",
@@ -2855,7 +2908,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "clientId": "可选的客户端 ID；留空时自动生成。",
                 "username": "Broker 用户名。",
                 "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。",
-                "tls": "TLS 配置节点 id；mqtts:// 本身已加密连接。"
+                "tls": "TLS 配置节点 id；mqtts:// 本身已加密连接。",
+                "mqtt": "供所有 MQTT 节点共用的 Broker 配置节点 id；下方内联字段作为覆盖项。"
             },
             "tcp-out": {
                 "payload": "作为载荷的上下文路径。",
@@ -2873,6 +2927,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "ca": "PEM 证书链；使用 {{credential:name}} 读取已保存的凭据。",
                 "cert": "PEM 证书；使用 {{credential:name}} 读取已保存的凭据。",
                 "key": "PEM 私钥；使用 {{credential:name}} 读取已保存的凭据。"
+            },
+            "mqtt": {
+                "url": "mqtt:// 地址；TLS 使用 mqtts://。",
+                "clientId": "可选的客户端 ID；留空时自动生成。",
+                "username": "Broker 用户名。",
+                "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。",
+                "tls": "用于客户端证书的 TLS 配置节点 id。",
+                "keepalive": "心跳间隔（秒）。"
             }
         },
         "group": {
