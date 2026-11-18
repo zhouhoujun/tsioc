@@ -1,5 +1,5 @@
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
-import { AGENT_APP_RPC_METHODS } from './capabilities';
+import { AGENT_APP_RPC_CAPABILITIES, AGENT_APP_RPC_METHODS } from './capabilities';
 import { Buffer } from 'buffer';
 import { UuidGenerator } from '@tsdi/core';
 import { AGENT_OPTIONS, AgentMessage, AgentOptions, AgentRuntime, AgentTurnCancelledError, AgentTurnMessageInput, AuditSink, applyNavFilter, buildAgentsRuleDraft, buildCompactionHistoryTrend, buildNavTree, buildSummaryQualityTrend, CompactionHistoryStore, defaultAgentOptions, defaultAgentProviderRegistry, DelegationGraphStore, diffHarnessProfiles, getBuiltinHarnessProfiles, HarnessProfile, MemoryStore, MemoryCommandOutputStore, NavFilter, NavSessionSource, normalizeAgentWorkspaceIdentity, normalizeDelegationMode, ProjectMemoryService, resolveHarnessProfile, ReviewFindingsStore, SessionStore, SummaryQualityStore, TimelineHistoryStore, CommandExchangeStore, CommandExchangeRecord, CommandExchangeStaleError, parseCommandExchangeRecord, redactCommandExchangeRecord, ApprovalManager, ToolRegistry, TurnDiagnosticsStore, WeaknessMiner, normalizeAgentMessageParts, snapshotHarnessProfile, CommandOutputQuery, AgentConsoleCommandOutputHistoryEntry, redactCommandOutputEntry, normalizeAgentRpcRequestMeta, COMMAND_EXCHANGE_STORE, BACKGROUND_TASK_HISTORY_STORE, BackgroundTaskHistoryStore, BackgroundTaskPageOptions, collectDelegationSessionIds, ExchangeMetrics, ExchangeMetricsSnapshot, AGENT_WORKSPACE_TRUST } from '@tsdi/agent';
@@ -167,8 +167,11 @@ export class AppRpcServer {
             case 'app.capabilities':
                 return {
                     protocol: 'json-rpc-2.0',
+                    protocolVersion: 1,
                     transports: ['http', 'stdio', 'ws'],
+                    features: { sse: true, ws: true, approvals: true, queue: true },
                     methods: AGENT_APP_RPC_METHODS,
+                    descriptors: AGENT_APP_RPC_CAPABILITIES.list(),
                     streamingMethods: ['run.turn_stream']
                 };
             case 'app.state':

@@ -4781,3 +4781,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   （limit/quota/throttle）；新增 2 个健壮性用例，kit 11、gateway 149、agent-gateway 388 全绿。
 - Gateway P2(a)：kit 新增 `GatewayCapabilityRegistry`（有序、去重、可带 summary/auth），agent-gateway `app.capabilities`
   的 146 个方法移入 `app-rpc/capabilities.ts` 单一注册表（响应不变）；kit 12、agent-gateway 388 通过。
+- Gateway P2(b)：`app.capabilities` 增加 `protocolVersion`、`features`（sse/ws/approvals/queue）与 `descriptors`
+  （来自 kit `GatewayCapabilityRegistry`；`methods` 排序/内容不变）；agent-gateway 388 passing。

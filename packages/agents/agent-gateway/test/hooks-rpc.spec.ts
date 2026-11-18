@@ -66,5 +66,11 @@ export class HooksRpcTest {
         const capabilities = await (server as any).dispatch('app.capabilities', {}, {});
         expect(capabilities.methods).toContain('hooks.list');
         expect(capabilities.methods).toContain('hooks.trust.list');
+        expect(capabilities.protocolVersion).toEqual(1);
+        expect(capabilities.features.sse).toEqual(true);
+        expect(capabilities.descriptors.length).toEqual(capabilities.methods.length);
+        expect(capabilities.descriptors.find((entry: any) => entry.id === 'hooks.list')).toEqual({
+            id: 'hooks.list', kind: 'rpc'
+        });
     }
 }
