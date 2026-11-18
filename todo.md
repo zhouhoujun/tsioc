@@ -4793,3 +4793,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   agent-gateway 复用（删除本地实现）；kit 新增重放/实时 id/循环与 bigint 序列化用例，kit 14、agent-gateway 392。
 - Gateway P2(g)：microservices 路由表新增 `openApiRoutes()`，`GatewayInterceptor.openApiDocument()` 用 kit builder 生成
   OpenAPI（不再只有 agent 侧有文档）；route-table/openapi 用例新增，gateway 150 passing。
+- Gateway P2(h)：admin 增加 `GET /api/gateway-admin/openapi`（由 `GatewayInterceptor.openApiDocument()` 生成），
+  微服务侧 OpenAPI 现在可直接消费；admin 87、gateway 150 passing。

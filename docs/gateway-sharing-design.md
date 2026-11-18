@@ -172,7 +172,8 @@ agent-gateway 全套 **388 passing** 不变。
 > 支持 `Last-Event-ID` 断线重放（按会话过滤，历史 200 条）。第四步：SSE hub 下沉到 kit
 > （`GatewayEventStream`/`stringifyGatewayEvent`），agent-gateway 复用，微服务侧可在需要时直接接入。
 > 第五步：microservices `GatewayRouteTable.openApiRoutes()` + `GatewayInterceptor.openApiDocument()` 使用 kit
-> builder，两个 gateway 现在都能从各自 route registry 生成 OpenAPI。
+> builder，两个 gateway 现在都能从各自 route registry 生成 OpenAPI；admin 通过
+> `GET /api/gateway-admin/openapi` 暴露该文档。
 
 - 单一 **method/route registry**：REST 路由 + JSON-RPC 方法共用 `id/meta/auth/rateLimit` 描述。
 - `app.capabilities` 由 registry 生成（不再手写 allowlist）；OpenAPI 同源生成。

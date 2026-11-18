@@ -20,7 +20,8 @@ surfaces:
 - Rule compiler (`compileGatewayRules`) that turns the workflow into
   `GatewayRuleOptions[]` (AND-combined conditions, `false` port negation).
 - HTTP API (`/api/gateway-admin`) that applies routes/rules to the live
-  `GatewayRuntime` immediately.
+  `GatewayRuntime` immediately, plus `GET /api/gateway-admin/openapi` for the
+  OpenAPI document generated from the compiled route table.
 - Optional static UI feature (`useGatewayAdminUi`).
 
 ## Start a standalone server

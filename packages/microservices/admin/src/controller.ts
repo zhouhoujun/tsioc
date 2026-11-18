@@ -258,6 +258,15 @@ export class GatewayAdminController {
         return this.gateway.previewMatch(request);
     }
 
+    /** OpenAPI document generated from the compiled gateway route table. */
+    @Get('/openapi')
+    openapi() {
+        if (!this.gateway) {
+            throw new BadRequestException('Gateway matching is unavailable in this process');
+        }
+        return this.gateway.openApiDocument();
+    }
+
     @Delete('/routes')
     resetRoutes() {
         if (this.configService) {
