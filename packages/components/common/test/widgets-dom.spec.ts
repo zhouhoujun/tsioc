@@ -14,6 +14,7 @@ import { ToastEntry } from '../toast';
     imports: [ListComponent, SelectComponent, ToastStackComponent],
     template: `
     <list :items="rows" :emptyLabel="emptyLabel" :selectValueAction="selectRow"></list>
+    <list :items="rows" :visibleItems="1" showScrollbar></list>
     <select-list :options="options" :selectedIndex="1" :visibleCount="2"
         ariaLabel="Picker" :fitContent="true"></select-list>
     <toast-stack :items="toasts" :messageWidth="18"></toast-stack>`
@@ -87,6 +88,15 @@ export class CommonWidgetsDomTest {
         await Promise.resolve();
         expect(root.textContent).toContain('Gamma');
         expect(root.textContent).not.toContain('Alpha');
+    }
+
+    @Test('renders a scrollbar when a list is windowed')
+    async listScrollbar() {
+        const ref = await this.mount();
+        const lists = ref.hostView.queryAll(ListComponent) as ComponentRef<ListComponent>[];
+        const root = lists[1].hostView.rootNodes[0] as HTMLElement;
+        expect(root.querySelector('.ui-scrollbar')).toBeTruthy();
+        expect(root.querySelectorAll('.ui-scrollbar-thumb').length).toBeGreaterThan(0);
     }
 
     @Test('exposes the normalized aria label and windows select rows')

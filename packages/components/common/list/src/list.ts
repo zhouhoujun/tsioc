@@ -1,4 +1,5 @@
 import { Attribute, Component, Computed } from '@tsdi/components';
+import { normalizeBoolean } from '../../src/ui';
 
 /** One rendered row of a {@link ListComponent}. */
 export interface ListItem {
@@ -171,6 +172,9 @@ export class ListPager<T extends { id: string } = ListItem> {
             <label class="list-error" v-show="error">{{error}}</label>
             <button class="list-more" v-show="hasMore && !loading && atWindowEnd" @click="loadMore">{{moreLabel}}</button>
         </div>
+        <ui-scrollbar v-if="showScrollbar && windowed" orientation="horizontal"
+            :offset="windowStart" :visible="visibleItems" :total="items.length"
+            :length="scrollbarLength" :ariaLabel="'List scrollbar'"></ui-scrollbar>
         <label class="list-panel-detail" v-for="line in detailLines">{{line}}</label>
         <label class="list-panel-hint" v-show="hint">{{hint}}</label>
         <label class="list-panel-hint" v-show="secondaryHint">{{secondaryHint}}</label>
@@ -216,11 +220,23 @@ export class ListComponent {
     @Attribute() autoLoad = false;
     /** Rows painted at once; 0 paints the whole loaded list. */
     @Attribute() visibleItems = 0;
+    /** Render a horizontal TUI-friendly scrollbar when the list is windowed. */
+    @Attribute() scrollbarLength = 16;
     /** Index of the first painted row inside `items`. */
     @Attribute() windowOffset = 0;
     @Attribute() hasPrevious = false;
     @Attribute() previousCursor?: string;
     protected readonly pager = new ListPager<ListItem>();
+    private _showScrollbar = false;
+
+    @Attribute()
+    get showScrollbar(): boolean { return this._showScrollbar; }
+    set showScrollbar(value: boolean | string) { this._showScrollbar = normalizeBoolean(value); }
+
+    get windowed(): boolean {
+        const size = Math.floor(Number(this.visibleItems) || 0);
+        return size > 0 && this.items.length > size;
+    }
 
     onInit(): void {
         if (this.autoLoad && !this.items.length && this.loadPage) {
