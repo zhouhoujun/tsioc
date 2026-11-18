@@ -34,6 +34,7 @@ export interface AgentConsoleSettingsCenterState {
     settingsCenterMeta: string;
     settingsCenterHint: string;
     settingsCenterPickAction?: (id: string) => void | Promise<void>;
+    settingsCenterSectionPickAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
     closeSettingsCenter(): void;
     syncDerivedInputFocus(): void;
 }
@@ -114,6 +115,7 @@ export function openAgentConsoleSettings(host: AgentConsoleSettingsCenterHost, q
         state.settingsCenterSection = section;
     }
     state.settingsCenterPickAction = (id: string) => applySettingsCenterSelection(host, id);
+    state.settingsCenterSectionPickAction = (id: AgentConsoleSettingsSectionId) => selectSettingsCenterSection(host, id);
     dismissBackgroundPanels(state as any);
     buildAgentConsoleSettingsRows(host);
     state.syncDerivedInputFocus();
@@ -132,6 +134,18 @@ export function moveSettingsCenterSelection(host: AgentConsoleSettingsCenterHost
     const index = (state.settingsCenterIndex + delta + rows.length) % rows.length;
     state.settingsCenterIndex = index;
     rows.forEach((row, rowIndex) => { row.selected = rowIndex === index; });
+}
+
+/** Jump directly to a section (section strip click). */
+export function selectSettingsCenterSection(host: AgentConsoleSettingsCenterHost, id: AgentConsoleSettingsSectionId): void {
+    const state = host.state;
+    if (!AGENT_CONSOLE_SETTINGS_SECTIONS.some(section => section.id === id)) {
+        return;
+    }
+    state.settingsCenterSection = id;
+    state.settingsCenterQuery = '';
+    state.settingsCenterIndex = 0;
+    buildAgentConsoleSettingsRows(host);
 }
 
 export function switchSettingsCenterSection(host: AgentConsoleSettingsCenterHost, delta: number): void {

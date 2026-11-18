@@ -20,7 +20,9 @@ import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
         <label class="dialog-close" data-cell-width="2" @click="close">✕</label>
         <label class="settings-title">{{title}}</label>
         <label class="settings-meta">{{windowMeta}}</label>
-        <label class="settings-sections">{{sectionStrip}}</label>
+        <div class="settings-sections">
+            <span class="settings-section" v-for="entry in sectionEntries" aria-selected="{{entry.active}}" @click="pickSection(entry.id)">{{entry.active ? '[' + entry.label + ']' : entry.label}}<span class="settings-section-sep" v-if="!entry.last"> · </span></span>
+        </div>
         <label class="settings-query" v-if="query">{{query}}</label>
         <div class="settings-rows">
             <label class="settings-row" v-for="row in visibleRows" aria-selected="{{row.selected}}" @click="pick(row.id)">
@@ -44,14 +46,15 @@ export class AgentConsoleSettingsCenterPanelComponent {
 
     get title(): string { return this.state.settingsCenterTitle; }
     get hint(): string { return this.state.settingsCenterHint; }
-    /** Compact section list so the page does not hide the other sections. */
-    get sectionStrip(): string {
-        return AGENT_CONSOLE_SETTINGS_SECTIONS
-            .map(section => {
-                const label = settingsCenterLabel(this.translator, section.labelKey, section.labelFallback);
-                return section.id === this.state.settingsCenterSection ? `[${label}]` : label;
-            })
-            .join(' · ');
+    /** Clickable section strip so the page does not hide the other sections. */
+    get sectionEntries(): Array<{ id: string; label: string; active: boolean; last: boolean }> {
+        const total = AGENT_CONSOLE_SETTINGS_SECTIONS.length;
+        return AGENT_CONSOLE_SETTINGS_SECTIONS.map((section, index) => ({
+            id: section.id,
+            label: settingsCenterLabel(this.translator, section.labelKey, section.labelFallback),
+            active: section.id === this.state.settingsCenterSection,
+            last: index === total - 1
+        }));
     }
 
     get query(): string { return this.state.settingsCenterQuery ? `/${this.state.settingsCenterQuery}` : ''; }
@@ -83,6 +86,10 @@ export class AgentConsoleSettingsCenterPanelComponent {
 
     get selectedDescription(): string {
         return this.rows[this.state.settingsCenterIndex]?.description || '';
+    }
+
+    pickSection(id: string): void {
+        void this.state.settingsCenterSectionPickAction?.(id as any);
     }
 
     pick(id: string): void {

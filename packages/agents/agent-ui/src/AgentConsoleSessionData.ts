@@ -279,6 +279,7 @@ export class AgentConsoleSessionData {
     settingsCenterMeta = '';
     settingsCenterHint = '';
     settingsCenterPickAction?: (id: string) => void | Promise<void>;
+    settingsCenterSectionPickAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
     selectMenu?: AgentConsoleSelectMenu;
     pendingApprovals: AgentConsoleApprovalRequest[] = []; modelUnavailableAction?: (failure: any) => void | Promise<void>; scrollTranscriptAction?: (rows: number) => boolean; revealMessageAction?: (messageId: string) => boolean;
     submitAction?: () => Promise<void>;

@@ -43,6 +43,7 @@ export abstract class AgentConsoleSessionOverlayHost extends AgentConsoleSession
         state.settingsCenterRows = [];
         state.settingsCenterIndex = 0;
         state.settingsCenterPickAction = undefined;
+        state.settingsCenterSectionPickAction = undefined;
         state.syncDerivedInputFocus();
     }
     hasTextOverlayFocus(): boolean { return hasTextOverlayFocusInState(this.self()); }

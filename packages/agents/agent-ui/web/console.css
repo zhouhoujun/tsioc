@@ -2312,6 +2312,18 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     white-space: nowrap;
 }
 
+#agent-console .settings-section {
+    cursor: pointer;
+}
+
+#agent-console .settings-section:hover {
+    color: var(--console-text);
+}
+
+#agent-console .settings-section[aria-selected="true"] {
+    color: var(--console-accent);
+}
+
 #agent-console .settings-query {
     color: var(--console-accent);
     font-size: 0.9em;

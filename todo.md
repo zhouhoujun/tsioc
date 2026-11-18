@@ -4734,3 +4734,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 测试：gateway hooks-rpc 2 passing。
 - 设置中心新增分区条（`[General] · Model · Permissions · …`），在 TUI/Web 都能看到所有分区与当前分区；
   console-renderer/HTML 用例断言分区条，132 passing。
+- 分区条可点击：`sectionEntries` + `settingsCenterSectionPickAction`，TUI/Web 点击任意分区直接切换（清空搜索、重置选中）；
+  CSS 增加 hover/选中态；settings-center 新增用例，相关套件 133 passing。

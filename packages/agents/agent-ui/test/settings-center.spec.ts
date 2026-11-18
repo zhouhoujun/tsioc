@@ -1,7 +1,8 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { createConsole, RuntimeStub, SchedulerStub } from './_helpers';
-import { handleSettingsCenterKey } from '../src/AgentConsoleSettingsCenter';
+import { handleSettingsCenterKey, selectSettingsCenterSection } from '../src/AgentConsoleSettingsCenter';
+import { AgentConsoleSettingsCenterPanelComponent } from '../src/AgentConsoleSettingsCenterPanel';
 
 @Suite('agent console settings center')
 export class AgentConsoleSettingsCenterTest {
@@ -161,6 +162,23 @@ export class AgentConsoleSettingsCenterTest {
         await component.handleCommand('/settings permissions');
         const row = state.settingsCenterRows.find((item: any) => item.id === 'approvalTimeout');
         expect(row.value).toEqual('60s');
+    }
+
+    @Test('the section strip switches sections and delegates clicks')
+    async sectionStrip() {
+        const { component, state } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings');
+        expect(typeof state.settingsCenterSectionPickAction).toEqual('function');
+        selectSettingsCenterSection(component, 'permissions');
+        expect(state.settingsCenterSection).toEqual('permissions');
+        expect(state.settingsCenterRows.some((row: any) => row.id === 'workspaceTrust')).toEqual(true);
+
+        const panel = new AgentConsoleSettingsCenterPanelComponent(state, undefined);
+        const picked: string[] = [];
+        state.settingsCenterSectionPickAction = (id: string) => { picked.push(id); };
+        panel.pickSection('data');
+        expect(picked).toEqual(['data']);
+        expect(panel.sectionEntries.find(entry => entry.active)?.id).toEqual('permissions');
     }
 
     @Test('/settings menu still opens the classic tab menu')
