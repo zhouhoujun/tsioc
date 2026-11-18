@@ -4732,3 +4732,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - gateways 新增 `hooks.list` RPC（返回 runtime.getHookSummary），修复 attach/web 下 `/hooks` 无数据。
 - README 增补设置中心用法（分区/搜索/`ctrl+r`/`/settings menu`）；设置方案文档更新 P2/P3 状态。
 - 测试：gateway hooks-rpc 2 passing。
+- 设置中心新增分区条（`[General] · Model · Permissions · …`），在 TUI/Web 都能看到所有分区与当前分区；
+  console-renderer/HTML 用例断言分区条，132 passing。

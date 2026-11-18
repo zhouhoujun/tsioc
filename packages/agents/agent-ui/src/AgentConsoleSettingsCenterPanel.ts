@@ -3,6 +3,7 @@ import { BadgeModule } from '@tsdi/components/common/badge';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel } from './agent-ui.i18n';
+import { AGENT_CONSOLE_SETTINGS_SECTIONS, settingsCenterLabel } from './AgentConsoleSettingsSchema';
 import { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
 
@@ -19,6 +20,7 @@ import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
         <label class="dialog-close" data-cell-width="2" @click="close">✕</label>
         <label class="settings-title">{{title}}</label>
         <label class="settings-meta">{{windowMeta}}</label>
+        <label class="settings-sections">{{sectionStrip}}</label>
         <label class="settings-query" v-if="query">{{query}}</label>
         <div class="settings-rows">
             <label class="settings-row" v-for="row in visibleRows" aria-selected="{{row.selected}}" @click="pick(row.id)">
@@ -42,6 +44,16 @@ export class AgentConsoleSettingsCenterPanelComponent {
 
     get title(): string { return this.state.settingsCenterTitle; }
     get hint(): string { return this.state.settingsCenterHint; }
+    /** Compact section list so the page does not hide the other sections. */
+    get sectionStrip(): string {
+        return AGENT_CONSOLE_SETTINGS_SECTIONS
+            .map(section => {
+                const label = settingsCenterLabel(this.translator, section.labelKey, section.labelFallback);
+                return section.id === this.state.settingsCenterSection ? `[${label}]` : label;
+            })
+            .join(' · ');
+    }
+
     get query(): string { return this.state.settingsCenterQuery ? `/${this.state.settingsCenterQuery}` : ''; }
     get rows(): AgentConsoleSettingsRow[] { return this.state.settingsCenterRows || []; }
     get emptyLabel(): string {

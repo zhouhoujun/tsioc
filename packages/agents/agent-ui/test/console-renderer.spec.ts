@@ -1514,6 +1514,8 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(text).toContain('Theme');
         expect(text).toContain('Steer mode');
         expect(text).toContain('workspace');
+        expect(text).toContain('[General]');
+        expect(text).toContain('Permissions');
     }
 
     @Test('renders working line with token usage while running')

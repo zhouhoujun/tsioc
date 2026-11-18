@@ -2304,6 +2304,14 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     font-size: 0.9em;
 }
 
+#agent-console .settings-sections {
+    color: var(--console-meta);
+    font-size: 0.9em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 #agent-console .settings-query {
     color: var(--console-accent);
     font-size: 0.9em;
