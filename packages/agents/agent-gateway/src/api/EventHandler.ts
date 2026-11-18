@@ -57,6 +57,25 @@ export class EventHandler {
         });
         res.write(`event: connected\ndata: ${JSON.stringify({ sessionId })}\n\n`);
 
+        // Reconnect support (Codex-style): replay buffered events after the
+        // client's Last-Event-ID so a dropped connection does not lose rows.
+        const lastEventId = String(
+            (req.headers && (req.headers['last-event-id'] ?? req.headers['Last-Event-ID'])) || ''
+        ).trim();
+        if (lastEventId) {
+            const index = this.history.findIndex(record => record.id === lastEventId);
+            for (const record of index >= 0 ? this.history.slice(index + 1) : []) {
+                if (record.sessionId !== sessionId) {
+                    continue;
+                }
+                try {
+                    res.write(`${record.id ? `id: ${record.id}\n` : ''}event: ${record.type}\ndata: ${this.safeStringify(record)}\n\n`);
+                } catch {
+                    break;
+                }
+            }
+        }
+
         const clients = this.clients.get(sessionId) ?? new Set<http.ServerResponse>();
         clients.add(res);
         this.clients.set(sessionId, clients);
@@ -455,7 +474,8 @@ export class EventHandler {
 
     /** Broadcast an event to connected SSE clients for one session */
     broadcast(sessionId: string, event: string, data: any): void {
-        const payload = `event: ${event}\ndata: ${this.safeStringify(data)}\n\n`;
+        const eventId = data && typeof data === 'object' ? String((data as any).id || '').trim() : '';
+        const payload = `${eventId ? `id: ${eventId}\n` : ''}event: ${event}\ndata: ${this.safeStringify(data)}\n\n`;
         const clients = this.clients.get(sessionId);
         if (!clients?.size) {
             return;
