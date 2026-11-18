@@ -11,6 +11,8 @@ import { VisualWorkflowService } from '../VisualWorkflowService';
 import { createBlankWorkflowDefinition, createDefaultWorkflowDefinition, WorkflowDesigner } from '../workflow-designer';
 import { VisualWorkflowDefinition, WorkflowToolbarModel } from '../types';
 import { diffWorkflowDefinitions, WorkflowDiffResult } from '../workflow-diff';
+import { WorkflowAuditPanelComponent } from './workflow-audit-panel';
+import { WorkflowCredentialPanelComponent } from './workflow-credential-panel';
 import {
     WorkflowDefinitionStore,
     WorkflowDefinitionSummary,
@@ -95,60 +97,15 @@ interface WorkflowDocumentTab {
             :restoreAction="restoreVersion" :compareAction="compareVersion"
             :releaseAction="releaseVersion"
             :closeDiffAction="closeVersionDiff" :closeAction="closeVersions"></workflow-version-panel>
-        <div class="workflow-publish workflow-audit" v-if="showAudit">
-            <div class="workflow-publish-panel workflow-audit-panel">
-                <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{tr('audit', 'Audit log')}}</span>
-                    <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeAudit">✕</button>
-                </div>
-                <div class="workflow-publish-error" v-if="auditError">{{auditError}}</div>
-                <ui-data-table class="workflow-audit-list" v-if="auditItems.length"
-                    :columns="auditColumns" :rows="auditRows" rowKey="id" dense
-                    :ariaLabel="tr('audit', 'Audit log')"></ui-data-table>
-                <ui-empty class="workflow-audit-empty" v-else
-                    icon="history" :title="tr('auditEmpty', 'No audit entries for this workflow.')"></ui-empty>
-                <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" [disabled]="auditBusy" @click="refreshAudit">{{tr('refresh', 'Refresh')}}</button>
-                    <button class="workflow-btn" type="button" @click="closeAudit">{{tr('close', 'Close')}}</button>
-                </div>
-            </div>
-        </div>
-        <div class="workflow-publish workflow-credentials" v-if="showCredentials">
-            <div class="workflow-publish-panel workflow-credentials-panel">
-                <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{tr('credentials', 'Credentials')}}</span>
-                    <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeCredentials">✕</button>
-                </div>
-                <div class="workflow-publish-error" v-if="credentialError">{{credentialError}}</div>
-                <div class="workflow-credentials-list" v-if="credentialNames.length">
-                    <div class="workflow-credential-row" v-for="name in credentialNames" data-credential-name="{{name}}">
-                        <span class="workflow-credential-name">{{name}}</span>
-                        <button class="workflow-btn workflow-credential-remove" type="button"
-                            [disabled]="credentialBusy" @click="removeCredential(name)">{{tr('remove', 'Delete')}}</button>
-                    </div>
-                </div>
-                <ui-empty class="workflow-credential-empty" v-else
-                    icon="key" :title="tr('credentialsEmpty', 'No credentials stored yet.')"></ui-empty>
-                <label class="workflow-group-field">
-                    <span>{{tr('credentialName', 'Name')}}</span>
-                    <input class="workflow-credential-name-input" type="text" [value]="credentialName"
-                        placeholder="api-token" @input="credentialNameInput" />
-                </label>
-                <label class="workflow-group-field">
-                    <span>{{tr('credentialValue', 'Secret value')}}</span>
-                    <input class="workflow-credential-value-input" type="password" [value]="credentialValue"
-                        @input="credentialValueInput" />
-                </label>
-                <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" [disabled]="credentialBusy" @click="refreshCredentials">{{tr('refresh', 'Refresh')}}</button>
-                    <button class="workflow-btn" type="button" @click="closeCredentials">{{tr('close', 'Close')}}</button>
-                    <button class="workflow-btn workflow-btn-primary workflow-credential-save" type="button"
-                        [disabled]="credentialBusy" @click="saveCredential">{{saveLabel}}</button>
-                </div>
-            </div>
-        </div>
+        <workflow-audit-panel v-if="showAudit" :items="auditItems" :busy="auditBusy"
+            :error="auditError" :locale="locale"
+            :refreshAction="auditPanelRefresh" :closeAction="auditPanelClose"></workflow-audit-panel>
+        <workflow-credential-panel v-if="showCredentials" :names="credentialNames"
+            :busy="credentialBusy" :error="credentialError"
+            :draftName="credentialName" :draftValue="credentialValue" :locale="locale"
+            :nameAction="credentialNameAction" :valueAction="credentialValueAction"
+            :saveAction="credentialPanelSave" :removeAction="credentialPanelRemove"
+            :refreshAction="credentialPanelRefresh" :closeAction="credentialPanelClose"></workflow-credential-panel>
         <div class="workflow-publish workflow-deployments" v-if="showDeployments">
             <div class="workflow-publish-panel workflow-deployments-panel">
                 <div class="workflow-publish-head">
@@ -1176,6 +1133,38 @@ export class WorkflowDesignerComponent implements OnDestroy {
         const date = new Date(at);
         const pad = (value: number) => String(value).padStart(2, '0');
         return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
+
+    readonly auditPanelRefresh = (): void => {
+        void (this.selfRef || this).refreshAudit();
+    };
+
+    readonly auditPanelClose = (): void => {
+        (this.selfRef || this).closeAudit();
+    };
+
+    readonly credentialNameAction = (value: string): void => {
+        (this.selfRef || this).credentialNameInput({ target: { value } } as any);
+    };
+
+    readonly credentialValueAction = (value: string): void => {
+        (this.selfRef || this).credentialValueInput({ target: { value } } as any);
+    };
+
+    readonly credentialPanelSave = (): void => {
+        void (this.selfRef || this).saveCredential();
+    };
+
+    readonly credentialPanelRemove = (name: string): void => {
+        void (this.selfRef || this).removeCredential(name);
+    };
+
+    readonly credentialPanelRefresh = (): void => {
+        void (this.selfRef || this).refreshCredentials();
+    };
+
+    readonly credentialPanelClose = (): void => {
+        (this.selfRef || this).closeCredentials();
     };
 
     async openAudit(): Promise<void> {

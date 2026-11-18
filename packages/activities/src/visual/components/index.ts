@@ -6,6 +6,8 @@ export * from './workflow-inspector';
 export * from './workflow-run-history';
 export * from './workflow-run-log';
 export * from './workflow-library';
+export * from './workflow-credential-panel';
+export * from './workflow-audit-panel';
 export * from './workflow-version-panel';
 export * from './workflow-designer.styles';
 export * from './workflow-designer-preview.component';

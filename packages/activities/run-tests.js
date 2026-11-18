@@ -19,5 +19,9 @@ const args = [
     'unit.ts',
     ...process.argv.slice(2)
 ];
-const result = spawnSync(process.execPath, args, { stdio: 'inherit', cwd: __dirname });
+// Type checking is covered by the tsc gate; skipping it here removes a
+// per-process TS program build from every test run (ts-node otherwise
+// type-checks the whole activities + components graph before the first test).
+const env = { ...process.env, TS_NODE_TRANSPILE_ONLY: process.env.TS_NODE_TRANSPILE_ONLY || '1' };
+const result = spawnSync(process.execPath, args, { stdio: 'inherit', cwd: __dirname, env });
 process.exit(result.status ?? 1);
