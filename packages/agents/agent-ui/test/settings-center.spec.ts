@@ -181,6 +181,28 @@ export class AgentConsoleSettingsCenterTest {
         expect(panel.sectionEntries.find(entry => entry.active)?.id).toEqual('permissions');
     }
 
+    @Test('message page size applies to the console options and persists')
+    async pagerSizeRow() {
+        const { component, state, persisted } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'pagerSize');
+        expect(index).toBeGreaterThanOrEqual(0);
+        state.settingsCenterIndex = index;
+        component.select = async () => '10';
+        await handleSettingsCenterKey(component, 'return');
+        expect(state.consoleOptions.messageSelectionPageSize).toEqual(10);
+        expect(persisted[persisted.length - 1]).toEqual({ messageSelectionPageSize: 10 });
+    }
+
+    @Test('search results name the section each row belongs to')
+    async searchResultsCarrySection() {
+        const { component, state } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings trust');
+        const row = state.settingsCenterRows.find((item: any) => item.id === 'workspaceTrust');
+        expect(row).toBeTruthy();
+        expect(row.description).toContain('Permissions');
+    }
+
     @Test('/settings menu still opens the classic tab menu')
     async classicMenuFallback() {
         const { component, state } = await this.createConsoleWithPersist();

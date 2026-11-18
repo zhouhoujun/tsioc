@@ -106,6 +106,12 @@ export async function restoreSettings(self: any): Promise<void> {
         if (persisted.approvalTimeoutMs) {
             (self.runtime as any)?.setApprovalTimeout?.(persisted.approvalTimeoutMs);
         }
+        if (persisted.messageSelectionPageSize) {
+            self.state.consoleOptions = {
+                ...self.state.consoleOptions,
+                messageSelectionPageSize: persisted.messageSelectionPageSize
+            };
+        }
         if (persisted.transcriptWindowMessages) {
             self.state.consoleOptions = {
                 ...self.state.consoleOptions,

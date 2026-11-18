@@ -333,6 +333,10 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         approvalTimeoutDescription: 'how long an approval waits before it times out',
         approvalTimeoutTitle: 'Settings · Approval timeout',
         approvalTimeoutOption: 'wait {count}s for an approval decision',
+        pagerSizeLabel: 'Message page size: {count}',
+        pagerSizeDescription: 'rows moved by page up/down in transcript navigation',
+        pagerSizeTitle: 'Settings · Message page size',
+        pagerSizeOption: 'jump {count} messages per page',
         thinkingLevelTitle: 'Settings · Thinking Level',
         thinkingLevelDescription: 'reasoning effort for the active model'
     },

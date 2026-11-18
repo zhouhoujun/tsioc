@@ -4736,3 +4736,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   console-renderer/HTML 用例断言分区条，132 passing。
 - 分区条可点击：`sectionEntries` + `settingsCenterSectionPickAction`，TUI/Web 点击任意分区直接切换（清空搜索、重置选中）；
   CSS 增加 hover/选中态；settings-center 新增用例，相关套件 133 passing。
+- 新增「Message page size」（4/6/10，持久化 `messageSelectionPageSize` 并恢复 consoleOptions）；搜索结果行前缀显示所属分区，
+  便于跨分区查找；settings-center 14 passing。

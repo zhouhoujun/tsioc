@@ -233,6 +233,26 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
             await host.persistSettings({ transcriptWindowMessages: size });
         },
         host => String(Number(host.state.consoleOptions?.transcriptWindowMessages) || 40), ['/display window']),
+    actionRow('pagerSize', 'general', 'agent.menu.settings.pagerSizeLabel', 'Message page size: {count}', 'agent.menu.settings.pagerSizeDescription', 'rows moved by page up/down in transcript navigation', 'workspace', 'immediate',
+        async host => {
+            const sizes = [4, 6, 10];
+            const current = Number(host.state.consoleOptions?.messageSelectionPageSize) || 6;
+            const picked = await host.select(
+                settingsCenterLabel(host.translator, 'agent.menu.settings.pagerSizeTitle', 'Settings · Message page size'),
+                sizes.map(size => ({
+                    label: `${size} rows${size === current ? ' ●' : ''}`,
+                    value: String(size),
+                    description: settingsCenterLabel(host.translator, 'agent.menu.settings.pagerSizeOption', 'jump {count} messages per page', { count: size })
+                })),
+                Math.max(0, sizes.indexOf(current)),
+                settingsCenterLabel(host.translator, 'agent.hint.enterApplyClose', 'enter apply   esc close')
+            );
+            if (!picked) return;
+            const size = Number(picked) as 4 | 6 | 10;
+            host.state.consoleOptions = { ...host.state.consoleOptions, messageSelectionPageSize: size };
+            await host.persistSettings({ messageSelectionPageSize: size });
+        },
+        host => String(Number(host.state.consoleOptions?.messageSelectionPageSize) || 6), ['/display pager']),
     toggleRow('tooloutput', 'general', 'agent.menu.settings.toolOutputLabel', 'Tool output: {state}', 'agent.menu.settings.toolOutputDescription', 'tool output visibility in messages', 'workspace',
         host => !!host.state.showToolOutput,
         async host => {

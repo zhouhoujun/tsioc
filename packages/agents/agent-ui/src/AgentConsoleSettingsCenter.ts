@@ -79,7 +79,10 @@ export function buildAgentConsoleSettingsRows(host: AgentConsoleSettingsCenterHo
         section: field.section,
         label: settingsCenterLabel(host.translator, field.labelKey, field.labelFallback, { name: '', state: '', level: '' }).replace(/[:：]\s*$/, '') || field.labelFallback,
         value: field.value(host),
-        description: settingsCenterLabel(host.translator, field.descriptionKey, field.descriptionFallback),
+        description: [
+            query ? sectionLabel(host, field.section) : '',
+            settingsCenterLabel(host.translator, field.descriptionKey, field.descriptionFallback)
+        ].filter(Boolean).join(' · '),
         scope: describeSettingsScope(host.translator, field.scope),
         effect: describeSettingsEffect(host.translator, field.effect),
         aliases: (field.aliases || []).join(' '),
@@ -171,7 +174,7 @@ function fieldById(id: string): AgentConsoleSettingsField | undefined {
 
 /** Rows that open another dialog/menu: close the page so overlays never stack. */
 const AGENT_CONSOLE_SETTINGS_CLOSING_ROWS = new Set([
-    'theme', 'language', 'transcriptWindow',
+    'theme', 'language', 'transcriptWindow', 'pagerSize',
     'model', 'thinkingLevel', 'fast', 'status',
     'securityLevel', 'sandbox', 'approvals', 'permissionsInspect',
     'archetype', 'personality', 'memories', 'delegation',
