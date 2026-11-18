@@ -10,6 +10,8 @@ import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
 import { EmptyStateModule } from '@tsdi/components/common/empty-state';
 import { StatModule } from '@tsdi/components/common/stat';
 import { BadgeModule } from '@tsdi/components/common/badge';
+import { KeymapPanelModule } from '@tsdi/components/common/keymap';
+import { ProgressModule } from '@tsdi/components/common/progress';
 import { FormsModule } from '@tsdi/components/forms';
 import { RunAspect } from './aop/RunAspect';
 import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
@@ -64,6 +66,8 @@ import {
         EmptyStateModule,
         StatModule,
         BadgeModule,
+        KeymapPanelModule,
+        ProgressModule,
         FormsModule,
         WorkflowDesignerI18nModule
     ],

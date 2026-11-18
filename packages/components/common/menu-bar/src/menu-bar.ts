@@ -83,14 +83,16 @@ interface MenuBarEntryView {
                     data-menu-id="{{entry.id}}"
                     [disabled]="entry.disabled"
                     aria-disabled="{{entry.disabled}}"
-                    @click="choose(entry.id, $event)">
+                    @click="choose(entry.id, $event)"
+                    @mouseenter="anchorSubmenu(entry.id, $event)">
                     <span class="menu-bar-item-icon" v-if="entry.icon"><icon [name]="entry.icon" [glyph]="entry.icon" size="sm"></icon></span>
                     <span class="menu-bar-item-label">{{entry.label}}</span>
                     <span class="menu-bar-item-shortcut" v-if="entry.shortcut">{{entry.shortcut}}</span>
                     <span class="menu-bar-item-check" v-if="entry.checked"><icon name="check" size="xs"></icon></span>
                     <span class="menu-bar-item-caret" v-if="entry.children.length"><icon name="caret-right" size="xs"></icon></span>
                 </button>
-                <div [class]="'menu-bar-submenu' + (activeSubmenuKey === entry.id ? ' is-open' : '')" role="menu" v-if="entry.children.length">
+                <div [class]="'menu-bar-submenu' + (activeSubmenuKey === entry.id ? ' is-open' : '')"
+                    [style]="submenuStyle(entry.id)" role="menu" v-if="entry.children.length">
                     <button class="menu-bar-item" type="button" role="menuitem"
                         v-for="child in entry.children"
                         trackBy="id"
@@ -123,6 +125,9 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     private _open = false;
     /** Id of the submenu parent currently expanded by click. */
     activeSubmenuKey = '';
+    /** Viewport coordinates of the open flyout (escapes the popup's clipping). */
+    private submenuLeft = 0;
+    private submenuTop = 0;
     private bound = false;
     private pointerHandler?: (event: any) => void;
     private keyHandler?: (event: any) => void;
@@ -236,7 +241,11 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         if (item.children?.length) {
             // Click toggles the flyout; hover-only submenus are unusable on
             // touch/keyboard and can vanish while crossing the 2px gap.
-            this.activeSubmenuKey = this.activeSubmenuKey === id ? '' : id;
+            const opening = this.activeSubmenuKey !== id;
+            if (opening) {
+                this.anchorSubmenu(id, event);
+            }
+            this.activeSubmenuKey = opening ? id : '';
             return;
         }
         this.close();
@@ -246,6 +255,40 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     close(): void {
         this.open = false;
         this.activeSubmenuKey = '';
+    }
+
+    /**
+     * Anchor the flyout with fixed coordinates. The popup is a scroll container,
+     * so an absolutely positioned flyout outside its box is clipped; fixed
+     * coordinates keep nested menus visible and clickable near the viewport edge.
+     */
+    anchorSubmenu(id: string, event?: Event): void {
+        if (this.activeSubmenuKey && this.activeSubmenuKey !== id) {
+            return;
+        }
+        const target = event?.currentTarget as any;
+        const rect = target?.getBoundingClientRect?.();
+        if (!rect) {
+            return;
+        }
+        const win = target?.ownerDocument?.defaultView
+            || (globalThis as { innerWidth?: number }).innerWidth;
+        const width = 200;
+        const viewWidth = Number((win as any)?.innerWidth) || 1024;
+        const viewHeight = Number((win as any)?.innerHeight) || 768;
+        const left = rect.right + width + 8 > viewWidth
+            ? Math.max(8, rect.left - width - 4)
+            : rect.right + 4;
+        const top = Math.max(8, Math.min(rect.top - 6, viewHeight - 120));
+        this.submenuLeft = Math.round(left);
+        this.submenuTop = Math.round(top);
+    }
+
+    submenuStyle(id: string): string {
+        if (this.activeSubmenuKey !== id) {
+            return '';
+        }
+        return `position: fixed; left: ${this.submenuLeft}px; top: ${this.submenuTop}px; right: auto;`;
     }
 
     protected itemClass(item: MenuBarItem, hasChildren = false): string {

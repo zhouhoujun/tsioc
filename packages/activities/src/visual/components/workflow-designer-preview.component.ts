@@ -116,6 +116,9 @@ function sameModelKey(previous: any[], next: any[]): boolean {
             <span class="workflow-status-selected">{{statusModel.selectedLabel}}</span>
             <span>{{statusModel.nodeCount}} {{nodeWord}}</span>
             <span>{{statusModel.executionLabel}}</span>
+            <ui-progress class="workflow-status-progress" v-if="statusModel.progress > 0"
+                :value="statusModel.progress" :max="100" :width="10"
+                :ariaLabel="statusModel.executionLabel"></ui-progress>
             <span>{{statusModel.zoomLabel}}</span>
         </div>
         <div class="workflow-selection-box" v-if="selectionBox" [style]="selectionBoxStyle"></div>
@@ -207,13 +210,10 @@ function sameModelKey(previous: any[], next: any[]): boolean {
         </div>
         <div class="workflow-shortcuts" v-if="showShortcuts" @click="closeShortcuts">
             <div class="workflow-shortcuts-panel" @click="stopShortcutClick">
-                <div class="workflow-shortcuts-head">
-                    <span class="workflow-shortcuts-title">{{shortcutsLabel}}</span>
-                    <button class="workflow-btn" type="button" @click="closeShortcuts">{{closeLabel}}</button>
-                </div>
-                <div class="workflow-shortcuts-row" v-for="row in shortcutRows">
-                    <span>{{row.action}}</span>
-                    <kbd>{{row.keys}}</kbd>
+                <keymap-panel :title="shortcutsLabel" :items="shortcutItems"
+                    :hint="tr('shortcutsHint', 'Press ? to toggle this panel')"></keymap-panel>
+                <div class="workflow-shortcuts-actions">
+                    <button class="workflow-btn" type="button" @click="closeShortcuts">{{tr('close', 'Close')}}</button>
                 </div>
             </div>
         </div>
@@ -887,6 +887,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return this.t('shortcutsTitle', 'Keyboard shortcuts');
     }
 
+    get shortcutItems(): Array<{ key: string; action: string }> {
+        return this.shortcutRows.map(row => ({ key: row.keys, action: row.action }));
+    }
+
     get shortcutRows(): Array<{ action: string; keys: string }> {
         return [
             { action: this.t('save', 'Save'), keys: 'Ctrl+S' },
@@ -1232,7 +1236,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             selected?.type || '',
             this.registry.revision,
             designer.zoom,
-            designer.execution?.status || ''
+            // Identity, not just the status: progress follows each node state.
+            designer.execution
         ];
     }
 

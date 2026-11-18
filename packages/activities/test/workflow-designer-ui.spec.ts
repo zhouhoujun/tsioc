@@ -2069,6 +2069,9 @@ describe('Workflow Designer UI', () => {
         key('?');
         await flush();
         expect(root.querySelector('.workflow-shortcuts-panel')).toBeTruthy();
+        // Shortcut help renders through the shared keymap widget.
+        expect(root.querySelectorAll('.workflow-shortcuts-panel .keymap-row').length)
+            .toBe((ref.instance.preview as any).shortcutItems.length);
         key('Escape');
         await flush();
         expect(root.querySelector('.workflow-shortcuts-panel')).toBeFalsy();

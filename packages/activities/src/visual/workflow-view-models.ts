@@ -785,8 +785,23 @@ export function buildWorkflowStatusModel(
                 ? `${selected.name} · ${typeLabel}`
                 : translateWorkflow(translator, locale, 'workflow.ui.noSelection', 'No node selected'),
         zoomLabel: `${Math.round(designer.zoom * 100)}%`,
-        executionLabel: executionStatusLabel(execution?.status, locale, translator)
+        executionLabel: executionStatusLabel(execution?.status, locale, translator),
+        progress: executionProgress(designer, execution)
     };
+}
+
+/** Share of nodes that already finished in the current (or last) run. */
+function executionProgress(designer: WorkflowDesigner, execution: any): number {
+    const total = designer?.nodes?.length || 0;
+    if (!execution || !total) {
+        return 0;
+    }
+    const states = execution.nodeStates || {};
+    const done = Object.values(states).filter((state: any) =>
+        state && (state.status === 'success' || state.status === 'failed'
+            || state.status === 'skipped' || state.status === 'cancelled')
+    ).length;
+    return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
 }
 
 function formatClock(timestamp?: number): string {

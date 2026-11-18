@@ -1039,6 +1039,8 @@ export interface WorkflowStatusModel {
     selectedLabel: string;
     zoomLabel: string;
     executionLabel: string;
+    /** Completed nodes as a percentage of the graph (0 when idle). */
+    progress: number;
 }
 
 /**
