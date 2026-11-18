@@ -14,6 +14,9 @@ import { KeymapPanelComponent, KeymapPanelModule } from '../keymap';
     imports: [DialogComponent, AlertDialogComponent, StatusListComponent, KeymapPanelComponent],
     template: `
     <dialog-panel title="Dialog title" :lines="dialogLines" ariaLabel="Dialog" @closeAction="onClose"></dialog-panel>
+    <dialog-panel title="Custom dialog" className="host-panel" ariaLabel="Custom" @closeAction="onClose">
+        <span class="projected-body">projected content</span>
+    </dialog-panel>
     <alert-dialog title="Alert title" tone="warning" actionLabel="Accept"
         :lines="alertLines" ariaLabel="Alert" @acceptAction="onAccept"></alert-dialog>
     <status-list title="Status" hint="hint"
@@ -76,6 +79,14 @@ export class CommonChromeWidgetsDomTest {
         expect(dialogRoot.textContent).toContain('dialog line');
         (dialogRoot.querySelector('.dialog-close') as HTMLElement).click();
         expect(host.closed).toEqual(1);
+
+        const custom = (ref.hostView.queryAll(DialogComponent) as ComponentRef<DialogComponent>[])
+            .find(entry => entry.instance.ariaLabel === 'Custom');
+        expect(custom).toBeTruthy();
+        const customRoot = custom!.hostView.rootNodes[0] as HTMLElement;
+        expect(customRoot.className).toContain('host-panel');
+        expect(customRoot.querySelector('.projected-body')?.textContent).toContain('projected content');
+        expect(customRoot.textContent).toContain('Custom dialog');
 
         const alert = ref.hostView.query(AlertDialogComponent) as ComponentRef<AlertDialogComponent>;
         const alertRoot = alert.hostView.rootNodes[0] as HTMLElement;

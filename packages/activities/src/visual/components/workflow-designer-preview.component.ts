@@ -133,7 +133,8 @@ function sameModelKey(previous: any[], next: any[]): boolean {
                         <span class="workflow-quick-add-label">{{item.label}}</span>
                         <span class="workflow-quick-add-category">{{item.category}}</span>
                     </button>
-                    <div class="workflow-quick-add-empty" v-if="!quickAddItems.length">{{quickAddEmpty}}</div>
+                    <ui-empty class="workflow-quick-add-empty" v-if="!quickAddItems.length"
+                        :title="quickAddEmpty"></ui-empty>
                 </div>
             </div>
         </div>
@@ -150,7 +151,8 @@ function sameModelKey(previous: any[], next: any[]): boolean {
                         <span class="workflow-quick-add-label">{{item.label}}</span>
                         <span class="workflow-quick-add-category">{{item.type}}</span>
                     </button>
-                    <div class="workflow-quick-add-empty" v-if="!findResults.length">{{tr('findEmpty', 'No matching nodes.')}}</div>
+                    <ui-empty class="workflow-quick-add-empty" v-if="!findResults.length"
+                        :title="tr('findEmpty', 'No matching nodes.')"></ui-empty>
                 </div>
             </div>
         </div>

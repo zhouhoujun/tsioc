@@ -22,7 +22,7 @@ import { describeWorkflowDiff, WorkflowDiffResult } from '../workflow-diff';
                 [aria-label]="closeLabel" [title]="closeLabel" @click="close">✕</button>
         </div>
         <div class="workflow-version-list">
-            <div class="workflow-version-empty" v-if="!items.length">{{emptyLabel}}</div>
+            <ui-empty class="workflow-version-empty" v-if="!items.length" icon="history" :title="emptyLabel"></ui-empty>
             <div class="workflow-version-row" v-for="item in items" [class]="rowClass(item)">
                 <span class="workflow-version-badge">v{{item.version}}</span>
                 <span class="workflow-version-main">
@@ -40,7 +40,8 @@ import { describeWorkflowDiff, WorkflowDiffResult } from '../workflow-diff';
                 <span class="workflow-status-spacer"></span>
                 <button class="workflow-btn" type="button" @click="clearDiff">{{closeLabel}}</button>
             </div>
-            <div class="workflow-version-diff-empty" v-if="diffLines.length === 0">{{diffEmptyLabel}}</div>
+            <ui-empty class="workflow-version-diff-empty" v-if="diffLines.length === 0"
+                icon="diff" :title="diffEmptyLabel"></ui-empty>
             <div class="workflow-version-diff-row" v-for="line in diffLines" [class]="'is-' + line.kind">
                 <span class="workflow-version-diff-mark">{{lineMark(line.kind)}}</span>
                 <span class="workflow-version-diff-text">{{line.text}}</span>

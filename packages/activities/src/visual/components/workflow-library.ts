@@ -21,7 +21,7 @@ import { WorkflowDefinitionSummary } from '../workflow-store';
             <button class="workflow-btn" @click="close">{{closeLabel}}</button>
         </div>
         <div class="workflow-library-list">
-            <div class="workflow-library-empty" v-if="!items.length">{{emptyLabel}}</div>
+            <ui-empty class="workflow-library-empty" v-if="!items.length" icon="folder" :title="emptyLabel"></ui-empty>
             <div class="workflow-library-row" v-for="item in items" [class]="rowClass(item)">
                 <span class="workflow-library-row-main">
                     <span class="workflow-library-row-name">{{item.name}}</span>

@@ -573,9 +573,8 @@ export const WORKFLOW_DESIGNER_CSS = `
 }
 
 .workflow-quick-add-empty {
-    padding: 10px;
-    color: #94a3b8;
-    font-size: 11px;
+    /* ui-empty owns the skin; keep the compact padding of the palette list. */
+    padding: 6px 8px;
 }
 
 .workflow-designer[data-theme="dark"] .workflow-quick-add-item,
@@ -644,9 +643,7 @@ export const WORKFLOW_DESIGNER_CSS = `
 }
 
 .workflow-audit-empty {
-    padding: 8px;
-    color: var(--wf-theme-muted, #94a3b8);
-    font-size: 11px;
+    padding: 6px 2px;
 }
 
 .workflow-credentials-panel {
@@ -687,9 +684,7 @@ export const WORKFLOW_DESIGNER_CSS = `
 }
 
 .workflow-credential-empty {
-    padding: 8px;
-    color: var(--wf-theme-muted, #94a3b8);
-    font-size: 11px;
+    padding: 6px 2px;
 }
 
 .workflow-credentials-panel .workflow-group-field input {
@@ -734,18 +729,8 @@ export const WORKFLOW_DESIGNER_CSS = `
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-.workflow-deployment-state.is-running {
-    color: #047857;
-}
-
-.workflow-deployment-state.is-stopped {
-    color: #94a3b8;
-}
-
 .workflow-deployments-empty {
-    padding: 8px;
-    color: var(--wf-theme-muted, #94a3b8);
-    font-size: 11px;
+    padding: 6px 2px;
 }
 
 .workflow-metrics-panel {
@@ -759,20 +744,8 @@ export const WORKFLOW_DESIGNER_CSS = `
 }
 
 .workflow-metrics-stat {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 6px 8px;
-    border: 1px solid var(--wf-theme-border, #e2e8f0);
-    border-radius: 7px;
-    color: var(--wf-theme-muted, #64748b);
-    font-size: 11px;
-}
-
-.workflow-metrics-stat strong {
-    color: var(--wf-theme-text, #0f172a);
-    font-size: 12px;
+    /* ui-stat owns the tile skin (border, padding, tones). */
+    min-width: 0;
 }
 
 .workflow-metrics-windows {
@@ -956,12 +929,8 @@ export const WORKFLOW_DESIGNER_CSS = `
 }
 
 .workflow-plugin-installed {
-    border-radius: 999px;
-    padding: 1px 7px;
-    background: #ecfdf5;
-    color: #047857;
-    font-size: 10px;
-    font-weight: 700;
+    /* ui-badge owns the pill skin. */
+    flex: 0 0 auto;
 }
 
 .workflow-plugin-description {
@@ -970,7 +939,10 @@ export const WORKFLOW_DESIGNER_CSS = `
     line-height: 1.45;
 }
 
-.workflow-plugins-empty,
+.workflow-plugins-empty {
+    padding: 6px 2px;
+}
+
 .workflow-plugins-error {
     font-size: 11px;
     color: var(--wf-theme-muted, #64748b);
@@ -2516,9 +2488,7 @@ workflow-canvas {
 }
 
 .workflow-library-empty {
-    font-size: 12px;
-    color: #94a3b8;
-    padding: 10px 2px;
+    padding: 6px 2px;
 }
 
 .workflow-library-row {
@@ -2604,9 +2574,7 @@ workflow-canvas {
 }
 
 .workflow-version-empty {
-    font-size: 12px;
-    color: #94a3b8;
-    padding: 10px 2px;
+    padding: 6px 2px;
 }
 
 .workflow-version-row {
@@ -2679,8 +2647,7 @@ workflow-canvas {
 }
 
 .workflow-version-diff-empty {
-    font-size: 11px;
-    color: #94a3b8;
+    padding: 4px 2px;
 }
 
 .workflow-version-diff-row {

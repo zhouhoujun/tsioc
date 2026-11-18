@@ -1332,6 +1332,7 @@ describe('Workflow Designer UI', () => {
         await waitFor(() => String(root.querySelector('.workflow-plugin-row[data-plugin-id="demo"]')?.textContent || '').includes('已安装'));
         row = root.querySelector('.workflow-plugin-row[data-plugin-id="demo"]') as any;
         expect(row.textContent).toContain('已安装');
+        expect(row.querySelector('.ui-badge')?.textContent).toContain('已安装');
         (row.querySelector('.workflow-btn') as any).click();
         await waitFor(() => !ref.instance.designer.registry.has('demo-node'));
         expect(ref.instance.designer.registry.has('demo-node')).toBe(false);
@@ -1621,6 +1622,7 @@ describe('Workflow Designer UI', () => {
 
         (root.querySelectorAll('.workflow-deployments-actions .workflow-btn')[1] as any).click();
         await waitFor(() => stoppedAll && String(root.querySelector('.workflow-deployment-row')?.textContent || '').includes('已停止'));
+        expect(root.querySelector('.workflow-deployment-row .ui-badge')?.textContent).toContain('已停止');
         expect(stoppedAll).toBe(true);
 
         (root.querySelector('.workflow-deployments .workflow-publish-close') as any).click();
@@ -1726,6 +1728,8 @@ describe('Workflow Designer UI', () => {
         const text = root.querySelector('.workflow-metrics')?.textContent || '';
         expect(text).toContain('4');
         expect(text).toContain('75%');
+        // Metric tiles come from the shared ui-stat widget.
+        expect(root.querySelectorAll('.workflow-metrics .ui-stat').length).toBe(4);
         expect(text).toContain('start_1');
         expect(text).toContain('task_1');
 

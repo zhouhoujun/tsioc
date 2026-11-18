@@ -2,18 +2,22 @@ import { Attribute, Component } from '@tsdi/components';
 import { getDisplayWidth } from '../../src/display-width';
 
 /**
- * Renderer-neutral dialog shell: title, body lines, hint and a glyph-only close
- * target. Hosts own the content and overlay placement; html/console renderers
- * own the visual chrome.
+ * Renderer-neutral dialog shell: title, optional body lines, hint, projected
+ * content and a glyph-only close target. Hosts own the overlay placement and
+ * the projected body (forms, lists, action rows); html/console renderers own
+ * the visual chrome.
  */
 @Component({
     selector: 'dialog-panel, ui-dialog-panel',
     template: `
-    <div class="console-panel dialog-panel {{widthClass}}" role="dialog" aria-label="{{ariaLabel}}">
+    <div class="console-panel dialog-panel {{widthClass}} {{className}}" role="dialog" aria-label="{{ariaLabel}}">
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
         <label class="dialog-title" v-show="title">{{title}}</label>
-        <label class="dialog-line" v-for="line in lines">{{line}}</label>
+        <div class="dialog-body" [style]="scrollStyle">
+            <label class="dialog-line" v-for="line in lines">{{line}}</label>
+        </div>
         <label class="dialog-hint" v-show="hint">{{hint}}</label>
+        <v-content></v-content>
     </div>`
 })
 export class DialogComponent {
@@ -27,7 +31,21 @@ export class DialogComponent {
     @Attribute() minWidth = 24;
     /** Border + horizontal padding assumed around the content. */
     @Attribute() horizontalChrome = 6;
+    /** Viewport guard for long modal content; empty disables the scroll box. */
+    @Attribute() maxHeight = '60vh';
+    /** Extra classes for hosts that keep their own skin/selectors. */
+    @Attribute() className = '';
     @Attribute() closeAction?: () => void;
+
+    get scrollStyle(): Record<string, string> {
+        return this.maxHeight
+            ? {
+                'max-height': String(this.maxHeight),
+                'overflow-y': 'auto',
+                'overscroll-behavior': 'contain'
+            }
+            : {};
+    }
 
     get resolvedShellStyle(): string {
         return `max-width: ${this.resolveContentWidth()}ch;`;

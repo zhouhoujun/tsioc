@@ -109,7 +109,8 @@ interface WorkflowDocumentTab {
                         <span class="workflow-audit-actor" v-if="entry.actor">{{entry.actor}}</span>
                     </div>
                 </div>
-                <div class="workflow-audit-empty" v-else>{{tr('auditEmpty', 'No audit entries for this workflow.')}}</div>
+                <ui-empty class="workflow-audit-empty" v-else
+                    icon="history" :title="tr('auditEmpty', 'No audit entries for this workflow.')"></ui-empty>
                 <div class="workflow-publish-actions">
                     <button class="workflow-btn" type="button" [disabled]="auditBusy" @click="refreshAudit">{{tr('refresh', 'Refresh')}}</button>
                     <button class="workflow-btn" type="button" @click="closeAudit">{{tr('close', 'Close')}}</button>
@@ -131,7 +132,8 @@ interface WorkflowDocumentTab {
                             [disabled]="credentialBusy" @click="removeCredential(name)">{{tr('remove', 'Delete')}}</button>
                     </div>
                 </div>
-                <div class="workflow-credential-empty" v-else>{{tr('credentialsEmpty', 'No credentials stored yet.')}}</div>
+                <ui-empty class="workflow-credential-empty" v-else
+                    icon="key" :title="tr('credentialsEmpty', 'No credentials stored yet.')"></ui-empty>
                 <label class="workflow-group-field">
                     <span>{{tr('credentialName', 'Name')}}</span>
                     <input class="workflow-credential-name-input" type="text" [value]="credentialName"
@@ -168,14 +170,16 @@ interface WorkflowDocumentTab {
                     <div class="workflow-deployment-row" v-for="item in deploymentItems"
                         data-workflow-id="{{item.workflowId}}">
                         <span class="workflow-deployment-id">{{item.workflowId}}</span>
-                        <span class="workflow-deployment-state"
-                            [class]="item.running ? 'is-running' : 'is-stopped'">{{item.running ? runningLabel : stoppedLabel}}</span>
+                        <ui-badge class="workflow-deployment-state"
+                            :label="item.running ? runningLabel : stoppedLabel"
+                            :tone="item.running ? 'success' : 'muted'"
+                            :dot="item.running"></ui-badge>
                         <span class="workflow-deployment-runs">{{item.runs}}</span>
                         <button class="workflow-btn" type="button" [disabled]="deploymentBusy"
                             @click="toggleDeployment(item)">{{item.running ? deploymentStop : deploymentStart}}</button>
                     </div>
                 </div>
-                <div class="workflow-deployments-empty" v-else>{{deploymentsEmpty}}</div>
+                <ui-empty class="workflow-deployments-empty" v-else icon="deploy" :title="deploymentsEmpty"></ui-empty>
                 <div class="workflow-publish-actions">
                     <button class="workflow-btn" type="button" @click="closeDeployments">{{tr('close', 'Close')}}</button>
                 </div>
@@ -201,18 +205,14 @@ interface WorkflowDocumentTab {
                         @click="setMetricsWindow(604800000)">{{tr('lastWeek', 'Last 7 days')}}</button>
                 </div>
                 <div class="workflow-metrics-summary" v-if="metricsData">
-                    <div class="workflow-metrics-stat">
-                        <span>{{tr('metricsRuns', 'Runs')}}</span><strong>{{metricsData?.runs}}</strong>
-                    </div>
-                    <div class="workflow-metrics-stat">
-                        <span>{{tr('metricsSuccess', 'Success')}}</span><strong>{{metricsRate}}%</strong>
-                    </div>
-                    <div class="workflow-metrics-stat">
-                        <span>{{tr('metricsAvg', 'Average')}}</span><strong>{{metricsData?.avgDurationMs}} ms</strong>
-                    </div>
-                    <div class="workflow-metrics-stat">
-                        <span>{{tr('metricsLast', 'Last status')}}</span><strong>{{metricsData?.lastStatus || '-'}}</strong>
-                    </div>
+                    <ui-stat class="workflow-metrics-stat"
+                        :label="tr('metricsRuns', 'Runs')" :value="metricsData?.runs ?? 0"></ui-stat>
+                    <ui-stat class="workflow-metrics-stat"
+                        :label="tr('metricsSuccess', 'Success')" :value="metricsRate + '%'"></ui-stat>
+                    <ui-stat class="workflow-metrics-stat"
+                        :label="tr('metricsAvg', 'Average')" :value="(metricsData?.avgDurationMs ?? 0) + ' ms'"></ui-stat>
+                    <ui-stat class="workflow-metrics-stat"
+                        :label="tr('metricsLast', 'Last status')" :value="metricsData?.lastStatus || '-'"></ui-stat>
                 </div>
                 <div class="workflow-metrics-trend" v-if="metricsTrend.length">
                     <div class="workflow-metrics-trend-row" v-for="point in metricsTrend" data-trend-start="{{point.start}}">
@@ -275,7 +275,8 @@ interface WorkflowDocumentTab {
                         <div class="workflow-plugin-main">
                             <span class="workflow-plugin-title">{{item.name}}</span>
                             <span class="workflow-plugin-version" v-if="item.version">v{{item.version}}</span>
-                            <span class="workflow-plugin-installed" v-if="item.installed">{{pluginInstalledLabel}}</span>
+                            <ui-badge class="workflow-plugin-installed" v-if="item.installed"
+                                :label="pluginInstalledLabel" tone="success" dot></ui-badge>
                             <div class="workflow-plugin-description" v-if="item.description">{{item.description}}</div>
                             <div class="workflow-plugin-nodes">{{pluginNodeCount(item)}}</div>
                         </div>
@@ -286,7 +287,7 @@ interface WorkflowDocumentTab {
                         </button>
                     </div>
                 </div>
-                <div class="workflow-plugins-empty" v-else>{{pluginsEmptyLabel}}</div>
+                <ui-empty class="workflow-plugins-empty" v-else icon="plugin" :title="pluginsEmptyLabel"></ui-empty>
             </div>
         </div>
         <div class="workflow-rename" v-if="showRename">

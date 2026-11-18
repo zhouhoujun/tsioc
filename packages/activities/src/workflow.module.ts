@@ -7,6 +7,9 @@ import { MenuBarModule } from '@tsdi/components/common/menu-bar';
 import { IconModule } from '@tsdi/components/common/icon';
 import { DynamicFormModule } from '@tsdi/components/common/dynamic-form';
 import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
+import { EmptyStateModule } from '@tsdi/components/common/empty-state';
+import { StatModule } from '@tsdi/components/common/stat';
+import { BadgeModule } from '@tsdi/components/common/badge';
 import { FormsModule } from '@tsdi/components/forms';
 import { RunAspect } from './aop/RunAspect';
 import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
@@ -58,6 +61,9 @@ import {
         IconModule,
         DynamicFormModule,
         WorkspaceLayoutModule,
+        EmptyStateModule,
+        StatModule,
+        BadgeModule,
         FormsModule,
         WorkflowDesignerI18nModule
     ],
