@@ -403,6 +403,66 @@ export const UI_CSS = `
 .ui-tree-toggle.is-leaf { visibility: hidden; }
 .ui-tree-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ui-tree-badge { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+
+.ui-field-required { color: var(--ui-danger-fg, inherit); margin-left: 0.2ch; }
+.ui-field-textarea { resize: vertical; min-height: 3em; }
+.ui-field-error { color: var(--ui-danger-fg, inherit); font-size: 0.85em; }
+.ui-text-field.has-error .ui-field-row { border-color: var(--ui-danger-fg, currentColor); }
+
+.ui-checkbox,
+.ui-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5ch;
+    cursor: pointer;
+}
+.ui-checkbox.is-disabled,
+.ui-switch.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
+.ui-checkbox-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2em;
+    height: 1.2em;
+    border: 1px solid var(--ui-border, currentColor);
+    border-radius: var(--ui-radius, 3px);
+}
+.ui-checkbox.is-checked .ui-checkbox-box { border-color: var(--ui-tone-border, currentColor); }
+.ui-switch-track {
+    display: inline-flex;
+    align-items: center;
+    width: 2.2em;
+    height: 1.2em;
+    padding: 0 0.15em;
+    border: 1px solid var(--ui-border, currentColor);
+    border-radius: var(--ui-radius-pill, 999px);
+}
+.ui-switch-thumb {
+    width: 0.8em;
+    height: 0.8em;
+    border-radius: 50%;
+    background: var(--ui-muted-fg, currentColor);
+    transition: transform 120ms ease, background 120ms ease;
+}
+.ui-switch.is-checked .ui-switch-thumb {
+    transform: translateX(0.9em);
+    background: var(--ui-tone-bg, currentColor);
+}
+.ui-switch-state { color: var(--ui-muted-fg, inherit); font-size: 0.9em; }
+
+.ui-radio-group { display: flex; flex-direction: column; gap: 0.25ch; }
+.ui-radio-option {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5ch;
+    cursor: pointer;
+    padding: 0 0.25ch;
+    border-radius: var(--ui-radius, 4px);
+}
+.ui-radio-option:hover { background: var(--ui-hover-bg, transparent); }
+.ui-radio-option.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
+.ui-radio-copy { display: inline-flex; flex-direction: column; min-width: 0; }
+.ui-radio-description { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
 `;
 
 export function installUiStyles(doc?: Document | null): void {

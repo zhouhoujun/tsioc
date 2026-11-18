@@ -47,7 +47,7 @@ Rules this layer must keep (see the root `AGENTS.md`):
 | `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
-| `@tsdi/components/common/<widget>` | one widget package: `alert`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `data-table`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `progress`, `search-field`, `select`, `skeleton`, `stat`, `status-list`, `steps`, `tab-bar`, `tabs`, `timeline`, `toast`, `toolbar`, `tree` |
+| `@tsdi/components/common/<widget>` | one widget package: `alert`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `data-table`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `progress`, `radio-group`, `search-field`, `select`, `skeleton`, `stat`, `status-list`, `steps`, `switch`, `tab-bar`, `tabs`, `text-field`, `timeline`, `toast`, `toolbar`, `tree` |
 
 ## Naming conventions
 
@@ -236,6 +236,10 @@ fields. Actions are callback attributes (`selectAction`, `closeAction`,
 | `ui-pagination` | `PaginationComponent` / `PaginationModule` | Page selector. `total` (items), `pageSize`, `page`, `maxButtons`, `changeAction`; middle range collapses to an ellipsis. |
 | `ui-data-table` | `DataTableComponent` / `DataTableModule` | Semantic columns/rows table. `columns` (`DataTableColumn[]`), `rows`, `rowKey`, `selectedKey`, `striped`/`bordered`/`dense`, `rowAction`, `emptyLabel`. |
 | `ui-tree` | `TreeComponent` / `TreeModule` | Flattened hierarchical tree. `items` (`TreeNode[]`), `expandedIds`, `selectedId`, `indent`, `selectAction`, `toggleAction`. |
+| `ui-text-field` | `TextFieldComponent` / `TextFieldModule` | Text/textarea field with label/hint/error, clear, Enter submit and blur. `value`, `type`, `multiline`, `rows`, `required`, `disabled`, `readonly`, `changeAction`, `submitAction`, `blurAction`. |
+| `ui-checkbox` | `CheckboxComponent` / `CheckboxModule` | Semantic checkbox with visible `✓` state in DOM/TUI. `label`, `checked`, `disabled`, `changeAction`. |
+| `ui-switch` | `SwitchComponent` / `SwitchModule` | On/off switch. `label`, `checked`, `onLabel`/`offLabel`, `disabled`, `changeAction`. |
+| `ui-radio-group` | `RadioGroupComponent` / `RadioGroupModule` | Radio list with descriptions and keyboard navigation. `options` (`RadioOption[]`), `value`, `disabled`, `changeAction`. |
 
 ### Projection example (`panel`)
 
@@ -261,7 +265,8 @@ land in a microtask.
 `ui-button`, `ui-badge`, `ui-card`, `ui-empty`, `ui-divider`, `ui-stat`,
 `ui-progress`, `ui-breadcrumb`, `ui-toolbar`, `ui-steps`, `ui-timeline`,
 `ui-skeleton`, `ui-search-field`, `ui-avatar`, `ui-pagination`,
-`ui-data-table` and `ui-tree` form the shared base layer. They use the same
+`ui-data-table`, `ui-tree`, `ui-text-field`, `ui-checkbox`, `ui-switch` and
+`ui-radio-group` form the shared base layer. They use the same
 contract:
 
 - `tone` (`default` / `info` / `success` / `warning` / `danger` / `error` /

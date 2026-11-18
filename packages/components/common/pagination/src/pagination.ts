@@ -22,7 +22,7 @@ interface PaginationViewItem {
         <span class="ui-pagination-pages">
             <span class="ui-pagination-node" v-for="entry in viewItems" trackBy="key">
                 <span class="ui-pagination-ellipsis" v-if="entry.ellipsis" aria-hidden="true">{{ellipsis}}</span>
-                <button class="{{entry.className}}" type="button" v-if="!entry.ellipsis"
+                <button class="{{pageClass(entry)}}" type="button" v-if="!entry.ellipsis"
                     aria-current="{{entry.page === currentPage ? 'page' : ''}}"
                     @click="go(entry.page)">{{entry.label}}</button>
             </span>
@@ -102,6 +102,13 @@ export class PaginationComponent {
                 className: ['ui-pagination-page', page === current ? 'is-current' : ''].filter(Boolean).join(' ')
             };
         });
+    }
+
+    pageClass(entry: PaginationViewItem): string {
+        return [
+            'ui-pagination-page',
+            entry.page === this.currentPage ? 'is-current' : ''
+        ].filter(Boolean).join(' ');
     }
 
     go(page: number): void {

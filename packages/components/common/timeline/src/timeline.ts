@@ -34,9 +34,9 @@ interface TimelineViewItem {
     selector: 'ui-timeline',
     template: `
     <ol class="ui-timeline {{timelineClass}}" role="list" aria-label="{{ariaLabel}}">
-        <li class="{{entry.className}}" data-status="{{entry.status}}" data-tone="{{entry.tone}}"
+        <li class="{{timelineItemClass(entry)}}" data-status="{{timelineStatus(entry)}}" data-tone="{{timelineTone(entry)}}"
             v-for="entry in viewItems" trackBy="key">
-            <span class="ui-timeline-marker" aria-hidden="true">{{entry.marker}}</span>
+            <span class="ui-timeline-marker" aria-hidden="true">{{timelineMarker(entry)}}</span>
             <span class="ui-timeline-connector" aria-hidden="true" v-if="!entry.last">│</span>
             <span class="ui-timeline-content">
                 <span class="ui-timeline-title">{{entry.title}}</span>
@@ -73,6 +73,25 @@ export class TimelineComponent {
                 status
             };
         });
+    }
+
+    timelineStatus(entry: TimelineViewItem): TimelineStatus {
+        return this.items[entry.index]?.status || 'pending';
+    }
+
+    timelineTone(entry: TimelineViewItem): UiTone {
+        const item = this.items[entry.index];
+        const status = item?.status || 'pending';
+        return normalizeTone(item?.tone, status === 'error' ? 'danger' : status === 'done' ? 'success' : status === 'running' ? 'accent' : 'muted');
+    }
+
+    timelineItemClass(entry: TimelineViewItem): string {
+        const status = this.timelineStatus(entry);
+        return ['ui-timeline-item', `is-${status}`, `is-${this.timelineTone(entry)}`].join(' ');
+    }
+
+    timelineMarker(entry: TimelineViewItem): string {
+        return this.markerFor(this.timelineStatus(entry));
     }
 
     private markerFor(status: TimelineStatus): string {

@@ -20,10 +20,14 @@ import { AvatarComponent, AvatarModule } from '@tsdi/components/common/avatar';
 import { PaginationComponent, PaginationModule } from '@tsdi/components/common/pagination';
 import { DataTableComponent, DataTableModule } from '@tsdi/components/common/data-table';
 import { TreeComponent, TreeModule } from '@tsdi/components/common/tree';
+import { TextFieldComponent, TextFieldModule } from '@tsdi/components/common/text-field';
+import { CheckboxComponent, CheckboxModule } from '@tsdi/components/common/checkbox';
+import { SwitchComponent, SwitchModule } from '@tsdi/components/common/switch';
+import { RadioGroupComponent, RadioGroupModule } from '@tsdi/components/common/radio-group';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -42,6 +46,10 @@ import { TreeComponent, TreeModule } from '@tsdi/components/common/tree';
         <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
         <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']"></ui-tree>
+        <ui-text-field label="Name" value="Ada"></ui-text-field>
+        <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
+        <ui-switch label="Live" :checked="true"></ui-switch>
+        <ui-radio-group :options="modes" value="basic"></ui-radio-group>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -52,6 +60,7 @@ class CommonUiConsoleHostComponent {
     tableColumns = [{ key: 'name', label: 'Name' }, { key: 'value', label: 'Value' }];
     tableRows = [{ id: 'a', name: 'Alpha', value: '1' }];
     tree = [{ id: 'root', label: 'Root', children: [{ id: 'child', label: 'Child' }] }];
+    modes = [{ label: 'Basic', value: 'basic' }, { label: 'Advanced', value: 'advanced' }];
 }
 
 @Suite('common base UI console rendering')
@@ -77,7 +86,11 @@ export class CommonUiConsoleTest {
                 AvatarModule,
                 PaginationModule,
                 DataTableModule,
-                TreeModule
+                TreeModule,
+                TextFieldModule,
+                CheckboxModule,
+                SwitchModule,
+                RadioGroupModule
             ]
         });
         try {
@@ -105,6 +118,10 @@ export class CommonUiConsoleTest {
             expect(output).toContain('AL');
             expect(output).toContain('Alpha');
             expect(output).toContain('Child');
+            expect(output).toContain('Ada');
+            expect(output).toContain('Enabled');
+            expect(output).toContain('Live');
+            expect(output).toContain('Basic');
         } finally {
             await ctx.close();
         }

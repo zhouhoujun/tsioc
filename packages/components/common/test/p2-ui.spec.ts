@@ -8,10 +8,11 @@ import { AvatarComponent, AvatarModule } from '../avatar';
 import { PaginationComponent, PaginationModule } from '../pagination';
 import { DataTableComponent, DataTableModule } from '../data-table';
 import { TreeComponent, TreeModule, TreeNode } from '../tree';
+import { StepsComponent, StepsModule } from '../steps';
 
 @Component({
     selector: 'p2-ui-host',
-    imports: [AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent],
+    imports: [AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, StepsComponent],
     template: `
     <ui-avatar label="Ada Lovelace" size="lg" status="online"></ui-avatar>
     <ui-avatar label="Bob" shape="square" tone="accent"></ui-avatar>
@@ -19,7 +20,8 @@ import { TreeComponent, TreeModule, TreeNode } from '../tree';
     <ui-data-table :columns="columns" :rows="rows" rowKey="id"
         emptyLabel="No rows" :rowAction="onRow"></ui-data-table>
     <ui-tree :items="tree" :expandedIds="expanded"
-        :selectAction="onNode" :toggleAction="onToggle"></ui-tree>`
+        :selectAction="onNode" :toggleAction="onToggle"></ui-tree>
+    <ui-steps :items="stepItems" :current="0"></ui-steps>`
 })
 class P2UiHostComponent {
     page = 5;
@@ -40,6 +42,7 @@ class P2UiHostComponent {
         ] }
     ];
     expanded = ['root'];
+    stepItems = [{ label: 'One' }, { label: 'Two' }, { label: 'Three' }];
     onPage = (page: number) => { this.page = page; };
     onRow = (row: { id: string }) => { this.selectedRow = row.id; };
     onNode = (node: TreeNode) => { this.selectedNode = String(node.id); };
@@ -59,7 +62,8 @@ export class P2UiWidgetsTest {
                 AvatarModule,
                 PaginationModule,
                 DataTableModule,
-                TreeModule
+                TreeModule,
+                StepsModule
             ],
             providers: [{
                 provide: DOCUMENT,
@@ -117,7 +121,9 @@ export class P2UiWidgetsTest {
         const pages = root.querySelectorAll('.ui-pagination-page') as NodeListOf<HTMLButtonElement>;
         const six = Array.from(pages).find(button => button.textContent === '6') as HTMLButtonElement;
         six.click();
+        await Promise.resolve();
         expect(host.page).toEqual(6);
+        expect(root.querySelector('.ui-pagination-page.is-current')?.textContent).toEqual('6');
     }
 
     @Test('data table renders headers/cells and dispatches a row')
@@ -135,6 +141,20 @@ export class P2UiWidgetsTest {
 
         (root.querySelectorAll('.ui-data-table-row')[1] as HTMLElement).click();
         expect(host.selectedRow).toEqual('b');
+    }
+
+    @Test('steps recompute status when current changes')
+    async steps() {
+        const ref = await this.mount();
+        const steps = ref.hostView.query(StepsComponent) as ComponentRef<StepsComponent>;
+        const root = steps.hostView.rootNodes[0] as HTMLElement;
+        const items = root.querySelectorAll('.ui-step') as NodeListOf<HTMLElement>;
+
+        expect(items[0].getAttribute('data-status')).toEqual('active');
+        (steps.instance as any).current = 2;
+        await Promise.resolve();
+        expect(items[0].getAttribute('data-status')).toEqual('done');
+        expect(items[2].getAttribute('data-status')).toEqual('active');
     }
 
     @Test('tree flattens expanded children and toggles expansion')

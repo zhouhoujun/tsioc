@@ -33,11 +33,11 @@ interface StepViewItem {
     selector: 'ui-steps',
     template: `
     <ol class="ui-steps {{stepsClass}}" aria-label="{{ariaLabel}}">
-        <li class="{{entry.className}}" data-status="{{entry.status}}"
+        <li class="{{stepClass(entry)}}" data-status="{{stepStatus(entry)}}"
             v-for="entry in viewItems" trackBy="key"
-            aria-current="{{entry.status === 'active' ? 'step' : ''}}"
+            aria-current="{{stepStatus(entry) === 'active' ? 'step' : ''}}"
             @click="pick(entry)">
-            <span class="ui-step-marker" aria-hidden="true">{{markerPrefix(entry)}}</span>
+            <span class="ui-step-marker" aria-hidden="true">{{stepMarker(entry)}}</span>
             <span class="ui-step-copy">
                 <span class="ui-step-label">{{entry.label}}</span>
                 <span class="ui-step-hint" v-if="entry.hint">{{entry.hint}}</span>
@@ -83,8 +83,25 @@ export class StepsComponent {
         });
     }
 
-    markerPrefix(entry: StepViewItem): string {
-        return entry.marker;
+    stepStatus(entry: StepViewItem): StepStatus {
+        const item = this.items[entry.index];
+        const currentIndex = this.currentIndex(this.items);
+        return this.resolveStatus(item, entry.index, currentIndex);
+    }
+
+    stepClass(entry: StepViewItem): string {
+        const status = this.stepStatus(entry);
+        const currentIndex = this.currentIndex(this.items);
+        return [
+            'ui-step',
+            `is-${status}`,
+            entry.disabled ? 'is-disabled' : '',
+            entry.index === currentIndex ? 'is-current' : ''
+        ].filter(Boolean).join(' ');
+    }
+
+    stepMarker(entry: StepViewItem): string {
+        return this.markerFor(this.stepStatus(entry), entry.index);
     }
 
     pick(entry: StepViewItem): void {
