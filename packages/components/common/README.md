@@ -47,7 +47,7 @@ Rules this layer must keep (see the root `AGENTS.md`):
 | `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
-| `@tsdi/components/common/<widget>` | one widget package: `alert`, `badge`, `breadcrumb`, `button`, `card`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `panel`, `progress`, `search-field`, `select`, `skeleton`, `stat`, `status-list`, `steps`, `tab-bar`, `tabs`, `timeline`, `toast`, `toolbar` |
+| `@tsdi/components/common/<widget>` | one widget package: `alert`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `data-table`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `progress`, `search-field`, `select`, `skeleton`, `stat`, `status-list`, `steps`, `tab-bar`, `tabs`, `timeline`, `toast`, `toolbar`, `tree` |
 
 ## Naming conventions
 
@@ -232,6 +232,10 @@ fields. Actions are callback attributes (`selectAction`, `closeAction`,
 | `ui-timeline` | `TimelineComponent` / `TimelineModule` | Vertical activity list. `items` (`TimelineItem[]`) with `title`/`label`, `detail`, `time`, `tone`, `status` (`pending`/`running`/`done`/`error`). |
 | `ui-skeleton` | `SkeletonComponent` / `SkeletonModule` | Static loading placeholder. `lines`, `width`, `lineWidths`, `label`; uses `░` bars so TUI hosts render too. |
 | `ui-search-field` | `SearchFieldComponent` / `SearchFieldModule` | Search/text field with leading icon, clear affordance and Enter submit. `value`, `label`, `placeholder`, `hint`, `clearable`, `disabled`, `readonly`, `changeAction`, `submitAction`, `clearAction`. |
+| `ui-avatar` | `AvatarComponent` / `AvatarModule` | Person/entity avatar. `label` (initials), `icon`, `src`, `size`, `tone`, `shape` (`circle`/`square`), `status` (`online`/`offline`/`away`/`busy`). |
+| `ui-pagination` | `PaginationComponent` / `PaginationModule` | Page selector. `total` (items), `pageSize`, `page`, `maxButtons`, `changeAction`; middle range collapses to an ellipsis. |
+| `ui-data-table` | `DataTableComponent` / `DataTableModule` | Semantic columns/rows table. `columns` (`DataTableColumn[]`), `rows`, `rowKey`, `selectedKey`, `striped`/`bordered`/`dense`, `rowAction`, `emptyLabel`. |
+| `ui-tree` | `TreeComponent` / `TreeModule` | Flattened hierarchical tree. `items` (`TreeNode[]`), `expandedIds`, `selectedId`, `indent`, `selectAction`, `toggleAction`. |
 
 ### Projection example (`panel`)
 
@@ -256,7 +260,8 @@ land in a microtask.
 
 `ui-button`, `ui-badge`, `ui-card`, `ui-empty`, `ui-divider`, `ui-stat`,
 `ui-progress`, `ui-breadcrumb`, `ui-toolbar`, `ui-steps`, `ui-timeline`,
-`ui-skeleton` and `ui-search-field` form the shared base layer. They use the same
+`ui-skeleton`, `ui-search-field`, `ui-avatar`, `ui-pagination`,
+`ui-data-table` and `ui-tree` form the shared base layer. They use the same
 contract:
 
 - `tone` (`default` / `info` / `success` / `warning` / `danger` / `error` /

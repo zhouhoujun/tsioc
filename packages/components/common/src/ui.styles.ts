@@ -301,6 +301,108 @@ export const UI_CSS = `
     padding: 0 0.2ch;
 }
 .ui-field-hint { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+
+.ui-avatar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    overflow: hidden;
+    background: var(--ui-avatar-bg, var(--ui-tone-bg, transparent));
+    color: var(--ui-avatar-fg, inherit);
+    font-weight: 600;
+    line-height: 1;
+}
+.ui-avatar.is-circle { border-radius: 50%; }
+.ui-avatar.is-square { border-radius: var(--ui-radius, 4px); }
+.ui-avatar.is-xs { width: 1.6em; height: 1.6em; font-size: 0.7em; }
+.ui-avatar.is-sm { width: 2em; height: 2em; font-size: 0.8em; }
+.ui-avatar.is-md { width: 2.6em; height: 2.6em; font-size: 1em; }
+.ui-avatar.is-lg { width: 3.4em; height: 3.4em; font-size: 1.2em; }
+.ui-avatar-image { width: 100%; height: 100%; object-fit: cover; }
+.ui-avatar-status {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 0.55em;
+    height: 0.55em;
+    border-radius: 50%;
+    background: var(--ui-muted-fg, currentColor);
+}
+.ui-avatar.is-online .ui-avatar-status { background: var(--ui-success-fg, currentColor); }
+.ui-avatar.is-away .ui-avatar-status { background: var(--ui-warning-fg, currentColor); }
+.ui-avatar.is-busy .ui-avatar-status { background: var(--ui-danger-fg, currentColor); }
+
+.ui-pagination { display: inline-flex; align-items: center; gap: 0.35ch; }
+.ui-pagination-pages { display: inline-flex; align-items: center; gap: 0.25ch; }
+.ui-pagination-node { display: inline-flex; }
+.ui-pagination-page,
+.ui-pagination-step {
+    min-width: 2ch;
+    padding: 0 0.5ch;
+    border: 1px solid transparent;
+    border-radius: var(--ui-radius, 4px);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.ui-pagination-page:hover,
+.ui-pagination-step:hover:not(:disabled) { border-color: var(--ui-border, currentColor); }
+.ui-pagination-page.is-current {
+    border-color: var(--ui-tone-border, currentColor);
+    color: var(--ui-tone-fg, inherit);
+    font-weight: 600;
+}
+.ui-pagination-step:disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
+.ui-pagination-ellipsis { color: var(--ui-muted-fg, inherit); }
+
+.ui-data-table {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid transparent;
+    border-radius: var(--ui-radius, 4px);
+}
+.ui-data-table.is-bordered { border-color: var(--ui-border, currentColor); }
+.ui-data-table-head,
+.ui-data-table-row {
+    display: flex;
+    align-items: baseline;
+    gap: 1ch;
+    padding: 0.15em 0.5ch;
+}
+.ui-data-table.is-dense .ui-data-table-head,
+.ui-data-table.is-dense .ui-data-table-row { padding: 0 0.5ch; }
+.ui-data-table-head { color: var(--ui-muted-fg, inherit); font-weight: 600; }
+.ui-data-table.is-striped .ui-data-table-row:nth-child(even) { background: var(--ui-stripe-bg, transparent); }
+.ui-data-table-row[role="row"] { cursor: default; }
+.ui-data-table-row.is-selected { background: var(--ui-selected-bg, transparent); }
+.ui-data-table-cell { min-width: 0; }
+.ui-data-table-cell.is-center { text-align: center; }
+.ui-data-table-cell.is-right { text-align: right; }
+.ui-data-table-sep { display: none; }
+.ui-data-table-empty { padding: 0.5ch; color: var(--ui-muted-fg, inherit); }
+
+.ui-tree { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ui-tree-node { display: block; min-width: 0; }
+.ui-tree-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35ch;
+    min-width: 0;
+    padding: 0 0.25ch;
+    border-radius: var(--ui-radius, 4px);
+    cursor: pointer;
+}
+.ui-tree-node.is-selected > .ui-tree-row { background: var(--ui-selected-bg, transparent); }
+.ui-tree-node.is-disabled > .ui-tree-row { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
+.ui-tree-indent { white-space: pre; }
+.ui-tree-toggle { width: 1ch; flex: none; }
+.ui-tree-toggle.is-leaf { visibility: hidden; }
+.ui-tree-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-tree-badge { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
 `;
 
 export function installUiStyles(doc?: Document | null): void {

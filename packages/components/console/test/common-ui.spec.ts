@@ -16,10 +16,14 @@ import { ToolbarComponent, ToolbarModule } from '@tsdi/components/common/toolbar
 import { StepsComponent, StepsModule } from '@tsdi/components/common/steps';
 import { TimelineComponent, TimelineModule } from '@tsdi/components/common/timeline';
 import { SkeletonComponent, SkeletonModule } from '@tsdi/components/common/skeleton';
+import { AvatarComponent, AvatarModule } from '@tsdi/components/common/avatar';
+import { PaginationComponent, PaginationModule } from '@tsdi/components/common/pagination';
+import { DataTableComponent, DataTableModule } from '@tsdi/components/common/data-table';
+import { TreeComponent, TreeModule } from '@tsdi/components/common/tree';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -34,6 +38,10 @@ import { SkeletonComponent, SkeletonModule } from '@tsdi/components/common/skele
         <ui-steps :items="steps" :current="1"></ui-steps>
         <ui-timeline :items="events"></ui-timeline>
         <ui-skeleton :lines="1" :width="6"></ui-skeleton>
+        <ui-avatar label="Ada Lovelace"></ui-avatar>
+        <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
+        <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id"></ui-data-table>
+        <ui-tree :items="tree" :expandedIds="['root']"></ui-tree>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -41,6 +49,9 @@ class CommonUiConsoleHostComponent {
     tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
+    tableColumns = [{ key: 'name', label: 'Name' }, { key: 'value', label: 'Value' }];
+    tableRows = [{ id: 'a', name: 'Alpha', value: '1' }];
+    tree = [{ id: 'root', label: 'Root', children: [{ id: 'child', label: 'Child' }] }];
 }
 
 @Suite('common base UI console rendering')
@@ -62,7 +73,11 @@ export class CommonUiConsoleTest {
                 ToolbarModule,
                 StepsModule,
                 TimelineModule,
-                SkeletonModule
+                SkeletonModule,
+                AvatarModule,
+                PaginationModule,
+                DataTableModule,
+                TreeModule
             ]
         });
         try {
@@ -87,6 +102,9 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Draft');
             expect(output).toContain('Started');
             expect(output).toContain('░░░░░░');
+            expect(output).toContain('AL');
+            expect(output).toContain('Alpha');
+            expect(output).toContain('Child');
         } finally {
             await ctx.close();
         }
