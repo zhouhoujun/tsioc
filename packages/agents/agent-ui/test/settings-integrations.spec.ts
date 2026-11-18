@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { activateAgentConsoleMcpTool, manageAgentConsolePlugins } from '../src/AgentConsoleSettingsIntegrationActions';
+import { describeAgentConsoleWorkspaceTrust, trustAgentConsoleWorkspace } from '../src/AgentConsoleSettingsWorkspaceTrust';
 
 function createHost(overrides: any = {}): any {
     const calls: any[] = [];
@@ -86,5 +87,26 @@ export class AgentConsoleSettingsIntegrationsTest {
         await activateAgentConsoleMcpTool(host);
         expect(host.calls).toEqual([]);
         expect(host.notifications[0]).toContain('already active');
+    }
+
+    @Test('workspace trust is reported and granted only after confirmation')
+    async workspaceTrust() {
+        const trusted = new Set<string>();
+        const resolver = {
+            isTrusted: (workspace: string) => trusted.has(workspace),
+            trust: (workspace: string) => { trusted.add(workspace); }
+        };
+        const host = createHost({ selectQueue: ['no'] });
+        host.app = { get: () => resolver };
+        host.state.workspace = '/w';
+        expect(describeAgentConsoleWorkspaceTrust(host)).toEqual('untrusted');
+        await trustAgentConsoleWorkspace(host);
+        expect(trusted.size).toEqual(0);
+
+        host.select = async () => 'yes';
+        await trustAgentConsoleWorkspace(host);
+        expect(trusted.has('/w')).toEqual(true);
+        expect(describeAgentConsoleWorkspaceTrust(host)).toEqual('trusted');
+        expect(host.notifications[host.notifications.length - 1]).toContain('/w');
     }
 }

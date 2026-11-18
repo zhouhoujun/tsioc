@@ -1,5 +1,6 @@
 import { formatAgentUiLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import { activateAgentConsoleMcpTool, manageAgentConsolePlugins } from './AgentConsoleSettingsIntegrationActions';
+import { describeAgentConsoleWorkspaceTrust, trustAgentConsoleWorkspace } from './AgentConsoleSettingsWorkspaceTrust';
 
 /**
  * Settings center schema.
@@ -63,6 +64,8 @@ export interface AgentConsoleSettingsHost extends AgentConsoleSettingsLabelHost 
     setYoloMode(enabled: boolean, notify?: boolean): Promise<void>;
     select(title: string, options: Array<{ label: string; value: string; description?: string }>, index: number, hint?: string): Promise<string | undefined>;
     invokeTool?(name: string, input: any): Promise<any>;
+    /** DI application context (workspace trust resolver). */
+    app?: any;
     persistSettings(patch: Record<string, any>): Promise<void>;
     runInternalCommand(command: string): Promise<any>;
     notify(message: string): void;
@@ -270,6 +273,8 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
         host => host.runPermissionsCommand('sandbox'), () => '', ['/permissions sandbox']),
     actionRow('approvals', 'permissions', 'agent.menu.settings.fieldApprovals', 'Pending approvals', 'agent.menu.settings.fieldApprovalsDescription', 'review and answer approval requests', 'session', 'none',
         host => host.runInternalCommand('/approvals'), host => String(host.state.pendingApprovals?.length || 0), ['/approvals']),
+    actionRow('workspaceTrust', 'permissions', 'agent.menu.settings.trustLabel', 'Workspace trust: {state}', 'agent.menu.settings.trustDescription', 'mutating tools are blocked until the workspace is trusted', 'workspace', 'immediate',
+        host => trustAgentConsoleWorkspace(host), host => describeAgentConsoleWorkspaceTrust(host), ['/permissions trust']),
     actionRow('permissionsInspect', 'permissions', 'agent.menu.settings.fieldPermissionsInspect', 'Permission inspector', 'agent.menu.settings.fieldPermissionsInspectDescription', 'explain why a tool would be allowed or denied', 'workspace', 'none',
         host => host.runPermissionsCommand('inspect'), () => '', ['/permissions inspect']),
 

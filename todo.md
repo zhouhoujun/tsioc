@@ -4711,3 +4711,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - UI：设置行 scope 使用 `ui-badge`（`:label` 绑定；`[label]` 在 console compiler 下不生效），行的值/生效方式照旧。
 - 测试：`settings-integrations.spec.ts` 4 用例（插件激活/移除确认、MCP 激活、全部已激活），设置中心新增队列/窗口用例，
   HTML 端新增设置页渲染用例；相关套件 135 passing。
+
+## 2026-11-18 设置中心 P3（工作区信任 + Web 皮肤）
+- Permissions 分区新增「Workspace trust」：经 `AGENT_WORKSPACE_TRUST` 读取 trusted/untrusted/unknown，
+  未信任时二次确认后调用 `trust()`；宿主无 resolver 时给出可诊断提示。
+- Web 皮肤：`web/console.css` 增加设置中心布局/选中态/徽标/提示样式，全部使用主题变量
+  （`--console-*`），light/dark/solarized/high-contrast 跟随主题。
+- 测试：settings-integrations 新增信任用例（取消不信任、确认后 trusted + 提示），相关套件 136 passing。

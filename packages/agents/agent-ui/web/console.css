@@ -2281,3 +2281,85 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     align-self: flex-start;
     margin: 2px 8px;
 }
+
+/* Settings center (schema-driven page, TUI + web) */
+#agent-console .settings-center-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px 8px;
+    background: var(--console-dialog-bg);
+    color: var(--console-text);
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+#agent-console .settings-title {
+    font-weight: 600;
+    color: var(--console-text);
+}
+
+#agent-console .settings-meta {
+    color: var(--console-meta);
+    font-size: 0.9em;
+}
+
+#agent-console .settings-query {
+    color: var(--console-accent);
+    font-size: 0.9em;
+    margin-bottom: 2px;
+}
+
+#agent-console .settings-rows {
+    display: flex;
+    flex-direction: column;
+}
+
+#agent-console .settings-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+#agent-console .settings-row:hover {
+    background: color-mix(in srgb, var(--console-select-selected-bg) 60%, transparent);
+}
+
+#agent-console .settings-row[aria-selected="true"] {
+    background: var(--console-select-selected-bg);
+}
+
+#agent-console .settings-label {
+    color: var(--console-text);
+}
+
+#agent-console .settings-value {
+    color: var(--console-accent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#agent-console .settings-row .ui-badge {
+    flex: none;
+    color: var(--console-meta);
+    border-color: var(--console-meta);
+    font-size: 0.85em;
+}
+
+#agent-console .settings-effect,
+#agent-console .settings-detail,
+#agent-console .settings-hint,
+#agent-console .settings-empty {
+    color: var(--console-meta);
+    font-size: 0.9em;
+}
+
+#agent-console .settings-empty {
+    padding: 6px;
+    color: var(--console-error);
+}
