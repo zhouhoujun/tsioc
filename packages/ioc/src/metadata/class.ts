@@ -18,6 +18,8 @@ import { ctorName, DecoratorFn, DecoratorType, DecorDefine, Decors, RunableDefin
 import type { RunContext } from '../handlers/contexts';
 
 
+let DEFINES_VERSION = 0;
+
 /**
  * type class reflective.
  * 
@@ -99,6 +101,8 @@ export class ClassRef<T = any> {
     }
 
     private invocationFactory?: Resolve<InvocationFactory>;
+    private _definesCache?: Map<DecoratorFn, DecorDefine[]>;
+    private _definesCacheVersion = -1;
 
     constructor(public readonly type: AbstractType<T>, annotation: Partial<TypeDef<T>>, private parent?: ClassRef) {
         this.annotation = this.initAnnotation(annotation);
@@ -169,7 +173,7 @@ export class ClassRef<T = any> {
     assignAnnotation(records: Record<string, any>) {
         if (!records) return;
         assign(this.annotation, records, 'classDefs', 'resolvers', 'runnables', 'providers', 'propDefs', 'methodDefs', 'paramDefs', 'propMetadatas', 'methodMetadatas');
-
+        DEFINES_VERSION += 1;
     }
 
     /**
@@ -213,7 +217,7 @@ export class ClassRef<T = any> {
     }
 
     storage(define: DecorDefine) {
-
+        DEFINES_VERSION += 1;
         const annotation = this.getAnnotation();
         switch (define.decorType) {
             case 'class':
@@ -263,7 +267,16 @@ export class ClassRef<T = any> {
     }
 
     getDefines<T = any>(decor: DecoratorFn): DecorDefine<T>[] {
-        return (this.annotation.decDefs?.get(decor) ?? []).concat(this.parent?.getDefines(decor) ?? []);
+        if (!this._definesCache || this._definesCacheVersion !== DEFINES_VERSION) {
+            this._definesCache = new Map();
+            this._definesCacheVersion = DEFINES_VERSION;
+        }
+        let defines = this._definesCache.get(decor);
+        if (!defines) {
+            defines = (this.annotation.decDefs?.get(decor) ?? []).concat(this.parent?.getDefines(decor) ?? []);
+            this._definesCache.set(decor, defines);
+        }
+        return defines as DecorDefine<T>[];
     }
 
     /**
