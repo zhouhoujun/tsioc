@@ -12,7 +12,9 @@ import { getDisplayWidth } from '../../src/display-width';
     <div class="console-panel dialog-panel alert-dialog {{widthClass}}" role="alertdialog" data-tone="{{tone}}" aria-label="{{ariaLabel}}">
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
         <label class="dialog-title" v-if="title">{{title}}</label>
-        <label class="dialog-line" v-for="line in lines">{{line}}</label>
+        <div class="dialog-body" [style]="scrollStyle">
+            <label class="dialog-line" v-for="line in lines">{{line}}</label>
+        </div>
         <label class="dialog-hint" v-if="hint">{{hint}}</label>
         <label class="alert-action" data-cell-width="2" @click="accept">{{actionLabel}}</label>
     </div>`
@@ -28,8 +30,20 @@ export class AlertDialogComponent {
     @Attribute() maxWidth = 88;
     @Attribute() minWidth = 24;
     @Attribute() horizontalChrome = 6;
+    /** Viewport guard for long alert content; empty disables the scroll box. */
+    @Attribute() maxHeight = '60vh';
     @Attribute() closeAction?: () => void;
     @Attribute() acceptAction?: () => void;
+
+    get scrollStyle(): Record<string, string> {
+        return this.maxHeight
+            ? {
+                'max-height': String(this.maxHeight),
+                'overflow-y': 'auto',
+                'overscroll-behavior': 'contain'
+            }
+            : {};
+    }
 
     get widthClass(): string {
         return `dialog-w-${this.resolveContentWidth()}`;

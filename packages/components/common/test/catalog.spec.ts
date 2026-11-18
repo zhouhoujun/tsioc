@@ -21,7 +21,7 @@ const BASE_SELECTORS = [
     'ui-progress', 'ui-breadcrumb', 'ui-toolbar', 'ui-steps', 'ui-timeline',
     'ui-skeleton', 'ui-search-field', 'ui-avatar', 'ui-pagination',
     'ui-data-table', 'ui-tree', 'ui-text-field', 'ui-checkbox', 'ui-switch',
-    'ui-radio-group', 'ui-alert', 'ui-select-trigger', 'ui-kbd'
+    'ui-radio-group', 'ui-alert', 'ui-select-trigger', 'ui-kbd', 'ui-scrollbar'
 ];
 
 @Suite('common package catalog')

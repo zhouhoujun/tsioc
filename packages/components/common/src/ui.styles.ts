@@ -545,6 +545,14 @@ export const UI_CSS = `
     text-align: center;
 }
 .ui-kbd-separator { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+
+.ui-scrollbar { display: inline-flex; flex-direction: column; line-height: 1; }
+.ui-scrollbar.is-vertical .ui-scrollbar-rail { display: flex; flex-direction: column; }
+.ui-scrollbar.is-horizontal .ui-scrollbar-track { display: inline-flex; white-space: nowrap; }
+.ui-scrollbar-track-cell { color: var(--ui-muted-fg, inherit); }
+.ui-scrollbar-thumb { color: var(--ui-tone-fg, inherit); }
+.ui-scrollbar-rail .ui-scrollbar-track-cell,
+.ui-scrollbar-rail .ui-scrollbar-thumb { display: block; }
 `;
 
 export function installUiStyles(doc?: Document | null): void {

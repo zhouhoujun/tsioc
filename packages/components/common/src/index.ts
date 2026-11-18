@@ -2,6 +2,7 @@ export * from './input';
 export * from './components';
 export * from './display-width';
 export * from './raw-element';
+export * from './scrollbar';
 export * from './styles';
 export * from './theme';
 export * from './ui';

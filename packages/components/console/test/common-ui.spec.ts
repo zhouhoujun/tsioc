@@ -27,10 +27,11 @@ import { RadioGroupComponent, RadioGroupModule } from '@tsdi/components/common/r
 import { AlertNoticeComponent, AlertNoticeModule } from '@tsdi/components/common/alert-notice';
 import { SelectTriggerComponent, SelectTriggerModule } from '@tsdi/components/common/select-trigger';
 import { KbdComponent, KbdModule } from '@tsdi/components/common/kbd';
+import { ScrollbarComponent, ScrollbarModule } from '@tsdi/components/common/scrollbar';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -56,6 +57,7 @@ import { KbdComponent, KbdModule } from '@tsdi/components/common/kbd';
         <ui-alert title="Heads up" :lines="['First']" tone="warning"></ui-alert>
         <ui-select-trigger value="basic" label="Basic"></ui-select-trigger>
         <ui-kbd :keys="['Ctrl', 'K']"></ui-kbd>
+        <ui-scrollbar :total="100" :visible="10" :offset="45" :length="10"></ui-scrollbar>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -99,7 +101,8 @@ export class CommonUiConsoleTest {
                 RadioGroupModule,
                 AlertNoticeModule,
                 SelectTriggerModule,
-                KbdModule
+                KbdModule,
+                ScrollbarModule
             ]
         });
         try {
@@ -133,6 +136,7 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Basic');
             expect(output).toContain('Heads up');
             expect(output).toContain('Ctrl');
+            expect(output).toContain('█');
         } finally {
             await ctx.close();
         }
