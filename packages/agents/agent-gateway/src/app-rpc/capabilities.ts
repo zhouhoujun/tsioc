@@ -155,3 +155,19 @@ export const AGENT_APP_RPC_CAPABILITIES = new GatewayCapabilityRegistry([
 
 /** Ordered method ids for `app.capabilities`. */
 export const AGENT_APP_RPC_METHODS = AGENT_APP_RPC_CAPABILITIES.methods();
+
+/**
+ * `app.capabilities` payload: protocol/version/features plus the registry
+ * descriptors. `methods` keeps the historical shape clients already parse.
+ */
+export function buildAgentAppRpcCapabilities() {
+    return {
+        protocol: 'json-rpc-2.0',
+        protocolVersion: 1,
+        transports: ['http', 'stdio', 'ws'],
+        features: { sse: true, ws: true, approvals: true, queue: true },
+        methods: AGENT_APP_RPC_METHODS,
+        descriptors: AGENT_APP_RPC_CAPABILITIES.list(),
+        streamingMethods: ['run.turn_stream']
+    };
+}
