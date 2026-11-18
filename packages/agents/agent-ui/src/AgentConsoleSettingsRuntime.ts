@@ -103,6 +103,9 @@ export async function restoreSettings(self: any): Promise<void> {
         if (typeof persisted.queueMode === 'boolean') {
             self.options.ui = { ...(self.options.ui || {}), queueMode: persisted.queueMode };
         }
+        if (persisted.approvalTimeoutMs) {
+            (self.runtime as any)?.setApprovalTimeout?.(persisted.approvalTimeoutMs);
+        }
         if (persisted.transcriptWindowMessages) {
             self.state.consoleOptions = {
                 ...self.state.consoleOptions,

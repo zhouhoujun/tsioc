@@ -4718,3 +4718,12 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - Web 皮肤：`web/console.css` 增加设置中心布局/选中态/徽标/提示样式，全部使用主题变量
   （`--console-*`），light/dark/solarized/high-contrast 跟随主题。
 - 测试：settings-integrations 新增信任用例（取消不信任、确认后 trusted + 提示），相关套件 136 passing。
+
+## 2026-11-18 设置中心 P3：审批超时（approval timeout）
+- agent：`ApprovalManager.setDefaultTimeout`（默认 no-op，`ToolApprovalManager` 实现并在 createRequest 时生效，
+  夹在 1s..maxTimeout），`DefaultAgentRuntime.setApprovalTimeout` 同时更新 policy.limits 与共享 manager。
+- gateway：`settings.ui.set` 接受 `approvalTimeoutMs`（1s..300s 夹取），持久化到 settings.json 并立即应用到 runtime。
+- agent-ui：Permissions 分区新增「Approval timeout: {N}s」，选择 15/30/60/120s；attach/web 走 `settings.ui.set`，
+  本地直接调用 runtime；持久化 `approvalTimeoutMs`，启动恢复时重新应用。
+- 测试：agent 1076 passing（新增 manager 超时/夹取与 runtime 共享用例），gateway 384 passing（持久化/夹取），
+  settings-center 11 passing（应用 60s + 持久化 + 行值显示）。

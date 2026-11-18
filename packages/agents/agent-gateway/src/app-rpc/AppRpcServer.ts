@@ -362,7 +362,14 @@ export class AppRpcServer {
                 return this.setSessionSandboxMode(params, context);
             case 'session.sandbox_mode.get':
                 return this.getSessionSandboxMode(params, context);
-            case 'settings.ui.set': return applyConsoleUiSettings(this.options, params || {}); case 'settings.ui.get': return readConsoleUiSettings(this.options.workspace || this.resolveWorkspace());
+            case 'settings.ui.set': {
+                const applied = applyConsoleUiSettings(this.options, params || {});
+                if (applied.approvalTimeoutMs) {
+                    (this.runtime as any).setApprovalTimeout?.(applied.approvalTimeoutMs);
+                }
+                return applied;
+            }
+            case 'settings.ui.get': return readConsoleUiSettings(this.options.workspace || this.resolveWorkspace());
             case 'settings.store.get': return readConsoleStore(this.options.workspace || this.resolveWorkspace(), String(params?.name || '')); case 'settings.store.set': writeConsoleStore(this.options.workspace || this.resolveWorkspace(), String(params?.name || ''), params?.data); return { ok: true };
             case 'session.delegation_mode.set':
                 return this.setSessionDelegationMode(params, context);

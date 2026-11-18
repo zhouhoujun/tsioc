@@ -9,6 +9,8 @@ export interface ConsoleUiSettingsPatch {
     yoloMode?: boolean;
     thinkingLevel?: string | null;
     modelProfile?: string | null;
+    /** Approval wait budget in milliseconds; new requests use it immediately. */
+    approvalTimeoutMs?: number | null;
 }
 
 const SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -35,9 +37,20 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
     const securityLevel = SECURITY_LEVELS.includes(String(params.securityLevel)) ? String(params.securityLevel) : undefined;
     const thinkingLevel = ['low', 'medium', 'high', 'max'].includes(String(params.thinkingLevel)) ? String(params.thinkingLevel) : undefined;
     const modelProfile = typeof params.modelProfile === 'string' && params.modelProfile.trim() ? params.modelProfile.trim() : undefined;
+    const approvalTimeoutMs = Number.isFinite(Number(params.approvalTimeoutMs)) && Number(params.approvalTimeoutMs) > 0
+        ? Math.max(1000, Math.min(300000, Math.floor(Number(params.approvalTimeoutMs))))
+        : undefined;
     (options as any).ui = ui;
-    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile);
-    return { personality: ui.personality, memoryInjection: ui.memoryInjection, securityLevel, yoloMode: params.yoloMode, thinkingLevel, modelProfile };
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs);
+    return {
+        personality: ui.personality,
+        memoryInjection: ui.memoryInjection,
+        securityLevel,
+        yoloMode: params.yoloMode,
+        thinkingLevel,
+        modelProfile,
+        ...(approvalTimeoutMs ? { approvalTimeoutMs } : {})
+    };
 }
 
 /** Read one console store file from the gateway workspace (web console clients). */
@@ -102,7 +115,8 @@ function persistConsoleUiSettings(
     securityLevel?: string,
     yoloMode?: boolean,
     thinkingLevel?: string,
-    modelProfile?: string
+    modelProfile?: string,
+    approvalTimeoutMs?: number
 ): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
@@ -136,6 +150,9 @@ function persistConsoleUiSettings(
     }
     if (modelProfile) {
         next.modelProfile = modelProfile;
+    }
+    if (approvalTimeoutMs) {
+        next.approvalTimeoutMs = approvalTimeoutMs;
     }
     try {
         fs.mkdirSync(path.dirname(file), { recursive: true });

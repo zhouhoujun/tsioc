@@ -2080,6 +2080,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return { value: false, source: 'default' };
     }
 
+    /**
+     * Update the approval timeout for this runtime: new approval requests use
+     * the value and the workspace policy keeps it for later turns.
+     */
+    setApprovalTimeout(timeoutMs: number): void {
+        const requested = Math.floor(Number(timeoutMs));
+        if (!Number.isFinite(requested) || requested <= 0) {
+            return;
+        }
+        const limits = { ...(this.options.policy?.limits || {}), approvalTimeoutMs: requested };
+        this.options.policy = { ...(this.options.policy || {}), limits };
+        this.toolApprovalManager?.setDefaultTimeout?.(requested);
+    }
+
     setPlanMode(sessionId: string, enabled: boolean): void {
         if (enabled) {
             this.setSessionArchetype(sessionId, 'plan');

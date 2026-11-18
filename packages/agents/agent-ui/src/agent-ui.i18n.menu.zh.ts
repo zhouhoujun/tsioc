@@ -329,6 +329,10 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         trustAlready: '该工作区已信任。',
         trustUnavailable: '当前宿主不支持工作区信任。',
         trustFailed: '信任工作区失败：{error}',
+        approvalTimeoutLabel: '审批超时：{seconds} 秒',
+        approvalTimeoutDescription: '审批等待多久后超时',
+        approvalTimeoutTitle: '设置 · 审批超时',
+        approvalTimeoutOption: '等待 {count} 秒以获得审批结果',
         thinkingLevelTitle: '设置 · 思考强度',
         thinkingLevelDescription: '当前模型的推理强度'
     },

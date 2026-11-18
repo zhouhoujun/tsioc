@@ -329,6 +329,10 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         trustAlready: 'This workspace is already trusted.',
         trustUnavailable: 'Workspace trust is not available in this host.',
         trustFailed: 'Failed to trust workspace: {error}',
+        approvalTimeoutLabel: 'Approval timeout: {seconds}s',
+        approvalTimeoutDescription: 'how long an approval waits before it times out',
+        approvalTimeoutTitle: 'Settings · Approval timeout',
+        approvalTimeoutOption: 'wait {count}s for an approval decision',
         thinkingLevelTitle: 'Settings · Thinking Level',
         thinkingLevelDescription: 'reasoning effort for the active model'
     },

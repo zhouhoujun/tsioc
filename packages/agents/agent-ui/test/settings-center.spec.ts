@@ -147,6 +147,22 @@ export class AgentConsoleSettingsCenterTest {
         expect(persisted[persisted.length - 1]).toEqual({ transcriptWindowMessages: 80 });
     }
 
+    @Test('approval timeout applies to the policy and persists milliseconds')
+    async approvalTimeoutRow() {
+        const { component, state, persisted } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings permissions');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'approvalTimeout');
+        expect(index).toBeGreaterThanOrEqual(0);
+        state.settingsCenterIndex = index;
+        component.select = async () => '60';
+        await handleSettingsCenterKey(component, 'return');
+        expect(component.options.policy.limits.approvalTimeoutMs).toEqual(60000);
+        expect(persisted[persisted.length - 1]).toEqual({ approvalTimeoutMs: 60000 });
+        await component.handleCommand('/settings permissions');
+        const row = state.settingsCenterRows.find((item: any) => item.id === 'approvalTimeout');
+        expect(row.value).toEqual('60s');
+    }
+
     @Test('/settings menu still opens the classic tab menu')
     async classicMenuFallback() {
         const { component, state } = await this.createConsoleWithPersist();

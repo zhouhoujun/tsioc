@@ -114,4 +114,20 @@ export class ConsoleUiSettingsTest {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
     }
+
+    @Test('persists the approval timeout for serve startup and clamps it')
+    approvalTimeout() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+        const options: any = { workspace };
+        try {
+            expect(applyConsoleUiSettings(options, { approvalTimeoutMs: 45000 }).approvalTimeoutMs).toEqual(45000);
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).approvalTimeoutMs).toEqual(45000);
+            expect(applyConsoleUiSettings(options, { approvalTimeoutMs: 1 }).approvalTimeoutMs).toEqual(1000);
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).approvalTimeoutMs).toEqual(1000);
+            expect(applyConsoleUiSettings(options, { approvalTimeoutMs: 'nope' as any }).approvalTimeoutMs).toEqual(undefined);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
 }

@@ -390,6 +390,31 @@ export class BuiltinToolsTest {
         expect((await pendingPromise).decision).toEqual(ApprovalDecision.DENIED);
     }
 
+    @Test('approval manager applies an updated default timeout to new requests')
+    async approvalManagerSetDefaultTimeout() {
+        const approvals = new ToolApprovalManager(
+            new FakeApp() as any,
+            new RandomUuidGenerator(),
+            new DefaultApprovalStrategy(['shell.exec']),
+            { defaultTimeoutMs: 5000 }
+        );
+        approvals.setDefaultTimeout(60000);
+        const pendingPromise = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        const pending = approvals.getPending();
+        expect(pending[0].timeoutMs).toEqual(60000);
+        approvals.reject(pending[0].id);
+        await pendingPromise;
+
+        // Values below one second are clamped instead of creating instant timeouts.
+        approvals.setDefaultTimeout(1);
+        const quick = approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(approvals.getPending()[0].timeoutMs).toEqual(1000);
+        approvals.reject(approvals.getPending()[0].id);
+        await quick;
+    }
+
     @Test('approval decisions are written to the audit sink')
     async approvalDecisionsWrittenToAuditSink() {
         const sink = (await bootStores()).auditSink;

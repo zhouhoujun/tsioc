@@ -64,4 +64,22 @@ export class ApprovalManagerSharingTest {
             await ctx.close();
         }
     }
+
+    @Test('setApprovalTimeout updates the policy and the shared manager')
+    async runtimeApprovalTimeout() {
+        const ctx = await buildApp(['terminal']);
+        try {
+            const runtime = ctx.get(AgentRuntime) as any;
+            const injected = ctx.get(ApprovalManager) as any;
+            runtime.setApprovalTimeout(45000);
+            expect(runtime.options.policy.limits.approvalTimeoutMs).toEqual(45000);
+            const pending = injected.checkApproval('terminal', { cmd: 'ls' }, 's1');
+            const request = injected.getPending()[0];
+            expect(request.timeoutMs).toEqual(45000);
+            injected.reject(request.id);
+            await pending;
+        } finally {
+            await ctx.close();
+        }
+    }
 }

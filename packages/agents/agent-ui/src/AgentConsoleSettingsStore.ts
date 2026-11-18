@@ -13,6 +13,7 @@ export interface AgentConsoleSettingsData {
     steerMode?: boolean;
     queueMode?: boolean;
     transcriptWindowMessages?: 20 | 40 | 80 | 120;
+    approvalTimeoutMs?: number;
     activityVerbosity?: 'low' | 'medium' | 'high';
     timelineMode?: boolean;
     timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
@@ -146,6 +147,9 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         transcriptWindowMessages: [20, 40, 80, 120].includes(Number(parsed?.transcriptWindowMessages))
             ? Number(parsed.transcriptWindowMessages) as 20 | 40 | 80 | 120
             : undefined,
+        approvalTimeoutMs: Number.isFinite(Number(parsed?.approvalTimeoutMs)) && Number(parsed.approvalTimeoutMs) > 0
+            ? Math.max(1000, Math.min(300000, Math.floor(Number(parsed.approvalTimeoutMs))))
+            : undefined,
         activityVerbosity: parsed?.activityVerbosity === 'low'
             ? 'low'
             : parsed?.activityVerbosity === 'medium'
@@ -217,6 +221,7 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.steerMode === 'boolean' ? { steerMode: data.steerMode } : {}),
             ...(typeof data.queueMode === 'boolean' ? { queueMode: data.queueMode } : {}),
             ...(data.transcriptWindowMessages ? { transcriptWindowMessages: data.transcriptWindowMessages } : {}),
+            ...(data.approvalTimeoutMs ? { approvalTimeoutMs: data.approvalTimeoutMs } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),
             ...(data.messageLayout ? { messageLayout: data.messageLayout } : {}),

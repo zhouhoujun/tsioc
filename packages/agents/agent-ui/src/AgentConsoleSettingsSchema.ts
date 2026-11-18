@@ -64,6 +64,8 @@ export interface AgentConsoleSettingsHost extends AgentConsoleSettingsLabelHost 
     setYoloMode(enabled: boolean, notify?: boolean): Promise<void>;
     select(title: string, options: Array<{ label: string; value: string; description?: string }>, index: number, hint?: string): Promise<string | undefined>;
     invokeTool?(name: string, input: any): Promise<any>;
+    appRpc?: any;
+    runtime?: any;
     /** DI application context (workspace trust resolver). */
     app?: any;
     persistSettings(patch: Record<string, any>): Promise<void>;
@@ -273,6 +275,35 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
         host => host.runPermissionsCommand('sandbox'), () => '', ['/permissions sandbox']),
     actionRow('approvals', 'permissions', 'agent.menu.settings.fieldApprovals', 'Pending approvals', 'agent.menu.settings.fieldApprovalsDescription', 'review and answer approval requests', 'session', 'none',
         host => host.runInternalCommand('/approvals'), host => String(host.state.pendingApprovals?.length || 0), ['/approvals']),
+    actionRow('approvalTimeout', 'permissions', 'agent.menu.settings.approvalTimeoutLabel', 'Approval timeout: {seconds}s', 'agent.menu.settings.approvalTimeoutDescription', 'how long an approval waits before it times out', 'workspace', 'immediate',
+        async host => {
+            const seconds = [15, 30, 60, 120];
+            const current = Math.round((Number(host.options?.policy?.limits?.approvalTimeoutMs) || 30000) / 1000);
+            const picked = await host.select(
+                settingsCenterLabel(host.translator, 'agent.menu.settings.approvalTimeoutTitle', 'Settings · Approval timeout'),
+                seconds.map(value => ({
+                    label: `${value}s${value === current ? ' ●' : ''}`,
+                    value: String(value),
+                    description: settingsCenterLabel(host.translator, 'agent.menu.settings.approvalTimeoutOption', 'wait {count}s for an approval decision', { count: value })
+                })),
+                Math.max(0, seconds.indexOf(current)),
+                settingsCenterLabel(host.translator, 'agent.hint.enterApplyClose', 'enter apply   esc close')
+            );
+            if (!picked) return;
+            const ms = Number(picked) * 1000;
+            try {
+                if (host.appRpc) {
+                    await host.appRpc.request('settings.ui.set', { approvalTimeoutMs: ms }).catch(() => undefined);
+                } else {
+                    host.runtime?.setApprovalTimeout?.(ms);
+                }
+                host.options.policy = { ...(host.options.policy || {}), limits: { ...(host.options.policy?.limits || {}), approvalTimeoutMs: ms } };
+                await host.persistSettings({ approvalTimeoutMs: ms });
+            } catch (error: any) {
+                host.notify(error?.message || String(error));
+            }
+        },
+        host => String(Math.round((Number(host.options?.policy?.limits?.approvalTimeoutMs) || 30000) / 1000)) + 's', ['/permissions timeout']),
     actionRow('workspaceTrust', 'permissions', 'agent.menu.settings.trustLabel', 'Workspace trust: {state}', 'agent.menu.settings.trustDescription', 'mutating tools are blocked until the workspace is trusted', 'workspace', 'immediate',
         host => trustAgentConsoleWorkspace(host), host => describeAgentConsoleWorkspaceTrust(host), ['/permissions trust']),
     actionRow('permissionsInspect', 'permissions', 'agent.menu.settings.fieldPermissionsInspect', 'Permission inspector', 'agent.menu.settings.fieldPermissionsInspectDescription', 'explain why a tool would be allowed or denied', 'workspace', 'none',

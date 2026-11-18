@@ -126,6 +126,8 @@ export abstract class ApprovalManager {
     abstract isConfigured(): boolean;
     abstract isAutoApproveEnabled(): boolean;
     abstract setAutoApprove(enabled: boolean): void;
+    /** Optional: hosts that expose an approval-timeout setting update it here. */
+    setDefaultTimeout(_timeoutMs: number): void { /* no-op for managers without a queue policy */ }
 }
 
 const DEFAULT_APPROVAL_TIMEOUT_MS = 30000;
@@ -225,6 +227,19 @@ export class ToolApprovalManager extends ApprovalManager {
 
     setAutoApprove(enabled: boolean): void {
         if (this.options) this.options.autoApprove = enabled;
+    }
+
+    /** Update the timeout used for *new* approval requests (existing ones keep theirs). */
+    setDefaultTimeout(timeoutMs: number): void {
+        const requested = Math.floor(Number(timeoutMs));
+        if (!Number.isFinite(requested) || requested <= 0) {
+            return;
+        }
+        const maxTimeout = this.options?.maxTimeoutMs ?? DEFAULT_MAX_APPROVAL_TIMEOUT_MS;
+        this.options = {
+            ...(this.options || {}),
+            defaultTimeoutMs: Math.max(1000, Math.min(requested, maxTimeout))
+        };
     }
 
     isAutoApproveEnabled(): boolean {
