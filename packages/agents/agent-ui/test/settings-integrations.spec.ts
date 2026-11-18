@@ -7,7 +7,7 @@ import { showAgentConsoleHooksDetail, showAgentConsolePluginDetail, showAgentCon
 function createHost(overrides: any = {}): any {
     const calls: any[] = [];
     const notifications: string[] = [];
-    const overlays: Array<{ title: string; lines: string[] }> = [];
+    const overlays: Array<{ title: string; lines: string[]; back?: () => void }> = [];
     const queued = [...(overrides.selectQueue || [])];
     return {
         calls,
@@ -16,7 +16,7 @@ function createHost(overrides: any = {}): any {
         translator: undefined,
         state: {
             sessionId: 's1',
-            openTextOverlay: (title: string, lines: string[]) => { overlays.push({ title, lines }); },
+            openTextOverlay: (title: string, lines: string[], _visible?: number, back?: () => void) => { overlays.push({ title, lines, back }); },
             tools: [
                 { name: 'mcp.fs.read', active: false },
                 { name: 'mcp.fs.write', active: true }
@@ -131,6 +131,8 @@ export class AgentConsoleSettingsIntegrationsTest {
         expect(host.overlays.length).toEqual(1);
         expect(host.overlays[0].title).toContain('code-review');
         expect(host.overlays[0].lines.join('\n')).toContain('Code review');
+        // Skills keep a back link to the picker so Esc returns to the list.
+        expect(typeof host.overlays[0].back).toEqual('function');
     }
 
     @Test('hooks render their registered stages in the detail overlay')
@@ -146,6 +148,8 @@ export class AgentConsoleSettingsIntegrationsTest {
         expect(host.overlays.length).toEqual(1);
         expect(host.overlays[0].lines.join('\n')).toContain('beforeTurn');
         expect(host.overlays[0].lines.join('\n')).toContain('npm test');
+        // No back link: Esc closes the overlay instead of reopening it.
+        expect(host.overlays[0].back).toEqual(undefined);
     }
 
     @Test('hooks detail reports when nothing is registered')

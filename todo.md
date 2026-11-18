@@ -4746,3 +4746,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - Plugins inspect：`plugins inspect` 的 manifest/contributions → `textOverlay`。
   不再把详情塞进命令输出历史；settings-integrations 9 passing，相关套件 134 passing。
 - 设置页可点击区域补齐 TUI hover：行、分区标签、关闭按钮加 `data-hover="fade"`；console-renderer 断言 hover 目标数量。
+- 详情浮层 back 语义修正：hooks/plugin 不再传 back（否则 Esc 会重开同一浮层，表现为关不掉）；skills 保留 back 返回列表。
+  测试断言 skills 有 back、hooks 无 back，settings-integrations 9 passing。

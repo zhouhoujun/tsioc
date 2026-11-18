@@ -71,7 +71,9 @@ export async function showAgentConsoleHooksDetail(host: AgentConsoleSettingsDeta
         const functions = entry.functions.length ? `fn: ${entry.functions.join(', ')}` : '';
         return `${entry.stage}${commands ? ` [${commands}]` : ''}${functions ? ` [${functions}]` : ''}`;
     }).join('\n');
-    openDetail(host, title, text, () => { void showAgentConsoleHooksDetail(host); });
+    // No back link: Esc must close the overlay (a back that reopens the same
+    // view would make the dismiss key appear broken).
+    openDetail(host, title, text);
 }
 
 /** One plugin's manifest/contributions in the detail overlay. */
@@ -84,5 +86,5 @@ export async function showAgentConsolePluginDetail(host: AgentConsoleSettingsDet
     const inspected = detail?.plugin || plugin;
     const title = String(inspected?.manifest?.name || inspected?.id || 'plugin');
     const text = formatPluginDetail(inspected, detail?.contributions);
-    openDetail(host, title, text, () => { void showAgentConsolePluginDetail(host, plugin); });
+    openDetail(host, title, text);
 }
