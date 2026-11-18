@@ -463,6 +463,71 @@ export const UI_CSS = `
 .ui-radio-option.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
 .ui-radio-copy { display: inline-flex; flex-direction: column; min-width: 0; }
 .ui-radio-description { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+
+.ui-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6ch;
+    padding: 0.6ch 0.8ch;
+    border: 1px solid var(--ui-border, currentColor);
+    border-left-width: 3px;
+    border-radius: var(--ui-radius, 4px);
+    background: var(--ui-alert-bg, transparent);
+    color: var(--ui-alert-fg, inherit);
+}
+.ui-alert.is-success { border-left-color: var(--ui-success-fg, currentColor); }
+.ui-alert.is-warning { border-left-color: var(--ui-warning-fg, currentColor); }
+.ui-alert.is-danger,
+.ui-alert.is-error { border-left-color: var(--ui-danger-fg, currentColor); }
+.ui-alert.is-accent { border-left-color: var(--ui-accent-fg, currentColor); }
+.ui-alert-body { display: flex; flex-direction: column; gap: 0.15ch; flex: 1 1 auto; min-width: 0; }
+.ui-alert-title { font-weight: 600; }
+.ui-alert-line { white-space: pre-wrap; }
+.ui-alert-action,
+.ui-alert-close {
+    flex: none;
+    border: 1px solid transparent;
+    border-radius: var(--ui-radius, 4px);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 0 0.5ch;
+}
+.ui-alert-action:hover,
+.ui-alert-close:hover { border-color: var(--ui-border, currentColor); }
+
+.ui-select-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5ch;
+    min-width: 0;
+    padding: 0.1em 0.6ch;
+    border: 1px solid var(--ui-border, currentColor);
+    border-radius: var(--ui-radius, 4px);
+    background: var(--ui-select-bg, transparent);
+    color: inherit;
+    cursor: pointer;
+}
+.ui-select-trigger.is-open { border-color: var(--ui-tone-border, currentColor); }
+.ui-select-trigger.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
+.ui-select-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ui-select-clear {
+    flex: none;
+    border: 0;
+    background: transparent;
+    color: var(--ui-muted-fg, inherit);
+    cursor: pointer;
+    font: inherit;
+    padding: 0 0.15ch;
+}
+.ui-select-arrow { flex: none; color: var(--ui-muted-fg, inherit); }
 `;
 
 export function installUiStyles(doc?: Document | null): void {

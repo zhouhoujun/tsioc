@@ -24,10 +24,12 @@ import { TextFieldComponent, TextFieldModule } from '@tsdi/components/common/tex
 import { CheckboxComponent, CheckboxModule } from '@tsdi/components/common/checkbox';
 import { SwitchComponent, SwitchModule } from '@tsdi/components/common/switch';
 import { RadioGroupComponent, RadioGroupModule } from '@tsdi/components/common/radio-group';
+import { AlertNoticeComponent, AlertNoticeModule } from '@tsdi/components/common/alert-notice';
+import { SelectTriggerComponent, SelectTriggerModule } from '@tsdi/components/common/select-trigger';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -50,6 +52,8 @@ import { RadioGroupComponent, RadioGroupModule } from '@tsdi/components/common/r
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
         <ui-switch label="Live" :checked="true"></ui-switch>
         <ui-radio-group :options="modes" value="basic"></ui-radio-group>
+        <ui-alert title="Heads up" :lines="['First']" tone="warning"></ui-alert>
+        <ui-select-trigger value="basic" label="Basic"></ui-select-trigger>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -90,7 +94,9 @@ export class CommonUiConsoleTest {
                 TextFieldModule,
                 CheckboxModule,
                 SwitchModule,
-                RadioGroupModule
+                RadioGroupModule,
+                AlertNoticeModule,
+                SelectTriggerModule
             ]
         });
         try {
@@ -122,6 +128,7 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Enabled');
             expect(output).toContain('Live');
             expect(output).toContain('Basic');
+            expect(output).toContain('Heads up');
         } finally {
             await ctx.close();
         }
