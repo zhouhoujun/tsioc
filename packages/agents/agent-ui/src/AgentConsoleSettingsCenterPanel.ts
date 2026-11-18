@@ -1,4 +1,5 @@
 import { Component } from '@tsdi/components';
+import { BadgeModule } from '@tsdi/components/common/badge';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { formatAgentUiLabel } from './agent-ui.i18n';
@@ -12,6 +13,7 @@ import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
  */
 @Component({
     selector: 'agent-console-settings-center-panel',
+    imports: [BadgeModule],
     template: `
     <div class="console-panel settings-center-panel" role="dialog" aria-label="{{title}}">
         <label class="dialog-close" data-cell-width="2" @click="close">✕</label>
@@ -22,7 +24,7 @@ import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
             <label class="settings-row" v-for="row in visibleRows" aria-selected="{{row.selected}}" @click="pick(row.id)">
                 <span class="settings-label">{{row.label}}</span>
                 <span class="settings-value" v-if="row.value">: {{row.value}}</span>
-                <span class="settings-scope">[{{row.scope}}]</span>
+                <ui-badge class="settings-scope" :label="row.scope" tone="muted" variant="outline"></ui-badge>
                 <span class="settings-effect" v-if="row.effect"> · {{row.effect}}</span>
             </label>
         </div>

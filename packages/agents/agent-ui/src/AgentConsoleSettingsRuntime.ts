@@ -100,6 +100,15 @@ export async function restoreSettings(self: any): Promise<void> {
         if (typeof persisted.steerMode === 'boolean') {
             self.state.setSteerMode(persisted.steerMode);
         }
+        if (typeof persisted.queueMode === 'boolean') {
+            self.options.ui = { ...(self.options.ui || {}), queueMode: persisted.queueMode };
+        }
+        if (persisted.transcriptWindowMessages) {
+            self.state.consoleOptions = {
+                ...self.state.consoleOptions,
+                transcriptWindowMessages: persisted.transcriptWindowMessages
+            };
+        }
         if (persisted.activityVerbosity) {
             self.state.setActivityVerbosity(persisted.activityVerbosity);
         }

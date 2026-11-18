@@ -157,7 +157,7 @@ function fieldById(id: string): AgentConsoleSettingsField | undefined {
 
 /** Rows that open another dialog/menu: close the page so overlays never stack. */
 const AGENT_CONSOLE_SETTINGS_CLOSING_ROWS = new Set([
-    'theme', 'language',
+    'theme', 'language', 'transcriptWindow',
     'model', 'thinkingLevel', 'fast', 'status',
     'securityLevel', 'sandbox', 'approvals', 'permissionsInspect',
     'archetype', 'personality', 'memories', 'delegation',

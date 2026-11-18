@@ -1,4 +1,5 @@
 import { formatAgentUiLabel, type AgentUiTranslator } from './agent-ui.i18n';
+import { activateAgentConsoleMcpTool, manageAgentConsolePlugins } from './AgentConsoleSettingsIntegrationActions';
 
 /**
  * Settings center schema.
@@ -60,6 +61,8 @@ export interface AgentConsoleSettingsHost extends AgentConsoleSettingsLabelHost 
     openSettingsLanguage(): Promise<boolean>;
     openSettingsKeybindsTab(): Promise<boolean>;
     setYoloMode(enabled: boolean, notify?: boolean): Promise<void>;
+    select(title: string, options: Array<{ label: string; value: string; description?: string }>, index: number, hint?: string): Promise<string | undefined>;
+    invokeTool?(name: string, input: any): Promise<any>;
     persistSettings(patch: Record<string, any>): Promise<void>;
     runInternalCommand(command: string): Promise<any>;
     notify(message: string): void;
@@ -198,6 +201,33 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
     actionRow('steer', 'general', 'agent.menu.settings.steerLabel', 'Steer mode: {state}', 'agent.menu.settings.steerDescription', 'Enter interrupts the running turn instead of queueing', 'workspace', 'immediate',
         host => host.runSteerCommand(''),
         host => onOff(host, host.state.steerMode === true), ['/steer']),
+    toggleRow('queueMode', 'general', 'agent.menu.settings.queueModeLabel', 'Queue mode: {state}', 'agent.menu.settings.queueModeDescription', 'Enter during a running turn queues instead of cancelling', 'workspace',
+        host => host.options.ui?.queueMode !== false,
+        async host => {
+            const next = host.options.ui?.queueMode === false;
+            host.options.ui = { ...(host.options.ui || {}), queueMode: next };
+            await host.persistSettings({ queueMode: next });
+        }, { defaultValue: true, aliases: ['/queue'] }),
+    actionRow('transcriptWindow', 'general', 'agent.menu.settings.transcriptWindowLabel', 'Transcript window', 'agent.menu.settings.transcriptWindowDescription', 'rows rendered while following the latest message', 'workspace', 'immediate',
+        async host => {
+            const sizes = [20, 40, 80, 120];
+            const current = Number(host.state.consoleOptions?.transcriptWindowMessages) || 40;
+            const picked = await host.select(
+                settingsCenterLabel(host.translator, 'agent.menu.settings.transcriptWindowTitle', 'Settings · Transcript window'),
+                sizes.map(size => ({
+                    label: `${size} messages${size === current ? ' ●' : ''}`,
+                    value: String(size),
+                    description: settingsCenterLabel(host.translator, 'agent.menu.settings.transcriptWindowOption', 'keep the newest {count} rows in the viewport', { count: size })
+                })),
+                Math.max(0, sizes.indexOf(current)),
+                settingsCenterLabel(host.translator, 'agent.hint.enterApplyClose', 'enter apply   esc close')
+            );
+            if (!picked) return;
+            const size = Number(picked) as 20 | 40 | 80 | 120;
+            host.state.consoleOptions = { ...host.state.consoleOptions, transcriptWindowMessages: size };
+            await host.persistSettings({ transcriptWindowMessages: size });
+        },
+        host => String(Number(host.state.consoleOptions?.transcriptWindowMessages) || 40), ['/display window']),
     toggleRow('tooloutput', 'general', 'agent.menu.settings.toolOutputLabel', 'Tool output: {state}', 'agent.menu.settings.toolOutputDescription', 'tool output visibility in messages', 'workspace',
         host => !!host.state.showToolOutput,
         async host => {
@@ -258,8 +288,10 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
     // Integrations
     actionRow('mcp', 'integrations', 'agent.menu.settings.fieldMcp', 'MCP servers', 'agent.menu.settings.fieldMcpDescription', 'list MCP servers and active tools', 'session', 'none',
         host => host.runMcpCommand(''), host => String((host.state.tools || []).filter((tool: any) => String(tool?.name || '').startsWith('mcp.')).length), ['/mcp']),
+    actionRow('mcpToolActivate', 'integrations', 'agent.menu.settings.mcpActivateTitle', 'Activate MCP tool', 'agent.menu.settings.mcpActivateToolDescription', 'enable an inactive MCP tool for this session', 'session', 'immediate',
+        host => activateAgentConsoleMcpTool(host), host => String((host.state.tools || []).filter((tool: any) => String(tool?.name || '').startsWith('mcp.') && tool.active).length) + ' active', ['/mcp activate']),
     actionRow('plugins', 'integrations', 'agent.menu.settings.fieldPlugins', 'Plugins', 'agent.menu.settings.fieldPluginsDescription', 'inspect, activate or remove plugins', 'workspace', 'none',
-        host => host.runPluginsCommand(''), () => '', ['/plugins']),
+        host => manageAgentConsolePlugins(host), () => '', ['/plugins']),
     actionRow('skills', 'integrations', 'agent.menu.settings.fieldSkills', 'Skills', 'agent.menu.settings.fieldSkillsDescription', 'browse installed skills', 'workspace', 'none',
         host => host.runSkillsCommand(''), () => '', ['/skills']),
     actionRow('hooks', 'integrations', 'agent.menu.settings.fieldHooks', 'Hooks', 'agent.menu.settings.fieldHooksDescription', 'registered lifecycle hooks', 'workspace', 'none',

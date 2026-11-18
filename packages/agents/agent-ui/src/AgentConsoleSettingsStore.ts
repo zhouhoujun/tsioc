@@ -11,6 +11,8 @@ export interface AgentConsoleSettingsData {
     showToolOutput?: boolean;
     showUsername?: boolean;
     steerMode?: boolean;
+    queueMode?: boolean;
+    transcriptWindowMessages?: 20 | 40 | 80 | 120;
     activityVerbosity?: 'low' | 'medium' | 'high';
     timelineMode?: boolean;
     timelineViewMode?: 'off' | 'compact' | 'steps' | 'verbose';
@@ -140,6 +142,10 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         showToolOutput: typeof parsed?.showToolOutput === 'boolean' ? parsed.showToolOutput : undefined,
         showUsername: typeof parsed?.showUsername === 'boolean' ? parsed.showUsername : undefined,
         steerMode: typeof parsed?.steerMode === 'boolean' ? parsed.steerMode : undefined,
+        queueMode: typeof parsed?.queueMode === 'boolean' ? parsed.queueMode : undefined,
+        transcriptWindowMessages: [20, 40, 80, 120].includes(Number(parsed?.transcriptWindowMessages))
+            ? Number(parsed.transcriptWindowMessages) as 20 | 40 | 80 | 120
+            : undefined,
         activityVerbosity: parsed?.activityVerbosity === 'low'
             ? 'low'
             : parsed?.activityVerbosity === 'medium'
@@ -209,6 +215,8 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.showToolOutput === 'boolean' ? { showToolOutput: data.showToolOutput } : {}),
             ...(typeof data.showUsername === 'boolean' ? { showUsername: data.showUsername } : {}),
             ...(typeof data.steerMode === 'boolean' ? { steerMode: data.steerMode } : {}),
+            ...(typeof data.queueMode === 'boolean' ? { queueMode: data.queueMode } : {}),
+            ...(data.transcriptWindowMessages ? { transcriptWindowMessages: data.transcriptWindowMessages } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),
             ...(data.messageLayout ? { messageLayout: data.messageLayout } : {}),

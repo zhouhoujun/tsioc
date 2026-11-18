@@ -13,6 +13,7 @@ import {
     AgentConsoleMessagesPanelComponent,
     AgentConsoleSessionsPanelComponent,
     AgentConsoleSelectPanelComponent,
+    AgentConsoleSettingsCenterPanelComponent,
     AgentConsoleStatusPanelComponent,
     AgentConsoleToolRunsPanelComponent,
     AgentConsoleToolsPanelComponent,
@@ -464,5 +465,18 @@ export class HtmlConsoleTest {
     async clean() {
         await this.ctx?.close();
         if (global.gc) global.gc();
+    }
+
+    @Test('settings center renders through the HTML console renderer')
+    async rendersSettingsCenter() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        await (ref.instance as any).handleCommand('/settings');
+        await settleDynamicMessages();
+        const panel = ref.hostView.query(AgentConsoleSettingsCenterPanelComponent) as ComponentRef<AgentConsoleSettingsCenterPanelComponent>;
+        const text = String(panel.hostView.rootNodes[0]?.textContent || '');
+        expect(text).toContain('Settings');
+        expect(text).toContain('Steer mode');
+        expect(text).toContain('workspace');
+        expect(text).toContain('General');
     }
 }

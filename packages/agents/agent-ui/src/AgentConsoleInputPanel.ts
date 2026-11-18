@@ -303,6 +303,20 @@ export class AgentConsoleInputPanelComponent {
 
     async onKeydown(event: KeyboardEvent): Promise<void> {
         const key = String(event?.key || event?.code || '');
+        // The settings center owns the keyboard while open: navigation, apply,
+        // search typing and Esc must never reach the draft or input history.
+        if (this.state?.settingsCenterOpen) {
+            const handled = await this.state?.globalKeyInputAction?.(event.key, {
+                ctrlKey: event.ctrlKey,
+                metaKey: event.metaKey,
+                shiftKey: event.shiftKey,
+                altKey: event.altKey
+            });
+            if (handled !== false) {
+                event.preventDefault?.();
+            }
+            return;
+        }
         // A text overlay owns its keys: Escape closes it, arrows/pages scroll
         // it and printable keys never leak into the draft behind it.
         if (this.state?.textOverlay) {

@@ -127,6 +127,26 @@ export class AgentConsoleSettingsCenterTest {
         expect(state.settingsCenterRows.some((row: any) => row.id === 'steer')).toEqual(true);
     }
 
+    @Test('queue mode and transcript window rows persist their values')
+    async newDisplayFields() {
+        const { component, state, persisted } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings');
+        const queueIndex = state.settingsCenterRows.findIndex((row: any) => row.id === 'queueMode');
+        expect(queueIndex).toBeGreaterThanOrEqual(0);
+        state.settingsCenterIndex = queueIndex;
+        await handleSettingsCenterKey(component, 'return');
+        expect(component.options.ui.queueMode).toEqual(false);
+        expect(persisted[persisted.length - 1]).toEqual({ queueMode: false });
+
+        await component.handleCommand('/settings');
+        const windowIndex = state.settingsCenterRows.findIndex((row: any) => row.id === 'transcriptWindow');
+        state.settingsCenterIndex = windowIndex;
+        component.select = async () => '80';
+        await handleSettingsCenterKey(component, 'return');
+        expect(state.consoleOptions.transcriptWindowMessages).toEqual(80);
+        expect(persisted[persisted.length - 1]).toEqual({ transcriptWindowMessages: 80 });
+    }
+
     @Test('/settings menu still opens the classic tab menu')
     async classicMenuFallback() {
         const { component, state } = await this.createConsoleWithPersist();

@@ -4700,3 +4700,14 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   经典菜单），console-renderer 增加渲染用例；相关 settings 套件 192 passing。
 - 说明：`ui-badge` 依赖 `IconModule`，在 console 模板导入路径下无法解析，P1 改用语义 span 显示 scope；
   source-size 通过（新增逻辑全部落在新文件，baseline 未增长）。
+
+## 2026-11-18 设置中心 P2（集成操作 + 新字段 + Web 键路由）
+- Integrations 不再是只读：
+  - 插件：`plugins` 工具驱动 activate / inspect / remove（移除前二次确认），失败提示走 i18n；
+  - MCP：列出未激活的 `mcp.*` 工具，经 `tools.activate`（attach/web 走 RPC，本地走 registry）激活并刷新工具列表。
+- 新字段：Queue mode（持久化 `queueMode`，恢复写入 `options.ui.queueMode`）、Transcript window（20/40/80/120，
+  持久化 `transcriptWindowMessages` 并同步 `consoleOptions`）。
+- Web：输入面板在设置中心打开时优先把键盘交给 `globalKeyInputAction`，方向键/回车/搜索/Esc 不再落到草稿或输入历史。
+- UI：设置行 scope 使用 `ui-badge`（`:label` 绑定；`[label]` 在 console compiler 下不生效），行的值/生效方式照旧。
+- 测试：`settings-integrations.spec.ts` 4 用例（插件激活/移除确认、MCP 激活、全部已激活），设置中心新增队列/窗口用例，
+  HTML 端新增设置页渲染用例；相关套件 135 passing。
