@@ -164,6 +164,21 @@ export class AgentConsoleSettingsCenterTest {
         expect(row.value).toEqual('60s');
     }
 
+    @Test('the MCP activation picker closes the page before stacking a dialog')
+    async mcpPickerClosesPage() {
+        const { component, state } = await this.createConsoleWithPersist();
+        state.tools = [{ name: 'mcp.fs.read', active: false, activeActivation: true } as any];
+        await component.handleCommand('/settings mcp');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'mcpToolActivate');
+        expect(index).toBeGreaterThanOrEqual(0);
+        state.settingsCenterIndex = index;
+        const opened: string[] = [];
+        component.select = async (title: string) => { opened.push(title); return undefined; };
+        await handleSettingsCenterKey(component, 'return');
+        expect(opened.length).toEqual(1);
+        expect(state.settingsCenterOpen).toEqual(false);
+    }
+
     @Test('the section strip switches sections and delegates clicks')
     async sectionStrip() {
         const { component, state } = await this.createConsoleWithPersist();

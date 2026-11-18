@@ -178,7 +178,7 @@ const AGENT_CONSOLE_SETTINGS_CLOSING_ROWS = new Set([
     'model', 'thinkingLevel', 'fast', 'status',
     'securityLevel', 'sandbox', 'approvals', 'permissionsInspect',
     'archetype', 'personality', 'memories', 'delegation',
-    'mcp', 'plugins', 'skills', 'hooks',
+    'mcp', 'mcpToolActivate', 'plugins', 'skills', 'hooks',
     'keybindsOpen', 'keybindsList', 'keybindsReset',
     'sessions', 'export', 'diagnostics', 'reload', 'debugConfig', 'restart'
 ]);

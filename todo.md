@@ -4738,3 +4738,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   CSS 增加 hover/选中态；settings-center 新增用例，相关套件 133 passing。
 - 新增「Message page size」（4/6/10，持久化 `messageSelectionPageSize` 并恢复 consoleOptions）；搜索结果行前缀显示所属分区，
   便于跨分区查找；settings-center 14 passing。
+- 修复 MCP 激活行未在打开选择器前关闭设置页（会叠加浮层）；新增回归用例（选择器打开后页面已关闭），settings-center 15 passing。
