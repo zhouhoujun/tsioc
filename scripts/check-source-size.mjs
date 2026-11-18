@@ -6,7 +6,9 @@ const COMMON_MAX_LINES = 700;
 const ROOT = process.cwd();
 const SCAN_ROOTS = [
     { root: join(ROOT, 'packages', 'agents'), max: DEFAULT_MAX_LINES },
-    { root: join(ROOT, 'packages', 'components', 'common'), max: COMMON_MAX_LINES }
+    { root: join(ROOT, 'packages', 'components', 'common'), max: COMMON_MAX_LINES },
+    // Workflow designer: templates + data-heavy UI files; ratchet only downward.
+    { root: join(ROOT, 'packages', 'activities', 'src', 'visual', 'components'), max: 700 }
 ];
 const BASELINE_PATH = join(ROOT, 'scripts', 'source-size-baseline.json');
 const EXCLUDED = [`${sep}node_modules${sep}`, `${sep}test${sep}`, `${sep}dist${sep}`, `${sep}lib${sep}`];
