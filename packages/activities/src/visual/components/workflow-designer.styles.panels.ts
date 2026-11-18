@@ -59,6 +59,117 @@ export const WORKFLOW_DESIGNER_PANELS_CSS = `.workflow-audit-panel {
     padding: 6px 2px;
 }
 
+/* Configuration-node index: name + value summary per row, usage chip on the
+   right, pencil to edit the record without leaving the list. */
+.workflow-config-nodes-panel {
+    width: min(520px, 100%);
+    max-height: min(80vh, 640px);
+    overflow: auto;
+}
+
+.workflow-config-node-group {
+    margin: 0 0 14px;
+}
+
+.workflow-config-node-group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    padding: 0 6px;
+}
+
+.workflow-config-node-group-label {
+    flex: 1 1 auto;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-config-node-add {
+    flex: 0 0 auto;
+    font-size: 11px;
+    padding: 2px 8px;
+}
+
+.workflow-config-node-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 6px;
+}
+
+.workflow-config-node-row:hover {
+    background: var(--wf-theme-surface-alt, #eef2f7);
+}
+
+.workflow-config-node-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+.workflow-config-node-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-config-node-summary {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-config-node-usage {
+    flex: 0 0 auto;
+    font-size: 10px;
+    line-height: 1.4;
+    padding: 1px 7px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+}
+
+.workflow-config-node-usage.is-used {
+    border-color: currentColor;
+    color: var(--wf-theme-primary, #2563eb);
+}
+
+.workflow-config-node-usage.is-unused {
+    border-color: var(--wf-theme-border, #e2e8f0);
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-config-node-edit {
+    flex: 0 0 auto;
+    font-size: 11px;
+    padding: 2px 7px;
+}
+
+.workflow-config-node-empty {
+    padding: 2px 6px 6px;
+    font-size: 11px;
+    color: var(--wf-theme-muted, #94a3b8);
+}
+
 .workflow-credentials-panel .workflow-group-field input {
     width: 100%;
     box-sizing: border-box;

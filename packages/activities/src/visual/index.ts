@@ -2,6 +2,7 @@ export * from './types';
 export * from './i18n';
 export * from './node-registry';
 export * from './workflow-config-nodes';
+export * from './workflow-canvas-focus';
 export * from './workflow-runtime';
 export * from './workflow-config-validation';
 export * from './workflow-scheduler';

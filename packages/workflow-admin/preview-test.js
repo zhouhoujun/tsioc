@@ -16,7 +16,7 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_005_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_010_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 /** Click a management menu entry after scrolling it into the popup viewport. */

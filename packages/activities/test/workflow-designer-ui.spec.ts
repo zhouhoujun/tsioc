@@ -122,12 +122,48 @@ describe('Workflow Designer UI', () => {
         await flush();
         const created = ref.instance.designer.nodes.find(node => node.type === 'mqtt')!;
 
+        // The configuration-node index lists shared records with usage counts.
+        (root.querySelector('.workflow-btn-config-nodes') as any).click();
+        await flush();
+        const panel = ref.instance.preview!.configNodes!;
+        expect(panel.visible).toBe(true);
+        const brokerRow = root.querySelector(`.workflow-config-nodes [data-config-id="${created.id}"]`) as any;
+        expect(brokerRow).toBeTruthy();
+        expect(brokerRow.querySelector('.workflow-config-node-name').textContent).toBe('prod');
+        expect(brokerRow.querySelector('.workflow-config-node-summary').textContent).toBe('mqtt://prod:1883');
+        expect(brokerRow.querySelector('.workflow-config-node-usage').textContent).toContain('1');
+        expect(root.querySelectorAll('[data-config-group="tls"] [data-config-id]').length).toBe(0);
+
+        // A group's create button adds a record without leaving the index.
+        (root.querySelector('[data-config-add="tls"]') as any).click();
+        await flush();
+        expect(root.querySelectorAll('[data-config-group="tls"] [data-config-id]').length).toBe(1);
+
+        // The pencil edits the record in place; the row follows the rename.
+        (root.querySelector(`[data-config-edit="${created.id}"]`) as any).click();
+        await flush();
+        expect(dialog.showConfigDialog).toBe(true);
+        expect(dialog.configId).toBe(created.id);
+        dialog.name = 'prod-2';
+        dialog.values = { ...dialog.values, url: 'mqtt://prod-2:1883' };
+        dialog.save();
+        await flush();
+        const renamed = root.querySelector(`.workflow-config-nodes [data-config-id="${created.id}"]`) as any;
+        expect(renamed.querySelector('.workflow-config-node-name').textContent).toBe('prod-2');
+        expect(renamed.querySelector('.workflow-config-node-summary').textContent).toBe('mqtt://prod-2:1883');
+
+        // The row body reveals the config node on the canvas and closes the panel.
+        (renamed.querySelector('.workflow-config-node-main') as any).click();
+        await flush();
+        expect(panel.visible).toBe(false);
+        expect(ref.instance.designer.selection?.nodeId).toBe(created.id);
+
         ref.instance.designer.selectNode(created.id);
         await flush();
         ref.instance.preview!.requestDeleteNodes([created.id]);
         await flush();
         expect(dialog.showDeleteConfirm).toBe(true);
-        expect(dialog.deleteConfirmRefs).toEqual([{ id: created.id, name: 'prod', count: 1 }]);
+        expect(dialog.deleteConfirmRefs).toEqual([{ id: created.id, name: 'prod-2', count: 1 }]);
         expect(root.querySelector('.workflow-delete-confirm')).toBeTruthy();
         // Nothing is deleted until the confirmation is accepted.
         expect(ref.instance.designer.nodes.some(node => node.id === created.id)).toBe(true);

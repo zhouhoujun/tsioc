@@ -46,6 +46,7 @@ const EMPTY_TOOLBAR: WorkflowToolbarModel = {
         <button v-if="visible('auto-layout')" class="workflow-btn" @click="autoLayout"><icon class="workflow-btn-icon" name="layout" size="sm"></icon>{{layoutLabel}}</button>
         <button v-if="visible('duplicate')" class="workflow-btn" [disabled]="!model.hasSelection" @click="duplicate"><icon class="workflow-btn-icon" name="duplicate" size="sm"></icon>{{duplicateLabel}}</button>
         <button v-if="visible('toggle-logs')" class="workflow-btn" @click="toggleLogs"><icon class="workflow-btn-icon" name="logs" size="sm"></icon>{{logsLabel}}</button>
+        <button v-if="visible('config-nodes')" class="workflow-btn workflow-btn-config-nodes" @click="openConfigNodes"><icon class="workflow-btn-icon" name="config" size="sm"></icon>{{configNodesLabel}}</button>
         <button v-if="visible('save')" class="workflow-btn" @click="save"><icon class="workflow-btn-icon" name="save" size="sm"></icon>{{saveLabel}}</button>
         <button v-if="visible('open-library')" class="workflow-btn" @click="openLibrary"><icon class="workflow-btn-icon" name="library" size="sm"></icon>{{libraryLabel}}</button>
         <button v-if="visible('toggle-json')" class="workflow-btn" @click="toggleJson"><icon class="workflow-btn-icon" name="json" size="sm"></icon>JSON</button>
@@ -110,6 +111,7 @@ export class WorkflowToolbarComponent {
     get layoutLabel(): string { return this.t('layout', 'Auto layout'); }
     get duplicateLabel(): string { return this.t('duplicate', 'Duplicate'); }
     get logsLabel(): string { return this.t('logs', 'Logs'); }
+    get configNodesLabel(): string { return this.t('configNodes', 'Configuration nodes'); }
     get zoomInLabel(): string { return this.t('zoomIn', 'Zoom in'); }
     get zoomOutLabel(): string { return this.t('zoomOut', 'Zoom out'); }
 
@@ -162,6 +164,9 @@ export class WorkflowToolbarComponent {
     }
     toggleLogs(): void {
         (this.toggleLogsAction || (() => this.action?.('toggle-logs')))();
+    }
+    openConfigNodes(): void {
+        this.action?.('config-nodes');
     }
     selectTheme(theme: ThemeName): void {
         this.themeChangeAction?.(theme);

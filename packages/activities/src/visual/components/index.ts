@@ -13,5 +13,6 @@ export * from './workflow-version-panel';
 export * from './workflow-designer.styles';
 export * from './workflow-designer-preview.component';
 export * from './workflow-config-dialog.component';
+export * from './workflow-config-nodes.component';
 export * from './workflow-group-settings.component';
 export * from './workflow-designer.component';

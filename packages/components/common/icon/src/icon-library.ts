@@ -95,6 +95,13 @@ export const ICON_LIBRARY: Record<string, IconDefinition> = {
         glyph: '☰',
         paths: ['M3 4.5h10M3 8h10M3 11.5h7']
     },
+    config: {
+        glyph: '⚙',
+        paths: [
+            'M3 5h10M3 11h10',
+            'M6.2 3.2v3.6','M9.8 9.2v3.6'
+        ]
+    },
     save: {
         glyph: '⇩',
         paths: [

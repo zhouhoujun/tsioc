@@ -42,8 +42,11 @@ import {
     WORKFLOW_PORT_START,
     workflowNodeFrame
 } from '../workflow-view-models';
+import { configNodesSignature } from '../workflow-config-nodes';
 import { WorkflowCanvasPointerPayload } from './workflow-canvas';
 import { WorkflowConfigDialogComponent } from './workflow-config-dialog.component';
+import { WorkflowConfigNodesComponent } from './workflow-config-nodes.component';
+import { revealWorkflowNode } from '../workflow-canvas-focus';
 import { WorkflowGroupSettingsComponent } from './workflow-group-settings.component';
 import { WorkflowInspectorComponent } from './workflow-inspector';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
@@ -164,6 +167,8 @@ function sameModelKey(previous: any[], next: any[]): boolean {
         </div>
         <workflow-group-settings #groupSettings :designer="designer" :locale="locale"
             :notifyAction="notifyDesignerChange"></workflow-group-settings>
+        <workflow-config-nodes #configNodes :designer="designer" :registry="registry"
+            :locale="locale" :action="configNodeAction"></workflow-config-nodes>
         <workflow-config-dialog #configDialog :designer="designer" :registry="registry"
             :locale="locale" :positionAction="nextConfigPosition"
             :notifyAction="notifyDesignerChange"></workflow-config-dialog>
@@ -247,6 +252,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     /** Inspector exposes a flush hook so commands never run on stale edits. */
     @ViewChild(WorkflowInspectorComponent) inspector?: WorkflowInspectorComponent;
     @ViewChild(WorkflowConfigDialogComponent) configDialog?: WorkflowConfigDialogComponent;
+    @ViewChild(WorkflowConfigNodesComponent) configNodes?: WorkflowConfigNodesComponent;
     @ViewChild(WorkflowGroupSettingsComponent) groupSettings?: WorkflowGroupSettingsComponent;
     jsonText = '';
     jsonError = '';
@@ -613,16 +619,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         if (!node) {
             return;
         }
-        this.designer.selectNode(node.id);
-        const viewport = this.canvasViewport();
-        if (viewport) {
-            const frame = workflowNodeFrame(node);
-            const zoom = this.designer.zoom || 1;
-            this.designer.pan = {
-                x: Math.round(viewport.width / 2 - (node.position.x + frame.width / 2) * zoom),
-                y: Math.round(viewport.height / 2 - (node.position.y + frame.height / 2) * zoom)
-            };
-        }
+        revealWorkflowNode(this.designer, node.id, this.canvasViewport());
         this.closeFind();
         this.notifyChange();
     }
@@ -674,6 +671,20 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     readonly inspectorAction = (key: string, actionId: string, nodeId?: string): void => {
         this.configDialog?.handleAction(key, actionId, nodeId);
     };
+
+    /** Panel requests: edit a record, create one, or reveal it on the canvas. */
+    readonly configNodeAction = (name: string, value: string): void => {
+        if (name === 'edit') {
+            this.configDialog?.open({ id: value });
+        } else if (name === 'add') {
+            this.designer.createConfigNode(value as any, this.nextAddPosition());
+            this.notifyChange();
+        } else {
+            revealWorkflowNode(this.designer, value, this.canvasViewport());
+        }
+    };
+
+    openConfigNodes(): void { this.configNodes?.open(); }
 
     /** Delete guard: config nodes still referenced by other nodes ask first. */
     requestDeleteNodes(nodeIds?: string[]): void {
@@ -971,7 +982,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         // Reference pickers resolve against sibling config nodes, so the cache
         // key must follow their id/name/summary even when the selected node's
         // own config object is unchanged.
-        const configNodes = this.configNodesSignature(node);
+        const configNodes = configNodesSignature(this.designer.definition, this.registry, type);
         const cache = this.inspectorModelCache;
         if (cache && cache.nodeId === nodeId && cache.name === name && cache.description === description
             && cache.type === type && cache.config === config && cache.disabled === disabled
@@ -984,21 +995,6 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
             nodeId, name, description, type, config, disabled, execution, locale, revision, configNodes, model
         };
         return model;
-    }
-
-    /** Stable signature of the config nodes a reference field could pick. */
-    private configNodesSignature(node: any): string {
-        if (!node) {
-            return '';
-        }
-        const fields = this.registry.get(node.type)?.fields || [];
-        if (!fields.some(field => field.reference)) {
-            return '';
-        }
-        return (this.designer.definition.nodes || [])
-            .filter(item => this.registry.get(item.type)?.configNode === true)
-            .map(item => `${item.id}:${item.name || ''}:${JSON.stringify(item.config || {})}`)
-            .join('|');
     }
 
     /**
@@ -1302,6 +1298,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 if (self.showLogs) {
                     self.expandBottomPane();
                 }
+                break;
+            case 'config-nodes':
+                self.openConfigNodes();
                 break;
             case 'save':
                 self.hostAction?.('save');

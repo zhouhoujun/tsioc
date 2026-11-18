@@ -198,6 +198,29 @@ export function configNodeOptions(
     }));
 }
 
+/**
+ * Signature of the config nodes a reference field can pick.
+ *
+ * Inspectors cache their property model, so a rename or URL change on a broker
+ * must invalidate that cache even though the selected node itself did not
+ * change. Returns an empty string when the node has no reference fields, which
+ * keeps the cache key stable for every other node type.
+ */
+export function configNodesSignature(
+    definition: VisualWorkflowDefinition | undefined,
+    registry: WorkflowNodeRegistry,
+    nodeType: string
+): string {
+    const fields = registry.get(nodeType)?.fields || [];
+    if (!fields.some(field => field.reference)) {
+        return '';
+    }
+    return (definition?.nodes || [])
+        .filter(node => isConfigNode(registry, node.type))
+        .map(node => `${node.id}:${node.name || ''}:${JSON.stringify(node.config || {})}`)
+        .join('|');
+}
+
 /** Label for a stored id; falls back to the raw id when it no longer resolves. */
 export function referenceLabel(
     definition: VisualWorkflowDefinition | undefined,
