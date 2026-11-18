@@ -8,6 +8,7 @@ import {
     DynamicFormOption,
     DynamicFormResult,
     DynamicFormSchema,
+    DynamicFormTypedSource,
     DynamicFormValidateResult
 } from './dynamic-form.types';
 import { buildDynamicValidators, dynamicFormMessage } from './dynamic-form.validation';
@@ -101,6 +102,8 @@ export class DynamicFormComponent implements OnDestroy {
     @Attribute() validityAction?: (valid: boolean, errors: Record<string, any> | null) => void;
 
     _schema: DynamicFormSchema = { fields: [] };
+    /** Pending typed-source choice per field key (only while the value is empty). */
+    typedSelections: Record<string, string> = {};
     protected _rawSchema?: any;
     _value: Record<string, any> = {};
     protected _contextKey = '';
@@ -491,6 +494,9 @@ export class DynamicFormComponent implements OnDestroy {
             return;
         }
         control.reset(this.resetValue(field), { emitEvent: false });
+        if (field.typed === true) {
+            delete this.typedSelections[field.key];
+        }
         this.valueVersion += 1;
         this.validationErrors = { ...this.validationErrors, [field.key]: control.errors };
         this.changeAction?.({
@@ -641,14 +647,12 @@ export class DynamicFormComponent implements OnDestroy {
 
     isTypedInput(field: DynamicFormField): boolean { return fields.isTypedInput(field); }
 
-    typedType(field: DynamicFormField): string { return fields.typedType(this, field); }
+    /** Localised source options; the host may override them per schema. */
+    get typedSourceOptions(): DynamicFormTypedSource[] { return fields.typedSources(this._schema); }
 
-    changeTypedType(field: DynamicFormField, event: any): void {
-        const next = String(event?.target?.value || 'literal');
-        const current = String(this.fieldValue(field) ?? '');
-        const text = current.replace(/^(msg|flow|global|env)\./, '');
-        this.updateValue(field, next === 'literal' ? text : `${next}.${text}`);
-    }
+    typedType(field: DynamicFormField): string { return fields.typedType(this, field); }
+    typedText(field: DynamicFormField): string { return fields.typedText(this, field); }
+    changeTypedType(field: DynamicFormField, event: any): void { fields.changeTypedType(this, field, event); }
 
     isTextareaInput(field: DynamicFormField): boolean { return fields.isTextareaInput(field); }
 

@@ -53,6 +53,16 @@ export interface DynamicFormFieldAction {
     title?: string;
 }
 
+/**
+ * One selectable source for a typed field (`literal` value, `msg.payload`,
+ * `flow.var`, ...). Labels are host-supplied so the control follows the host's
+ * locale; the value is what gets prefixed onto the stored string.
+ */
+export interface DynamicFormTypedSource {
+    value: 'literal' | 'msg' | 'flow' | 'global' | 'env';
+    label: string;
+}
+
 export type DynamicFormRuleType =
     | 'required'
     | 'requiredTrue'
@@ -147,6 +157,8 @@ export interface DynamicFormSchema {
     fields: DynamicFormField[];
     /** Title used for fields that do not declare a group. */
     defaultGroupLabel?: string;
+    /** Labels for the typed-value source selector; defaults to English. */
+    typedSources?: DynamicFormTypedSource[];
     /** Labels for switching JSON fields between key/value rows and raw JSON. */
     jsonFieldsLabel?: string;
     jsonTextLabel?: string;

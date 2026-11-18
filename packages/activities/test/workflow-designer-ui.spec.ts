@@ -509,13 +509,18 @@ describe('Workflow Designer UI', () => {
 
         field = root.querySelector('.workflow-field[data-field-key="url"]') as any;
         const input = field.querySelector('input') as any;
-        expect(input.value).toBe('msg.');
+        // The selector owns the source: an empty field stays empty instead of
+        // storing a dangling `msg.`, and the choice survives until typing.
+        expect(input.value).toBe('');
+        expect((field.querySelector('.workflow-field-value-type') as any).value).toBe('msg');
         input.value = 'payload.endpoint';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         await new Promise(resolve => setTimeout(resolve, 420));
 
         const updated = ref.instance.designer.nodes.find(item => item.id === node.id)!;
         expect(updated.config?.url).toBe('msg.payload.endpoint');
+        // The stored prefix is not repeated inside the input.
+        expect((root.querySelector('.workflow-field[data-field-key="url"] input') as any).value).toBe('payload.endpoint');
         expect(root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-error')).toBeFalsy();
 
         const literalSelect = root.querySelector('.workflow-field[data-field-key="url"] .workflow-field-value-type') as any;

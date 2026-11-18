@@ -27,23 +27,20 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         <select [class]="classes.typedType" data-value-type="true"
                             [disabled]="field.disabled || field.readonly"
                             @change="changeTypedType(field, $event)">
-                            <option value="literal" [selected]="typedType(field) === 'literal'">Literal</option>
-                            <option value="msg" [selected]="typedType(field) === 'msg'">msg</option>
-                            <option value="flow" [selected]="typedType(field) === 'flow'">flow</option>
-                            <option value="global" [selected]="typedType(field) === 'global'">global</option>
-                            <option value="env" [selected]="typedType(field) === 'env'">env</option>
+                            <option v-for="source in typedSourceOptions" [value]="source.value"
+                                [selected]="typedType(field) === source.value">{{source.label}}</option>
                         </select>
                     </div>
                     <div [class]="inputWrapClass(field)" v-if="isTextInput(field) || isNumberInput(field)">
                         <input v-if="isTextInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
-                            [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
+                            [value]="field.typed ? typedText(field) : fieldValue(field)" [placeholder]="field.placeholder || ''"
                             [readOnly]="field.readonly" [disabled]="field.disabled"
                             [min]="field.min" [max]="field.max" [step]="field.step"
                             aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                             aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
                             @input="changeText(field, $event)" @blur="blurField(field)" />
                         <input v-if="isNumberInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
-                            [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
+                            [value]="field.typed ? typedText(field) : fieldValue(field)" [placeholder]="field.placeholder || ''"
                             [readOnly]="field.readonly" [disabled]="field.disabled"
                             [min]="field.min" [max]="field.max" [step]="field.step || 1"
                             aria-required="{{isRequired(field) ? 'true' : 'false'}}"
@@ -123,11 +120,8 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                             <select [class]="classes.typedType" data-value-type="true"
                                                 [disabled]="child.disabled || child.readonly"
                                                 @change="changeListItemTypedType(field, listIndex(field, item), child, $event)">
-                                                <option value="literal" [selected]="listItemTypedType(item, child) === 'literal'">Literal</option>
-                                                <option value="msg" [selected]="listItemTypedType(item, child) === 'msg'">msg</option>
-                                                <option value="flow" [selected]="listItemTypedType(item, child) === 'flow'">flow</option>
-                                                <option value="global" [selected]="listItemTypedType(item, child) === 'global'">global</option>
-                                                <option value="env" [selected]="listItemTypedType(item, child) === 'env'">env</option>
+                                                <option v-for="source in typedSourceOptions" [value]="source.value"
+                                                    [selected]="listItemTypedType(item, child) === source.value">{{source.label}}</option>
                                             </select>
                                         </div>
                                         <input v-if="isTextInput(child) || isNumberInput(child)" [class]="inputClass(child)"

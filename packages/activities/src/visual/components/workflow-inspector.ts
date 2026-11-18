@@ -296,7 +296,16 @@ export class WorkflowInspectorComponent implements OnDestroy {
             fields,
             defaultGroupLabel,
             jsonFieldsLabel: this.t('fields', 'Fields'),
-            jsonTextLabel: this.t('json', 'JSON')
+            jsonTextLabel: this.t('json', 'JSON'),
+            // `msg`/`flow`/`global`/`env` are runtime identifiers; only the
+            // literal source needs translating.
+            typedSources: [
+                { value: 'literal', label: this.t('typedLiteral', 'Literal') },
+                { value: 'msg', label: 'msg' },
+                { value: 'flow', label: 'flow' },
+                { value: 'global', label: 'global' },
+                { value: 'env', label: 'env' }
+            ]
         };
     }
 

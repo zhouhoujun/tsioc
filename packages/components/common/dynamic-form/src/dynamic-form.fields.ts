@@ -1,5 +1,5 @@
 import { FormGroup } from '@tsdi/components/forms';
-import { DynamicFormField, DynamicFormSchema } from './dynamic-form.types';
+import { DynamicFormField, DynamicFormSchema, DynamicFormTypedSource } from './dynamic-form.types';
 import { dynamicFormMessage } from './dynamic-form.validation';
 
 /** State exposed by {@link DynamicFormComponent} to the pure field helpers. */
@@ -12,6 +12,29 @@ export interface DynamicFormFieldHost {
     messages: Record<string, string>;
     submitAttempted: boolean;
     valueVersion: number;
+}
+
+/** Host hooks the typed-value helpers need on top of the read-only state. */
+export interface DynamicFormTypedHost extends DynamicFormFieldHost {
+    typedSelections?: Record<string, string>;
+    updateValue(field: DynamicFormField, value: any): void;
+}
+
+/** Sources shown by the typed-value selector when the host does not label them. */
+export const DEFAULT_TYPED_SOURCES: DynamicFormTypedSource[] = [
+    { value: 'literal', label: 'Literal' },
+    { value: 'msg', label: 'msg' },
+    { value: 'flow', label: 'flow' },
+    { value: 'global', label: 'global' },
+    { value: 'env', label: 'env' }
+];
+
+/** Leading source of a stored typed value (`msg.payload` -> `msg`). */
+const TYPED_SOURCE_PATTERN = /^(msg|flow|global|env)\./;
+
+export function typedSources(schema?: DynamicFormSchema): DynamicFormTypedSource[] {
+    const configured = schema?.typedSources;
+    return configured && configured.length ? configured : DEFAULT_TYPED_SOURCES;
 }
 
 export function hasOwn(value: any, key: string): boolean {
@@ -181,10 +204,41 @@ export function isTypedInput(field: DynamicFormField): boolean {
     return field.typed === true;
 }
 
+/**
+ * Selected source for a typed field. The stored value is the source of truth;
+ * a pending choice is remembered only while the value is empty so a source can
+ * be picked before typing anything.
+ */
 export function typedType(host: DynamicFormFieldHost, field: DynamicFormField): string {
     const value = String(fieldValue(host, field) ?? '');
-    const match = /^(msg|flow|global|env)\./.exec(value);
-    return match ? match[1] : 'literal';
+    const match = TYPED_SOURCE_PATTERN.exec(value);
+    if (match) {
+        return match[1];
+    }
+    return value ? 'literal' : ((host as DynamicFormTypedHost).typedSelections?.[field.key] || 'literal');
+}
+
+/** Typed values show the payload text only; the selector owns the source. */
+export function typedText(host: DynamicFormFieldHost, field: DynamicFormField): string {
+    return String(fieldValue(host, field) ?? '').replace(TYPED_SOURCE_PATTERN, '');
+}
+
+/** Text input value; typed fields hide the source the selector shows. */
+export function textValue(host: DynamicFormFieldHost, field: DynamicFormField): any {
+    const value = fieldValue(host, field);
+    return field.typed === true ? String(value ?? '').replace(TYPED_SOURCE_PATTERN, '') : value;
+}
+
+export function changeTypedType(host: DynamicFormTypedHost, field: DynamicFormField, event: any): void {
+    const next = String(event?.target?.value || 'literal');
+    const text = typedText(host, field);
+    if (!text) {
+        // Nothing to prefix yet: remember the choice for the first input
+        // instead of storing a dangling `msg.`.
+        host.typedSelections = { ...(host.typedSelections || {}), [field.key]: next };
+        return;
+    }
+    host.updateValue(field, next === 'literal' ? text : `${next}.${text}`);
 }
 
 export function isTextareaInput(field: DynamicFormField): boolean {

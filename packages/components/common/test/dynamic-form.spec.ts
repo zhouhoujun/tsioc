@@ -218,6 +218,55 @@ export class DynamicFormTest {
         expect(invalid.errors?.host).toBeTruthy();
     }
 
+    @Test('stores typed values with their source and hides the prefix in the input')
+    async typedValues() {
+        const form = createForm({
+            fields: [
+                { key: 'payload', type: 'text', label: 'Payload', typed: true, defaultValue: 'payload' },
+                { key: 'plain', type: 'text', label: 'Plain' }
+            ],
+            typedSources: [
+                { value: 'literal', label: 'Literal' },
+                { value: 'msg', label: 'msg' }
+            ]
+        }, { payload: 'payload' });
+        await flush();
+
+        const field = form.schema.fields[0];
+        expect(form.typedSourceOptions.map(option => option.label)).toEqual(['Literal', 'msg']);
+        expect(form.typedType(field)).toBe('literal');
+        expect(form.typedText(field)).toBe('payload');
+
+        form.changeTypedType(field, { target: { value: 'msg' } });
+        await flush();
+        expect(form.form!.get('payload')!.value).toBe('msg.payload');
+        expect(form.typedType(field)).toBe('msg');
+        // The selector owns the source, so the input shows the value only.
+        expect(form.typedText(field)).toBe('payload');
+
+        // Editing a reference keeps exactly one source prefix.
+        form.changeText(field, { target: { value: 'payload.value' } });
+        await flush();
+        expect(form.form!.get('payload')!.value).toBe('msg.payload.value');
+
+        // An empty value remembers the choice instead of storing `msg.`.
+        form.changeText(field, { target: { value: '' } });
+        await flush();
+        expect(form.form!.get('payload')!.value).toBe('');
+        form.changeTypedType(field, { target: { value: 'msg' } });
+        expect(form.form!.get('payload')!.value).toBe('');
+        expect(form.typedType(field)).toBe('msg');
+        form.changeText(field, { target: { value: 'x' } });
+        await flush();
+        expect(form.form!.get('payload')!.value).toBe('msg.x');
+
+        // Switching back to literal strips the source; plain fields have no selector.
+        form.changeTypedType(field, { target: { value: 'literal' } });
+        await flush();
+        expect(form.form!.get('payload')!.value).toBe('x');
+        expect(form.isTypedInput(form.schema.fields[1])).toBe(false);
+    }
+
     @Test('reports schema-declared field actions to the host')
     async reportsFieldActions() {
         const form = createForm({
