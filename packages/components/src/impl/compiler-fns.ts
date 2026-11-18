@@ -1393,7 +1393,23 @@ export function processDirectiveAttributes(directiveRef: any, directiveDef: Dire
             }
         } else if (isPlainDirectiveAttribute(attr.name, name)) {
             // Plain @Attribute-style directive properties such as `trackBy`.
-            directiveInstance[propertyKey] = attr.value;
+            // A plain attribute may still contain interpolation (`name="{{x}}"`);
+            // without this branch the directive receives the literal braces and
+            // renders nothing (common with dynamic icons).
+            const matches = isString(attr.value) ? matchDelimiter(attr.value, delimiter) : null;
+            if (matches?.length) {
+                evaluateDelimiterExpression(
+                    attr.value,
+                    context,
+                    effect,
+                    matches,
+                    value => { directiveInstance[propertyKey] = value; },
+                    injector,
+                    delimiter
+                );
+            } else {
+                directiveInstance[propertyKey] = attr.value;
+            }
         }
     });
 }
