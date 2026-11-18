@@ -174,25 +174,64 @@ export class OldTestRunner implements UnitRunner {
         await this.runAfter(desc);
     }
 
-    runTimeout(fn: Function | undefined, describe: string, timeout?: number): Promise<any> {
+    runTimeout(fn: Function | undefined, describe: string, timeout?: number): any {
+        if (!fn) {
+            return undefined;
+        }
+        // Synchronous tests cannot be interrupted by a timer. Call them directly
+        // and only pay for the timeout/defer machinery when the function really
+        // returns a promise or declares the Mocha done callback.
+        if (fn.length === 0) {
+            const result = fn();
+            if (result === undefined || result === null || typeof result.then !== 'function') {
+                return result;
+            }
+            return this.runPromiseTimeout(Promise.resolve(result), describe, timeout);
+        }
+        return this.runDoneTimeout(fn, describe, timeout);
+    }
+
+    private runPromiseTimeout(result: Promise<any>, describe: string, timeout?: number): Promise<any> {
         const defer = lang.defer();
-        let timer = setTimeout(() => {
+        const timer = setTimeout(() => {
+            const assert = this.injector.get(Assert);
+            defer.reject(new assert.AssertionError({
+                message: `${describe}, timeout ${timeout}`,
+                stackStartFunction: undefined,
+                stackStartFn: undefined
+            }));
+        }, timeout || this.timeout);
+        result.then(value => {
+            clearTimeout(timer);
+            defer.resolve(value);
+        }, error => {
+            clearTimeout(timer);
+            defer.reject(error);
+        });
+        return defer.promise;
+    }
+
+    private runDoneTimeout(fn: Function, describe: string, timeout?: number): Promise<any> {
+        const defer = lang.defer();
+        let timer: any = setTimeout(() => {
             if (timer) {
                 clearTimeout(timer);
+                timer = null;
                 const assert = this.injector.get(Assert);
-                const err = new assert.AssertionError({
+                defer.reject(new assert.AssertionError({
                     message: `${describe}, timeout ${timeout}`,
                     stackStartFunction: fn,
                     stackStartFn: fn
-                });
-                defer.reject(err)
+                }));
             }
         }, timeout || this.timeout);
 
-        // Mocha Done callback support
         const done = (err?: Error | any) => {
+            if (!timer) {
+                return;
+            }
             clearTimeout(timer);
-            timer = null!;
+            timer = null;
             if (err) {
                 defer.reject(err);
             } else {
@@ -201,59 +240,28 @@ export class OldTestRunner implements UnitRunner {
         };
 
         try {
-            const result = fn?.(done);
-            // If function returns a Promise, handle it
-            // If function doesn't return Promise (sync test or undefined), it's complete immediately
-            // or it will call done() later for callback-style async tests
-            if (result !== undefined && result !== null && typeof result.then === 'function') {
-                Promise.resolve(result)
-                    .then(r => {
-                        if (timer) {
-                            clearTimeout(timer);
-                            timer = null!;
-                            defer.resolve(r);
-                        }
-                    })
-                    .catch(err => {
-                        if (timer) {
-                            clearTimeout(timer);
-                            timer = null!;
-                            defer.reject(err);
-                        }
-                    });
-            } else if (result === undefined) {
-                // For sync tests or tests that will use done callback
-                // Do nothing here - wait for done() to be called or timer timeout
-                // Note: if test doesn't need done callback (sync test without params),
-                // it should complete immediately. Check if function expects done parameter.
-                if (fn && fn.length === 0) {
-                    // Function doesn't expect any parameter (sync test), complete immediately
-                    clearTimeout(timer);
-                    timer = null!;
-                    defer.resolve(result);
-                }
-            } else {
-                // Function returned a non-Promise value (sync test with return value)
-                clearTimeout(timer);
-                timer = null!;
-                defer.resolve(result);
-            }
+            fn(done);
         } catch (err) {
-            clearTimeout(timer);
-            timer = null!;
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+            }
             defer.reject(err);
         }
 
-        return defer.promise
+        return defer.promise;
     }
 
     async runHook(describe: SuiteDescribe, action: string, desc: string) {
+        const hooks: ICaseDescribe[] = (describe as any)[action] || [];
+        if (!hooks.length) {
+            return;
+        }
         await lang.step(
-            ((describe as any)[action] || [])
-                .map((hk: ICaseDescribe) => () => this.runTimeout(
-                    hk.fn,
-                    desc,
-                    hk.timeout || describe.timeout)))
+            hooks.map((hk: ICaseDescribe) => () => this.runTimeout(
+                hk.fn,
+                desc,
+                hk.timeout || describe.timeout)))
     }
 
     async runBefore(describe: SuiteDescribe) {
@@ -276,7 +284,9 @@ export class OldTestRunner implements UnitRunner {
     }
 
     async runTest(desc: SuiteDescribe) {
-        await lang.step(desc.cases.map(caseDesc => () => this.runCase(caseDesc, desc)))
+        for (const caseDesc of desc.cases) {
+            await this.runCase(caseDesc, desc);
+        }
     }
 
     async runCase(caseDesc: ICaseDescribe, suiteDesc?: SuiteDescribe): Promise<ICaseDescribe> {
