@@ -236,6 +236,8 @@ export class AppRpcServer {
                         'tools.list',
                         'tools.activate',
                         'tools.invoke',
+                        'hooks.list',
+                        'hooks.trust.list',
                         'model.list',
                         'model.catalog',
                         'model.add',

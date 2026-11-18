@@ -59,4 +59,12 @@ export class HooksRpcTest {
             fs.rmSync(workspace, { recursive: true, force: true });
         }
     }
+
+    @Test('capabilities advertise the hooks methods')
+    async capabilities() {
+        const server = buildServer({});
+        const capabilities = await (server as any).dispatch('app.capabilities', {}, {});
+        expect(capabilities.methods).toContain('hooks.list');
+        expect(capabilities.methods).toContain('hooks.trust.list');
+    }
 }

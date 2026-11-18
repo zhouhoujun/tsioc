@@ -4758,3 +4758,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 设置页 Hooks 详情优先展示信任状态（`trusted N/M` + 每项 `[trusted]/[untrusted]`），随后附 runtime 阶段摘要；无数据时保留提示。
 - 测试：agent 1079 passing（新增共享模块 3 例）、agent-cli hooks/cli 87 passing、gateway hooks-rpc 3 passing、
   settings-integrations 9 passing。
+- gateway `app.capabilities` 补登 `hooks.list` / `hooks.trust.list`（客户端能力发现）；hooks-rpc 4 passing。
