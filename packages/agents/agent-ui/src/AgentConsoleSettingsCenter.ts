@@ -176,7 +176,7 @@ function fieldById(id: string): AgentConsoleSettingsField | undefined {
 const AGENT_CONSOLE_SETTINGS_CLOSING_ROWS = new Set([
     'theme', 'language', 'transcriptWindow', 'pagerSize',
     'model', 'thinkingLevel', 'fast', 'status',
-    'securityLevel', 'sandbox', 'approvals', 'permissionsInspect',
+    'securityLevel', 'sandbox', 'approvals', 'permissionsInspect', 'workspaceTrust', 'approvalTimeout',
     'archetype', 'personality', 'memories', 'delegation',
     'mcp', 'mcpToolActivate', 'plugins', 'skills', 'hooks',
     'keybindsOpen', 'keybindsList', 'keybindsReset',

@@ -159,9 +159,31 @@ export class AgentConsoleSettingsCenterTest {
         await handleSettingsCenterKey(component, 'return');
         expect(component.options.policy.limits.approvalTimeoutMs).toEqual(60000);
         expect(persisted[persisted.length - 1]).toEqual({ approvalTimeoutMs: 60000 });
+        // The picker opened from a closed page: never stack two dialogs.
+        expect(state.settingsCenterOpen).toEqual(false);
         await component.handleCommand('/settings permissions');
         const row = state.settingsCenterRows.find((item: any) => item.id === 'approvalTimeout');
         expect(row.value).toEqual('60s');
+    }
+
+    @Test('the workspace trust confirmation closes the page before the picker')
+    async trustPickerClosesPage() {
+        const { component, state } = await this.createConsoleWithPersist();
+        const trusted = new Set<string>();
+        (component as any).app = {
+            get: () => ({ isTrusted: (workspace: string) => trusted.has(workspace), trust: (workspace: string) => trusted.add(workspace) })
+        };
+        state.workspace = '/w';
+        await component.handleCommand('/settings trust');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'workspaceTrust');
+        expect(index).toBeGreaterThanOrEqual(0);
+        state.settingsCenterIndex = index;
+        const opened: string[] = [];
+        component.select = async (title: string) => { opened.push(title); return 'no'; };
+        await handleSettingsCenterKey(component, 'return');
+        expect(opened.length).toEqual(1);
+        expect(state.settingsCenterOpen).toEqual(false);
+        expect(trusted.size).toEqual(0);
     }
 
     @Test('the MCP activation picker closes the page before stacking a dialog')

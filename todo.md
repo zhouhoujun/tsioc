@@ -4739,3 +4739,4 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 新增「Message page size」（4/6/10，持久化 `messageSelectionPageSize` 并恢复 consoleOptions）；搜索结果行前缀显示所属分区，
   便于跨分区查找；settings-center 14 passing。
 - 修复 MCP 激活行未在打开选择器前关闭设置页（会叠加浮层）；新增回归用例（选择器打开后页面已关闭），settings-center 15 passing。
+- 补全「打开弹窗的行」清单：`workspaceTrust`、`approvalTimeout` 先关闭设置页再打开选择器；静态审计确认全部 dialog 行都在关闭集合内。
