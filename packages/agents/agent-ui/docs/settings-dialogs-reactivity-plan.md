@@ -162,3 +162,17 @@ state 52–67ms + paint 25–56ms；历史记录 98–138ms。已试并回退的
 - 性能改动以真实 1k 消息 TUI 路径 A/B；无收益立即回退（已两次验证此纪律）。
 - ratchet：新增逻辑落新文件（<600 行）；触及基线文件时同提交下调。
 - Web/TUI 边界：console 差异只落 `components/console` 通用层，不在 agent-ui 兜底。
+
+## 8. 实施状态（2026-11-18）
+
+- **P0 基线**：见 `docs/agent-ui-baseline.md`（测试计数、1k 消息切换 p50/p95、state/paint
+  拆分、source-size 预算与复跑命令）。
+- **P1 弹窗契约**：已完成（`55324b026`）。阻塞式 select/dialog 与输入区同宽并贴输入框顶边；
+  `/sessions` 去无效 `[ Load more ]`、归档徽标、秒级时间戳归一化；`/projects` 二级标题用
+  label、Esc 返回项目列表、无会话提示后回到列表；相关套件 191 passing。
+- **P2 响应式/性能**（进行中）：已落地"已投影 transcript 数组复用"（`4ef0f7a84`，
+  state p50 中位数约 61 vs 69ms）与"`navFilteredSessions` 按列表+过滤值缓存"
+  （500 会话下 2000 次读取 493ms → 1.7ms）。剩余：弹窗/重置批量写入、热点 getter 评估。
+- **P3 Web 设置页**：待做，复用 `AgentConsoleSettingsSchema` 与 `components/common`
+  组件，不复制 TUI 逻辑。
+- **P4 收尾**：待做。
