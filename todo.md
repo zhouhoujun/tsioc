@@ -4769,3 +4769,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 验证：gateway-kit 8 passing、agent-gateway 388 passing（gateway-server/openapi 不变）、
   tsc、package-deps、source-size、diff-check 通过。
 - P1 待做：microservices/gateway 内部复用 kit（route table/rate limit/error），保持其 140+ 测试与上游管线不变。
+- P1 评审：微服务路由（前缀命中/hosts/accepts）、限流（quota/throttle/共享 store）、错误分类（bulkhead/circuit）
+  超出 kit 当前语义，已把扩展点与迁移顺序写入设计文档，避免直接替换造成能力降级。

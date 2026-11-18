@@ -129,6 +129,23 @@ agent-gateway 全套 **388 passing** 不变。
 
 ### P1 —— microservices/gateway 复用 kit 原语（保留上游管线）
 
+> 2026-11-18 评审结论：P1 不能直接替换，kit 需先补齐三项语义，否则会降级现有能力：
+> 1. **路由**：微服务 route table 的 segment 模式允许「前缀命中」（`/api/users` 命中 `/api/users/1`），
+>    并支持 `hosts` 过滤与 `accepts(resolved)` 谓词（canary/header 规则）；kit router 目前是整段精确匹配。
+>    扩展：`matchMode: 'exact' | 'segment'`、`hosts?: string[]`、`accepts?(route)`、保留 specificity 排序。
+> 2. **限流**：微服务支持 `quota`（多维窗口）与 `throttle`（最小间隔），并区分是否使用共享 store；
+>    kit 目前只有单窗口 `limit/windowMs`。扩展：`quota`/`throttle` 维度 + `keyBy` 解析器，保持
+>    `Retry-After` 秒数与共享 store 行为不变。
+> 3. **错误 envelope**：微服务按 `bulkhead/circuit/timeout` 细分 `x-gateway-error-type`；
+>    kit 的 `gatewayErrorTypeForStatus` 只覆盖状态码类别。扩展：允许调用方传入 error type
+>    （`GatewayErrorOptions.type`），现有分类器保留在微服务侧。
+>
+> 迁移顺序（每步独立提交 + 回归）：
+> a) kit router 增加 prefix/hosts/accepts 并加对照测试（同一路由夹具对比旧/新命中结果）；
+> b) `gateway.route-table.ts` 内部改为 kit adapter（对外 `GatewayRouteTable` API/`version` 不变）；
+> c) kit limiter 增加 quota/throttle，`gateway.rate-limit.ts` 内部替换（保留共享 store 分支）；
+> d) 错误 envelope 接入 kit（保留 `statusCode/message` 与 `x-gateway-error-type`）。
+
 - `gateway.route-table.ts` 内部改用 kit `GatewayRouter`（对外 `GatewayRouteTable` API 不变）。
 - `gateway.rate-limit.ts` 内部改用 kit 限流器（保留 route/global 与共享 store 行为）。
 - `gateway.auth.ts` 保持 API key/HMAC/JWT，但 principal/envelope 走 kit 约定。
