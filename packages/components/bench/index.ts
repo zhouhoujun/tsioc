@@ -289,6 +289,40 @@ async function benchCommonWidth(): Promise<void> {
 }
 
 @Component({
+    selector: 'bench-bindings-host',
+    imports: [],
+    template: `<div class="root"><span class="cell" v-for="cell in cells" :data-id="cell.id" title="{{cell.label}}">{{cell.label}}</span></div>`
+})
+class BenchBindingsHost {
+    cells = Array.from({ length: 200 }, (_, index) => ({ id: `c${index}`, label: `Cell ${index}` }));
+}
+
+/** First-render cost of per-element bindings (interpolation + attribute). */
+async function benchRenderBindings(): Promise<void> {
+    const { JSDOM } = require('jsdom');
+    const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+    const ctx = await Application.run(BenchBindingsHost, {
+        deps: [HtmlTemplateModule, ComponentsModule],
+        providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+    });
+    try {
+        const factory = ctx.get(ComponentFactory);
+        (ctx.runners.getRef(BenchBindingsHost) as any)?.destroy?.();
+        const renders = 5;
+        const start = now();
+        for (let i = 0; i < renders; i++) {
+            const ref = factory.create(BenchBindingsHost, { injector: ctx }) as ComponentRef<BenchBindingsHost>;
+            await ref.render();
+            await ref.destroy();
+        }
+        report('render 200 bound rows', ms(start), `${renders} renders`);
+    } finally {
+        await ctx.close();
+        dom.window.close();
+    }
+}
+
+@Component({
     selector: 'bench-render-child',
     template: `<span class="child"><i class="glyph">{{glyph}}</i><b class="label">{{label}}</b></span>`
 })
@@ -372,6 +406,7 @@ async function main(): Promise<void> {
         await benchViewQueries();
         await benchToggleWrites();
         await benchRender();
+        await benchRenderBindings();
         await benchCommonWidth();
     }
     printResults();

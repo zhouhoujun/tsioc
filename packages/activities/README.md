@@ -1232,6 +1232,31 @@ runTest('./test/core-activities.spec.ts', { baseURL: __dirname }, ConsoleReporte
 "
 ```
 
+### Test performance notes
+
+The designer UI suite boots one application and renders a fresh designer per
+test. Measured on an idle host (2026-11):
+
+| Phase | Cost |
+| --- | --- |
+| `Application.run` (module + AOP metadata + first render) | ~2.5-3.3 s per app |
+| Designer first render (JSDOM, ~1400 elements) | ~1.0-1.5 s |
+| JSDOM `createElement` (plain node) | ~0.5-0.7 ms each |
+
+So the wall time is dominated by DOM node creation in jsdom, not by the
+framework's reactive logic. Practical rules:
+
+- `run-tests.js` runs with `TS_NODE_TRANSPILE_ONLY=1`; type checking belongs to
+  the `tsc` gate, and rebuilding the TS program per run costs tens of seconds.
+- Prefer fewer elements over fewer re-renders: the palette/menu/item markup is
+  the bulk of the tree.
+- Sharing one `ApplicationContext` between tests saves little and leaks
+  module-level singletons (service runtime state, action bus), so keep a fresh
+  app per test unless those singletons gain an explicit reset.
+- `packages/components` gates first-render cost with `npm run bench:check`
+  (`render designer tree`, `render 200 bound rows`); use it rather than
+  wall-clock suite time to judge render changes, since the host is often busy.
+
 ## Related Packages
 
 - [@tsdi/ioc](https://www.npmjs.com/package/@tsdi/ioc) - IoC container

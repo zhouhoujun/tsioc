@@ -39,6 +39,7 @@ const budgets = {
     'viewchildren append': 800,
     'writes after 500 toggles': 100,
     'render designer tree': 900,
+    'render 200 bound rows': 3000,
     'common display width (ansi)': 60,
     'common slice width (ansi/cjk)': 60
 };
