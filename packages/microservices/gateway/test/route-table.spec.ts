@@ -122,6 +122,18 @@ describe('GatewayRouteTable', () => {
         expect(table.match({ url: '/api/service-0/items/7/more', method: 'GET' })?.service).toBe('service-0');
         expect(table.match({ url: '/api/unknown/items/7', method: 'GET' })).toBeNull();
     });
+
+    it('projects the compiled table into OpenAPI operations', () => {
+        const routes: GatewayRouteOptions[] = [
+            { path: '/api/users', service: 'users', methods: ['GET', 'POST'] },
+            { path: '/api/orders/:id', service: 'orders' }
+        ];
+        const { table } = compile(routes);
+        const operations = table.openApiRoutes();
+        expect(operations.filter(operation => operation.path === '/api/users').map(operation => operation.method))
+            .toEqual(['GET', 'POST']);
+        expect(operations.some(operation => operation.path === '/api/orders/:id' && operation.method === 'GET')).toBe(true);
+    });
 });
 
 describe('GatewayInterceptor route table caching', () => {

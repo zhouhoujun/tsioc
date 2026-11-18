@@ -11,6 +11,7 @@ import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
 import { GatewayLoadBalancer } from './load-balancer';
 import { GatewayRouteTable } from './gateway.route-table';
+import { buildGatewayOpenApi } from '@tsdi/gateway-kit';
 import { GatewayRuleEngine, ruleToRoute } from './gateway.rule-engine';
 import { HttpAuthService, HttpAuthOptions, HmacSignatureService } from '@tsdi/security';
 import { Tracer, Span } from '@tsdi/tracing';
@@ -283,6 +284,16 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             host: getRequestHost(request),
             legacy: mode === 'legacy',
             accepts: route => this.matchHeaders(route, request) && this.matchCanary(route.canary, request)
+        });
+    }
+
+    /** OpenAPI document generated from the compiled route table (shared kit builder). */
+    openApiDocument(): ReturnType<typeof buildGatewayOpenApi> {
+        const table = this.getRouteTable();
+        return buildGatewayOpenApi(table.openApiRoutes(), {
+            title: 'TSDI Gateway',
+            version: String(table.version),
+            description: 'Microservice API gateway route table.'
         });
     }
 

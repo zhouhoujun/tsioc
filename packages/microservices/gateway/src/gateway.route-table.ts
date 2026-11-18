@@ -1,4 +1,4 @@
-import { GatewayRouter, type GatewayRouteDefinition } from '@tsdi/gateway-kit';
+import { GatewayRouter, type GatewayOpenApiRoute, type GatewayRouteDefinition } from '@tsdi/gateway-kit';
 import { GatewayRouteOptions, ResolvedGatewayRoute } from './gateway.options';
 
 /**
@@ -133,6 +133,26 @@ export class GatewayRouteTable {
             accept: route => !request.accepts || request.accepts(route.handler)
         });
         return matched ? matched.route.handler : null;
+    }
+
+    /** Routes in the shared OpenAPI shape (for docs/diagnostics). */
+    openApiRoutes(): GatewayOpenApiRoute[] {
+        const routes: GatewayOpenApiRoute[] = [];
+        for (const route of this.compiled) {
+            const path = `/${route.segments.join('/')}` || '/';
+            const methods = route.methods?.size ? [...route.methods] : ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+            for (const method of methods) {
+                routes.push({
+                    method,
+                    path,
+                    ...(route.source.auth === false ? { auth: false } : {}),
+                    ...(typeof (route.source as any).description === 'string'
+                        ? { summary: (route.source as any).description }
+                        : {})
+                });
+            }
+        }
+        return routes;
     }
 
     private routeDefinition(compiled: CompiledGatewayRoute): GatewayRouteDefinition<ResolvedGatewayRoute> {
