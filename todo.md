@@ -4685,3 +4685,18 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 新增 `calibration` 指标（同形状的内存访问循环，5120 万次读）；
   - `check-components-bench.mjs` 按 `calibration / 250ms` 放宽容差（下限 1，不收紧空闲机器），并在缩放 >5% 时打印 `[BENCH-INFO]`。
   - 验证：空闲与 4 个 `yes` 满载并行两种情况下 `bench:check` 均 PASS。
+
+## 2026-11-18 设置中心 P1（schema + TUI 页面）
+- 新增 `AgentConsoleSettingsSchema.ts`（字段一处声明：label/描述/scope/effect/value/apply/reset）、
+  `AgentConsoleSettingsCenter.ts`（分区、搜索、选择、应用、重置、键处理）、
+  `AgentConsoleSettingsCenterPanel.ts`（console/html 共用面板）、`...Keys.ts`（终端/浏览器键映射）。
+- `/settings` 打开设置中心（分区 + 搜索 + 作用域/生效徽标 + ctrl+r 重置）；`/settings <query>` 搜索；
+  `/settings menu` 保留原 tab 菜单（原 settings 用例改为该路径，断言不变）。
+- 行内动作复用现有 handler（theme/language/vim/raw/thinking/yolo/timestamps/activity/steer/tooloutput/
+  username/title/touch/model/thinking level/fast/status/permissions/sandbox/approvals/inspect/archetype/
+  plan/personality/memories/delegation/mcp/plugins/skills/hooks/keybinds/data 动作）。
+- 键路由：终端在 composer/全局键之前拦截；浏览器键同一映射；动作型行会先关闭页面再打开弹窗。
+- 测试：新增 `settings-center.spec.ts`（9 用例：打开/搜索/输入过滤/应用+持久化/重置/分区/动作行/终端键/
+  经典菜单），console-renderer 增加渲染用例；相关 settings 套件 192 passing。
+- 说明：`ui-badge` 依赖 `IconModule`，在 console 模板导入路径下无法解析，P1 改用语义 span 显示 scope；
+  source-size 通过（新增逻辑全部落在新文件，baseline 未增长）。

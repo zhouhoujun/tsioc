@@ -311,8 +311,7 @@ import { CommandHandlerContext } from './AgentConsoleCommandHandlers';
 import { buildCommandHandlerState } from './AgentConsoleCommandHandlerContext';
 import { AgentConsoleCommandDispatchHost, dispatchAgentConsoleCommand } from './AgentConsoleCommandDispatch';
 import { AGENT_WIZARD_PROVIDERS, AGENT_WIZARD_TIERS, AgentWizardProviderDef, AgentWizardStepDef, buildProviderWizardChoiceOptions, buildProviderWizardConfirmOptions, buildProviderWizardSteps, buildProviderWizardSummary, buildWizardStepHelp, resolveWizardPrefill, resolveWizardProviderDef, resolveWizardProviderName, resolveWizardTierLabel } from './AgentConsoleProviderWizard';
-import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetProviderWizardComposer, showProviderWizardStep, openProviderWizardChoice, handleProviderWizardChoice, openProviderWizardConfirm, handleProviderWizardConfirm, openProviderWizardEditor, testProviderConnection, commitProviderWizard, advanceProviderWizard } from './AgentConsoleProviderWizardFlow';
-@Component({
+import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetProviderWizardComposer, showProviderWizardStep, openProviderWizardChoice, handleProviderWizardChoice, openProviderWizardConfirm, handleProviderWizardConfirm, openProviderWizardEditor, testProviderConnection, commitProviderWizard, advanceProviderWizard } from './AgentConsoleProviderWizardFlow';@Component({
     selector: 'agent-console',
     template: `
     <div class="agent-console" data-theme="{{themeName}}">
@@ -330,6 +329,7 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
         <agent-console-working-panel v-show="panels.working && !panels.messageDetail"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="panels.toolRuns && !panels.messageDetail"></agent-console-tool-runs-panel>
         <agent-console-pending-question-panel renderRegion="menu" v-show="panels.pendingQuestion"></agent-console-pending-question-panel>
+        <agent-console-settings-center-panel renderRegion="menu" v-show="panels.settingsCenter"></agent-console-settings-center-panel>
         <agent-console-select-panel renderRegion="menu" v-show="panels.suggestion"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="panels.select"></agent-console-select-panel>
         <agent-console-text-overlay-panel renderRegion="dialog" v-show="panels.textOverlay"></agent-console-text-overlay-panel>
         <toast-stack renderRegion="toast" :items="state.toasts" :messageWidth="toastMessageWidth" @closeAction="dismissToast"></toast-stack>

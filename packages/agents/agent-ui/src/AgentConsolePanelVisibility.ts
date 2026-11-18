@@ -22,6 +22,7 @@ export interface AgentConsolePanelVisibility {
     textOverlay: boolean;
     commandOutputs: boolean;
     pendingQuestion: boolean;
+    settingsCenter: boolean;
     welcome: boolean;
 }
 
@@ -52,6 +53,7 @@ export function resolveAgentConsolePanelVisibility(state: AgentConsoleSessionSta
         textOverlay: state.hasTextOverlayFocus(),
         commandOutputs: state.commandOutputsOpen,
         pendingQuestion: !!state.pendingQuestion,
+        settingsCenter: state.settingsCenterOpen === true,
         // The welcome card belongs to an empty transcript only.
         welcome: state.messages.length === 0
     };
@@ -85,5 +87,6 @@ export abstract class AgentConsolePanelVisibilityHost {
     get showTextOverlayPanel(): boolean { return this.panels.textOverlay; }
     get showCommandOutputsPanel(): boolean { return this.panels.commandOutputs; }
     get showPendingQuestionPanel(): boolean { return this.panels.pendingQuestion; }
+    get showSettingsCenterPanel(): boolean { return this.panels.settingsCenter; }
     get showBrandPanel(): boolean { return this.panels.welcome; }
 }

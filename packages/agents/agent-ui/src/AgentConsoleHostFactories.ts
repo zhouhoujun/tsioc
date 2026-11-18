@@ -13,6 +13,7 @@ import { scrollAgentConsoleTranscript } from './AgentConsoleTranscriptLayout';
 import type { KeymapCommandHost } from './AgentConsoleKeymapCommands';
 import type { AgentConsoleGlobalKeyInputHost } from './AgentConsoleGlobalKeyInputController';
 import type { AgentConsoleTerminalInputHost } from './AgentConsoleTerminalInputController';
+import { handleSettingsCenterTerminalInput } from './AgentConsoleSettingsCenterKeys';
 import type { AgentConsoleTurnInputHost } from './AgentConsoleTurnInputController';
 import type { PromptMentionHost } from './AgentConsolePromptMentions';
 import type { ApprovalInspectorHost } from './AgentConsoleApprovalCommands';
@@ -98,7 +99,6 @@ export function globalKeyInputHost(self: any): AgentConsoleGlobalKeyInputHost {
     };
 }
 export function terminalInputHost(self: any): AgentConsoleTerminalInputHost {
-    
     return {
         state: self.state,
         transcriptNavigationController: self.transcriptNavigationController,
@@ -120,7 +120,7 @@ export function terminalInputHost(self: any): AgentConsoleTerminalInputHost {
         submit: () => self.submit(),
         queueDraft: () => self.queueDraft(),
         handleCommand: (value: string) => self.handleCommand(value),
-        focusComposer: () => self.state.setMessagesFocused(false)
+        focusComposer: () => self.state.setMessagesFocused(false), handleSettingsCenterTerminalInput: (decoded, raw) => handleSettingsCenterTerminalInput(self as any, decoded, raw)
     };
 }
 export function turnInputHost(self: any): AgentConsoleTurnInputHost {

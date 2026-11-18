@@ -2556,7 +2556,7 @@ export class VmReviewTasksTest {
         const component = createConsole(runtime, new SchedulerStub(), new ToolRegistryStub(), undefined, undefined, undefined, undefined, appRpc);
         await component.onInit();
 
-        const pending = (component as any).handleCommand('/settings');
+        const pending = (component as any).handleCommand('/settings menu');
         await waitForCondition(() => !!component.selectMenu);
         await component.sessionState.confirmSelectMenu('providers');
         await waitForCondition(() => component.selectMenu?.title === 'Settings · Providers');

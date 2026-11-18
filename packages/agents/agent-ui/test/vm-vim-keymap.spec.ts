@@ -476,7 +476,7 @@ export class VmVimKeymapTest {
             (component as any).settingsStore = store;
             await component.onInit();
 
-            const pending = (component as any).handleCommand('/settings');
+            const pending = (component as any).handleCommand('/settings menu');
             await waitForCondition(() => !!component.selectMenu);
             expect(component.selectMenu?.title).toEqual('Settings');
             expect(component.selectMenu?.options.map(option => option.value)).toEqual(['general', 'keybinds', 'providers']);
@@ -510,7 +510,7 @@ export class VmVimKeymapTest {
         await component.onInit();
         try {
             expect(component.sessionState.consoleOptions.touchMode).toEqual(false);
-            const pending = (component as any).handleCommand('/settings');
+            const pending = (component as any).handleCommand('/settings menu');
             await waitForCondition(() => !!component.selectMenu);
             await component.sessionState.confirmSelectMenu('general');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
@@ -540,7 +540,7 @@ export class VmVimKeymapTest {
         await component.onInit();
         try {
             expect(component.sessionState.steerMode).toEqual(undefined);
-            const pending = (component as any).handleCommand('/settings');
+            const pending = (component as any).handleCommand('/settings menu');
             await waitForCondition(() => !!component.selectMenu);
             await component.sessionState.confirmSelectMenu('general');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
@@ -569,7 +569,7 @@ export class VmVimKeymapTest {
         };
         (component as any).translator = translator;
 
-        const pending = (component as any).handleCommand('/settings');
+        const pending = (component as any).handleCommand('/settings menu');
         await waitForCondition(() => !!component.selectMenu);
         await component.sessionState.confirmSelectMenu('general');
         await waitForCondition(() => component.selectMenu?.title === 'Settings · General');
@@ -589,7 +589,7 @@ export class VmVimKeymapTest {
         const component = createConsole(new RuntimeStub(), new SchedulerStub(), new ToolRegistryStub());
         await component.onInit();
 
-        const pending = (component as any).handleCommand('/settings');
+        const pending = (component as any).handleCommand('/settings menu');
         await waitForCondition(() => !!component.selectMenu);
         await component.sessionState.confirmSelectMenu('keybinds');
         await waitForCondition(() => component.selectMenu?.title === 'Settings · Keybinds');
@@ -611,7 +611,7 @@ export class VmVimKeymapTest {
         await component.onInit();
         (component as any).globalKeymap.set('ctrl+y', 'interrupt-turn', 'global');
 
-        const pending = (component as any).handleCommand('/settings');
+        const pending = (component as any).handleCommand('/settings menu');
         await waitForCondition(() => !!component.selectMenu);
         await component.sessionState.confirmSelectMenu('keybinds');
         await waitForCondition(() => component.selectMenu?.title === 'Settings · Keybinds');
@@ -632,7 +632,7 @@ export class VmVimKeymapTest {
             (component as any).settingsStore = store;
             await component.onInit();
 
-            const pending = (component as any).handleCommand('/settings');
+            const pending = (component as any).handleCommand('/settings menu');
             await waitForCondition(() => !!component.selectMenu);
             await component.sessionState.confirmSelectMenu('providers');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · Providers');
@@ -811,7 +811,7 @@ export class VmVimKeymapTest {
             (component as any).settingsStore = store;
             await component.onInit();
 
-            const pending = (component as any).handleCommand('/settings');
+            const pending = (component as any).handleCommand('/settings menu');
             await waitForCondition(() => !!component.selectMenu);
             await component.sessionState.confirmSelectMenu('general');
             await waitForCondition(() => component.selectMenu?.title === 'Settings · General');

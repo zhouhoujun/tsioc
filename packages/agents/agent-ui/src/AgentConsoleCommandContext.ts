@@ -67,7 +67,7 @@ export function buildCommandContext(self: any, abortSignal?: AbortSignal): Comma
             runFastCommand: (a) => self.runFastCommand(a),
             runPersonalityCommand: (a) => self.runPersonalityCommand(a),
             runDebugConfigCommand: () => self.runDebugConfigCommand(),
-            runSettingsCommand: () => self.runSettingsCommand(),
+            runSettingsCommand: (a) => self.runSettingsCommand(a),
             runYoloCommand: (a) => self.runYoloCommand(a),
             runFeedbackCommand: () => self.runFeedbackCommand(),
             runBackgroundTasksCommand: (a) => self.runBackgroundTasksCommand(a),

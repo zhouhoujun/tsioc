@@ -32,6 +32,7 @@ import {
 } from './AgentConsolePreferenceCommands';
 import { runQueueCommand as runQueueCommandView } from './AgentConsoleRpcCommands';
 import { runSteerCommand as runSteerCommandView } from './AgentConsoleSteerCommands';
+import { openAgentConsoleSettings } from './AgentConsoleSettingsCenter';
 import { runStashCommand as runStashCommandView } from './AgentConsoleStashCommands';
 import {
     preferenceCommandHost,
@@ -181,8 +182,18 @@ export abstract class AgentConsoleSettingsHost extends AgentConsoleIntegrationHo
         return runDebugConfigCommandView(preferenceCommandHost(this));
     }
 
-    protected async runSettingsCommand(): Promise<boolean> {
-        return runSettingsCommandView(settingsPanelHost(this));
+    protected async runSettingsCommand(args?: string): Promise<boolean> {
+        const raw = String(args || '').trim();
+        if (raw.toLowerCase() === 'menu') {
+            return runSettingsCommandView(settingsPanelHost(this));
+        }
+        openAgentConsoleSettings(this as any, raw);
+        return true;
+    }
+
+    /** Data/tooling rows of the settings center delegate to the existing commands. */
+    protected async runInternalCommand(command: string): Promise<boolean> {
+        return (this as any).handleCommand(command);
     }
 
     protected async openSettingsGeneralTab(): Promise<boolean> {

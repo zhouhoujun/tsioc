@@ -22,8 +22,10 @@ const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
  */
 export interface AgentConsoleTerminalInputHost {
     transcriptNavigationController: import('./AgentConsoleTranscriptNavigation').AgentConsoleTranscriptNavigationController;
+    handleSettingsCenterTerminalInput?(decoded: TerminalInputSequenceResult, raw: string): Promise<boolean>;
     state: {
         sessionId: string;
+        settingsCenterOpen?: boolean;
         vimMode: boolean;
         inputMode: string;
         commandHints: string[];
@@ -245,6 +247,7 @@ export async function handleTerminalInputView(
         });
         return;
     }
+    if (host.state.settingsCenterOpen && host.handleSettingsCenterTerminalInput && await host.handleSettingsCenterTerminalInput(decoded, rawChunk)) return;
     if (await handleCommandPaletteInputView(host, decoded, rawChunk)) {
         return;
     }

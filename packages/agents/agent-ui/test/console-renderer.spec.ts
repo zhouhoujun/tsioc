@@ -15,6 +15,7 @@ import {
     AgentConsoleMessagesPanelComponent,
     AgentConsolePendingQuestionPanelComponent,
     AgentConsoleReviewPanelComponent,
+    AgentConsoleSettingsCenterPanelComponent,
     AgentConsoleSessionsPanelComponent,
     AgentConsoleStatusPanelComponent,
     AgentConsoleJobsPanelComponent,
@@ -1497,6 +1498,23 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(messageLines.some(line => line.includes('final line 12'))).toBe(true);
     }
 
+
+    @Test('settings center renders its sections and rows')
+    async renderSettingsCenter() {
+        const ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
+        await (ref.instance as any).handleCommand('/settings');
+        await ref.render();
+
+        const renderer = this.ctx.get(ConsoleRenderer);
+        const panel = ref.hostView.query(AgentConsoleSettingsCenterPanelComponent) as ComponentRef<AgentConsoleSettingsCenterPanelComponent>;
+        const lines = renderer.renderToLines(panel.hostView.rootNodes[0]);
+        const text = lines.join('\n');
+        expect(text).toContain('Settings');
+        expect(text).toContain('General');
+        expect(text).toContain('Theme');
+        expect(text).toContain('Steer mode');
+        expect(text).toContain('workspace');
+    }
 
     @Test('renders working line with token usage while running')
     async renderWorkingLine() {

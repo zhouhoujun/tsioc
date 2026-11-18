@@ -6,6 +6,8 @@ import type { CommandOutputStore } from './AgentConsoleCommandOutputHistory';
 import type { AgentConsoleStatuslineField } from './AgentConsoleStatusline';
 import type { AgentConsoleTitleField } from './AgentConsoleTitle';
 import type { AgentConsoleWorkspaceMentionResolver, AgentConsoleMentionCatalogItem } from './AgentConsoleWorkspaceMentions';
+import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
+import type { AgentConsoleSettingsSectionId } from './AgentConsoleSettingsSchema';
 import {
     AgentConsoleActivity,
     AgentConsoleApprovalRequest,
@@ -267,6 +269,16 @@ export class AgentConsoleSessionData {
     rawMode = false;
     theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     themeStyles: AgentConsoleThemeStyles = resolveAgentConsoleThemeStyles(defaultAgentConsoleTheme);
+    /** Settings center (schema-driven page opened by `/settings`). */
+    settingsCenterOpen = false;
+    settingsCenterSection: AgentConsoleSettingsSectionId = 'general';
+    settingsCenterQuery = '';
+    settingsCenterIndex = 0;
+    settingsCenterRows: AgentConsoleSettingsRow[] = [];
+    settingsCenterTitle = '';
+    settingsCenterMeta = '';
+    settingsCenterHint = '';
+    settingsCenterPickAction?: (id: string) => void | Promise<void>;
     selectMenu?: AgentConsoleSelectMenu;
     pendingApprovals: AgentConsoleApprovalRequest[] = []; modelUnavailableAction?: (failure: any) => void | Promise<void>; scrollTranscriptAction?: (rows: number) => boolean; revealMessageAction?: (messageId: string) => boolean;
     submitAction?: () => Promise<void>;

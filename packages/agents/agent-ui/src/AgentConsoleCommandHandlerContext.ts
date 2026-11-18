@@ -151,7 +151,7 @@ export interface CommandHandlerContext {
     runFastCommand(args: string): Promise<boolean>;
     runPersonalityCommand(args: string): Promise<boolean>;
     runDebugConfigCommand(): Promise<boolean>;
-    runSettingsCommand(): Promise<boolean>;
+    runSettingsCommand(args?: string): Promise<boolean>;
     runYoloCommand(args: string): Promise<boolean>;
     runFeedbackCommand(): Promise<boolean>;
     runBackgroundTasksCommand(args: string): Promise<boolean>;

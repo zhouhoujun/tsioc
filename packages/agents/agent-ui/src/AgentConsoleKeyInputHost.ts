@@ -13,6 +13,7 @@ import {
     startEditTarget
 } from './AgentConsoleEditModeHandlers';
 import { decodeGlobalKey } from './AgentConsoleStreamHelpers';
+import { handleSettingsCenterBrowserKey } from './AgentConsoleSettingsCenterKeys';
 import {
     executeGlobalKeyActionView,
     handleBrowserGlobalKeyInputView,
@@ -45,6 +46,10 @@ export abstract class AgentConsoleKeyInputHost extends AgentConsolePolicyHost {
     }
 
     protected async handleBrowserGlobalKeyInput(key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }): Promise<boolean> {
+        const settingsHandled = await (this as any).handleSettingsCenterBrowserKey?.(key, modifiers);
+        if (settingsHandled) {
+            return true;
+        }
         return handleBrowserGlobalKeyInputView(globalKeyInputHost(this), key, modifiers);
     }
 

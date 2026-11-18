@@ -66,6 +66,7 @@ export * from './AgentConsoleOverlayPanels';
 export * from './AgentConsoleTaskPanels';
 export * from './AgentConsoleResourcePanels';
 export * from './AgentConsoleInputPanel';
+export * from './AgentConsoleSettingsCenterPanel';
 export * from './AgentConsoleWorkingPanel';
 @Component({
     selector: 'agent-console-brand-panel',

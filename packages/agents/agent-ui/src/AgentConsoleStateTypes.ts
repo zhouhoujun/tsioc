@@ -378,6 +378,8 @@ export interface AgentConsoleOptions {
     messageDetailHint?: string;
     selectHint?: string;
     selectCloseHint?: string;
+    /** Rows visible in the settings center before it scrolls. */
+    settingsCenterVisibleRows?: number;
     suggestionsHint?: string;
     brandWidth?: number;
     messageStatusLabels?: AgentConsoleMessageStatusLabels;
@@ -446,6 +448,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     messageDetailHint: 'up/down scroll   left/right pan   pg jump   y copy   esc',
     selectHint: AGENT_CONSOLE_OVERLAY_HINTS.select,
     selectCloseHint: 'up/down move   enter close   q close',
+    settingsCenterVisibleRows: 12,
     suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT,
     brandWidth: DEFAULT_TERMINAL_COLUMNS,
     messageStatusLabels: ZH_MESSAGE_STATUS_LABELS,
