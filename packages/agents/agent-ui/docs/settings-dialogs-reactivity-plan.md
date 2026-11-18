@@ -178,4 +178,6 @@ state 52–67ms + paint 25–56ms；历史记录 98–138ms。已试并回退的
   `components/common` 的 card/switch/search-field/button/badge/empty/kbd 渲染，
   `v-show` 控制可见性，Esc/✕ 关闭，开关即时应用并保持页面打开；页面应用独立挂载，
   不改变 TUI 组件树（console-renderer 回归通过）。
-- **P4 收尾**：待做。
+- **P4 收尾**：已完成。README 增加浏览器设置页说明，`docs/dialog-matrix.md` 更新 `/settings`
+  行与 P3 记录；全量 gate 除 `source-size`（用户未提交的 activities 文件超额）外 13/14 PASS，
+  `components-bench` 全部 BENCH-OK。

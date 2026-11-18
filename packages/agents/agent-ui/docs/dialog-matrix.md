@@ -11,7 +11,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 | `/model` | `openSelectMenu` | Esc/q/✕; arrows/Enter/digits; type-to-filter | provider/model lists, nested menus | select card above composer | nested menu Esc returns one level |
 | `/provider` | select wizard + text | Esc/q/✕; type-to-filter on lists | provider/auth/model steps | select card | async validation state can leave a stale menu |
 | `/sessions` | select/list panel | Esc/q/✕ | input filter (in dialog) | select card | empty/async result can render a 0x0 menu |
-| `/settings` | select + forms | Esc/q/✕; type-to-filter | section list | select card | form fields use custom shell, not DialogFrame |
+| `/settings` | schema panel / web page | Esc/q/✕; type-to-filter | section strip + live filter | composer-wide overlay (TUI/web command); full page from the browser sidebar | fixed: overlay docks at composer width; the browser page applies toggles in place |
 | `/theme` | select | Esc/q/✕; type-to-filter | list | select card | no preview row |
 | `/tools` | select/text | Esc/q/✕ | tool list | select card | no-arg vs arg paths differ |
 | `/approvals` | custom approvals panel | `a/d/A/y`, arrows, Esc/✕ | list | custom panel | separate shell from DialogFrame |
@@ -72,3 +72,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 - Keys: Esc closes top; ↑↓, PgUp/PgDn, Home/End, Enter, Tab, digits, type filter.
 - Layout: composer-attached above footer in both renderers; free dialogs centered horizontally, bottom-aligned.
 - Route registry (`R1`) drives group/title/loader/permissions; no per-command duplicate metadata.
+
+- ✅ P3 browser settings page: the sidebar gear mounts a separate `Application` rendering the same
+  `AGENT_CONSOLE_SETTINGS_FIELDS` rows with `components/common` cards/switches/search/buttons; the
+  terminal tree is untouched (console-renderer 107 passing) and `/settings` keeps the overlay.

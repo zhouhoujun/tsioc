@@ -11,7 +11,7 @@
 | P1 | 弹窗契约（与输入区同宽、贴输入框）+ `/sessions`、`/projects` 细节 | console-renderer / dialog-regressions / p236 | 已完成（`55324b026`） |
 | P2 | 响应式利用与性能（投影/过滤缓存、批量写入、热点 getter、A/B） | 1k 消息 A/B + agent-ui 全套 + components-bench | 进行中 |
 | P3 | Web 设置页（同一 schema、components/common 组件） | DOM 设置页测试 + 刷新持久化 + Web build | 已完成 |
-| P4 | 收尾（文档//help/which-key、全量 gate、真实 TUI/浏览器手测） | 全量 gate 12/12 | 待做 |
+| P4 | 收尾（README/dialog matrix、全量 gate + DOM/TUI/预算） | 全量 gate 13/14 + bench 全绿（source-size 外部阻塞） | 已完成 |
 
 ## 2. 测试基线（2026-11-18，`4ef0f7a84` + P0 文档）
 
@@ -21,7 +21,7 @@
 | `@tsdi/components/common` | 122 passing |
 | `@tsdi/components/console` | 171 passing |
 | `@tsdi/components/html` | 146 passing |
-| `@tsdi/agent-ui` | 2214 passing（3.2 min） |
+| `@tsdi/agent-ui` | 2222 passing（2.4 min，含设置页 4 用例 + 侧栏 2 用例） |
 | tsc `agent-ui` | 通过 |
 | Web 生产包 | 通过 |
 
@@ -34,8 +34,8 @@ vm-panels）：191 passing。
 
 | 指标 | 实测 |
 | --- | --- |
-| p50 | 76–77 ms |
-| p95 | 91–93 ms |
+| p50 | 76–115 ms（多轮，负载 2.0–2.4） |
+| p95 | 91–150 ms |
 | state（禁用 paint）p50/p90 | 59–63 / 74–81 ms（A/B 交替，负载 2–4） |
 | 单次整屏 paint | 25–56 ms |
 | 历史逐页加载 | 98–138 ms |
@@ -46,7 +46,7 @@ vm-panels）：191 passing。
 - state p50 ≤ 90 ms；
 - 不允许新增"每次读取都执行"的缓存/遍历（响应式核心热路径纪律见 AGENTS.md）。
 
-对照：P2 首个优化前同 harness p50 87–140 ms（尖峰 195 ms）；优化后稳定在 76–77 ms。
+对照：P2 首个优化前同 harness p50 87–140 ms（尖峰 195 ms）；P2 后 76–115 ms（含负载波动）。
 两次被否决的优化（`removeDeps` 三元组、console 样式快路径）记录在 `todo.md`。
 
 ## 4. source-size 预算
@@ -54,6 +54,9 @@ vm-panels）：191 passing。
 - `packages/agents/**`：单文件 ≤ 600 行，已超额文件只降不升；
 - `packages/components/common/**`：≤ 700 行；
 - 本次基线：agents 与 components/common 全部达标。
+- P4 全量 gate（2026-11-18）：components ×4 / agent-ui / tsc / diff-check / web build /
+  dom-gate / dom-gate-matrix / tui-gate / gate-regression 全部 PASS；`components-bench` 全部
+  BENCH-OK（trigger 703ms ≤ 1500，v-for reorder 340ms ≤ 1000，viewchildren 186ms ≤ 800）。
 - 已知外部阻塞（2026-11-18）：用户未提交的
   `packages/activities/src/visual/components/workflow-designer.component.ts`
   （1903 行 > 基线 1897）导致全量 gate 的 `source-size` 阶段失败；该文件不属于

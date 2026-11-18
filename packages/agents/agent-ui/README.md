@@ -106,6 +106,16 @@ Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimenta
 Delegation: `/delegation` `/goal` `/usage`
 System: `/ps` `/ide` `/feedback` `/keymap`
 
+## Browser settings page
+
+`tsdi-agent serve` (or `/web`) hosts the same console in the browser. The sidebar gear opens a
+full-page settings screen instead of the terminal overlay: section buttons, a live search field,
+and one card per setting with a switch (toggles) or an action button (picker/command rows). It reads
+and writes the same schema as the TUI center (`AgentConsoleSettingsSchema`), so `/settings` and the
+page never drift; toggles apply and persist immediately, `Esc`/`✕` close the page. The page is a
+separate application over the shared session state, so the terminal component tree and its
+composer/menu overlays are unchanged.
+
 ## Transcript behavior
 
 - Viewport mode renders the newest `transcriptWindowMessages` (default 40) rows while following the latest message; scrolling up, focusing a message, opening detail, scrollback layout or an older error expands to the full transcript.

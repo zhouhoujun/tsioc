@@ -4838,3 +4838,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   开关即时应用并保持页面打开，Esc/✕ 关闭。
 - 测试：`web-settings-page.spec.ts` 4 用例（渲染/开关/搜索与分区/关闭与重开），侧栏 2 用例；
   相关 DOM/TUI 套件 195 + 76 passing。新增 i18n en/zh 页面文案。
+
+## 2026-11-18 P4 收尾
+- 文档：README 增加浏览器设置页章节；dialog-matrix 更新 `/settings` 行与 P3 记录；baseline/plan 状态收尾。
+- 全量 gate：components / common / console / html / agent-ui（2222 passing）/ tsc / diff-check / web build /
+  dom-gate / dom-gate-matrix / tui-gate / gate-regression = PASS；components-bench 全部 BENCH-OK。
+- 唯一失败：`source-size` 由用户未提交的 `activities/.../workflow-designer.component.ts`（1903 > 1897）触发，
+  非 agent-ui 改动，未擅自改基线或提交他人工作。
+- 1k 消息 tab 切换（多轮）：p50 76–115ms、p95 91–150ms（预算 p50 ≤120 / p95 ≤200）。
