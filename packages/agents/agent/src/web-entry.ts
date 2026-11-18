@@ -11,7 +11,8 @@
  */
 export { AGENT_CONSOLE_APP_RPC } from './ui/AgentConsoleAppRpc';
 export type { AgentConsoleAppRpc } from './ui/AgentConsoleAppRpc';
-export { AGENT_OPTIONS } from './tokens';
+export { AGENT_OPTIONS, AGENT_WORKSPACE_TRUST } from './tokens';
+export type { AgentWorkspaceTrustResolver } from './tokens';
 export type { AgentOptions } from './options';
 export { defaultAgentOptions, DEFAULT_RENDER_POLICY } from './options';
 export type { AgentPolicyConfig } from './options';
