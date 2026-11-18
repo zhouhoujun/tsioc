@@ -158,6 +158,48 @@ export class SessionProjectDialogsTest {
         expect(this.state.selectMenu).toBeUndefined();
     }
 
+    @Test('/sessions explains an empty search instead of showing a blank picker')
+    async emptySearchState() {
+        await this.instance.handleCommand('/sessions zzz-missing');
+        await settle();
+        this.surface.render();
+        expect(this.surface.lastRenderedLines.join('\n')).toContain('no sessions match "zzz-missing"');
+    }
+
+    @Test('a tall dialog keeps its title and close affordance inside the viewport')
+    async tallDialogClipping() {
+        this.state.openSelectMenu(
+            'Very tall dialog',
+            Array.from({ length: 40 }, (_value, index) => ({ label: `Choice ${index + 1}`, value: `v${index}` })),
+            0,
+            'up/down move   enter confirm   esc close'
+        );
+        await settle();
+        this.surface.render();
+        const lines = this.surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
+        const titleRow = lines.findIndex(line => line.includes('Very tall dialog'));
+        const topBorderRow = lines.findIndex(line => line.includes('╭'));
+        const bottomBorderRow = lines.findIndex(line => line.includes('╰'));
+        const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
+        expect(titleRow).toBeGreaterThan(0);
+        // Window position and hint stay readable when the list is clipped.
+        expect(lines.join('\n')).toContain('1-12/40');
+        expect(lines[titleRow]).not.toContain('Choice');
+        expect(lines.some(line => line.includes('esc close'))).toEqual(true);
+        // The ✕ rides on the top border so the close affordance never scrolls.
+        expect(lines[topBorderRow]).toContain('✕');
+        expect(bottomBorderRow).toBeLessThan(inputRow);
+        // No option is painted below the dialog (never covers the composer).
+        const optionRows = lines.map((line, index) => (line.includes('Choice') ? index : -1)).filter(index => index >= 0);
+        expect(Math.max(...optionRows)).toBeLessThan(bottomBorderRow);
+        // Clicking the ✕ dismisses without selecting anything.
+        const closeColumn = lines[topBorderRow].indexOf('✕') + 1;
+        this.surface.dispatchMouse({ button: 0, x: closeColumn, y: topBorderRow + 1, release: false });
+        this.surface.dispatchMouse({ button: 0, x: closeColumn, y: topBorderRow + 1, release: true });
+        await settle();
+        expect(this.state.selectMenu).toBeUndefined();
+    }
+
     @Test('project groups without a sessions array do not crash the picker')
     async tolerantGroups() {
         expect(flattenProjectSessions([{ projectKey: 'x', label: 'X', workspace: '/w', sessionCount: 0, lastActiveAt: 1 } as any]))
