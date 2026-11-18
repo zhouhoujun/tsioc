@@ -16,7 +16,7 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 945_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 985_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 /** Click a management menu entry after scrolling it into the popup viewport. */
@@ -527,8 +527,15 @@ function startDesignerServer(port) {
             widths: Array.from(document.querySelectorAll('.workflow-metrics-trend-fill'))
                 .map(el => el.getAttribute('style') || '')
         }));
+        const metricsWidgets = await page.evaluate(() => ({
+            stats: document.querySelectorAll('.workflow-metrics .ui-stat').length,
+            trendRows: document.querySelectorAll('.workflow-metrics-trend-row').length
+        }));
         await page.locator('.workflow-metrics-window').first().click();
         await page.waitForTimeout(450);
+        if (metricsWidgets.stats !== 4) {
+            errors.push(`expected 4 ui-stat tiles in metrics, got ${metricsWidgets.stats}`);
+        }
         const metricsWindowSwitch = await page.evaluate(() => ({
             rows: document.querySelectorAll('.workflow-metrics-trend-row').length,
             active: (document.querySelector('.workflow-metrics-window.is-active')?.textContent || '').trim()
@@ -741,7 +748,7 @@ function startDesignerServer(port) {
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !partialClean || !enterNewline || !tabAccepts
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
-            || paletteFiltered < 1 || paletteFiltered >= 61 || paletteRestored !== 61
+            || paletteFiltered < 1 || paletteFiltered >= 64 || paletteRestored !== 64
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
             || !credentialDialog.open || credentialDialog.title !== 'Credentials'
             || credentialSaved.rows !== 1 || !credentialSaved.names.includes('preview-token') || credentialSaved.leaked

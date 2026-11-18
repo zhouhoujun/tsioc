@@ -22,8 +22,8 @@ import { translateWorkflow } from '../i18n';
             <div class="workflow-credentials-list" v-if="names.length">
                 <div class="workflow-credential-row" v-for="name in names" data-credential-name="{{name}}">
                     <span class="workflow-credential-name">{{name}}</span>
-                    <button class="workflow-btn workflow-credential-remove" type="button"
-                        [disabled]="busy" @click="remove(name)">{{removeLabel}}</button>
+                    <ui-button className="workflow-btn workflow-credential-remove" size="xs"
+                        :label="removeLabel" :disabled="busy" :action="removeFor(name)"></ui-button>
                 </div>
             </div>
             <ui-empty class="workflow-credential-empty" v-else icon="key" :title="emptyLabel"></ui-empty>
@@ -38,10 +38,10 @@ import { translateWorkflow } from '../i18n';
                     @input="valueInput" />
             </label>
             <div class="workflow-publish-actions">
-                <button class="workflow-btn" type="button" [disabled]="busy" @click="refresh">{{refreshLabel}}</button>
-                <button class="workflow-btn" type="button" @click="close">{{closeLabel}}</button>
-                <button class="workflow-btn workflow-btn-primary workflow-credential-save" type="button"
-                    [disabled]="busy" @click="save">{{saveLabel}}</button>
+                <ui-button className="workflow-btn" :label="refreshLabel" :disabled="busy" :action="refreshPressed"></ui-button>
+                <ui-button className="workflow-btn" :label="closeLabel" :action="closePressed"></ui-button>
+                <ui-button className="workflow-btn workflow-btn-primary workflow-credential-save"
+                    tone="accent" :label="saveLabel" :disabled="busy" :action="savePressed"></ui-button>
             </div>
         </div>
     </div>`
@@ -74,9 +74,15 @@ export class WorkflowCredentialPanelComponent {
         this.saveAction?.();
     }
 
-    remove(name: string): void {
-        this.removeAction?.(name);
-    }
+    readonly refreshPressed = (): void => this.refresh();
+
+    readonly closePressed = (): void => this.close();
+
+    readonly savePressed = (): void => this.save();
+
+    /** Row delete: arrow field because bindings call it without a receiver. */
+    readonly removeFor = (name: string): (() => void) =>
+        () => this.removeAction?.(name);
 
     refresh(): void {
         this.refreshAction?.();

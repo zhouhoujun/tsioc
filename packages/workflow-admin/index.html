@@ -7,19 +7,70 @@
     <link rel="icon" href="data:," />
     <title>TSDI Workflow Admin</title>
     <style>
+        /* Shell theme follows the designer theme (`data-theme` is set on <html>
+           by applyThemeToDocument), so light/dark/solarized/high-contrast stay
+           consistent between the chrome and the canvas. */
+        :root {
+            --wa-shell-bg: #f8fafc;
+            --wa-shell-surface: #ffffff;
+            --wa-shell-text: #0f172a;
+            --wa-shell-muted: #64748b;
+            --wa-shell-border: #e2e8f0;
+            --wa-shell-accent: #2563eb;
+            --wa-shell-accent-text: #ffffff;
+            --wa-shell-danger: #dc2626;
+            --wa-shell-hero: radial-gradient(circle at 20% 10%, #dbeafe, #f8fafc 55%);
+            --wa-shell-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+        }
+        [data-theme="dark"] {
+            --wa-shell-bg: #0f172a;
+            --wa-shell-surface: #111c33;
+            --wa-shell-text: #f8fafc;
+            --wa-shell-muted: #94a3b8;
+            --wa-shell-border: #1e293b;
+            --wa-shell-accent: #60a5fa;
+            --wa-shell-accent-text: #0b1220;
+            --wa-shell-danger: #fca5a5;
+            --wa-shell-hero: radial-gradient(circle at 20% 10%, #1e3a5f, #0b1220 55%);
+            --wa-shell-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+        }
+        [data-theme="solarized"] {
+            --wa-shell-bg: #fdf6e3;
+            --wa-shell-surface: #eee8d5;
+            --wa-shell-text: #073642;
+            --wa-shell-muted: #657b83;
+            --wa-shell-border: #d8cfb0;
+            --wa-shell-accent: #268bd2;
+            --wa-shell-accent-text: #fdf6e3;
+            --wa-shell-danger: #dc322f;
+            --wa-shell-hero: radial-gradient(circle at 20% 10%, #eee8d5, #fdf6e3 55%);
+            --wa-shell-shadow: 0 24px 70px rgba(7, 54, 66, 0.22);
+        }
+        [data-theme="high-contrast"] {
+            --wa-shell-bg: #000000;
+            --wa-shell-surface: #0a0a0a;
+            --wa-shell-text: #ffffff;
+            --wa-shell-muted: #e5e5e5;
+            --wa-shell-border: #ffffff;
+            --wa-shell-accent: #ffff00;
+            --wa-shell-accent-text: #000000;
+            --wa-shell-danger: #ff6b6b;
+            --wa-shell-hero: radial-gradient(circle at 20% 10%, #1a1a1a, #000000 55%);
+            --wa-shell-shadow: 0 0 0 1px #ffffff;
+        }
         * { box-sizing: border-box; }
         html, body { height: 100%; margin: 0; }
         body {
-            background: #0f172a;
-            color: #e2e8f0;
+            background: var(--wa-shell-bg);
+            color: var(--wa-shell-text);
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             display: flex;
             flex-direction: column;
         }
         .designer-header {
             padding: 12px 18px;
-            background: #111c33;
-            border-bottom: 1px solid #1e293b;
+            background: var(--wa-shell-surface);
+            border-bottom: 1px solid var(--wa-shell-border);
             display: flex;
             align-items: baseline;
             gap: 12px;
@@ -28,12 +79,12 @@
         .designer-header h1 {
             margin: 0;
             font-size: 15px;
-            color: #f8fafc;
+            color: var(--wa-shell-text);
         }
         .designer-header p {
             margin: 0;
             font-size: 11px;
-            color: #94a3b8;
+            color: var(--wa-shell-muted);
         }
         .designer-lang {
             margin-left: auto;
@@ -59,45 +110,34 @@
             align-items: center;
             gap: 8px;
             margin-left: 8px;
-            color: #cbd5e1;
+            color: var(--wa-shell-muted);
             font-size: 11px;
         }
-        .designer-auth button {
-            border: 1px solid #334155;
-            border-radius: 6px;
-            background: #0b1220;
-            color: #cbd5e1;
-            font-size: 11px;
-            padding: 4px 9px;
-            cursor: pointer;
-        }
-        .designer-auth button:hover {
-            border-color: #60a5fa;
-            color: #ffffff;
-        }
+        .designer-auth button,
         .designer-lang button {
-            border: 1px solid #334155;
+            border: 1px solid var(--wa-shell-border);
             border-radius: 6px;
-            background: #0b1220;
-            color: #cbd5e1;
+            background: var(--wa-shell-bg);
+            color: var(--wa-shell-muted);
             font-size: 11px;
             padding: 4px 9px;
             cursor: pointer;
         }
+        .designer-auth button:hover,
         .designer-lang button:hover {
-            border-color: #60a5fa;
-            color: #ffffff;
+            border-color: var(--wa-shell-accent);
+            color: var(--wa-shell-text);
         }
         #boot-status {
             padding: 18px;
             font-size: 13px;
-            color: #93c5fd;
+            color: var(--wa-shell-accent);
         }
         #workflow-app {
             flex: 1;
             min-height: 0;
-            background: #f8fafc;
-            color: #0f172a;
+            background: var(--wa-shell-bg);
+            color: var(--wa-shell-text);
         }
         #workflow-app > workflow-designer,
         #workflow-app > workflow-admin-shell,
@@ -114,73 +154,78 @@
             display: grid;
             place-items: center;
             padding: 24px;
-            background: radial-gradient(circle at 20% 10%, #1e3a5f, #0b1220 55%);
+            background: var(--wa-shell-hero);
         }
         .wa-login-card {
             width: min(420px, calc(100vw - 32px));
             padding: 28px;
-            border: 1px solid #334155;
+            border: 1px solid var(--wa-shell-border);
             border-radius: 16px;
-            background: rgba(15, 23, 42, 0.94);
-            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+            background: var(--wa-shell-surface);
+            box-shadow: var(--wa-shell-shadow);
         }
         .wa-login-card h1 { margin: 0 0 6px; font-size: 20px; }
-        .wa-login-card p { margin: 0 0 20px; color: #94a3b8; font-size: 12px; }
+        .wa-login-card p { margin: 0 0 20px; color: var(--wa-shell-muted); font-size: 12px; }
         .wa-login-card button,
         .wa-login-card input {
             width: 100%;
             padding: 10px 12px;
             margin-top: 10px;
             border-radius: 8px;
-            border: 1px solid #475569;
-            background: #0b1220;
-            color: #e2e8f0;
+            border: 1px solid var(--wa-shell-border);
+            background: var(--wa-shell-bg);
+            color: var(--wa-shell-text);
             font-size: 13px;
         }
         .wa-login-card button { cursor: pointer; }
-        .wa-login-card button.wa-primary { background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600; }
-        .wa-login-card label { display: block; margin-top: 12px; color: #cbd5e1; font-size: 11px; }
-        .wa-divider { display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 11px; margin: 18px 0; }
-        .wa-divider::before, .wa-divider::after { content: ""; flex: 1; height: 1px; background: #334155; }
-        .wa-error { min-height: 18px; margin-top: 10px; color: #fca5a5; font-size: 12px; }
+        .wa-login-card button.wa-primary {
+            background: var(--wa-shell-accent);
+            border-color: var(--wa-shell-accent);
+            color: var(--wa-shell-accent-text);
+            font-weight: 600;
+        }
+        .wa-login-card label { display: block; margin-top: 12px; color: var(--wa-shell-muted); font-size: 11px; }
+        .wa-divider { display: flex; align-items: center; gap: 10px; color: var(--wa-shell-muted); font-size: 11px; margin: 18px 0; }
+        .wa-divider::before, .wa-divider::after { content: ""; flex: 1; height: 1px; background: var(--wa-shell-border); }
+        .wa-error { min-height: 18px; margin-top: 10px; color: var(--wa-shell-danger); font-size: 12px; }
         .wa-not-found {
             height: 100%;
             display: grid;
             place-items: center;
             padding: 24px;
-            background: radial-gradient(circle at 20% 10%, #1e3a5f, #0b1220 55%);
+            background: var(--wa-shell-hero);
         }
         .wa-not-found-card {
             width: min(440px, calc(100vw - 32px));
             padding: 30px;
-            border: 1px solid #334155;
+            border: 1px solid var(--wa-shell-border);
             border-radius: 16px;
-            background: rgba(15, 23, 42, 0.94);
-            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+            background: var(--wa-shell-surface);
+            box-shadow: var(--wa-shell-shadow);
             text-align: center;
         }
-        .wa-not-found-code { color: #60a5fa; font-size: 52px; font-weight: 800; line-height: 1; }
+        .wa-not-found-code { color: var(--wa-shell-accent); font-size: 52px; font-weight: 800; line-height: 1; }
         .wa-not-found-card h1 { margin: 14px 0 8px; font-size: 20px; }
-        .wa-not-found-card p { margin: 0; color: #94a3b8; font-size: 12px; }
+        .wa-not-found-card p { margin: 0; color: var(--wa-shell-muted); font-size: 12px; }
         .wa-not-found-actions { display: flex; gap: 8px; justify-content: center; margin-top: 22px; }
         .wa-not-found-actions button {
             padding: 9px 12px;
-            border: 1px solid #475569;
+            border: 1px solid var(--wa-shell-border);
             border-radius: 8px;
-            background: #0b1220;
-            color: #e2e8f0;
+            background: var(--wa-shell-bg);
+            color: var(--wa-shell-text);
             font-size: 12px;
             cursor: pointer;
         }
         .wa-not-found-actions button.wa-primary {
-            border-color: #2563eb;
-            background: #2563eb;
-            color: #ffffff;
+            border-color: var(--wa-shell-accent);
+            background: var(--wa-shell-accent);
+            color: var(--wa-shell-accent-text);
             font-weight: 600;
         }
         noscript {
             padding: 18px;
-            color: #fca5a5;
+            color: var(--wa-shell-danger);
         }
     </style>
 </head>

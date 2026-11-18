@@ -291,6 +291,18 @@ The query index is only created for components that actually declare view or
 content queries. `ViewChild` uses first-match lookups, so large `v-for` lists do
 not collect every row on each query.
 
+### Declaring child components
+
+A component is only rendered when it is declared (or imported) by the module
+that compiles the parent template. A page that imports `WorkflowDesignerModule`
+instead of the full `WorkflowModule` needs the child components declared there
+too — a missing declaration renders nothing and raises no error, so cover each
+host module with a test or a browser check.
+
+Root-level structural directives (`v-if` / `v-for` as the only root) render a
+placeholder node before the embedded view is created; wrap them in a container
+when a test asserts "not rendered yet".
+
 ## components
 *  `@Component`  Component decorator, define a class as a component with a template.
 *  `@Directive`  Directive decorator, define attribute / structural / custom-element directives (see below).

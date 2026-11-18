@@ -10,6 +10,14 @@ import { MenuBarModule } from '@tsdi/components/common/menu-bar';
 import { IconModule } from '@tsdi/components/common/icon';
 import { DynamicFormModule } from '@tsdi/components/common/dynamic-form';
 import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
+import { EmptyStateModule } from '@tsdi/components/common/empty-state';
+import { StatModule } from '@tsdi/components/common/stat';
+import { BadgeModule } from '@tsdi/components/common/badge';
+import { ButtonModule } from '@tsdi/components/common/button';
+import { DataTableModule } from '@tsdi/components/common/data-table';
+import { BreadcrumbModule } from '@tsdi/components/common/breadcrumb';
+import { KeymapPanelModule } from '@tsdi/components/common/keymap';
+import { ProgressModule } from '@tsdi/components/common/progress';
 import { FormsModule } from '@tsdi/components/forms';
 import {
     VisualWorkflowService,
@@ -25,6 +33,7 @@ import {
     WorkflowLibraryComponent,
     WorkflowCredentialPanelComponent,
     WorkflowAuditPanelComponent,
+    WorkflowMetricsPanelComponent,
     WorkflowVersionPanelComponent,
     WorkflowDesignerComponent,
     WorkflowDesignerPreviewComponent,
@@ -50,6 +59,14 @@ import {
         IconModule,
         DynamicFormModule,
         WorkspaceLayoutModule,
+        EmptyStateModule,
+        StatModule,
+        BadgeModule,
+        ButtonModule,
+        DataTableModule,
+        BreadcrumbModule,
+        KeymapPanelModule,
+        ProgressModule,
         FormsModule,
         WorkflowDesignerI18nModule
     ],
@@ -71,6 +88,7 @@ import {
         WorkflowLibraryComponent,
         WorkflowCredentialPanelComponent,
         WorkflowAuditPanelComponent,
+        WorkflowMetricsPanelComponent,
         WorkflowVersionPanelComponent,
         WorkflowDesignerPreviewComponent,
         WorkflowManagementMenuComponent,
@@ -101,6 +119,7 @@ import {
         WorkflowLibraryComponent,
         WorkflowCredentialPanelComponent,
         WorkflowAuditPanelComponent,
+        WorkflowMetricsPanelComponent,
         WorkflowVersionPanelComponent,
         WorkflowDesignerPreviewComponent,
         WorkflowManagementMenuComponent,

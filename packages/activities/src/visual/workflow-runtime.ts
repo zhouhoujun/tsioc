@@ -58,6 +58,22 @@ export interface VisualNodeRuntimeHost {
     resolveDefinition?(id: string): Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
 }
 
+/** Parse a text payload as JSON when possible (file-in auto mode). */
+function parsePayloadText(text: string): any {
+    const trimmed = String(text ?? '').trim();
+    if (!trimmed) {
+        return text;
+    }
+    if (!/^[[{]/.test(trimmed)) {
+        return text;
+    }
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        return text;
+    }
+}
+
 export interface WorkflowMqttSettings {
     url: string;
     topic: string;
@@ -1105,6 +1121,112 @@ export async function executeVisualNode(
             } catch (error) {
                 return { success: false, error: error as Error, data: { nodeId: node.id, transport } };
             }
+        }
+        case 'file-in': {
+            const read = (context as any).fileRead;
+            if (typeof read !== 'function') {
+                return {
+                    success: false,
+                    error: new Error(
+                        'File in requires a workflow host with file access. '
+                        + 'Run the workflow with `tsdi-agent serve` or inject a file reader.'
+                    ),
+                    data: { nodeId: node.id }
+                };
+            }
+            const path = String(await resolveCredentialValue(config.path, context) ?? '').trim();
+            if (!path) {
+                return {
+                    success: false,
+                    error: new Error('File in needs a path (workspace-relative or absolute).'),
+                    data: { nodeId: node.id }
+                };
+            }
+            try {
+                const encoding = String(config.encoding || 'utf8');
+                const file = await read({ path, encoding });
+                const text = String(file?.data ?? '');
+                const payload = String(config.parse || 'auto') === 'text' ? text : parsePayloadText(text);
+                return {
+                    success: true,
+                    data: {
+                        nodeId: node.id,
+                        payload,
+                        path: file?.path || path,
+                        size: file?.size ?? text.length,
+                        encoding,
+                        msg: { payload, topic: 'file', meta: { path: file?.path || path } }
+                    }
+                };
+            } catch (error) {
+                return { success: false, error: error as Error, data: { nodeId: node.id, path } };
+            }
+        }
+        case 'file-out': {
+            const write = (context as any).fileWrite;
+            if (typeof write !== 'function') {
+                return {
+                    success: false,
+                    error: new Error(
+                        'File out requires a workflow host with file access. '
+                        + 'Run the workflow with `tsdi-agent serve` or inject a file writer.'
+                    ),
+                    data: { nodeId: node.id }
+                };
+            }
+            const path = String(await resolveCredentialValue(config.path, context) ?? '').trim();
+            if (!path) {
+                return {
+                    success: false,
+                    error: new Error('File out needs a path (workspace-relative or absolute).'),
+                    data: { nodeId: node.id }
+                };
+            }
+            const value = resolveWorkflowValue(config.payload === undefined ? 'payload' : config.payload, context);
+            const data = typeof value === 'string' ? value : JSON.stringify(value ?? null);
+            try {
+                const result = await write({
+                    path,
+                    data,
+                    encoding: String(config.encoding || 'utf8'),
+                    append: config.append === true,
+                    mkdir: config.mkdir !== false
+                });
+                return {
+                    success: true,
+                    data: {
+                        nodeId: node.id,
+                        written: true,
+                        path: result?.path || path,
+                        bytes: result?.bytes ?? String(data).length,
+                        appended: config.append === true,
+                        msg: { payload: value, topic: 'file', meta: { path: result?.path || path } }
+                    }
+                };
+            } catch (error) {
+                return { success: false, error: error as Error, data: { nodeId: node.id, path } };
+            }
+        }
+        case 'watch': {
+            const inbound = (context as any).inbound;
+            if (!inbound) {
+                return { success: true, data: { nodeId: node.id, waiting: true, reason: 'No file event yet' } };
+            }
+            if (inbound.nodeId !== node.id || String(inbound.transport || '') !== 'watch') {
+                return { success: true, data: { nodeId: node.id, matched: false, reason: 'File event belongs to another listener' } };
+            }
+            return {
+                success: true,
+                data: {
+                    nodeId: node.id,
+                    matched: true,
+                    transport: 'watch',
+                    event: inbound.event,
+                    path: inbound.path,
+                    payload: inbound.payload ?? inbound.data,
+                    meta: { path: inbound.path, event: inbound.event }
+                }
+            };
         }
         case 'mqtt':
         case 'tls': {

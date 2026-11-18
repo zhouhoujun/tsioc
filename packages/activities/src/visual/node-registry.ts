@@ -1334,6 +1334,79 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { event: 'workflow.event', timeout: 30000 }
     },
     {
+        type: 'file-in',
+        label: 'File in',
+        description: 'Read a file from the workflow workspace',
+        category: 'storage',
+        icon: '▤',
+        color: '#64748b',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [
+            port('out', 'out', 'output', 'Output'),
+            port('error', 'error', 'output', 'Error')
+        ],
+        fields: [
+            configField({ key: 'path', label: 'Path', type: 'text', required: true, typed: true, placeholder: 'data/input.json', description: 'Absolute path or a path inside the workspace root.' }),
+            configField({ key: 'encoding', label: 'Encoding', type: 'select', defaultValue: 'utf8', options: [
+                { label: 'UTF-8 text', value: 'utf8' },
+                { label: 'Base64', value: 'base64' }
+            ] }),
+            configField({ key: 'parse', label: 'Parse', type: 'select', defaultValue: 'auto', options: [
+                { label: 'Auto (JSON when valid)', value: 'auto' },
+                { label: 'Keep text', value: 'text' }
+            ] })
+        ],
+        defaultConfig: { path: '', encoding: 'utf8', parse: 'auto' }
+    },
+    {
+        type: 'file-out',
+        label: 'File out',
+        description: 'Write a file inside the workflow workspace',
+        category: 'storage',
+        icon: '▥',
+        color: '#64748b',
+        textColor: '#ffffff',
+        inputs: [port('in', 'in', 'input', 'Input')],
+        outputs: [
+            port('out', 'out', 'output', 'Output'),
+            port('error', 'error', 'output', 'Error')
+        ],
+        fields: [
+            configField({ key: 'path', label: 'Path', type: 'text', required: true, typed: true, placeholder: 'data/output.json', description: 'Absolute path or a path inside the workspace root.' }),
+            configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the file content.' }),
+            configField({ key: 'encoding', label: 'Encoding', type: 'select', defaultValue: 'utf8', options: [
+                { label: 'UTF-8 text', value: 'utf8' },
+                { label: 'Base64', value: 'base64' }
+            ] }),
+            configField({ key: 'append', label: 'Append', type: 'boolean', defaultValue: false }),
+            configField({ key: 'mkdir', label: 'Create folders', type: 'boolean', defaultValue: true })
+        ],
+        defaultConfig: { path: '', payload: 'payload', encoding: 'utf8', append: false, mkdir: true }
+    },
+    {
+        type: 'watch',
+        label: 'Watch',
+        description: 'Start the flow when a file or folder changes',
+        category: 'trigger',
+        icon: '◎',
+        color: '#0f766e',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Change')],
+        fields: [
+            configField({ key: 'path', label: 'Path', type: 'text', required: true, placeholder: 'data', description: 'File or directory to watch (workspace-relative or absolute).' }),
+            configField({ key: 'recursive', label: 'Recursive', type: 'boolean', defaultValue: false }),
+            configField({ key: 'debounce', label: 'Debounce', type: 'number', defaultValue: 200, min: 0, step: 50, unit: 'ms' }),
+            configField({ key: 'event', label: 'Event', type: 'select', defaultValue: 'all', options: [
+                { label: 'All changes', value: 'all' },
+                { label: 'Renames only', value: 'rename' },
+                { label: 'Content changes only', value: 'change' }
+            ] })
+        ],
+        defaultConfig: { path: '', recursive: false, debounce: 200, event: 'all' }
+    },
+    {
         type: 'command',
         label: 'Command',
         description: 'Run a host-provided command executor',

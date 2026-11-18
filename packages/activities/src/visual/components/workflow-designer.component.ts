@@ -1,4 +1,4 @@
-import { Attribute, Component, ElementRef, NoReactive, OnDestroy, ReactiveEffect, ViewChild, noReact, reactive } from '@tsdi/components';
+import { Attribute, batchReactiveUpdates, Component, Computed, ElementRef, NoReactive, OnDestroy, ReactiveEffect, ViewChild, noReact, reactive } from '@tsdi/components';
 import { applyThemeToDocument, isThemeName, ThemeName } from '@tsdi/components/common';
 import { TabBarSource } from '@tsdi/components/common/tab-bar';
 import { DOCUMENT } from '@tsdi/common';
@@ -13,6 +13,7 @@ import { VisualWorkflowDefinition, WorkflowToolbarModel } from '../types';
 import { diffWorkflowDefinitions, WorkflowDiffResult } from '../workflow-diff';
 import { WorkflowAuditPanelComponent } from './workflow-audit-panel';
 import { WorkflowCredentialPanelComponent } from './workflow-credential-panel';
+import { WorkflowMetricsPanelComponent } from './workflow-metrics-panel';
 import {
     WorkflowDefinitionStore,
     WorkflowDefinitionSummary,
@@ -85,9 +86,9 @@ interface WorkflowDocumentTab {
                 <div class="workflow-publish-hint">{{publishHint}}</div>
                 <div class="workflow-publish-error" v-if="publishError">{{publishError}}</div>
                 <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" @click="cancelPublish">{{cancelLabel}}</button>
-                    <button class="workflow-btn workflow-btn-primary workflow-publish-confirm" type="button"
-                        @click="confirmPublish">{{publishConfirmLabel}}</button>
+                    <ui-button className="workflow-btn" :label="cancelLabel" :action="cancelPublishPressed"></ui-button>
+                    <ui-button className="workflow-btn workflow-btn-primary workflow-publish-confirm"
+                        tone="accent" :label="publishConfirmLabel" :action="confirmPublishPressed"></ui-button>
                 </div>
             </div>
         </div>
@@ -115,10 +116,10 @@ interface WorkflowDocumentTab {
                 </div>
                 <div class="workflow-publish-error" v-if="deploymentError">{{deploymentError}}</div>
                 <div class="workflow-deployments-actions">
-                    <button class="workflow-btn workflow-btn-primary" type="button"
-                        [disabled]="deploymentBusy" @click="startAllDeployments">{{deploymentStartAll}}</button>
-                    <button class="workflow-btn" type="button"
-                        [disabled]="deploymentBusy" @click="stopAllDeployments">{{deploymentStopAll}}</button>
+                    <ui-button className="workflow-btn workflow-btn-primary" tone="accent"
+                        :label="deploymentStartAll" :disabled="deploymentBusy" :action="startAllDeploymentsPressed"></ui-button>
+                    <ui-button className="workflow-btn"
+                        :label="deploymentStopAll" :disabled="deploymentBusy" :action="stopAllDeploymentsPressed"></ui-button>
                 </div>
                 <div class="workflow-deployments-list" v-if="deploymentItems.length">
                     <div class="workflow-deployment-row" v-for="item in deploymentItems"
@@ -129,63 +130,20 @@ interface WorkflowDocumentTab {
                             :tone="item.running ? 'success' : 'muted'"
                             :dot="item.running"></ui-badge>
                         <span class="workflow-deployment-runs">{{item.runs}}</span>
-                        <button class="workflow-btn" type="button" [disabled]="deploymentBusy"
-                            @click="toggleDeployment(item)">{{item.running ? deploymentStop : deploymentStart}}</button>
+                        <ui-button className="workflow-btn" size="xs"
+                            :label="item.running ? deploymentStop : deploymentStart"
+                            :disabled="deploymentBusy" :action="deploymentToggleAction(item)"></ui-button>
                     </div>
                 </div>
                 <ui-empty class="workflow-deployments-empty" v-else icon="deploy" :title="deploymentsEmpty"></ui-empty>
                 <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" @click="closeDeployments">{{tr('close', 'Close')}}</button>
+                    <ui-button className="workflow-btn" :label="tr('close', 'Close')" :action="closeDeploymentsPressed"></ui-button>
                 </div>
             </div>
         </div>
-        <div class="workflow-publish workflow-metrics" v-if="showMetrics">
-            <div class="workflow-publish-panel workflow-metrics-panel">
-                <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{tr('metrics', 'Execution metrics')}}</span>
-                    <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeMetrics">✕</button>
-                </div>
-                <div class="workflow-metrics-error" v-if="metricsError">{{metricsError}}</div>
-                <div class="workflow-metrics-windows">
-                    <button class="workflow-btn workflow-metrics-window" type="button"
-                        [class]="metricsWindow === 3600000 ? 'is-active' : ''"
-                        @click="setMetricsWindow(3600000)">{{tr('lastHour', 'Last hour')}}</button>
-                    <button class="workflow-btn workflow-metrics-window" type="button"
-                        [class]="metricsWindow === 86400000 ? 'is-active' : ''"
-                        @click="setMetricsWindow(86400000)">{{tr('lastDay', 'Last 24h')}}</button>
-                    <button class="workflow-btn workflow-metrics-window" type="button"
-                        [class]="metricsWindow === 604800000 ? 'is-active' : ''"
-                        @click="setMetricsWindow(604800000)">{{tr('lastWeek', 'Last 7 days')}}</button>
-                </div>
-                <div class="workflow-metrics-summary" v-if="metricsData">
-                    <ui-stat class="workflow-metrics-stat"
-                        :label="tr('metricsRuns', 'Runs')" :value="metricsData?.runs ?? 0"></ui-stat>
-                    <ui-stat class="workflow-metrics-stat"
-                        :label="tr('metricsSuccess', 'Success')" :value="metricsRate + '%'"></ui-stat>
-                    <ui-stat class="workflow-metrics-stat"
-                        :label="tr('metricsAvg', 'Average')" :value="(metricsData?.avgDurationMs ?? 0) + ' ms'"></ui-stat>
-                    <ui-stat class="workflow-metrics-stat"
-                        :label="tr('metricsLast', 'Last status')" :value="metricsData?.lastStatus || '-'"></ui-stat>
-                </div>
-                <div class="workflow-metrics-trend" v-if="metricsTrend.length">
-                    <div class="workflow-metrics-trend-row" v-for="point in metricsTrend" data-trend-start="{{point.start}}">
-                        <span class="workflow-metrics-trend-time">{{formatTrendTime(point.start)}}</span>
-                        <span class="workflow-metrics-trend-bar">
-                            <span class="workflow-metrics-trend-fill" [style]="trendStyle(point)"></span>
-                        </span>
-                        <span class="workflow-metrics-trend-count">{{point.runs}}</span>
-                        <span class="workflow-metrics-trend-failed" v-if="point.failed">{{point.failed}} failed</span>
-                    </div>
-                </div>
-                <ui-data-table class="workflow-metrics-nodes" v-if="metricsData && metricsData.nodes.length"
-                    :columns="metricsNodeColumns" :rows="metricsNodeRows" rowKey="nodeId" dense
-                    :ariaLabel="tr('metrics', 'Execution metrics')"></ui-data-table>
-                <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" @click="closeMetrics">{{tr('close', 'Close')}}</button>
-                </div>
-            </div>
-        </div>
+        <workflow-metrics-panel v-if="showMetrics" :data="metricsData" :trend="metricsTrend"
+            :rate="metricsRate" :windowMs="metricsWindow" :error="metricsError" :locale="locale"
+            :windowAction="setMetricsWindowAction" :closeAction="closeMetricsPressed"></workflow-metrics-panel>
         <div class="workflow-publish workflow-settings" v-if="showSettings">
             <div class="workflow-publish-panel workflow-settings-panel">
                 <div class="workflow-publish-head">
@@ -205,9 +163,9 @@ interface WorkflowDocumentTab {
                 </label>
                 <div class="workflow-publish-error" v-if="settingsError">{{settingsError}}</div>
                 <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" @click="closeSettings">{{cancelLabel}}</button>
-                    <button class="workflow-btn workflow-btn-primary workflow-settings-save" type="button"
-                        @click="saveSettings">{{saveLabel}}</button>
+                    <ui-button className="workflow-btn" :label="cancelLabel" :action="closeSettingsPressed"></ui-button>
+                    <ui-button className="workflow-btn workflow-btn-primary workflow-settings-save"
+                        tone="accent" :label="saveLabel" :action="saveSettingsPressed"></ui-button>
                 </div>
             </div>
         </div>
@@ -229,11 +187,9 @@ interface WorkflowDocumentTab {
                             <div class="workflow-plugin-description" v-if="item.description">{{item.description}}</div>
                             <div class="workflow-plugin-nodes">{{pluginNodeCount(item)}}</div>
                         </div>
-                        <button class="workflow-btn" type="button"
-                            [disabled]="pluginBusyId === item.id"
-                            @click="togglePlugin(item)">
-                            {{item.installed ? pluginUninstallLabel : pluginInstallLabel}}
-                        </button>
+                        <ui-button className="workflow-btn" size="xs"
+                            :label="item.installed ? pluginUninstallLabel : pluginInstallLabel"
+                            :disabled="pluginBusyId === item.id" :action="pluginToggleAction(item)"></ui-button>
                     </div>
                 </div>
                 <ui-empty class="workflow-plugins-empty" v-else icon="plugin" :title="pluginsEmptyLabel"></ui-empty>
@@ -251,8 +207,9 @@ interface WorkflowDocumentTab {
                     @input="renameInput" @keydown="renameKey" />
                 <div class="workflow-rename-error" v-if="renameError">{{renameError}}</div>
                 <div class="workflow-rename-actions">
-                    <button class="workflow-btn" type="button" @click="cancelRename">{{cancelLabel}}</button>
-                    <button class="workflow-btn workflow-btn-primary" type="button" @click="commitRename">{{renameConfirmLabel}}</button>
+                    <ui-button className="workflow-btn" :label="cancelLabel" :action="cancelRenamePressed"></ui-button>
+                    <ui-button className="workflow-btn workflow-btn-primary"
+                        tone="accent" :label="renameConfirmLabel" :action="commitRenamePressed"></ui-button>
                 </div>
             </div>
         </div>
@@ -516,8 +473,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
         );
         definition.id = self.nextWorkflowId();
         const tab = self.createTab(definition);
-        self.setWorkflowTabs([...self.workflowTabs, tab]);
-        self.setActiveTab(tab);
+        batchReactiveUpdates(() => {
+            self.setWorkflowTabs([...self.workflowTabs, tab]);
+            self.setActiveTab(tab);
+        });
         self.emitTabs();
     }
 
@@ -537,8 +496,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
             }
             await self.persistActiveTab();
             const tab = self.createTab(definition, true);
-            self.setWorkflowTabs([...self.workflowTabs, tab]);
-            self.setActiveTab(tab);
+            batchReactiveUpdates(() => {
+                self.setWorkflowTabs([...self.workflowTabs, tab]);
+                self.setActiveTab(tab);
+            });
             self.emitTabs();
             return true;
         } catch (error) {
@@ -573,9 +534,11 @@ export class WorkflowDesignerComponent implements OnDestroy {
         if (!loaded.length) {
             return false;
         }
-        self.setWorkflowTabs(loaded);
         const active = loaded.find(tab => tab.id === activeId) || loaded[0];
-        self.setActiveTab(active);
+        batchReactiveUpdates(() => {
+            self.setWorkflowTabs(loaded);
+            self.setActiveTab(active);
+        });
         self.emitTabs();
         return true;
     }
@@ -638,7 +601,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
             return;
         }
         await self.persistActiveTab();
-        self.setActiveTab(tab);
+        self.activateDocument(tab);
         self.emitTabs();
     }
 
@@ -1135,18 +1098,51 @@ export class WorkflowDesignerComponent implements OnDestroy {
         return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     };
 
-    readonly auditPanelRefresh = (): void => {
-        void (this.selfRef || this).refreshAudit();
+    readonly cancelPublishPressed = (): void => (this.selfRef || this).cancelPublish();
+
+    readonly confirmPublishPressed = (): void => {
+        void (this.selfRef || this).confirmPublish();
     };
 
-    readonly auditPanelClose = (): void => {
-        (this.selfRef || this).closeAudit();
+    readonly startAllDeploymentsPressed = (): void => {
+        void (this.selfRef || this).startAllDeployments();
     };
+
+    readonly stopAllDeploymentsPressed = (): void => {
+        void (this.selfRef || this).stopAllDeployments();
+    };
+
+    readonly closeDeploymentsPressed = (): void => {
+        void (this.selfRef || this).closeDeployments();
+    };
+
+    readonly setMetricsWindowAction = (windowMs: number): void => {
+        void (this.selfRef || this).setMetricsWindow(windowMs);
+    };
+
+    readonly closeMetricsPressed = (): void => (this.selfRef || this).closeMetrics();
+
+    readonly closeSettingsPressed = (): void => (this.selfRef || this).closeSettings();
+
+    readonly saveSettingsPressed = (): void => (this.selfRef || this).saveSettings();
+
+    readonly cancelRenamePressed = (): void => (this.selfRef || this).cancelRename();
+
+    readonly commitRenamePressed = (): void => (this.selfRef || this).commitRename();
+
+    readonly deploymentToggleAction = (item: WorkflowDeploymentStatus): (() => void) =>
+        () => (this.selfRef || this).toggleDeployment(item);
+
+    readonly pluginToggleAction = (item: WorkflowPluginManifest & { installed: boolean }): (() => void) =>
+        () => (this.selfRef || this).togglePlugin(item);
+
+    readonly auditPanelRefresh = (): void => { void (this.selfRef || this).refreshAudit(); };
+
+    readonly auditPanelClose = (): void => { (this.selfRef || this).closeAudit(); };
 
     readonly credentialNameAction = (value: string): void => {
         (this.selfRef || this).credentialNameInput({ target: { value } } as any);
     };
-
     readonly credentialValueAction = (value: string): void => {
         (this.selfRef || this).credentialValueInput({ target: { value } } as any);
     };
@@ -1207,6 +1203,11 @@ export class WorkflowDesignerComponent implements OnDestroy {
     credentialValueInput(event: any): void {
         this.credentialValue = String(event?.target?.value ?? '');
         this.credentialError = '';
+    }
+
+    /** Swap the active document (tab switch) with one binding pass. */
+    private activateDocument(tab: WorkflowDocumentTab): void {
+        batchReactiveUpdates(() => this.setActiveTab(tab));
     }
 
     async openCredentials(): Promise<void> {
@@ -1305,25 +1306,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }));
     }
 
-    get metricsNodeColumns(): Array<{ key: string; label: string; align?: 'left' | 'right' }> {
-        return [
-            { key: 'nodeId', label: this.t('node', 'Node') },
-            { key: 'runs', label: this.t('metricsRuns', 'Runs'), align: 'right' },
-            { key: 'failed', label: this.t('failed', 'Failed'), align: 'right' },
-            { key: 'avgDurationMs', label: this.t('metricsAvg', 'Average'), align: 'right' }
-        ];
-    }
-
-    get metricsNodeRows(): Array<Record<string, any>> {
-        return ((this.metricsData?.nodes || []) as any[]).map(node => ({
-            nodeId: node.nodeId,
-            runs: node.runs,
-            failed: node.failed || 0,
-            avgDurationMs: `${node.avgDurationMs} ms`
-        }));
-    }
-
-    /** Parent › current trail for subflow tabs. */
+    @Computed()
+    @Computed()
     get subflowTrail(): Array<{ id?: string; label: string; disabled?: boolean }> {
         const current = this.designer?.definition;
         const parent = current ? this.subflowParents[current.id] : undefined;

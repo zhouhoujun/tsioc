@@ -315,6 +315,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "mqtt": {
                 "label": "MQTT broker",
                 "description": "Shared MQTT broker connection for MQTT nodes"
+            },
+            "file-in": {
+                "label": "File in",
+                "description": "Read a file from the workflow workspace"
+            },
+            "file-out": {
+                "label": "File out",
+                "description": "Write a file inside the workflow workspace"
+            },
+            "watch": {
+                "label": "Watch",
+                "description": "Start the flow when a file or folder changes"
             }
         },
         "field": {
@@ -771,6 +783,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "password": "Password",
                 "tls": "TLS config",
                 "keepalive": "Keepalive"
+            },
+            "file-in": {
+                "path": "Path",
+                "encoding": "Encoding",
+                "parse": "Parse"
+            },
+            "file-out": {
+                "path": "Path",
+                "payload": "Payload path",
+                "encoding": "Encoding",
+                "append": "Append",
+                "mkdir": "Create folders"
+            },
+            "watch": {
+                "path": "Path",
+                "recursive": "Recursive",
+                "debounce": "Debounce",
+                "event": "Event"
             }
         },
         "fieldPlaceholder": {
@@ -1037,6 +1067,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "url": "mqtt://broker:1883",
                 "clientId": "auto",
                 "tls": "tls_1"
+            },
+            "file-in": {
+                "path": "data/input.json"
+            },
+            "file-out": {
+                "path": "data/output.json"
+            },
+            "watch": {
+                "path": "data"
             }
         },
         "fieldDescription": {
@@ -1428,6 +1467,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "password": "Broker password. Use {{credential:name}} to read a stored credential.",
                 "tls": "Id of a TLS config node for client certificates.",
                 "keepalive": "Seconds between keepalive pings."
+            },
+            "file-in": {
+                "path": "Absolute path or a path inside the workspace root.",
+                "encoding": "Read the file as UTF-8 text or base64.",
+                "parse": "Parse valid JSON automatically, or keep the raw text."
+            },
+            "file-out": {
+                "path": "Absolute path or a path inside the workspace root.",
+                "payload": "Context path used as the file content.",
+                "encoding": "Write UTF-8 text or base64 content.",
+                "append": "Append instead of replacing the file.",
+                "mkdir": "Create missing parent folders."
+            },
+            "watch": {
+                "path": "File or directory to watch (workspace-relative or absolute).",
+                "recursive": "Watch nested directories as well.",
+                "debounce": "Wait this long before emitting a change.",
+                "event": "Restrict to renames or content changes."
             }
         },
         "group": {
@@ -1526,7 +1583,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "timeout": "Wait with timeout",
             "bearer": "Bearer token",
             "0": "0",
-            "1": "1"
+            "1": "1",
+            "all": "All changes",
+            "rename": "Renames only"
         }
     },
     "zh-CN": {
@@ -1838,6 +1897,18 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "mqtt": {
                 "label": "MQTT Broker",
                 "description": "供 MQTT 节点共用的 Broker 连接"
+            },
+            "file-in": {
+                "label": "文件输入",
+                "description": "从工作区读取文件"
+            },
+            "file-out": {
+                "label": "文件输出",
+                "description": "把内容写入工作区文件"
+            },
+            "watch": {
+                "label": "文件监听",
+                "description": "文件或目录变化时启动流程"
             }
         },
         "field": {
@@ -2294,6 +2365,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "password": "密码",
                 "tls": "TLS 配置",
                 "keepalive": "心跳间隔"
+            },
+            "file-in": {
+                "path": "路径",
+                "encoding": "编码",
+                "parse": "解析"
+            },
+            "file-out": {
+                "path": "路径",
+                "payload": "载荷路径",
+                "encoding": "编码",
+                "append": "追加写入",
+                "mkdir": "自动创建目录"
+            },
+            "watch": {
+                "path": "路径",
+                "recursive": "递归监听",
+                "debounce": "去抖",
+                "event": "事件类型"
             }
         },
         "fieldPlaceholder": {
@@ -2544,6 +2633,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "url": "mqtt://broker:1883",
                 "clientId": "auto",
                 "tls": "tls_1"
+            },
+            "file-in": {
+                "path": "data/input.json"
+            },
+            "file-out": {
+                "path": "data/output.json"
+            },
+            "watch": {
+                "path": "data"
             }
         },
         "fieldDescription": {
@@ -2935,6 +3033,24 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "password": "Broker 密码；使用 {{credential:name}} 读取已保存的凭据。",
                 "tls": "用于客户端证书的 TLS 配置节点 id。",
                 "keepalive": "心跳间隔（秒）。"
+            },
+            "file-in": {
+                "path": "绝对路径，或工作区根目录内的相对路径。",
+                "encoding": "以 UTF-8 文本或 base64 读取文件。",
+                "parse": "自动解析合法 JSON，或保留原始文本。"
+            },
+            "file-out": {
+                "path": "绝对路径，或工作区根目录内的相对路径。",
+                "payload": "作为文件内容的上下文路径。",
+                "encoding": "写入 UTF-8 文本或 base64 内容。",
+                "append": "追加写入而不是覆盖。",
+                "mkdir": "自动创建缺失的父目录。"
+            },
+            "watch": {
+                "path": "要监听的文件或目录（工作区相对路径或绝对路径）。",
+                "recursive": "同时监听子目录。",
+                "debounce": "事件合并等待时间。",
+                "event": "只响应重命名或内容变更。"
             }
         },
         "group": {
@@ -3033,7 +3149,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "timeout": "超时后继续",
             "bearer": "Bearer Token",
             "0": "0",
-            "1": "1"
+            "1": "1",
+            "all": "All changes",
+            "rename": "Renames only"
         }
     }
 };

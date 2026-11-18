@@ -1,5 +1,7 @@
 import * as dgram from 'node:dgram';
+import * as fs from 'node:fs';
 import * as net from 'node:net';
+import * as path from 'node:path';
 import { ActivityContext, ActivityResult } from '../src/activities/Activity';
 import { VisualWorkflowDefinition, WorkflowExecutionOptions } from '../src/visual/types';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
@@ -10,10 +12,14 @@ import { configNodeMap } from '../src/visual/VisualWorkflowService';
 /** Message delivered to a `tcp-in` / `udp-in` node through `context.inbound`. */
 export interface WorkflowInboundMessage {
     nodeId: string;
-    transport: 'tcp' | 'udp' | 'websocket' | 'mqtt';
+    transport: 'tcp' | 'udp' | 'websocket' | 'mqtt' | 'watch';
     data: string;
     /** MQTT topic the message arrived on. */
     topic?: string;
+    /** File/folder path reported by `watch`. */
+    path?: string;
+    /** `watch` event type (`rename` or `change`). */
+    event?: string;
     remote?: { address?: string; port?: number };
 }
 
@@ -32,6 +38,8 @@ export interface WorkflowInboundOptions {
     credentialResolver?: (name: string) => Promise<string | undefined> | string | undefined;
     /** Share one broker connection across listeners (defaults to the process registry). */
     mqttRegistry?: WorkflowMqttRegistry;
+    /** Sandbox root for `watch` paths (falls back to context.workspaceRoot). */
+    workspaceRoot?: string;
 }
 
 export interface WorkflowInboundHandle {
@@ -111,16 +119,25 @@ export class WorkflowInboundRunner {
 
         const dispatch = async (
             nodeId: string,
-            transport: 'tcp' | 'udp' | 'websocket' | 'mqtt',
+            transport: 'tcp' | 'udp' | 'websocket' | 'mqtt' | 'watch',
             data: string,
             remote: WorkflowInboundMessage['remote'],
             reply: ((payload: string) => void) | undefined,
-            topic?: string
+            topic?: string,
+            extra?: { path?: string; event?: string }
         ): Promise<void> => {
             if (!running) {
                 return;
             }
-            const message: WorkflowInboundMessage = { nodeId, transport, data, remote, ...(topic ? { topic } : {}) };
+            const message: WorkflowInboundMessage = {
+                nodeId,
+                transport,
+                data,
+                remote,
+                ...(topic ? { topic } : {}),
+                ...(extra?.path ? { path: extra.path } : {}),
+                ...(extra?.event ? { event: extra.event } : {})
+            };
             try {
                 const result = await this.service.execute(
                     definition,
@@ -149,9 +166,11 @@ export class WorkflowInboundRunner {
         const mqttRegistry = options.mqttRegistry || sharedMqttRegistry;
         const configNodes = options.configNodes || configNodeMap(definition);
         const mqttUnsubscribes: Array<() => Promise<void>> = [];
+        const watchers: fs.FSWatcher[] = [];
         const inboundNodes = (definition.nodes || []).filter(node =>
             node.type === 'tcp-in' || node.type === 'udp-in'
             || node.type === 'websocket-in' || node.type === 'mqtt-in'
+            || node.type === 'watch'
         );
 
         for (const node of inboundNodes) {
@@ -241,6 +260,74 @@ export class WorkflowInboundRunner {
                         if (off) {
                             await off();
                         }
+                    }
+                });
+            } else if (node.type === 'watch') {
+                const requested = String(config.path || '').trim();
+                const workspaceRoot = String(
+                    (options.context as any)?.workspaceRoot || options.workspaceRoot || process.cwd()
+                );
+                const target = path.isAbsolute(requested)
+                    ? path.resolve(requested)
+                    : path.resolve(workspaceRoot, requested);
+                const relative = path.relative(path.resolve(workspaceRoot), target);
+                if (requested && (relative.startsWith('..') || path.isAbsolute(relative))) {
+                    await this.stopListeners(listeners, sockets);
+                    for (const watcher of watchers) {
+                        watcher.close();
+                    }
+                    throw new Error(
+                        `Watch path "${requested}" is outside the allowed workspace root (${workspaceRoot}).`
+                    );
+                }
+                if (!requested || !fs.existsSync(target)) {
+                    await this.stopListeners(listeners, sockets);
+                    for (const watcher of watchers) {
+                        watcher.close();
+                    }
+                    throw new Error(`Watch path does not exist: ${target}.`);
+                }
+                const debounceMs = Math.max(0, Number(config.debounce) || 0);
+                const wanted = String(config.event || 'all');
+                const timers = new Map<string, any>();
+                const watcher = fs.watch(target, { recursive: config.recursive === true }, (event, filename) => {
+                    const eventName = String(event || 'change');
+                    if (wanted !== 'all' && wanted !== eventName) {
+                        return;
+                    }
+                    const reported = filename
+                        ? path.resolve(target, String(filename))
+                        : target;
+                    const fire = () => {
+                        timers.delete(reported);
+                        void dispatch(
+                            node.id,
+                            'watch',
+                            reported,
+                            undefined,
+                            undefined,
+                            undefined,
+                            { path: reported, event: eventName }
+                        );
+                    };
+                    const existing = timers.get(reported);
+                    if (existing) {
+                        clearTimeout(existing);
+                    }
+                    timers.set(reported, setTimeout(fire, debounceMs));
+                });
+                watcher.on('error', error => {
+                    options.onError?.(error as Error);
+                });
+                watchers.push(watcher);
+                listeners.push({
+                    port: 0,
+                    close: async () => {
+                        watcher.close();
+                        for (const timer of timers.values()) {
+                            clearTimeout(timer);
+                        }
+                        timers.clear();
                     }
                 });
             } else if (node.type === 'websocket-in') {

@@ -107,6 +107,30 @@ export interface WorkflowTlsOptions {
 }
 
 /** Payload handed to the host TCP transport by `tcp-out`. */
+export interface WorkflowFileReadRequest {
+    path: string;
+    encoding?: string;
+}
+
+export interface WorkflowFileReadResult {
+    data: string;
+    path: string;
+    size: number;
+}
+
+export interface WorkflowFileWriteRequest {
+    path: string;
+    data: string;
+    encoding?: string;
+    append?: boolean;
+    mkdir?: boolean;
+}
+
+export interface WorkflowFileWriteResult {
+    path: string;
+    bytes: number;
+}
+
 export interface WorkflowTcpSendRequest {
     host: string;
     port: number;
@@ -163,6 +187,8 @@ export class VisualWorkflowService {
     private definitionResolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
     private credentialResolver?: (name: string) => Promise<string | undefined> | string | undefined;
     private mqttPublisher?: (message: WorkflowMqttPublishRequest) => Promise<void> | void;
+    private fileReader?: (request: WorkflowFileReadRequest) => Promise<WorkflowFileReadResult> | WorkflowFileReadResult;
+    private fileWriter?: (request: WorkflowFileWriteRequest) => Promise<WorkflowFileWriteResult> | WorkflowFileWriteResult;
     private tcpSender?: (message: WorkflowTcpSendRequest) => Promise<void> | void;
     private udpSender?: (message: WorkflowUdpSendRequest) => Promise<void> | void;
     private webSocketSender?: (message: WorkflowWebSocketSendRequest) => Promise<void> | void;
@@ -467,6 +493,15 @@ export class VisualWorkflowService {
         this.webSocketSender = sender;
     }
 
+    /** Host file access for `file-in` / `file-out` (workspace-sandboxed). */
+    setFileAccess(access?: {
+        read?: (request: WorkflowFileReadRequest) => Promise<WorkflowFileReadResult> | WorkflowFileReadResult;
+        write?: (request: WorkflowFileWriteRequest) => Promise<WorkflowFileWriteResult> | WorkflowFileWriteResult;
+    }): void {
+        this.fileReader = access?.read;
+        this.fileWriter = access?.write;
+    }
+
     setDefinitionResolver(
         resolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined
     ): void {
@@ -553,6 +588,12 @@ export class VisualWorkflowService {
                 : undefined,
             webSocketSend: this.webSocketSender
                 ? (message: WorkflowWebSocketSendRequest) => this.webSocketSender!(message)
+                : undefined,
+            fileRead: this.fileReader
+                ? (request: WorkflowFileReadRequest) => this.fileReader!(request)
+                : undefined,
+            fileWrite: this.fileWriter
+                ? (request: WorkflowFileWriteRequest) => this.fileWriter!(request)
                 : undefined,
             configNodes: configNodeMap(definition)
         };

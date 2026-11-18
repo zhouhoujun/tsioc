@@ -8,3 +8,4 @@ export * from './WorkflowAuditStore';
 export * from './WorkflowCredentialStore';
 export * from './WorkflowMqtt';
 export * from './WorkflowNetTransport';
+export * from './WorkflowFileTransport';

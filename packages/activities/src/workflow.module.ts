@@ -10,6 +10,7 @@ import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
 import { EmptyStateModule } from '@tsdi/components/common/empty-state';
 import { StatModule } from '@tsdi/components/common/stat';
 import { BadgeModule } from '@tsdi/components/common/badge';
+import { ButtonModule } from '@tsdi/components/common/button';
 import { KeymapPanelModule } from '@tsdi/components/common/keymap';
 import { ProgressModule } from '@tsdi/components/common/progress';
 import { DataTableModule } from '@tsdi/components/common/data-table';
@@ -44,6 +45,7 @@ import {
     WorkflowLibraryComponent,
     WorkflowCredentialPanelComponent,
     WorkflowAuditPanelComponent,
+    WorkflowMetricsPanelComponent,
     WorkflowVersionPanelComponent,
     WorkflowDesignerComponent,
     WorkflowDesignerPreviewComponent,
@@ -70,6 +72,7 @@ import {
         EmptyStateModule,
         StatModule,
         BadgeModule,
+        ButtonModule,
         KeymapPanelModule,
         ProgressModule,
         DataTableModule,
@@ -132,6 +135,7 @@ import {
         WorkflowLibraryComponent,
         WorkflowCredentialPanelComponent,
         WorkflowAuditPanelComponent,
+        WorkflowMetricsPanelComponent,
         WorkflowVersionPanelComponent,
         WorkflowDesignerPreviewComponent,
         WorkflowManagementMenuComponent,

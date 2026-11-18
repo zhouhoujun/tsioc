@@ -24,8 +24,8 @@ import { WorkflowAuditEntry } from '../workflow-store';
                 :columns="columns" :rows="rows" rowKey="id" dense :ariaLabel="title"></ui-data-table>
             <ui-empty class="workflow-audit-empty" v-else icon="history" :title="emptyLabel"></ui-empty>
             <div class="workflow-publish-actions">
-                <button class="workflow-btn" type="button" [disabled]="busy" @click="refresh">{{refreshLabel}}</button>
-                <button class="workflow-btn" type="button" @click="close">{{closeLabel}}</button>
+                <ui-button className="workflow-btn" :label="refreshLabel" :disabled="busy" :action="refreshPressed"></ui-button>
+                <ui-button className="workflow-btn" :label="closeLabel" :action="closePressed"></ui-button>
             </div>
         </div>
     </div>`
@@ -39,6 +39,10 @@ export class WorkflowAuditPanelComponent {
     @Attribute() closeAction?: () => void;
 
     constructor(@Optional() private translator?: Translator) { }
+
+    readonly refreshPressed = (): void => this.refresh();
+
+    readonly closePressed = (): void => this.close();
 
     refresh(): void {
         this.refreshAction?.();

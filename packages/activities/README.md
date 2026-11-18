@@ -603,7 +603,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 61 registered node types by label, description or type,
+- searchable palette: filter 64 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -862,6 +862,24 @@ Referenced by `tcp-out` / `websocket-out` / `mqtt-out` through `"tls": "tls_1"`.
 The runtime resolves the node from the definition, resolves `{{credential:name}}`
 values, and hands the result to the transport. A missing id fails the node with
 `TLS config not found: <id>`.
+
+### File nodes
+
+`file-in`, `file-out` and `watch` run on the host and stay inside the workspace:
+
+```text
+file-out  { path: "data/out.json", payload: "payload", append: false, mkdir: true }
+file-in   { path: "data/out.json", encoding: "utf8", parse: "auto" }
+watch     { path: "data", recursive: false, debounce: 200, event: "all" }
+```
+
+- every path is resolved against the workspace root; escaping it fails with
+  `outside the allowed workspace root` and a suggested relative path
+- `file-in` parses valid JSON when `parse: "auto"`, otherwise keeps the text
+- `watch` starts one run per debounced change with
+  `context.inbound = { transport: "watch", path, event }`; the watcher is closed
+  when the run handle stops
+- browser-only hosts fail with a diagnosable error instead of silently skipping
 
 ### Sub-workflow ports
 
