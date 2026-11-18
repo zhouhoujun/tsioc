@@ -60,6 +60,9 @@ menu-bar {
     z-index: 60;
     min-width: 220px;
     max-width: min(340px, calc(100vw - 24px));
+    max-height: min(60vh, 480px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 6px;
     display: flex;
     flex-direction: column;
@@ -99,6 +102,9 @@ menu-bar {
     gap: 1px;
     min-width: 180px;
     max-width: min(280px, calc(100vw - 24px));
+    max-height: min(60vh, 480px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 6px;
     background: var(--menu-bar-surface, #ffffff);
     border: 1px solid var(--menu-bar-border, #cbd5e1);
