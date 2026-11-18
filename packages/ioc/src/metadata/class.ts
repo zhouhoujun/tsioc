@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { AbstractType } from '../types';
 import { Provider } from '../providers';
 import { PropertyMetadata, ParameterMetadata } from './meta';
@@ -609,13 +610,13 @@ function getParamNames(func: Function) {
 
 
 
-const CLASS_REF_CACHE = new WeakMap<AbstractType, ClassRef>();
+const CLASS_REF = Symbol('CLASS_REF');
 
 export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
     if (!type || isPrimitive(type)) return null!;
-    let tyRef = CLASS_REF_CACHE.get(type);
+    let tyRef = Reflect.getMetadata(CLASS_REF, type) as ClassRef;
 
-    if (!tyRef || tyRef.type !== type) {
+    if (tyRef?.type !== type) {
         let prRef = tyRef as ClassRef;
         if (!prRef) {
             const parentType = getParentType(type);
@@ -624,7 +625,7 @@ export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
             }
         }
         tyRef = new ClassRef(type, getDef(type), prRef);
-        CLASS_REF_CACHE.set(type, tyRef);
+        Reflect.defineMetadata(CLASS_REF, tyRef, type);
         try {
             registerPrecompiledType(type);
         } catch {

@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { InvokeOptions } from '../context';
 import { ModuleWithProviders, Provider } from '../providers';
 import { ResolveInterceptorLike } from '../resolver';
@@ -86,18 +87,21 @@ export interface ModuleDef<T = any> extends TypeDef<T> {
 }
 
 
-const TYEP_DEF_CACHE = new WeakMap<AbstractType, Partial<TypeDef>>();
-
+const TYEP_DEF = Symbol('TYEP_DEF');
+/**
+ * get type def.
+ * @param type class type.
+ */
 export function getDef<T extends TypeDef>(type: AbstractType): Partial<T> {
-    let tagAnn = TYEP_DEF_CACHE.get(type) as Partial<T>;
-    if (!tagAnn) {
+    let tagAnn = Reflect.getMetadata(TYEP_DEF, type) as Partial<T>;
+    if (tagAnn?.type !== type) {
         tagAnn = (type as AnnotationType).ƿAnn?.() as Partial<T>;
-        if (!tagAnn || tagAnn.type !== type) {
+        if (tagAnn?.type !== type) {
             tagAnn = {
                 name: type.name,
                 type
             } as Partial<T>;
-            TYEP_DEF_CACHE.set(type, tagAnn);
+            Reflect.defineMetadata(TYEP_DEF, tagAnn, type);
         }
     }
     return tagAnn as T
