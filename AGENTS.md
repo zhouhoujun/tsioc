@@ -150,7 +150,7 @@
 
 针对"逻辑已抽出、类却持续膨胀"的巨型文件（如 `agent-ui/src/AgentConsoleComponent.ts` 8000+ 行），以下为强制规则：
 
-- **行数门槛（ratchet）**：`scripts/check-source-size.mjs` 检查 `packages/agents/**`（排除 `test`/`dist`/`lib`）的行数，`scripts/source-size-baseline.json` 记录现存超额文件。**已入基线的文件只允许下降；未入基线的新文件上限 600 行**。统一 gate 的 `source-size` 阶段必须通过——任何让基线文件增长、或新增 >600 行文件的提交都算失败。
+- **行数门槛（ratchet）**：`scripts/check-source-size.mjs` 检查 `packages/agents/**`（排除 `test`/`dist`/`lib`，上限 600 行）与 `packages/components/common/**`（上限 700 行），`scripts/source-size-baseline.json` 记录现存超额文件。**已入基线的文件只允许下降；未入基线的新文件按对应目录上限执行**。统一 gate 的 `source-size` 阶段必须通过——任何让基线文件增长、或新增超限文件的提交都算失败。
 - **单一职责 / 禁止 god-object**：`agent-ui/src/AgentConsoleComponent.ts` 是 TUI 组合根与 facade，**不得再往其中新增业务逻辑**。新增 console 能力必须落到既有模块（`AgentConsoleCommandHandlers`、`AgentConsoleCodingTaskHandlers`、`AgentConsolePanels`、`AgentConsoleMessageRenderers`、`AgentConsoleSessionService` 等）或新建的 `AgentConsole*Controller`。
 - **命令处理用注册表**：新增 `/command` **不得再往单体 `switch` 里加 `case`**；统一走命令注册表，实现放进 handler 模块。
 - **抽取纪律**：抽取时必须保持用户可见行为与测试不变（交叉引用第 1 条"禁止降级功能"）；每降低一个文件体量，**在同一提交内下调其 baseline**。
