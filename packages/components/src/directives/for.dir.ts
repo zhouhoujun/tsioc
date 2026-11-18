@@ -110,6 +110,13 @@ export class VForDirective {
     }
 
     private updateView() {
+        // A page/view can be destroyed while a parent state array still notifies
+        // a binding captured by the old view. The template injector is destroyed
+        // with that view; stop before creating a row with it. The live view's
+        // own binding continues in the same trigger pass.
+        if (this.isStale()) {
+            return;
+        }
         const collection = this._collection;
 
         // 检查集合是否真的发生了变化
@@ -413,8 +420,16 @@ export class VForDirective {
     }
 
     // 通用的视图更新逻辑（支持trackBy）
-    private updateViewsWithTrackBy(contexts: any[]) {
+    private isStale(): boolean {
         if (this.viewContainer.injector.destroyed) {
+            return true;
+        }
+        const templateInjector = (this._templateRef as any)?.options?.injector as { destroyed?: boolean } | undefined;
+        return templateInjector?.destroyed === true;
+    }
+
+    private updateViewsWithTrackBy(contexts: any[]) {
+        if (this.isStale()) {
             return;
         }
         const newViewRefs: any[] = [];
