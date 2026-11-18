@@ -74,6 +74,8 @@ export interface AgentConsoleSettingsHost extends AgentConsoleSettingsLabelHost 
     notify(message: string): void;
 }
 
+export type AgentConsoleSettingsFieldKind = 'toggle' | 'action';
+
 export interface AgentConsoleSettingsField {
     id: string;
     section: AgentConsoleSettingsSectionId;
@@ -83,6 +85,10 @@ export interface AgentConsoleSettingsField {
     descriptionFallback: string;
     scope: AgentConsoleSettingsScope;
     effect: AgentConsoleSettingsEffect;
+    /** Renderer hint: a switch (toggleRow) or a button that opens a picker/action. */
+    kind: AgentConsoleSettingsFieldKind;
+    /** Raw boolean state for switch rendering (toggles only). */
+    read?(host: AgentConsoleSettingsHost): boolean;
     /** Searchable aliases (command names, legacy labels). */
     aliases?: string[];
     value(host: AgentConsoleSettingsHost): string;
@@ -137,6 +143,8 @@ function toggleRow(
         descriptionFallback,
         scope,
         effect: options.effect ?? 'immediate',
+        kind: 'toggle',
+        read,
         ...(options.aliases ? { aliases: options.aliases } : {}),
         value: host => onOff(host, read(host), options.shownHidden === true),
         apply: host => apply(host, !read(host)),
@@ -168,6 +176,7 @@ function actionRow(
         descriptionFallback,
         scope,
         effect,
+        kind: 'action',
         ...(aliases ? { aliases } : {}),
         value,
         apply: action

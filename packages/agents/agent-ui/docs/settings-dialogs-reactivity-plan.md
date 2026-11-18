@@ -173,6 +173,9 @@ state 52–67ms + paint 25–56ms；历史记录 98–138ms。已试并回退的
 - **P2 响应式/性能**（进行中）：已落地"已投影 transcript 数组复用"（`4ef0f7a84`，
   state p50 中位数约 61 vs 69ms）与"`navFilteredSessions` 按列表+过滤值缓存"
   （500 会话下 2000 次读取 493ms → 1.7ms）。剩余：弹窗/重置批量写入、热点 getter 评估。
-- **P3 Web 设置页**：待做，复用 `AgentConsoleSettingsSchema` 与 `components/common`
-  组件，不复制 TUI 逻辑。
+- **P3 Web 设置页**：已完成。`/settings` overlay 保持 TUI 契约；浏览器侧栏齿轮挂载独立
+  设置页应用（同一 `AgentConsoleSessionState`/schema/row 动作），用
+  `components/common` 的 card/switch/search-field/button/badge/empty/kbd 渲染，
+  `v-show` 控制可见性，Esc/✕ 关闭，开关即时应用并保持页面打开；页面应用独立挂载，
+  不改变 TUI 组件树（console-renderer 回归通过）。
 - **P4 收尾**：待做。

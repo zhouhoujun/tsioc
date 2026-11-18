@@ -10,7 +10,7 @@
 | P0 | 基线、预算与回归入口（本文档） | 全量 gate + 1k 消息切换基线 | 本提交 |
 | P1 | 弹窗契约（与输入区同宽、贴输入框）+ `/sessions`、`/projects` 细节 | console-renderer / dialog-regressions / p236 | 已完成（`55324b026`） |
 | P2 | 响应式利用与性能（投影/过滤缓存、批量写入、热点 getter、A/B） | 1k 消息 A/B + agent-ui 全套 + components-bench | 进行中 |
-| P3 | Web 设置页（同一 schema、components/common 组件） | DOM 设置页测试 + 刷新持久化 + Web build | 待做 |
+| P3 | Web 设置页（同一 schema、components/common 组件） | DOM 设置页测试 + 刷新持久化 + Web build | 已完成 |
 | P4 | 收尾（文档//help/which-key、全量 gate、真实 TUI/浏览器手测） | 全量 gate 12/12 | 待做 |
 
 ## 2. 测试基线（2026-11-18，`4ef0f7a84` + P0 文档）

@@ -23,6 +23,7 @@ export interface AgentConsolePanelVisibility {
     commandOutputs: boolean;
     pendingQuestion: boolean;
     settingsCenter: boolean;
+    settingsPage: boolean;
     welcome: boolean;
 }
 
@@ -54,6 +55,7 @@ export function resolveAgentConsolePanelVisibility(state: AgentConsoleSessionSta
         commandOutputs: state.commandOutputsOpen,
         pendingQuestion: !!state.pendingQuestion,
         settingsCenter: state.settingsCenterOpen === true,
+        settingsPage: state.settingsPageOpen === true,
         // The welcome card belongs to an empty transcript only.
         welcome: state.messages.length === 0
     };
@@ -88,5 +90,6 @@ export abstract class AgentConsolePanelVisibilityHost {
     get showCommandOutputsPanel(): boolean { return this.panels.commandOutputs; }
     get showPendingQuestionPanel(): boolean { return this.panels.pendingQuestion; }
     get showSettingsCenterPanel(): boolean { return this.panels.settingsCenter; }
+    get showSettingsPagePanel(): boolean { return this.panels.settingsPage; }
     get showBrandPanel(): boolean { return this.panels.welcome; }
 }

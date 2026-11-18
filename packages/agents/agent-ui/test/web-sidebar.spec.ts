@@ -251,3 +251,48 @@ export class WebAgentSidebarFinderTest {
         sidebar.dispose();
     }
 }
+
+@Suite('web agent sidebar settings entry')
+export class WebAgentSidebarSettingsTest {
+    @Test('the gear opens the settings page when the host provides one')
+    async opensSettingsPage() {
+        const fixture = createFinderFixture();
+        let opened = 0;
+        const sidebar = createWebSidebar({
+            document: fixture.dom.window.document,
+            mount: fixture.mount,
+            state: fixture.state,
+            runCommand: command => { fixture.commands.push(command); },
+            navigate: sessionId => { fixture.navigated.push(sessionId); },
+            openSettingsPage: () => { opened += 1; }
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+        const actions = Array.from(sidebar.element.querySelectorAll('.agent-web-sidebar-action')) as HTMLElement[];
+        const settings = actions.find(action => (action.textContent || '').includes('Settings')) as HTMLElement;
+        settings.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        expect(opened).toEqual(1);
+        // The page owns the settings surface; the overlay command is not run.
+        expect(fixture.commands).toEqual([]);
+        sidebar.dispose();
+    }
+
+    @Test('without a page host the gear keeps the /settings command')
+    async fallsBackToCommand() {
+        const fixture = createFinderFixture();
+        const sidebar = createWebSidebar({
+            document: fixture.dom.window.document,
+            mount: fixture.mount,
+            state: fixture.state,
+            runCommand: command => { fixture.commands.push(command); },
+            navigate: sessionId => { fixture.navigated.push(sessionId); }
+        });
+        await Promise.resolve();
+        await Promise.resolve();
+        const actions = Array.from(sidebar.element.querySelectorAll('.agent-web-sidebar-action')) as HTMLElement[];
+        const settings = actions.find(action => (action.textContent || '').includes('Settings')) as HTMLElement;
+        settings.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        expect(fixture.commands).toEqual(['/settings']);
+        sidebar.dispose();
+    }
+}

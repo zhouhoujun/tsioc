@@ -3,6 +3,7 @@ import { DOCUMENT } from '@tsdi/common';
 import { Injectable } from '@tsdi/ioc';
 import { ComponentRef, ComponentsModule, ReactiveEffect, reactive } from '@tsdi/components';
 import { ToastService } from '@tsdi/components/common/toast';
+import { installStyleSheet, UI_CSS, UI_STYLE_ID } from '@tsdi/components/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DomOverlayAnchors, DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
 import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
@@ -34,6 +35,7 @@ import { routeAgentConsoleHistoryKey } from './history-keys';
 import { bindContextMenuCopy } from './clipboard';
 import { createWebSidebar } from './sidebar';
 import { createRpcConsoleSettingsStore, createRpcConsoleStores } from './rpc-stores';
+import { mountAgentWebSettingsPage } from './settings-page';
 export { createRpcConsoleSettingsStore, createRpcConsoleStores } from './rpc-stores';
 import { loadAgentConsoleAttentionCounts } from './counts';
 import { keepTranscriptSelection } from './selection-anchor';
@@ -150,6 +152,9 @@ export async function mountAgentWebConsole(
     if (!doc) {
         throw new Error('mountAgentWebConsole must run in a browser DOM environment');
     }
+    // Shared primitives (card/switch/search/empty/kbd/badge) ship a neutral
+    // skin; install it once for the settings page and any other common widgets.
+    installStyleSheet(doc, UI_STYLE_ID, UI_CSS);
 
     const rpc = new HttpAgentConsoleAppRpc({
         baseUrl,
@@ -411,6 +416,7 @@ export async function mountAgentWebConsole(
 
     focusWebConsoleComposer(doc, root);
 
+    let settingsPage: Awaited<ReturnType<typeof mountAgentWebSettingsPage>> | null = null;
     const sidebar = createWebSidebar({
         document: doc,
         mount,
@@ -442,6 +448,18 @@ export async function mountAgentWebConsole(
         refreshSessions: () => {
             const instance = rootRef?.instance as unknown as { refreshSessions?: (currentId?: string) => Promise<void> } | undefined;
             return instance?.refreshSessions?.(state.sessionId);
+        },
+        openSettingsPage: () => {
+            const instance = rootRef?.instance as unknown as { openSettingsPage?: () => Promise<boolean> } | undefined;
+            void (async () => {
+                if (!settingsPage) {
+                    // The page app proxies the raw state with its own effect; a
+                    // proxy from the console effect would bind page DOM to the
+                    // wrong dependency collector.
+                    settingsPage = await mountAgentWebSettingsPage({ document: doc, state: rawState });
+                }
+                await instance?.openSettingsPage?.();
+            })();
         },
         loadCounts: () => loadAgentConsoleAttentionCounts({
             request: (method, params) => rpc.request(method, params),
@@ -489,6 +507,8 @@ export async function mountAgentWebConsole(
             toastService.clear();
             follower?.detach();
             indicator.remove();
+            await settingsPage?.dispose();
+            settingsPage = null;
             brandObserver?.disconnect();
             themeObserver?.disconnect();
             root?.removeAttribute('data-theme');

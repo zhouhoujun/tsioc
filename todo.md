@@ -4828,3 +4828,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - 行为回归：dialog-exclusivity / dialog-regressions / console-renderer / settings-center / session-picker / vm-panels / overlay-composer 共 188 passing。
 - `@Computed` 评估：对 `sessionItems` 等热点 getter 做了 500 会话 profile，热点在响应式 removeDeps/track（每键 ~4ms）与 `v-for` 行重建，
   `get sessionItems` 仅 13.8ms/40 次；转 `@Computed` 不会减少主要成本，未改动（避免无收益优化）。
+
+## 2026-11-18 P3 Web 设置页（同一 schema + components/common）
+- 新增 `AgentConsoleSettingsPageComponent`（settings 行转 card/switch/button/badge/empty/kbd）+ `AgentConsoleSettingsPageModule`；
+  浏览器通过 `web-console/settings-page.ts` 在独立 `Application` 中挂载（共享 raw state，第二个 effect 代理，跨应用写入可互见），
+  不改变 TUI 组件树（console-renderer 107 passing）。
+- 侧栏 Settings 齿轮优先调用 `openSettingsPage()`（无页面宿主时回退 `/settings` 命令）。
+- schema 行新增 `kind`/`checked`/`canReset`；`openAgentConsoleSettingsPage` 复用同一 `AGENT_CONSOLE_SETTINGS_FIELDS`，
+  开关即时应用并保持页面打开，Esc/✕ 关闭。
+- 测试：`web-settings-page.spec.ts` 4 用例（渲染/开关/搜索与分区/关闭与重开），侧栏 2 用例；
+  相关 DOM/TUI 套件 195 + 76 passing。新增 i18n en/zh 页面文案。

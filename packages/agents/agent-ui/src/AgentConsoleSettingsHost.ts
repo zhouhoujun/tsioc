@@ -32,7 +32,7 @@ import {
 } from './AgentConsolePreferenceCommands';
 import { runQueueCommand as runQueueCommandView } from './AgentConsoleRpcCommands';
 import { runSteerCommand as runSteerCommandView } from './AgentConsoleSteerCommands';
-import { openAgentConsoleSettings } from './AgentConsoleSettingsCenter';
+import { closeAgentConsoleSettingsPage, openAgentConsoleSettings, openAgentConsoleSettingsPage } from './AgentConsoleSettingsCenter';
 import { runStashCommand as runStashCommandView } from './AgentConsoleStashCommands';
 import {
     preferenceCommandHost,
@@ -188,6 +188,17 @@ export abstract class AgentConsoleSettingsHost extends AgentConsoleIntegrationHo
             return runSettingsCommandView(settingsPanelHost(this));
         }
         openAgentConsoleSettings(this as any, raw);
+        return true;
+    }
+
+    /** Browser entry: full-page settings (terminal keeps the overlay). */
+    async openSettingsPage(): Promise<boolean> {
+        openAgentConsoleSettingsPage(this as any);
+        return true;
+    }
+
+    async closeSettingsPage(): Promise<boolean> {
+        closeAgentConsoleSettingsPage(this as any);
         return true;
     }
 

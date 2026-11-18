@@ -280,6 +280,13 @@ export class AgentConsoleSessionData {
     settingsCenterHint = '';
     settingsCenterPickAction?: (id: string) => void | Promise<void>;
     settingsCenterSectionPickAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
+    /** Web settings page: same schema, full-page shell instead of the overlay. */
+    settingsPageOpen = false;
+    settingsPagePickAction?: (id: string) => void | Promise<void>;
+    settingsPageResetAction?: (id: string) => void | Promise<void>;
+    settingsPageSectionAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
+    settingsPageQueryAction?: (query: string) => void | Promise<void>;
+    settingsPageCloseAction?: () => void | Promise<void>;
     selectMenu?: AgentConsoleSelectMenu;
     pendingApprovals: AgentConsoleApprovalRequest[] = []; modelUnavailableAction?: (failure: any) => void | Promise<void>; scrollTranscriptAction?: (rows: number) => boolean; revealMessageAction?: (messageId: string) => boolean;
     submitAction?: () => Promise<void>;

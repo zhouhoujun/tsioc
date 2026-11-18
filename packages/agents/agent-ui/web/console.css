@@ -2383,3 +2383,147 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     padding: 6px;
     color: var(--console-error);
 }
+
+/* Browser full settings page (same schema rows as the TUI center) */
+#agent-console .settings-page {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    justify-content: center;
+    padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--console-input-bg, #1b2128) 92%, transparent);
+    color: var(--console-text, #c9d1d9);
+    overflow-y: auto;
+}
+
+#agent-console .settings-page-shell {
+    width: min(1040px, 100%);
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 20px 22px;
+    background: var(--console-dialog-bg, #161b22);
+    border: 1px solid var(--console-meta, #6e7681);
+    border-radius: 10px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+#agent-console .settings-page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#agent-console .settings-page-heading {
+    min-width: 0;
+}
+
+#agent-console .settings-page-title {
+    margin: 0;
+    font-size: 1.15em;
+    font-weight: 600;
+    color: var(--console-text, #c9d1d9);
+}
+
+#agent-console .settings-page-meta {
+    margin: 2px 0 0;
+    color: var(--console-meta, #6e7681);
+    font-size: 0.9em;
+}
+
+#agent-console .settings-page-search {
+    width: 100%;
+}
+
+#agent-console .settings-page-sections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid color-mix(in srgb, var(--console-meta, #6e7681) 40%, transparent);
+}
+
+#agent-console .settings-page-sections .ui-button.is-solid {
+    color: var(--console-dialog-bg, #161b22);
+    background: var(--console-accent, #86a9d6);
+}
+
+#agent-console .settings-page-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 10px;
+}
+
+#agent-console .settings-page .ui-card {
+    min-width: 0;
+    background: color-mix(in srgb, var(--console-select-selected-bg, #202a36) 55%, transparent);
+    border: 1px solid color-mix(in srgb, var(--console-meta, #6e7681) 30%, transparent);
+    border-radius: 8px;
+}
+
+#agent-console .settings-page .ui-card-title {
+    color: var(--console-text, #c9d1d9);
+    font-weight: 600;
+}
+
+#agent-console .settings-page .ui-card-subtitle,
+#agent-console .settings-page .ui-card-meta {
+    color: var(--console-meta, #6e7681);
+    font-size: 0.88em;
+}
+
+#agent-console .settings-page-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#agent-console .settings-page-value {
+    color: var(--console-accent, #86a9d6);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+#agent-console .settings-page-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+#agent-console .settings-page-close {
+    flex: none;
+}
+
+#agent-console .settings-page-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--console-meta, #6e7681);
+    font-size: 0.85em;
+}
+
+#agent-console .settings-page .ui-empty {
+    color: var(--console-meta, #6e7681);
+}
+
+@media (max-width: 640px) {
+    #agent-console .settings-page {
+        padding: 0;
+    }
+
+    #agent-console .settings-page-shell {
+        border-radius: 0;
+        min-height: 100%;
+        padding: 14px 12px 20px;
+    }
+
+    #agent-console .settings-page-grid {
+        grid-template-columns: 1fr;
+    }
+}

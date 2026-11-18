@@ -21,6 +21,12 @@ export interface AgentConsoleSettingsRow {
     effect: string;
     aliases: string;
     selected: boolean;
+    /** Switch vs action button in the web settings page. */
+    kind: 'toggle' | 'action';
+    /** Raw toggle state (ignores the localized on/off label). */
+    checked: boolean;
+    /** Toggle rows with a declared default expose a reset action. */
+    canReset: boolean;
 }
 
 export interface AgentConsoleSettingsCenterState {
@@ -35,6 +41,12 @@ export interface AgentConsoleSettingsCenterState {
     settingsCenterHint: string;
     settingsCenterPickAction?: (id: string) => void | Promise<void>;
     settingsCenterSectionPickAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
+    settingsPageOpen: boolean;
+    settingsPagePickAction?: (id: string) => void | Promise<void>;
+    settingsPageResetAction?: (id: string) => void | Promise<void>;
+    settingsPageSectionAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
+    settingsPageQueryAction?: (query: string) => void | Promise<void>;
+    settingsPageCloseAction?: () => void | Promise<void>;
     closeSettingsCenter(): void;
     syncDerivedInputFocus(): void;
 }
@@ -86,7 +98,10 @@ export function buildAgentConsoleSettingsRows(host: AgentConsoleSettingsCenterHo
         scope: describeSettingsScope(host.translator, field.scope),
         effect: describeSettingsEffect(host.translator, field.effect),
         aliases: (field.aliases || []).join(' '),
-        selected: false
+        selected: false,
+        kind: field.kind,
+        checked: field.kind === 'toggle' ? field.read?.(host) === true : false,
+        canReset: typeof field.reset === 'function'
     }));
     const preserved = previous ? rows.findIndex(row => row.id === previous) : -1;
     const index = preserved >= 0
@@ -111,6 +126,9 @@ export function buildAgentConsoleSettingsRows(host: AgentConsoleSettingsCenterHo
 
 export function openAgentConsoleSettings(host: AgentConsoleSettingsCenterHost, query?: string, section?: AgentConsoleSettingsSectionId): void {
     const state = host.state;
+    // The page and the overlay are two shells of the same schema; only one
+    // can own the screen at a time.
+    state.settingsPageOpen = false;
     state.settingsCenterOpen = true;
     state.settingsCenterQuery = String(query || '').trim();
     state.settingsCenterIndex = 0;
@@ -121,6 +139,41 @@ export function openAgentConsoleSettings(host: AgentConsoleSettingsCenterHost, q
     state.settingsCenterSectionPickAction = (id: AgentConsoleSettingsSectionId) => selectSettingsCenterSection(host, id);
     dismissBackgroundPanels(state as any);
     buildAgentConsoleSettingsRows(host);
+    state.syncDerivedInputFocus();
+}
+
+/**
+ * Web settings page: same schema rows as the overlay, rendered as a full page
+ * instead of a composer-anchored dialog. The page stays open while toggles
+ * apply so several settings can be changed in one visit.
+ */
+export function openAgentConsoleSettingsPage(host: AgentConsoleSettingsCenterHost, query?: string, section?: AgentConsoleSettingsSectionId): void {
+    const state = host.state;
+    state.settingsCenterOpen = false;
+    state.settingsPageOpen = true;
+    state.settingsCenterQuery = String(query || '').trim();
+    state.settingsCenterIndex = 0;
+    if (section) {
+        state.settingsCenterSection = section;
+    }
+    state.settingsPagePickAction = (id: string) => applySettingsCenterRow(host, id, true);
+    state.settingsPageResetAction = (id: string) => resetSettingsCenterRow(host, id);
+    state.settingsPageSectionAction = (id: AgentConsoleSettingsSectionId) => selectSettingsCenterSection(host, id);
+    state.settingsPageQueryAction = (query: string) => setSettingsCenterQuery(host, query);
+    state.settingsPageCloseAction = () => closeAgentConsoleSettingsPage(host);
+    dismissBackgroundPanels(state as any);
+    buildAgentConsoleSettingsRows(host);
+    state.syncDerivedInputFocus();
+}
+
+export function closeAgentConsoleSettingsPage(host: AgentConsoleSettingsCenterHost): void {
+    const state = host.state;
+    state.settingsPageOpen = false;
+    state.settingsPagePickAction = undefined;
+    state.settingsPageResetAction = undefined;
+    state.settingsPageSectionAction = undefined;
+    state.settingsPageQueryAction = undefined;
+    state.settingsPageCloseAction = undefined;
     state.syncDerivedInputFocus();
 }
 
@@ -186,19 +239,33 @@ const AGENT_CONSOLE_SETTINGS_CLOSING_ROWS = new Set([
 export async function applySettingsCenterSelection(host: AgentConsoleSettingsCenterHost, id?: string): Promise<void> {
     const state = host.state;
     const rowId = id || state.settingsCenterRows?.[state.settingsCenterIndex]?.id;
-    const field = rowId ? fieldById(rowId) : undefined;
+    await applySettingsCenterRow(host, rowId, false);
+}
+
+async function applySettingsCenterRow(
+    host: AgentConsoleSettingsCenterHost,
+    id?: string,
+    keepPageOpen = false
+): Promise<void> {
+    const state = host.state;
+    const field = id ? fieldById(id) : undefined;
     if (!field) {
         return;
     }
     if (AGENT_CONSOLE_SETTINGS_CLOSING_ROWS.has(field.id)) {
-        closeAgentConsoleSettings(host);
+        // Rows that open their own picker must not sit behind a full page.
+        if (keepPageOpen) {
+            closeAgentConsoleSettingsPage(host);
+        } else {
+            closeAgentConsoleSettings(host);
+        }
     }
     try {
         await field.apply(host);
     } catch (error: any) {
         host.notify(error?.message || String(error));
     }
-    if (state.settingsCenterOpen) {
+    if (state.settingsCenterOpen || state.settingsPageOpen) {
         buildAgentConsoleSettingsRows(host);
         state.syncDerivedInputFocus();
     }
@@ -209,6 +276,12 @@ export async function resetSettingsCenterSelection(host: AgentConsoleSettingsCen
     const field = state.settingsCenterRows?.[state.settingsCenterIndex]
         ? fieldById(state.settingsCenterRows[state.settingsCenterIndex].id)
         : undefined;
+    await resetSettingsCenterRow(host, field?.id);
+}
+
+async function resetSettingsCenterRow(host: AgentConsoleSettingsCenterHost, id?: string): Promise<void> {
+    const state = host.state;
+    const field = id ? fieldById(id) : undefined;
     if (!field?.reset) {
         host.notify(settingsCenterLabel(host.translator, 'agent.menu.settings.resetUnavailable', 'This setting has no default to restore.'));
         return;
@@ -218,7 +291,7 @@ export async function resetSettingsCenterSelection(host: AgentConsoleSettingsCen
     } catch (error: any) {
         host.notify(error?.message || String(error));
     }
-    if (state.settingsCenterOpen) {
+    if (state.settingsCenterOpen || state.settingsPageOpen) {
         buildAgentConsoleSettingsRows(host);
         state.syncDerivedInputFocus();
     }

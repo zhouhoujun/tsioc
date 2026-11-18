@@ -146,7 +146,6 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
         AgentConsoleTextOverlayPanelComponent,
         AgentConsolePendingQuestionPanelComponent,
         AgentConsoleSettingsCenterPanelComponent,
-        AgentConsoleSettingsCenterPanelComponent,
             AgentConsoleMessageLineComponent,
         AgentConsoleRoutedTokensComponent,
         AgentConsoleRoutedLineComponent,

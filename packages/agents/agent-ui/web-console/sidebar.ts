@@ -25,6 +25,8 @@ export interface AgentConsoleWebSidebarHost {
     loadCounts?(): Promise<{ work: number; inbox: number }>;
     /** Optional: reload the console session index (terminal-created sessions). */
     refreshSessions?(): Promise<void> | void;
+    /** Browser settings page (falls back to the `/settings` overlay). */
+    openSettingsPage?(): Promise<void> | void;
 }
 
 export interface AgentConsoleWebSidebarHandle {
@@ -47,7 +49,8 @@ const SESSION_LIMIT = 200;
  * (opencode-style finders): the project picker filters by label/workspace, the
  * session finder filters by title/id/workspace/project and groups the result by
  * activity date. Detail dialogs stay in the console (`/agents`, `/work`,
- * `/inbox`, `/settings`); the sidebar only mirrors state and routes clicks.
+ * `/inbox`); settings opens the browser page when the host provides one, and
+ * the sidebar only mirrors state and routes clicks.
  * Refreshes are event-driven (tab strip and agent badge mutations), never
  * timers.
  */
@@ -155,7 +158,12 @@ export function createWebSidebar(host: AgentConsoleWebSidebarHost): AgentConsole
     // ── Footer actions ──────────────────────────────────────────────────────
     const actions = doc.createElement('div');
     actions.className = 'agent-web-sidebar-actions';
-    const action = (command: string, key: string, fallback: string): { button: HTMLButtonElement; count: HTMLElement } => {
+    const action = (
+        command: string,
+        key: string,
+        fallback: string,
+        run?: () => Promise<void> | void
+    ): { button: HTMLButtonElement; count: HTMLElement } => {
         const button = doc.createElement('button');
         button.type = 'button';
         button.className = 'agent-web-sidebar-action';
@@ -167,13 +175,14 @@ export function createWebSidebar(host: AgentConsoleWebSidebarHost): AgentConsole
         count.hidden = true;
         button.append(name, count);
         button.addEventListener('click', () => {
-            void Promise.resolve(host.runCommand(command)).then(() => refreshCounts());
+            const handled = run ? run() : host.runCommand(command);
+            void Promise.resolve(handled).then(() => refreshCounts());
         });
         return { button, count };
     };
     const workAction = action('/work', 'work', 'Work');
     const inboxAction = action('/inbox', 'inbox', 'Inbox');
-    const settingsAction = action('/settings', 'settings', 'Settings');
+    const settingsAction = action('/settings', 'settings', 'Settings', host.openSettingsPage);
     actions.append(workAction.button, inboxAction.button, settingsAction.button);
     const renderCounts = (counts: { work: number; inbox: number }): void => {
         workAction.count.textContent = counts.work > 0 ? String(counts.work) : '';
