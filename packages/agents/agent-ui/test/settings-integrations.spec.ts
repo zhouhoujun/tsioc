@@ -2,17 +2,21 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { activateAgentConsoleMcpTool, manageAgentConsolePlugins } from '../src/AgentConsoleSettingsIntegrationActions';
 import { describeAgentConsoleWorkspaceTrust, trustAgentConsoleWorkspace } from '../src/AgentConsoleSettingsWorkspaceTrust';
+import { showAgentConsoleHooksDetail, showAgentConsolePluginDetail, showAgentConsoleSkillsDetail } from '../src/AgentConsoleSettingsDetailViews';
 
 function createHost(overrides: any = {}): any {
     const calls: any[] = [];
     const notifications: string[] = [];
+    const overlays: Array<{ title: string; lines: string[] }> = [];
     const queued = [...(overrides.selectQueue || [])];
     return {
         calls,
         notifications,
+        overlays,
         translator: undefined,
         state: {
             sessionId: 's1',
+            openTextOverlay: (title: string, lines: string[]) => { overlays.push({ title, lines }); },
             tools: [
                 { name: 'mcp.fs.read', active: false },
                 { name: 'mcp.fs.write', active: true }
@@ -108,5 +112,61 @@ export class AgentConsoleSettingsIntegrationsTest {
         expect(trusted.has('/w')).toEqual(true);
         expect(describeAgentConsoleWorkspaceTrust(host)).toEqual('trusted');
         expect(host.notifications[host.notifications.length - 1]).toContain('/w');
+    }
+
+    @Test('skills open a scrollable detail overlay with a back link')
+    async skillsDetail() {
+        const host = createHost({ selectQueue: ['code-review'] });
+        host.invokeTool = async (name: string, input: any) => {
+            host.calls.push({ name, input });
+            if (name === 'skill_list') {
+                return { skills: [{ id: 'code-review', title: 'Code review', summary: 'review diffs', category: 'code' }] };
+            }
+            if (name === 'read_skill') {
+                return { skill: { id: 'code-review', title: 'Code review', summary: 'review diffs', source: 'builtin' } };
+            }
+            return {};
+        };
+        await showAgentConsoleSkillsDetail(host);
+        expect(host.overlays.length).toEqual(1);
+        expect(host.overlays[0].title).toContain('code-review');
+        expect(host.overlays[0].lines.join('\n')).toContain('Code review');
+    }
+
+    @Test('hooks render their registered stages in the detail overlay')
+    async hooksDetail() {
+        const host = createHost();
+        host.appRpc = {
+            request: async (method: string) => {
+                host.calls.push({ method });
+                return [{ stage: 'beforeTurn', commands: ['npm test'], functions: [] }];
+            }
+        };
+        await showAgentConsoleHooksDetail(host);
+        expect(host.overlays.length).toEqual(1);
+        expect(host.overlays[0].lines.join('\n')).toContain('beforeTurn');
+        expect(host.overlays[0].lines.join('\n')).toContain('npm test');
+    }
+
+    @Test('hooks detail reports when nothing is registered')
+    async hooksEmpty() {
+        const host = createHost();
+        host.runtime = { getHookSummary: () => [] };
+        await showAgentConsoleHooksDetail(host);
+        expect(host.overlays).toEqual([]);
+        expect(host.notifications[0]).toBeTruthy();
+    }
+
+    @Test('plugin detail inspects contributions before opening the overlay')
+    async pluginDetail() {
+        const host = createHost();
+        host.invokeTool = async (name: string, input: any) => {
+            host.calls.push({ name, input });
+            return { plugin: { id: 'p1', manifest: { name: 'Demo', description: 'demo plugin' } }, contributions: { skills: 1 } };
+        };
+        await showAgentConsolePluginDetail(host, { id: 'p1', manifest: { name: 'Demo' } });
+        expect(host.calls[0]).toEqual({ name: 'plugins', input: { action: 'inspect', id: 'p1' } });
+        expect(host.overlays[0].title).toEqual('Demo');
+        expect(host.overlays[0].lines.join('\n')).toContain('Demo');
     }
 }

@@ -4740,3 +4740,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   便于跨分区查找；settings-center 14 passing。
 - 修复 MCP 激活行未在打开选择器前关闭设置页（会叠加浮层）；新增回归用例（选择器打开后页面已关闭），settings-center 15 passing。
 - 补全「打开弹窗的行」清单：`workspaceTrust`、`approvalTimeout` 先关闭设置页再打开选择器；静态审计确认全部 dialog 行都在关闭集合内。
+- Integrations 详情改为内联浮层（`AgentConsoleSettingsDetailViews`）：
+  - Skills：列表 → `read_skill` → `textOverlay`（可返回列表）；
+  - Hooks：RPC/runtime 摘要 → `textOverlay`；无注册时提示；
+  - Plugins inspect：`plugins inspect` 的 manifest/contributions → `textOverlay`。
+  不再把详情塞进命令输出历史；settings-integrations 9 passing，相关套件 134 passing。

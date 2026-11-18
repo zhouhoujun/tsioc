@@ -1,5 +1,6 @@
 import { formatAgentUiNotice } from './agent-ui.i18n';
 import { settingsCenterLabel, type AgentConsoleSettingsHost } from './AgentConsoleSettingsSchema';
+import { showAgentConsolePluginDetail } from './AgentConsoleSettingsDetailViews';
 
 /** Host surface the integration actions need on top of the settings schema. */
 export interface AgentConsoleIntegrationHost extends AgentConsoleSettingsHost {
@@ -55,7 +56,7 @@ export async function manageAgentConsolePlugins(host: AgentConsoleIntegrationHos
     if (!action) return;
     try {
         if (action === 'inspect') {
-            await host.runPluginsCommand(picked);
+            await showAgentConsolePluginDetail(host, plugin);
             return;
         }
         if (action === 'activate') {

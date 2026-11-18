@@ -1,6 +1,7 @@
 import { formatAgentUiLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import { activateAgentConsoleMcpTool, manageAgentConsolePlugins } from './AgentConsoleSettingsIntegrationActions';
 import { describeAgentConsoleWorkspaceTrust, trustAgentConsoleWorkspace } from './AgentConsoleSettingsWorkspaceTrust';
+import { showAgentConsoleHooksDetail, showAgentConsoleSkillsDetail } from './AgentConsoleSettingsDetailViews';
 
 /**
  * Settings center schema.
@@ -349,9 +350,9 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
     actionRow('plugins', 'integrations', 'agent.menu.settings.fieldPlugins', 'Plugins', 'agent.menu.settings.fieldPluginsDescription', 'inspect, activate or remove plugins', 'workspace', 'none',
         host => manageAgentConsolePlugins(host), () => '', ['/plugins']),
     actionRow('skills', 'integrations', 'agent.menu.settings.fieldSkills', 'Skills', 'agent.menu.settings.fieldSkillsDescription', 'browse installed skills', 'workspace', 'none',
-        host => host.runSkillsCommand(''), () => '', ['/skills']),
+        host => showAgentConsoleSkillsDetail(host), () => '', ['/skills']),
     actionRow('hooks', 'integrations', 'agent.menu.settings.fieldHooks', 'Hooks', 'agent.menu.settings.fieldHooksDescription', 'registered lifecycle hooks', 'workspace', 'none',
-        host => host.runHooksCommand(), () => '', ['/hooks']),
+        host => showAgentConsoleHooksDetail(host), () => '', ['/hooks']),
 
     // Keybinds
     actionRow('keybindsOpen', 'keybinds', 'agent.menu.settings.keybindsTitle', 'Keybinds', 'agent.menu.settings.keybindsListDescription', 'list, record or reset key bindings', 'workspace', 'immediate',
