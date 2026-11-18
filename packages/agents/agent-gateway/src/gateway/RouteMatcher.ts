@@ -1,4 +1,5 @@
-import { HttpMethod, GatewayRoute } from '../contracts/GatewayRoute';
+import { GatewayRouter } from '@tsdi/gateway-kit';
+import { GatewayRoute } from '../contracts/GatewayRoute';
 
 interface MatchedRoute {
     route: GatewayRoute;
@@ -6,59 +7,29 @@ interface MatchedRoute {
 }
 
 /**
- * Path pattern matching with :param and * wildcard support.
+ * Agent gateway route matcher.
+ *
+ * Matching (specificity, `:param`, `*`, method and explicit priority) is shared
+ * with the microservice gateway through `@tsdi/gateway-kit`; this class keeps
+ * the historical registration API used by the gateway bootstrap.
  */
 export class RouteMatcher {
-    private readonly routes: GatewayRoute[] = [];
+    private readonly router = new GatewayRouter<GatewayRoute>();
 
     add(route: GatewayRoute): void {
-        this.routes.push(route);
+        this.router.add(route as any);
     }
 
     addMany(routes: GatewayRoute[]): void {
-        for (const r of routes) this.routes.push(r);
-    }
-
-    match(method: string, pathname: string): MatchedRoute | null {
-        const normalized = pathname.replace(/\/$/, '') || '/';
-        // Try exact match first, then pattern match
-        for (const route of this.routes) {
-            if (route.method !== method.toUpperCase()) continue;
-            const result = this.matchPath(route.path, normalized);
-            if (result) return { route, params: result };
-        }
-        return null;
-    }
-
-    private matchPath(pattern: string, pathname: string): Record<string, string> | null {
-        if (pattern === '/*') return {}; // catch-all
-
-        const patternParts = pattern.split('/');
-        const pathParts = pathname.split('/');
-
-        if (patternParts.length !== pathParts.length && !pattern.includes('*')) return null;
-
-        const params: Record<string, string> = {};
-
-        for (let i = 0; i < patternParts.length; i++) {
-            const pp = patternParts[i];
-            const pv = pathParts[i];
-
-            if (pp === '*') {
-                params['*'] = pathParts.slice(i).join('/');
-                return params;
-            }
-            if (pp.startsWith(':')) {
-                params[pp.slice(1)] = pv;
-            } else if (pp !== pv) {
-                return null;
-            }
-        }
-
-        return params;
+        this.router.addMany(routes as any);
     }
 
     getRoutes(): GatewayRoute[] {
-        return [...this.routes];
+        return this.router.getRoutes() as unknown as GatewayRoute[];
+    }
+
+    match(method: string, pathname: string): MatchedRoute | null {
+        const matched = this.router.match(method, pathname);
+        return matched ? { route: matched.route as unknown as GatewayRoute, params: matched.params } : null;
     }
 }

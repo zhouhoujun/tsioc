@@ -110,7 +110,12 @@ export function createEventStream(): EventStream;   // SSE + WS adapters share t
 
 ## 4. 迁移阶段
 
-### P0 —— 提取 `@tsdi/gateway-kit`，agent-gateway 接入（行为不变）
+### P0 —— 提取 `@tsdi/gateway-kit`，agent-gateway 接入（行为不变）—— 已完成（2026-11-18）
+
+落地内容：`packages/gateway-kit`（router/rate-limit/error/cors/static/openapi，8 个单测）；
+agent-gateway 的 `RouteMatcher`、`RateLimiter`、`OpenApiDocument`、`GatewayServer`
+（CORS/静态/错误响应）改为复用 kit；`GatewayServer` 由 265 行降至约 190 行，
+agent-gateway 全套 **388 passing** 不变。
 
 - 新包：`packages/gateway-kit`（不依赖 agent / microservices / http-microservice）。
 - 从 `microservices/gateway` 泛化 `GatewayRouteTable`（保留 specificity/参数语义）为 kit `GatewayRouter`；

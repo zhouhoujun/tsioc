@@ -4759,3 +4759,13 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 测试：agent 1079 passing（新增共享模块 3 例）、agent-cli hooks/cli 87 passing、gateway hooks-rpc 3 passing、
   settings-integrations 9 passing。
 - gateway `app.capabilities` 补登 `hooks.list` / `hooks.trust.list`（客户端能力发现）；hooks-rpc 4 passing。
+
+## 2026-11-18 Gateway P0：抽出 @tsdi/gateway-kit 并与 agent-gateway 共享
+- 新包 `packages/gateway-kit`：`GatewayRouter`（specificity/参数/通配/优先级）、`GatewayRateLimiter`
+  （固定窗口 + 可选共享 store + Retry-After 秒数）、错误 envelope（legacy/envelope 双形态）、
+  CORS、静态文件（目录 index + 路径穿越防护）、OpenAPI 生成；8 个单测。
+- agent-gateway 接入：RouteMatcher/RateLimiter/OpenApiDocument/GatewayServer（CORS/静态/404/403/500）复用 kit；
+  RateLimiter 保留“构造后替换 config 再读取”的兼容行为；GatewayServer 265→约 190 行。
+- 验证：gateway-kit 8 passing、agent-gateway 388 passing（gateway-server/openapi 不变）、
+  tsc、package-deps、source-size、diff-check 通过。
+- P1 待做：microservices/gateway 内部复用 kit（route table/rate limit/error），保持其 140+ 测试与上游管线不变。
