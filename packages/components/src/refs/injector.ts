@@ -125,6 +125,7 @@ export class NodeInjector extends ContextInjector {
         const visited = new Set<RNode>();
         // Collect refs to destroy AFTER walking the full tree (avoid re-entrant mutation)
         const compsToDestroy: ComponentRef<any>[] = [];
+        const directivesToDestroy: DirectiveRef<any>[] = [];
 
         const walk = (node: RNode | null | undefined): void => {
             if (!node || visited.has(node)) {
@@ -138,6 +139,10 @@ export class NodeInjector extends ContextInjector {
             }
 
             this.componentRefs.delete(node);
+            const directives = this.directiveRefs.get(node);
+            if (directives?.length) {
+                directivesToDestroy.push(...directives);
+            }
             this.directiveRefs.delete(node);
             this.templateRefs.delete(node);
             this.elementRefs.delete(node);
@@ -164,8 +169,22 @@ export class NodeInjector extends ContextInjector {
 
         nodes.forEach(node => walk(node));
 
+        // Directives own structural views (v-if/v-for rows). Their onDestroy
+        // clears those views; skipping it left every re-rendered template's
+        // rows attached to the long-lived injector.
+        for (const directive of directivesToDestroy) {
+            try { (directive as any).destroy?.(); } catch { /* ignore cleanup errors */ }
+        }
+
         for (const comp of compsToDestroy) {
-            try { comp.hostView?.destroy(); } catch { /* ignore cleanup errors */ }
+            try {
+                // Destroy the ref (not only its host view): the ref owns the
+                // component instance, its query lists, the directives of the
+                // component template and the node injector. Destroying only the
+                // host view skipped directive onDestroy hooks, so v-for/v-if
+                // views inside a removed component were never cleared.
+                (comp as any).destroy?.();
+            } catch { /* ignore cleanup errors */ }
         }
     }
 
