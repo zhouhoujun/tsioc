@@ -33,7 +33,7 @@ export class GatewayKitRouterTest {
         router.add({ method: 'GET', path: '/a/:x', handler: 'first' });
         router.add({ method: 'GET', path: '/a/:y', handler: 'second' });
         router.add({ method: 'POST', path: '/a/:x', handler: 'post' });
-        router.add({ method: 'GET', path: '/a/b', handler: 'boosted', priority: 10 });
+        router.add({ method: 'GET', path: '/a/b', handler: 'boosted', priority: 100000 });
 
         expect(router.match('GET', '/a/b')?.route.handler).toEqual('boosted');
         expect(router.match('GET', '/a/c')?.route.handler).toEqual('first');

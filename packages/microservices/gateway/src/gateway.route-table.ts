@@ -143,8 +143,9 @@ export class GatewayRouteTable {
             handler: compiled.resolved,
             methods: compiled.methods ? [...compiled.methods] : undefined,
             hosts: compiled.hosts ? [...compiled.hosts] : undefined,
-            // Use this table's historical specificity so ordering is identical.
-            priority: compiled.specificity,
+            // Encode this table's historical ordering (specificity desc, then
+            // declaration order) into the kit priority so ties stay stable.
+            priority: compiled.specificity * 100000 - compiled.index,
             matchMode: 'prefix'
         };
     }
