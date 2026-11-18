@@ -1,5 +1,5 @@
 {
-  "packages/activities/src/visual/components/workflow-designer-preview.component.ts": 2059,
+  "packages/activities/src/visual/components/workflow-designer-preview.component.ts": 2027,
   "packages/activities/src/visual/components/workflow-designer.component.ts": 1882,
   "packages/agents/agent-cli/src/config.ts": 564,
   "packages/agents/agent-gateway/src/api/SessionHandler.ts": 701,

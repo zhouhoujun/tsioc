@@ -38,6 +38,21 @@ export interface DynamicFormOption {
     disabled?: boolean;
 }
 
+/**
+ * Trailing control action declared by the field schema.
+ *
+ * The form only renders the button and reports the id back to the host; the
+ * host owns what the action does (open a dialog, create a referenced record,
+ * clear a value). This keeps the schema JSON-friendly.
+ */
+export interface DynamicFormFieldAction {
+    id: string;
+    label: string;
+    icon?: string;
+    /** Accessible name/tooltip; falls back to `label`. */
+    title?: string;
+}
+
 export type DynamicFormRuleType =
     | 'required'
     | 'requiredTrue'
@@ -120,6 +135,8 @@ export interface DynamicFormField {
     rules?: Array<DynamicFormRule | DynamicFormRuleType>;
     /** Per-field message overrides, keyed by rule/error name. */
     errorMessages?: Record<string, string>;
+    /** Trailing action buttons (reference pickers, inline editors). */
+    actions?: DynamicFormFieldAction[];
     /** Render the field only when another control matches the condition. */
     visibleWhen?: DynamicFormCondition;
     /** Keep the value in the form model but do not render it. */

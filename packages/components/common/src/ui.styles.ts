@@ -7,7 +7,51 @@ import { installStyleSheet } from './styles';
  */
 export const UI_STYLE_ID = 'tsdi-ui-styles';
 
+/**
+ * Shared motion tokens and interaction feedback for the generic primitives.
+ *
+ * Exported separately so hosts that own their own skin (for example the
+ * workflow designer) can include motion without adopting the full default
+ * sheet. Every rule degrades to no motion under `prefers-reduced-motion`.
+ */
+export const UI_MOTION_CSS = `
+:root {
+    --ui-motion-fast: 120ms;
+    --ui-motion-normal: 180ms;
+    --ui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ui-focus-ring: var(--ui-tone-border, currentColor);
+}
+.ui-button,
+.ui-toolbar-item {
+    transition:
+        background var(--ui-motion-fast) var(--ui-ease),
+        border-color var(--ui-motion-fast) var(--ui-ease),
+        color var(--ui-motion-fast) var(--ui-ease),
+        transform var(--ui-motion-fast) var(--ui-ease);
+}
+.ui-button:active:not(:disabled),
+.ui-toolbar-item:active:not(:disabled) {
+    transform: translateY(1px);
+}
+.ui-button:focus-visible,
+.ui-toolbar-item:focus-visible {
+    outline: 2px solid var(--ui-focus-ring);
+    outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .ui-button,
+    .ui-toolbar-item {
+        transition: none;
+    }
+    .ui-button:active:not(:disabled),
+    .ui-toolbar-item:active:not(:disabled) {
+        transform: none;
+    }
+}
+`;
+
 export const UI_CSS = `
+${UI_MOTION_CSS}
 .ui-button {
     display: inline-flex;
     align-items: center;
@@ -181,6 +225,8 @@ export const UI_CSS = `
     cursor: pointer;
 }
 .ui-toolbar-item:hover { border-color: var(--ui-border, currentColor); }
+.ui-toolbar-item.is-solid { background: var(--ui-tone-bg, transparent); color: var(--ui-tone-fg, inherit); border-color: transparent; }
+.ui-toolbar-item.is-outline { border-color: var(--ui-tone-border, currentColor); }
 .ui-toolbar-item.is-active { border-color: var(--ui-tone-border, currentColor); color: var(--ui-tone-fg, inherit); }
 .ui-toolbar-item.is-danger { color: var(--ui-danger-fg, inherit); }
 .ui-toolbar-item.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }

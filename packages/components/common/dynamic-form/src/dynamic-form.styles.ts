@@ -109,6 +109,54 @@ export const DYNAMIC_FORM_CSS = `
     color: var(--df-primary);
 }
 
+.df-field-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.df-field-action {
+    border: 1px solid var(--df-border, #cbd5e1);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--df-text-hint);
+    font-size: 11px;
+    line-height: 1;
+    padding: 1px 5px;
+    cursor: pointer;
+    transition: background var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        border-color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        color var(--ui-motion-fast, 120ms) var(--ui-ease, ease);
+}
+
+.df-field-action:hover:not(:disabled) {
+    border-color: var(--df-primary);
+    color: var(--df-primary);
+}
+
+.df-field-action:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.df-field-action:focus-visible {
+    outline: 2px solid var(--df-primary);
+    outline-offset: 1px;
+}
+
+.df-field-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .df-field-action {
+        transition: none;
+    }
+    .df-field-action:active:not(:disabled) {
+        transform: none;
+    }
+}
+
 .df-input-wrap {
     position: relative;
     display: flex;

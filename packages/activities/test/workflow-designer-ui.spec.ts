@@ -75,6 +75,71 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelectorAll('.workspace-splitter').length).toBe(3);
     });
 
+    it('creates a broker from the inspector picker and guards deletion of referenced config', async () => {
+        const out = ref.instance.designer.addNode('mqtt-out', { x: 320, y: 120 }, {
+            config: { topic: 'sensors/temp' }
+        })!;
+        ref.instance.designer.selectNode(out.id);
+        await flush();
+
+        const field = root.querySelector('[data-field-key="mqtt"]');
+        expect(field).toBeTruthy();
+        const create = field.querySelector('[data-field-action="create"]') as any;
+        expect(create).toBeTruthy();
+        create.click();
+        await flush();
+
+        const dialog = ref.instance.preview!.configDialog!;
+        expect(dialog).toBeTruthy();
+        expect(dialog.showConfigDialog).toBe(true);
+        expect(dialog.configType).toBe('mqtt');
+        expect(root.querySelector('.workflow-config-dialog')).toBeTruthy();
+
+        dialog.name = 'prod';
+        dialog.values = { url: 'mqtt://prod:1883' };
+        dialog.save();
+        await flush();
+
+        expect(dialog.showConfigDialog).toBe(false);
+        const broker = ref.instance.designer.nodes.find(node => node.type === 'mqtt')!;
+        expect(broker).toBeTruthy();
+        expect(broker.name).toBe('prod');
+        expect(broker.config?.url).toBe('mqtt://prod:1883');
+        expect(ref.instance.designer.nodes.find(node => node.id === out.id)?.config?.mqtt).toBe(broker.id);
+
+        // One undo removes both the broker and the binding.
+        ref.instance.designer.undo();
+        await flush();
+        expect(ref.instance.designer.nodes.some(node => node.type === 'mqtt')).toBe(false);
+        expect(ref.instance.designer.nodes.find(node => node.id === out.id)?.config?.mqtt).toBeFalsy();
+
+        // Re-create it through the same dialog and check the delete guard.
+        dialog.open({ type: 'mqtt', bindTo: { nodeId: out.id, key: 'mqtt' } });
+        await flush();
+        dialog.name = 'prod';
+        dialog.values = { url: 'mqtt://prod:1883' };
+        dialog.save();
+        await flush();
+        const created = ref.instance.designer.nodes.find(node => node.type === 'mqtt')!;
+
+        ref.instance.designer.selectNode(created.id);
+        await flush();
+        ref.instance.preview!.requestDeleteNodes([created.id]);
+        await flush();
+        expect(dialog.showDeleteConfirm).toBe(true);
+        expect(dialog.deleteConfirmRefs).toEqual([{ id: created.id, name: 'prod', count: 1 }]);
+        expect(root.querySelector('.workflow-delete-confirm')).toBeTruthy();
+        // Nothing is deleted until the confirmation is accepted.
+        expect(ref.instance.designer.nodes.some(node => node.id === created.id)).toBe(true);
+
+        dialog.confirmDelete();
+        await flush();
+        expect(dialog.showDeleteConfirm).toBe(false);
+        expect(ref.instance.designer.nodes.some(node => node.id === created.id)).toBe(false);
+        expect(ref.instance.designer.nodes.find(node => node.id === out.id)?.config?.mqtt).toBe(created.id);
+        expect(ref.instance.designer.validate().errors.join(' ')).toContain(created.id);
+    });
+
     it('installs the shared stylesheet instead of inline styles', () => {
         const style = doc.getElementById('tsdi-workflow-designer-styles');
         expect(style).toBeTruthy();
@@ -2140,4 +2205,5 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.execution?.nodeStates.task_2.status).toBe('success');
         expect(ref.instance.toolbarModel.canResume).toBe(false);
     });
+
 });

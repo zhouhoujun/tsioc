@@ -155,11 +155,30 @@ export interface WorkflowWebSocketSendRequest {
     tls?: WorkflowTlsOptions;
 }
 
-/** Config nodes (`tls`, `mqtt`) available to the runtime by id. */
-export function configNodeMap(definition: VisualWorkflowDefinition | undefined): Record<string, any> {
+let fallbackConfigRegistry: WorkflowNodeRegistry | undefined;
+
+/**
+ * Config nodes available to the runtime by id.
+ *
+ * The set is driven by `WorkflowNodeDefinition.configNode` rather than a
+ * hardcoded type list, so plugin-provided config nodes resolve the same way.
+ * Hosts that own a registry (the service, the inbound runner) pass their own
+ * predicate; the fallback uses the built-in definitions.
+ */
+export function configNodeMap(
+    definition: VisualWorkflowDefinition | undefined,
+    isConfigNode?: (type: string) => boolean
+): Record<string, any> {
+    if (!isConfigNode) {
+        if (!fallbackConfigRegistry) {
+            fallbackConfigRegistry = new WorkflowNodeRegistry();
+        }
+        const registry = fallbackConfigRegistry;
+        isConfigNode = (type: string) => registry.get(type)?.configNode === true;
+    }
     const nodes: Record<string, any> = {};
     (definition?.nodes || []).forEach(node => {
-        if (node && node.id && (node.type === 'tls' || node.type === 'mqtt')) {
+        if (node && node.id && isConfigNode!(node.type)) {
             nodes[node.id] = node.config || {};
         }
     });
@@ -595,7 +614,7 @@ export class VisualWorkflowService {
             fileWrite: this.fileWriter
                 ? (request: WorkflowFileWriteRequest) => this.fileWriter!(request)
                 : undefined,
-            configNodes: configNodeMap(definition)
+            configNodes: configNodeMap(definition, type => this.registry.get(type)?.configNode === true)
         };
     }
 

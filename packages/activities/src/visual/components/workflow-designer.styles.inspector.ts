@@ -175,6 +175,49 @@ export const WORKFLOW_DESIGNER_INSPECTOR_CSS = `/* Inspector */
     cursor: pointer;
 }
 
+/* Reference picker buttons (create / edit) are primary affordances, so they
+   stay visible instead of appearing on hover like the reset control. */
+.workflow-field-action {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 11px;
+    line-height: 1;
+    padding: 1px 6px;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.workflow-field-action:hover:not(:disabled) {
+    border-color: #2563eb;
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.workflow-field-action:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.workflow-field-action:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+.workflow-field-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .workflow-field-action {
+        transition: none;
+    }
+    .workflow-field-action:active:not(:disabled) {
+        transform: none;
+    }
+}
+
 .workflow-field:hover .workflow-field-reset,
 .workflow-field:focus-within .workflow-field-reset {
     opacity: 1;

@@ -217,4 +217,44 @@ export class DynamicFormTest {
         expect(invalid.valid).toBe(false);
         expect(invalid.errors?.host).toBeTruthy();
     }
+
+    @Test('reports schema-declared field actions to the host')
+    async reportsFieldActions() {
+        const form = createForm({
+            fields: [
+                {
+                    key: 'broker',
+                    type: 'select',
+                    label: 'Broker',
+                    options: [{ label: 'prod', value: 'mqtt_1' }],
+                    actions: [
+                        { id: 'create', label: '＋', title: 'New broker' },
+                        { id: 'edit', label: '✎' }
+                    ]
+                },
+                {
+                    key: 'locked',
+                    type: 'text',
+                    label: 'Locked',
+                    disabled: true,
+                    actions: [{ id: 'create', label: '＋' }]
+                }
+            ]
+        });
+        await flush();
+
+        const calls: Array<[string, string]> = [];
+        form.actionAction = (field, actionId) => calls.push([field.key, actionId]);
+
+        const broker = form.schema.fields[0];
+        expect(broker.actions?.map(action => action.id)).toEqual(['create', 'edit']);
+        form.runFieldAction(broker, broker.actions![0]);
+        form.runFieldAction(broker, broker.actions![1]);
+        expect(calls).toEqual([['broker', 'create'], ['broker', 'edit']]);
+
+        // Disabled fields must not dispatch actions.
+        const locked = form.schema.fields[1];
+        form.runFieldAction(locked, locked.actions![0]);
+        expect(calls.length).toBe(2);
+    }
 }

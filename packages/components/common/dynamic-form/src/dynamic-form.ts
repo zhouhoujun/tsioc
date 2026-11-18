@@ -4,6 +4,7 @@ import {
     DynamicFormChange,
     DynamicFormCondition,
     DynamicFormField,
+    DynamicFormFieldAction,
     DynamicFormOption,
     DynamicFormResult,
     DynamicFormSchema,
@@ -93,6 +94,8 @@ export class DynamicFormComponent implements OnDestroy {
     @Attribute() messages: Record<string, string> = {};
     @Attribute() changeAction?: (change: DynamicFormChange) => void;
     @Attribute() blurAction?: (field: DynamicFormField) => void;
+    /** Host callback for `field.actions` buttons. */
+    @Attribute() actionAction?: (field: DynamicFormField, actionId: string) => void;
     @Attribute() submitAction?: (result: DynamicFormResult) => void;
     @Attribute() resetAction?: (value: Record<string, any>) => void;
     @Attribute() validityAction?: (valid: boolean, errors: Record<string, any> | null) => void;
@@ -468,6 +471,14 @@ export class DynamicFormComponent implements OnDestroy {
 
     blurField(field: DynamicFormField): void {
         this.blurAction?.(field);
+    }
+
+    /** Report a schema-declared field action (`field.actions`) to the host. */
+    runFieldAction(field: DynamicFormField, action: DynamicFormFieldAction): void {
+        if (!action || field.disabled || field.readonly) {
+            return;
+        }
+        this.actionAction?.(field, String(action.id));
     }
 
     // -----------------------------------------------------------------

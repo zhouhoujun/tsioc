@@ -14,6 +14,13 @@ export interface ToolbarItem {
     disabled?: boolean;
     active?: boolean;
     danger?: boolean;
+    /** Native tooltip; defaults to `label`. */
+    title?: string;
+    /** Accessible name; defaults to `label`/`title`. */
+    ariaLabel?: string;
+    /** Extra class for host-owned skins (for example `workflow-btn`). */
+    className?: string;
+    variant?: 'solid' | 'outline' | 'ghost';
 }
 
 interface ToolbarViewItem {
@@ -23,6 +30,8 @@ interface ToolbarViewItem {
     label: string;
     icon: string;
     iconGlyph: string;
+    title: string;
+    ariaLabel: string;
     disabled: boolean;
     active: boolean;
     className: string;
@@ -43,6 +52,8 @@ interface ToolbarViewItem {
             <button class="{{entry.className}}" type="button"
                 v-if="entry.kind !== 'separator'"
                 [disabled]="entry.disabled"
+                title="{{entry.title || entry.label || entry.ariaLabel}}"
+                aria-label="{{entry.ariaLabel || entry.label || entry.title}}"
                 aria-pressed="{{entry.active}}"
                 @click="pick(entry)">
                 <icon v-if="entry.icon" [name]="entry.icon" [glyph]="entry.iconGlyph || entry.icon" size="sm"></icon>
@@ -74,6 +85,7 @@ export class ToolbarComponent {
     get viewItems(): ToolbarViewItem[] {
         return (Array.isArray(this.items) ? this.items : []).map((item, index) => {
             const kind: ToolbarKind = item?.kind === 'separator' ? 'separator' : 'item';
+            const variant = item?.variant === 'solid' || item?.variant === 'outline' ? item.variant : '';
             return {
                 key: String(item?.id ?? index),
                 index,
@@ -81,14 +93,18 @@ export class ToolbarComponent {
                 label: String(item?.label ?? ''),
                 icon: String(item?.icon ?? ''),
                 iconGlyph: String(item?.iconGlyph ?? ''),
+                title: String(item?.title ?? ''),
+                ariaLabel: String(item?.ariaLabel ?? ''),
                 disabled: item?.disabled === true,
                 active: item?.active === true,
                 className: [
                     'ui-toolbar-item',
                     `is-${normalizeTone(item?.tone)}`,
+                    variant ? `is-${variant}` : '',
                     item?.active ? 'is-active' : '',
                     item?.danger ? 'is-danger' : '',
-                    item?.disabled ? 'is-disabled' : ''
+                    item?.disabled ? 'is-disabled' : '',
+                    String(item?.className ?? '')
                 ].filter(Boolean).join(' ')
             };
         });

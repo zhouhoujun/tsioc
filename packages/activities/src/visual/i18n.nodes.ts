@@ -1488,6 +1488,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             }
         },
         "group": {
+            "broker-override": "Broker override",
             "reliability": "Reliability",
             "options": "Options",
             "delay": "Delay",
@@ -3054,6 +3055,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             }
         },
         "group": {
+            "broker-override": "Broker 覆盖",
             "reliability": "可靠性",
             "options": "选项",
             "delay": "延迟",

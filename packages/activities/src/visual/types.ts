@@ -635,6 +635,25 @@ export type WorkflowConfigRule = DynamicFormRule;
 export type WorkflowConfigFieldCondition = DynamicFormCondition;
 
 /**
+ * Reference picker metadata for a config field.
+ *
+ * The stored value stays a plain string id, so documents, version snapshots
+ * and the runtime are unchanged; only the editing surface becomes a picker.
+ */
+export interface WorkflowReferenceSpec {
+    /** What the field points at. */
+    kind: 'config-node' | 'node' | 'workflow' | 'link' | 'credential';
+    /** Config-node resource filter when `kind === 'config-node'`. */
+    resource?: string;
+    /** Allow several ids (comma separated in the stored value). */
+    multiple?: boolean;
+    /** Offer an inline "create" action. */
+    create?: boolean;
+    /** Offer an inline "edit" action for the referenced record. */
+    edit?: boolean;
+}
+
+/**
  * 节点配置字段定义
  * Node config field definition.
  */
@@ -650,6 +669,8 @@ export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'la
     group?: string;
     /** Only render the field when the referenced config value matches. */
     visibleWhen?: WorkflowConfigFieldCondition;
+    /** Render as a reference picker bound to another node/record id. */
+    reference?: WorkflowReferenceSpec;
 }
 
 /**
@@ -724,6 +745,15 @@ export interface WorkflowNodeDefinition {
     pluginId?: string;
     /** The node can only execute on a host that has installed its plugin. */
     requiresServer?: boolean;
+    /**
+     * Configuration node: a shared resource (broker, TLS profile, credential
+     * bundle) that is referenced by other nodes instead of being executed.
+     * Config nodes are still stored in `definition.nodes`, so documents stay
+     * backwards compatible; the editor treats them as a separate collection.
+     */
+    configNode?: boolean;
+    /** Resource name exposed to reference pickers (`mqtt-broker`, `tls`, ...). */
+    resource?: string;
     /** Executor supplied by a workflow plugin. */
     execute?: (node: IVisualWorkflowNode, context: ActivityContext) => Promise<ActivityResult> | ActivityResult;
 }
@@ -906,6 +936,24 @@ export interface WorkflowCanvasModel {
  * 检查器字段视图
  * Inspector field view model.
  */
+/**
+ * 引用字段视图
+ * Resolved reference picker for the inspector.
+ */
+export interface WorkflowInspectorReferenceView {
+    kind: 'config-node' | 'node' | 'workflow' | 'link' | 'credential';
+    resource?: string;
+    multiple?: boolean;
+    /** Stored id(s) no longer resolve to an existing record. */
+    missing: boolean;
+    /** Picker entries, including placeholders for unresolved ids. */
+    options: Array<{ label: string; value: string; description?: string }>;
+    /** Human label for the current value (falls back to the raw id). */
+    label: string;
+    /** Trailing actions offered by the host (create/edit). */
+    actions: Array<{ id: string; label: string; title?: string }>;
+}
+
 export interface WorkflowInspectorFieldView {
     key: string;
     label: string;
@@ -915,7 +963,7 @@ export interface WorkflowInspectorFieldView {
     value: any;
     displayValue: string;
     checked: boolean;
-    options: Array<{ label: string; value: string }>;
+    options: Array<{ label: string; value: string; description?: string }>;
     placeholder: string;
     description: string;
     group: string;
@@ -943,6 +991,10 @@ export interface WorkflowInspectorFieldView {
     inputClass?: string;
     fieldClass?: string;
     language?: string;
+    /** Reference picker metadata (the current value stays a plain id string). */
+    reference?: WorkflowInspectorReferenceView;
+    /** Trailing field actions forwarded to the shared dynamic form. */
+    actions?: Array<{ id: string; label: string; title?: string }>;
     hasDefault: boolean;
     /** Value written back when the field is reset (already formatted for the control). */
     resetValue: any;

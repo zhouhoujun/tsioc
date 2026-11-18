@@ -419,6 +419,83 @@ export class WorkflowDesigner {
         return node;
     }
 
+    /**
+     * Ids of nodes that reference `nodeId` through a declared reference field
+     * (`WorkflowConfigField.reference`). Used to warn before deleting a shared
+     * config node instead of failing at run time.
+     */
+    nodeReferences(nodeId: string): string[] {
+        if (!nodeId) {
+            return [];
+        }
+        const result: string[] = [];
+        for (const node of this.definition.nodes) {
+            if (node.id === nodeId) {
+                continue;
+            }
+            const fields = this.registry.get(node.type)?.fields || [];
+            for (const field of fields) {
+                if (!field.reference) {
+                    continue;
+                }
+                const ids = String(node.config?.[field.key] ?? '')
+                    .split(',')
+                    .map(item => item.trim());
+                if (ids.includes(nodeId)) {
+                    result.push(node.id);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Create a config node and, optionally, bind it into a reference field of
+     * another node. Both edits land in a single history entry so one undo puts
+     * the document back exactly as it was.
+     */
+    createConfigNode(
+        type: IVisualWorkflowNode['type'],
+        position: NodePosition,
+        options: {
+            name?: string;
+            config?: Record<string, any>;
+            bindTo?: { nodeId: string; key: string };
+        } = {}
+    ): IVisualWorkflowNode | undefined {
+        const definition = this.registry.get(type);
+        if (!definition) {
+            this.setError('workflow.error.unknownType', { type });
+            return undefined;
+        }
+        const node = this.registry.createNode(type, position, {
+            id: this.nextNodeId(type),
+            name: options.name,
+            config: options.config
+        });
+        const bindTo = options.bindTo;
+        const target = bindTo
+            ? this.definition.nodes.find(item => item.id === bindTo.nodeId)
+            : undefined;
+        this.commit(current => ({
+            ...current,
+            nodes: [
+                ...current.nodes.map(item => (
+                    target && item.id === target.id
+                        ? { ...item, config: { ...(item.config || {}), [bindTo!.key]: node.id } }
+                        : item
+                )),
+                node
+            ],
+            metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
+        }));
+        this.selection = { nodeId: target ? target.id : node.id };
+        this.clearError();
+        this.setMessage('workflow.message.added', { name: node.name });
+        return node;
+    }
+
     removeNode(nodeId: string): boolean {
         if (!this.definition.nodes.some(node => node.id === nodeId)) {
             return false;

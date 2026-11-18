@@ -18,6 +18,7 @@ export interface DynamicFormClasses {
     label: string;
     required: string;
     reset: string;
+    fieldAction: string;
     inputUnit: string;
     checkboxRow: string;
     options: string;
@@ -55,6 +56,7 @@ export function createDynamicFormClasses(classPrefix: string | undefined): Dynam
         label: p('field-label'),
         required: p('field-required'),
         reset: p('field-reset'),
+        fieldAction: p('field-action'),
         inputUnit: p('input-unit'),
         checkboxRow: p('checkbox-row'),
         options: p('options'),

@@ -2,6 +2,7 @@ import type { DynamicFormField } from '@tsdi/components/common/dynamic-form';
 import { validateDynamicFormValues } from '@tsdi/components/common/dynamic-form';
 import { WorkflowConfigField, WorkflowConfigFieldCondition, VisualWorkflowDefinition } from './types';
 import type { WorkflowNodeRegistry } from './node-registry';
+import { referenceIds } from './workflow-config-nodes';
 
 export interface WorkflowConfigIssue {
     nodeId: string;
@@ -106,6 +107,73 @@ export function validateWorkflowConfigs(
                 }
             });
         }
+        // Reference fields store plain ids. Report ids that no longer resolve
+        // so a stale broker/TLS pick is visible while editing, not at run time.
+        for (const field of nodeDefinition.fields) {
+            const spec = field.reference;
+            if (!spec) {
+                continue;
+            }
+            const ids = referenceIds(config[field.key]);
+            if (!ids.length) {
+                continue;
+            }
+            const missing = ids.filter(id => !resolveReference(id, spec, definition, registry));
+            if (!missing.length) {
+                continue;
+            }
+            issues.push({
+                nodeId: node.id,
+                nodeName: node.name || node.id,
+                fieldKey: field.key,
+                label: field.label || field.key,
+                message: `Reference not found: ${missing.join(', ')}. Pick an existing ${referenceNoun(spec)} or create one.`
+            });
+        }
     }
     return issues;
+}
+
+/** A stored id resolves when a matching record exists in the document. */
+function resolveReference(
+    id: string,
+    spec: NonNullable<WorkflowConfigField['reference']>,
+    definition: VisualWorkflowDefinition,
+    registry: WorkflowNodeRegistry
+): boolean {
+    const nodes = definition?.nodes || [];
+    if (spec.kind === 'config-node') {
+        const node = nodes.find(item => item.id === id);
+        if (!node) {
+            return false;
+        }
+        const target = registry.get(node.type);
+        return target?.configNode === true
+            && (!spec.resource || (target.resource || '') === spec.resource);
+    }
+    if (spec.kind === 'node') {
+        return nodes.some(item => item.id === id);
+    }
+    if (spec.kind === 'link') {
+        return nodes.some(item => item.type === 'link'
+            && String(item.config?.links || '').split(',').map(name => name.trim()).includes(id));
+    }
+    // Workflow and credential references are resolved by the host store.
+    return true;
+}
+
+function referenceNoun(spec: NonNullable<WorkflowConfigField['reference']>): string {
+    if (spec.kind === 'config-node') {
+        return spec.resource === 'tls' ? 'TLS config' : 'configuration node';
+    }
+    if (spec.kind === 'workflow') {
+        return 'workflow';
+    }
+    if (spec.kind === 'link') {
+        return 'link';
+    }
+    if (spec.kind === 'credential') {
+        return 'credential';
+    }
+    return 'node';
 }

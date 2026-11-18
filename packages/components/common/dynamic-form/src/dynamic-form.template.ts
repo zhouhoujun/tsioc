@@ -11,6 +11,11 @@ export const DYNAMIC_FORM_TEMPLATE = `
                     <div [class]="classes.labelRow" v-if="field.type !== 'hidden'">
                         <label [class]="classes.label">{{fieldLabel(field)}}<span [class]="classes.required" v-if="isRequired(field)">*</span></label>
                         <span class="df-field-actions">
+                        <button [class]="classes.fieldAction" v-for="action in field.actions" type="button"
+                            data-field-action="{{action.id}}"
+                            title="{{action.title || action.label}}" aria-label="{{action.title || action.label}}"
+                            [disabled]="field.disabled || field.readonly"
+                            @click="runFieldAction(field, action)">{{action.label}}</button>
                         <button [class]="classes.jsonMode" v-if="field.type === 'json'" type="button"
                             @click="toggleJsonMode(field)">{{isJsonRaw(field) ? (schema.jsonFieldsLabel || 'Fields') : (schema.jsonTextLabel || 'JSON')}}</button>
                         <button [class]="classes.reset" v-if="canReset(field)" type="button"

@@ -673,4 +673,20 @@ export const WORKFLOW_DESIGNER_THEME_CSS = `/* Themes */
 .workflow-field-mode:hover {
     color: #2563eb;
 }
+
+.workflow-designer[data-theme="dark"] .workflow-field-action,
+.workflow-designer[data-theme="solarized"] .workflow-field-action,
+.workflow-designer[data-theme="high-contrast"] .workflow-field-action {
+    border-color: var(--wf-theme-border);
+    background: var(--wf-theme-surface-alt);
+    color: var(--wf-theme-muted);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-field-action:hover:not(:disabled),
+.workflow-designer[data-theme="solarized"] .workflow-field-action:hover:not(:disabled),
+.workflow-designer[data-theme="high-contrast"] .workflow-field-action:hover:not(:disabled) {
+    border-color: var(--wf-theme-primary);
+    background: var(--wf-theme-surface);
+    color: var(--wf-theme-primary);
+}
 `;

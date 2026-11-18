@@ -43,6 +43,8 @@ import {
     workflowNodeFrame
 } from '../workflow-view-models';
 import { WorkflowCanvasPointerPayload } from './workflow-canvas';
+import { WorkflowConfigDialogComponent } from './workflow-config-dialog.component';
+import { WorkflowGroupSettingsComponent } from './workflow-group-settings.component';
 import { WorkflowInspectorComponent } from './workflow-inspector';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 
@@ -98,6 +100,7 @@ function sameModelKey(previous: any[], next: any[]): boolean {
             <workspace-right>
                 <workflow-inspector #inspector :model="inspectorModel" :locale="locale"
                     :changeAction="inspectorChange" :restoreAction="inspectorRestore"
+                    :actionAction="inspectorAction"
                     :codeSuggestions="codeSuggestions"></workflow-inspector>
             </workspace-right>
             <workspace-bottom>
@@ -159,32 +162,11 @@ function sameModelKey(previous: any[], next: any[]): boolean {
                 </div>
             </div>
         </div>
-        <div class="workflow-publish workflow-group-settings" v-if="showGroupSettings">
-            <div class="workflow-publish-panel workflow-group-settings-panel">
-                <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{groupSettingsTitle}}</span>
-                    <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="closeLabel" [title]="closeLabel" @click="closeGroupSettings">✕</button>
-                </div>
-                <label class="workflow-group-field">
-                    <span>{{groupNameLabel}}</span>
-                    <input class="workflow-group-name-input" type="text"
-                        [value]="groupSettingsName" @input="groupNameInput"
-                        @keydown="groupSettingsKey" />
-                </label>
-                <label class="workflow-group-field">
-                    <span>{{groupColorLabel}}</span>
-                    <input class="workflow-group-color-input" type="color"
-                        [value]="groupSettingsColor" @input="groupColorInput" />
-                </label>
-                <div class="workflow-publish-error" v-if="groupSettingsError">{{groupSettingsError}}</div>
-                <div class="workflow-publish-actions">
-                    <button class="workflow-btn" type="button" @click="closeGroupSettings">{{cancelLabel}}</button>
-                    <button class="workflow-btn workflow-btn-primary workflow-group-save" type="button"
-                        @click="saveGroupSettings">{{saveLabel}}</button>
-                </div>
-            </div>
-        </div>
+        <workflow-group-settings #groupSettings :designer="designer" :locale="locale"
+            :notifyAction="notifyDesignerChange"></workflow-group-settings>
+        <workflow-config-dialog #configDialog :designer="designer" :registry="registry"
+            :locale="locale" :positionAction="nextConfigPosition"
+            :notifyAction="notifyDesignerChange"></workflow-config-dialog>
         <div class="workflow-node-menu-backdrop" v-if="showNodeMenu" @mousedown="closeNodeMenu"
             @contextmenu="closeNodeMenu"></div>
         <div class="workflow-node-menu" v-if="showNodeMenu" [style]="nodeMenuStyle">
@@ -256,11 +238,6 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     quickAddQuery = '';
     quickAddIndex = 0;
     quickAddSpliceId = '';
-    showGroupSettings = false;
-    groupSettingsId = '';
-    groupSettingsName = '';
-    groupSettingsColor = '#60a5fa';
-    groupSettingsError = '';
     nodeMenuId = '';
     nodeMenuX = 0;
     nodeMenuY = 0;
@@ -269,6 +246,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     @ViewChild('workspaceLayout', WorkspaceLayoutComponent) workspaceLayout?: WorkspaceLayoutComponent;
     /** Inspector exposes a flush hook so commands never run on stale edits. */
     @ViewChild(WorkflowInspectorComponent) inspector?: WorkflowInspectorComponent;
+    @ViewChild(WorkflowConfigDialogComponent) configDialog?: WorkflowConfigDialogComponent;
+    @ViewChild(WorkflowGroupSettingsComponent) groupSettings?: WorkflowGroupSettingsComponent;
     jsonText = '';
     jsonError = '';
     private selfRef?: WorkflowDesignerPreviewComponent;
@@ -302,6 +281,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         execution: any;
         locale: string;
         revision: number;
+        configNodes: string;
         model: ReturnType<typeof buildWorkflowInspectorModel>;
     };
     @NoReactive() private statusModelCache?: { key: any[]; model: ReturnType<typeof buildWorkflowStatusModel> };
@@ -687,54 +667,24 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         this.notifyChange();
     }
 
-    get groupSettingsTitle(): string { return this.t('groupSettings', 'Group settings'); }
-    get groupNameLabel(): string { return this.t('groupName', 'Group name'); }
-    get groupColorLabel(): string { return this.t('groupColor', 'Color'); }
-    get cancelLabel(): string { return this.t('cancel', 'Cancel'); }
-    get saveLabel(): string { return this.t('save', 'Save'); }
+    // ---------------------------------------------------------------------
+    // Configuration nodes (shared brokers / TLS profiles)
+    // ---------------------------------------------------------------------
 
-    closeGroupSettings(): void {
-        this.showGroupSettings = false;
-        this.groupSettingsError = '';
+    readonly inspectorAction = (key: string, actionId: string, nodeId?: string): void => {
+        this.configDialog?.handleAction(key, actionId, nodeId);
+    };
+
+    /** Delete guard: config nodes still referenced by other nodes ask first. */
+    requestDeleteNodes(nodeIds?: string[]): void {
+        this.configDialog?.requestDelete(nodeIds);
+    }
+
+    readonly nextConfigPosition = (): NodePosition => this.nextAddPosition();
+
+    readonly notifyDesignerChange = (): void => {
         this.notifyChange();
-    }
-
-    groupNameInput(event: any): void {
-        this.groupSettingsName = String(event?.target?.value ?? '');
-        this.groupSettingsError = '';
-    }
-
-    groupColorInput(event: any): void {
-        this.groupSettingsColor = String(event?.target?.value ?? '#60a5fa');
-    }
-
-    groupSettingsKey(event: any): void {
-        const key = String(event?.key || '');
-        if (key === 'Enter') {
-            event?.preventDefault?.();
-            this.saveGroupSettings();
-        } else if (key === 'Escape') {
-            event?.preventDefault?.();
-            this.closeGroupSettings();
-        }
-    }
-
-    saveGroupSettings(): void {
-        if (!this.designer || !this.groupSettingsId) {
-            return;
-        }
-        const saved = this.designer.updateGroup(this.groupSettingsId, {
-            name: this.groupSettingsName,
-            color: this.groupSettingsColor
-        });
-        if (!saved) {
-            this.groupSettingsError = this.t('groupNameRequired', 'Enter a group name');
-            return;
-        }
-        this.showGroupSettings = false;
-        this.groupSettingsError = '';
-        this.notifyChange();
-    }
+    };
 
     get selectionCount(): number {
         return this.designer?.selectedNodeIds.length || 0;
@@ -842,7 +792,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     deleteMenuNode(): void {
         if (this.nodeMenuId) {
             this.designer.selectNode(this.nodeMenuId);
-            this.designer.deleteSelection();
+            this.showNodeMenu = false;
+            this.requestDeleteNodes([this.nodeMenuId]);
+            return;
         }
         this.showNodeMenu = false;
         this.notifyChange();
@@ -1016,17 +968,37 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         const type = node?.type || '';
         const config = node?.config;
         const disabled = !!node?.disabled;
+        // Reference pickers resolve against sibling config nodes, so the cache
+        // key must follow their id/name/summary even when the selected node's
+        // own config object is unchanged.
+        const configNodes = this.configNodesSignature(node);
         const cache = this.inspectorModelCache;
         if (cache && cache.nodeId === nodeId && cache.name === name && cache.description === description
             && cache.type === type && cache.config === config && cache.disabled === disabled
-            && cache.execution === execution && cache.locale === locale && cache.revision === revision) {
+            && cache.execution === execution && cache.locale === locale && cache.revision === revision
+            && cache.configNodes === configNodes) {
             return cache.model;
         }
         const model = buildWorkflowInspectorModel(this.designer, this.registry, locale, this.translator);
         this.inspectorModelCache = {
-            nodeId, name, description, type, config, disabled, execution, locale, revision, model
+            nodeId, name, description, type, config, disabled, execution, locale, revision, configNodes, model
         };
         return model;
+    }
+
+    /** Stable signature of the config nodes a reference field could pick. */
+    private configNodesSignature(node: any): string {
+        if (!node) {
+            return '';
+        }
+        const fields = this.registry.get(node.type)?.fields || [];
+        if (!fields.some(field => field.reference)) {
+            return '';
+        }
+        return (this.designer.definition.nodes || [])
+            .filter(item => this.registry.get(item.type)?.configNode === true)
+            .map(item => `${item.id}:${item.name || ''}:${JSON.stringify(item.config || {})}`)
+            .join('|');
     }
 
     /**
@@ -1308,7 +1280,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 self.designer.redo();
                 break;
             case 'delete':
-                self.designer.deleteSelection();
+                self.requestDeleteNodes();
                 break;
             case 'zoom-in':
                 self.designer.zoomIn();
@@ -1771,11 +1743,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
                 const group = (designer.definition.groups || [])
                     .find(item => item.id === payload.groupId);
                 if (group) {
-                    self.groupSettingsId = group.id;
-                    self.groupSettingsName = group.name;
-                    self.groupSettingsColor = group.color || '#60a5fa';
-                    self.groupSettingsError = '';
-                    self.showGroupSettings = true;
+                    self.groupSettings?.open(group.id);
                     self.notifyChange();
                 }
                 break;
@@ -1993,7 +1961,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     private handleKey(payload: WorkflowCanvasPointerPayload): void {
         const key = payload.key || '';
         if (key === 'Delete' || key === 'Backspace') {
-            this.designer.deleteSelection();
+            this.requestDeleteNodes();
             return;
         }
         if (key === 'Escape') {

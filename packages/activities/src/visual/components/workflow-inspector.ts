@@ -58,7 +58,10 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
             field.group || '',
             field.placeholder || '',
             field.description || '',
-            field.hasDefault ? 1 : 0
+            field.hasDefault ? 1 : 0,
+            field.options.map(option => `${option.value}=${option.label}`).join('\u0001'),
+            field.reference ? `${field.reference.kind}:${field.reference.missing ? 1 : 0}` : '',
+            (field.actions || []).map(action => action.id).join(',')
         ])
     ]);
 }
@@ -72,7 +75,14 @@ function schemaKey(model: WorkflowInspectorModel): string {
     if (!model.hasSelection) {
         return 'empty';
     }
-    return model.fields.map(field => `${field.key}:${field.type}:${field.typed ? 1 : 0}:${field.visible === false ? 0 : 1}`).join('|');
+    return model.fields.map(field => [
+        field.key,
+        field.type,
+        field.typed ? 1 : 0,
+        field.visible === false ? 0 : 1,
+        field.options.map(option => `${option.value}=${option.label}`).join(','),
+        (field.actions || []).map(action => action.id).join(',')
+    ].join(':')).join('|');
 }
 
 /**
@@ -103,7 +113,8 @@ function schemaKey(model: WorkflowInspectorModel): string {
             </div>
             <dynamic-form #nodeForm classPrefix="workflow" :schema="formSchema" :value="formValue"
                 :contextKey="model.nodeId" :messages="formMessages" :emptyLabel="noPropertiesLabel"
-                :resetFieldLabel="resetFieldLabel" :changeAction="formChange" :blurAction="formBlur">
+                :resetFieldLabel="resetFieldLabel" :changeAction="formChange" :blurAction="formBlur"
+                :actionAction="formAction">
             </dynamic-form>
             <div class="workflow-no-fields" v-if="!model.fields.length">{{noPropertiesLabel}}</div>
             <div class="workflow-result" v-if="model.resultText">
@@ -130,6 +141,8 @@ export class WorkflowInspectorComponent implements OnDestroy {
      */
     @Attribute() textChangeDelay = 300;
     @Attribute() changeAction?: (key: string, value: any, type: string, nodeId?: string) => void;
+    /** Field-level actions (`field.actions`) forwarded from the inspector model. */
+    @Attribute() actionAction?: (key: string, actionId: string, nodeId?: string) => void;
     @Attribute() restoreAction?: () => void;
     @Attribute() codeSuggestions: string[] = [];
 
@@ -322,6 +335,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
             fieldClass: field.fieldClass,
             language: field.language,
             suggestions: this.codeSuggestions,
+            actions: field.actions,
             hidden: field.visible === false
         };
     }
@@ -395,6 +409,12 @@ export class WorkflowInspectorComponent implements OnDestroy {
         // name, then immediately toggle the node).
         this.flushPendingChange();
         this.changeAction?.(change.key, change.value, type, this._model.nodeId);
+    };
+
+    readonly formAction = (field: DynamicFormField, actionId: string): void => {
+        // Reference actions open dialogs; never leave a half-typed value behind.
+        this.flushPendingChange();
+        this.actionAction?.(field.key, actionId, this._model.nodeId);
     };
 
     readonly formBlur = (): void => {

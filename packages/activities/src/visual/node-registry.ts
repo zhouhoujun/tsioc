@@ -741,6 +741,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         label: 'MQTT broker',
         description: 'Shared MQTT broker connection for MQTT nodes',
         category: 'advanced',
+        configNode: true,
+        resource: 'mqtt-broker',
         icon: '◉',
         color: '#6d28d9',
         textColor: '#ffffff',
@@ -751,7 +753,13 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto' }),
             configField({ key: 'username', label: 'Username', type: 'text' }),
             configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' }),
-            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node for client certificates.' }),
+            configField({
+                key: 'tls',
+                label: 'TLS config',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'tls', create: true, edit: true },
+                description: 'Client certificates for mqtts:// connections.'
+            }),
             configField({ key: 'keepalive', label: 'Keepalive', type: 'number', defaultValue: 60, min: 0, step: 10, unit: 's' })
         ],
         defaultConfig: { url: 'mqtt://localhost:1883', keepalive: 60 }
@@ -767,16 +775,22 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Message')],
         fields: [
-            configField({ key: 'mqtt', label: 'Broker config', type: 'text', placeholder: 'mqtt_1', description: 'Id of an MQTT broker config node shared by every MQTT node; inline settings below override it.' }),
-            configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', description: 'Inline override; prefer an MQTT broker config node.' }),
+            configField({
+                key: 'mqtt',
+                label: 'Broker',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'mqtt-broker', create: true, edit: true },
+                description: 'Pick a shared broker. Leave empty only when the inline override below is filled in.'
+            }),
             configField({ key: 'topic', label: 'Topic', type: 'text', required: true, defaultValue: '#', placeholder: 'sensors/+/temp', description: 'Subscription filter; + and # wildcards are supported.' }),
             configField({ key: 'qos', label: 'QoS', type: 'select', defaultValue: '0', options: [
                 { label: '0', value: '0' },
                 { label: '1', value: '1' }
             ] }),
-            configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto' }),
-            configField({ key: 'username', label: 'Username', type: 'text' }),
-            configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' })
+            configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', group: 'Broker override', description: 'Inline override used when no shared broker is selected.' }),
+            configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto', group: 'Broker override' }),
+            configField({ key: 'username', label: 'Username', type: 'text', group: 'Broker override' }),
+            configField({ key: 'password', label: 'Password', type: 'password', group: 'Broker override', description: 'Use {{credential:name}} to read a stored credential.' })
         ],
         defaultConfig: { url: '', topic: '#', qos: '0' }
     },
@@ -848,6 +862,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         label: 'TLS config',
         description: 'Reusable TLS options for outbound nodes',
         category: 'advanced',
+        configNode: true,
+        resource: 'tls',
         icon: '⛨',
         color: '#475569',
         textColor: '#ffffff',
@@ -876,8 +892,13 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'mqtt', label: 'Broker config', type: 'text', placeholder: 'mqtt_1', description: 'Id of an MQTT broker config node shared by every MQTT node; inline settings below override it.' }),
-            configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', description: 'Inline override; prefer an MQTT broker config node.' }),
+            configField({
+                key: 'mqtt',
+                label: 'Broker',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'mqtt-broker', create: true, edit: true },
+                description: 'Pick a shared broker. Leave empty only when the inline override below is filled in.'
+            }),
             configField({ key: 'topic', label: 'Topic', type: 'text', required: true, placeholder: 'sensors/temp' }),
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
             configField({ key: 'qos', label: 'QoS', type: 'select', defaultValue: '0', options: [
@@ -885,10 +906,18 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 { label: '1', value: '1' }
             ] }),
             configField({ key: 'retain', label: 'Retain', type: 'boolean', defaultValue: false }),
-            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; mqtts:// already encrypts the connection.' }),
-            configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto' }),
-            configField({ key: 'username', label: 'Username', type: 'text' }),
-            configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' })
+            configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', group: 'Broker override', description: 'Inline override used when no shared broker is selected.' }),
+            configField({
+                key: 'tls',
+                label: 'TLS config',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'tls', create: true, edit: true },
+                group: 'Broker override',
+                description: 'Client certificates; mqtts:// already encrypts the connection.'
+            }),
+            configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto', group: 'Broker override' }),
+            configField({ key: 'username', label: 'Username', type: 'text', group: 'Broker override' }),
+            configField({ key: 'password', label: 'Password', type: 'password', group: 'Broker override', description: 'Use {{credential:name}} to read a stored credential.' })
         ],
         defaultConfig: { url: '', topic: '', payload: 'payload', qos: '0', retain: false }
     },

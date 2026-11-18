@@ -49,6 +49,8 @@ import {
     WorkflowVersionPanelComponent,
     WorkflowDesignerComponent,
     WorkflowDesignerPreviewComponent,
+    WorkflowConfigDialogComponent,
+    WorkflowGroupSettingsComponent,
     WorkflowManagementMenuComponent
 } from './visual';
 
@@ -138,6 +140,8 @@ import {
         WorkflowMetricsPanelComponent,
         WorkflowVersionPanelComponent,
         WorkflowDesignerPreviewComponent,
+        WorkflowConfigDialogComponent,
+        WorkflowGroupSettingsComponent,
         WorkflowManagementMenuComponent,
         WorkflowDesignerComponent
     ],
@@ -200,6 +204,8 @@ import {
         WorkflowAuditPanelComponent,
         WorkflowVersionPanelComponent,
         WorkflowDesignerPreviewComponent,
+        WorkflowConfigDialogComponent,
+        WorkflowGroupSettingsComponent,
         WorkflowManagementMenuComponent,
         WorkflowDesignerComponent,
         ActivityInterceptorService,

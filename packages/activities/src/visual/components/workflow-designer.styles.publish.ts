@@ -234,6 +234,31 @@ export const WORKFLOW_DESIGNER_PUBLISH_CSS = `/* Rename workflow dialog */
     width: min(380px, 100%);
 }
 
+.workflow-config-dialog-panel {
+    width: min(460px, 100%);
+    max-height: min(80vh, 640px);
+    overflow: auto;
+}
+
+.workflow-delete-confirm-panel {
+    width: min(420px, 100%);
+}
+
+.workflow-delete-confirm-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0 10px;
+    font-size: 12px;
+    color: var(--wf-theme-text, #0f172a);
+}
+
+.workflow-delete-confirm-line {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--wf-theme-surface-alt, rgba(148, 163, 184, 0.12));
+}
+
 .workflow-group-field {
     display: flex;
     flex-direction: column;

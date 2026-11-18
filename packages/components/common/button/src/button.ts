@@ -20,7 +20,7 @@ export type ButtonVariant = 'solid' | 'outline' | 'ghost';
         aria-busy="{{loading}}"
         aria-pressed="{{pressed}}"
         @click="activate">
-        <icon v-if="icon" [name]="icon" [glyph]="iconGlyph || icon" [size]="iconSize"></icon>
+        <icon v-if="icon" [class]="iconClass" [name]="icon" [glyph]="iconGlyph || icon" [size]="iconSize"></icon>
         <span class="ui-button-label" v-if="label">{{loading && loadingLabel ? loadingLabel : label}}</span>
         <v-content></v-content>
     </button>`
@@ -29,6 +29,8 @@ export class ButtonComponent {
     @Attribute() label = '';
     @Attribute() icon = '';
     @Attribute() iconGlyph = '';
+    /** Extra class on the leading icon (host skins that space icons themselves). */
+    @Attribute() iconClass = '';
     @Attribute() variant: ButtonVariant = 'ghost';
     @Attribute() type: 'button' | 'submit' | 'reset' = 'button';
     @Attribute() ariaLabel = '';
