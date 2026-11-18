@@ -1377,9 +1377,17 @@ describe('Workflow Designer UI', () => {
 
         const back = root.querySelector('.workflow-global-bar [data-menu-id="back-subflow"]') as any;
         expect(back).toBeTruthy();
-        back.click();
+
+        // The global bar shows the parent › child trail; clicking the parent
+        // returns without opening the menu.
+        const breadcrumb = root.querySelector('.workflow-breadcrumb') as any;
+        expect(breadcrumb).toBeTruthy();
+        expect(breadcrumb.textContent).toContain('审批流程示例');
+        expect(breadcrumb.textContent).toContain('Child flow');
+        (breadcrumb.querySelector('.ui-breadcrumb-item[role="link"]') as any).click();
         await waitFor(() => ref.instance.designer.definition.id === parentId);
         expect(ref.instance.designer.definition.id).toBe(parentId);
+        expect(root.querySelector('.workflow-breadcrumb')).toBeFalsy();
     });
 
     it('saves and reopens definitions through the workflow library', async () => {
@@ -1584,9 +1592,10 @@ describe('Workflow Designer UI', () => {
         ref.instance.store = store;
 
         (root.querySelector('.workflow-global-bar [data-menu-id="audit"]') as any).click();
-        await waitFor(() => !!root.querySelector('.workflow-audit-row'));
+        await waitFor(() => !!root.querySelector('.workflow-audit .ui-data-table-row'));
 
-        expect(root.querySelectorAll('.workflow-audit-row').length).toBe(2);
+        // Entries render through the shared data table (row = one audit entry).
+        expect(root.querySelectorAll('.workflow-audit .ui-data-table-row').length).toBe(2);
         const text = root.querySelector('.workflow-audit')?.textContent || '';
         expect(text).toContain('publish');
         expect(text).toContain('save');

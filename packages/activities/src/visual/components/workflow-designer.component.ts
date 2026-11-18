@@ -48,6 +48,8 @@ interface WorkflowDocumentTab {
     <div class="workflow-designer" data-theme="{{themeName}}">
         <div class="workflow-global-bar">
             <tab-bar class="workflow-tabs" :source="workflowTabSource"></tab-bar>
+            <ui-breadcrumb class="workflow-breadcrumb" v-if="subflowTrail.length"
+                :items="subflowTrail" :action="openBreadcrumb"></ui-breadcrumb>
             <workflow-management-menu :model="toolbarModel" :locale="locale" :theme="themeName"
                 :action="toolbarAction" :themeChangeAction="themeSelectAction"
                 :localeChangeAction="changeLocale"></workflow-management-menu>
@@ -101,14 +103,9 @@ interface WorkflowDocumentTab {
                         [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeAudit">✕</button>
                 </div>
                 <div class="workflow-publish-error" v-if="auditError">{{auditError}}</div>
-                <div class="workflow-audit-list" v-if="auditItems.length">
-                    <div class="workflow-audit-row" v-for="entry in auditItems" data-audit-id="{{entry.id}}">
-                        <span class="workflow-audit-time">{{formatAuditTime(entry.at)}}</span>
-                        <span class="workflow-audit-action">{{entry.action}}</span>
-                        <span class="workflow-audit-workflow" v-if="entry.workflowId">{{entry.workflowId}}</span>
-                        <span class="workflow-audit-actor" v-if="entry.actor">{{entry.actor}}</span>
-                    </div>
-                </div>
+                <ui-data-table class="workflow-audit-list" v-if="auditItems.length"
+                    :columns="auditColumns" :rows="auditRows" rowKey="id" dense
+                    :ariaLabel="tr('audit', 'Audit log')"></ui-data-table>
                 <ui-empty class="workflow-audit-empty" v-else
                     icon="history" :title="tr('auditEmpty', 'No audit entries for this workflow.')"></ui-empty>
                 <div class="workflow-publish-actions">
@@ -224,14 +221,9 @@ interface WorkflowDocumentTab {
                         <span class="workflow-metrics-trend-failed" v-if="point.failed">{{point.failed}} failed</span>
                     </div>
                 </div>
-                <div class="workflow-metrics-nodes" v-if="metricsData && metricsData.nodes.length">
-                    <div class="workflow-metrics-node" v-for="node in (metricsData?.nodes || [])" data-node-id="{{node.nodeId}}">
-                        <span class="workflow-metrics-node-id">{{node.nodeId}}</span>
-                        <span>{{node.runs}} runs</span>
-                        <span v-if="node.failed">{{node.failed}} failed</span>
-                        <span>{{node.avgDurationMs}} ms</span>
-                    </div>
-                </div>
+                <ui-data-table class="workflow-metrics-nodes" v-if="metricsData && metricsData.nodes.length"
+                    :columns="metricsNodeColumns" :rows="metricsNodeRows" rowKey="nodeId" dense
+                    :ariaLabel="tr('metrics', 'Execution metrics')"></ui-data-table>
                 <div class="workflow-publish-actions">
                     <button class="workflow-btn" type="button" @click="closeMetrics">{{tr('close', 'Close')}}</button>
                 </div>
@@ -398,8 +390,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @NoReactive() private keyHandler?: (event: any) => void;
     @NoReactive() private documentRef?: any;
     @NoReactive() private actionBusUnsubscribe?: () => void;
-    /** Subflow tab -> parent workflow id; replaced (not mutated) on write. */
-    private subflowParents: Record<string, string> = {};
+    /** Subflow tab -> parent workflow; replaced (not mutated) on write. */
+    private subflowParents: Record<string, { id: string; name: string }> = {};
 
     readonly registry: WorkflowNodeRegistry;
     private readonly service?: VisualWorkflowService;
@@ -510,7 +502,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         // `subflowParents` is replaced on write, so this read is tracked and the
         // breadcrumb updates without a manual invalidation counter.
         const parent = this.subflowParents[this.designer?.definition.id];
-        return parent ? { ...model, subflowParent: parent } : model;
+        return parent ? { ...model, subflowParent: parent.name || parent.id } : model;
     }
 
     get workflowTabSource(): TabBarSource {
@@ -985,7 +977,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         if (action === 'back-subflow') {
             const parent = self.subflowParents[self.designer.definition.id];
             if (parent) {
-                void self.openWorkflowTab(parent);
+                void self.openWorkflowTab(parent.id);
             }
             return;
         }
@@ -1021,7 +1013,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
         const parent = self.designer?.definition.id;
         const opened = await self.openWorkflowTab(id);
         if (opened && parent && parent !== id) {
-            self.subflowParents = { ...self.subflowParents, [id]: parent };
+            const name = (self.workflowTabs.find(tab => tab.id === parent)?.designer?.definition?.name) || parent;
+            self.subflowParents = { ...self.subflowParents, [id]: { id: parent, name } };
         } else if (!opened) {
             self.designer.error = self.libraryError || self.t(
                 'notFound',
@@ -1303,6 +1296,63 @@ export class WorkflowDesignerComponent implements OnDestroy {
             this.credentialBusy = false;
         }
     }
+
+    get auditColumns(): Array<{ key: string; label: string }> {
+        return [
+            { key: 'time', label: this.t('time', 'Time') },
+            { key: 'action', label: this.t('action', 'Action') },
+            { key: 'workflow', label: this.t('workflow', 'Workflow') },
+            { key: 'actor', label: this.t('actor', 'Actor') }
+        ];
+    }
+
+    get auditRows(): Array<Record<string, any>> {
+        return (this.auditItems || []).map(entry => ({
+            id: entry.id,
+            time: this.formatAuditTime(entry.at),
+            action: entry.action,
+            workflow: entry.workflowId || '',
+            actor: entry.actor || ''
+        }));
+    }
+
+    get metricsNodeColumns(): Array<{ key: string; label: string; align?: 'left' | 'right' }> {
+        return [
+            { key: 'nodeId', label: this.t('node', 'Node') },
+            { key: 'runs', label: this.t('metricsRuns', 'Runs'), align: 'right' },
+            { key: 'failed', label: this.t('failed', 'Failed'), align: 'right' },
+            { key: 'avgDurationMs', label: this.t('metricsAvg', 'Average'), align: 'right' }
+        ];
+    }
+
+    get metricsNodeRows(): Array<Record<string, any>> {
+        return ((this.metricsData?.nodes || []) as any[]).map(node => ({
+            nodeId: node.nodeId,
+            runs: node.runs,
+            failed: node.failed || 0,
+            avgDurationMs: `${node.avgDurationMs} ms`
+        }));
+    }
+
+    /** Parent › current trail for subflow tabs. */
+    get subflowTrail(): Array<{ id?: string; label: string; disabled?: boolean }> {
+        const current = this.designer?.definition;
+        const parent = current ? this.subflowParents[current.id] : undefined;
+        if (!parent) {
+            return [];
+        }
+        return [
+            { id: parent.id, label: parent.name || parent.id },
+            { label: current.name || current.id, disabled: true }
+        ];
+    }
+
+    readonly openBreadcrumb = (item: { id?: string; label: string; disabled?: boolean }): void => {
+        const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (item?.id) {
+            void self.openWorkflowTab(item.id);
+        }
+    };
 
     get deploymentsTitle(): string { return this.t('deployments', 'Deployments'); }
     get deploymentsEmpty(): string { return this.t('deploymentsEmpty', 'No workflows are deployed.'); }

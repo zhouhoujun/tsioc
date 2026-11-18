@@ -83,6 +83,23 @@ export const WORKFLOW_DESIGNER_CSS = `
     border-bottom: 0;
 }
 
+.workflow-breadcrumb {
+    min-width: 0;
+    max-width: 320px;
+    overflow: hidden;
+    font-size: 11px;
+    color: var(--wf-theme-muted, #64748b);
+}
+
+.workflow-breadcrumb .ui-breadcrumb-item[role="link"] {
+    cursor: pointer;
+}
+
+.workflow-breadcrumb .ui-breadcrumb-item[aria-current="page"] {
+    color: var(--wf-theme-text, #0f172a);
+    cursor: default;
+}
+
 .workflow-management-menu {
     flex: 0 0 auto;
     display: flex;
@@ -607,38 +624,13 @@ export const WORKFLOW_DESIGNER_CSS = `
 }
 
 .workflow-audit-list {
+    /* ui-data-table owns the grid; keep the dialog's scroll budget. */
     max-height: 46vh;
     overflow: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.workflow-audit-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 6px;
-    border-bottom: 1px solid var(--wf-theme-border, #e2e8f0);
     font-size: 11px;
-    color: var(--wf-theme-muted, #64748b);
 }
 
-.workflow-audit-time {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.workflow-audit-action {
-    color: var(--wf-theme-text, #0f172a);
-    font-weight: 600;
-}
-
-.workflow-audit-workflow {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.workflow-audit-list .ui-data-table-cell:first-child {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -815,27 +807,10 @@ export const WORKFLOW_DESIGNER_CSS = `
 }
 
 .workflow-metrics-nodes {
+    /* ui-data-table owns the grid; keep the dialog's scroll budget. */
     max-height: 40vh;
     overflow: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.workflow-metrics-node {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 6px;
-    border-bottom: 1px solid var(--wf-theme-border, #e2e8f0);
     font-size: 11px;
-    color: var(--wf-theme-muted, #64748b);
-}
-
-.workflow-metrics-node-id {
-    flex: 1;
-    color: var(--wf-theme-text, #0f172a);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .workflow-metrics-error {

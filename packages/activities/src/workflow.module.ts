@@ -12,6 +12,8 @@ import { StatModule } from '@tsdi/components/common/stat';
 import { BadgeModule } from '@tsdi/components/common/badge';
 import { KeymapPanelModule } from '@tsdi/components/common/keymap';
 import { ProgressModule } from '@tsdi/components/common/progress';
+import { DataTableModule } from '@tsdi/components/common/data-table';
+import { BreadcrumbModule } from '@tsdi/components/common/breadcrumb';
 import { FormsModule } from '@tsdi/components/forms';
 import { RunAspect } from './aop/RunAspect';
 import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
@@ -68,6 +70,8 @@ import {
         BadgeModule,
         KeymapPanelModule,
         ProgressModule,
+        DataTableModule,
+        BreadcrumbModule,
         FormsModule,
         WorkflowDesignerI18nModule
     ],
