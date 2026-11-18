@@ -47,7 +47,7 @@ Rules this layer must keep (see the root `AGENTS.md`):
 | `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
-| `@tsdi/components/common/<widget>` | one widget package: `alert`, `dialog`, `dynamic-form`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `panel`, `select`, `status-list`, `tab-bar`, `tabs`, `toast` |
+| `@tsdi/components/common/<widget>` | one widget package: `alert`, `badge`, `breadcrumb`, `button`, `card`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `panel`, `progress`, `select`, `stat`, `status-list`, `tab-bar`, `tabs`, `toast` |
 
 ## Naming conventions
 
@@ -219,6 +219,14 @@ fields. Actions are callback attributes (`selectAction`, `closeAction`,
 | `markdown-table` / `markdown-code` | `MarkdownTableComponent` / `MarkdownModule` | Semantic table/code shells consumed by both renderers. Table cells are `MarkdownToken[]` + align; code lines are `MarkdownToken[][]` with tone classes. |
 | `dynamic-form` | `DynamicFormComponent` / `DynamicFormModule` | JSON-schema form with shared validation. See the main `@tsdi/components` README for the full schema, validation and host API. |
 | `icon` | `IconDirective` / `IconModule` | `<icon name="run" size="sm" label="…">` (or `icon` / `glyph`), registry lookups (`getIcon`, `resolveIcon`, `hasIcon`, `ICON_NAMES`), optional SVG helpers (`iconPathAttributes`, `iconGlyphText`). |
+| `ui-button` | `ButtonComponent` / `ButtonModule` | Renderer-neutral action button. `label`, `icon`, `iconGlyph`, `tone`, `size` (`xs`/`sm`/`md`/`lg`), `variant` (`solid`/`outline`/`ghost`), `disabled`, `loading`, `pressed`, `block`, `action`. |
+| `ui-badge` | `BadgeComponent` / `BadgeModule` | Status/count/filter pill. `label`, `icon`, `tone`, `size`, `variant`, `dot`, `active`, `disabled`, optional `action` (turns it into `role="button"`). |
+| `ui-card` | `CardComponent` / `CardModule` | Surface card with optional title/subtitle/meta and an `actions` projection slot. `tone`, `dense`, `divider`; default projection is the body. |
+| `ui-empty` | `EmptyStateComponent` / `EmptyStateModule` | Empty/search placeholder. `icon`, `title`, `hint`, `tone`, `actionLabel`, `action`; composes `ui-button` for the action. |
+| `ui-divider` | `DividerComponent` / `DividerModule` | Separator with optional label; `orientation` (`horizontal`/`vertical`), `fill` renders a terminal-safe text rule. |
+| `ui-stat` | `StatComponent` / `StatModule` | Compact metric tile. `label`, `value`, `hint`, `tone`, `trend` (`up`/`down`/`flat`), `trendLabel`. |
+| `ui-progress` | `ProgressComponent` / `ProgressModule` | Progress indicator with a text bar (`█`/`░`) plus `role="progressbar"`/`aria-*`. `value`, `max`, `width`, `label`, `showValue`, `indeterminate`, `tone`. |
+| `ui-breadcrumb` | `BreadcrumbComponent` / `BreadcrumbModule` | Flat breadcrumb trail. `items` (`BreadcrumbItem[]`), `separator`, `ellipsis`, `maxItems` collapse, `action`. |
 
 ### Projection example (`panel`)
 
@@ -239,6 +247,33 @@ the projected nodes in `PROJECTION_NODES`), so dynamic `v-for` / `v-if` content
 is reflected without a platform flag. Query refreshes after structural changes
 land in a microtask.
 
+## Base UI primitives
+
+`ui-button`, `ui-badge`, `ui-card`, `ui-empty`, `ui-divider`, `ui-stat`,
+`ui-progress` and `ui-breadcrumb` form the shared base layer. They use the same
+contract:
+
+- `tone` (`default` / `info` / `success` / `warning` / `danger` / `error` /
+  `accent` / `muted`) and `size` (`xs` / `sm` / `md` / `lg`) are normalized by
+  `normalizeTone` / `normalizeSize` into safe `is-*` classes and `data-tone`.
+- Boolean attributes accept `true`, `""`, `"true"` and `"false"` via
+  `normalizeBoolean`.
+- The widgets are skin-agnostic: emit stable `ui-*` classes and semantic ARIA,
+  then call `installUiStyles(document)` for the neutral default skin. Every
+  color is a `--ui-*` variable, so hosts keep their own theme.
+- `ui-progress` uses block characters (`█`/`░`) so terminal and DOM hosts share
+  the same value rendering; DOM skins can style over the text or hide it.
+
+```html
+<ui-card title="Routes" subtitle="2 staged" meta="v1" divider>
+  <ui-button slot="actions" label="Apply" tone="accent"></ui-button>
+  <ui-breadcrumb :items="trail" :maxItems="4"></ui-breadcrumb>
+  <ui-progress label="Load" :value="load" :max="100"></ui-progress>
+</ui-card>
+<ui-empty icon="search" title="Nothing found" hint="Try another query"
+  actionLabel="Clear" :action="clear"></ui-empty>
+```
+
 ## Styling
 
 Widgets emit stable class names (`console-panel`, `dialog-panel`, `list-panel`,
@@ -246,7 +281,7 @@ Widgets emit stable class names (`console-panel`, `dialog-panel`, `list-panel`,
 (`data-tone`, `data-status`, `data-selected`, `aria-*`). DOM hosts install the
 shared skins with the exported helpers — `installDynamicFormStyles`,
 `installGridLayoutStyles`, `installIconStyles`, `installMenuBarStyles`,
-`installTabBarStyles`, `installWorkspaceLayoutStyles` — while the console
+`installTabBarStyles`, `installWorkspaceLayoutStyles`, `installUiStyles` — while the console
 renderer resolves the same class names through the compiled console stylesheet
 (`components/console/styles/console.scss`, shipped as
 `default-styles.generated.ts`). All installers go through the shared
@@ -266,6 +301,8 @@ export { getDisplayWidth, sliceByDisplayWidth, padByDisplayWidth, fitByDisplayWi
 export * from './input'          // shared prompt/select/history helpers
 export { markElementRefRaw }
 export { installStyleSheet }
+export { installUiStyles, UI_CSS, UI_STYLE_ID }
+export { normalizeTone, normalizeSize, normalizeBoolean, iconSizeFor }
 
 // widgets are imported from their own entry points
 export * from '@tsdi/components/common/panel'   // etc.
