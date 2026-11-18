@@ -12,10 +12,14 @@ import { DividerComponent, DividerModule } from '@tsdi/components/common/divider
 import { StatComponent, StatModule } from '@tsdi/components/common/stat';
 import { ProgressComponent, ProgressModule } from '@tsdi/components/common/progress';
 import { BreadcrumbComponent, BreadcrumbModule } from '@tsdi/components/common/breadcrumb';
+import { ToolbarComponent, ToolbarModule } from '@tsdi/components/common/toolbar';
+import { StepsComponent, StepsModule } from '@tsdi/components/common/steps';
+import { TimelineComponent, TimelineModule } from '@tsdi/components/common/timeline';
+import { SkeletonComponent, SkeletonModule } from '@tsdi/components/common/skeleton';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -26,10 +30,17 @@ import { BreadcrumbComponent, BreadcrumbModule } from '@tsdi/components/common/b
         <ui-breadcrumb :items="trail"></ui-breadcrumb>
         <ui-empty title="Nothing" hint="Try" actionLabel="Reset"></ui-empty>
         <ui-card title="Card" meta="v1"><span>body</span></ui-card>
+        <ui-toolbar :items="tools"></ui-toolbar>
+        <ui-steps :items="steps" :current="1"></ui-steps>
+        <ui-timeline :items="events"></ui-timeline>
+        <ui-skeleton :lines="1" :width="6"></ui-skeleton>
     </div>`
 })
 class CommonUiConsoleHostComponent {
     trail = [{ label: 'Home' }, { label: 'Work' }];
+    tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
+    steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
+    events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
 }
 
 @Suite('common base UI console rendering')
@@ -47,7 +58,11 @@ export class CommonUiConsoleTest {
                 DividerModule,
                 StatModule,
                 ProgressModule,
-                BreadcrumbModule
+                BreadcrumbModule,
+                ToolbarModule,
+                StepsModule,
+                TimelineModule,
+                SkeletonModule
             ]
         });
         try {
@@ -68,6 +83,10 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Reset');
             expect(output).toContain('Card');
             expect(output).toContain('body');
+            expect(output).toContain('Run');
+            expect(output).toContain('Draft');
+            expect(output).toContain('Started');
+            expect(output).toContain('░░░░░░');
         } finally {
             await ctx.close();
         }

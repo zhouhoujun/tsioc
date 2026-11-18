@@ -47,7 +47,7 @@ Rules this layer must keep (see the root `AGENTS.md`):
 | `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
-| `@tsdi/components/common/<widget>` | one widget package: `alert`, `badge`, `breadcrumb`, `button`, `card`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `panel`, `progress`, `select`, `stat`, `status-list`, `tab-bar`, `tabs`, `toast` |
+| `@tsdi/components/common/<widget>` | one widget package: `alert`, `badge`, `breadcrumb`, `button`, `card`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `panel`, `progress`, `search-field`, `select`, `skeleton`, `stat`, `status-list`, `steps`, `tab-bar`, `tabs`, `timeline`, `toast`, `toolbar` |
 
 ## Naming conventions
 
@@ -227,6 +227,11 @@ fields. Actions are callback attributes (`selectAction`, `closeAction`,
 | `ui-stat` | `StatComponent` / `StatModule` | Compact metric tile. `label`, `value`, `hint`, `tone`, `trend` (`up`/`down`/`flat`), `trendLabel`. |
 | `ui-progress` | `ProgressComponent` / `ProgressModule` | Progress indicator with a text bar (`█`/`░`) plus `role="progressbar"`/`aria-*`. `value`, `max`, `width`, `label`, `showValue`, `indeterminate`, `tone`. |
 | `ui-breadcrumb` | `BreadcrumbComponent` / `BreadcrumbModule` | Flat breadcrumb trail. `items` (`BreadcrumbItem[]`), `separator`, `ellipsis`, `maxItems` collapse, `action`. |
+| `ui-toolbar` | `ToolbarComponent` / `ToolbarModule` | Action strip with icon/label/separator items. `items` (`ToolbarItem[]`), `orientation`, `compact`, `ariaLabel`, `action`. |
+| `ui-steps` | `StepsComponent` / `StepsModule` | Ordered steps/wizard header. `items` (`StepItem[]`), `current` (index or id), `orientation`, `connector`, `action`; explicit item status wins. |
+| `ui-timeline` | `TimelineComponent` / `TimelineModule` | Vertical activity list. `items` (`TimelineItem[]`) with `title`/`label`, `detail`, `time`, `tone`, `status` (`pending`/`running`/`done`/`error`). |
+| `ui-skeleton` | `SkeletonComponent` / `SkeletonModule` | Static loading placeholder. `lines`, `width`, `lineWidths`, `label`; uses `░` bars so TUI hosts render too. |
+| `ui-search-field` | `SearchFieldComponent` / `SearchFieldModule` | Search/text field with leading icon, clear affordance and Enter submit. `value`, `label`, `placeholder`, `hint`, `clearable`, `disabled`, `readonly`, `changeAction`, `submitAction`, `clearAction`. |
 
 ### Projection example (`panel`)
 
@@ -250,7 +255,8 @@ land in a microtask.
 ## Base UI primitives
 
 `ui-button`, `ui-badge`, `ui-card`, `ui-empty`, `ui-divider`, `ui-stat`,
-`ui-progress` and `ui-breadcrumb` form the shared base layer. They use the same
+`ui-progress`, `ui-breadcrumb`, `ui-toolbar`, `ui-steps`, `ui-timeline`,
+`ui-skeleton` and `ui-search-field` form the shared base layer. They use the same
 contract:
 
 - `tone` (`default` / `info` / `success` / `warning` / `danger` / `error` /
