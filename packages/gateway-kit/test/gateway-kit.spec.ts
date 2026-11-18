@@ -9,6 +9,7 @@ import { gatewayErrorBody, sendGatewayError } from '../src/error';
 import { applyGatewayCorsHeaders, handleGatewayCorsPreflight } from '../src/cors';
 import { serveGatewayStaticFile, resolveGatewayStaticPath } from '../src/static';
 import { buildGatewayOpenApi } from '../src/openapi';
+import { GatewayCapabilityRegistry } from '../src/capabilities';
 
 @Suite('gateway kit router')
 export class GatewayKitRouterTest {
@@ -219,5 +220,20 @@ export class GatewayKitRobustnessTest {
         } finally {
             throttle.dispose();
         }
+    }
+}
+
+@Suite('gateway kit capability registry')
+export class GatewayKitCapabilitiesTest {
+    @Test('keeps registration order and dedupes by id')
+    registry() {
+        const registry = new GatewayCapabilityRegistry(['app.ping', 'session.list']);
+        registry.register({ id: 'tools.list', kind: 'rpc', summary: 'list tools' });
+        registry.register({ id: 'app.ping', kind: 'rpc', summary: 'ping' });
+        expect(registry.methods()).toEqual(['app.ping', 'session.list', 'tools.list']);
+        expect(registry.get('tools.list')?.summary).toEqual('list tools');
+        expect(registry.get('app.ping')?.summary).toEqual('ping');
+        expect(registry.has('missing')).toEqual(false);
+        expect(registry.list().length).toEqual(3);
     }
 }

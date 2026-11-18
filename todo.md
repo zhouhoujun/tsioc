@@ -4779,3 +4779,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   envelope 写入保留各自兼容形态；gateway 149、kit 9 通过。
 - Gateway kit 加固：静态路径对畸形百分号编码返回 forbidden（不再抛未捕获异常）；限流拒绝按维度给出正确 resetAt
   （limit/quota/throttle）；新增 2 个健壮性用例，kit 11、gateway 149、agent-gateway 388 全绿。
+- Gateway P2(a)：kit 新增 `GatewayCapabilityRegistry`（有序、去重、可带 summary/auth），agent-gateway `app.capabilities`
+  的 146 个方法移入 `app-rpc/capabilities.ts` 单一注册表（响应不变）；kit 12、agent-gateway 388 通过。

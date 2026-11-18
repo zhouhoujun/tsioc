@@ -165,6 +165,10 @@ agent-gateway 全套 **388 passing** 不变。
 
 ### P2 —— 契约统一（opencode/Codex 模式）
 
+> 已完成（2026-11-18）第一步：kit `GatewayCapabilityRegistry`（有序/去重/元数据），agent-gateway 的
+> `app.capabilities` 方法表移入 `app-rpc/capabilities.ts`（146 个方法），响应形状不变；
+> 为后续 OpenAPI/客户端类型生成提供单一来源。
+
 - 单一 **method/route registry**：REST 路由 + JSON-RPC 方法共用 `id/meta/auth/rateLimit` 描述。
 - `app.capabilities` 由 registry 生成（不再手写 allowlist）；OpenAPI 同源生成。
 - 生成 TypeScript 客户端类型供 web console / attach 使用（opencode 的 contract-first 思路）。
