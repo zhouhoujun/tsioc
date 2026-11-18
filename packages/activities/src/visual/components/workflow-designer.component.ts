@@ -68,7 +68,7 @@ interface WorkflowDocumentTab {
             :openWorkflowAction="openReferencedWorkflow"
             :hiddenActions="previewHiddenActions"
             :autosaveAction="scheduleAutosave"></workflow-designer-preview>
-        <workflow-library :items="libraryItems" :visible="showLibrary"
+        <workflow-library v-if="showLibrary" :items="libraryItems" :visible="showLibrary"
             :currentId="designer.definition.id" :locale="locale" :error="libraryError"
             :saveAction="saveWorkflow" :saveAsAction="saveWorkflowAs"
             :openAction="loadWorkflow" :removeAction="deleteWorkflow"
@@ -91,7 +91,7 @@ interface WorkflowDocumentTab {
                 </div>
             </div>
         </div>
-        <workflow-version-panel :items="versionItems" :release="versionRelease"
+        <workflow-version-panel v-if="showVersions" :items="versionItems" :release="versionRelease"
             :visible="showVersions" :locale="locale" :error="versionError"
             :diff="versionDiff" :diffVersion="versionDiffVersion"
             :restoreAction="restoreVersion" :compareAction="compareVersion"

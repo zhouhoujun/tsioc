@@ -1899,7 +1899,7 @@ describe('Workflow Designer UI', () => {
         restore.click();
         await waitFor(() => ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name === 'first version');
         expect(ref.instance.designer.nodes.find(node => node.id === 'task_1')?.name).toBe('first version');
-        expect((root.querySelector('.workflow-version-panel') as any).hasAttribute('hidden')).toBe(true);
+        expect(root.querySelector('.workflow-version-panel')).toBeFalsy();
 
         // Explicit saves record the signed-in author provided by the host.
         ref.instance.designer.author = '张三';
