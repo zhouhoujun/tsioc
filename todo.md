@@ -4773,3 +4773,5 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   超出 kit 当前语义，已把扩展点与迁移顺序写入设计文档，避免直接替换造成能力降级。
 - Gateway P1(a)(b)：kit router 增加 prefix 匹配、hosts 过滤、accepts 谓词与显式 priority（priority 取代 computed specificity）；
   microservices `GatewayRouteTable` 内部改为 kit adapter（对外 API/legacy 模式/顺序语义不变），gateway 全套 149 passing。
+- Gateway P1(c)：kit 限流器补齐 quota/throttle/rejection 与共享 store（短窗口），microservices `gateway.rate-limit.ts`
+  内部改用 kit（route/global、rateLimit:false、destroy 重建语义不变）；gateway 149、agent-gateway 388、gateway-kit 9 全绿。

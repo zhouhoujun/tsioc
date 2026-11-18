@@ -52,7 +52,8 @@ export class GatewayKitRateLimitTest {
             expect(limiter.check('ip').allowed).toEqual(true);
             const blocked = limiter.check('ip');
             expect(blocked.allowed).toEqual(false);
-            expect(blocked.count).toEqual(3);
+            expect(blocked.count).toEqual(2);
+            expect(blocked.reason).toEqual('limit');
             expect(limiter.retryAfterSeconds(blocked)).toBeGreaterThanOrEqual(1);
             expect(limiter.check('other').allowed).toEqual(true);
         } finally {

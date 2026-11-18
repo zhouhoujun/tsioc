@@ -1,5 +1,5 @@
 import { RequestContext } from '@tsdi/common';
-import { ApiRateLimiter } from '@tsdi/service';
+import { GatewayRateLimiter as SharedRateLimiter } from '@tsdi/gateway-kit';
 import { GatewayOptions, ResolvedGatewayRoute } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { getClientIp } from './gateway.http';
@@ -19,8 +19,8 @@ export function rateLimitError(retryAfterMs: number, message = 'Rate limit excee
  * Extracted from `GatewayInterceptor` so the interceptor only orchestrates.
  */
 export class GatewayRateLimiter {
-    private limiters = new Map<string, ApiRateLimiter>();
-    private globalLimiter?: ApiRateLimiter;
+    private limiters = new Map<string, SharedRateLimiter>();
+    private globalLimiter?: SharedRateLimiter;
 
     constructor(
         private readonly options: GatewayOptions,
@@ -45,11 +45,12 @@ export class GatewayRateLimiter {
         }
         let limiter = this.limiters.get(route.path);
         if (!limiter) {
-            limiter = new ApiRateLimiter(rateLimit);
+            limiter = new SharedRateLimiter(rateLimit);
             this.limiters.set(route.path, limiter);
         }
-        if (!limiter.check(input, context)) {
-            const rejection = limiter.rejection(input, context);
+        const key = getClientIp(input) || 'global';
+        if (!limiter.check(key).allowed) {
+            const rejection = limiter.rejection(key);
             throw rateLimitError(rejection.retryAfterMs, rejection.message);
         }
     }
@@ -70,19 +71,20 @@ export class GatewayRateLimiter {
             return;
         }
         if (!this.globalLimiter) {
-            this.globalLimiter = new ApiRateLimiter(rateLimit);
+            this.globalLimiter = new SharedRateLimiter(rateLimit);
         }
-        if (!this.globalLimiter.check(input, context)) {
-            const rejection = this.globalLimiter.rejection(input, context);
+        const key = getClientIp(input) || 'global';
+        if (!this.globalLimiter.check(key).allowed) {
+            const rejection = this.globalLimiter.rejection(key);
             throw rateLimitError(rejection.retryAfterMs, rejection.message);
         }
     }
 
     destroy(): void {
-        this.globalLimiter?.destroy();
+        this.globalLimiter?.dispose();
         this.globalLimiter = undefined;
         for (const limiter of Array.from(this.limiters.values())) {
-            limiter.destroy();
+            limiter.dispose();
         }
         this.limiters.clear();
     }
