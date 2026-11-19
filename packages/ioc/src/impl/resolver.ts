@@ -18,6 +18,7 @@ import { resolveArgs, resolveParameters } from './common';
 import { InjectUtil } from './injector';
 import { invokeTail } from '../handlers/compose';
 
+const DEFAULT_PARAMETER_RESOLVE_HANDLER = Symbol('DEFAULT_PARAMETER_RESOLVE_HANDLER');
 
 export class DefaultResolver implements Resolver {
 
@@ -26,6 +27,50 @@ export class DefaultResolver implements Resolver {
     ) { }
 
     resolve<T>(parameter: Parameter<T>, context: RunContext): T {
+        // Successful resolutions are the common case: query the default
+        // handler's own branches directly before entering the interceptor/tail
+        // machinery. A miss still falls through to the full path so defaults,
+        // optional/null handling and diagnostics stay identical.
+        const defaultHandler = this.handler as any;
+        if (!parameter.resolver
+            && defaultHandler?.[DEFAULT_PARAMETER_RESOLVE_HANDLER]
+            && !defaultHandler.hasExtensions) {
+            const injector = context.getInjector();
+            try {
+                let value: any = UNRESOLVED;
+                if (parameter.provider && !parameter.multi) {
+                    if (context.has(parameter.provider)) {
+                        value = context.get(parameter.provider, parameter.flags);
+                    } else if (injector.has(parameter.provider, parameter.flags)) {
+                        value = injector.get<any>(parameter.provider as any, UNRESOLVED, parameter.flags, context);
+                    }
+                } else if (!parameter.multi && parameter.name && injector.has(parameter.name, parameter.flags)) {
+                    value = injector.get<any>(parameter.name as any, UNRESOLVED, parameter.flags);
+                } else if (parameter.type) {
+                    if (context.has(parameter.type)) {
+                        value = context.get(parameter.type, parameter.flags);
+                    } else if (injector.has(parameter.type, parameter.flags)) {
+                        value = injector.get<any>(parameter.type as any, UNRESOLVED, parameter.flags, context);
+                    }
+                }
+                if (value !== UNRESOLVED) {
+                    return value;
+                }
+            } catch (error) {
+                // Preserve the handler's failure contract without resolving a
+                // second time (factories must not run twice on errors).
+                if (error instanceof Exception) {
+                    throw error;
+                }
+                const failed = context.getFailed();
+                if (failed) {
+                    failed(parameter.target, parameter.propertyKey!);
+                    return null as any;
+                }
+                this.missingException([parameter], parameter.target, parameter.propertyKey!);
+            }
+        }
+
         const metaRvr = parameter.resolver;
         let handler = this.handler;
         if (metaRvr?.length) {
@@ -183,6 +228,7 @@ export function getParameterResolveHanlder(runtime: Runtime): RuntimeHandler<Par
                 return UNRESOLVED;
             }
         );
+        (scope as any)[DEFAULT_PARAMETER_RESOLVE_HANDLER] = true;
         runtime.set(PARAMETER_RESOLVE_HANDLER, scope);
     }
     return scope;

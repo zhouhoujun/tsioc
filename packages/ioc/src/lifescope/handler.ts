@@ -11,6 +11,15 @@ export class RuntimeHandler<TInput = any, TOutput = any, TContext = any> impleme
     private chain?: InterceptorFn<TInput, TOutput, TContext> | null;
     private backend: HandlerFn<TInput, TOutput, TContext>;
     protected interceptors: InterceptorLike[];
+    private extended = false;
+
+    /**
+     * Whether callers added interceptors on top of the default chain. Hot
+     * resolution paths may only bypass the chain while it is untouched.
+     */
+    get hasExtensions(): boolean {
+        return this.extended;
+    }
     constructor(
         backend: HandlerFn<TInput, TOutput, TContext> | Handler<TInput, TOutput, TContext>,
         interceptors?: InterceptorLike<TInput, TOutput, TContext>[]
@@ -37,6 +46,7 @@ export class RuntimeHandler<TInput = any, TOutput = any, TContext = any> impleme
         } else {
             this.interceptors.push(...iterceps);
         }
+        this.extended = true;
         this.reset();
         return this;
     }
