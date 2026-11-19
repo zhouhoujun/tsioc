@@ -35,13 +35,17 @@ function convert(entry: any): TemplateIRNode[] | null {
     const keys = Object.keys(entry);
     if (keys.length === 1 && keys[0] === '#text') return [{ kind: 'text', value: toText(entry['#text']) }];
     if (keys.length === 1 && keys[0] === '#comment') return [{ kind: 'comment', value: toText(entry['#comment']) }];
-    const tag = keys.find(key => !key.startsWith('@_') && !key.startsWith('#') && !key.startsWith(':@') && !key.startsWith('v-'));
+    const tag = keys.find(key =>
+        key === 'v-content'
+        || key === 'v-template'
+        || (!key.startsWith('@_') && !key.startsWith('#') && !key.startsWith(':@') && !key.startsWith('v-')));
     if (!tag) return null;
     const attrs: Array<[string, string]> = [];
     const children: any[] = [];
     for (const key of keys) {
         const value = entry[key];
-        if (key.startsWith('@_')) attrs.push([key.slice(2), toText(value)]);
+        if (key === tag) children.push(value);
+        else if (key.startsWith('@_')) attrs.push([key.slice(2), toText(value)]);
         else if (key.startsWith('#')) attrs.push([key.slice(1), toText(value)]);
         else if (key === ':@') {
             for (const attr of Object.keys(value || {})) {

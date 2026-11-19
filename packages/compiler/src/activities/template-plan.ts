@@ -26,8 +26,7 @@ export interface TemplatePlan {
 }
 
 const DEFAULT_DELIMITER = '{{}}';
-const UNSUPPORTED_TAGS = new Set(['template', 'v-content', 'ng-content', 'v-template']);
-const STRUCTURAL_ATTRS = /^(?:v-(?:if|else|else-if|for|switch|case|default|show)|[*])/i;
+const UNSUPPORTED_TAGS = new Set(['template', 'v-template']);
 const BINDING_ATTR = /^(?:@|:|\[|v-|\*)/;
 
 function planNode(node: TemplateIRNode): TemplatePlanNode | null {
@@ -38,20 +37,14 @@ function planNode(node: TemplateIRNode): TemplatePlanNode | null {
         return { kind: 'comment', value: node.value };
     }
     const tag = String(node.tag).toLowerCase();
-    if (!tag || tag.startsWith('v-') || UNSUPPORTED_TAGS.has(tag)) {
+    if (!tag || UNSUPPORTED_TAGS.has(tag) || (tag.startsWith('v-') && tag !== 'v-content')) {
         return null;
     }
     const attrs: Array<[string, string]> = [];
     const rawAttrs: Array<[string, string]> = [];
     for (const [name, value] of node.attrs as Array<[string, string, string?]>) {
-        if (name.startsWith('#')) {
-            return null;
-        }
-        if (STRUCTURAL_ATTRS.test(name)) {
-            return null;
-        }
         rawAttrs.push([name, value]);
-        if (!BINDING_ATTR.test(name) && !value.includes('{{')) {
+        if (!BINDING_ATTR.test(name) && !name.startsWith('#') && !value.includes('{{')) {
             attrs.push([name, value]);
         }
     }

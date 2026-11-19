@@ -55,6 +55,16 @@ const simplePathExpression = /^[_$a-zA-Z][_$a-zA-Z0-9]*(?:\.[_$a-zA-Z][_$a-zA-Z0
 // into; remember the replacement so the root node list can be rewritten.
 const rootStructuralContainers = new WeakMap<RNode, RNode>();
 
+export function resolveRootStructuralContainer(node: RNode): RNode {
+    let current = node;
+    let replacement = rootStructuralContainers.get(current);
+    while (replacement) {
+        current = replacement;
+        replacement = rootStructuralContainers.get(current);
+    }
+    return current;
+}
+
 function extractLocalRefs(attrs: RAttr[]): string[] {
     return (attrs || [])
         .map(attr => attr?.name || '')
@@ -702,13 +712,7 @@ export function generateNodeBindings<C>(
 
     // Root-level v-if/v-for replace themselves with a container anchor.
     for (let i = 0; i < nodes.length; i++) {
-        let node = nodes[i];
-        let replacement = rootStructuralContainers.get(node);
-        while (replacement) {
-            node = replacement;
-            replacement = rootStructuralContainers.get(node);
-        }
-        nodes[i] = node;
+        nodes[i] = resolveRootStructuralContainer(nodes[i]);
     }
 }
 
