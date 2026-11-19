@@ -1,12 +1,14 @@
 import { Module } from '@tsdi/ioc';
+import { ToastService } from './toast';
 import { ToastStackComponent } from './toast-stack';
 
 /**
- * Complex component entry point (`@tsdi/components/common/toast`). The host
- * still provides the queue (`ToastService`); this module only declares the
- * shared toast strip.
+ * Complex component entry point (`@tsdi/components/common/toast`). Provides
+ * the queue service and declares the shared toast strip; renderers only paint
+ * the markup.
  */
 @Module({
+    providers: [ToastService],
     declarations: [ToastStackComponent],
     exports: [ToastStackComponent]
 })

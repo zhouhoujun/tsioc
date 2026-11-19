@@ -6,7 +6,7 @@ import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { ListComponent, ListModule } from '../list';
 import { SelectComponent, SelectModule } from '../select';
-import { ToastStackComponent, ToastModule } from '../toast';
+import { ToastStackComponent, ToastModule, ToastService } from '../toast';
 import { ToastEntry } from '../toast';
 
 @Component({
@@ -35,6 +35,23 @@ class CommonWidgetsHostComponent {
     ];
     selected: string[] = [];
     selectRow = (value: string) => this.selected.push(value);
+}
+
+/**
+ * Hosts may bind the queue directly. Reading the injected service inside a
+ * template effect uses the `subscribe` contract of the proxy layer, so new
+ * entries paint without any host-side copy or manual refresh.
+ */
+@Component({
+    selector: 'reactive-toast-host',
+    imports: [ToastStackComponent],
+    template: `<toast-stack :items="toastService.current" :messageWidth="18"
+        :closeAction="closeToast"></toast-stack>`
+})
+class ReactiveToastHostComponent {
+    readonly closeToast = (id: string): void => this.toastService.dismiss(id);
+
+    constructor(public readonly toastService: ToastService) { }
 }
 
 @Suite('common widgets DOM')
@@ -125,5 +142,29 @@ export class CommonWidgetsDomTest {
         expect(stack.instance.rows.map(row => row.text)).toEqual(['Copied          ']);
         expect(root.textContent).toContain('Copied');
         expect(root.textContent).toContain('✕');
+    }
+
+    @Test('the shared toast queue paints through the reactive subscribe contract')
+    async reactiveToastQueue() {
+        const ref = this.ctx.get(ComponentFactory).create(ReactiveToastHostComponent, {
+            injector: this.ctx
+        }) as ComponentRef<ReactiveToastHostComponent>;
+        await ref.render();
+        const root = ref.hostView.rootNodes[0] as HTMLElement;
+        const host = ref.instance;
+
+        host.toastService.show('Saved', { durationMs: 0, tone: 'success' });
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(root.textContent).toContain('Saved');
+        expect(root.querySelector('.console-toast[data-tone="success"]')).toBeTruthy();
+
+        const id = host.toastService.current[0].id;
+        (root.querySelector('.toast-close') as HTMLElement).click();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(host.toastService.current).toEqual([]);
+        expect(root.textContent).not.toContain('Saved');
+        expect(id).toBeTruthy();
     }
 }

@@ -41,7 +41,9 @@ function scheduleOverlayAutoClose(host: AgentConsoleToastHost, state: AgentConso
 
 /** Keep a queue even when the host did not provide one (tests, standalone). */
 export function ensureConsoleToasts(host: AgentConsoleToastHost): void {
-    host.toastService = host.toastService || new ToastService();
+    // Auto-dismiss rides on the renderer's shared clock; the service must not
+    // schedule its own timer (TUI and browser both provide an AnimationClock).
+    host.toastService = host.toastService || new ToastService(host.animationClock ?? undefined);
 }
 
 export function bindConsoleToasts(host: AgentConsoleToastHost): void {

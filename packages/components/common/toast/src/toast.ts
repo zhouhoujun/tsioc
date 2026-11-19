@@ -1,4 +1,5 @@
-import { Injectable } from '@tsdi/ioc';
+import { Injectable, OnDestroy, Optional } from '@tsdi/ioc';
+import { AnimationClock } from '@tsdi/components';
 
 export type ToastTone = 'info' | 'success' | 'warning' | 'error';
 
@@ -18,15 +19,24 @@ export interface ToastEntry {
 export type ToastListener = (entries: readonly ToastEntry[]) => void;
 
 /**
- * Renderer-neutral toast queue. Hosts subscribe and paint the current entries;
- * the service owns ids, ordering and auto-dismiss timing.
+ * Renderer-neutral toast queue. Hosts read `current` (reactive hosts pick up
+ * the `subscribe` contract automatically) or subscribe explicitly; the
+ * service owns ids, ordering and auto-dismiss timing.
+ *
+ * Auto-dismiss is driven by the shared {@link AnimationClock}, so the terminal
+ * and browser hosts use the same lifecycle clock and no business timer runs
+ * while the toast strip is idle. Without a clock (plain unit usage) entries
+ * stay until they are dismissed explicitly.
  */
 @Injectable()
-export class ToastService {
+export class ToastService implements OnDestroy {
     protected entries: ToastEntry[] = [];
     protected readonly listeners = new Set<ToastListener>();
+    protected readonly deadlines = new Map<string, number>();
     protected sequence = 0;
-    protected readonly timers = new Map<string, ReturnType<typeof setTimeout>>();
+    protected ticking = false;
+
+    constructor(@Optional() protected clock?: AnimationClock) { }
 
     get current(): readonly ToastEntry[] {
         return this.entries;
@@ -45,35 +55,30 @@ export class ToastService {
             createdAt: Date.now()
         };
         this.entries = [...this.entries, entry];
-        this.emit();
         const duration = Number(options.durationMs ?? 2200);
         if (Number.isFinite(duration) && duration > 0) {
-            const timer = setTimeout(() => this.dismiss(id), duration);
-            (timer as { unref?: () => void }).unref?.();
-            this.timers.set(id, timer);
+            this.deadlines.set(id, entry.createdAt + duration);
+            this.startTick();
         }
+        this.emit();
         return id;
     }
 
     dismiss(id: string): void {
-        const timer = this.timers.get(id);
-        if (timer) {
-            clearTimeout(timer);
-            this.timers.delete(id);
-        }
+        this.deadlines.delete(id);
         const next = this.entries.filter(entry => entry.id !== id);
         if (next.length === this.entries.length) {
+            this.stopTickIfIdle();
             return;
         }
         this.entries = next;
+        this.stopTickIfIdle();
         this.emit();
     }
 
     clear(): void {
-        for (const timer of this.timers.values()) {
-            clearTimeout(timer);
-        }
-        this.timers.clear();
+        this.deadlines.clear();
+        this.stopTickIfIdle();
         if (!this.entries.length) {
             return;
         }
@@ -90,6 +95,52 @@ export class ToastService {
     onDestroy(): void {
         this.clear();
         this.listeners.clear();
+    }
+
+    /**
+     * Drop every entry whose deadline has passed. Exposed for hosts/tests that
+     * already own a clock tick; the clock subscription calls it automatically.
+     */
+    tick(): void {
+        if (!this.deadlines.size) {
+            this.stopTickIfIdle();
+            return;
+        }
+        const now = Date.now();
+        const expired: string[] = [];
+        for (const [id, deadline] of this.deadlines) {
+            if (deadline <= now) {
+                expired.push(id);
+            }
+        }
+        if (!expired.length) {
+            return;
+        }
+        for (const id of expired) {
+            this.deadlines.delete(id);
+        }
+        const expiredSet = new Set(expired);
+        this.entries = this.entries.filter(entry => !expiredSet.has(entry.id));
+        this.stopTickIfIdle();
+        this.emit();
+    }
+
+    protected readonly onClockTick = (): void => this.tick();
+
+    protected startTick(): void {
+        if (this.ticking || !this.clock || !this.deadlines.size) {
+            return;
+        }
+        this.ticking = true;
+        this.clock.subscribe(this.onClockTick);
+    }
+
+    protected stopTickIfIdle(): void {
+        if (!this.ticking || this.deadlines.size) {
+            return;
+        }
+        this.ticking = false;
+        this.clock?.unsubscribe(this.onClockTick);
     }
 
     protected emit(): void {
