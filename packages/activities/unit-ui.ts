@@ -1,8 +1,7 @@
-// Designer UI suite: boots one real JSDOM application per test.
-//
-// Kept separate from `unit.ts` so the default run stays fast; run it with
-// `npm run test:ui` (or `npm run test:all` for both).
+// Designer UI suite entry point. The specs are split into three files that
+// `run-ui-tests.js` runs in parallel processes; this file exists for running
+// one part manually (see unit-ui-a/b/c.ts).
 
 import { runTest } from '@tsdi/unit';
 
-runTest('./test/workflow-designer-ui.spec.ts', { baseURL: __dirname });
+runTest('./test/workflow-designer-ui-a.spec.ts', { baseURL: __dirname });

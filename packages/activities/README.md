@@ -1330,6 +1330,11 @@ framework's reactive logic. Practical rules:
 
 - `run-tests.js` runs with `TS_NODE_TRANSPILE_ONLY=1`; type checking belongs to
   the `tsc` gate, and rebuilding the TS program per run costs tens of seconds.
+- The UI specs are split into `workflow-designer-ui-{a,b,c}.spec.ts` and each
+  part boots one application (`DesignerUiHost`) and renders a fresh designer per
+  test. `npm run test:ui` runs the parts in parallel processes
+  (`ACTIVITIES_UI_PARTS=a,b,c` to choose parts), which keeps the run near
+  ~3.5 minutes instead of ~4.5.
 - Prefer fewer elements over fewer re-renders: the palette/menu/item markup is
   the bulk of the tree.
 - Sharing one `ApplicationContext` between tests saves little and leaks

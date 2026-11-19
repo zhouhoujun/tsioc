@@ -6,7 +6,7 @@
         "build": "ts-node -r tsconfig-paths/register taskfile.ts",
         "test": "node run-tests.js",
         "test:coverage": "node run-tests.js -c",
-        "test:ui": "node run-tests.js unit-ui.ts",
+        "test:ui": "node run-ui-tests.js",
         "test:all": "npm run test && npm run test:ui"
     },
     "keywords": [
