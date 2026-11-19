@@ -12,6 +12,8 @@ import {
 import { buildVerifiedTemplateIR, getCachedTemplateIR, irToNodes, nodesToIR, sameTemplateIR, setCachedTemplateIR, TemplateIRNode } from './template-ir';
 
 const selectorMatcherCache = new Map<string, RegExp[] | null>();
+// Renderer constructor -> encoded AOT templateIR -> validated IR (null if invalid).
+const validatedTemplateIRCache = new WeakMap<Function, Map<string, TemplateIRNode[] | null>>();
 
 function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -103,17 +105,36 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
         const templateText = typeof template === 'string' ? template : '';
         let nodes: RNode[] | undefined;
         if (templateText && options.templateIR) {
-            try {
-                const ir = JSON.parse(options.templateIR) as TemplateIRNode[];
-                if (Array.isArray(ir)) {
-                    const rebuilt = irToNodes(ir, this.renderer);
-                    const roundTrip = nodesToIR(rebuilt, this.renderer);
-                    if (roundTrip && sameTemplateIR(ir, roundTrip)) {
-                        nodes = rebuilt;
+            const rendererCtor = (this.renderer as any)?.constructor as Function | undefined;
+            let cache = rendererCtor ? validatedTemplateIRCache.get(rendererCtor) : undefined;
+            let ir = cache?.get(options.templateIR);
+            if (ir === undefined) {
+                try {
+                    const parsed = JSON.parse(options.templateIR) as TemplateIRNode[];
+                    if (Array.isArray(parsed)) {
+                        const rebuilt = irToNodes(parsed, this.renderer);
+                        const roundTrip = nodesToIR(rebuilt, this.renderer);
+                        ir = roundTrip && sameTemplateIR(parsed, roundTrip) ? parsed : null;
+                    } else {
+                        ir = null;
                     }
+                } catch {
+                    ir = null;
                 }
-            } catch {
-                // Ignore malformed/incompatible IR and parse the template.
+                if (rendererCtor) {
+                    if (!cache) {
+                        cache = new Map();
+                        validatedTemplateIRCache.set(rendererCtor, cache);
+                    }
+                    cache.set(options.templateIR, ir);
+                }
+            }
+            if (ir) {
+                try {
+                    nodes = irToNodes(ir, this.renderer);
+                } catch {
+                    // Rebuild failed; fall back to the parser below.
+                }
             }
         }
         if (!nodes && this.parser.preferTemplateIR && templateText) {
