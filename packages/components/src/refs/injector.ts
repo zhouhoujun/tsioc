@@ -169,20 +169,36 @@ export class NodeInjector extends ContextInjector {
 
         nodes.forEach(node => walk(node));
 
+        // `detachNodes` also walks nodes that were moved into a live tree
+        // (projected `<v-content>` content, reused anchors). Destroying those
+        // refs tears down bindings that are still on screen, so only refs whose
+        // element is actually detached get the full teardown.
+        const isAttached = (ref: any): boolean => {
+            const element: any = ref?.elementRef?.nativeElement;
+            return !!element && !!element.parentNode;
+        };
+
         // Directives own structural views (v-if/v-for rows). Their onDestroy
         // clears those views; skipping it left every re-rendered template's
         // rows attached to the long-lived injector.
         for (const directive of directivesToDestroy) {
+            if (isAttached(directive)) {
+                continue;
+            }
             try { (directive as any).destroy?.(); } catch { /* ignore cleanup errors */ }
         }
 
         for (const comp of compsToDestroy) {
             try {
-                // Destroy the ref (not only its host view): the ref owns the
-                // component instance, its query lists, the directives of the
-                // component template and the node injector. Destroying only the
-                // host view skipped directive onDestroy hooks, so v-for/v-if
-                // views inside a removed component were never cleared.
+                if (isAttached(comp)) {
+                    // Keep the previous teardown for a still-mounted ref: the
+                    // component instance may be moved/reused by the next view.
+                    comp.hostView?.destroy();
+                    continue;
+                }
+                // A removed ref owns its instance, query lists, template
+                // directives and node injector; destroying only the host view
+                // skipped directive onDestroy hooks.
                 (comp as any).destroy?.();
             } catch { /* ignore cleanup errors */ }
         }
