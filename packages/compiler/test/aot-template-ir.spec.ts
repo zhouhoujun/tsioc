@@ -110,6 +110,46 @@ export class AotMemberHost {
         }
     });
 
+
+    it('precompiles view query metadata', async () => {
+        const source = `
+import { Component, ElementRef, QueryList, ViewChild, ViewChildren } from '@tsdi/components';
+
+@Component({
+    selector: 'aot-query-host',
+    template: '<div><span #inner></span><i class="row" v-for="item in items" #row></i></div>'
+})
+export class AotQueryHost {
+    items = [1, 2];
+    @ViewChild('inner') inner?: ElementRef;
+    @ViewChildren('row') rows?: QueryList<ElementRef>;
+}
+`;
+        const emitted = transpileAot('aot-query.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotComponent(');
+        expect(emitted).toContain('viewChilds:');
+        expect(emitted).toContain('viewChildrens:');
+        expect(emitted).toContain('propertyKey: "inner"');
+
+        const exported = loadAotModule(source);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const ctx = await Application.run(exported.AotQueryHost, {
+            deps: [HtmlTemplateModule, ComponentsModule],
+            providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+        });
+        try {
+            const ref = ctx.runners.getRef(exported.AotQueryHost) as ComponentRef<any>;
+            await Promise.resolve();
+            await Promise.resolve();
+            expect(ref.instance.inner).toBeTruthy();
+            expect(ref.instance.rows?.length).toBe(2);
+        } finally {
+            await ctx.close();
+            dom.window.close();
+        }
+    });
+
     it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';

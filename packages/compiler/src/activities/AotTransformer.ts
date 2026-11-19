@@ -18,7 +18,10 @@ const PRECOMPILABLE_CLASS_DECORATORS = new Set([
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
-const PRECOMPILABLE_MEMBER_DECORATORS = new Set(['Attribute', 'Computed']);
+const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
+    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren'
+]);
+
 
 export interface AotPrecompileOptions {
     /** Emit design:* metadata (needed by IoC injection). Default true. */
@@ -299,11 +302,59 @@ function withProperty(expression: ts.Expression, key: string, value: ts.Expressi
     return ts.factory.updateObjectLiteralExpression(expression, properties);
 }
 
+function selectorValueExpression(expression: ts.Expression): ts.Expression {
+    if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
+        return expression;
+    }
+    if (ts.isIdentifier(expression)) {
+        return valueTypeReference(expression.text);
+    }
+    return expression;
+}
+
+function queryMetadataExpression(decorator: ts.Decorator): ts.Expression | undefined {
+    const factory = ts.factory;
+    const args = decoratorArgs(decorator);
+    if (args.length === 0) {
+        return factory.createObjectLiteralExpression([
+            factory.createPropertyAssignment('nullable', factory.createTrue())
+        ], false);
+    }
+    if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+        const properties = args[0].properties.map(property => {
+            if (!ts.isPropertyAssignment(property)) {
+                return property;
+            }
+            const name = propertyName(property);
+            return name === 'selector' || name === 'read'
+                ? factory.createPropertyAssignment(property.name, selectorValueExpression(property.initializer))
+                : property;
+        });
+        return factory.updateObjectLiteralExpression(args[0], properties);
+    }
+    if (args.length <= 2 && (ts.isStringLiteral(args[0]) || ts.isIdentifier(args[0]))) {
+        const properties: ts.ObjectLiteralElementLike[] = [
+            factory.createPropertyAssignment('selector', selectorValueExpression(args[0]))
+        ];
+        if (args[1]) {
+            properties.push(factory.createPropertyAssignment('read', selectorValueExpression(args[1])));
+        }
+        properties.push(factory.createPropertyAssignment('nullable', factory.createTrue()));
+        return factory.createObjectLiteralExpression(properties, false);
+    }
+    return undefined;
+}
+
 function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | undefined {
     const factory = ts.factory;
     const name = decoratorName(decorator);
     const args = decoratorArgs(decorator);
     switch (name) {
+        case 'ViewChild':
+        case 'ViewChildren':
+        case 'ContentChild':
+        case 'ContentChildren':
+            return queryMetadataExpression(decorator);
         case 'Attribute':
             if (args.length === 0) {
                 return factory.createObjectLiteralExpression([
@@ -357,6 +408,10 @@ function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | unde
 function attachMemberMetadata(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
     const attributes: ts.Expression[] = [];
     const computeds: ts.Expression[] = [];
+    const viewChilds: ts.Expression[] = [];
+    const viewChildrens: ts.Expression[] = [];
+    const contentChilds: ts.Expression[] = [];
+    const contentChildrens: ts.Expression[] = [];
     for (const member of node.members) {
         const key = memberKey(member);
         if (!key) {
@@ -364,7 +419,7 @@ function attachMemberMetadata(metadata: ts.Expression, node: ts.ClassDeclaration
         }
         for (const decorator of decoratorsOf(member)) {
             const name = decoratorName(decorator);
-            if (name !== 'Attribute' && name !== 'Computed') {
+            if (!PRECOMPILABLE_MEMBER_DECORATORS.has(name)) {
                 continue;
             }
             const meta = memberMetadataExpression(decorator);
@@ -372,19 +427,28 @@ function attachMemberMetadata(metadata: ts.Expression, node: ts.ClassDeclaration
                 continue;
             }
             const withKey = withProperty(meta, 'propertyKey', ts.factory.createStringLiteral(key));
-            (name === 'Attribute' ? attributes : computeds).push(withKey);
+            switch (name) {
+                case 'Attribute': attributes.push(withKey); break;
+                case 'Computed': computeds.push(withKey); break;
+                case 'ViewChild': viewChilds.push(withKey); break;
+                case 'ViewChildren': viewChildrens.push(withKey); break;
+                case 'ContentChild': contentChilds.push(withKey); break;
+                case 'ContentChildren': contentChildrens.push(withKey); break;
+            }
         }
     }
-    if (!attributes.length && !computeds.length) {
-        return metadata;
-    }
     let result = metadata;
-    if (attributes.length) {
-        result = withProperty(result, 'attributes', ts.factory.createArrayLiteralExpression(attributes, false));
-    }
-    if (computeds.length) {
-        result = withProperty(result, 'computeds', ts.factory.createArrayLiteralExpression(computeds, false));
-    }
+    const addArray = (key: string, values: ts.Expression[]) => {
+        if (values.length) {
+            result = withProperty(result, key, ts.factory.createArrayLiteralExpression(values, false));
+        }
+    };
+    addArray('attributes', attributes);
+    addArray('computeds', computeds);
+    addArray('viewChilds', viewChilds);
+    addArray('viewChildrens', viewChildrens);
+    addArray('contentChilds', contentChilds);
+    addArray('contentChildrens', contentChildrens);
     return result;
 }
 

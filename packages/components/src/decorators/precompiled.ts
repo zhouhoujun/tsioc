@@ -33,10 +33,10 @@ export function applyPrecompiledComponent(
     def.exportProviders = def.exportProviders || [];
     def.attributes = def.attributes || [];
     def.computeds = def.computeds || [];
-    def.viewChilds = [];
-    def.viewChildrens = [];
-    def.contentChilds = [];
-    def.contentChildrens = [];
+    def.viewChilds = def.viewChilds || [];
+    def.viewChildrens = def.viewChildrens || [];
+    def.contentChilds = def.contentChilds || [];
+    def.contentChildrens = def.contentChildrens || [];
 
     if (dir$.test(def.selector)) {
         const selectors = def.selector.split(',');
