@@ -385,6 +385,28 @@ export class OptionInjectedService {
         expect(emitted).not.toContain('ƿprov');
     });
 
+
+    it('precompiles provider aliases with getToken', () => {
+        const source = `
+import { Injectable, Singleton } from '@tsdi/ioc';
+
+@Injectable('TOKEN', 'alias')
+export class AliasedService {}
+
+@Singleton('SINGLE')
+export class SingleService {}
+`;
+        const emitted = transpileAot('aot-alias.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotGetToken');
+
+        const exported = loadModule(source);
+        const aliased = getClassRef(exported.AliasedService).getAnnotation() as any;
+        expect(aliased.provides.length).toBe(1);
+        const single = getClassRef(exported.SingleService).getAnnotation() as any;
+        expect(single.singleton).toBe(true);
+        expect(single.provides).toContain('SINGLE');
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

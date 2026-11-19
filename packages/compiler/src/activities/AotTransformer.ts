@@ -49,6 +49,7 @@ interface TypeEmitContext {
     sequence: { value: number };
     moduleKind?: ts.ModuleKind;
     usesInjectFlags?: boolean;
+    usesGetToken?: boolean;
 }
 let activeTypeContext: TypeEmitContext | undefined;
 
@@ -218,6 +219,27 @@ function isObjectLiteralExpression(node: ts.Expression | undefined): node is ts.
  * for the shapes the framework documents. Returns `undefined` when the call is
  * dynamic enough that only the real decorator can be trusted.
  */
+function decoratorTokenExpression(args: readonly ts.Expression[]): ts.Expression | undefined {
+    const factory = ts.factory;
+    if (args.length === 0) {
+        return undefined;
+    }
+    if (args.length === 1) {
+        return selectorValueExpression(args[0]);
+    }
+    if (args.length === 2 && (ts.isStringLiteral(args[0]) || ts.isIdentifier(args[0])) && ts.isStringLiteral(args[1])) {
+        if (activeTypeContext) {
+            activeTypeContext.usesGetToken = true;
+        }
+        return factory.createCallExpression(
+            factory.createIdentifier('__aotGetToken'),
+            undefined,
+            [selectorValueExpression(args[0]), args[1]]
+        );
+    }
+    return undefined;
+}
+
 function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | undefined {
     const factory = ts.factory;
     const name = decoratorName(decorator);
@@ -226,24 +248,36 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
     }
     const args = decoratorArgs(decorator);
     switch (name) {
-        case 'Injectable':
+        case 'Injectable': {
             if (args.length === 0) return factory.createObjectLiteralExpression([], false);
-            if (args.length === 1) {
-                return isObjectLiteralExpression(args[0])
-                    ? args[0]
-                    : factory.createObjectLiteralExpression([
-                        factory.createPropertyAssignment('provide', args[0])
-                    ], false);
+            if (args.length === 1 && isObjectLiteralExpression(args[0])) {
+                return args[0];
             }
-            return undefined;
-        case 'Singleton':
-            return args.length === 0
-                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('singleton', factory.createTrue())], false)
+            const token = decoratorTokenExpression(args);
+            return token
+                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('provide', token)], false)
                 : undefined;
-        case 'Static':
-            return args.length === 0
-                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('static', factory.createTrue())], false)
+        }
+        case 'Singleton': {
+            const base = [factory.createPropertyAssignment('singleton', factory.createTrue())];
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression(base, false);
+            }
+            const token = decoratorTokenExpression(args);
+            return token
+                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('provide', token), ...base], false)
                 : undefined;
+        }
+        case 'Static': {
+            const base = [factory.createPropertyAssignment('static', factory.createTrue())];
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression(base, false);
+            }
+            const token = decoratorTokenExpression(args);
+            return token
+                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('provide', token), ...base], false)
+                : undefined;
+        }
         case 'Abstract':
             return args.length === 0
                 ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('abstract', factory.createTrue())], false)
@@ -303,6 +337,19 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
                 return factory.createObjectLiteralExpression([
                     factory.createPropertyAssignment('target', selectorValueExpression(args[0])),
                     factory.createPropertyAssignment('provide', selectorValueExpression(args[1]))
+                ], false);
+            }
+            if (args.length === 3 && ts.isStringLiteral(args[2])) {
+                if (activeTypeContext) {
+                    activeTypeContext.usesGetToken = true;
+                }
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('target', selectorValueExpression(args[0])),
+                    factory.createPropertyAssignment('provide', factory.createCallExpression(
+                        factory.createIdentifier('__aotGetToken'),
+                        undefined,
+                        [selectorValueExpression(args[1]), args[2]]
+                    ))
                 ], false);
             }
             return undefined;
@@ -1490,6 +1537,25 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
 
             if (usesReflect) {
                 imports.push(factory.createImportDeclaration(undefined, undefined, factory.createStringLiteral('reflect-metadata')));
+            }
+            if (activeTypeContext?.usesGetToken) {
+                if (options.moduleKind === ts.ModuleKind.CommonJS) {
+                    imports.push(factory.createVariableStatement(undefined, factory.createVariableDeclarationList([
+                        factory.createVariableDeclaration('__aotGetToken', undefined, undefined,
+                            factory.createPropertyAccessExpression(
+                                factory.createCallExpression(factory.createIdentifier('require'), undefined, [factory.createStringLiteral('@tsdi/ioc')]),
+                                'getToken'
+                            ))
+                    ], ts.NodeFlags.Const)));
+                } else {
+                    imports.push(factory.createImportDeclaration(
+                        undefined,
+                        factory.createImportClause(false, undefined, factory.createNamedImports([
+                            factory.createImportSpecifier(false, factory.createIdentifier('getToken'), factory.createIdentifier('__aotGetToken'))
+                        ])),
+                        factory.createStringLiteral('@tsdi/ioc')
+                    ));
+                }
             }
             if (activeTypeContext?.usesInjectFlags) {
                 // `addHelperBinding` is declared below; inline the same shape.
