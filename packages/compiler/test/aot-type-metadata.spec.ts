@@ -189,6 +189,32 @@ export class AutorunService {
         expect(exported.AutorunService.ƿAnn().runnables?.length).toBe(1);
     });
 
+
+    it('precompiles method @Autorun runnables', () => {
+        const source = `
+import { Autorun, Injectable } from '@tsdi/ioc';
+
+@Injectable()
+export class MethodAutorunService {
+    ready = false;
+
+    @Autorun()
+    boot() { this.ready = true; }
+}
+`;
+        const emitted = transpileAot('aot-method-autorun.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('runnables');
+        expect(emitted).toContain('decorType: "method"');
+
+        const exported = loadModule(source);
+        expect(exported.MethodAutorunService.ƿAnn().runnables?.length).toBe(1);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.MethodAutorunService);
+        const service = container.get(exported.MethodAutorunService) as any;
+        expect(service.ready).toBe(true);
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

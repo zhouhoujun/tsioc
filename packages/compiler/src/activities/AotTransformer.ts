@@ -437,8 +437,36 @@ function attachMethodMetadata(metadata: ts.Expression, node: ts.ClassDeclaration
     return withProperty(metadata, 'methodMetadatas', ts.factory.createArrayLiteralExpression(entries, false));
 }
 
+function methodAutorunMetadata(decorator: ts.Decorator, key: string): ts.Expression | undefined {
+    const factory = ts.factory;
+    const args = decoratorArgs(decorator);
+    const properties: ts.ObjectLiteralElementLike[] = [
+        factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)),
+        factory.createPropertyAssignment('decorType', factory.createStringLiteral('method')),
+        factory.createPropertyAssignment('auto', factory.createTrue())
+    ];
+    if (args.length === 0) {
+        return factory.createObjectLiteralExpression(properties, false);
+    }
+    if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+        return factory.updateObjectLiteralExpression(args[0], [
+            ...args[0].properties,
+            ...properties
+        ]);
+    }
+    if (args.length <= 2 && ts.isNumericLiteral(args[0])) {
+        properties.splice(1, 0, factory.createPropertyAssignment('order', args[0]));
+        if (args[1]) {
+            properties.splice(2, 0, factory.createPropertyAssignment('args', args[1]));
+        }
+        return factory.createObjectLiteralExpression(properties, false);
+    }
+    return undefined;
+}
+
 function attachServiceMembers(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
     const properties: ts.Expression[] = [];
+    const runnables: ts.Expression[] = [];
     for (const member of node.members) {
         if (ts.isConstructorDeclaration(member)) {
             continue;
@@ -449,24 +477,32 @@ function attachServiceMembers(metadata: ts.Expression, node: ts.ClassDeclaration
         }
         for (const decorator of decoratorsOf(member)) {
             const name = decoratorName(decorator);
-            if (name !== 'Autowired' && name !== 'Inject') {
-                continue;
+            if (name === 'Autowired' || name === 'Inject') {
+                const meta = injectedPropertyMetadata(decorator, member);
+                if (!meta) {
+                    continue;
+                }
+                const withKey = withProperty(meta, 'propertyKey', ts.factory.createStringLiteral(key));
+                properties.push(ts.factory.createArrayLiteralExpression([
+                    ts.factory.createStringLiteral(key),
+                    withKey
+                ], false));
+            } else if (name === 'Autorun' && !ts.isPropertyDeclaration(member)) {
+                const meta = methodAutorunMetadata(decorator, key);
+                if (meta) {
+                    runnables.push(meta);
+                }
             }
-            const meta = injectedPropertyMetadata(decorator, member);
-            if (!meta) {
-                continue;
-            }
-            const withKey = withProperty(meta, 'propertyKey', ts.factory.createStringLiteral(key));
-            properties.push(ts.factory.createArrayLiteralExpression([
-                ts.factory.createStringLiteral(key),
-                withKey
-            ], false));
         }
     }
-    if (!properties.length) {
-        return metadata;
+    let result = metadata;
+    if (properties.length) {
+        result = withProperty(result, 'propMetadatas', ts.factory.createArrayLiteralExpression(properties, false));
     }
-    return withProperty(metadata, 'propMetadatas', ts.factory.createArrayLiteralExpression(properties, false));
+    if (runnables.length) {
+        result = withProperty(result, 'runnables', ts.factory.createArrayLiteralExpression(runnables, false));
+    }
+    return result;
 }
 
 function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | undefined {
@@ -732,6 +768,12 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
         }
         for (const decorator of decoratorsOf(member)) {
             const name = decoratorName(decorator);
+            if (name === 'Autorun') {
+                if (ts.isPropertyDeclaration(member) || !methodAutorunMetadata(decorator, memberKey(member) || '')) {
+                    return false;
+                }
+                continue;
+            }
             if (name !== 'Autowired' && name !== 'Inject') {
                 return false;
             }
