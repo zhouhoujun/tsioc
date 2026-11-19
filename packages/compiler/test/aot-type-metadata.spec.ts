@@ -378,7 +378,7 @@ import { Inject, Injectable } from '@tsdi/ioc';
 
 @Injectable()
 export class OptionInjectedService {
-    constructor(@Inject('TOKEN', { flags: 8 }) readonly value?: string) {}
+    constructor(@Inject('TOKEN', { flags: 8, alias: 'x' }) readonly value?: string) {}
 }
 `, { module: ts.ModuleKind.CommonJS });
         expect(emitted).toContain('__aotDeco(');
@@ -405,6 +405,30 @@ export class SingleService {}
         const single = getClassRef(exported.SingleService).getAnnotation() as any;
         expect(single.singleton).toBe(true);
         expect(single.provides).toContain('SINGLE');
+    });
+
+
+    it('precompiles Inject options metadata', () => {
+        const source = `
+import { Inject, Injectable } from '@tsdi/ioc';
+
+@Injectable()
+export class OptionInjectedService {
+    constructor(
+        @Inject('MISSING', { nullable: true, defaultValue: 'fallback' }) readonly value?: string
+    ) {}
+}
+`;
+        const emitted = transpileAot('aot-inject-options-aot.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('methodMetadatas');
+        expect(emitted).toContain('defaultValue');
+
+        const exported = loadModule(source);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.OptionInjectedService);
+        const service = container.get(exported.OptionInjectedService) as any;
+        expect(service.value).toBe('fallback');
     });
 
     it('materializes component and directive definitions', () => {

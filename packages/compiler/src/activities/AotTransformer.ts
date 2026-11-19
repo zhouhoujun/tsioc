@@ -861,7 +861,7 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                     return false;
                 }
             }
-            if ((decorators.length || hasParameterDecorators) && !parameterDependency(parameter)) {
+            if ((decorators.length || hasParameterDecorators) && !parameterMetadataExpression(parameter, memberKey(member) || '')) {
                 return false;
             }
         }
@@ -960,28 +960,104 @@ function parameterDependency(parameter: ts.ParameterDeclaration): ts.Expression 
         : token;
 }
 
-function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: string): ts.Expression | undefined {
-    const dep = parameterDependency(parameter);
-    if (!dep) {
+function optionProperty(expression: ts.Expression | undefined, name: string): ts.Expression | undefined {
+    if (!expression || !ts.isObjectLiteralExpression(expression)) {
         return undefined;
     }
+    const property = expression.properties.find(item => propertyName(item) === name);
+    return property && ts.isPropertyAssignment(property) ? property.initializer : undefined;
+}
+
+function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: string): ts.Expression | undefined {
     const factory = ts.factory;
-    const properties: ts.ObjectLiteralElementLike[] = [];
-    if (ts.isArrayLiteralExpression(dep)) {
-        const [token, ...flags] = dep.elements;
-        if (token) {
-            properties.push(factory.createPropertyAssignment('provider', token));
-        }
-        if (flags.length) {
-            let merged = flags[0];
-            for (let i = 1; i < flags.length; i++) {
-                merged = factory.createBinaryExpression(merged, ts.SyntaxKind.BarToken, flags[i]);
+    let token: ts.Expression | undefined;
+    let options: ts.Expression | undefined;
+    let nullable: ts.Expression | undefined;
+    let defaultValue: ts.Expression | undefined;
+    let multi: ts.Expression | undefined;
+    let resolver: ts.Expression | undefined;
+    let optionFlags: ts.Expression | undefined;
+    const flagExpressions: ts.Expression[] = [];
+    for (const decorator of decoratorsOf(parameter)) {
+        const name = decoratorName(decorator);
+        if (name === 'Inject' || name === 'Autowired') {
+            const args = decoratorArgs(decorator);
+            if (args[0] && ts.isObjectLiteralExpression(args[0])) {
+                options = args[0];
+            } else {
+                if (args[0]) {
+                    token = selectorValueExpression(args[0]);
+                }
+                if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+                    options = args[1];
+                } else if (args.length > 1) {
+                    return undefined;
+                }
             }
-            properties.push(factory.createPropertyAssignment('flags', merged));
+            if (!token) {
+                const provider = optionProperty(options, 'provider');
+                if (provider) {
+                    token = selectorValueExpression(provider);
+                }
+            }
+            optionFlags = optionProperty(options, 'flags');
+            nullable = optionProperty(options, 'nullable');
+            defaultValue = optionProperty(options, 'defaultValue');
+            multi = optionProperty(options, 'multi');
+            resolver = optionProperty(options, 'resolver');
+            if (optionProperty(options, 'alias')) {
+                return undefined;
+            }
+            continue;
         }
-    } else {
-        properties.push(factory.createPropertyAssignment('provider', dep));
+        if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host') {
+            if (activeTypeContext) {
+                activeTypeContext.usesInjectFlags = true;
+            }
+            flagExpressions.push(factory.createPropertyAccessExpression(
+                factory.createIdentifier('__aotFlags'),
+                name
+            ));
+            continue;
+        }
+        if (name === 'Nullable') {
+            nullable = factory.createTrue();
+            continue;
+        }
+        return undefined;
     }
+    if (!token) {
+        const type = parameter.type;
+        if (!type || !ts.isTypeReferenceNode(type) || !activeTypeChecker) {
+            return undefined;
+        }
+        let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
+        if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
+            symbol = activeTypeChecker.getAliasedSymbol(symbol);
+        }
+        if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
+            return undefined;
+        }
+        token = typeExpression(type);
+    }
+    if (!token) {
+        return undefined;
+    }
+    const properties: ts.ObjectLiteralElementLike[] = [
+        factory.createPropertyAssignment('provider', token)
+    ];
+    if (flagExpressions.length || optionFlags) {
+        let merged = optionFlags ?? flagExpressions[0];
+        const startIndex = optionFlags ? 0 : 1;
+        for (let i = startIndex; i < flagExpressions.length; i++) {
+            merged = factory.createBinaryExpression(merged, ts.SyntaxKind.BarToken, flagExpressions[i]);
+        }
+        properties.push(factory.createPropertyAssignment('flags', merged));
+    }
+    if (nullable) properties.push(factory.createPropertyAssignment('nullable', nullable));
+    if (defaultValue) properties.push(factory.createPropertyAssignment('defaultValue', defaultValue));
+    if (multi) properties.push(factory.createPropertyAssignment('multi', multi));
+    if (resolver) properties.push(factory.createPropertyAssignment('resolver', resolver));
     properties.push(factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)));
     return factory.createObjectLiteralExpression(properties, false);
 }
@@ -1017,9 +1093,8 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                         return false;
                     }
                 }
-                // Bare @Inject() needs design:type; only allow it when the plan
-                // can be materialized (type checker + concrete class).
-                if (!parameterDependency(parameter)) {
+                // The full parameter metadata plan must be materializable.
+                if (!parameterMetadataExpression(parameter, 'constructor')) {
                     return false;
                 }
             }
@@ -1057,7 +1132,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                     return false;
                 }
             }
-            if ((decorators.length || hasParameterDecorators) && !parameterDependency(parameter)) {
+            if ((decorators.length || hasParameterDecorators) && !parameterMetadataExpression(parameter, memberKey(member) || '')) {
                 return false;
             }
         }
@@ -1443,7 +1518,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                                 factory.createPropertyAssignment('name', factory.createStringLiteral(node.name!.text))
                             ], false);
                             precompiledMetadata = attachServiceMembers(precompiledMetadata, node);
-                            precompiledMetadata = attachMethodMetadata(precompiledMetadata, node);
+                            precompiledMetadata = attachMethodMetadata(precompiledMetadata, node, true);
                             precompiledMetadata = attachNoReactiveMetadata(precompiledMetadata, node);
                         }
                         compiledTypeRecords = genericClassDecorators.slice().reverse().map(decorator =>
