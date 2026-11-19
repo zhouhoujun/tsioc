@@ -690,6 +690,56 @@ export class AotPlanTplRef {
         }
     });
 
+    it('matches directive attribute selectors in binding plans', async () => {
+        const source = `
+import { Component, Directive, ElementRef } from '@tsdi/components';
+
+@Directive({ selector: '[type=button]' })
+export class AotPlanTypeButton {
+    constructor(elementRef: ElementRef) {
+        elementRef.nativeElement.setAttribute('data-directive', 'button');
+    }
+}
+
+@Component({
+    selector: 'aot-plan-selector',
+    imports: [AotPlanTypeButton],
+    template: '<div><button type="text" class="no">no</button><button type="button" class="yes">yes</button></div>'
+})
+export class AotPlanSelector {}
+`;
+        const emitted = transpileAot('aot-plan-selector.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('templatePlan:');
+
+        const exported = loadAotModule(source);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const proto = HtmlTemplateParser.prototype as any;
+        const originalParse = proto.parse;
+        let parses = 0;
+        proto.parse = function (...args: any[]) {
+            parses += 1;
+            return originalParse.apply(this, args);
+        };
+        let ctx: any;
+        try {
+            ctx = await Application.run(exported.AotPlanSelector, {
+                deps: [HtmlTemplateModule, ComponentsModule],
+                providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+            });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            const ref = ctx.runners.getRef(exported.AotPlanSelector) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('button.yes')?.getAttribute('data-directive')).toBe('button');
+            expect(root.querySelector('button.no')?.getAttribute('data-directive')).toBeFalsy();
+            expect(parses).toBe(0);
+        } finally {
+            proto.parse = originalParse;
+            await ctx?.close();
+            dom.window.close();
+        }
+    });
+
     it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';

@@ -91,28 +91,127 @@ function hasClass(attrs: Array<[string, string]>, name: string): boolean {
     return !!value && value.split(/\s+/).includes(name);
 }
 
-function matchesSelector(tag: string, attrs: Array<[string, string]>, selector: string): boolean {
-    const lowerTag = tag.toLowerCase();
+function matchesAttribute(attrs: Array<[string, string]>, expression: string): boolean {
+    const match = expression.match(/^([^~|^$*=\s]+)\s*(?:([~|^$*]?=)\s*(.*))?$/);
+    if (!match) {
+        return false;
+    }
+    const name = match[1];
+    const operator = match[2];
+    const actual = attrValue(attrs, name);
+    if (actual === undefined) {
+        return false;
+    }
+    if (!operator) {
+        return true;
+    }
+    let expected = (match[3] || '').trim();
+    if ((expected.startsWith('"') && expected.endsWith('"')) || (expected.startsWith("'") && expected.endsWith("'"))) {
+        expected = expected.slice(1, -1);
+    }
+    switch (operator) {
+        case '=': return actual === expected;
+        case '~=': return actual.split(/\s+/).includes(expected);
+        case '|=': return actual === expected || actual.startsWith(`${expected}-`);
+        case '^=': return expected !== '' && actual.startsWith(expected);
+        case '$=': return expected !== '' && actual.endsWith(expected);
+        case '*=': return expected !== '' && actual.includes(expected);
+        default: return false;
+    }
+}
+
+/** Match one simple selector (tag / .class / #id / [attr op value] compounds). */
+function matchesSimpleSelector(tag: string, attrs: Array<[string, string]>, selector: string): boolean {
+    if (selector === '*') {
+        return true;
+    }
+    let rest = selector;
+    const tagMatch = rest.match(/^([a-zA-Z][\w-]*)/);
+    if (tagMatch) {
+        if (tagMatch[1].toLowerCase() !== tag.toLowerCase()) {
+            return false;
+        }
+        rest = rest.slice(tagMatch[1].length);
+    } else if (!/^[.#[]/.test(rest)) {
+        return false;
+    }
+    while (rest) {
+        if (rest.startsWith('.')) {
+            const name = rest.slice(1).match(/^[\w-]+/)?.[0] || '';
+            if (!name || !hasClass(attrs, name)) {
+                return false;
+            }
+            rest = rest.slice(1 + name.length);
+            continue;
+        }
+        if (rest.startsWith('#')) {
+            const name = rest.slice(1).match(/^[\w-]+/)?.[0] || '';
+            if (!name || attrValue(attrs, 'id') !== name) {
+                return false;
+            }
+            rest = rest.slice(1 + name.length);
+            continue;
+        }
+        if (rest.startsWith('[')) {
+            let end = 1;
+            let quote = '';
+            while (end < rest.length) {
+                const char = rest[end];
+                if (quote) {
+                    if (char === quote) {
+                        quote = '';
+                    }
+                } else if (char === '"' || char === "'") {
+                    quote = char;
+                } else if (char === ']') {
+                    break;
+                }
+                end += 1;
+            }
+            if (end >= rest.length) {
+                return false;
+            }
+            if (!matchesAttribute(attrs, rest.slice(1, end))) {
+                return false;
+            }
+            rest = rest.slice(end + 1);
+            continue;
+        }
+        return false;
+    }
+    return true;
+}
+
+function matchesSelector(
+    node: RElement,
+    tag: string,
+    attrs: Array<[string, string]>,
+    selector: string,
+    renderer: Renderer
+): boolean {
+    // Native/virtual renderers provide the full selector engine (including
+    // descendant/child combinators over static attributes). Plan's matcher adds
+    // framework attributes such as `v-if`, which never reach the DOM.
+    const rendererMatches = (renderer as any).matchesSelector;
+    if (typeof rendererMatches === 'function') {
+        try {
+            if (rendererMatches.call(renderer, node, selector)) {
+                return true;
+            }
+        } catch {
+            // Fall through to the plan matcher.
+        }
+    }
     for (const raw of (selector || '').split(',')) {
         const part = raw.trim();
         if (!part) {
             continue;
         }
-        if (part.startsWith('[') && part.endsWith(']')) {
-            const inner = part.slice(1, -1);
-            const name = inner.split(/[~|^$*=\s]/)[0];
-            if (name && attrValue(attrs, name) !== undefined) {
-                return true;
-            }
+        // Framework-attribute combinators are not represented on the DOM node.
+        if (/[\s>+~]/.test(part)) {
             continue;
         }
-        if (part.startsWith('.')) {
-            if (hasClass(attrs, part.slice(1))) {
-                return true;
-            }
-            continue;
-        }
-        if (part.toLowerCase() === lowerTag) {
+        if (matchesSimpleSelector(tag, attrs, part)) {
             return true;
         }
     }
@@ -221,7 +320,7 @@ function bindPlanNode(
     assignLocalRefs(element, planElement);
 
     const tag = elementTag(element);
-    const component = components.find(def => matchesSelector(tag, planElement.rawAttrs, def.selector));
+    const component = components.find(def => matchesSelector(element, tag, planElement.rawAttrs, def.selector, renderer));
     if (component) {
         element[COMPONENTDEF] = component;
         ctx.componentElements.add(element);
@@ -237,7 +336,7 @@ function bindPlanNode(
     if (planElement.rawAttrs.length) {
         const matched: DirectiveDef[] = [];
         for (const def of directives) {
-            if (matchesSelector(tag, planElement.rawAttrs, def.selector)) {
+            if (matchesSelector(element, tag, planElement.rawAttrs, def.selector, renderer)) {
                 matched.push(def);
             }
         }
@@ -254,7 +353,7 @@ function bindPlanNode(
     }
 
     for (const def of customElements) {
-        if (matchesSelector(tag, planElement.rawAttrs, def.selector)) {
+        if (matchesSelector(element, tag, planElement.rawAttrs, def.selector, renderer)) {
             const list = element[CUSTOM_ELEMENTS] || [];
             list.push(def);
             element[CUSTOM_ELEMENTS] = list;
