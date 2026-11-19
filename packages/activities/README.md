@@ -603,7 +603,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 64 registered node types by label, description or type,
+- searchable palette: filter 65 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -880,6 +880,32 @@ watch     { path: "data", recursive: false, debounce: 200, event: "all" }
   `context.inbound = { transport: "watch", path, event }`; the watcher is closed
   when the run handle stops
 - browser-only hosts fail with a diagnosable error instead of silently skipping
+
+### Global config and context
+
+`global-config` declares workflow variables without a node hop:
+
+```json
+{ "id": "config_1", "type": "global-config",
+  "config": { "values": { "region": "eu", "retries": 3 }, "scope": "env" } }
+```
+
+- `scope: "env"` exposes `env.region` to every node, plus `env.get(name)` /
+  `env.has(name)` helpers (non-enumerable, so serialized payloads stay clean)
+- `scope: "global"` merges into the shared `global` scope
+- the config node never executes
+
+`flow` / `global` context is persisted between runs when the host installs a
+context store:
+
+```ts
+service.setContextStore(new InMemoryWorkflowContextStore());
+```
+
+The HTTP server installs a SQLite store next to the definition database by
+default (`workflow_context` table, only that table is created), so a workflow
+that increments `flow.counter` continues from the previous run after a restart.
+Store failures never fail a run.
 
 ### Link routing
 

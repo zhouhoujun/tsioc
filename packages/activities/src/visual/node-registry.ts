@@ -741,6 +741,38 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { host: '0.0.0.0', port: 0, path: '', reply: false }
     },
     {
+        type: 'global-config',
+        label: 'Global config',
+        description: 'Workflow variables exposed through env or global',
+        category: 'advanced',
+        icon: '⚙',
+        color: '#475569',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [],
+        fields: [
+            configField({
+                key: 'values',
+                label: 'Values',
+                type: 'json',
+                defaultValue: {},
+                placeholder: '{ "region": "eu", "retries": 3 }'
+            }),
+            configField({
+                key: 'scope',
+                label: 'Scope',
+                type: 'select',
+                defaultValue: 'env',
+                options: [
+                    { label: 'Environment (env)', value: 'env' },
+                    { label: 'Global', value: 'global' }
+                ],
+                description: 'env values are visible to every node as env.<name>; global values are shared across workflows.'
+            })
+        ],
+        defaultConfig: { values: {}, scope: 'env' }
+    },
+    {
         type: 'mqtt',
         label: 'MQTT broker',
         description: 'Shared MQTT broker connection for MQTT nodes',

@@ -62,6 +62,12 @@ import { WorkflowMqttTransport } from './WorkflowMqtt';
 import { WorkflowNetTransport } from './WorkflowNetTransport';
 import { WorkflowFileTransport } from './WorkflowFileTransport';
 import {
+    InMemoryWorkflowContextStore,
+    SqliteWorkflowContextStore,
+    WORKFLOW_CONTEXT_STORE,
+    WorkflowContextStore
+} from './WorkflowContextStore';
+import {
     InMemoryWorkflowCredentialStore,
     SqliteWorkflowCredentialStore,
     WORKFLOW_CREDENTIAL_STORE,
@@ -203,6 +209,7 @@ export class WorkflowHttpController {
         private mqtt: WorkflowMqttTransport,
         private netTransport: WorkflowNetTransport,
         private fileTransport: WorkflowFileTransport,
+        @Inject(WORKFLOW_CONTEXT_STORE) private contextStore: WorkflowContextStore,
         private execution: VisualWorkflowService
     ) {
         this.execution.setDefinitionResolver(id => this.store.get(id));
@@ -211,6 +218,7 @@ export class WorkflowHttpController {
         this.execution.setTcpSender(message => this.netTransport.sendTcp(message));
         this.execution.setUdpSender(message => this.netTransport.sendUdp(message));
         this.execution.setWebSocketSender(message => this.netTransport.sendWebSocket(message));
+        this.execution.setContextStore(this.contextStore);
         this.execution.setFileAccess({
             read: request => this.fileTransport.read(request),
             write: request => this.fileTransport.write(request)
@@ -925,6 +933,8 @@ export interface WorkflowHttpServerOptions {
     auditStore?: WorkflowAuditStore;
     /** Audit entries kept on disk (default 2000). */
     auditHistoryLimit?: number;
+    /** Context storage override (SQLite next to the definition store by default). */
+    contextStore?: WorkflowContextStore;
     /** Credential store override (encrypted SQLite by default when a key exists). */
     credentialStore?: WorkflowCredentialStore;
     /** Encryption key; defaults to WORKFLOW_CREDENTIAL_KEY. */
@@ -959,6 +969,22 @@ export interface WorkflowHttpServerOptions {
     cookies?: boolean;
     /** Enable JSON request/response handling. */
     json?: boolean;
+}
+
+function createServerContextStore(options: WorkflowHttpServerOptions): WorkflowContextStore {
+    if (options.contextStore) {
+        return options.contextStore;
+    }
+    if (options.store instanceof SqliteWorkflowDefinitionStore) {
+        return new SqliteWorkflowContextStore({ file: options.store.databaseFile });
+    }
+    if (options.store) {
+        return new InMemoryWorkflowContextStore();
+    }
+    if (options.databaseFile || isSqliteAvailable()) {
+        return new SqliteWorkflowContextStore({ file: options.databaseFile });
+    }
+    return new InMemoryWorkflowContextStore();
 }
 
 function createServerCredentialStore(options: WorkflowHttpServerOptions): WorkflowCredentialStore {
@@ -1049,6 +1075,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
     const executionStore = createServerExecutionStore(options);
     const auditStore = createServerAuditStore(options);
     const credentialStore = createServerCredentialStore(options);
+    const contextStore = createServerContextStore(options);
     const fileTransport = new WorkflowFileTransport(
         options.workspaceRoot || (typeof process !== 'undefined' ? process.env.WORKFLOW_WORKSPACE_ROOT : undefined)
     );
@@ -1088,6 +1115,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             { provide: WORKFLOW_AUDIT_STORE, useValue: auditStore },
             { provide: WORKFLOW_CREDENTIAL_STORE, useValue: credentialStore },
             { provide: WorkflowFileTransport, useValue: fileTransport },
+            { provide: WORKFLOW_CONTEXT_STORE, useValue: contextStore },
             { provide: WORKFLOW_AUDIT_LIMIT, useValue: options.auditHistoryLimit ?? 2000 },
             WorkflowAuditService,
             {

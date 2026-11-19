@@ -15,6 +15,7 @@ import {
     WorkflowMessage
 } from './types';
 import { WorkflowNodeRegistry } from './node-registry';
+import type { WorkflowContextStore } from '../../server/WorkflowContextStore';
 import {
     resolveWorkflowValue,
     validateVisualWorkflow,
@@ -209,6 +210,7 @@ export class VisualWorkflowService {
     private definitionResolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined;
     private credentialResolver?: (name: string) => Promise<string | undefined> | string | undefined;
     private mqttPublisher?: (message: WorkflowMqttPublishRequest) => Promise<void> | void;
+    private contextStore?: WorkflowContextStore;
     private fileReader?: (request: WorkflowFileReadRequest) => Promise<WorkflowFileReadResult> | WorkflowFileReadResult;
     private fileWriter?: (request: WorkflowFileWriteRequest) => Promise<WorkflowFileWriteResult> | WorkflowFileWriteResult;
     private tcpSender?: (message: WorkflowTcpSendRequest) => Promise<void> | void;
@@ -276,6 +278,7 @@ export class VisualWorkflowService {
             || options.resumeFrom?.executionId
             || this.generateExecutionId();
         const runtimeContext = this.withMessageContext(this.withPluginServices(context), options, definition);
+        await this.restoreContext(definition, runtimeContext);
         const state = options.resumeFrom
             ? this.createStateFromCheckpoint(definition, options.resumeFrom, executionId)
             : this.createState(definition, executionId);
@@ -467,6 +470,7 @@ export class VisualWorkflowService {
             if (timeoutTimer) {
                 clearTimeout(timeoutTimer);
             }
+            await this.persistContext(definition, runtimeContext);
         }
     }
 
@@ -524,6 +528,11 @@ export class VisualWorkflowService {
         this.fileWriter = access?.write;
     }
 
+    /** Persist `flow`/`global` context between runs (optional host store). */
+    setContextStore(store?: WorkflowContextStore): void {
+        this.contextStore = store;
+    }
+
     setDefinitionResolver(
         resolver?: (id: string) => Promise<VisualWorkflowDefinition | undefined> | VisualWorkflowDefinition | undefined
     ): void {
@@ -568,6 +577,108 @@ export class VisualWorkflowService {
         return this.globalContext;
     }
 
+    /** `global` scope: service-wide values plus `global-config` nodes. */
+    private globalScope(
+        context: ActivityContext,
+        definition?: VisualWorkflowDefinition
+    ): Record<string, any> {
+        // Keep one shared object so node writes to `global` persist across runs.
+        const shared = this.globalContext;
+        Object.assign(shared, (context as any)?.global || {});
+        (definition?.nodes || []).forEach(node => {
+            if (node.type !== 'global-config') {
+                return;
+            }
+            const config = node.config || {};
+            if (String(config.scope || 'env') !== 'global') {
+                return;
+            }
+            const declared = config.values;
+            if (declared && typeof declared === 'object' && !Array.isArray(declared)) {
+                Object.assign(shared, declared);
+            }
+        });
+        return shared;
+    }
+
+    /**
+     * `env` scope: host-provided values plus `global-config` nodes, exposed with
+     * Node-RED style `get`/`has` helpers (non-enumerable so JSON stays clean).
+     */
+    private environmentScope(
+        context: ActivityContext,
+        options: WorkflowExecutionOptions,
+        definition?: VisualWorkflowDefinition
+    ): Record<string, any> {
+        const values: Record<string, any> = { ...(options.env || {}), ...((context as any)?.env || {}) };
+        (definition?.nodes || []).forEach(node => {
+            if (node.type !== 'global-config') {
+                return;
+            }
+            const config = node.config || {};
+            if (String(config.scope || 'env') !== 'env') {
+                return;
+            }
+            const declared = config.values;
+            if (declared && typeof declared === 'object' && !Array.isArray(declared)) {
+                Object.assign(values, declared);
+            }
+        });
+        const env: Record<string, any> = { ...values };
+        Object.defineProperty(env, 'get', {
+            value: (key: string) => env[key],
+            enumerable: false
+        });
+        Object.defineProperty(env, 'has', {
+            value: (key: string) => Object.prototype.hasOwnProperty.call(env, key),
+            enumerable: false
+        });
+        return env;
+    }
+
+    /** Merge persisted `flow`/`global` context into the run (never blocks it). */
+    private async restoreContext(
+        definition: VisualWorkflowDefinition,
+        context: ActivityContext
+    ): Promise<void> {
+        if (!this.contextStore) {
+            return;
+        }
+        try {
+            const saved = await this.contextStore.read(definition.id);
+            if (!saved) {
+                return;
+            }
+            if (saved.flow) {
+                (context as any).flow = { ...(saved.flow || {}), ...((context as any).flow || {}) };
+            }
+            if (saved.global) {
+                Object.assign(this.globalContext, saved.global);
+                (context as any).global = { ...this.globalContext, ...((context as any).global || {}) };
+            }
+        } catch {
+            // Context persistence is best effort; a broken store must not fail a run.
+        }
+    }
+
+    /** Persist the final `flow`/`global` state so the next run can resume it. */
+    private async persistContext(
+        definition: VisualWorkflowDefinition,
+        context: ActivityContext
+    ): Promise<void> {
+        if (!this.contextStore) {
+            return;
+        }
+        try {
+            await this.contextStore.write(definition.id, {
+                flow: (context as any).flow,
+                global: (context as any).global
+            });
+        } catch {
+            // Never fail a completed run because persistence failed.
+        }
+    }
+
     /**
      * Ensure every execution has a msg envelope plus flow/global/env scopes.
      * Existing payload-based definitions keep working through `payload`.
@@ -596,8 +707,8 @@ export class VisualWorkflowService {
             ...(payload !== undefined ? { payload } : {}),
             msg,
             flow: (context as any)?.flow || {},
-            global: (context as any)?.global || this.globalContext,
-            env: (context as any)?.env || options.env || {},
+            global: this.globalScope(context, definition),
+            env: this.environmentScope(context, options, definition),
             resolveCredential: (name: string) => this.credentialResolver?.(name),
             mqttPublish: this.mqttPublisher
                 ? (message: WorkflowMqttPublishRequest) => this.mqttPublisher!(message)

@@ -327,6 +327,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "watch": {
                 "label": "Watch",
                 "description": "Start the flow when a file or folder changes"
+            },
+            "global-config": {
+                "label": "Global config",
+                "description": "Workflow variables exposed through env or global"
             }
         },
         "field": {
@@ -802,6 +806,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "recursive": "Recursive",
                 "debounce": "Debounce",
                 "event": "Event"
+            },
+            "global-config": {
+                "values": "Values",
+                "scope": "Scope"
             }
         },
         "fieldPlaceholder": {
@@ -1077,6 +1085,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "watch": {
                 "path": "data"
+            },
+            "global-config": {
+                "values": "{ \"region\": \"eu\", \"retries\": 3 }"
             }
         },
         "fieldDescription": {
@@ -1486,6 +1497,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "recursive": "Watch nested directories as well.",
                 "debounce": "Wait this long before emitting a change.",
                 "event": "Restrict to renames or content changes."
+            },
+            "global-config": {
+                "scope": "env values are visible to every node as env.<name>; global values are shared across workflows."
             }
         },
         "group": {
@@ -1589,7 +1603,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "all": "All changes",
             "rename": "Renames only",
             "call": "Link call",
-            "return": "Link return"
+            "return": "Link return",
+            "env": "Environment (env)",
+            "global": "Global"
         }
     },
     "zh-CN": {
@@ -1913,6 +1929,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "watch": {
                 "label": "文件监听",
                 "description": "文件或目录变化时启动流程"
+            },
+            "global-config": {
+                "label": "全局配置",
+                "description": "通过 env 或 global 暴露的工作流变量"
             }
         },
         "field": {
@@ -2388,6 +2408,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "recursive": "递归监听",
                 "debounce": "去抖",
                 "event": "事件类型"
+            },
+            "global-config": {
+                "values": "变量",
+                "scope": "作用域"
             }
         },
         "fieldPlaceholder": {
@@ -2647,6 +2671,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "watch": {
                 "path": "data"
+            },
+            "global-config": {
+                "values": "{ \"region\": \"eu\", \"retries\": 3 }"
             }
         },
         "fieldDescription": {
@@ -3056,6 +3083,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "recursive": "同时监听子目录。",
                 "debounce": "事件合并等待时间。",
                 "event": "只响应重命名或内容变更。"
+            },
+            "global-config": {
+                "scope": "env 变量以 env.<name> 对所有节点可见；global 变量在工作流之间共享。"
             }
         },
         "group": {
@@ -3159,7 +3189,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "all": "All changes",
             "rename": "Renames only",
             "call": "Link call",
-            "return": "Link return"
+            "return": "Link return",
+            "env": "Environment (env)",
+            "global": "Global"
         }
     }
 };

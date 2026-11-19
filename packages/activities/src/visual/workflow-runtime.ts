@@ -1228,6 +1228,7 @@ export async function executeVisualNode(
                 }
             };
         }
+        case 'global-config':
         case 'mqtt':
         case 'tls': {
             // Config node: it only carries settings for other nodes.
