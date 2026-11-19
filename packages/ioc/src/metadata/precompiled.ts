@@ -235,6 +235,12 @@ function applyTypeMetadataFields(def: Record<string, any>, records: PrecompiledT
         if (typeof meta.abstract === 'boolean') {
             def.abstract = meta.abstract;
         }
+        if (meta.selector !== undefined) {
+            def.selector = meta.selector;
+        }
+        if (typeof meta.pure === 'boolean') {
+            def.pure = meta.pure;
+        }
         if (typeof meta.singleton === 'boolean') {
             def.singleton = meta.singleton;
         }

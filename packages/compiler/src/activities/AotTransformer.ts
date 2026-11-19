@@ -14,7 +14,7 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Component', 'Directive'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'Component', 'Directive'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
@@ -250,6 +250,22 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
             return args.length === 1
                 ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('providers', args[0])], false)
                 : undefined;
+        case 'Pipe':
+            if (args.length === 1 && ts.isStringLiteral(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('selector', args[0]),
+                    factory.createPropertyAssignment('provide', args[0]),
+                    factory.createPropertyAssignment('pure', factory.createTrue())
+                ], false);
+            }
+            if (args.length === 2 && ts.isStringLiteral(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('selector', args[0]),
+                    factory.createPropertyAssignment('provide', args[0]),
+                    factory.createPropertyAssignment('pure', args[1])
+                ], false);
+            }
+            return undefined;
         case 'ProvidedIn':
             if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
                 return args[0];

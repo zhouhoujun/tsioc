@@ -12,7 +12,9 @@ function loadModule(source: string): Record<string, any> {
         ? nodeRequire('../../ioc/src')
         : id === '@tsdi/components'
             ? nodeRequire('../../components/src')
-            : nodeRequire(id);
+            : id === '@tsdi/core'
+                ? nodeRequire('../../core/src')
+                : nodeRequire(id);
     const load = new Function('exports', 'require', 'module', output);
     load(module.exports, localRequire, module);
     return module.exports;
@@ -237,6 +239,28 @@ export class ProvidedService extends TargetToken {}
         const providers = container.getRuntime().getTypeProvider(exported.TargetToken) as any[];
         expect(providers.some(provider => provider === exported.ProvidedService
             || provider?.provide === exported.TargetToken)).toBe(true);
+    });
+
+
+    it('precompiles @Pipe selector metadata', () => {
+        const source = `
+import { Pipe } from '@tsdi/core';
+
+@Pipe('upper')
+export class UpperPipe {
+    transform(value: string) { return value.toUpperCase(); }
+}
+`;
+        const emitted = transpileAot('aot-pipe.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain("selector: 'upper'");
+        expect(emitted).toContain("provide: 'upper'");
+
+        const exported = loadModule(source);
+        const def = getClassRef(exported.UpperPipe).getAnnotation() as any;
+        expect(def.selector).toBe('upper');
+        expect(def.pure).toBe(true);
+        expect(def.provides).toContain('upper');
     });
 
     it('materializes component and directive definitions', () => {
