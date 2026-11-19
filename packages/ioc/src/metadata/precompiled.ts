@@ -1,5 +1,5 @@
-import { AbstractType } from '../types';
-import type { DecoratorType } from './define';
+import { AbstractType, typeAnn } from '../types';
+import type { DecoratorFn, DecoratorType } from './define';
 
 /**
  * Small global index used by precompiled metadata. Build-time metadata stores
@@ -127,4 +127,112 @@ export function applyPrecompiledDecorators(
                 break;
         }
     }
+}
+
+
+/**
+ * One class-level decorator recorded by the AOT transformer.
+ *
+ * The generated module keeps the decorator expression (so `getDefines()` /
+ * `hasMetadata()` still resolve identical definitions) but skips the runtime
+ * decorator factory + dispatch pipeline; the annotation fields are already
+ * present in the precompiled type definition.
+ */
+export interface PrecompiledTypeDecoratorRecord {
+    decor: DecoratorFn;
+    decorator?: string;
+    metadata?: any;
+}
+
+/** Compact tuple emitted by the AOT transformer: `[decorator, metadata]`. */
+export type PrecompiledTypeDecoratorEntry = PrecompiledTypeDecoratorRecord | [Function, any];
+
+const PRECOMPILED_TYPE_DEFINES = Symbol('__AOT_TYPE_DEFINES');
+
+/**
+ * Install a fully materialized `ƿAnn` definition for a class.
+ *
+ * `getDef()` reads the definition without scanning decorators, and
+ * `ClassRef` replays only the compact decorator records (no option factories,
+ * no runtime handler chain) when it is first created.
+ */
+export function applyPrecompiledType(
+    target: Function,
+    metadata: Record<string, any>,
+    records?: PrecompiledTypeDecoratorEntry[],
+    mergeMetadata = false
+): void {
+    if (!target) {
+        return;
+    }
+    const def = metadata && typeof metadata === 'object' ? metadata : {};
+    def.type = target;
+    if (!def.name) {
+        def.name = target.name;
+    }
+    if (records?.length) {
+        if (mergeMetadata) {
+            // Component/Directive keep the decorator options object as their
+            // definition. Merge the emitted option metadata into it so both
+            // copies point at the same runtime values.
+            for (let i = 0, len = records.length; i < len; i++) {
+                const record = records[i] as any;
+                const meta = Array.isArray(record) ? record[1] : record?.metadata;
+                if (meta && typeof meta === 'object') {
+                    Object.assign(def, meta);
+                    if (meta.provide !== undefined) {
+                        (def.provides || (def.provides = []));
+                        if (def.provides.indexOf(meta.provide) < 0) {
+                            def.provides.push(meta.provide);
+                        }
+                    }
+                }
+            }
+        } else {
+            applyTypeMetadataFields(def, records);
+        }
+    }
+    (target as any)[typeAnn] = () => def;
+    (target as any)[PRECOMPILED_TYPE_DEFINES] = records ?? [];
+}
+
+function applyTypeMetadataFields(def: Record<string, any>, records: PrecompiledTypeDecoratorEntry[]): void {
+    for (let i = 0, len = records.length; i < len; i++) {
+        const record = records[i] as any;
+        const meta = Array.isArray(record) ? record[1] : record?.metadata;
+        if (!meta || typeof meta !== 'object') {
+            continue;
+        }
+        if (typeof meta.abstract === 'boolean') {
+            def.abstract = meta.abstract;
+        }
+        if (typeof meta.singleton === 'boolean') {
+            def.singleton = meta.singleton;
+        }
+        if (typeof meta.static === 'boolean') {
+            def.static = meta.static;
+        }
+        if (meta.expires) {
+            def.expires = meta.expires;
+        }
+        if (meta.providedIn) {
+            def.providedIn = meta.providedIn;
+        }
+        if (meta.provide !== undefined) {
+            (def.provides || (def.provides = []));
+            if (def.provides.indexOf(meta.provide) < 0) {
+                def.provides.push(meta.provide);
+            }
+        }
+        if (Array.isArray(meta.providers) && meta.providers.length) {
+            (def.providers || (def.providers = []));
+            if (def.providers !== meta.providers && def.providers.indexOf(meta.providers) < 0) {
+                def.providers.push(meta.providers);
+            }
+        }
+    }
+}
+
+export function getPrecompiledTypeDefines(target: Function): PrecompiledTypeDecoratorEntry[] | undefined {
+    return (target as any)?.[PRECOMPILED_TYPE_DEFINES];
 }

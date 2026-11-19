@@ -13,7 +13,7 @@ import { Injector, MethodType, Resolve } from '../injector';
 import { Invocation, InvocationFactory } from '../invocation';
 import { getDef, proxyTag, TypeDef } from './type.def';
 import { getType, isPrimitive } from './type';
-import { registerPrecompiledType } from './precompiled';
+import { registerPrecompiledType, getPrecompiledTypeDefines, PrecompiledTypeDecoratorEntry } from './precompiled';
 import { ctorName, DecoratorFn, DecoratorType, DecorDefine, Decors, RunableDefine } from './define';
 import type { RunContext } from '../handlers/contexts';
 
@@ -214,6 +214,46 @@ export class ClassRef<T = any> {
             args.push(injector)
         }
         return inst[method](...args);
+    }
+
+    /**
+     * Replay compact records emitted by the AOT transformer. This registers
+     * the same `classDefs`/`decDefs` entries as the runtime decorator path but
+     * skips decorator option factories and dispatch handlers.
+     */
+    applyPrecompiledDefines(records: PrecompiledTypeDecoratorEntry[]): void {
+        if (!records?.length) {
+            return;
+        }
+        for (let i = 0, len = records.length; i < len; i++) {
+            const record = records[i] as any;
+            const decor = Array.isArray(record) ? record[0] : record.decor;
+            const metadata = (Array.isArray(record) ? record[1] : record.metadata) ?? {};
+            this.storage({
+                decor,
+                decorType: 'class',
+                propertyKey: ctorName,
+                metadata
+            } as DecorDefine);
+        }
+        const annotation = this.annotation;
+        if (!annotation.methodMetadatas.get(ctorName)?.params) {
+            const paramTypes = Reflect.getMetadata('design:paramtypes', this.type) as any[] | undefined;
+            if (paramTypes) {
+                const names = this.getParamNames(ctorName);
+                let meta = annotation.methodMetadatas.get(ctorName);
+                if (!meta) {
+                    meta = {};
+                    annotation.methodMetadatas.set(ctorName, meta);
+                }
+                meta.params = paramTypes.map((type, index) => ({
+                    type,
+                    name: names[index],
+                    target: this.type,
+                    propertyKey: ctorName
+                }));
+            }
+        }
     }
 
     storage(define: DecorDefine) {
@@ -638,6 +678,10 @@ export function getClassRef<T = any>(type: AbstractType<T>): ClassRef<T> {
             }
         }
         tyRef = new ClassRef(type, getDef(type), prRef);
+        const precompiledDefines = getPrecompiledTypeDefines(type);
+        if (precompiledDefines?.length) {
+            tyRef.applyPrecompiledDefines(precompiledDefines);
+        }
         Reflect.defineMetadata(CLASS_REF, tyRef, type);
         try {
             registerPrecompiledType(type);

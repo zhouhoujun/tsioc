@@ -6,6 +6,16 @@ const ASPECT_DECORATORS = new Set([
 ]);
 const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterReturning', 'AfterThrowing', 'Advice']);
 
+/**
+ * Class-level decorators whose metadata can be materialized without running
+ * the decorator factory/dispatch pipeline. Classes that also carry member or
+ * parameter decorators keep the runtime path, because those still need the
+ * full design/runtime handler chain.
+ */
+const PRECOMPILABLE_CLASS_DECORATORS = new Set([
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Component', 'Directive'
+]);
+
 export interface AotPrecompileOptions {
     /** Emit design:* metadata (needed by IoC injection). Default true. */
     designMetadata?: boolean;
@@ -189,6 +199,59 @@ function decoratorArgs(decorator: ts.Decorator): readonly ts.Expression[] {
     return ts.isCallExpression(decorator.expression) ? decorator.expression.arguments : [];
 }
 
+function isObjectLiteralExpression(node: ts.Expression | undefined): node is ts.ObjectLiteralExpression {
+    return !!node && ts.isObjectLiteralExpression(node);
+}
+
+/**
+ * Emit the metadata object a decorator's `props`/`appendProps` would produce
+ * for the shapes the framework documents. Returns `undefined` when the call is
+ * dynamic enough that only the real decorator can be trusted.
+ */
+function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | undefined {
+    const factory = ts.factory;
+    const name = decoratorName(decorator);
+    if (!ts.isCallExpression(decorator.expression)) {
+        return undefined;
+    }
+    const args = decoratorArgs(decorator);
+    switch (name) {
+        case 'Injectable':
+            if (args.length === 0) return factory.createObjectLiteralExpression([], false);
+            if (args.length === 1) {
+                return isObjectLiteralExpression(args[0])
+                    ? args[0]
+                    : factory.createObjectLiteralExpression([
+                        factory.createPropertyAssignment('provide', args[0])
+                    ], false);
+            }
+            return undefined;
+        case 'Singleton':
+            return args.length === 0
+                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('singleton', factory.createTrue())], false)
+                : undefined;
+        case 'Static':
+            return args.length === 0
+                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('static', factory.createTrue())], false)
+                : undefined;
+        case 'Abstract':
+            return args.length === 0
+                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('abstract', factory.createTrue())], false)
+                : undefined;
+        case 'Providers':
+            return args.length === 1
+                ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('providers', args[0])], false)
+                : undefined;
+        case 'Component':
+        case 'Directive':
+            return args.length === 1 && isObjectLiteralExpression(args[0])
+                ? args[0]
+                : undefined;
+        default:
+            return undefined;
+    }
+}
+
 function memberKey(member: ts.ClassElement): string | undefined {
     const name = (member as ts.MethodDeclaration | ts.PropertyDeclaration).name;
     if (!name) {
@@ -224,6 +287,34 @@ function isRuntimeValueType(name: ts.EntityName): boolean {
     } catch {
         return false;
     }
+}
+
+/**
+ * Emit constructor injection dependencies (`ƿprov`) when every parameter is a
+ * concrete class. Interfaces/type aliases and unresolved types fall back to the
+ * runtime `design:paramtypes` path instead of injecting `Object`.
+ */
+function constructorDependencies(node: ts.ClassDeclaration): ts.Expression | undefined {
+    const ctor = node.members.find(ts.isConstructorDeclaration) as ts.ConstructorDeclaration | undefined;
+    if (!ctor?.parameters.length || !activeTypeChecker) {
+        return undefined;
+    }
+    const deps: ts.Expression[] = [];
+    for (const parameter of ctor.parameters) {
+        const type = parameter.type;
+        if (!type || !ts.isTypeReferenceNode(type)) {
+            return undefined;
+        }
+        let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
+        if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
+            symbol = activeTypeChecker.getAliasedSymbol(symbol);
+        }
+        if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
+            return undefined;
+        }
+        deps.push(typeExpression(type));
+    }
+    return ts.factory.createArrayLiteralExpression(deps, false);
 }
 
 function typeExpression(type: ts.TypeNode | undefined): ts.Expression {
@@ -456,6 +547,9 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
             const statements: ts.Statement[] = [];
             activeTypeContext = { sourceFile, imports, aliases: new Map(), sequence: { value: 0 }, moduleKind: options.moduleKind };
             let usesIoc = false;
+            let usesAotType = false;
+            let usesAotComponent = false;
+            let usesAotDirective = false;
             let usesAspect = false;
             let usesNoPointcut = false;
             let usesReflect = false;
@@ -566,6 +660,34 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                     records.push({ expression: decorator.expression, kind: 'class' });
                 });
 
+                let compiledTypeRecords: ts.Expression[] | undefined;
+                let precompiledHelper = '__aotType';
+                let precompiledMetadata: ts.Expression | undefined;
+                if (!hasAnyMemberDecorator
+                    && !aspectDecorator
+                    && !noPointcutDecorator
+                    && genericClassDecorators.length > 0
+                    && genericClassDecorators.every(decorator => PRECOMPILABLE_CLASS_DECORATORS.has(decoratorName(decorator)))
+                    && genericClassDecorators.every(decorator => !!precompiledDecoratorMetadata(decorator))) {
+                    const names = genericClassDecorators.map(decorator => decoratorName(decorator));
+                    const hasComponent = names.includes('Component');
+                    const hasDirective = names.includes('Directive');
+                    if (!(hasComponent && hasDirective)) {
+                        precompiledHelper = hasComponent ? '__aotComponent' : hasDirective ? '__aotDirective' : '__aotType';
+                        if (hasComponent || hasDirective) {
+                            precompiledMetadata = precompiledDecoratorMetadata(
+                                genericClassDecorators.find(decorator => decoratorName(decorator) === (hasComponent ? 'Component' : 'Directive'))!
+                            );
+                        }
+                        compiledTypeRecords = genericClassDecorators.slice().reverse().map(decorator =>
+                            factory.createArrayLiteralExpression([
+                                (decorator.expression as ts.CallExpression).expression,
+                                precompiledDecoratorMetadata(decorator)!
+                            ], false)
+                        );
+                    }
+                }
+
                 const updated = factory.updateClassDeclaration(
                     node,
                     stripDecorators(node.modifiers),
@@ -575,7 +697,36 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                     members
                 );
                 const injections: ts.Statement[] = [...metadataStatements];
-                if (records.length) {
+                if (compiledTypeRecords) {
+                    injections.push(factory.createExpressionStatement(factory.createCallExpression(
+                        factory.createIdentifier(precompiledHelper),
+                        undefined,
+                        [
+                            factory.createIdentifier(node.name!.text),
+                            precompiledMetadata ?? factory.createObjectLiteralExpression([
+                                factory.createPropertyAssignment('name', factory.createStringLiteral(node.name!.text))
+                            ], false),
+                            factory.createArrayLiteralExpression(compiledTypeRecords, false)
+                        ]
+                    )));
+                    if (precompiledHelper === '__aotComponent') {
+                        usesAotComponent = true;
+                    } else if (precompiledHelper === '__aotDirective') {
+                        usesAotDirective = true;
+                    } else {
+                        usesAotType = true;
+                        const deps = constructorDependencies(node);
+                        if (deps) {
+                            injections.push(factory.createExpressionStatement(factory.createBinaryExpression(
+                                factory.createPropertyAccessExpression(factory.createIdentifier(node.name!.text), 'ƿprov'),
+                                ts.SyntaxKind.EqualsToken,
+                                factory.createObjectLiteralExpression([
+                                    factory.createPropertyAssignment('deps', deps)
+                                ], false)
+                            )));
+                        }
+                    }
+                } else if (records.length) {
                     injections.push(factory.createExpressionStatement(factory.createCallExpression(
                         factory.createIdentifier('__aotDeco'),
                         undefined,
@@ -644,6 +795,15 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
             };
             if (usesIoc) {
                 addHelperBinding('__aotDeco', '@tsdi/ioc', 'applyPrecompiledDecorators');
+            }
+            if (usesAotType) {
+                addHelperBinding('__aotType', '@tsdi/ioc', 'applyPrecompiledType');
+            }
+            if (usesAotComponent) {
+                addHelperBinding('__aotComponent', '@tsdi/components', 'applyPrecompiledComponent');
+            }
+            if (usesAotDirective) {
+                addHelperBinding('__aotDirective', '@tsdi/components', 'applyPrecompiledDirective');
             }
             if (usesAspect) {
                 addHelperBinding('__aotAspect', '@tsdi/aop', 'registerPrecompiledAspect');

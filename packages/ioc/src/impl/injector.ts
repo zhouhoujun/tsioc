@@ -969,13 +969,17 @@ export function generateTypeRecord(injector: Injector, typeRef: ClassRef, params
         return createRecord((raise, flags) => origin.get(type, undefined, flags), isStatic, decStatic);
     }
 
+    // AOT builds may publish constructor dependencies; using them skips the
+    // runtime `design:paramtypes` lookup while keeping the same interceptor
+    // chain (property injection, AOP, autorun).
+    const precompiledDeps = params ?? (type as any)?.ƿprov?.deps;
 
     const factory = (runContext?: RunContext) => {
         if (singleton && runtime.has(type)) {
             return runtime.get(type);
         }
 
-        const context = createRuntimeContext(injector, undefined, runtime, runContext, multi, params);
+        const context = createRuntimeContext(injector, undefined, runtime, runContext, multi, precompiledDeps);
         const instance = runtime.getInstanceHandler().handle(typeRef, context, { finally: () => context.onDestroy() });
         if (singleton) {
             runtime.set(type, instance, injector);

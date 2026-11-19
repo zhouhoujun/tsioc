@@ -8,6 +8,52 @@ export const CUSTOM_ELEMENTS = token<DirectiveDef[]>('CUSTOM_ELEMENTS');
 
 export const DIRECTIVES = token<DirectiveDef[]>('DIRECTIVES');
 
+const HTML_ELEMENTS = ['button', 'input', 'div', 'span', 'a', 'form', 'ul', 'li', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'img', 'video', 'audio', 'select', 'option', 'textarea', 'label', 'link', 'meta', 'script', 'style', 'panel', 'icon'];
+
+/**
+ * Normalize a directive selector list and split it into attribute and custom
+ * element selectors. Shared by the decorator and the AOT metadata path.
+ */
+export function normalizeDirectiveSelector(rawSelector: string): {
+    selector: string;
+    dirSelector: string;
+    custSelector: string;
+} {
+    const parts = (rawSelector || '').split(',').map(s => s.trim()).filter(s => s.length > 0);
+    const attrParts: string[] = [];
+    const custParts: string[] = [];
+    const normalizedParts: string[] = [];
+    for (const part of parts) {
+        if (part.startsWith('*')) {
+            const bracketed = `[${part}]`;
+            attrParts.push(bracketed);
+            normalizedParts.push(bracketed);
+        } else if (part.startsWith('[') && part.endsWith(']')) {
+            attrParts.push(part);
+            normalizedParts.push(part);
+        } else if (part.includes('=')) {
+            const bracketed = `[${part}]`;
+            attrParts.push(bracketed);
+            normalizedParts.push(bracketed);
+        } else if (part.includes('-')) {
+            custParts.push(part);
+            normalizedParts.push(part);
+        } else if (HTML_ELEMENTS.includes(part)) {
+            custParts.push(part);
+            normalizedParts.push(part);
+        } else {
+            const bracketed = `[${part}]`;
+            attrParts.push(bracketed);
+            normalizedParts.push(bracketed);
+        }
+    }
+    return {
+        selector: normalizedParts.join(','),
+        dirSelector: attrParts.join(','),
+        custSelector: custParts.join(',')
+    };
+}
+
 
 /**
  * Directive decorator interface
@@ -55,38 +101,10 @@ export const Directive: Directive = createDecorator<Partial<DirectiveDef>>('Dire
             def.exportProviders.push({ provide: DIRECTIVES, useValue: def, multi: true });
 
             const rawSelector = def.selector || '';
-            const parts = rawSelector.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            const attrParts: string[] = [];
-            const custParts: string[] = [];
-            const normalizedParts: string[] = [];
-            const htmlElements = ['button', 'input', 'div', 'span', 'a', 'form', 'ul', 'li', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'img', 'video', 'audio', 'select', 'option', 'textarea', 'label', 'link', 'meta', 'script', 'style', 'panel', 'icon'];
-            for (const part of parts) {
-                if (part.startsWith('*')) {
-                    const bracketed = `[${part}]`;
-                    attrParts.push(bracketed);
-                    normalizedParts.push(bracketed);
-                } else if (part.startsWith('[') && part.endsWith(']')) {
-                    attrParts.push(part);
-                    normalizedParts.push(part);
-                } else if (part.includes('=')) {
-                    const bracketed = `[${part}]`;
-                    attrParts.push(bracketed);
-                    normalizedParts.push(bracketed);
-                } else if (part.includes('-')) {
-                    custParts.push(part);
-                    normalizedParts.push(part);
-                } else if (htmlElements.includes(part)) {
-                    custParts.push(part);
-                    normalizedParts.push(part);
-                } else {
-                    const bracketed = `[${part}]`;
-                    attrParts.push(bracketed);
-                    normalizedParts.push(bracketed);
-                }
-            }
-            def.selector = normalizedParts.join(',');
-            const dirSelector = attrParts.join(',');
-            const custSelector = custParts.join(',');
+            const normalized = normalizeDirectiveSelector(rawSelector);
+            def.selector = normalized.selector;
+            const dirSelector = normalized.dirSelector;
+            const custSelector = normalized.custSelector;
             if (dirSelector && dirSelector !== def.selector) {
                 def.exportProviders.push({ provide: DIRECTIVES, useValue: { ...def, selector: dirSelector }, multi: true });
             }

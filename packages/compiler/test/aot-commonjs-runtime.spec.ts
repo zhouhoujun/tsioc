@@ -38,6 +38,8 @@ export class DemoService {
 }
 `;
         const output = transpileAot('demo.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(output).toContain('applyPrecompiledType');
+        expect(output).toContain('__aotType(DemoService,');
         const module = { exports: {} as Record<string, any> };
         const nodeRequire = require;
         const localRequire = (id: string): any => id === '@tsdi/ioc'
@@ -48,10 +50,13 @@ export class DemoService {
         expect(typeof module.exports.DemoService).toEqual('function');
 
         // Guard the regression itself: without the binding this is exactly the
-        // browser/runtime failure users saw (`__aotDeco is not defined`).
-        const broken = output.replace(/const __aotDeco = require\(["']@tsdi\/ioc["']\)\.applyPrecompiledDecorators;\n/, '');
+        // browser/runtime failure users saw (`__aotType is not defined`).
+        const broken = output.replace(
+            /const __aotType = require\(["']@tsdi\/ioc["']\)\.applyPrecompiledType;\n/,
+            ''
+        );
         const brokenModule = { exports: {} as Record<string, any> };
         const loadBroken = new Function('exports', 'require', 'module', broken);
-        expect(() => loadBroken(brokenModule.exports, localRequire, brokenModule)).toThrow(/__aotDeco is not defined/);
+        expect(() => loadBroken(brokenModule.exports, localRequire, brokenModule)).toThrow(/__aotType is not defined/);
     }
 }
