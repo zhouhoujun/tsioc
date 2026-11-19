@@ -59,6 +59,8 @@ interface PlanBuildContext {
     projectionOutlets: WeakMap<RNode, Array<{ name: string; value: string }>>;
     /** `<v-template>` hosts; their content is built lazily per embedded view. */
     templatePlans: WeakMap<RNode, TemplatePlanElement>;
+    /** Transparent `<template v-if|v-for>` anchors and their body nodes. */
+    transparentTemplates: WeakMap<RNode, RNode[]>;
 }
 
 function createPlanContext(): PlanBuildContext {
@@ -68,7 +70,8 @@ function createPlanContext(): PlanBuildContext {
         componentElements: new WeakSet(),
         structuralTemplates: new WeakSet(),
         projectionOutlets: new WeakMap(),
-        templatePlans: new WeakMap()
+        templatePlans: new WeakMap(),
+        transparentTemplates: new WeakMap()
     };
 }
 
@@ -268,13 +271,21 @@ function createNode(renderer: Renderer, node: TemplatePlanNode, ctx: PlanBuildCo
         ctx.templatePlans.set(element, node);
         return element;
     }
+    const transparent = tag === 'template';
     const children: RNode[] = [];
     for (const childPlan of node.children) {
         const child = createNode(renderer, childPlan, ctx);
         children.push(child);
-        element.appendChild(child);
+        if (!transparent) {
+            element.appendChild(child);
+        }
     }
     ctx.childrenByElement.set(element, children);
+    if (transparent) {
+        // `<template v-if>` only provides structural template content; the
+        // wrapper itself is never rendered.
+        ctx.transparentTemplates.set(element, children);
+    }
     return element;
 }
 
@@ -343,11 +354,12 @@ function bindPlanNode(
         if (matched.length) {
             matched.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
             element[DIRECTIVES] = matched;
+            const templateContent = ctx.transparentTemplates.get(element);
             matched.forEach(def => {
                 if (isStructuralDirective(def)) {
                     ctx.structuralTemplates.add(element);
                 }
-                bindingDirectiveFactory(element, def, attrs, renderer, delimiter);
+                bindingDirectiveFactory(element, def, attrs, renderer, delimiter, templateContent);
             });
         }
     }
@@ -432,6 +444,9 @@ function prepareTemplates(
     const localRefs = node[LOCAL_REFS];
     if (localRefs?.length) {
         injector.registerLocalRefs(node, localRefs);
+    }
+    if (ctx.structuralTemplates.has(node) || ctx.transparentTemplates.has(node)) {
+        return;
     }
     const templatePlan = ctx.templatePlans.get(node);
     if (templatePlan) {

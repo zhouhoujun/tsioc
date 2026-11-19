@@ -1087,7 +1087,7 @@ export function bindingComponentFactory(element: RElement, componentDef: Compone
  * @param renderer 渲染器
  * @param delimiter 分隔符正则表达式
  */
-export function bindingDirectiveFactory(element: RElement, directiveDef: DirectiveDef, attrs: RAttr[], renderer: Renderer, delimiter: RegExp): void {
+export function bindingDirectiveFactory(element: RElement, directiveDef: DirectiveDef, attrs: RAttr[], renderer: Renderer, delimiter: RegExp, templateNodes?: RNode[]): void {
     const selectors = directiveDef.selector.split(',').map(sel => sel.replace(/^\[|\]$/g, ''));
 
     switch (directiveDef.dirType) {
@@ -1099,15 +1099,15 @@ export function bindingDirectiveFactory(element: RElement, directiveDef: Directi
                 bindingDirective(element, directiveDef, selectors, attrs, renderer, delimiter);
             } else if (directiveDef.selector.includes('v-case') || directiveDef.selector.includes('*case')) {
                 // v-case is a structural directive that creates a container
-                processConditionalBinding(element, directiveDef, selectors, attrs, renderer, delimiter);
+                processConditionalBinding(element, directiveDef, selectors, attrs, renderer, delimiter, templateNodes);
             } else {
-                processConditionalBinding(element, directiveDef, selectors, attrs, renderer, delimiter);
+                processConditionalBinding(element, directiveDef, selectors, attrs, renderer, delimiter, templateNodes);
             }
             break;
 
         case DirectiveType.Iterable:
             // 处理列表指令（v-for, *for）
-            processIterableBinding(element, directiveDef, selectors, attrs, renderer, delimiter);
+            processIterableBinding(element, directiveDef, selectors, attrs, renderer, delimiter, templateNodes);
             break;
 
         default:
@@ -1285,7 +1285,7 @@ export function bindingDirective(node: RNode, dirDef: DirectiveDef, selectors: s
  * @param renderer 渲染器
  * @param delimiter 分隔符正则表达式
  */
-export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp): void {
+export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp, templateNodes?: RNode[]): void {
     const parent = renderer.parentNode(el);
     const container = createContainer(renderer, dirDef.selector, parent ?? undefined);
     container[BINDINGS] = [];
@@ -1303,7 +1303,7 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
 
     // Keep el's subtree as template content (mirroring processIterableBinding):
     // moving it out would bind nested conditionals eagerly regardless of this directive's visibility.
-    bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, [el], parent);
+    bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, templateNodes ?? [el], parent);
 }
 
 /**
@@ -1315,7 +1315,7 @@ export function processConditionalBinding(el: RNode, dirDef: DirectiveDef, selec
  * @param renderer 渲染器
  * @param delimiter 分隔符正则表达式
  */
-export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp): void {
+export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selectors: string[], attrs: RAttr[], renderer: Renderer, delimiter: RegExp, templateNodes?: RNode[]): void {
     const parent = renderer.parentNode(el);
     const container = createContainer(renderer, dirDef.selector, parent ?? undefined);
     container[BINDINGS] = [];
@@ -1333,7 +1333,7 @@ export function processIterableBinding(el: RNode, dirDef: DirectiveDef, selector
 
     // Child bindings were already created by bindingElement; re-walking here would
     // reset node[BINDINGS] and wipe nested structural containers' binding factories.
-    bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, [el], parent);
+    bindingDirective(container, dirDef, selectors, attrs, renderer, delimiter, templateNodes ?? [el], parent);
 }
 
 /**

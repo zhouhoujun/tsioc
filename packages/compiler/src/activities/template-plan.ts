@@ -26,7 +26,7 @@ export interface TemplatePlan {
 }
 
 const DEFAULT_DELIMITER = '{{}}';
-const UNSUPPORTED_TAGS = new Set(['template']);
+const UNSUPPORTED_TAGS = new Set<string>();
 const BINDING_ATTR = /^(?:@|:|\[|v-|\*)/;
 
 function planNode(node: TemplateIRNode): TemplatePlanNode | null {
@@ -39,6 +39,17 @@ function planNode(node: TemplateIRNode): TemplatePlanNode | null {
     const tag = String(node.tag).toLowerCase();
     if (!tag || UNSUPPORTED_TAGS.has(tag) || (tag.startsWith('v-') && tag !== 'v-content' && tag !== 'v-template')) {
         return null;
+    }
+    if (tag === 'template') {
+        // `<template v-if>` / `<template v-for>` lower to transparent plan
+        // anchors; switch/case blocks and other template usage stay on the
+        // runtime pipeline.
+        const names = (node.attrs as Array<[string, string, string?]>).map(([name]) => name.toLowerCase());
+        const hasTransparent = names.some(name => /^\*?(?:v-)?(?:if|else-if|else|for)$/.test(name));
+        const hasSwitch = names.some(name => /^\*?(?:v-)?(?:switch|case|default)$/.test(name));
+        if (!hasTransparent || hasSwitch) {
+            return null;
+        }
     }
     const attrs: Array<[string, string]> = [];
     const rawAttrs: Array<[string, string]> = [];

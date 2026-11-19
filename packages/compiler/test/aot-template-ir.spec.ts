@@ -740,6 +740,101 @@ export class AotPlanSelector {}
         }
     });
 
+    it('renders @if block templates from binding plans', async () => {
+        const source = `
+import { Component } from '@tsdi/components';
+
+@Component({
+    selector: 'aot-plan-block',
+    template: '<div class="root">@if (show) {<span class="a">A</span>} @else {<span class="b">B</span>}</div>'
+})
+export class AotPlanBlock {
+    show = true;
+}
+`;
+        const emitted = transpileAot('aot-plan-block.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('templatePlan:');
+
+        const exported = loadAotModule(source);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const proto = HtmlTemplateParser.prototype as any;
+        const originalParse = proto.parse;
+        let parses = 0;
+        proto.parse = function (...args: any[]) {
+            parses += 1;
+            return originalParse.apply(this, args);
+        };
+        let ctx: any;
+        try {
+            ctx = await Application.run(exported.AotPlanBlock, {
+                deps: [HtmlTemplateModule, ComponentsModule],
+                providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+            });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            const ref = ctx.runners.getRef(exported.AotPlanBlock) as ComponentRef<any>;
+            await ref.render();
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('.a')?.textContent).toBe('A');
+            expect(root.querySelector('.b')).toBeFalsy();
+            ref.instance.show = false;
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(root.querySelector('.a')).toBeFalsy();
+            expect(root.querySelector('.b')?.textContent).toBe('B');
+            expect(parses).toBe(0);
+        } finally {
+            proto.parse = originalParse;
+            await ctx?.close();
+            dom.window.close();
+        }
+    });
+
+    it('renders transparent v-for templates from binding plans', async () => {
+        const source = `
+import { Component } from '@tsdi/components';
+
+@Component({
+    selector: 'aot-plan-tpl-for',
+    template: '<ul class="root"><template v-for="item in items"><li class="row">{{item}}</li><li class="sep">|</li></template></ul>'
+})
+export class AotPlanTplFor {
+    items = ['a', 'b'];
+}
+`;
+        const emitted = transpileAot('aot-plan-tpl-for.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('templatePlan:');
+
+        const exported = loadAotModule(source);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const proto = HtmlTemplateParser.prototype as any;
+        const originalParse = proto.parse;
+        let parses = 0;
+        proto.parse = function (...args: any[]) {
+            parses += 1;
+            return originalParse.apply(this, args);
+        };
+        let ctx: any;
+        try {
+            ctx = await Application.run(exported.AotPlanTplFor, {
+                deps: [HtmlTemplateModule, ComponentsModule],
+                providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+            });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            const ref = ctx.runners.getRef(exported.AotPlanTplFor) as ComponentRef<any>;
+            await ref.render();
+            const root = ref.hostView.rootNodes[0] as any;
+            const rows = Array.from(root.querySelectorAll('.row') as ArrayLike<any>).map((row: any) => row.textContent);
+            expect(rows).toEqual(['a', 'b']);
+            expect(root.querySelectorAll('.sep').length).toBe(2);
+            expect(parses).toBe(0);
+        } finally {
+            proto.parse = originalParse;
+            await ctx?.close();
+            dom.window.close();
+        }
+    });
+
     it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';
