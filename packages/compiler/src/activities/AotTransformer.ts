@@ -727,7 +727,25 @@ function beanMetadataExpression(decorator: ts.Decorator, member: ts.ClassElement
         }
     }
     if (!provide) {
-        return undefined;
+        if (!activeTypeChecker) {
+            return undefined;
+        }
+        const type = ts.isMethodDeclaration(member)
+            ? member.type
+            : ts.isPropertyDeclaration(member)
+                ? member.type
+                : undefined;
+        if (!type || !ts.isTypeReferenceNode(type)) {
+            return undefined;
+        }
+        let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
+        if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
+            symbol = activeTypeChecker.getAliasedSymbol(symbol);
+        }
+        if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
+            return undefined;
+        }
+        provide = typeExpression(type);
     }
     const properties: ts.ObjectLiteralElementLike[] = [
         factory.createPropertyAssignment('provide', provide)
