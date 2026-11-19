@@ -240,6 +240,35 @@ export class AotQueryFallback {
         expect(emitted).not.toContain('viewChilds:');
     });
 
+
+    it('precompiles component property injection', async () => {
+        const source = `
+import { Autowired, Component } from '@tsdi/components';
+
+@Component({ selector: 'aot-prop-host', template: '<div class="value">{{value}}</div>' })
+export class AotPropHost {
+    @Autowired('AOT_PROP')
+    value?: string;
+}
+`;
+        const emitted = transpileAot('aot-component-prop.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotComponent(');
+        expect(emitted).toContain('propMetadatas');
+
+        const exported = loadAotModule(source);
+        const ctx = await Application.run(exported.AotPropHost, {
+            deps: [XmlTemplateModule, ComponentsModule],
+            providers: [{ provide: 'AOT_PROP', useValue: 'property' }]
+        });
+        try {
+            const ref = ctx.runners.getRef(exported.AotPropHost) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('.value')?.textContent).toBe('property');
+        } finally {
+            await ctx.close();
+        }
+    });
+
     it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';

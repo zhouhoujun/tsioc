@@ -873,11 +873,20 @@ function attachMemberMetadata(metadata: ts.Expression, node: ts.ClassDeclaration
 
 function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
     for (const member of node.members) {
+        let hasInjection = false;
         for (const decorator of decoratorsOf(member)) {
-            if (!PRECOMPILABLE_MEMBER_DECORATORS.has(decoratorName(decorator))
+            const name = decoratorName(decorator);
+            if (name === 'Autowired' || name === 'Inject') {
+                hasInjection = true;
+                continue;
+            }
+            if (!PRECOMPILABLE_MEMBER_DECORATORS.has(name)
                 || !memberMetadataExpression(decorator, member)) {
                 return false;
             }
+        }
+        if (hasInjection && !servicePropertyMetadata(member)) {
+            return false;
         }
         const parameters = memberParameters(member);
         const hasParameterDecorators = parameters.some(parameter => decoratorsOf(parameter).length > 0);
@@ -1556,6 +1565,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             }
                             if (precompiledMetadata) {
                                 precompiledMetadata = attachMemberMetadata(precompiledMetadata, node);
+                                precompiledMetadata = attachServiceMembers(precompiledMetadata, node);
                                 precompiledMetadata = attachMethodMetadata(precompiledMetadata, node, true);
                                 precompiledMetadata = attachNoReactiveMetadata(precompiledMetadata, node);
                             }
