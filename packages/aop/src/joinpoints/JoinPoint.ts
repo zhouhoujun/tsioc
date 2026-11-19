@@ -5,6 +5,7 @@ import {
 } from '@tsdi/ioc';
 import { JoinpointState } from './state';
 import { Advisor } from '../Advisor';
+import type { AdvicePlan } from '../Advicer';
 
 /**
  * joinpoint option.
@@ -27,6 +28,7 @@ export interface JoinpointOption extends TargetInvokeArguments {
     state?: JoinpointState;
     advisor: Advisor;
     annotations?: DecorDefine[];
+    plan?: AdvicePlan;
     /**
      * instance of target type
      */
@@ -76,6 +78,7 @@ export class JoinPoint extends ContextInjector {
     readonly params?: Parameters;
     readonly annotations?: DecorDefine[];
     readonly valueChange?: { newValue: any, oldValue: any };
+    readonly plan?: AdvicePlan;
 
     public state: JoinpointState;
 
@@ -95,6 +98,7 @@ export class JoinPoint extends ContextInjector {
         this.valueChange = options.valueChange;
         this.accessor = options.accessor;
         this.annotations = options.annotations;
+        this.plan = options.plan;
         this.state = options.state ?? JoinpointState.Before;
     }
 
@@ -145,6 +149,7 @@ export class ProceedingJoinPoint extends JoinPoint {
             valueChange: joinPoint.valueChange,
             annotations: joinPoint.annotations,
             state: joinPoint.state,
+            plan: joinPoint.plan,
             advisor: joinPoint.advisor
         })
     }

@@ -65,3 +65,16 @@ export interface AroundProceeding {
 
     interceptor: InterceptorFn<JoinPoint>;
 }
+
+/**
+ * Advice lists resolved once for one advised property (invalidated with the
+ * advisor version). Avoids re-running every `resolve()` pass on each call.
+ */
+export interface AdvicePlan {
+    before: Advicer[];
+    pointcut: Advicer[];
+    after: Advicer[];
+    afterReturning: Advicer[];
+    afterThrowing: Advicer[];
+    proceedings: AroundProceeding[];
+}

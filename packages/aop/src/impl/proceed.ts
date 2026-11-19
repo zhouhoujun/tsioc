@@ -9,7 +9,7 @@ import { JoinPoint } from '../joinpoints/JoinPoint';
 import { JoinpointState } from '../joinpoints/state';
 import { Advisor } from '../Advisor';
 import { Proceeding } from '../Proceeding';
-import { Advicer } from '../Advicer';
+import { Advicer, AdvicePlan } from '../Advicer';
 import { AroundMetadata } from '../metadata/meta';
 const POINTCUT = new ContextToken(() => false);
 
@@ -22,6 +22,7 @@ interface PropertyMatch {
     method: boolean;
     get: boolean;
     set: boolean;
+    plan?: AdvicePlan;
 }
 
 /**
@@ -76,7 +77,7 @@ export class ProceedingScope implements Proceeding {
 
     protected createProxy(prefix: string, rootRef: ClassRef, root: any, typeRef: ClassRef | null, instance: any, advisor: Advisor, parent?: Injector) {
         const descriptors = typeRef?.getPropertyDescriptors();
-        const weakMap = new WeakMap();
+        let weakMap = new WeakMap();
         const runtime = this.runtime;
 
         // A property access on an advised instance would otherwise re-run
@@ -89,6 +90,9 @@ export class ProceedingScope implements Proceeding {
             if (matchVersion !== advisor.version) {
                 matchVersion = advisor.version;
                 decisions.clear();
+                // Proxied function wrappers capture the resolved advice plan;
+                // drop them when registered advice changes.
+                weakMap = new WeakMap();
             }
             let decision = decisions.get(name);
             if (!decision) {
@@ -100,6 +104,16 @@ export class ProceedingScope implements Proceeding {
                     get: advisor.match(name, fullName, rootRef, instance, { accessor: 'get' }),
                     set: advisor.match(name, fullName, rootRef, instance, { accessor: 'set' })
                 };
+                if (decision.method) {
+                    decision.plan = {
+                        before: advisor.getBefore(name, fullName, rootRef, root),
+                        pointcut: advisor.getPointcut(name, fullName, rootRef, root),
+                        after: advisor.getAfter(name, fullName, rootRef, root),
+                        afterReturning: advisor.getAfterReturning(name, fullName, rootRef, root),
+                        afterThrowing: advisor.getAfterThrowing(name, fullName, rootRef, root),
+                        proceedings: advisor.getProceeding(name, fullName, rootRef, root)
+                    };
+                }
                 decisions.set(name, decision);
             }
             return decision;
@@ -129,7 +143,7 @@ export class ProceedingScope implements Proceeding {
                     let cachedFn = weakMap.get(result);
                     if (!cachedFn) {
                         if (decision.method) {
-                            cachedFn = this.proxy(result, name, decision.fullName, advisor, receiver ?? proxy, root, rootRef, parent);
+                            cachedFn = this.proxy(result, name, decision.fullName, advisor, receiver ?? proxy, root, rootRef, parent, decision.plan);
                         } else {
                             cachedFn = result;
                         }
@@ -180,7 +194,7 @@ export class ProceedingScope implements Proceeding {
         return proxy;
     }
 
-    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: Injector) {
+    protected proxy<T>(originMethod: Function, propertyKey: string | symbol, fullName: string, advisor: Advisor, receiver: T, target: any, targetRef: ClassRef, parent?: Injector, plan?: AdvicePlan) {
         const runtime = this.runtime;
         return (...args: any[]) => {
             if (!runtime || !runtime.has(EnvironmentInjector) || runtime.get(EnvironmentInjector).destroyed) {
@@ -191,11 +205,19 @@ export class ProceedingScope implements Proceeding {
                 args = args.slice(0, args.length - 1);
                 parent = larg
             }
+            if (plan && !plan.before.length && !plan.pointcut.length && !plan.after.length
+                && !plan.afterReturning.length && !plan.afterThrowing.length && !plan.proceedings.length) {
+                // The property matched a proxy decision (for example a host or
+                // accessor rule) but no callable advice applies; skip the
+                // synthetic JoinPoint entirely.
+                return originMethod.apply(receiver ?? target, args);
+            }
             return this.handle(targetRef, fullName, propertyKey, receiver, advisor, runtime, {
                 target,
                 originMethod,
                 args,
-                parent
+                parent,
+                plan
             })
         }
     }
@@ -208,6 +230,7 @@ export class ProceedingScope implements Proceeding {
         params?: Parameters;
         valueChange?: { newValue: any, oldValue: any },
         parent?: Injector,
+        plan?: AdvicePlan,
         originProxy?: (joinPoint: JoinPoint) => any,
         next?: (res: JoinPoint) => any
     } = {}): any {
@@ -261,7 +284,9 @@ export const afterReturningInterceptor = (jp: JoinPoint, next: HandlerFn, contex
     return invokeTail(next, (res) => {
         jp.state = JoinpointState.AfterReturning;
         if (isDefined(res) && res !== jp) jp.returning = res;
-        const advicers = jp.advisor.getAfterReturning(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
+        const advicers = jp.plan
+            ? jp.plan.afterReturning
+            : jp.advisor.getAfterReturning(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
             return toHanlder(advicers)(jp, context);
         }
@@ -273,7 +298,9 @@ export const afterThrowingInterceptor = (jp: JoinPoint, next: HandlerFn, context
         error: (error) => {
             jp.throwing = error;
             jp.state = JoinpointState.AfterThrowing;
-            const advicers = jp.advisor.getAfterThrowing(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
+            const advicers = jp.plan
+                ? jp.plan.afterThrowing
+                : jp.advisor.getAfterThrowing(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
             if (advicers?.length) {
                 return toHanlder(advicers)(jp, context);
             }
@@ -284,7 +311,9 @@ export const afterThrowingInterceptor = (jp: JoinPoint, next: HandlerFn, context
 export const beforeInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(() => {
         jp.state = JoinpointState.Before;
-        const advicers = jp.advisor.getBefore(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
+        const advicers = jp.plan
+            ? jp.plan.before
+            : jp.advisor.getBefore(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
             return toHanlder(advicers)(jp, context);
         }
@@ -294,7 +323,9 @@ export const beforeInterceptor = (jp: JoinPoint, next: HandlerFn, context: Runti
 export const pointcutInterceptor = (jp: JoinPoint, next: HandlerFn, context: RuntimeContext) => {
     return invokeTail(() => {
         jp.state = JoinpointState.Pointcut;
-        const advicers = jp.advisor.getPointcut(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
+        const advicers = jp.plan
+            ? jp.plan.pointcut
+            : jp.advisor.getPointcut(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
             return toHanlder(advicers)(jp, context);
         }
@@ -305,7 +336,9 @@ export const afterInterceptor = (jp: JoinPoint, next: HandlerFn, context: Runtim
     return invokeTail(next, (res) => {
         jp.state = JoinpointState.After;
         if (isDefined(res) && res !== jp) jp.returning = res;
-        const advicers = jp.advisor.getAfter(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
+        const advicers = jp.plan
+            ? jp.plan.after
+            : jp.advisor.getAfter(jp.propertyKey, jp.fullName, jp.targetRef, jp.target, { accessor: jp.accessor });
         if (advicers?.length) {
             return toHanlder(advicers)(jp, context);
         }
@@ -324,7 +357,9 @@ export const originMethodHandler = (jp: JoinPoint, context: RuntimeContext) => {
 }
 
 export const adviceHanlder = (jp: JoinPoint, context: RuntimeContext) => {
-    const proceedings = jp.advisor.getProceeding(jp.propertyKey, jp.fullName, jp.targetRef, jp.target);
+    const proceedings = jp.plan
+        ? jp.plan.proceedings
+        : jp.advisor.getProceeding(jp.propertyKey, jp.fullName, jp.targetRef, jp.target);
     if (proceedings?.length) {
         const chain = composeInterceptors(proceedings.map(r => r.interceptor));
         return chain(jp, originMethodHandler, context);

@@ -1,5 +1,5 @@
-import { createInjector, InjectUtil, Injectable, Injector } from '@tsdi/ioc';
-import { AopModule, Aspect, Before, JoinPoint } from '../src';
+import { createInjector, getClassRef, InjectUtil, Injectable, Injector } from '@tsdi/ioc';
+import { Advisor, AopModule, Aspect, Before, JoinPoint } from '../src';
 import expect = require('expect');
 
 const stats: { before: number; noArg: number; last?: JoinPoint; asyncLast?: JoinPoint } = { before: 0, noArg: 0 };
@@ -65,8 +65,17 @@ class LifecycleAspect {
     }
 }
 
-function createContainer() {
-    const container = createInjector();
+let lateBefore = 0;
+
+@Aspect({ static: true })
+class LateAspect {
+    @Before('execution(Worker.doWork)')
+    beforeLate() {
+        lateBefore++;
+    }
+}
+
+function createContainer() {    const container = createInjector();
     InjectUtil.use(container, AopModule);
     InjectUtil.register(container, LifecycleAspect, Worker, NoArgWorker);
     return container;
@@ -196,6 +205,24 @@ describe('AOP joinpoint lifecycle', () => {
         expect(worker.calls).toBe(200);
 
         container.destroy();
+    });
+
+    it('picks up advice added after a plan was cached', () => {
+        lateBefore = 0;
+        const container = createContainer();
+        try {
+            const worker = container.get(Worker);
+            worker.doWork(1);
+
+            const advisor = container.get(Advisor);
+            const invocation = getClassRef(LateAspect).createInvocation(container);
+            advisor.add(invocation);
+
+            worker.doWork(2);
+            expect(lateBefore).toBe(1);
+        } finally {
+            container.destroy();
+        }
     });
 
 });
