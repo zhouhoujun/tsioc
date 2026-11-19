@@ -10,6 +10,73 @@ import {
     compileToFactory, generateNodeBindings
 } from './compiler-fns';
 
+const selectorMatcherCache = new Map<string, RegExp[] | null>();
+
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Precompute cheap "does this template possibly contain the selector" checks.
+ * `generateNodeBindings` otherwise runs a renderer selector query for every
+ * registered component/directive, even when the template uses none of them.
+ * `null` means "unknown syntax, keep the definition".
+ */
+function selectorMatchers(selector: string): RegExp[] | null {
+    if (selectorMatcherCache.has(selector)) {
+        return selectorMatcherCache.get(selector)!;
+    }
+    const matchers: RegExp[] = [];
+    for (const rawPart of selector.split(',')) {
+        const part = rawPart.trim();
+        if (!part) {
+            continue;
+        }
+        if (part === '*' || part.includes(':')) {
+            selectorMatcherCache.set(selector, null);
+            return null;
+        }
+        if (part.startsWith('[') && part.endsWith(']')) {
+            const inner = part.slice(1, -1).trim();
+            const name = inner.split(/[~|^$*=\s]/)[0];
+            if (!name || name === '*') {
+                selectorMatcherCache.set(selector, null);
+                return null;
+            }
+            matchers.push(new RegExp(`(?:^|[^A-Za-z0-9_-])${escapeRegExp(name)}(?:[^A-Za-z0-9_-]|$)`, 'i'));
+            continue;
+        }
+        if (part.startsWith('.')) {
+            matchers.push(new RegExp(escapeRegExp(part.slice(1)), 'i'));
+            continue;
+        }
+        if (/^[a-zA-Z][\w-]*$/.test(part)) {
+            matchers.push(new RegExp(`<\\s*${escapeRegExp(part)}(?:\\s|/|>)`, 'i'));
+            continue;
+        }
+        selectorMatcherCache.set(selector, null);
+        return null;
+    }
+    const result = matchers.length ? matchers : null;
+    selectorMatcherCache.set(selector, result);
+    return result;
+}
+
+function definitionsUsedByTemplate<T extends { selector?: string }>(defs: T[] | undefined, template: string): T[] {
+    if (!defs?.length) {
+        return defs || [];
+    }
+    return defs.filter(def => {
+        const selector = def.selector;
+        if (!selector) {
+            return true;
+        }
+        const matchers = selectorMatchers(selector);
+        return !matchers || matchers.some(matcher => matcher.test(template));
+    });
+}
+
+
 
 
 @Abstract()
@@ -33,6 +100,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const nodes = this.parser.parse(template);
+        const templateText = typeof template === 'string' ? template : '';
 
         if (options.schemas?.length) {
             const declaredElements = new Set(
@@ -51,7 +119,17 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             nodes.forEach(validate);
         }
 
-        generateNodeBindings<C>(nodes, options.directives, options.components, this.renderer, this.delimiter, undefined, options.customElements);
+        const bindingDirectives = templateText
+            ? definitionsUsedByTemplate(options.directives, templateText)
+            : options.directives;
+        const bindingComponents = templateText
+            ? definitionsUsedByTemplate(options.components, templateText)
+            : options.components;
+        const bindingCustomElements = templateText
+            ? definitionsUsedByTemplate(options.customElements, templateText)
+            : options.customElements;
+
+        generateNodeBindings<C>(nodes, bindingDirectives, bindingComponents, this.renderer, this.delimiter, undefined, bindingCustomElements);
 
         // 将模板编译为 node factory
         const factory = compileToFactory<C>(nodes, this.renderer, options, {
