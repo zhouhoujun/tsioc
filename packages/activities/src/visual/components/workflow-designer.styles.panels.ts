@@ -457,18 +457,35 @@ export const WORKFLOW_DESIGNER_PANELS_CSS = `.workflow-audit-panel {
 }
 
 .workflow-btn {
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--wf-btn-border, #cbd5e1);
     border-radius: 6px;
     padding: 6px 8px;
-    background: #ffffff;
-    color: #334155;
+    background: var(--wf-btn-bg, #ffffff);
+    color: var(--wf-btn-fg, #334155);
     font-size: 12px;
     line-height: 1.2;
     cursor: pointer;
+    transition:
+        background-color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        border-color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        transform var(--ui-motion-fast, 120ms) var(--ui-ease, ease);
 }
 
 .workflow-btn:hover:not(:disabled) {
-    background: #f1f5f9;
+    background: var(--wf-btn-hover-bg, var(--wf-theme-hover, #f1f5f9));
+    border-color: var(--wf-btn-hover-border, #94a3b8);
+    transform: translateY(-1px);
+}
+
+.workflow-btn:active:not(:disabled) {
+    background: var(--wf-btn-active-bg, var(--wf-theme-active, #e2e8f0));
+    transform: translateY(1px);
+}
+
+.workflow-btn:focus-visible {
+    outline: 2px solid var(--wf-theme-focus-ring, rgba(37, 99, 235, 0.35));
+    outline-offset: 1px;
 }
 
 .workflow-btn:disabled {
@@ -491,18 +508,34 @@ export const WORKFLOW_DESIGNER_PANELS_CSS = `.workflow-audit-panel {
 }
 
 .workflow-btn-primary {
-    border: 0;
-    background: #2563eb;
-    color: #ffffff;
+    border-color: var(--wf-btn-primary, #2563eb);
+    background: var(--wf-btn-primary, #2563eb);
+    color: var(--wf-btn-primary-fg, #ffffff);
 }
 
 .workflow-btn-primary:hover:not(:disabled) {
-    background: #1d4ed8;
+    background: var(--wf-btn-primary-hover, #1d4ed8);
+    border-color: var(--wf-btn-primary-hover, #1d4ed8);
 }
 
 .workflow-btn-danger {
-    border-color: #fecaca;
-    color: #dc2626;
+    border-color: var(--wf-btn-danger-border, #fecaca);
+    color: var(--wf-btn-danger, #dc2626);
+}
+
+.workflow-btn-danger:hover:not(:disabled) {
+    background: var(--wf-btn-danger-hover-bg, #fef2f2);
+    border-color: var(--wf-btn-danger, #dc2626);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .workflow-btn {
+        transition: none;
+    }
+    .workflow-btn:hover:not(:disabled),
+    .workflow-btn:active:not(:disabled) {
+        transform: none;
+    }
 }
 
 workflow-designer-preview {

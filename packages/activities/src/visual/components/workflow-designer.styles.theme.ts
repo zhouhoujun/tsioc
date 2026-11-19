@@ -350,14 +350,6 @@ export const WORKFLOW_DESIGNER_THEME_CSS = `/* Themes */
     color: var(--wf-theme-muted);
 }
 
-.workflow-designer[data-theme="dark"] .workflow-btn,
-.workflow-designer[data-theme="solarized"] .workflow-btn,
-.workflow-designer[data-theme="high-contrast"] .workflow-btn {
-    background: var(--wf-theme-surface);
-    border-color: var(--wf-theme-border);
-    color: var(--wf-theme-text);
-}
-
 .workflow-designer[data-theme="dark"] .workflow-inspector-restore,
 .workflow-designer[data-theme="solarized"] .workflow-inspector-restore,
 .workflow-designer[data-theme="high-contrast"] .workflow-inspector-restore {
@@ -428,21 +420,6 @@ export const WORKFLOW_DESIGNER_THEME_CSS = `/* Themes */
     border-color: var(--wf-theme-primary);
     background: rgba(59, 130, 246, 0.18);
     color: var(--wf-theme-text);
-}
-
-.workflow-designer[data-theme="dark"] .workflow-btn-primary,
-.workflow-designer[data-theme="solarized"] .workflow-btn-primary,
-.workflow-designer[data-theme="high-contrast"] .workflow-btn-primary {
-    background: var(--wf-theme-primary);
-    border-color: var(--wf-theme-primary);
-    color: var(--wf-theme-primary-text);
-}
-
-.workflow-designer[data-theme="dark"] .workflow-btn-danger,
-.workflow-designer[data-theme="solarized"] .workflow-btn-danger,
-.workflow-designer[data-theme="high-contrast"] .workflow-btn-danger {
-    color: var(--wf-theme-danger);
-    border-color: var(--wf-theme-border);
 }
 
 .workflow-designer[data-theme="dark"] .workflow-input,

@@ -111,7 +111,7 @@ export const WORKFLOW_DESIGNER_BASE_CSS = `
     --tab-border: var(--wf-theme-border, #e2e8f0);
     --tab-text: var(--wf-theme-text, #0f172a);
     --tab-muted: var(--wf-theme-muted, #64748b);
-    --tab-hover: var(--wf-theme-surface, #ffffff);
+    --tab-hover: var(--wf-theme-hover, #f1f5f9);
     --tab-accent: var(--wf-theme-primary, #2563eb);
     --tab-danger: var(--wf-theme-danger, #dc2626);
 }
@@ -140,10 +140,17 @@ export const WORKFLOW_DESIGNER_BASE_CSS = `
     line-height: 1.2;
     cursor: pointer;
     white-space: nowrap;
+    transition:
+        background-color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        border-color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        transform var(--ui-motion-fast, 120ms) var(--ui-ease, ease);
 }
 
 .workflow-tabs .tab:hover {
-    background: var(--wf-theme-surface, #ffffff);
+    background: var(--tab-hover, var(--wf-theme-hover, #f1f5f9));
+    color: var(--wf-theme-text, #0f172a);
+    transform: translateY(-1px);
 }
 
 .workflow-tabs .tab[aria-selected="true"] {
@@ -151,6 +158,12 @@ export const WORKFLOW_DESIGNER_BASE_CSS = `
     border-color: var(--wf-theme-border, #e2e8f0);
     color: var(--wf-theme-text, #0f172a);
     font-weight: 600;
+    transform: none;
+}
+
+.workflow-tabs .tab[aria-selected="true"]:hover {
+    background: var(--wf-theme-surface, #ffffff);
+    transform: none;
 }
 
 .workflow-tabs .tab-label {
@@ -161,8 +174,18 @@ export const WORKFLOW_DESIGNER_BASE_CSS = `
 
 .workflow-tabs .tab-close {
     margin-left: 8px;
+    padding: 1px 2px;
+    border-radius: 4px;
     color: var(--wf-theme-muted, #64748b);
     cursor: pointer;
+    transition:
+        background-color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        color var(--ui-motion-fast, 120ms) var(--ui-ease, ease);
+}
+
+.workflow-tabs .tab-close:hover {
+    background: var(--tab-hover, var(--wf-theme-hover, #f1f5f9));
+    color: var(--wf-theme-danger, #dc2626);
 }
 
 .workflow-tabs .tab[aria-selected="true"] .tab-close:hover {
@@ -171,10 +194,37 @@ export const WORKFLOW_DESIGNER_BASE_CSS = `
 
 .workflow-tabs .tab-new {
     padding: 6px 8px;
+    border-radius: 7px;
     color: var(--wf-theme-primary, #2563eb);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
+    transition:
+        background-color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        color var(--ui-motion-fast, 120ms) var(--ui-ease, ease),
+        transform var(--ui-motion-fast, 120ms) var(--ui-ease, ease);
+}
+
+.workflow-tabs .tab-new:hover {
+    background: var(--tab-hover, var(--wf-theme-hover, #f1f5f9));
+    transform: scale(1.08);
+}
+
+.workflow-tabs .tab-new:active {
+    transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .workflow-tabs .tab,
+    .workflow-tabs .tab-close,
+    .workflow-tabs .tab-new {
+        transition: none;
+    }
+    .workflow-tabs .tab:hover,
+    .workflow-tabs .tab-new:hover,
+    .workflow-tabs .tab-new:active {
+        transform: none;
+    }
 }
 
 .workflow-toolbar {
