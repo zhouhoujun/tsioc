@@ -238,8 +238,36 @@ export class ClassRef<T = any> {
         }
         const annotation = this.annotation;
         if (!annotation.methodMetadatas.get(ctorName)?.params) {
+            const precompiledDeps = (this.type as any)?.ƿprov?.deps as any[] | undefined;
             const paramTypes = Reflect.getMetadata('design:paramtypes', this.type) as any[] | undefined;
-            if (paramTypes) {
+            if (precompiledDeps?.length) {
+                const names = this.getParamNames(ctorName);
+                let meta = annotation.methodMetadatas.get(ctorName);
+                if (!meta) {
+                    meta = {};
+                    annotation.methodMetadatas.set(ctorName, meta);
+                }
+                meta.params = precompiledDeps.map((dep, index) => {
+                    let provider = dep;
+                    let flags: number | undefined;
+                    if (isArray(dep)) {
+                        provider = dep[0];
+                        for (let i = 1; i < dep.length; i++) {
+                            if (typeof dep[i] === 'number') {
+                                flags = (flags ?? 0) | dep[i];
+                            }
+                        }
+                    }
+                    return {
+                        provider,
+                        flags,
+                        type: paramTypes?.[index],
+                        name: names[index],
+                        target: this.type,
+                        propertyKey: ctorName
+                    };
+                });
+            } else if (paramTypes) {
                 const names = this.getParamNames(ctorName);
                 let meta = annotation.methodMetadatas.get(ctorName);
                 if (!meta) {

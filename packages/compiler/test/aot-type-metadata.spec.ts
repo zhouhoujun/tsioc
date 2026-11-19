@@ -99,6 +99,29 @@ export class Root {
         expect(root.leaf.value).toBe(3);
     });
 
+
+    it('precompiles constructor @Inject tokens into ƿprov', () => {
+        const source = `
+import { Inject, Injectable } from '@tsdi/ioc';
+
+@Injectable()
+export class InjectedService {
+    constructor(@Inject('AOT_TOKEN') readonly value: string) {}
+}
+`;
+        const emitted = transpileAot('aot-inject.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('ƿprov');
+        expect(emitted).toContain('AOT_TOKEN');
+
+        const exported = loadModule(source);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.InjectedService);
+        container.setValue('AOT_TOKEN', 'injected');
+        const service = container.get(exported.InjectedService) as any;
+        expect(service.value).toBe('injected');
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

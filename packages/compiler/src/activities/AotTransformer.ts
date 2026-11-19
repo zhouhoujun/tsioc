@@ -511,27 +511,76 @@ function isRuntimeValueType(name: ts.EntityName): boolean {
  * concrete class. Interfaces/type aliases and unresolved types fall back to the
  * runtime `design:paramtypes` path instead of injecting `Object`.
  */
+function parameterDependency(parameter: ts.ParameterDeclaration): ts.Expression | undefined {
+    for (const decorator of decoratorsOf(parameter)) {
+        const name = decoratorName(decorator);
+        if (name === 'Inject' || name === 'Autowired') {
+            const args = decoratorArgs(decorator);
+            if (args[0]) {
+                return selectorValueExpression(args[0]);
+            }
+            continue;
+        }
+        // Flags/defaults need runtime parameter metadata; keep the class on
+        // the decorator pipeline until they are represented in the plan.
+        return undefined;
+    }
+    const type = parameter.type;
+    if (!type || !ts.isTypeReferenceNode(type) || !activeTypeChecker) {
+        return undefined;
+    }
+    let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
+    if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
+        symbol = activeTypeChecker.getAliasedSymbol(symbol);
+    }
+    if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
+        return undefined;
+    }
+    return typeExpression(type);
+}
+
 function constructorDependencies(node: ts.ClassDeclaration): ts.Expression | undefined {
     const ctor = node.members.find(ts.isConstructorDeclaration) as ts.ConstructorDeclaration | undefined;
-    if (!ctor?.parameters.length || !activeTypeChecker) {
+    if (!ctor?.parameters.length) {
         return undefined;
     }
     const deps: ts.Expression[] = [];
     for (const parameter of ctor.parameters) {
-        const type = parameter.type;
-        if (!type || !ts.isTypeReferenceNode(type)) {
+        const dep = parameterDependency(parameter);
+        if (!dep) {
             return undefined;
         }
-        let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
-        if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
-            symbol = activeTypeChecker.getAliasedSymbol(symbol);
-        }
-        if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
-            return undefined;
-        }
-        deps.push(typeExpression(type));
+        deps.push(dep);
     }
     return ts.factory.createArrayLiteralExpression(deps, false);
+}
+
+function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
+    for (const member of node.members) {
+        if (ts.isConstructorDeclaration(member)) {
+            for (const parameter of member.parameters) {
+                for (const decorator of decoratorsOf(parameter)) {
+                    const name = decoratorName(decorator);
+                    if (name !== 'Inject' && name !== 'Autowired') {
+                        return false;
+                    }
+                    if (!decoratorArgs(decorator)[0]) {
+                        return false;
+                    }
+                }
+            }
+            continue;
+        }
+        if (decoratorsOf(member).length) {
+            return false;
+        }
+        for (const parameter of memberParameters(member)) {
+            if (decoratorsOf(parameter).length) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 function typeExpression(type: ts.TypeNode | undefined): ts.Expression {
@@ -880,7 +929,11 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                 let compiledTypeRecords: ts.Expression[] | undefined;
                 let precompiledHelper = '__aotType';
                 let precompiledMetadata: ts.Expression | undefined;
-                if (memberDecoratorsSupported(node)
+                const componentLike = genericClassDecorators.some(decorator => {
+                    const name = decoratorName(decorator);
+                    return name === 'Component' || name === 'Directive';
+                });
+                if ((componentLike ? memberDecoratorsSupported(node) : serviceMemberDecoratorsSupported(node))
                     && !aspectDecorator
                     && !noPointcutDecorator
                     && genericClassDecorators.length > 0

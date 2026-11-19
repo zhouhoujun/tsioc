@@ -14,9 +14,10 @@ export class AotCommonJsRuntimeTest {
     @Test('emitted CommonJS defines the decorator helper before use')
     decoratorHelperIsDefined() {
         const source = `
-import { Injectable, Inject, Injector } from '@tsdi/ioc';
+import { Autowired, Injectable, Inject, Injector } from '@tsdi/ioc';
 @Injectable()
 export class DemoService {
+    @Autowired() name = '';
     constructor(@Inject('DEMO') private readonly value: string, private readonly injector: Injector) {}
 }
 `;
