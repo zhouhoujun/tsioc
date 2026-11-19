@@ -299,6 +299,11 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
                 return factory.createObjectLiteralExpression([factory.createPropertyAssignment('static', factory.createTrue())], false);
             }
             if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                if (args[0].properties.some(property => propertyName(property) === 'imports')) {
+                    // Configuration imports are loaded asynchronously before beans
+                    // are injected; keep those classes on the decorator pipeline.
+                    return undefined;
+                }
                 const hasStatic = args[0].properties.some(property => propertyName(property) === 'static' || propertyName(property) === 'singleton');
                 return hasStatic
                     ? args[0]

@@ -565,6 +565,25 @@ export class AotConfiguration {
         expect(container.get('BEAN_TOKEN')).toBe('bean-value');
     });
 
+
+    it('keeps Configuration imports on the runtime pipeline', () => {
+        const emitted = transpileAot('aot-config-imports.ts', `
+import { Bean, Configuration } from '@tsdi/core';
+import { Injectable } from '@tsdi/ioc';
+
+@Injectable()
+export class ImportedConfigModule {}
+
+@Configuration({ imports: [ImportedConfigModule] })
+export class ImportedConfiguration {
+    @Bean('IMPORTED_BEAN')
+    make() { return 'value'; }
+}
+`, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotDeco(');
+        expect(emitted).not.toContain('aotConfiguration');
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';
