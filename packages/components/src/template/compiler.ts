@@ -20,8 +20,8 @@ export interface CompilerOptions {
     schemas?: SchemaMetadata[];
     /** AOT precompiled renderer-neutral template IR (JSON). */
     templateIR?: string;
-    /** AOT precompiled binding instructions (JSON). */
-    templatePlan?: string;
+    /** AOT precompiled binding instructions (object, or legacy JSON string). */
+    templatePlan?: string | import('./plan').TemplatePlan;
 }
 
 @Abstract()

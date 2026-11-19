@@ -30,8 +30,9 @@ describe('AOT build activity', () => {
             expect(output).not.toContain('@Injectable');
             expect(output).not.toContain('@Autowired');
             expect(output).not.toContain('__decorate');
+            expect(output).toContain('__aotType(');
             expect(output).toContain('__aotDeco(');
-            expect(output).toContain('Injectable)()');
+            expect(output).toContain('Injectable, {');
             expect(output).toContain('Autowired)()');
             expect(output).toContain('design:type');
         } finally {

@@ -174,7 +174,11 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         }
         let factory = tempFacs.get(compiler);
         if (!factory) {
-            const template = def.template || await fetchTemplate(def.templateUrl!);
+            const aotTemplate = !!(def.templatePlan || def.templateIR);
+            // AOT output already carries the compiled template description.
+            // Do not read `templateUrl` from disk again and do not join the
+            // template text/definition signatures into a shared cache key.
+            const template = def.template || (aotTemplate ? '' : await fetchTemplate(def.templateUrl!));
             if (this.injector.destroyed) {
                 return;
             }
@@ -183,7 +187,7 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
                 def.schemas
             );
             const compilerCtor = (compiler as any)?.constructor as Function | undefined;
-            const sharedKey = typeof template === 'string' && compilerCtor
+            const sharedKey = !aotTemplate && typeof template === 'string' && compilerCtor
                 ? [
                     definitionId((compiler as any)?.renderer?.constructor),
                     compilerOptionsSignature(compiler),

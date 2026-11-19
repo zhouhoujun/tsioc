@@ -586,6 +586,36 @@ export class ImportedConfiguration {
         expect(emitted).toContain('imports');
     });
 
+    it('precompiles supported class metadata while replaying controller decorators', () => {
+        const source = `
+import { Singleton } from '@tsdi/ioc';
+
+function Controller(route: string) {
+    return (target: any) => { target.controllerRoute = route; };
+}
+function Get(path: string) {
+    return (target: any, key: string) => { target.constructor.routePath = path; void key; };
+}
+
+@Singleton()
+@Controller('/mixed')
+export class MixedAotService {
+    @Get('/ping')
+    ping() { return 'pong'; }
+}
+`;
+        const emitted = transpileAot('aot-mixed-service.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(MixedAotService');
+        expect(emitted).toContain('__aotDeco(MixedAotService');
+        expect(emitted).not.toContain('__decorate(');
+
+        const exported = loadModule(source);
+        const type = exported.MixedAotService;
+        expect(type.ƿAnn().singleton).toBe(true);
+        expect(type.controllerRoute).toBe('/mixed');
+        expect(type.routePath).toBe('/ping');
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

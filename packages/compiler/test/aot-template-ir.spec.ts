@@ -1,5 +1,8 @@
 import expect = require('expect');
 import * as ts from 'typescript';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { Application } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { Component, ComponentsModule } from '@tsdi/components';
@@ -9,8 +12,7 @@ import { XmlTemplateModule } from '../../components/xml/src';
 import { ConsoleTemplateModule } from '../../components/console/src';
 import { transpileAot } from '../src/activities/AotTransform';
 
-function loadAotModule(source: string): Record<string, any> {
-    const output = transpileAot('aot-template-ir.ts', source, { module: ts.ModuleKind.CommonJS });
+function loadAotOutput(output: string): Record<string, any> {
     const module = { exports: {} as Record<string, any> };
     const nodeRequire = require;
     const localRequire = (id: string): any => id === '@tsdi/components'
@@ -19,6 +21,10 @@ function loadAotModule(source: string): Record<string, any> {
     const load = new Function('exports', 'require', 'module', output);
     load(module.exports, localRequire, module);
     return module.exports;
+}
+
+function loadAotModule(source: string): Record<string, any> {
+    return loadAotOutput(transpileAot('aot-template-ir.ts', source, { module: ts.ModuleKind.CommonJS }));
 }
 
 describe('AOT template IR', () => {
@@ -348,7 +354,9 @@ export class AotPlanHost {
 }
 `;
         const emitted = transpileAot('aot-plan.ts', source, { module: ts.ModuleKind.CommonJS });
-        expect(emitted).toContain('templatePlan:');
+        // The factory description is emitted as JS data, not a JSON string.
+        expect(emitted).toContain('templatePlan: {');
+        expect(emitted).not.toContain('templatePlan: "{');
 
         const exported = loadAotModule(source);
         const { JSDOM } = require('jsdom');
@@ -827,6 +835,106 @@ export class AotPlanTplFor {
             const rows = Array.from(root.querySelectorAll('.row') as ArrayLike<any>).map((row: any) => row.textContent);
             expect(rows).toEqual(['a', 'b']);
             expect(root.querySelectorAll('.sep').length).toBe(2);
+            expect(parses).toBe(0);
+        } finally {
+            proto.parse = originalParse;
+            await ctx?.close();
+            dom.window.close();
+        }
+    });
+
+    it('renders AOT templateUrl plans without reading the template at runtime', async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aot-url-plan-'));
+        const tsFile = path.join(dir, 'external.ts');
+        const htmlFile = path.join(dir, 'external.html');
+        try {
+            fs.writeFileSync(htmlFile, '<section class="external"><span class="title">{{title}}</span></section>', 'utf-8');
+            const source = `
+import { Component } from '@tsdi/components';
+
+@Component({ selector: 'aot-url-plan', templateUrl: './external.html' })
+export class AotUrlPlan {
+    title = 'external-plan';
+}
+`;
+            fs.writeFileSync(tsFile, source, 'utf-8');
+            const emitted = transpileAot(tsFile, source, { module: ts.ModuleKind.CommonJS });
+            expect(emitted).toContain('templatePlan: {');
+
+            // The build artifact must not need the source template file later.
+            fs.rmSync(htmlFile);
+
+            const exported = loadAotOutput(emitted);
+            const { JSDOM } = require('jsdom');
+            const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+            const proto = HtmlTemplateParser.prototype as any;
+            const originalParse = proto.parse;
+            let parses = 0;
+            proto.parse = function (...args: any[]) {
+                parses += 1;
+                return originalParse.apply(this, args);
+            };
+            let ctx: any;
+            try {
+                ctx = await Application.run(exported.AotUrlPlan, {
+                    deps: [HtmlTemplateModule, ComponentsModule],
+                    providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+                });
+                await new Promise(resolve => setTimeout(resolve, 0));
+                const ref = ctx.runners.getRef(exported.AotUrlPlan) as ComponentRef<any>;
+                const root = ref.hostView.rootNodes[0] as any;
+                expect(root.querySelector('.title')?.textContent).toBe('external-plan');
+                expect(parses).toBe(0);
+            } finally {
+                proto.parse = originalParse;
+                await ctx?.close();
+                dom.window.close();
+            }
+        } finally {
+            fs.rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    it('precompiles templates when the class uses runtime decorators', async () => {
+        const source = `
+import { Component } from '@tsdi/components';
+
+function LegacyMark(target: any, key: string) { void target; void key; }
+
+@Component({
+    selector: 'aot-fallback-plan',
+    template: '<div class="fallback">{{title}}</div>'
+})
+export class AotFallbackPlan {
+    @LegacyMark title = 'fallback-plan';
+}
+`;
+        const emitted = transpileAot('aot-fallback-plan.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotDeco(');
+        expect(emitted).toContain('templatePlan: {');
+
+        const exported = loadAotModule(source);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const proto = HtmlTemplateParser.prototype as any;
+        const originalParse = proto.parse;
+        let parses = 0;
+        proto.parse = function (...args: any[]) {
+            parses += 1;
+            return originalParse.apply(this, args);
+        };
+        let ctx: any;
+        try {
+            ctx = await Application.run(exported.AotFallbackPlan, {
+                deps: [HtmlTemplateModule, ComponentsModule],
+                providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+            });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            const ref = ctx.runners.getRef(exported.AotFallbackPlan) as ComponentRef<any>;
+            await ref.render();
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.className).toContain('fallback');
+            expect(root.textContent).toBe('fallback-plan');
             expect(parses).toBe(0);
         } finally {
             proto.parse = originalParse;

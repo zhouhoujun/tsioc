@@ -105,17 +105,22 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const templateText = typeof template === 'string' ? template : '';
         if (options.templatePlan && this.delimiter.source === '{{(.*?)}}') {
-            try {
-                const plan = JSON.parse(options.templatePlan) as TemplatePlan;
-                if (plan?.delimiter === '{{}}' && Array.isArray(plan.nodes)) {
-                    return createTemplatePlanFactory<C>(plan, this.renderer, this.delimiter, options.directives, options.components, options.customElements || []);
+            let plan: TemplatePlan | undefined;
+            if (typeof options.templatePlan === 'string') {
+                try {
+                    plan = JSON.parse(options.templatePlan) as TemplatePlan;
+                } catch {
+                    // Fall through to IR/parser paths.
                 }
-            } catch {
-                // Fall through to IR/parser paths.
+            } else {
+                plan = options.templatePlan;
+            }
+            if (plan?.delimiter === '{{}}' && Array.isArray(plan.nodes)) {
+                return createTemplatePlanFactory<C>(plan, this.renderer, this.delimiter, options.directives, options.components, options.customElements || []);
             }
         }
         let nodes: RNode[] | undefined;
-        if (templateText && options.templateIR) {
+        if (options.templateIR) {
             const rendererCtor = (this.renderer as any)?.constructor as Function | undefined;
             let cache = rendererCtor ? validatedTemplateIRCache.get(rendererCtor) : undefined;
             let ir = cache?.get(options.templateIR);

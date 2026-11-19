@@ -11,7 +11,7 @@ function transform(source: string): string {
 }
 
 describe('decorator precompile transformer', () => {
-    it('replaces class/member/parameter decorators with one metadata call', () => {
+    it('precompiles class metadata and keeps compact member/parameter records', () => {
         const output = transform(`
 import { Injectable, Inject, Autowired } from '@tsdi/ioc';
 @Injectable()
@@ -24,9 +24,10 @@ class Service {
         expect(output).not.toContain('@Injectable');
         expect(output).not.toContain('@Autowired');
         expect(output).not.toContain('@Inject');
+        expect(output).toContain('__aotType(Service');
         expect(output).toContain('__aotDeco(');
-        // Compact tuples: [decorator, kindIndex, propertyKey?, parameterIndex?].
-        expect(output).toContain('[Injectable(), 0]');
+        expect(output).toContain('[Injectable,');
+        // Compact member/parameter tuples: [decorator, kindIndex, key, index].
         expect(output).toContain('Autowired(), 1, "value"');
         expect(output).toContain("Inject('token'), 3, undefined, 0");
         expect(output).toContain('Reflect.metadata("design:paramtypes"');

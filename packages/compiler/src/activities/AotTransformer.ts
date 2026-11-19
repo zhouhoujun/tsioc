@@ -438,6 +438,38 @@ function inlineTemplateText(metadata: ts.ObjectLiteralExpression): string | unde
     }
 }
 
+/** Convert JSON-safe plan data into a JavaScript expression literal. */
+function valueExpression(value: any): ts.Expression {
+    const factory = ts.factory;
+    if (value === null) {
+        return factory.createNull();
+    }
+    if (typeof value === 'string') {
+        return factory.createStringLiteral(value);
+    }
+    if (typeof value === 'number') {
+        return factory.createNumericLiteral(value);
+    }
+    if (typeof value === 'boolean') {
+        return value ? factory.createTrue() : factory.createFalse();
+    }
+    if (Array.isArray(value)) {
+        return factory.createArrayLiteralExpression(value.map(valueExpression), false);
+    }
+    if (value && typeof value === 'object') {
+        return factory.createObjectLiteralExpression(
+            Object.keys(value).map(key => {
+                const name = /^[A-Za-z_$][\w$]*$/.test(key)
+                    ? key
+                    : factory.createStringLiteral(key);
+                return factory.createPropertyAssignment(name, valueExpression(value[key]));
+            }),
+            false
+        );
+    }
+    return factory.createVoidZero();
+}
+
 function attachTemplateIR(metadata: ts.Expression): ts.Expression {
     if (!ts.isObjectLiteralExpression(metadata)) {
         return metadata;
@@ -460,12 +492,33 @@ function attachTemplateIR(metadata: ts.Expression): ts.Expression {
     ));
     const plan = templatePlanFromIR(ir);
     if (plan) {
+        // Emit the factory description as a real JS object (`ɵcmp` data),
+        // not as a JSON string that every process must parse at startup.
         properties.push(ts.factory.createPropertyAssignment(
             'templatePlan',
-            ts.factory.createStringLiteral(JSON.stringify(plan))
+            valueExpression(plan)
         ));
     }
     return ts.factory.updateObjectLiteralExpression(metadata, properties);
+}
+
+/**
+ * Keep template precompilation even when the class falls back to runtime
+ * decorator replay (for example a component with a custom member decorator).
+ * The Component call in the compact decorator record then receives the same
+ * `templateIR` / `templatePlan` data a fully precompiled class would.
+ */
+function decoratorRecordExpression(decorator: ts.Decorator): ts.Expression {
+    const expression = decorator.expression;
+    if (decoratorName(decorator) !== 'Component' || !ts.isCallExpression(expression)) {
+        return expression;
+    }
+    const args = expression.arguments.slice();
+    if (!args.length || !isObjectLiteralExpression(args[0])) {
+        return expression;
+    }
+    args[0] = attachTemplateIR(args[0]);
+    return ts.factory.updateCallExpression(expression, expression.expression, expression.typeArguments, args);
 }
 
 function withProperty(expression: ts.Expression, key: string, value: ts.Expression): ts.Expression {
@@ -1666,10 +1719,11 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                 });
 
                 genericClassDecorators.slice().reverse().forEach(decorator => {
-                    records.push({ expression: decorator.expression, kind: 'class' });
+                    records.push({ expression: decoratorRecordExpression(decorator), kind: 'class' });
                 });
 
                 let compiledTypeRecords: ts.Expression[] | undefined;
+                let mixedFallbackRecords: DecoratorRecord[] | undefined;
                 let precompiledHelper = '__aotType';
                 let precompiledMetadata: ts.Expression | undefined;
                 const componentLike = genericClassDecorators.some(decorator => {
@@ -1716,6 +1770,37 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             ], false)
                         );
                     }
+                } else if (!componentLike
+                    && !aspectDecorator
+                    && !noPointcutDecorator
+                    && genericClassDecorators.length > 0) {
+                    // Microservice/controller classes commonly mix supported
+                    // class decorators (`@Injectable`, `@Module`, ...) with
+                    // domain decorators (`@Controller`, route mappings).
+                    // Materialize the supported class metadata now and replay
+                    // only the remaining decorators at module load.
+                    const supported = genericClassDecorators.filter(decorator => {
+                        const name = decoratorName(decorator);
+                        return name !== 'Component'
+                            && name !== 'Directive'
+                            && PRECOMPILABLE_CLASS_DECORATORS.has(name)
+                            && !!precompiledDecoratorMetadata(decorator);
+                    });
+                    if (supported.length) {
+                        precompiledHelper = '__aotType';
+                        precompiledMetadata = factory.createObjectLiteralExpression([
+                            factory.createPropertyAssignment('name', factory.createStringLiteral(node.name!.text))
+                        ], false);
+                        compiledTypeRecords = supported.slice().reverse().map(decorator =>
+                            factory.createArrayLiteralExpression([
+                                (decorator.expression as ts.CallExpression).expression,
+                                precompiledDecoratorMetadata(decorator)!
+                            ], false)
+                        );
+                        mixedFallbackRecords = records.filter(record =>
+                            !supported.some(decorator => record.expression === decorator.expression)
+                        );
+                    }
                 }
 
                 const updated = factory.updateClassDeclaration(
@@ -1756,11 +1841,13 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             )));
                         }
                     }
-                } else if (records.length) {
+                }
+                const fallbackRecords = compiledTypeRecords ? mixedFallbackRecords : records;
+                if (fallbackRecords?.length) {
                     injections.push(factory.createExpressionStatement(factory.createCallExpression(
                         factory.createIdentifier('__aotDeco'),
                         undefined,
-                        [factory.createIdentifier(node.name!.text), decoratorsArray(records)]
+                        [factory.createIdentifier(node.name!.text), decoratorsArray(fallbackRecords)]
                     )));
                     usesIoc = true;
                 }

@@ -46,7 +46,17 @@ export interface TemplatePlan {
     nodes: TemplatePlanNode[];
 }
 
+interface PlanNodeBinding {
+    localRefs: string[];
+    component?: ComponentDef;
+    directives: DirectiveDef[];
+    customElements: DirectiveDef[];
+    projectionAttrs?: Array<{ name: string; value: string }>;
+}
+
 interface PlanBuildContext {
+    /** Component/directive matches computed once per plan factory. */
+    bindings: WeakMap<TemplatePlanNode, PlanNodeBinding>;
     /** Plan node that produced each created node. */
     planByNode: WeakMap<RNode, TemplatePlanNode>;
     /** Created plan children per element, in template order. */
@@ -63,8 +73,9 @@ interface PlanBuildContext {
     transparentTemplates: WeakMap<RNode, RNode[]>;
 }
 
-function createPlanContext(): PlanBuildContext {
+function createPlanContext(bindings: WeakMap<TemplatePlanNode, PlanNodeBinding>): PlanBuildContext {
     return {
+        bindings,
         planByNode: new WeakMap(),
         childrenByElement: new WeakMap(),
         componentElements: new WeakSet(),
@@ -221,10 +232,6 @@ function matchesSelector(
     return false;
 }
 
-function elementTag(element: RElement): string {
-    return String((element as any).localName || element.tagName || '').toLowerCase();
-}
-
 /** Structural directives that move their host element into a container. */
 function isStructuralDirective(def: DirectiveDef): boolean {
     if (def.dirType !== DirectiveType.Conditional && def.dirType !== DirectiveType.Iterable) {
@@ -238,6 +245,72 @@ function isStructuralDirective(def: DirectiveDef): boolean {
         }
     }
     return true;
+}
+
+function localRefsOf(plan: TemplatePlanElement): string[] {
+    return plan.rawAttrs
+        .map(([name]) => name)
+        .filter(name => name.startsWith('#') && name.length > 1)
+        .map(name => name.slice(1));
+}
+
+/**
+ * Resolve component/directive/custom-element matches once per plan factory.
+ * The plan itself is immutable, so every embedded view can reuse the result
+ * instead of scanning every definition for every node.
+ */
+function collectPlanBindings(
+    planNodes: TemplatePlanNode[],
+    directives: DirectiveDef[],
+    components: ComponentDef[],
+    customElements: DirectiveDef[],
+    renderer: Renderer
+): WeakMap<TemplatePlanNode, PlanNodeBinding> {
+    const bindings = new WeakMap<TemplatePlanNode, PlanNodeBinding>();
+    const visit = (plan: TemplatePlanNode): void => {
+        if (plan.kind !== 'element') {
+            return;
+        }
+        const tag = String(plan.tag).toLowerCase();
+        const localRefs = localRefsOf(plan);
+        if (isProjectionOutletTag(tag)) {
+            bindings.set(plan, {
+                localRefs,
+                directives: [],
+                customElements: [],
+                projectionAttrs: plan.attrs.map(([name, value]) => ({ name, value }))
+            });
+            plan.children.forEach(visit);
+            return;
+        }
+        let component: ComponentDef | undefined;
+        let matched: DirectiveDef[] = [];
+        let custom: DirectiveDef[] = [];
+        if (tag !== 'v-template') {
+            const probe = renderer.createElement(plan.tag);
+            for (const [name, value] of plan.attrs) {
+                renderer.setAttribute(probe, name, value);
+            }
+            component = components.find(def => matchesSelector(probe, tag, plan.rawAttrs, def.selector, renderer));
+            if (plan.rawAttrs.length) {
+                for (const def of directives) {
+                    if (matchesSelector(probe, tag, plan.rawAttrs, def.selector, renderer)) {
+                        matched.push(def);
+                    }
+                }
+                matched.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+                for (const def of customElements) {
+                    if (matchesSelector(probe, tag, plan.rawAttrs, def.selector, renderer)) {
+                        custom.push(def);
+                    }
+                }
+            }
+        }
+        bindings.set(plan, { localRefs, component, directives: matched, customElements: custom });
+        plan.children.forEach(visit);
+    };
+    planNodes.forEach(visit);
+    return bindings;
 }
 
 function createNode(renderer: Renderer, node: TemplatePlanNode, ctx: PlanBuildContext): RNode {
@@ -297,9 +370,6 @@ function createNode(renderer: Renderer, node: TemplatePlanNode, ctx: PlanBuildCo
 function bindPlanNode(
     node: RNode,
     plan: TemplatePlanNode,
-    directives: DirectiveDef[],
-    components: ComponentDef[],
-    customElements: DirectiveDef[],
     renderer: Renderer,
     delimiter: RegExp,
     ctx: PlanBuildContext
@@ -316,24 +386,23 @@ function bindPlanNode(
     }
     const planElement = plan as TemplatePlanElement;
     const attrs = planElement.rawAttrs.map(([name, value]) => ({ name, value }));
+    const info = ctx.bindings.get(plan) ?? { localRefs: [], directives: [], customElements: [] };
     bindingAtrrbutes(element, attrs, renderer, delimiter);
 
     if (ctx.templatePlans.has(element)) {
-        assignLocalRefs(element, planElement);
+        assignLocalRefs(element, info);
         return;
     }
 
     const children = ctx.childrenByElement.get(element) || [];
     for (let i = 0; i < children.length; i++) {
-        bindPlanNode(children[i], planElement.children[i], directives, components, customElements, renderer, delimiter, ctx);
+        bindPlanNode(children[i], planElement.children[i], renderer, delimiter, ctx);
     }
 
-    assignLocalRefs(element, planElement);
+    assignLocalRefs(element, info);
 
-    const tag = elementTag(element);
-    const component = components.find(def => matchesSelector(element, tag, planElement.rawAttrs, def.selector, renderer));
-    if (component) {
-        element[COMPONENTDEF] = component;
+    if (info.component) {
+        element[COMPONENTDEF] = info.component;
         ctx.componentElements.add(element);
         // Children of a component host are projection content, not host nodes.
         const projected = Array.from((element.childNodes || []) as ArrayLike<RNode>);
@@ -341,45 +410,28 @@ function bindPlanNode(
             projected.forEach(child => renderer.removeChild(element, child));
             (element as any)[PROJECTION_NODES] = projected;
         }
-        bindingComponentFactory(element, component, attrs, renderer, delimiter);
+        bindingComponentFactory(element, info.component, attrs, renderer, delimiter);
     }
 
-    if (planElement.rawAttrs.length) {
-        const matched: DirectiveDef[] = [];
-        for (const def of directives) {
-            if (matchesSelector(element, tag, planElement.rawAttrs, def.selector, renderer)) {
-                matched.push(def);
+    if (info.directives.length) {
+        element[DIRECTIVES] = info.directives;
+        const templateContent = ctx.transparentTemplates.get(element);
+        info.directives.forEach(def => {
+            if (isStructuralDirective(def)) {
+                ctx.structuralTemplates.add(element);
             }
-        }
-        if (matched.length) {
-            matched.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-            element[DIRECTIVES] = matched;
-            const templateContent = ctx.transparentTemplates.get(element);
-            matched.forEach(def => {
-                if (isStructuralDirective(def)) {
-                    ctx.structuralTemplates.add(element);
-                }
-                bindingDirectiveFactory(element, def, attrs, renderer, delimiter, templateContent);
-            });
-        }
+            bindingDirectiveFactory(element, def, attrs, renderer, delimiter, templateContent);
+        });
     }
 
-    for (const def of customElements) {
-        if (matchesSelector(element, tag, planElement.rawAttrs, def.selector, renderer)) {
-            const list = element[CUSTOM_ELEMENTS] || [];
-            list.push(def);
-            element[CUSTOM_ELEMENTS] = list;
-        }
+    if (info.customElements.length) {
+        element[CUSTOM_ELEMENTS] = info.customElements.slice(0);
     }
 }
 
-function assignLocalRefs(node: RElement, plan: TemplatePlanElement): void {
-    const localRefs = plan.rawAttrs
-        .map(([name]) => name)
-        .filter(name => name.startsWith('#') && name.length > 1)
-        .map(name => name.slice(1));
-    if (localRefs.length) {
-        node[LOCAL_REFS] = localRefs;
+function assignLocalRefs(node: RElement, info: PlanNodeBinding): void {
+    if (info.localRefs.length) {
+        node[LOCAL_REFS] = info.localRefs.slice(0);
     }
 }
 
@@ -433,9 +485,7 @@ function prepareTemplates(
     context: any,
     effect: ReactiveEffect,
     injector: NodeInjector,
-    directives: DirectiveDef[],
-    components: ComponentDef[],
-    customElements: DirectiveDef[],
+    bindings: WeakMap<TemplatePlanNode, PlanNodeBinding>,
     delimiter: RegExp
 ): void {
     if (!node || injector.destroyed) {
@@ -454,7 +504,7 @@ function prepareTemplates(
         const factory = (render: Renderer, factoryInjector: NodeInjector, factoryContext: any, factoryEffect: ReactiveEffect): RNode[] =>
             buildPlanNodes(
                 templatePlan.children, render, factoryInjector, factoryContext, factoryEffect,
-                directives, components, customElements, delimiter
+                bindings, delimiter
             );
         (node as any)[TEMPLATE_FACTORY] = factory;
         injector.attachTemplate(createTemplateRef(factory, elementRef, { injector, context }));
@@ -466,11 +516,11 @@ function prepareTemplates(
     }
     if (ctx.componentElements.has(node)) {
         const projected = (node as any)[PROJECTION_NODES] as RNode[] | undefined;
-        projected?.forEach(child => prepareTemplates(child, ctx, context, effect, injector, directives, components, customElements, delimiter));
+        projected?.forEach(child => prepareTemplates(child, ctx, context, effect, injector, bindings, delimiter));
         return;
     }
     const planChildren = ctx.childrenByElement.get(node);
-    planChildren?.forEach(child => prepareTemplates(child, ctx, context, effect, injector, directives, components, customElements, delimiter));
+    planChildren?.forEach(child => prepareTemplates(child, ctx, context, effect, injector, bindings, delimiter));
 }
 
 function executeBindings(
@@ -522,18 +572,16 @@ function buildPlanNodes<C>(
     injector: NodeInjector,
     context: C,
     effect: ReactiveEffect,
-    directives: DirectiveDef[],
-    components: ComponentDef[],
-    customElements: DirectiveDef[],
+    bindings: WeakMap<TemplatePlanNode, PlanNodeBinding>,
     delimiter: RegExp
 ): RNode[] {
-    const ctx = createPlanContext();
+    const ctx = createPlanContext(bindings);
     const nodes = planNodes.map(node => createNode(render, node, ctx));
     for (let i = 0; i < nodes.length; i++) {
-        bindPlanNode(nodes[i], planNodes[i], directives, components, customElements, render, delimiter, ctx);
+        bindPlanNode(nodes[i], planNodes[i], render, delimiter, ctx);
         nodes[i] = resolveRootStructuralContainer(nodes[i]);
     }
-    nodes.forEach(node => prepareTemplates(node, ctx, context, effect, injector, directives, components, customElements, delimiter));
+    nodes.forEach(node => prepareTemplates(node, ctx, context, effect, injector, bindings, delimiter));
     nodes.forEach(node => executeBindings(node, ctx, context, effect, injector));
     return nodes;
 }
@@ -547,7 +595,8 @@ export function createTemplatePlanFactory<C>(
     components: ComponentDef[],
     customElements: DirectiveDef[]
 ): TemplateFactory<C> {
+    const bindings = collectPlanBindings(plan.nodes, directives, components, customElements, renderer);
     const rootNodes = (render: Renderer, injector: NodeInjector, context: C, effect: ReactiveEffect): RNode[] =>
-        buildPlanNodes(plan.nodes, render, injector, context, effect, directives, components, customElements, delimiter);
+        buildPlanNodes(plan.nodes, render, injector, context, effect, bindings, delimiter);
     return (host, injector) => createTemplateRef<C>(rootNodes, host, { injector });
 }
