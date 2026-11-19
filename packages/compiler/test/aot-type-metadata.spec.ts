@@ -179,7 +179,7 @@ export class PropertyInjectedService {
 import { Autorun, Injectable } from '@tsdi/ioc';
 
 @Injectable()
-@Autorun({ propertyKey: 'setup' })
+@Autorun({ propertyKey: 'setup', providedIn: 'root', singleton: true })
 export class AutorunService {
     ready = false;
     setup() { this.ready = true; }
@@ -190,7 +190,14 @@ export class AutorunService {
         expect(emitted).toContain("propertyKey: 'setup'");
 
         const exported = loadModule(source);
-        expect(exported.AutorunService.ƿAnn().runnables?.length).toBe(1);
+        const annotation: any = exported.AutorunService.ƿAnn();
+        expect(annotation.runnables?.length).toBe(1);
+        // `@Autorun` is a runnable decorator: its options stay on the runnable
+        // record. The runtime dispatch pipeline never copies them onto the class
+        // annotation, and the precompiled path must not either (otherwise the
+        // class self-registers in the root injector and fails to resolve).
+        expect(annotation.providedIn).toBeUndefined();
+        expect(annotation.singleton).toBeUndefined();
     });
 
 

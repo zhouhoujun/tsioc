@@ -191,6 +191,11 @@ export interface DecoratorFn extends Function {
      */
     decorator?: string;
     /**
+     * decorator action type, used by the precompiled metadata path to mirror
+     * the runtime dispatch pipeline.
+     */
+    actionType?: ActionType;
+    /**
      * decorator name
      */
     toString(): string;

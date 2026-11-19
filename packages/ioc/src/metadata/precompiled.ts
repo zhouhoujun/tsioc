@@ -1,5 +1,5 @@
 import { AbstractType, typeAnn } from '../types';
-import type { DecoratorFn, DecoratorType } from './define';
+import { ActionType, type DecoratorFn, type DecoratorType } from './define';
 
 /**
  * Small global index used by precompiled metadata. Build-time metadata stores
@@ -295,13 +295,11 @@ function applyTypeMetadataFields(def: Record<string, any>, records: PrecompiledT
         if (!meta || typeof meta !== 'object') {
             continue;
         }
-        const decoratorName = (Array.isArray(record) ? record[0] : record?.decor)?.decorator;
+        const decor = Array.isArray(record) ? record[0] : record?.decor;
+        const decoratorName = decor?.decorator;
         if (decoratorName === '@Module') {
             applyModuleMetadata(def, meta);
             continue;
-        }
-        if (typeof meta.abstract === 'boolean') {
-            def.abstract = meta.abstract;
         }
         if (meta.selector !== undefined) {
             def.selector = meta.selector;
@@ -309,28 +307,42 @@ function applyTypeMetadataFields(def: Record<string, any>, records: PrecompiledT
         if (typeof meta.pure === 'boolean') {
             def.pure = meta.pure;
         }
-        if (typeof meta.singleton === 'boolean') {
-            def.singleton = meta.singleton;
-        }
-        if (typeof meta.static === 'boolean') {
-            def.static = meta.static;
-        }
-        if (meta.expires) {
-            def.expires = meta.expires;
-        }
-        if (meta.providedIn) {
-            def.providedIn = meta.providedIn;
-        }
-        if (meta.provide !== undefined) {
-            (def.provides || (def.provides = []));
-            if (def.provides.indexOf(meta.provide) < 0) {
-                def.provides.push(meta.provide);
+        // Mirror the runtime dispatch pipeline: only `ActionType.annoation`
+        // decorators write annotation fields, and only `ActionType.providers`
+        // decorators contribute class providers. Runnable metadata (for example
+        // `@Autorun({ providedIn: 'root', singleton: true })`) keeps these
+        // options in its runnable record; copying them onto the class
+        // annotation would wrongly register the class in the root injector.
+        const actionType = (decor as DecoratorFn)?.actionType;
+        if (actionType && actionType & ActionType.annoation) {
+            if (typeof meta.abstract === 'boolean') {
+                def.abstract = meta.abstract;
+            }
+            if (typeof meta.singleton === 'boolean') {
+                def.singleton = meta.singleton;
+            }
+            if (typeof meta.static === 'boolean') {
+                def.static = meta.static;
+            }
+            if (meta.expires) {
+                def.expires = meta.expires;
+            }
+            if (meta.providedIn) {
+                def.providedIn = meta.providedIn;
+            }
+            if (meta.provide !== undefined) {
+                (def.provides || (def.provides = []));
+                if (def.provides.indexOf(meta.provide) < 0) {
+                    def.provides.push(meta.provide);
+                }
             }
         }
-        if (Array.isArray(meta.providers) && meta.providers.length) {
-            (def.providers || (def.providers = []));
-            if (def.providers !== meta.providers && def.providers.indexOf(meta.providers) < 0) {
-                def.providers.push(meta.providers);
+        if (actionType && actionType & ActionType.providers) {
+            if (Array.isArray(meta.providers) && meta.providers.length) {
+                (def.providers || (def.providers = []));
+                if (def.providers !== meta.providers && def.providers.indexOf(meta.providers) < 0) {
+                    def.providers.push(meta.providers);
+                }
             }
         }
     }

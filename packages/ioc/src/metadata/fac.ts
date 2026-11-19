@@ -45,6 +45,9 @@ export function createDecorator<T>(name: string, option: DecoratorOption<T>): an
     if (option.runtime) factory.getRuntimeHandler = mapToFac(option.runtime as Record<string, HandlerFn | HandlerFn[]>);
     factory.toString = () => decor;
     factory.decorator = decor;
+    // Exposed so precompiled (`applyPrecompiledType`) metadata can apply the
+    // same annotation/provider fields the runtime dispatch pipeline would.
+    factory.actionType = option.actionType;
     return factory
 }
 
