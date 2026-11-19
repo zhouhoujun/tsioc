@@ -16,7 +16,7 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Component', 'Directive'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Module', 'Component', 'Directive'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
@@ -254,6 +254,12 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
                 : undefined;
         case 'NoReactive':
             return factory.createObjectLiteralExpression([], false);
+        case 'Module':
+            return args.length === 0
+                ? factory.createObjectLiteralExpression([], false)
+                : args.length === 1 && ts.isObjectLiteralExpression(args[0])
+                    ? args[0]
+                    : undefined;
         case 'Pipe':
             if (args.length === 1 && ts.isStringLiteral(args[0])) {
                 return factory.createObjectLiteralExpression([

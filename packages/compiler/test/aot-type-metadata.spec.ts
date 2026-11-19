@@ -298,6 +298,36 @@ export class AotNoReactive {
         expect(shownRuns).toBe(2);
     });
 
+
+    it('precompiles @Module metadata', () => {
+        const source = `
+import { Injectable, Module } from '@tsdi/ioc';
+
+@Injectable()
+export class ModuleService {}
+
+@Module({
+    providers: [ModuleService],
+    declarations: [ModuleService],
+    imports: [[ModuleService]],
+    exports: [ModuleService]
+})
+export class AotModule {}
+`;
+        const emitted = transpileAot('aot-module.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('Module,');
+        expect(emitted).toContain('providers');
+
+        const exported = loadModule(source);
+        const annotation: any = getClassRef(exported.AotModule).getAnnotation();
+        expect(annotation.module).toBe(true);
+        expect(annotation.providers).toContain(exported.ModuleService);
+        expect(annotation.declarations).toContain(exported.ModuleService);
+        expect(annotation.imports).toContain(exported.ModuleService);
+        expect(annotation.exports).toContain(exported.ModuleService);
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

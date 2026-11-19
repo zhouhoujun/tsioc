@@ -205,6 +205,69 @@ export function applyPrecompiledType(
     (target as any)[PRECOMPILED_TYPE_DEFINES] = records ?? [];
 }
 
+
+function isClassValue(value: any): boolean {
+    return typeof value === 'function' && !!value.prototype;
+}
+
+function isPlainObjectValue(value: any): boolean {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
+}
+
+function collectModuleValues(input: any, predicate: (value: any) => boolean, descend = true): any[] {
+    const result: any[] = [];
+    const visit = (value: any): void => {
+        if (Array.isArray(value)) {
+            value.forEach(visit);
+            return;
+        }
+        if (descend && isPlainObjectValue(value) && !value.module) {
+            Object.keys(value).forEach(key => visit(value[key]));
+            return;
+        }
+        if (predicate(value)) {
+            result.push(value);
+        }
+    };
+    visit(input);
+    return result;
+}
+
+function applyModuleMetadata(def: Record<string, any>, meta: Record<string, any>): void {
+    def.module = true;
+    if (meta.providedIn !== undefined) {
+        def.providedIn = meta.providedIn;
+    }
+    if (meta.baseURL !== undefined) {
+        def.baseURL = meta.baseURL;
+    }
+    if (meta.debug !== undefined) {
+        def.debug = meta.debug;
+    }
+    if (Array.isArray(meta.providers) && meta.providers.length) {
+        (def.providers || (def.providers = []));
+        def.providers.push(...meta.providers);
+    }
+    if (meta.imports) {
+        def.imports = collectModuleValues(meta.imports, value =>
+            isClassValue(value) || (!!value && typeof value === 'object' && !!value.module)
+        );
+    }
+    if (meta.exports) {
+        def.exports = collectModuleValues(meta.exports, isClassValue);
+    }
+    if (meta.declarations) {
+        def.declarations = collectModuleValues(meta.declarations, isClassValue);
+    }
+    if (meta.bootstrap) {
+        def.bootstrap = collectModuleValues(meta.bootstrap, isClassValue);
+    }
+}
+
 function applyRunnableDefines(def: Record<string, any>, records: PrecompiledTypeDecoratorEntry[]): void {
     for (let i = 0, len = records.length; i < len; i++) {
         const record = records[i] as any;
@@ -230,6 +293,11 @@ function applyTypeMetadataFields(def: Record<string, any>, records: PrecompiledT
         const record = records[i] as any;
         const meta = Array.isArray(record) ? record[1] : record?.metadata;
         if (!meta || typeof meta !== 'object') {
+            continue;
+        }
+        const decoratorName = (Array.isArray(record) ? record[0] : record?.decor)?.decorator;
+        if (decoratorName === '@Module') {
+            applyModuleMetadata(def, meta);
             continue;
         }
         if (typeof meta.abstract === 'boolean') {
