@@ -1,4 +1,6 @@
 import * as ts from 'typescript';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { templateToIR } from './template-ir';
 
 const ASPECT_DECORATORS = new Set([
@@ -333,17 +335,35 @@ function propertyName(property: ts.ObjectLiteralElementLike): string | undefined
         : undefined;
 }
 
+function inlineTemplateText(metadata: ts.ObjectLiteralExpression): string | undefined {
+    const template = metadata.properties.find(property =>
+        propertyName(property) === 'template'
+    ) as ts.PropertyAssignment | undefined;
+    if (template && ts.isStringLiteral(template.initializer)) {
+        return template.initializer.text;
+    }
+    const templateUrl = metadata.properties.find(property =>
+        propertyName(property) === 'templateUrl'
+    ) as ts.PropertyAssignment | undefined;
+    if (!templateUrl || !ts.isStringLiteral(templateUrl.initializer) || !activeTypeContext?.sourceFile) {
+        return undefined;
+    }
+    try {
+        return readFileSync(resolve(dirname(activeTypeContext.sourceFile.fileName), templateUrl.initializer.text), 'utf-8');
+    } catch {
+        return undefined;
+    }
+}
+
 function attachTemplateIR(metadata: ts.Expression): ts.Expression {
     if (!ts.isObjectLiteralExpression(metadata)) {
         return metadata;
     }
-    const template = metadata.properties.find(property =>
-        propertyName(property) === 'template'
-    ) as ts.PropertyAssignment | undefined;
-    if (!template || !ts.isStringLiteral(template.initializer)) {
+    const templateText = inlineTemplateText(metadata);
+    if (!templateText) {
         return metadata;
     }
-    const ir = templateToIR(template.initializer.text);
+    const ir = templateToIR(templateText);
     if (!ir) {
         return metadata;
     }
