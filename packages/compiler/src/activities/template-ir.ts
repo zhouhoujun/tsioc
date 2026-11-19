@@ -1,4 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
+import { transformBlocks } from './template-blocks';
 
 export type TemplateIRNode =
     | { kind: 'text'; value: string }
@@ -57,8 +58,8 @@ function convert(entry: any): TemplateIRNode[] | null {
 }
 
 export function templateToIR(template: string): TemplateIRNode[] | null {
-    if (!template || template.includes('@if') || template.includes('@switch')) return null;
+    if (!template) return null;
     if (/<\s*(svg|math)\b/i.test(template)) return null;
-    try { return convert(new XMLParser(PARSER_OPTIONS).parse(template.trim())); }
+    try { return convert(new XMLParser(PARSER_OPTIONS).parse(transformBlocks(template).trim())); }
     catch { return null; }
 }

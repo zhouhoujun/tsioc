@@ -69,11 +69,22 @@ export class AotIrHost {
         }
     });
 
-    it('leaves block templates on the runtime parser', () => {
+    it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';
-@Component({ selector: 'aot-ir-block', template: '@if (ok) { <span>yes</span> }' })
+@Component({ selector: 'aot-ir-block', template: '@if (ok) { <span>yes</span> } @else { <span>no</span> }' })
 export class AotIrBlock { ok = true; }
+`, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('templateIR:');
+        expect(emitted).toContain('v-if');
+        expect(emitted).toContain('v-else');
+    });
+
+    it('leaves SVG templates on the runtime parser', () => {
+        const emitted = transpileAot('aot-template-ir-svg.ts', `
+import { Component } from '@tsdi/components';
+@Component({ selector: 'aot-ir-svg', template: '<svg><circle /></svg>' })
+export class AotIrSvg {}
 `, { module: ts.ModuleKind.CommonJS });
         expect(emitted).not.toContain('templateIR:');
     });
