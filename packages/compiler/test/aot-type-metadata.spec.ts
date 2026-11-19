@@ -73,7 +73,8 @@ export class Root {
         expect(root.leaf.value).toBe(5);
     });
 
-    it('keeps the decorator pipeline for member decorators', () => {        const source = `
+    it('precompiles service property injection', () => {
+        const source = `
 import { Injectable, Autowired } from '@tsdi/ioc';
 
 @Injectable()
@@ -89,8 +90,8 @@ export class Root {
 `;
         const output = transpileAot('aot-member.ts', source, { module: ts.ModuleKind.CommonJS });
         const exported = loadModule(source);
-        expect(output).toContain('__aotDeco(Root,');
-        expect(exported.Root.ƿAnn).toBeUndefined();
+        expect(output).toContain('__aotType(Root,');
+        expect(exported.Root.ƿAnn).toBeDefined();
 
         const container = ioc.createInjector();
         ioc.InjectUtil.use(container, exported.Leaf, exported.Root);
@@ -120,6 +121,52 @@ export class InjectedService {
         container.setValue('AOT_TOKEN', 'injected');
         const service = container.get(exported.InjectedService) as any;
         expect(service.value).toBe('injected');
+    });
+
+
+    it('precompiles @Optional tokens into ƿprov flags', () => {
+        const source = `
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
+
+@Injectable()
+export class OptionalService {
+    constructor(@Optional() @Inject('MISSING_TOKEN') readonly value?: string) {}
+}
+`;
+        const emitted = transpileAot('aot-optional.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotFlags');
+        expect(emitted).toContain('ƿprov');
+        expect(emitted).toContain('Optional');
+
+        const exported = loadModule(source);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.OptionalService);
+        const service = container.get(exported.OptionalService) as any;
+        expect(service.value == null).toBe(true);
+    });
+
+
+    it('precompiles @Autowired property injection metadata', () => {
+        const source = `
+import { Autowired, Injectable } from '@tsdi/ioc';
+
+@Injectable()
+export class PropertyInjectedService {
+    @Autowired('PROP_TOKEN')
+    value?: string;
+}
+`;
+        const emitted = transpileAot('aot-prop.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('propMetadatas');
+        expect(emitted).toContain('PROP_TOKEN');
+
+        const exported = loadModule(source);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.PropertyInjectedService);
+        container.setValue('PROP_TOKEN', 'property-value');
+        const service = container.get(exported.PropertyInjectedService) as any;
+        expect(service.value).toBe('property-value');
     });
 
     it('materializes component and directive definitions', () => {

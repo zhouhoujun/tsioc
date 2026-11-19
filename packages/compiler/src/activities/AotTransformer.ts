@@ -46,6 +46,7 @@ interface TypeEmitContext {
     aliases: Map<string, string>;
     sequence: { value: number };
     moduleKind?: ts.ModuleKind;
+    usesInjectFlags?: boolean;
 }
 let activeTypeContext: TypeEmitContext | undefined;
 
@@ -345,6 +346,65 @@ function queryMetadataExpression(decorator: ts.Decorator): ts.Expression | undef
     return undefined;
 }
 
+function injectedPropertyMetadata(decorator: ts.Decorator, member: ts.ClassElement): ts.Expression | undefined {
+    const factory = ts.factory;
+    const args = decoratorArgs(decorator);
+    if (args[0]) {
+        return factory.createObjectLiteralExpression([
+            factory.createPropertyAssignment('provider', selectorValueExpression(args[0]))
+        ], false);
+    }
+    if (!activeTypeChecker) {
+        return undefined;
+    }
+    const type = (member as ts.PropertyDeclaration).type;
+    if (!type || !ts.isTypeReferenceNode(type)) {
+        return undefined;
+    }
+    let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
+    if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
+        symbol = activeTypeChecker.getAliasedSymbol(symbol);
+    }
+    if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
+        return undefined;
+    }
+    return factory.createObjectLiteralExpression([
+        factory.createPropertyAssignment('type', typeExpression(type))
+    ], false);
+}
+
+function attachServiceMembers(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
+    const properties: ts.Expression[] = [];
+    for (const member of node.members) {
+        if (ts.isConstructorDeclaration(member)) {
+            continue;
+        }
+        const key = memberKey(member);
+        if (!key) {
+            continue;
+        }
+        for (const decorator of decoratorsOf(member)) {
+            const name = decoratorName(decorator);
+            if (name !== 'Autowired' && name !== 'Inject') {
+                continue;
+            }
+            const meta = injectedPropertyMetadata(decorator, member);
+            if (!meta) {
+                continue;
+            }
+            const withKey = withProperty(meta, 'propertyKey', ts.factory.createStringLiteral(key));
+            properties.push(ts.factory.createArrayLiteralExpression([
+                ts.factory.createStringLiteral(key),
+                withKey
+            ], false));
+        }
+    }
+    if (!properties.length) {
+        return metadata;
+    }
+    return withProperty(metadata, 'propMetadatas', ts.factory.createArrayLiteralExpression(properties, false));
+}
+
 function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | undefined {
     const factory = ts.factory;
     const name = decoratorName(decorator);
@@ -512,31 +572,49 @@ function isRuntimeValueType(name: ts.EntityName): boolean {
  * runtime `design:paramtypes` path instead of injecting `Object`.
  */
 function parameterDependency(parameter: ts.ParameterDeclaration): ts.Expression | undefined {
+    let token: ts.Expression | undefined;
+    const flags: ts.Expression[] = [];
     for (const decorator of decoratorsOf(parameter)) {
         const name = decoratorName(decorator);
         if (name === 'Inject' || name === 'Autowired') {
             const args = decoratorArgs(decorator);
             if (args[0]) {
-                return selectorValueExpression(args[0]);
+                token = selectorValueExpression(args[0]);
             }
             continue;
         }
-        // Flags/defaults need runtime parameter metadata; keep the class on
-        // the decorator pipeline until they are represented in the plan.
+        if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host') {
+            if (activeTypeContext) {
+                activeTypeContext.usesInjectFlags = true;
+            }
+            flags.push(ts.factory.createPropertyAccessExpression(
+                ts.factory.createIdentifier('__aotFlags'),
+                name
+            ));
+            continue;
+        }
         return undefined;
     }
-    const type = parameter.type;
-    if (!type || !ts.isTypeReferenceNode(type) || !activeTypeChecker) {
+    if (!token) {
+        const type = parameter.type;
+        if (!type || !ts.isTypeReferenceNode(type) || !activeTypeChecker) {
+            return undefined;
+        }
+        let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
+        if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
+            symbol = activeTypeChecker.getAliasedSymbol(symbol);
+        }
+        if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
+            return undefined;
+        }
+        token = typeExpression(type);
+    }
+    if (!token) {
         return undefined;
     }
-    let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
-    if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
-        symbol = activeTypeChecker.getAliasedSymbol(symbol);
-    }
-    if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
-        return undefined;
-    }
-    return typeExpression(type);
+    return flags.length
+        ? ts.factory.createArrayLiteralExpression([token, ...flags], false)
+        : token;
 }
 
 function constructorDependencies(node: ts.ClassDeclaration): ts.Expression | undefined {
@@ -561,6 +639,9 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             for (const parameter of member.parameters) {
                 for (const decorator of decoratorsOf(parameter)) {
                     const name = decoratorName(decorator);
+                    if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host') {
+                        continue;
+                    }
                     if (name !== 'Inject' && name !== 'Autowired') {
                         return false;
                     }
@@ -571,8 +652,14 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             }
             continue;
         }
-        if (decoratorsOf(member).length) {
-            return false;
+        for (const decorator of decoratorsOf(member)) {
+            const name = decoratorName(decorator);
+            if (name !== 'Autowired' && name !== 'Inject') {
+                return false;
+            }
+            if (!injectedPropertyMetadata(decorator, member)) {
+                return false;
+            }
         }
         for (const parameter of memberParameters(member)) {
             if (decoratorsOf(parameter).length) {
@@ -951,9 +1038,14 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             if (hasComponent && precompiledMetadata) {
                                 precompiledMetadata = attachTemplateIR(precompiledMetadata);
                             }
-                            if ((hasComponent || hasDirective) && precompiledMetadata) {
+                            if (precompiledMetadata) {
                                 precompiledMetadata = attachMemberMetadata(precompiledMetadata, node);
                             }
+                        } else {
+                            precompiledMetadata = factory.createObjectLiteralExpression([
+                                factory.createPropertyAssignment('name', factory.createStringLiteral(node.name!.text))
+                            ], false);
+                            precompiledMetadata = attachServiceMembers(precompiledMetadata, node);
                         }
                         compiledTypeRecords = genericClassDecorators.slice().reverse().map(decorator =>
                             factory.createArrayLiteralExpression([
@@ -1046,6 +1138,26 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
 
             if (usesReflect) {
                 imports.push(factory.createImportDeclaration(undefined, undefined, factory.createStringLiteral('reflect-metadata')));
+            }
+            if (activeTypeContext?.usesInjectFlags) {
+                // `addHelperBinding` is declared below; inline the same shape.
+                if (options.moduleKind === ts.ModuleKind.CommonJS) {
+                    imports.push(factory.createVariableStatement(undefined, factory.createVariableDeclarationList([
+                        factory.createVariableDeclaration('__aotFlags', undefined, undefined,
+                            factory.createPropertyAccessExpression(
+                                factory.createCallExpression(factory.createIdentifier('require'), undefined, [factory.createStringLiteral('@tsdi/ioc')]),
+                                'InjectFlags'
+                            ))
+                    ], ts.NodeFlags.Const)));
+                } else {
+                    imports.push(factory.createImportDeclaration(
+                        undefined,
+                        factory.createImportClause(false, undefined, factory.createNamedImports([
+                            factory.createImportSpecifier(false, factory.createIdentifier('InjectFlags'), factory.createIdentifier('__aotFlags'))
+                        ])),
+                        factory.createStringLiteral('@tsdi/ioc')
+                    ));
+                }
             }
             const addHelperBinding = (local: string, moduleName: string, exported: string): void => {
                 if (options.moduleKind === ts.ModuleKind.CommonJS) {

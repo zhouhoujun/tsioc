@@ -170,6 +170,11 @@ export function applyPrecompiledType(
     if (!def.name) {
         def.name = target.name;
     }
+    if (Array.isArray(def.propMetadatas)) {
+        def.propMetadatas = new Map(def.propMetadatas.map(([key, value]: [any, any]) =>
+            [key, Array.isArray(value) ? value : [value]]
+        ));
+    }
     if (records?.length) {
         if (mergeMetadata) {
             // Component/Directive keep the decorator options object as their
