@@ -299,11 +299,6 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
                 return factory.createObjectLiteralExpression([factory.createPropertyAssignment('static', factory.createTrue())], false);
             }
             if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
-                if (args[0].properties.some(property => propertyName(property) === 'imports')) {
-                    // Configuration imports are loaded asynchronously before beans
-                    // are injected; keep those classes on the decorator pipeline.
-                    return undefined;
-                }
                 const hasStatic = args[0].properties.some(property => propertyName(property) === 'static' || propertyName(property) === 'singleton');
                 return hasStatic
                     ? args[0]
@@ -799,11 +794,15 @@ function attachConfigurationMetadata(metadata: ts.Expression, node: ts.ClassDecl
     }
     const configOptions = precompiledDecoratorMetadata(configuration);
     const configProviders = optionProperty(configOptions, 'providers');
+    const configImports = optionProperty(configOptions, 'imports');
     const properties: ts.ObjectLiteralElementLike[] = [
         ts.factory.createPropertyAssignment('beans', ts.factory.createArrayLiteralExpression(beans, false))
     ];
     if (configProviders) {
         properties.push(ts.factory.createPropertyAssignment('providers', configProviders));
+    }
+    if (configImports) {
+        properties.push(ts.factory.createPropertyAssignment('imports', configImports));
     }
     return withProperty(metadata, 'aotConfiguration', ts.factory.createObjectLiteralExpression(properties, false));
 }

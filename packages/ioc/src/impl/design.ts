@@ -147,31 +147,38 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
     const aotConfiguration = (input.getAnnotation() as any).aotConfiguration;
     if (aotConfiguration) {
         const invocation = input.createInvocation(injector);
-        if (aotConfiguration.providers) {
-            InjectUtil.inject(invocation.injector, aotConfiguration.providers);
-        }
-        for (const bean of aotConfiguration.beans || []) {
-            const metadata = bean.metadata || {};
-            const provide = metadata.provide;
-            if (provide === undefined) {
-                continue;
+        const registerBeans = () => {
+            if (aotConfiguration.providers) {
+                InjectUtil.inject(invocation.injector, aotConfiguration.providers);
             }
-            const provider = bean.decorType === 'method'
-                ? {
-                    provide,
-                    useFactory: () => invocation.invoke(bean.propertyKey),
-                    static: metadata.static,
-                    multi: metadata.multi,
-                    multiOrder: metadata.multiOrder
+            for (const bean of aotConfiguration.beans || []) {
+                const metadata = bean.metadata || {};
+                const provide = metadata.provide;
+                if (provide === undefined) {
+                    continue;
                 }
-                : {
-                    provide,
-                    useFactory: () => invocation.instance[bean.propertyKey],
-                    static: metadata.static,
-                    multi: metadata.multi,
-                    multiOrder: metadata.multiOrder
-                };
-            InjectUtil.provider(injector, provider);
+                const provider = bean.decorType === 'method'
+                    ? {
+                        provide,
+                        useFactory: () => invocation.invoke(bean.propertyKey),
+                        static: metadata.static,
+                        multi: metadata.multi,
+                        multiOrder: metadata.multiOrder
+                    }
+                    : {
+                        provide,
+                        useFactory: () => invocation.instance[bean.propertyKey],
+                        static: metadata.static,
+                        multi: metadata.multi,
+                        multiOrder: metadata.multiOrder
+                    };
+                InjectUtil.provider(injector, provider);
+            }
+        };
+        if (aotConfiguration.imports?.length) {
+            InjectUtil.useAsync(invocation.injector, aotConfiguration.imports).then(registerBeans);
+        } else {
+            registerBeans();
         }
         injector.onDestroy(() => invocation.destroy?.());
     }

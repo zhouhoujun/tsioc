@@ -566,8 +566,8 @@ export class AotConfiguration {
     });
 
 
-    it('keeps Configuration imports on the runtime pipeline', () => {
-        const emitted = transpileAot('aot-config-imports.ts', `
+    it('precompiles Configuration imports', () => {
+        const source = `
 import { Bean, Configuration } from '@tsdi/core';
 import { Injectable } from '@tsdi/ioc';
 
@@ -579,9 +579,11 @@ export class ImportedConfiguration {
     @Bean('IMPORTED_BEAN')
     make() { return 'value'; }
 }
-`, { module: ts.ModuleKind.CommonJS });
-        expect(emitted).toContain('__aotDeco(');
-        expect(emitted).not.toContain('aotConfiguration');
+`;
+        const emitted = transpileAot('aot-config-imports.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('aotConfiguration');
+        expect(emitted).toContain('imports');
     });
 
     it('materializes component and directive definitions', () => {
