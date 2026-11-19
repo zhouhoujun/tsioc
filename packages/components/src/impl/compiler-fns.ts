@@ -49,6 +49,7 @@ function resolveNodeNamespace(node: RElement): string | undefined {
 const outputSubscriptions = new WeakMap<object, Map<string, Subscription>>();
 const outputSubscriptionCleanup = new WeakSet<object>();
 const compiledExpressionCache = new Map<string, CompiledExpression>();
+const simplePathPartsCache = new Map<string, string[] | null>();
 const simplePathExpression = /^[_$a-zA-Z][_$a-zA-Z0-9]*(?:\.[_$a-zA-Z][_$a-zA-Z0-9]*)*$/;
 // Root-level structural directives have no parent to insert their v-container
 // into; remember the replacement so the root node list can be rewritten.
@@ -2011,11 +2012,15 @@ function createExpressionScope(context: any, injector: NodeInjector): any {
 }
 
 function resolveSimpleExpressionValue(expr: string, context: any, injector: NodeInjector): any {
-    if (!expr || !simplePathExpression.test(expr)) {
+    let parts = simplePathPartsCache.get(expr);
+    if (parts === undefined) {
+        parts = expr && simplePathExpression.test(expr) ? expr.split('.') : null;
+        simplePathPartsCache.set(expr, parts);
+    }
+    if (!parts) {
         return unresolvedExpressionBinding;
     }
 
-    const parts = expr.split('.');
     const root = resolveSimpleExpressionRoot(context, parts[0], injector);
     if (root === unresolvedExpressionBinding) {
         return unresolvedExpressionBinding;
