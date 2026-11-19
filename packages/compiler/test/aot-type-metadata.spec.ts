@@ -371,6 +371,20 @@ export class LowerPipe {
         expect(def.pure).toBe(true);
     });
 
+
+    it('keeps Inject options on the runtime pipeline', () => {
+        const emitted = transpileAot('aot-inject-options.ts', `
+import { Inject, Injectable } from '@tsdi/ioc';
+
+@Injectable()
+export class OptionInjectedService {
+    constructor(@Inject('TOKEN', { flags: 8 }) readonly value?: string) {}
+}
+`, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotDeco(');
+        expect(emitted).not.toContain('ƿprov');
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

@@ -493,6 +493,9 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
         if (name === 'Autowired' || name === 'Inject') {
             hasInjection = true;
             const args = decoratorArgs(decorator);
+            if (args.length > 1 || (args[0] && ts.isObjectLiteralExpression(args[0]))) {
+                return undefined;
+            }
             if (args[0]) {
                 token = selectorValueExpression(args[0]);
             }
@@ -868,6 +871,9 @@ function parameterDependency(parameter: ts.ParameterDeclaration): ts.Expression 
         const name = decoratorName(decorator);
         if (name === 'Inject' || name === 'Autowired') {
             const args = decoratorArgs(decorator);
+            if (args.length > 1 || (args[0] && ts.isObjectLiteralExpression(args[0]))) {
+                return undefined;
+            }
             if (args[0]) {
                 token = selectorValueExpression(args[0]);
             }
