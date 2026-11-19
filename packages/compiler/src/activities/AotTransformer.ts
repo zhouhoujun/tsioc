@@ -14,7 +14,7 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Component', 'Directive'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'Component', 'Directive'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
@@ -250,6 +250,35 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
             return args.length === 1
                 ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('providers', args[0])], false)
                 : undefined;
+        case 'Autorun': {
+            const base = [
+                factory.createPropertyAssignment('auto', factory.createTrue()),
+                factory.createPropertyAssignment('singleton', factory.createTrue())
+            ];
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression(base, false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return factory.updateObjectLiteralExpression(args[0], [
+                    ...args[0].properties,
+                    ...base
+                ]);
+            }
+            if (args.length <= 2 && (ts.isStringLiteral(args[0]) || ts.isNumericLiteral(args[0]))) {
+                const properties: ts.ObjectLiteralElementLike[] = [
+                    factory.createPropertyAssignment(
+                        ts.isStringLiteral(args[0]) ? 'propertyKey' : 'order',
+                        args[0]
+                    ),
+                    ...base
+                ];
+                if (args[1]) {
+                    properties.splice(1, 0, factory.createPropertyAssignment('args', args[1]));
+                }
+                return factory.createObjectLiteralExpression(properties, false);
+            }
+            return undefined;
+        }
         case 'Component':
         case 'Directive':
             return args.length === 1 && isObjectLiteralExpression(args[0])

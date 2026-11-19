@@ -169,6 +169,26 @@ export class PropertyInjectedService {
         expect(service.value).toBe('property-value');
     });
 
+
+    it('precompiles class @Autorun runnables', () => {
+        const source = `
+import { Autorun, Injectable } from '@tsdi/ioc';
+
+@Injectable()
+@Autorun({ propertyKey: 'setup' })
+export class AutorunService {
+    ready = false;
+    setup() { this.ready = true; }
+}
+`;
+        const emitted = transpileAot('aot-autorun.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain("propertyKey: 'setup'");
+
+        const exported = loadModule(source);
+        expect(exported.AutorunService.ƿAnn().runnables?.length).toBe(1);
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

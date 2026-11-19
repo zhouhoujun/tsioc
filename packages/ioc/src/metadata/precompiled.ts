@@ -176,6 +176,7 @@ export function applyPrecompiledType(
         ));
     }
     if (records?.length) {
+        applyRunnableDefines(def, records);
         if (mergeMetadata) {
             // Component/Directive keep the decorator options object as their
             // definition. Merge the emitted option metadata into it so both
@@ -199,6 +200,19 @@ export function applyPrecompiledType(
     }
     (target as any)[typeAnn] = () => def;
     (target as any)[PRECOMPILED_TYPE_DEFINES] = records ?? [];
+}
+
+function applyRunnableDefines(def: Record<string, any>, records: PrecompiledTypeDecoratorEntry[]): void {
+    for (let i = 0, len = records.length; i < len; i++) {
+        const record = records[i] as any;
+        const decor = Array.isArray(record) ? record[0] : record?.decor;
+        const meta = Array.isArray(record) ? record[1] : record?.metadata;
+        if (decor?.decorator !== '@Autorun' || !meta || typeof meta !== 'object') {
+            continue;
+        }
+        const runnables = (def.runnables || (def.runnables = []));
+        runnables.push({ ...meta, decorType: 'class' });
+    }
 }
 
 function applyTypeMetadataFields(def: Record<string, any>, records: PrecompiledTypeDecoratorEntry[]): void {
