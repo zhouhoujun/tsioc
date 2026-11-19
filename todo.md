@@ -4859,3 +4859,9 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   保留。
 - 验证：components 191 / common 122 / console 171 / html 147（含 view-teardown），agent-ui **2224 passing**，
   tsc、source-size、dom-gate、tui-gate、gate-regression 全绿。
+
+## 2026-11-19 命令回显端到端核查
+- TUI 探针跑 `/status` `/settings` `/projects` `/sessions` `/rewind`：消息区 `$ /...` 回显为 0，
+  `/rewind` 有 toast，shell 命令执行行保留 1 行。
+- 修复 `flattenProjectSessions(undefined|null)` 崩溃（`session.list_projects` 返回缺失时降级为空选择器），
+  避免失败回显；新增 dialog-regressions 用例。

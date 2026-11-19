@@ -46,7 +46,10 @@ export function flattenProjectSessions(groups: AgentConsoleSessionProjectGroup[]
     projectLabel?: string;
     projectSessionCount?: number;
 }> {
-    return groups.flatMap(group => {
+    // A failed/absent RPC must degrade to an empty picker, not throw and leave
+    // a failed command row behind.
+    const list = Array.isArray(groups) ? groups : [];
+    return list.flatMap(group => {
         const projectKey = String(group.projectKey || '').trim() || undefined;
         const projectId = String(group.projectId || '').trim() || undefined;
         const projectLabel = String(group.label || group.projectId || group.focusSummary || group.workspace || group.primaryThreadId || group.rootRequest || '').trim()

@@ -205,4 +205,10 @@ export class SessionProjectDialogsTest {
         expect(flattenProjectSessions([{ projectKey: 'x', label: 'X', workspace: '/w', sessionCount: 0, lastActiveAt: 1 } as any]))
             .toEqual([]);
     }
+
+    @Test('a missing project-group payload degrades to an empty picker')
+    async tolerantPayload() {
+        expect(flattenProjectSessions(undefined as any)).toEqual([]);
+        expect(flattenProjectSessions(null as any)).toEqual([]);
+    }
 }
