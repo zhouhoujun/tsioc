@@ -2,6 +2,7 @@ import * as ts from 'typescript';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { templateToIR } from './template-ir';
+import { templatePlanFromIR } from './template-plan';
 
 const ASPECT_DECORATORS = new Set([
     'Aspect', 'Pointcut', 'Before', 'After', 'Around', 'AfterReturning',
@@ -449,11 +450,21 @@ function attachTemplateIR(metadata: ts.Expression): ts.Expression {
     if (!ir) {
         return metadata;
     }
-    const properties = metadata.properties.filter(property => propertyName(property) !== 'templateIR');
+    const properties = metadata.properties.filter(property => {
+        const name = propertyName(property);
+        return name !== 'templateIR' && name !== 'templatePlan';
+    });
     properties.push(ts.factory.createPropertyAssignment(
         'templateIR',
         ts.factory.createStringLiteral(JSON.stringify(ir))
     ));
+    const plan = templatePlanFromIR(ir);
+    if (plan) {
+        properties.push(ts.factory.createPropertyAssignment(
+            'templatePlan',
+            ts.factory.createStringLiteral(JSON.stringify(plan))
+        ));
+    }
     return ts.factory.updateObjectLiteralExpression(metadata, properties);
 }
 

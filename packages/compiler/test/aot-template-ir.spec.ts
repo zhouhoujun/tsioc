@@ -4,7 +4,7 @@ import { Application } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { Component, ComponentsModule } from '@tsdi/components';
 import { ComponentRef } from '../../components/src/refs/component';
-import { HtmlTemplateModule } from '../../components/html/src';
+import { HtmlTemplateModule, HtmlTemplateParser } from '../../components/html/src';
 import { XmlTemplateModule } from '../../components/xml/src';
 import { ConsoleTemplateModule } from '../../components/console/src';
 import { transpileAot } from '../src/activities/AotTransform';
@@ -295,6 +295,111 @@ export class AotAutorunHost {
             expect(ref.instance.ready).toBe(true);
         } finally {
             await ctx.close();
+        }
+    });
+
+
+    it('precompiles Attribute accessors and passes inputs to child components', async () => {
+        const source = `
+import { Attribute, Component } from '@tsdi/components';
+
+@Component({ selector: 'aot-attr-child', template: '<span class="value">{{label}}</span>' })
+export class AotAttrChild {
+    private _label = '';
+
+    @Attribute()
+    set label(value: string) { this._label = value; }
+    get label() { return this._label; }
+}
+
+@Component({ selector: 'aot-attr-parent', imports: [AotAttrChild], template: '<aot-attr-child label="hello"></aot-attr-child>' })
+export class AotAttrParent {}
+`;
+        const emitted = transpileAot('aot-attr-accessor.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotComponent(AotAttrChild');
+        expect(emitted).toContain('attributes:');
+
+        const exported = loadAotModule(source);
+        const ctx = await Application.run(exported.AotAttrParent, {
+            deps: [XmlTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(exported.AotAttrParent) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('.value')?.textContent).toBe('hello');
+        } finally {
+            await ctx.close();
+        }
+    });
+
+
+    it('emits and executes binding plans for simple templates', async () => {
+        const source = `
+import { Component } from '@tsdi/components';
+
+@Component({
+    selector: 'aot-plan-host',
+    template: '<div class="card"><span class="title">{{title}}</span><button class="hit" @click="hit()">go</button><input :value="title" /></div>'
+})
+export class AotPlanHost {
+    title = 'plan';
+    hits = 0;
+    hit() { this.hits += 1; }
+}
+`;
+        const emitted = transpileAot('aot-plan.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('templatePlan:');
+
+        const exported = loadAotModule(source);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const proto = HtmlTemplateParser.prototype as any;
+        const originalParse = proto.parse;
+        let parses = 0;
+        proto.parse = function (...args: any[]) {
+            parses += 1;
+            return originalParse.apply(this, args);
+        };
+        let ctx: any;
+        try {
+            ctx = await Application.run(exported.AotPlanHost, {
+                deps: [HtmlTemplateModule, ComponentsModule],
+                providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+            });
+            const ref = ctx.runners.getRef(exported.AotPlanHost) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('.title')?.textContent).toBe('plan');
+            expect((root.querySelector('input') as any)?.value).toBe('plan');
+            root.querySelector('button.hit')?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+            expect(ref.instance.hits).toBe(1);
+            expect(parses).toBe(0);
+        } finally {
+            proto.parse = originalParse;
+            await ctx?.close();
+            dom.window.close();
+        }
+    });
+
+
+    it('executes binding plans with XML and console renderers', async () => {
+        const source = `
+import { Component } from '@tsdi/components';
+
+@Component({ selector: 'aot-plan-multi', template: '<div><span class="title">{{title}}</span></div>' })
+export class AotPlanMulti {
+    title = 'multi';
+}
+`;
+        const exported = loadAotModule(source);
+        for (const deps of [[XmlTemplateModule, ComponentsModule], [ConsoleTemplateModule, ComponentsModule]]) {
+            const ctx = await Application.run(exported.AotPlanMulti, { deps });
+            try {
+                const ref = ctx.runners.getRef(exported.AotPlanMulti) as ComponentRef<any>;
+                const root = ref.hostView.rootNodes[0] as any;
+                expect(root.querySelector('.title')?.textContent).toBe('multi');
+            } finally {
+                await ctx.close();
+            }
         }
     });
 

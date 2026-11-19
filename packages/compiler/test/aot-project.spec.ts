@@ -147,6 +147,32 @@ describe('shared AOT compiler', () => {
         }
     });
 
+
+    it('infers Bean providers from property types', () => {
+        const outDir = tempDir('config-property');
+        try {
+            const result = emitAotProject({
+                configPath: path.join(__dirname, '../tsconfig.json'),
+                rootNames: [path.join(__dirname, 'fixtures/aot/config-property.ts')],
+                compilerOptions: {
+                    outDir,
+                    declaration: false,
+                    sourceMap: false,
+                    target: ts.ScriptTarget.ES2020,
+                    module: ts.ModuleKind.CommonJS,
+                    noEmitOnError: false
+                },
+                throwOnError: true
+            });
+            expect(result.success).toBe(true);
+            const output = fs.readFileSync(path.join(outDir, 'test', 'fixtures', 'aot', 'config-property.js'), 'utf-8');
+            expect(output).toContain('aotConfiguration');
+            expect(output).toContain('PropertyBeanValue');
+        } finally {
+            fs.rmSync(outDir, { recursive: true, force: true });
+        }
+    });
+
     it('compiles a browser-target project to ESM AOT output', () => {
         const outDir = tempDir('browser');
         try {

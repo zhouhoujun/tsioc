@@ -10,6 +10,7 @@ import {
     compileToFactory, generateNodeBindings
 } from './compiler-fns';
 import { buildVerifiedTemplateIR, getCachedTemplateIR, irToNodes, nodesToIR, sameTemplateIR, setCachedTemplateIR, TemplateIRNode } from './template-ir';
+import { createTemplatePlanFactory, TemplatePlan } from '../template/plan';
 
 const selectorMatcherCache = new Map<string, RegExp[] | null>();
 // Renderer constructor -> encoded AOT templateIR -> validated IR (null if invalid).
@@ -103,6 +104,16 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const templateText = typeof template === 'string' ? template : '';
+        if (options.templatePlan && this.delimiter.source === '{{(.*?)}}') {
+            try {
+                const plan = JSON.parse(options.templatePlan) as TemplatePlan;
+                if (plan?.delimiter === '{{}}' && Array.isArray(plan.nodes)) {
+                    return createTemplatePlanFactory<C>(plan, this.renderer, this.delimiter);
+                }
+            } catch {
+                // Fall through to IR/parser paths.
+            }
+        }
         let nodes: RNode[] | undefined;
         if (templateText && options.templateIR) {
             const rendererCtor = (this.renderer as any)?.constructor as Function | undefined;
