@@ -79,7 +79,9 @@ export class DialogDeepLinkTest {
             expect(dialog.textContent || '').toContain('Help');
             expect(this.dom.window.document.querySelectorAll('#agent-console .select-option').length).toBeGreaterThan(2);
             const transcript = this.dom.window.document.querySelector('#agent-console .console-messages-panel')?.textContent || '';
-            expect(transcript).toContain('/help');
+            // The route is proven by the Help menu itself; command echoes are
+            // toast/status feedback and never enter the transcript.
+            expect(transcript).not.toContain('$ /');
             expect(transcript).not.toContain('/dialog');
             // Desktop focus lands on the composer so the deep-linked dialog is
             // immediately keyboard-operable.

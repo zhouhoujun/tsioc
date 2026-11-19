@@ -3,6 +3,7 @@ import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleDecisionMainline, projectAgentConsoleDiagnosticMainline, projectAgentConsoleExecutionMainline, projectAgentConsoleTimelineDurations } from './AgentConsoleSessionContentPresenter';
 import { aggregateAgentConsoleActivity } from './AgentConsoleActivityAggregation';
 import { DEFAULT_TIMELINE_LABELS, TimelineWindowMessage, fillTimelineLabel, formatTimelineClockTime, formatTimelineSessionDuration, isError, truncateTimelineRowText } from './AgentConsoleTimelineWindow';
+import { shouldProjectCommandExecution } from './AgentConsoleCommandEcho';
 
 const displayMessagesCache = new WeakMap<object, {
     messages: AgentMessage[];
@@ -131,7 +132,10 @@ function buildDisplayMessages(state: AgentConsoleSessionState): AgentMessage[] {
         // projected turn keeps the final answer (and every existing row) in
         // place; inserting it mid-list rebuilt the async message rows, which
         // briefly emptied the transcript and moved the viewport.
-        aggregated.push(...state.commandExecutionMessages);
+        // Slash-command echoes are toast/status feedback, not conversation rows
+        // (their dialogs, notices and the status line already report them).
+        // Failures and shell command executions stay visible.
+        aggregated.push(...state.commandExecutionMessages.filter(shouldProjectCommandExecution));
         return aggregated;
     }
 

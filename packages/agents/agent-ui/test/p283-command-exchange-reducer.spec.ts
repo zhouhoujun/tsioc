@@ -225,7 +225,9 @@ export class P283SessionStateEnvelopeWiringTest {
         const state = createState();
         state.configure({ sessionId: 'A' } as any);
         state.commandExecutionController.begin('/usage', '');
-        const msg = state.displayMessages.find(m => m.metadata?.uiKind === 'command-execution');
+        // Slash echoes live in the projection store; successful ones no longer
+        // render as transcript rows.
+        const msg = state.commandExecutionMessages.find(m => m.metadata?.uiKind === 'command-execution');
         expect(msg).toBeDefined();
         expect(msg?.metadata?.sequence).toEqual(1);
         expect(msg?.metadata?.attempt).toEqual(1);

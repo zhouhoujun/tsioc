@@ -135,7 +135,7 @@ export class P284UiDurableReplayTest {
             makeRecord(1, { kind: 'command', key: 'cmd-1', content: '/usage', sequence: 7, attempt: 2, status: 'success' }),
             makeRecord(2, { kind: 'command', key: 'cmd-2', content: '/status', sequence: 8, attempt: 1, status: 'error' })
         ]);
-        const executions = state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution');
+        const executions = state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution');
         expect(executions.length).toEqual(2);
         const first = executions[0];
         expect(first.metadata?.uiEventKey).toEqual('cmd-1');
@@ -155,7 +155,7 @@ export class P284UiDurableReplayTest {
             makeRecord(1, { sessionEpoch: 0, kind: 'command', key: 'stale-1' }),
             makeRecord(2, { sessionEpoch: 1, kind: 'command', key: 'current-2' })
         ]);
-        const executions = state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution');
+        const executions = state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution');
         expect(executions.length).toEqual(1);
         expect(executions[0].metadata?.uiEventKey).toEqual('current-2');
     }
@@ -167,7 +167,7 @@ export class P284UiDurableReplayTest {
             makeRecord(1, { kind: 'output', key: 'out-1', content: 'stdout line' }),
             makeRecord(2, { kind: 'command', key: 'cmd-2', content: '/status' })
         ]);
-        const executions = state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution');
+        const executions = state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution');
         expect(executions.length).toEqual(1);
         expect(executions[0].metadata?.uiEventKey).toEqual('cmd-2');
     }
@@ -180,7 +180,7 @@ export class P284UiDurableReplayTest {
             makeRecord(2, { kind: 'tool', key: 'tool:tc-1', content: 'tool finished', toolCallId: 'tc-1', durationMs: 12 }),
             makeRecord(3, { kind: 'command', key: 'cmd-2', content: '/status' })
         ]);
-        const executions = state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution');
+        const executions = state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution');
         expect(executions.map(m => m.metadata?.uiEventKey)).toEqual(['cmd-1', 'cmd-2']);
         const toolEvent = state.messages.find(m => m.metadata?.uiKind === 'event' && m.metadata?.uiEventKey === 'tool:tc-1');
         expect(toolEvent).toBeDefined();
@@ -198,7 +198,7 @@ export class P284UiDurableReplayTest {
         ];
         state.seedCommandExchange(records);
         state.seedCommandExchange(records);
-        const executions = state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution');
+        const executions = state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution');
         expect(executions.length).toEqual(1);
         const toolEvents = state.messages.filter(m => m.metadata?.uiKind === 'event' && m.metadata?.uiEventKey === 'tool:tc-1');
         expect(toolEvents.length).toEqual(1);
@@ -212,7 +212,7 @@ export class P284UiDurableReplayTest {
             makeRecord(1, { kind: 'command', key: 'cmd-1', content: '/a', sequence: 1 }),
             makeRecord(2, { kind: 'command', key: 'cmd-2', content: '/b', sequence: 2 })
         ]);
-        const executions = state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution');
+        const executions = state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution');
         expect(executions.map(m => m.metadata?.uiEventKey)).toEqual(['cmd-1', 'cmd-2', 'cmd-3']);
         expect(executions.map(m => m.metadata?.sequence)).toEqual([1, 2, 3]);
     }
@@ -226,7 +226,7 @@ export class P284UiDurableReplayTest {
             makeRecord(3, { kind: 'tool', key: 'tool:t-3', content: 'done', toolCallId: 't-3' })
         ]);
         expect(state.commandExchangeTailSeq).toEqual(3);
-        expect(state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution').length).toEqual(1);
+        expect(state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution').length).toEqual(1);
         expect(state.messages.filter(m => m.metadata?.uiKind === 'event' && m.metadata?.uiEventKey === 'tool:t-3').length).toEqual(1);
     }
 
@@ -238,16 +238,16 @@ export class P284UiDurableReplayTest {
             makeRecord(2, { kind: 'command', key: 'cmd-2', content: '/b' })
         ]);
         expect(state.commandExchangeTailSeq).toEqual(2);
-        expect(state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution').length).toEqual(2);
+        expect(state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution').length).toEqual(2);
 
         state.configure({ sessionId: 'session-B' } as any);
         expect(state.commandExchangeTailSeq).toEqual(-1);
-        expect(state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution').length).toEqual(0);
+        expect(state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution').length).toEqual(0);
 
         state.seedCommandExchange([
             makeRecord(1, { sessionId: 'session-B', sessionEpoch: 2, kind: 'command', key: 'b-1', content: '/x' })
         ]);
-        const executions = state.displayMessages.filter(m => m.metadata?.uiKind === 'command-execution');
+        const executions = state.commandExecutionMessages.filter(m => m.metadata?.uiKind === 'command-execution');
         expect(executions.length).toEqual(1);
         expect(executions[0].metadata?.uiEventKey).toEqual('b-1');
     }

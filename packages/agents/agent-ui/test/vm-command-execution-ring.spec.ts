@@ -142,12 +142,13 @@ export class VmCommandExecutionsRingTest {
         const requestId = state.commandExecutionController.begin('/usage', '');
         expect(state.commandExecutions.length).toEqual(1);
         expect(state.latestCommandExecution?.status).toEqual('running');
-        expect(state.displayMessages.find(item => item.metadata?.uiKind === 'command-execution')?.content).toEqual('/usage running');
+        // Slash echoes stay in the projection store; the transcript hides them.
+        expect(state.commandExecutionMessages.find(item => item.metadata?.uiKind === 'command-execution')?.content).toEqual('/usage running');
         state.commandExecutionController.complete(requestId, 'succeeded');
         expect(state.latestCommandExecution?.status).toEqual('succeeded');
         expect(state.latestCommandExecution?.requestId).toEqual(requestId);
-        expect(state.displayMessages.filter(item => item.metadata?.uiKind === 'command-execution').length).toEqual(1);
-        expect(state.displayMessages.find(item => item.metadata?.uiKind === 'command-execution')?.content).toEqual('/usage completed');
+        expect(state.commandExecutionMessages.filter(item => item.metadata?.uiKind === 'command-execution').length).toEqual(1);
+        expect(state.commandExecutionMessages.find(item => item.metadata?.uiKind === 'command-execution')?.content).toEqual('/usage completed');
 
         const requestId2 = state.commandExecutionController.begin('/status', '');
         expect(state.latestCommandExecution?.requestId).toEqual(requestId2);

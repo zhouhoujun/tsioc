@@ -4846,3 +4846,16 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 唯一失败：`source-size` 由用户未提交的 `activities/.../workflow-designer.component.ts`（1903 > 1897）触发，
   非 agent-ui 改动，未擅自改基线或提交他人工作。
 - 1k 消息 tab 切换（多轮）：p50 76–115ms、p95 91–150ms（预算 p50 ≤120 / p95 ≤200）。
+
+## 2026-11-19 命令回显移出消息区 + detach 回归修复
+- `/` 命令回显（`✓ $ /sessions completed`）不再进入 transcript：成功/运行中/取消的 slash echo 只在
+  `commandExecutionMessages`（`/outputs`/inspector 仍可用），失败保留错误行；shell 命令执行行继续显示。
+  反馈由既有 dialog/notice/status 承担（opencode 风格，不额外加噪音 toast）。
+- 新增 `AgentConsoleCommandEcho.shouldProjectCommandExecution`；p283/p284/p320/vm-ring/deeplink 用例改为观察
+  投影存储或不再断言回显。
+- 回归修复（components）：`detachNodes` 会遍历被移动到 live 树的投影/复用节点，`a67bad2b2` 直接 destroy
+  这些 ref 会拆掉仍在屏幕上的绑定（`{{value}}` 字面量、v-for 空行、markdown surface undefined）。
+  现在仅 destroy 已脱离父节点的 ref；仍挂载的组件保持旧的 hostView 销毁路径，泄漏修复（detached v-if/v-for 行）
+  保留。
+- 验证：components 191 / common 122 / console 171 / html 147（含 view-teardown），agent-ui **2224 passing**，
+  tsc、source-size、dom-gate、tui-gate、gate-regression 全绿。

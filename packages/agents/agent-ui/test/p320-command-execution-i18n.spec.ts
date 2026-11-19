@@ -29,8 +29,8 @@ export class CommandExecutionI18nTest {
         expect(row?.content).not.toContain(' failed');
     }
 
-    @Test('a command echo is appended after the final answer instead of shifting it')
-    async echoFollowsFinalAnswer() {
+    @Test('a successful slash-command echo stays out of the transcript')
+    async successEchoIsNotAConversationRow() {
         const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
         state.setMessages([
             { id: 'u1', role: 'user', content: 'hello', createdAt: 1 },
@@ -40,12 +40,34 @@ export class CommandExecutionI18nTest {
         const requestId = state.commandExecutionController.begin('/web', '');
         state.commandExecutionController.complete(requestId, 'succeeded');
         const ids = state.displayMessages.map(message => message.id);
-        // A new interaction starts with the command: it must not be inserted
-        // between the request and its final answer (that shifted every row and
-        // moved the viewport right before the dialog opened).
-        expect(ids[ids.length - 1]).toContain('__command_execution_');
-        expect(ids.indexOf('a-final')).toBeLessThan(ids.length - 1);
+        // Commands open dialogs / emit notices; they must not leave a
+        // "✓ $ /web completed" row that pushes the answer up.
+        expect(ids.some(id => id.includes('__command_execution_'))).toEqual(false);
+        expect(ids[ids.length - 1]).toEqual('a-final');
         expect(ids.indexOf('u1')).toBeLessThan(ids.indexOf('a-final'));
+    }
+
+    @Test('a failed slash-command echo stays visible with its error')
+    async failedEchoStaysVisible() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        const requestId = state.commandExecutionController.begin('/zzz-unknown', '');
+        state.commandExecutionController.fail(requestId, 'unknown command', false);
+        const rows = state.displayMessages.filter(message => (message.metadata as any)?.uiKind === 'command-execution');
+        expect(rows.length).toEqual(1);
+        expect(rows[0].content).toContain('unknown command');
+    }
+
+    @Test('a shell command execution stays in the turn narrative')
+    async shellExecutionStaysVisible() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.projectThreadItem({
+            kind: 'command', key: 'shell-1', sessionId: state.sessionId,
+            content: 'npm test completed', status: 'success',
+            command: 'npm', args: 'test', sequence: 1
+        });
+        const rows = state.displayMessages.filter(message => (message.metadata as any)?.uiKind === 'command-execution');
+        expect(rows.length).toEqual(1);
+        expect(rows[0].metadata?.command).toEqual('npm');
     }
 
     @Test('without a translator the English status word is kept')
