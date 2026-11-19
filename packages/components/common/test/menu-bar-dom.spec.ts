@@ -205,7 +205,7 @@ export class MenuBarDomTest {
         expect(submenu.className).toContain('is-open');
         const style = submenu.getAttribute('style') || '';
         expect(style).toContain('position: fixed');
-        expect(style).toContain('left: 324px');
+        expect(style).toContain('left: 322px');
         expect(style).toContain('top: 294px');
         // 900 - 294 (top) - 8 = 598: scrolls only if the flyout exceeds it.
         expect(style).toContain('max-height: 598px');
@@ -227,6 +227,64 @@ export class MenuBarDomTest {
         }));
         await Promise.resolve();
         expect(submenu.className).not.toContain('is-open');
+    }
+
+    @Test('keeps the flyout aligned with its row near the bottom edge')
+    async alignsFlyoutNearBottom() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        const menu = (this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>).instance;
+        menu.close();
+        await Promise.resolve();
+
+        const win = this.doc.defaultView as any;
+        Object.defineProperty(win, 'innerHeight', { value: 700, configurable: true });
+        Object.defineProperty(win, 'innerWidth', { value: 1200, configurable: true });
+
+        root.querySelector('.menu-bar-trigger').click();
+        await Promise.resolve();
+
+        const theme = root.querySelector('[data-menu-id="theme"]') as any;
+        theme.getBoundingClientRect = () => ({ top: 600, bottom: 630, left: 100, right: 320, width: 220, height: 30 });
+        theme.dispatchEvent(new (win as any).MouseEvent('mouseenter', { bubbles: false }));
+        await Promise.resolve();
+
+        const submenu = root.querySelector('.menu-bar-submenu') as any;
+        const style = submenu.getAttribute('style') || '';
+        // The flyout flips above the row and keeps its bottom on the row's
+        // bottom; it must not be clamped somewhere in the middle of the menu.
+        expect(style).toContain('bottom: 64px');
+        expect(style).toContain('top: auto');
+        expect(style).toContain('max-height: 622px');
+    }
+
+    @Test('anchors a left-opening flyout by its right edge')
+    async alignsFlyoutOnTheLeftSide() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        const menu = (this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>).instance;
+        menu.close();
+        await Promise.resolve();
+
+        const win = this.doc.defaultView as any;
+        Object.defineProperty(win, 'innerHeight', { value: 900, configurable: true });
+        Object.defineProperty(win, 'innerWidth', { value: 1200, configurable: true });
+
+        root.querySelector('.menu-bar-trigger').click();
+        await Promise.resolve();
+
+        const theme = root.querySelector('[data-menu-id="theme"]') as any;
+        theme.getBoundingClientRect = () => ({ top: 300, bottom: 330, left: 1000, right: 1200, width: 200, height: 30 });
+        theme.dispatchEvent(new (win as any).MouseEvent('mouseenter', { bubbles: false }));
+        await Promise.resolve();
+
+        const submenu = root.querySelector('.menu-bar-submenu') as any;
+        const style = submenu.getAttribute('style') || '';
+        // 1200 - 1000 (item left) + 2 = 202: the flyout's right edge sits two
+        // pixels left of the item, regardless of the flyout's own width.
+        expect(style).toContain('right: 202px');
+        expect(style).toContain('left: auto');
+        expect(style).toContain('top: 294px');
     }
 
     @Test('Escape and outside clicks close the popup')

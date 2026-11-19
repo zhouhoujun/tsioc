@@ -133,7 +133,11 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     hoverSubmenuKey = '';
     /** Viewport coordinates of the open flyout (escapes the popup's clipping). */
     private submenuLeft = 0;
+    private submenuRight = 0;
+    private submenuSide: 'left' | 'right' = 'right';
     private submenuTop = 0;
+    private submenuBottom = 0;
+    private submenuAbove = false;
     private submenuMaxHeight = 0;
     /** Viewport budget for the scrollable popup, measured from the trigger. */
     private popupMaxHeight = 0;
@@ -364,14 +368,31 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         const width = 240;
         const viewWidth = Number((win as any)?.innerWidth) || 1024;
         const viewHeight = Number((win as any)?.innerHeight) || 768;
-        const left = rect.right + width + 8 > viewWidth
-            ? Math.max(8, rect.left - width - 4)
-            : rect.right + 4;
-        const top = Math.max(8, Math.min(rect.top - 6, viewHeight - 160));
-        this.submenuLeft = Math.round(left);
-        this.submenuTop = Math.round(top);
-        // Only let the flyout scroll when it would actually leave the viewport.
-        this.submenuMaxHeight = Math.max(120, Math.round(viewHeight - top - 8));
+        // Anchor the flyout to the item's right/left edge. Positioning by
+        // `left` with an assumed width leaves a gap whenever the actual
+        // flyout is narrower; use the opposite edge instead.
+        const openLeft = rect.right + width + 8 > viewWidth;
+        this.submenuSide = openLeft ? 'left' : 'right';
+        if (openLeft) {
+            this.submenuRight = Math.max(8, Math.round(viewWidth - rect.left + 2));
+        } else {
+            this.submenuLeft = Math.round(rect.right + 2);
+        }
+        // Align the flyout with the row it belongs to. The old clamp moved it
+        // upwards near the viewport edge, which detached it from the item.
+        const top = Math.max(8, rect.top - 6);
+        const visibleBottom = Math.min(rect.bottom, viewHeight - 8);
+        const below = viewHeight - top - 8;
+        const above = visibleBottom - 8;
+        this.submenuAbove = below < 160 && above > below;
+        if (this.submenuAbove) {
+            // Flip upwards and keep the flyout's bottom on the item's bottom.
+            this.submenuBottom = Math.max(8, Math.round(viewHeight - visibleBottom - 6));
+            this.submenuMaxHeight = Math.max(120, Math.round(above));
+        } else {
+            this.submenuTop = Math.round(top);
+            this.submenuMaxHeight = Math.max(120, Math.round(below));
+        }
     }
 
     submenuStyle(id: string): string {
@@ -379,8 +400,13 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             return '';
         }
         const maxHeight = this.submenuMaxHeight || 480;
-        return `position: fixed; left: ${this.submenuLeft}px; top: ${this.submenuTop}px; `
-            + `right: auto; max-height: ${maxHeight}px;`;
+        const horizontal = this.submenuSide === 'left'
+            ? `right: ${this.submenuRight}px; left: auto;`
+            : `left: ${this.submenuLeft}px; right: auto;`;
+        const vertical = this.submenuAbove
+            ? `bottom: ${this.submenuBottom}px; top: auto;`
+            : `top: ${this.submenuTop}px; bottom: auto;`;
+        return `position: fixed; ${horizontal} ${vertical} max-height: ${maxHeight}px;`;
     }
 
     /**
