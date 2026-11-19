@@ -21,7 +21,7 @@ const PRECOMPILABLE_CLASS_DECORATORS = new Set([
 
 /** Member decorators whose metadata can be materialized statically. */
 const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
-    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive'
+    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive', 'Autorun'
 ]);
 
 
@@ -739,6 +739,7 @@ function memberMetadataExpression(decorator: ts.Decorator, member: ts.ClassEleme
     const args = decoratorArgs(decorator);
     switch (name) {
         case 'NoReactive':
+        case 'Autorun':
             return factory.createObjectLiteralExpression([], false);
         case 'ViewChild':
         case 'ViewChildren':

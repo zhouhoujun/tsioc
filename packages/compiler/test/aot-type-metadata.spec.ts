@@ -469,6 +469,78 @@ export class AliasedInjectionService {
         expect(emitted).toContain('__aotType(');
     });
 
+
+    it('normalizes Module imports/exports and scalar options', () => {
+        const source = `
+import { Injectable, Module } from '@tsdi/ioc';
+
+@Injectable()
+export class ModuleEntry {}
+
+@Module({
+    imports: [{ module: ModuleEntry, providers: [{ provide: 'X', useValue: 1 }] }],
+    exports: [[ModuleEntry]],
+    baseURL: 'base',
+    debug: true,
+    providedIn: 'root'
+})
+export class NormalizedModule {}
+`;
+        const exported = loadModule(source);
+        const annotation: any = getClassRef(exported.NormalizedModule).getAnnotation();
+        expect(annotation.module).toBe(true);
+        expect(annotation.baseURL).toBe('base');
+        expect(annotation.debug).toBe(true);
+        expect(annotation.providedIn).toBe('root');
+        expect(annotation.imports[0].module).toBe(exported.ModuleEntry);
+        expect(annotation.exports).toContain(exported.ModuleEntry);
+    });
+
+    it('precompiles ProvidedIn aliases', () => {
+        const source = `
+import { Injectable, ProvidedIn } from '@tsdi/ioc';
+
+export class TargetToken {}
+
+@Injectable()
+@ProvidedIn(TargetToken, 'TOKEN', 'alias')
+export class AliasedProvidedService {}
+`;
+        const emitted = transpileAot('aot-provided-alias.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotGetToken');
+        const exported = loadModule(source);
+        expect(exported.AliasedProvidedService.ƿAnn().aotProvidedIn).toBeTruthy();
+    });
+
+    it('precompiles class-level NoReactive', () => {
+        const source = `
+import { NoReactive } from '@tsdi/components';
+
+@NoReactive()
+export class RawModel {
+    value = 1;
+}
+`;
+        const exported = loadModule(source);
+        const annotation: any = getClassRef(exported.RawModel).getAnnotation();
+        expect(annotation.noReactiveClass).toBe(true);
+        const raw = new exported.RawModel();
+        const effect = new DefaultReactiveEffect();
+        expect(reactive(raw, effect)).toBe(raw);
+    });
+
+    it('preserves Pipe pure=false', () => {
+        const source = `
+import { Pipe } from '@tsdi/core';
+
+@Pipe({ selector: 'impure', provide: 'impure', pure: false })
+export class ImpurePipe {}
+`;
+        const exported = loadModule(source);
+        const annotation: any = getClassRef(exported.ImpurePipe).getAnnotation();
+        expect(annotation.pure).toBe(false);
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

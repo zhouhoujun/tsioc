@@ -269,6 +269,35 @@ export class AotPropHost {
         }
     });
 
+
+    it('precompiles component Autorun runnables', async () => {
+        const source = `
+import { Autorun, Component } from '@tsdi/components';
+
+@Component({ selector: 'aot-autorun-host', template: '<div></div>' })
+export class AotAutorunHost {
+    ready = false;
+
+    @Autorun()
+    boot() { this.ready = true; }
+}
+`;
+        const emitted = transpileAot('aot-component-autorun.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotComponent(');
+        expect(emitted).toContain('runnables');
+
+        const exported = loadAotModule(source);
+        const ctx = await Application.run(exported.AotAutorunHost, {
+            deps: [XmlTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(exported.AotAutorunHost) as ComponentRef<any>;
+            expect(ref.instance.ready).toBe(true);
+        } finally {
+            await ctx.close();
+        }
+    });
+
     it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';
