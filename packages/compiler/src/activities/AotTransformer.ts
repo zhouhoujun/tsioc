@@ -17,6 +17,9 @@ const PRECOMPILABLE_CLASS_DECORATORS = new Set([
     'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Component', 'Directive'
 ]);
 
+/** Member decorators whose metadata can be materialized statically. */
+const PRECOMPILABLE_MEMBER_DECORATORS = new Set(['Attribute', 'Computed']);
+
 export interface AotPrecompileOptions {
     /** Emit design:* metadata (needed by IoC injection). Default true. */
     designMetadata?: boolean;
@@ -283,6 +286,123 @@ function attachTemplateIR(metadata: ts.Expression): ts.Expression {
         ts.factory.createStringLiteral(JSON.stringify(ir))
     ));
     return ts.factory.updateObjectLiteralExpression(metadata, properties);
+}
+
+function withProperty(expression: ts.Expression, key: string, value: ts.Expression): ts.Expression {
+    if (!ts.isObjectLiteralExpression(expression)) {
+        return ts.factory.createObjectLiteralExpression([
+            ts.factory.createPropertyAssignment(key, value)
+        ], false);
+    }
+    const properties = expression.properties.filter(property => propertyName(property) !== key);
+    properties.push(ts.factory.createPropertyAssignment(key, value));
+    return ts.factory.updateObjectLiteralExpression(expression, properties);
+}
+
+function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | undefined {
+    const factory = ts.factory;
+    const name = decoratorName(decorator);
+    const args = decoratorArgs(decorator);
+    switch (name) {
+        case 'Attribute':
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('nullable', factory.createTrue())
+                ], false);
+            }
+            if (args.length === 1 && ts.isStringLiteral(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('alias', args[0]),
+                    factory.createPropertyAssignment('nullable', factory.createTrue())
+                ], false);
+            }
+            if (args.length === 2 && ts.isStringLiteral(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('alias', args[0]),
+                    factory.createPropertyAssignment('required', args[1]),
+                    factory.createPropertyAssignment('nullable', factory.createTrue())
+                ], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            return undefined;
+        case 'Computed':
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('cache', factory.createTrue())
+                ], false);
+            }
+            if (args.length === 1 && ts.isArrayLiteralExpression(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('dependencies', args[0]),
+                    factory.createPropertyAssignment('cache', factory.createTrue())
+                ], false);
+            }
+            if (args.length === 2 && ts.isArrayLiteralExpression(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('dependencies', args[0]),
+                    factory.createPropertyAssignment('cache', args[1])
+                ], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            return undefined;
+        default:
+            return undefined;
+    }
+}
+
+function attachMemberMetadata(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
+    const attributes: ts.Expression[] = [];
+    const computeds: ts.Expression[] = [];
+    for (const member of node.members) {
+        const key = memberKey(member);
+        if (!key) {
+            continue;
+        }
+        for (const decorator of decoratorsOf(member)) {
+            const name = decoratorName(decorator);
+            if (name !== 'Attribute' && name !== 'Computed') {
+                continue;
+            }
+            const meta = memberMetadataExpression(decorator);
+            if (!meta) {
+                continue;
+            }
+            const withKey = withProperty(meta, 'propertyKey', ts.factory.createStringLiteral(key));
+            (name === 'Attribute' ? attributes : computeds).push(withKey);
+        }
+    }
+    if (!attributes.length && !computeds.length) {
+        return metadata;
+    }
+    let result = metadata;
+    if (attributes.length) {
+        result = withProperty(result, 'attributes', ts.factory.createArrayLiteralExpression(attributes, false));
+    }
+    if (computeds.length) {
+        result = withProperty(result, 'computeds', ts.factory.createArrayLiteralExpression(computeds, false));
+    }
+    return result;
+}
+
+function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
+    for (const member of node.members) {
+        for (const decorator of decoratorsOf(member)) {
+            if (!PRECOMPILABLE_MEMBER_DECORATORS.has(decoratorName(decorator))
+                || !memberMetadataExpression(decorator)) {
+                return false;
+            }
+        }
+        for (const parameter of memberParameters(member)) {
+            if (decoratorsOf(parameter).length) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 function memberKey(member: ts.ClassElement): string | undefined {
@@ -696,7 +816,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                 let compiledTypeRecords: ts.Expression[] | undefined;
                 let precompiledHelper = '__aotType';
                 let precompiledMetadata: ts.Expression | undefined;
-                if (!hasAnyMemberDecorator
+                if (memberDecoratorsSupported(node)
                     && !aspectDecorator
                     && !noPointcutDecorator
                     && genericClassDecorators.length > 0
@@ -713,6 +833,9 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             );
                             if (hasComponent && precompiledMetadata) {
                                 precompiledMetadata = attachTemplateIR(precompiledMetadata);
+                            }
+                            if ((hasComponent || hasDirective) && precompiledMetadata) {
+                                precompiledMetadata = attachMemberMetadata(precompiledMetadata, node);
                             }
                         }
                         compiledTypeRecords = genericClassDecorators.slice().reverse().map(decorator =>

@@ -69,6 +69,47 @@ export class AotIrHost {
         }
     });
 
+
+    it('precompiles Attribute and Computed member metadata', async () => {
+        const source = `
+import { Attribute, Component, Computed } from '@tsdi/components';
+
+@Component({ selector: 'aot-member-host', template: '<div class="value">{{doubled}}</div>' })
+export class AotMemberHost {
+    @Attribute() label = 'x';
+
+    @Computed(['label'])
+    get doubled() { return this.label + this.label; }
+}
+`;
+        const emitted = transpileAot('aot-member.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotComponent(');
+        expect(emitted).toContain('templateIR:');
+        expect(emitted).toContain('propertyKey: "label"');
+
+        const exported = loadAotModule(source);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const ctx = await Application.run(exported.AotMemberHost, {
+            deps: [HtmlTemplateModule, ComponentsModule],
+            providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+        });
+        try {
+            const ref = ctx.runners.getRef(exported.AotMemberHost) as ComponentRef<any>;
+            expect(ref.def.attributes?.length).toBe(1);
+            expect(ref.def.computeds?.length).toBe(1);
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.getAttribute('class')).toBe('value');
+            expect(root.textContent).toBe('xx');
+            ref.instance.label = 'y';
+            await Promise.resolve();
+            expect(root.textContent).toBe('yy');
+        } finally {
+            await ctx.close();
+            dom.window.close();
+        }
+    });
+
     it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';

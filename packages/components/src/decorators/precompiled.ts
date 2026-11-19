@@ -31,8 +31,8 @@ export function applyPrecompiledComponent(
     }
     def.providers = def.providers || [];
     def.exportProviders = def.exportProviders || [];
-    def.attributes = [];
-    def.computeds = [];
+    def.attributes = def.attributes || [];
+    def.computeds = def.computeds || [];
     def.viewChilds = [];
     def.viewChildrens = [];
     def.contentChilds = [];
@@ -93,8 +93,8 @@ export function applyPrecompiledDirective(
     }
     def.providers = def.providers || [];
     def.exportProviders = def.exportProviders || [];
-    def.attributes = [];
-    def.computeds = [];
+    def.attributes = def.attributes || [];
+    def.computeds = def.computeds || [];
 
     def.exportProviders.push({ provide: DIRECTIVES, useValue: def, multi: true } as any);
 
