@@ -349,6 +349,7 @@ export class HtmlRenderer implements Renderer {
 @Injectable()
 export class HtmlTemplateParser implements TemplateParser {
     [noReact] = true;
+    readonly preferTemplateIR = true;
 
     constructor(
         private renderer: HtmlRenderer

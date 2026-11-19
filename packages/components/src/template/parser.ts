@@ -8,6 +8,10 @@ export abstract class TemplateParser<T = any> {
 
     abstract [noReact]: boolean;
     /**
+     * Whether a verified cached template IR may replace repeated parses.
+     */
+    readonly preferTemplateIR?: boolean;
+    /**
      * 解析模板字符串为节点列表
      * @param template 模板字符串
      * @returns 解析后的节点列表

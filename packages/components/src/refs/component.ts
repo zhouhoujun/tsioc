@@ -15,6 +15,8 @@ import type { ContentChildMetadata, ContentChildrenMetadata } from '../decorator
 export interface ComponentDef<T = any> extends Omit<DirectiveDef<T>, typeof factoryKey> {
     template?: any;
     templateUrl?: string;
+    /** Renderer-neutral template IR emitted by the AOT compiler (JSON). */
+    templateIR?: string;
     ƿFac?: (ctx: NodeInjector, options: ComponentOptions) => ComponentRef<T>;
     ƿtempFac?: TemplateFactory<T>;
     viewChilds?: ViewChildMetadata[];

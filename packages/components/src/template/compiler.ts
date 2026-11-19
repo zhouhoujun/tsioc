@@ -18,6 +18,8 @@ export interface CompilerOptions {
     directives: DirectiveDef[];
     components: ComponentDef[];
     schemas?: SchemaMetadata[];
+    /** AOT precompiled renderer-neutral template IR (JSON). */
+    templateIR?: string;
 }
 
 @Abstract()

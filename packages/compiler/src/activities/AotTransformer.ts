@@ -1,4 +1,5 @@
 import * as ts from 'typescript';
+import { templateToIR } from './template-ir';
 
 const ASPECT_DECORATORS = new Set([
     'Aspect', 'Pointcut', 'Before', 'After', 'Around', 'AfterReturning',
@@ -250,6 +251,38 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
         default:
             return undefined;
     }
+}
+
+function propertyName(property: ts.ObjectLiteralElementLike): string | undefined {
+    if (!ts.isPropertyAssignment(property)) {
+        return undefined;
+    }
+    const name = property.name;
+    return ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)
+        ? name.text
+        : undefined;
+}
+
+function attachTemplateIR(metadata: ts.Expression): ts.Expression {
+    if (!ts.isObjectLiteralExpression(metadata)) {
+        return metadata;
+    }
+    const template = metadata.properties.find(property =>
+        propertyName(property) === 'template'
+    ) as ts.PropertyAssignment | undefined;
+    if (!template || !ts.isStringLiteral(template.initializer)) {
+        return metadata;
+    }
+    const ir = templateToIR(template.initializer.text);
+    if (!ir) {
+        return metadata;
+    }
+    const properties = metadata.properties.filter(property => propertyName(property) !== 'templateIR');
+    properties.push(ts.factory.createPropertyAssignment(
+        'templateIR',
+        ts.factory.createStringLiteral(JSON.stringify(ir))
+    ));
+    return ts.factory.updateObjectLiteralExpression(metadata, properties);
 }
 
 function memberKey(member: ts.ClassElement): string | undefined {
@@ -678,6 +711,9 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             precompiledMetadata = precompiledDecoratorMetadata(
                                 genericClassDecorators.find(decorator => decoratorName(decorator) === (hasComponent ? 'Component' : 'Directive'))!
                             );
+                            if (hasComponent && precompiledMetadata) {
+                                precompiledMetadata = attachTemplateIR(precompiledMetadata);
+                            }
                         }
                         compiledTypeRecords = genericClassDecorators.slice().reverse().map(decorator =>
                             factory.createArrayLiteralExpression([

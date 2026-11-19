@@ -201,7 +201,8 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
                     directives,
                     components,
                     customElements,
-                    schemas
+                    schemas,
+                    templateIR: def.templateIR
                 });
                 if (sharedKey && compilerCtor) {
                     if (!shared) {

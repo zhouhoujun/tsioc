@@ -9,6 +9,7 @@ import {
     compileElementToFactory, compileTemplateToFactory, compileTextToFactory,
     compileToFactory, generateNodeBindings
 } from './compiler-fns';
+import { buildVerifiedTemplateIR, getCachedTemplateIR, irToNodes, nodesToIR, sameTemplateIR, setCachedTemplateIR, TemplateIRNode } from './template-ir';
 
 const selectorMatcherCache = new Map<string, RegExp[] | null>();
 
@@ -99,8 +100,41 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      * 编译模板并返回 TemplateFactory
      */
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
-        const nodes = this.parser.parse(template);
         const templateText = typeof template === 'string' ? template : '';
+        let nodes: RNode[] | undefined;
+        if (this.parser.preferTemplateIR && templateText && options.templateIR) {
+            try {
+                const ir = JSON.parse(options.templateIR) as TemplateIRNode[];
+                if (Array.isArray(ir)) {
+                    const rebuilt = irToNodes(ir, this.renderer);
+                    const roundTrip = nodesToIR(rebuilt, this.renderer);
+                    if (roundTrip && sameTemplateIR(ir, roundTrip)) {
+                        nodes = rebuilt;
+                    }
+                }
+            } catch {
+                // Ignore malformed/incompatible IR and parse the template.
+            }
+        }
+        if (!nodes && this.parser.preferTemplateIR && templateText) {
+            const cached = getCachedTemplateIR(this.parser, templateText);
+            if (cached === undefined) {
+                nodes = this.parser.parse(template);
+                setCachedTemplateIR(this.parser, templateText, buildVerifiedTemplateIR(nodes, this.renderer));
+            } else if (cached) {
+                try {
+                    nodes = irToNodes(cached, this.renderer);
+                } catch {
+                    nodes = this.parser.parse(template);
+                    setCachedTemplateIR(this.parser, templateText, null);
+                }
+            } else {
+                nodes = this.parser.parse(template);
+            }
+        }
+        if (!nodes) {
+            nodes = this.parser.parse(template);
+        }
 
         if (options.schemas?.length) {
             const declaredElements = new Set(
