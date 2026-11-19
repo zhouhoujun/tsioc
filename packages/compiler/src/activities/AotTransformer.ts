@@ -435,31 +435,103 @@ function queryMetadataExpression(decorator: ts.Decorator): ts.Expression | undef
     return undefined;
 }
 
-function injectedPropertyMetadata(decorator: ts.Decorator, member: ts.ClassElement): ts.Expression | undefined {
+function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undefined {
+    const factory = ts.factory;
+    const flags: ts.Expression[] = [];
+    let token: ts.Expression | undefined;
+    let hasInjection = false;
+    let nullable = false;
+    for (const decorator of decoratorsOf(member)) {
+        const name = decoratorName(decorator);
+        if (name === 'Autowired' || name === 'Inject') {
+            hasInjection = true;
+            const args = decoratorArgs(decorator);
+            if (args[0]) {
+                token = selectorValueExpression(args[0]);
+            }
+            continue;
+        }
+        if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host') {
+            if (activeTypeContext) {
+                activeTypeContext.usesInjectFlags = true;
+            }
+            flags.push(factory.createPropertyAccessExpression(
+                factory.createIdentifier('__aotFlags'),
+                name
+            ));
+            continue;
+        }
+        if (name === 'Nullable') {
+            nullable = true;
+            continue;
+        }
+        if (name === 'NoReactive') {
+            continue;
+        }
+        return undefined;
+    }
+    if (!hasInjection) {
+        return undefined;
+    }
+    if (!token) {
+        if (!activeTypeChecker) {
+            return undefined;
+        }
+        const type = (member as ts.PropertyDeclaration).type;
+        if (!type || !ts.isTypeReferenceNode(type)) {
+            return undefined;
+        }
+        let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
+        if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
+            symbol = activeTypeChecker.getAliasedSymbol(symbol);
+        }
+        if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
+            return undefined;
+        }
+        token = typeExpression(type);
+    }
+    const properties: ts.ObjectLiteralElementLike[] = [];
+    if (token) {
+        properties.push(factory.createPropertyAssignment('provider', token));
+    }
+    if (nullable) {
+        properties.push(factory.createPropertyAssignment('nullable', factory.createTrue()));
+    }
+    if (flags.length) {
+        let merged = flags[0];
+        for (let i = 1; i < flags.length; i++) {
+            merged = factory.createBinaryExpression(merged, ts.SyntaxKind.BarToken, flags[i]);
+        }
+        properties.push(factory.createPropertyAssignment('flags', merged));
+    }
+    return factory.createObjectLiteralExpression(properties, false);
+}
+
+function methodAutorunMetadata(decorator: ts.Decorator, key: string): ts.Expression | undefined {
     const factory = ts.factory;
     const args = decoratorArgs(decorator);
-    if (args[0]) {
-        return factory.createObjectLiteralExpression([
-            factory.createPropertyAssignment('provider', selectorValueExpression(args[0]))
-        ], false);
+    const properties: ts.ObjectLiteralElementLike[] = [
+        factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)),
+        factory.createPropertyAssignment('decorType', factory.createStringLiteral('method')),
+        factory.createPropertyAssignment('auto', factory.createTrue())
+    ];
+    if (args.length === 0) {
+        return factory.createObjectLiteralExpression(properties, false);
     }
-    if (!activeTypeChecker) {
-        return undefined;
+    if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+        return factory.updateObjectLiteralExpression(args[0], [
+            ...args[0].properties,
+            ...properties
+        ]);
     }
-    const type = (member as ts.PropertyDeclaration).type;
-    if (!type || !ts.isTypeReferenceNode(type)) {
-        return undefined;
+    if (args.length <= 2 && ts.isNumericLiteral(args[0])) {
+        properties.splice(1, 0, factory.createPropertyAssignment('order', args[0]));
+        if (args[1]) {
+            properties.splice(2, 0, factory.createPropertyAssignment('args', args[1]));
+        }
+        return factory.createObjectLiteralExpression(properties, false);
     }
-    let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
-    if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
-        symbol = activeTypeChecker.getAliasedSymbol(symbol);
-    }
-    if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
-        return undefined;
-    }
-    return factory.createObjectLiteralExpression([
-        factory.createPropertyAssignment('type', typeExpression(type))
-    ], false);
+    return undefined;
 }
 
 function attachMethodMetadata(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
@@ -497,33 +569,6 @@ function attachMethodMetadata(metadata: ts.Expression, node: ts.ClassDeclaration
     return withProperty(metadata, 'methodMetadatas', ts.factory.createArrayLiteralExpression(entries, false));
 }
 
-function methodAutorunMetadata(decorator: ts.Decorator, key: string): ts.Expression | undefined {
-    const factory = ts.factory;
-    const args = decoratorArgs(decorator);
-    const properties: ts.ObjectLiteralElementLike[] = [
-        factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)),
-        factory.createPropertyAssignment('decorType', factory.createStringLiteral('method')),
-        factory.createPropertyAssignment('auto', factory.createTrue())
-    ];
-    if (args.length === 0) {
-        return factory.createObjectLiteralExpression(properties, false);
-    }
-    if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
-        return factory.updateObjectLiteralExpression(args[0], [
-            ...args[0].properties,
-            ...properties
-        ]);
-    }
-    if (args.length <= 2 && ts.isNumericLiteral(args[0])) {
-        properties.splice(1, 0, factory.createPropertyAssignment('order', args[0]));
-        if (args[1]) {
-            properties.splice(2, 0, factory.createPropertyAssignment('args', args[1]));
-        }
-        return factory.createObjectLiteralExpression(properties, false);
-    }
-    return undefined;
-}
-
 function attachServiceMembers(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
     const properties: ts.Expression[] = [];
     const runnables: ts.Expression[] = [];
@@ -535,19 +580,16 @@ function attachServiceMembers(metadata: ts.Expression, node: ts.ClassDeclaration
         if (!key) {
             continue;
         }
+        const propertyMeta = servicePropertyMetadata(member);
+        if (propertyMeta) {
+            const withKey = withProperty(propertyMeta, 'propertyKey', ts.factory.createStringLiteral(key));
+            properties.push(ts.factory.createArrayLiteralExpression([
+                ts.factory.createStringLiteral(key),
+                withKey
+            ], false));
+        }
         for (const decorator of decoratorsOf(member)) {
-            const name = decoratorName(decorator);
-            if (name === 'Autowired' || name === 'Inject') {
-                const meta = injectedPropertyMetadata(decorator, member);
-                if (!meta) {
-                    continue;
-                }
-                const withKey = withProperty(meta, 'propertyKey', ts.factory.createStringLiteral(key));
-                properties.push(ts.factory.createArrayLiteralExpression([
-                    ts.factory.createStringLiteral(key),
-                    withKey
-                ], false));
-            } else if (name === 'Autorun' && !ts.isPropertyDeclaration(member)) {
+            if (decoratorName(decorator) === 'Autorun' && !ts.isPropertyDeclaration(member)) {
                 const meta = methodAutorunMetadata(decorator, key);
                 if (meta) {
                     runnables.push(meta);
@@ -857,23 +899,26 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             }
             continue;
         }
+        let hasInjection = false;
         for (const decorator of decoratorsOf(member)) {
             const name = decoratorName(decorator);
-            if (name === 'NoReactive') {
-                continue;
-            }
             if (name === 'Autorun') {
                 if (ts.isPropertyDeclaration(member) || !methodAutorunMetadata(decorator, memberKey(member) || '')) {
                     return false;
                 }
                 continue;
             }
-            if (name !== 'Autowired' && name !== 'Inject') {
-                return false;
+            if (name === 'Autowired' || name === 'Inject') {
+                hasInjection = true;
+                continue;
             }
-            if (!injectedPropertyMetadata(decorator, member)) {
-                return false;
+            if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host' || name === 'Nullable' || name === 'NoReactive') {
+                continue;
             }
+            return false;
+        }
+        if (hasInjection && !servicePropertyMetadata(member)) {
+            return false;
         }
         const parameters = memberParameters(member);
         const hasParameterDecorators = parameters.some(parameter => decoratorsOf(parameter).length > 0);

@@ -328,6 +328,29 @@ export class AotModule {}
         expect(annotation.exports).toContain(exported.ModuleService);
     });
 
+
+    it('precompiles property injection flags', () => {
+        const source = `
+import { Autowired, Injectable, Optional } from '@tsdi/ioc';
+
+@Injectable()
+export class OptionalPropertyService {
+    @Autowired('MISSING_PROP')
+    @Optional()
+    value?: string;
+}
+`;
+        const emitted = transpileAot('aot-prop-optional.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotFlags');
+        expect(emitted).toContain('propMetadatas');
+
+        const exported = loadModule(source);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.OptionalPropertyService);
+        const service = container.get(exported.OptionalPropertyService) as any;
+        expect(service.value == null).toBe(true);
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';
