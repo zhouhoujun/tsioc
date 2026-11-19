@@ -292,17 +292,18 @@ function collectPlanBindings(
                 renderer.setAttribute(probe, name, value);
             }
             component = components.find(def => matchesSelector(probe, tag, plan.rawAttrs, def.selector, renderer));
-            if (plan.rawAttrs.length) {
-                for (const def of directives) {
-                    if (matchesSelector(probe, tag, plan.rawAttrs, def.selector, renderer)) {
-                        matched.push(def);
-                    }
+            // Directives and custom elements can match on the tag alone
+            // (`router-outlet`, `<my-button>`); scanning only elements with
+            // attributes silently skipped them in every AOT plan.
+            for (const def of directives) {
+                if (matchesSelector(probe, tag, plan.rawAttrs, def.selector, renderer)) {
+                    matched.push(def);
                 }
-                matched.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-                for (const def of customElements) {
-                    if (matchesSelector(probe, tag, plan.rawAttrs, def.selector, renderer)) {
-                        custom.push(def);
-                    }
+            }
+            matched.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+            for (const def of customElements) {
+                if (matchesSelector(probe, tag, plan.rawAttrs, def.selector, renderer)) {
+                    custom.push(def);
                 }
             }
         }
