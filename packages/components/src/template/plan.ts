@@ -1,4 +1,4 @@
-import { BINDINGS, COMPONENTDEF, CUSTOM_ELEMENTS, DIRECTIVES, LOCAL_REFS, NodeType, PROJECTION_NODES, RNode, RElement, RText } from '../renderer/Node';
+import { BINDINGS, COMPONENTDEF, CUSTOM_ELEMENTS, DIRECTIVES, LOCAL_REFS, NodeType, PROJECTION_NODES, RNode, RElement, RText, TEMPLATE_FACTORY } from '../renderer/Node';
 import { Renderer } from '../renderer/Renderer';
 import { ReactiveEffect } from '../effect';
 import { NodeInjector } from '../refs/injector';
@@ -57,6 +57,19 @@ interface PlanBuildContext {
     structuralTemplates: WeakSet<RNode>;
     /** Projection outlets created by this plan and their selector attributes. */
     projectionOutlets: WeakMap<RNode, Array<{ name: string; value: string }>>;
+    /** `<v-template>` hosts; their content is built lazily per embedded view. */
+    templatePlans: WeakMap<RNode, TemplatePlanElement>;
+}
+
+function createPlanContext(): PlanBuildContext {
+    return {
+        planByNode: new WeakMap(),
+        childrenByElement: new WeakMap(),
+        componentElements: new WeakSet(),
+        structuralTemplates: new WeakSet(),
+        projectionOutlets: new WeakMap(),
+        templatePlans: new WeakMap()
+    };
 }
 
 function isProjectionOutletTag(tag: string): boolean {
@@ -151,6 +164,11 @@ function createNode(renderer: Renderer, node: TemplatePlanNode, ctx: PlanBuildCo
     for (const [name, value] of node.attrs) {
         renderer.setAttribute(element, name, value);
     }
+    if (tag === 'v-template') {
+        // Template content is instantiated per embedded view, never eagerly.
+        ctx.templatePlans.set(element, node);
+        return element;
+    }
     const children: RNode[] = [];
     for (const childPlan of node.children) {
         const child = createNode(renderer, childPlan, ctx);
@@ -190,18 +208,17 @@ function bindPlanNode(
     const attrs = planElement.rawAttrs.map(([name, value]) => ({ name, value }));
     bindingAtrrbutes(element, attrs, renderer, delimiter);
 
+    if (ctx.templatePlans.has(element)) {
+        assignLocalRefs(element, planElement);
+        return;
+    }
+
     const children = ctx.childrenByElement.get(element) || [];
     for (let i = 0; i < children.length; i++) {
         bindPlanNode(children[i], planElement.children[i], directives, components, customElements, renderer, delimiter, ctx);
     }
 
-    const localRefs = planElement.rawAttrs
-        .map(([name]) => name)
-        .filter(name => name.startsWith('#') && name.length > 1)
-        .map(name => name.slice(1));
-    if (localRefs.length) {
-        element[LOCAL_REFS] = localRefs;
-    }
+    assignLocalRefs(element, planElement);
 
     const tag = elementTag(element);
     const component = components.find(def => matchesSelector(tag, planElement.rawAttrs, def.selector));
@@ -245,6 +262,16 @@ function bindPlanNode(
     }
 }
 
+function assignLocalRefs(node: RElement, plan: TemplatePlanElement): void {
+    const localRefs = plan.rawAttrs
+        .map(([name]) => name)
+        .filter(name => name.startsWith('#') && name.length > 1)
+        .map(name => name.slice(1));
+    if (localRefs.length) {
+        node[LOCAL_REFS] = localRefs;
+    }
+}
+
 function runBindings(node: RNode, context: any, effect: ReactiveEffect, injector: NodeInjector): void {
     node[BINDINGS]?.forEach(binding => {
         const unbinding = binding(node, context, effect, injector);
@@ -280,6 +307,58 @@ function executeChildBindings(
     }
 }
 
+/**
+ * Create template refs and register local refs before any sibling binding runs.
+ *
+ * Compiled factories materialize `<v-template>` refs while creating children
+ * (their host bindings run immediately), while ordinary element bindings are
+ * deferred to a microtask. Template outlet bindings can therefore resolve a
+ * template declared later in the same template; the plan does the same by
+ * preparing all template nodes first.
+ */
+function prepareTemplates(
+    node: RNode,
+    ctx: PlanBuildContext,
+    context: any,
+    effect: ReactiveEffect,
+    injector: NodeInjector,
+    directives: DirectiveDef[],
+    components: ComponentDef[],
+    customElements: DirectiveDef[],
+    delimiter: RegExp
+): void {
+    if (!node || injector.destroyed) {
+        return;
+    }
+    const localRefs = node[LOCAL_REFS];
+    if (localRefs?.length) {
+        injector.registerLocalRefs(node, localRefs);
+    }
+    const templatePlan = ctx.templatePlans.get(node);
+    if (templatePlan) {
+        const elementRef = injector.getElementRef(node as RElement);
+        const factory = (render: Renderer, factoryInjector: NodeInjector, factoryContext: any, factoryEffect: ReactiveEffect): RNode[] =>
+            buildPlanNodes(
+                templatePlan.children, render, factoryInjector, factoryContext, factoryEffect,
+                directives, components, customElements, delimiter
+            );
+        (node as any)[TEMPLATE_FACTORY] = factory;
+        injector.attachTemplate(createTemplateRef(factory, elementRef, { injector, context }));
+        runBindings(node, null, effect, injector);
+        return;
+    }
+    if (ctx.projectionOutlets.has(node)) {
+        return;
+    }
+    if (ctx.componentElements.has(node)) {
+        const projected = (node as any)[PROJECTION_NODES] as RNode[] | undefined;
+        projected?.forEach(child => prepareTemplates(child, ctx, context, effect, injector, directives, components, customElements, delimiter));
+        return;
+    }
+    const planChildren = ctx.childrenByElement.get(node);
+    planChildren?.forEach(child => prepareTemplates(child, ctx, context, effect, injector, directives, components, customElements, delimiter));
+}
+
 function executeBindings(
     node: RNode,
     ctx: PlanBuildContext,
@@ -297,9 +376,8 @@ function executeBindings(
         registerProjectionOutlet(host, node, outletAttrs, injector.get(Renderer));
         return;
     }
-    const localRefs = node[LOCAL_REFS];
-    if (localRefs?.length) {
-        injector.registerLocalRefs(node, localRefs);
+    if (ctx.templatePlans.has(node)) {
+        return;
     }
     const planChildren = ctx.childrenByElement.get(node);
     if (ctx.componentElements.has(node)) {
@@ -310,7 +388,40 @@ function executeBindings(
     } else if (planChildren && !isStructuralContainer(node)) {
         executeChildBindings(node.childNodes || [], ctx, context, effect, injector);
     }
+    if (isStructuralContainer(node) && !node.parentNode) {
+        // A root structural anchor is inserted into its owning view after the
+        // factory returns. ElementContainer views insert their rows as siblings
+        // of the anchor, so they need the parent to exist first.
+        Promise.resolve().then(() => {
+            if (!injector.destroyed) {
+                runBindings(node, context, effect, injector);
+            }
+        }).catch(() => undefined);
+        return;
+    }
     runBindings(node, context, effect, injector);
+}
+
+function buildPlanNodes<C>(
+    planNodes: TemplatePlanNode[],
+    render: Renderer,
+    injector: NodeInjector,
+    context: C,
+    effect: ReactiveEffect,
+    directives: DirectiveDef[],
+    components: ComponentDef[],
+    customElements: DirectiveDef[],
+    delimiter: RegExp
+): RNode[] {
+    const ctx = createPlanContext();
+    const nodes = planNodes.map(node => createNode(render, node, ctx));
+    for (let i = 0; i < nodes.length; i++) {
+        bindPlanNode(nodes[i], planNodes[i], directives, components, customElements, render, delimiter, ctx);
+        nodes[i] = resolveRootStructuralContainer(nodes[i]);
+    }
+    nodes.forEach(node => prepareTemplates(node, ctx, context, effect, injector, directives, components, customElements, delimiter));
+    nodes.forEach(node => executeBindings(node, ctx, context, effect, injector));
+    return nodes;
 }
 
 /** Build a TemplateFactory directly from a serialized plan. */
@@ -322,21 +433,7 @@ export function createTemplatePlanFactory<C>(
     components: ComponentDef[],
     customElements: DirectiveDef[]
 ): TemplateFactory<C> {
-    const rootNodes = (render: Renderer, injector: NodeInjector, context: C, effect: ReactiveEffect): RNode[] => {
-        const ctx: PlanBuildContext = {
-            planByNode: new WeakMap(),
-            childrenByElement: new WeakMap(),
-            componentElements: new WeakSet(),
-            structuralTemplates: new WeakSet(),
-            projectionOutlets: new WeakMap()
-        };
-        const nodes = plan.nodes.map(node => createNode(render, node, ctx));
-        for (let i = 0; i < nodes.length; i++) {
-            bindPlanNode(nodes[i], plan.nodes[i], directives, components, customElements, render, delimiter, ctx);
-            nodes[i] = resolveRootStructuralContainer(nodes[i]);
-        }
-        nodes.forEach(node => executeBindings(node, ctx, context as any, effect, injector));
-        return nodes;
-    };
+    const rootNodes = (render: Renderer, injector: NodeInjector, context: C, effect: ReactiveEffect): RNode[] =>
+        buildPlanNodes(plan.nodes, render, injector, context, effect, directives, components, customElements, delimiter);
     return (host, injector) => createTemplateRef<C>(rootNodes, host, { injector });
 }

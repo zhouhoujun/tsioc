@@ -26,7 +26,7 @@ export interface TemplatePlan {
 }
 
 const DEFAULT_DELIMITER = '{{}}';
-const UNSUPPORTED_TAGS = new Set(['template', 'v-template']);
+const UNSUPPORTED_TAGS = new Set(['template']);
 const BINDING_ATTR = /^(?:@|:|\[|v-|\*)/;
 
 function planNode(node: TemplateIRNode): TemplatePlanNode | null {
@@ -37,7 +37,7 @@ function planNode(node: TemplateIRNode): TemplatePlanNode | null {
         return { kind: 'comment', value: node.value };
     }
     const tag = String(node.tag).toLowerCase();
-    if (!tag || UNSUPPORTED_TAGS.has(tag) || (tag.startsWith('v-') && tag !== 'v-content')) {
+    if (!tag || UNSUPPORTED_TAGS.has(tag) || (tag.startsWith('v-') && tag !== 'v-content' && tag !== 'v-template')) {
         return null;
     }
     const attrs: Array<[string, string]> = [];
