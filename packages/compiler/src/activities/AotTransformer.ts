@@ -402,17 +402,47 @@ function selectorValueExpression(expression: ts.Expression): ts.Expression {
     return expression;
 }
 
-function queryMetadataExpression(decorator: ts.Decorator): ts.Expression | undefined {
+function queryTypeExpression(member: ts.ClassElement): ts.Expression | undefined {
+    if (!activeTypeChecker) {
+        return undefined;
+    }
+    const type = (member as ts.PropertyDeclaration).type;
+    if (!type || !ts.isTypeReferenceNode(type)) {
+        return undefined;
+    }
+    let symbol = activeTypeChecker.getSymbolAtLocation(type.typeName);
+    if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) {
+        symbol = activeTypeChecker.getAliasedSymbol(symbol);
+    }
+    if (!symbol || !(symbol.flags & ts.SymbolFlags.Class)) {
+        return undefined;
+    }
+    return typeExpression(type);
+}
+
+function queryMetadataExpression(decorator: ts.Decorator, member: ts.ClassElement): ts.Expression | undefined {
     const factory = ts.factory;
     const args = decoratorArgs(decorator);
     if (args.length === 0) {
-        // No selector means the runtime decorator relies on design:type
-        // metadata; keep those classes on the decorator pipeline.
-        return undefined;
+        const type = queryTypeExpression(member);
+        return type
+            ? factory.createObjectLiteralExpression([
+                factory.createPropertyAssignment('type', type),
+                factory.createPropertyAssignment('nullable', factory.createTrue())
+            ], false)
+            : undefined;
     }
     if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
-        if (!args[0].properties.some(property => propertyName(property) === 'selector')) {
-            return undefined;
+        const hasSelector = args[0].properties.some(property => propertyName(property) === 'selector');
+        if (!hasSelector) {
+            const type = queryTypeExpression(member);
+            if (!type) {
+                return undefined;
+            }
+            return factory.updateObjectLiteralExpression(args[0], [
+                ...args[0].properties,
+                factory.createPropertyAssignment('type', type)
+            ]);
         }
         const properties = args[0].properties.map(property => {
             if (!ts.isPropertyAssignment(property)) {
@@ -610,7 +640,7 @@ function attachServiceMembers(metadata: ts.Expression, node: ts.ClassDeclaration
     return result;
 }
 
-function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | undefined {
+function memberMetadataExpression(decorator: ts.Decorator, member: ts.ClassElement): ts.Expression | undefined {
     const factory = ts.factory;
     const name = decoratorName(decorator);
     const args = decoratorArgs(decorator);
@@ -621,7 +651,7 @@ function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | unde
         case 'ViewChildren':
         case 'ContentChild':
         case 'ContentChildren':
-            return queryMetadataExpression(decorator);
+            return queryMetadataExpression(decorator, member);
         case 'Attribute':
             if (args.length === 0) {
                 return factory.createObjectLiteralExpression([
@@ -718,7 +748,7 @@ function attachMemberMetadata(metadata: ts.Expression, node: ts.ClassDeclaration
             if (!PRECOMPILABLE_MEMBER_DECORATORS.has(name)) {
                 continue;
             }
-            const meta = memberMetadataExpression(decorator);
+            const meta = memberMetadataExpression(decorator, member);
             if (!meta) {
                 continue;
             }
@@ -752,7 +782,7 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
     for (const member of node.members) {
         for (const decorator of decoratorsOf(member)) {
             if (!PRECOMPILABLE_MEMBER_DECORATORS.has(decoratorName(decorator))
-                || !memberMetadataExpression(decorator)) {
+                || !memberMetadataExpression(decorator, member)) {
                 return false;
             }
         }
