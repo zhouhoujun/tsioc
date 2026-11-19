@@ -4,7 +4,8 @@ import { Before, Suite, Test } from '@tsdi/unit';
 import { Component, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { TemplateCompiler } from '../../src/template/compiler';
-import { HtmlTemplateModule, HtmlTemplateParser } from '../src';
+import { irToNodes, nodesToIR, sameTemplateIR } from '../../src/impl/template-ir';
+import { HtmlTemplateModule, HtmlTemplateParser, HtmlRenderer } from '../src';
 
 const TEMPLATE = `
     <div class="card">
@@ -66,5 +67,22 @@ export class TemplateIrReuseTest {
         } finally {
             await ctx.close();
         }
+    }
+
+    @Test('preserves template element content through IR round-trip')
+    roundTripsTemplateContent() {
+        const renderer = new HtmlRenderer(this.dom.window.document, null);
+        const parser = new HtmlTemplateParser(renderer);
+        const nodes = parser.parse('<div><template v-if="ok"><span class="inside">yes</span></template></div>');
+        const ir = nodesToIR(nodes, renderer);
+        expect(ir).not.toBeNull();
+        const rebuilt = irToNodes(ir!, renderer);
+        const rebuiltIR = nodesToIR(rebuilt, renderer);
+        expect(rebuiltIR).not.toBeNull();
+        expect(sameTemplateIR(ir!, rebuiltIR!)).toBe(true);
+        const template = (rebuilt[0] as any).childNodes[0];
+        expect(template.tagName).toBe('TEMPLATE');
+        expect(template.content.childNodes.length).toBe(1);
+        expect(template.content.firstChild.getAttribute('class')).toBe('inside');
     }
 }

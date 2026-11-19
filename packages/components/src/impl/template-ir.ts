@@ -38,7 +38,10 @@ export function nodesToIR(nodes: RNode[], renderer: Renderer): TemplateIRNode[] 
                 attrs.push([key, String((element as any)[key])]);
             }
         }
-        const children = nodesToIR(element.childNodes || [], renderer);
+        const children = nodesToIR(
+            (element as any).content ? (element as any).content.childNodes : (element.childNodes || []),
+            renderer
+        );
         if (!children) {
             return null;
         }
@@ -78,8 +81,14 @@ export function irToNodes(ir: TemplateIRNode[], renderer: Renderer): RNode[] {
                 renderer.setAttribute(element, name, value, namespace);
             }
         }
+        const target: any = element;
+        const content = item.tag.toLowerCase() === 'template' ? target.content : undefined;
         for (const child of irToNodes(item.children, renderer)) {
-            element.appendChild(child);
+            if (content) {
+                content.appendChild(child as any);
+            } else {
+                element.appendChild(child);
+            }
         }
         return element;
     });
