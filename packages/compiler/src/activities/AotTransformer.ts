@@ -14,12 +14,12 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'Component', 'Directive'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Component', 'Directive'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
 const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
-    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren'
+    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive'
 ]);
 
 
@@ -250,6 +250,8 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
             return args.length === 1
                 ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('providers', args[0])], false)
                 : undefined;
+        case 'NoReactive':
+            return factory.createObjectLiteralExpression([], false);
         case 'Pipe':
             if (args.length === 1 && ts.isStringLiteral(args[0])) {
                 return factory.createObjectLiteralExpression([
@@ -542,6 +544,8 @@ function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | unde
     const name = decoratorName(decorator);
     const args = decoratorArgs(decorator);
     switch (name) {
+        case 'NoReactive':
+            return factory.createObjectLiteralExpression([], false);
         case 'ViewChild':
         case 'ViewChildren':
         case 'ContentChild':
@@ -595,6 +599,35 @@ function memberMetadataExpression(decorator: ts.Decorator): ts.Expression | unde
         default:
             return undefined;
     }
+}
+
+function attachNoReactiveMetadata(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
+    const members: ts.Expression[] = [];
+    let classLevel = false;
+    for (const decorator of decoratorsOf(node)) {
+        if (decoratorName(decorator) === 'NoReactive') {
+            classLevel = true;
+        }
+    }
+    for (const member of node.members) {
+        const key = memberKey(member);
+        if (!key) {
+            continue;
+        }
+        for (const decorator of decoratorsOf(member)) {
+            if (decoratorName(decorator) === 'NoReactive') {
+                members.push(ts.factory.createStringLiteral(key));
+            }
+        }
+    }
+    let result = metadata;
+    if (classLevel) {
+        result = withProperty(result, 'noReactiveClass', ts.factory.createTrue());
+    }
+    if (members.length) {
+        result = withProperty(result, 'noReactive', ts.factory.createArrayLiteralExpression(members, false));
+    }
+    return result;
 }
 
 function attachMemberMetadata(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
@@ -800,6 +833,9 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
         }
         for (const decorator of decoratorsOf(member)) {
             const name = decoratorName(decorator);
+            if (name === 'NoReactive') {
+                continue;
+            }
             if (name === 'Autorun') {
                 if (ts.isPropertyDeclaration(member) || !methodAutorunMetadata(decorator, memberKey(member) || '')) {
                     return false;
@@ -1202,6 +1238,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             }
                             if (precompiledMetadata) {
                                 precompiledMetadata = attachMemberMetadata(precompiledMetadata, node);
+                                precompiledMetadata = attachNoReactiveMetadata(precompiledMetadata, node);
                             }
                         } else {
                             precompiledMetadata = factory.createObjectLiteralExpression([
@@ -1209,6 +1246,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             ], false);
                             precompiledMetadata = attachServiceMembers(precompiledMetadata, node);
                             precompiledMetadata = attachMethodMetadata(precompiledMetadata, node);
+                            precompiledMetadata = attachNoReactiveMetadata(precompiledMetadata, node);
                         }
                         compiledTypeRecords = genericClassDecorators.slice().reverse().map(decorator =>
                             factory.createArrayLiteralExpression([

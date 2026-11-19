@@ -147,9 +147,17 @@ export function reactive(target: any, effect: ReactiveEffect, computeds?: Comput
         return target;
     }
 
-    const noReactiveDefines = getClassRef(target?.constructor)?.getDefines(NoReactive) ?? [];
+    const classRef = getClassRef(target?.constructor);
+    const annotation: any = classRef?.getAnnotation();
+    if (annotation?.noReactiveClass === true) {
+        return target;
+    }
+    const noReactiveDefines = classRef?.getDefines(NoReactive) ?? [];
     let noReactiveSet: Set<string | symbol> | undefined;
-    if (noReactiveDefines.length) {
+    const precompiledKeys = annotation?.noReactive as Array<string | symbol> | undefined;
+    if (precompiledKeys?.length) {
+        noReactiveSet = new Set<string | symbol>(precompiledKeys);
+    } else if (noReactiveDefines.length) {
         const memberKeys = noReactiveDefines
             .map(define => define.propertyKey)
             .filter(Boolean) as Array<string | symbol>;

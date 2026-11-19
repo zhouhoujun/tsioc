@@ -2,6 +2,8 @@ import expect = require('expect');
 import * as ts from 'typescript';
 import * as ioc from '@tsdi/ioc';
 import { getClassRef } from '@tsdi/ioc';
+import { reactive } from '../../components/src';
+import { DefaultReactiveEffect } from '../../components/src/impl/effect';
 import { transpileAot } from '../src/activities/AotTransform';
 
 function loadModule(source: string): Record<string, any> {
@@ -261,6 +263,39 @@ export class UpperPipe {
         expect(def.selector).toBe('upper');
         expect(def.pure).toBe(true);
         expect(def.provides).toContain('upper');
+    });
+
+
+    it('precompiles NoReactive member metadata', () => {
+        const source = `
+import { Component, NoReactive } from '@tsdi/components';
+
+@Component({ selector: 'aot-noreactive', template: '<div></div>' })
+export class AotNoReactive {
+    @NoReactive() cache = 1;
+    shown = 2;
+}
+`;
+        const emitted = transpileAot('aot-noreactive.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotComponent(');
+        expect(emitted).toContain('noReactive:');
+        expect(emitted).toContain('cache');
+
+        const exported = loadModule(source);
+        const annotation: any = getClassRef(exported.AotNoReactive).getAnnotation();
+        expect(annotation.noReactive).toContain('cache');
+
+        const effect = new DefaultReactiveEffect();
+        const state: any = reactive(new exported.AotNoReactive(), effect);
+        let cacheRuns = 0;
+        effect.run(() => { cacheRuns += 1; void state.cache; });
+        state.cache = 3;
+        expect(cacheRuns).toBe(1);
+
+        let shownRuns = 0;
+        effect.run(() => { shownRuns += 1; void state.shown; });
+        state.shown = 4;
+        expect(shownRuns).toBe(2);
     });
 
     it('materializes component and directive definitions', () => {
