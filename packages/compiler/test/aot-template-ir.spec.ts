@@ -5,6 +5,8 @@ import { DOCUMENT } from '@tsdi/common';
 import { Component, ComponentsModule } from '@tsdi/components';
 import { ComponentRef } from '../../components/src/refs/component';
 import { HtmlTemplateModule } from '../../components/html/src';
+import { XmlTemplateModule } from '../../components/xml/src';
+import { ConsoleTemplateModule } from '../../components/console/src';
 import { transpileAot } from '../src/activities/AotTransform';
 
 function loadAotModule(source: string): Record<string, any> {
@@ -147,6 +149,50 @@ export class AotQueryHost {
         } finally {
             await ctx.close();
             dom.window.close();
+        }
+    });
+
+
+    it('renders emitted IR with the XML renderer', async () => {
+        const exported = loadAotModule(`
+import { Component } from '@tsdi/components';
+
+@Component({ selector: 'aot-ir-xml-host', template: '<div class="xml-ir"><span class="label">{{label}}</span></div>' })
+export class AotIrXmlHost {
+    label = 'xml';
+}
+`);
+        const ctx = await Application.run(exported.AotIrXmlHost, {
+            deps: [XmlTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(exported.AotIrXmlHost) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('.label')?.textContent).toBe('xml');
+        } finally {
+            await ctx.close();
+        }
+    });
+
+
+    it('renders emitted IR with the console renderer', async () => {
+        const exported = loadAotModule(`
+import { Component } from '@tsdi/components';
+
+@Component({ selector: 'aot-ir-console-host', template: '<div class="console-ir"><span class="label">{{label}}</span></div>' })
+export class AotIrConsoleHost {
+    label = 'console';
+}
+`);
+        const ctx = await Application.run(exported.AotIrConsoleHost, {
+            deps: [ConsoleTemplateModule, ComponentsModule]
+        });
+        try {
+            const ref = ctx.runners.getRef(exported.AotIrConsoleHost) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('.label')?.textContent).toBe('console');
+        } finally {
+            await ctx.close();
         }
     });
 

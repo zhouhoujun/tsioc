@@ -102,7 +102,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const templateText = typeof template === 'string' ? template : '';
         let nodes: RNode[] | undefined;
-        if (this.parser.preferTemplateIR && templateText && options.templateIR) {
+        if (templateText && options.templateIR) {
             try {
                 const ir = JSON.parse(options.templateIR) as TemplateIRNode[];
                 if (Array.isArray(ir)) {
