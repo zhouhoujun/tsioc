@@ -616,7 +616,7 @@ export function walkNodesForBindings<C>(
  * @param delimiter 分隔符正则表达式
  * @param walkNodesForBindings 节点遍历函数
  */
-export function generateNodeBindings<C>(
+export function bindNodesWithDefinitions<C>(
     nodes: RNode[],
     directives: DirectiveDef[],
     components: ComponentDef[],
@@ -687,6 +687,18 @@ export function generateNodeBindings<C>(
 
     // 为每个节点创建绑定工厂
     nodesForBindings(nodes, renderer, delimiter);
+}
+
+export function generateNodeBindings<C>(
+    nodes: RNode[],
+    directives: DirectiveDef[],
+    components: ComponentDef[],
+    renderer: Renderer,
+    delimiter: RegExp,
+    nodesForBindings: ((nodes: RNode[], renderer: Renderer, delimiter: RegExp) => void) = walkNodesForBindings<C>,
+    customElements: DirectiveDef[] = []
+): void {
+    bindNodesWithDefinitions(nodes, directives, components, renderer, delimiter, nodesForBindings, customElements);
 
     // Root-level v-if/v-for replace themselves with a container anchor.
     for (let i = 0; i < nodes.length; i++) {
