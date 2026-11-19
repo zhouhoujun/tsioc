@@ -261,6 +261,11 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
                     ? args[0]
                     : undefined;
         case 'Pipe':
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('pure', factory.createTrue())
+                ], false);
+            }
             if (args.length === 1 && ts.isStringLiteral(args[0])) {
                 return factory.createObjectLiteralExpression([
                     factory.createPropertyAssignment('selector', args[0]),
@@ -274,6 +279,15 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
                     factory.createPropertyAssignment('provide', args[0]),
                     factory.createPropertyAssignment('pure', args[1])
                 ], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                const hasPure = args[0].properties.some(property => propertyName(property) === 'pure');
+                return hasPure
+                    ? args[0]
+                    : factory.updateObjectLiteralExpression(args[0], [
+                        ...args[0].properties,
+                        factory.createPropertyAssignment('pure', factory.createTrue())
+                    ]);
             }
             return undefined;
         case 'ProvidedIn':

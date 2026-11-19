@@ -351,6 +351,26 @@ export class OptionalPropertyService {
         expect(service.value == null).toBe(true);
     });
 
+
+    it('precompiles @Pipe object metadata', () => {
+        const source = `
+import { Pipe } from '@tsdi/core';
+
+@Pipe({ selector: 'lower', provide: 'lower' })
+export class LowerPipe {
+    transform(value: string) { return value.toLowerCase(); }
+}
+`;
+        const emitted = transpileAot('aot-pipe-object.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain("selector: 'lower'");
+
+        const exported = loadModule(source);
+        const def = getClassRef(exported.LowerPipe).getAnnotation() as any;
+        expect(def.selector).toBe('lower');
+        expect(def.pure).toBe(true);
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';
