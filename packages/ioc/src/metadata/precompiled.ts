@@ -175,6 +175,9 @@ export function applyPrecompiledType(
             [key, Array.isArray(value) ? value : [value]]
         ));
     }
+    if (Array.isArray(def.methodMetadatas)) {
+        def.methodMetadatas = new Map(def.methodMetadatas);
+    }
     if (records?.length) {
         applyRunnableDefines(def, records);
         if (mergeMetadata) {

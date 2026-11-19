@@ -402,6 +402,41 @@ function injectedPropertyMetadata(decorator: ts.Decorator, member: ts.ClassEleme
     ], false);
 }
 
+function attachMethodMetadata(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
+    const entries: ts.Expression[] = [];
+    for (const member of node.members) {
+        if (ts.isConstructorDeclaration(member)) {
+            continue;
+        }
+        const key = memberKey(member);
+        if (!key) {
+            continue;
+        }
+        const parameters = memberParameters(member);
+        if (!parameters.some(parameter => decoratorsOf(parameter).length)) {
+            continue;
+        }
+        const params: ts.Expression[] = [];
+        for (const parameter of parameters) {
+            const dep = parameterDependency(parameter);
+            if (!dep) {
+                return metadata;
+            }
+            params.push(dep);
+        }
+        entries.push(ts.factory.createArrayLiteralExpression([
+            ts.factory.createStringLiteral(key),
+            ts.factory.createObjectLiteralExpression([
+                ts.factory.createPropertyAssignment('params', ts.factory.createArrayLiteralExpression(params, false))
+            ], false)
+        ], false));
+    }
+    if (!entries.length) {
+        return metadata;
+    }
+    return withProperty(metadata, 'methodMetadatas', ts.factory.createArrayLiteralExpression(entries, false));
+}
+
 function attachServiceMembers(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
     const properties: ts.Expression[] = [];
     for (const member of node.members) {
@@ -549,8 +584,18 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 return false;
             }
         }
-        for (const parameter of memberParameters(member)) {
-            if (decoratorsOf(parameter).length) {
+        const parameters = memberParameters(member);
+        const hasParameterDecorators = parameters.some(parameter => decoratorsOf(parameter).length > 0);
+        for (const parameter of parameters) {
+            const decorators = decoratorsOf(parameter);
+            for (const decorator of decorators) {
+                const name = decoratorName(decorator);
+                if (name !== 'Inject' && name !== 'Autowired'
+                    && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host') {
+                    return false;
+                }
+            }
+            if ((decorators.length || hasParameterDecorators) && !parameterDependency(parameter)) {
                 return false;
             }
         }
@@ -694,8 +739,18 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 return false;
             }
         }
-        for (const parameter of memberParameters(member)) {
-            if (decoratorsOf(parameter).length) {
+        const parameters = memberParameters(member);
+        const hasParameterDecorators = parameters.some(parameter => decoratorsOf(parameter).length > 0);
+        for (const parameter of parameters) {
+            const decorators = decoratorsOf(parameter);
+            for (const decorator of decorators) {
+                const name = decoratorName(decorator);
+                if (name !== 'Inject' && name !== 'Autowired'
+                    && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host') {
+                    return false;
+                }
+            }
+            if ((decorators.length || hasParameterDecorators) && !parameterDependency(parameter)) {
                 return false;
             }
         }
@@ -1079,6 +1134,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                                 factory.createPropertyAssignment('name', factory.createStringLiteral(node.name!.text))
                             ], false);
                             precompiledMetadata = attachServiceMembers(precompiledMetadata, node);
+                            precompiledMetadata = attachMethodMetadata(precompiledMetadata, node);
                         }
                         compiledTypeRecords = genericClassDecorators.slice().reverse().map(decorator =>
                             factory.createArrayLiteralExpression([

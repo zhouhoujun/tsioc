@@ -60,6 +60,8 @@ describe('shared AOT compiler', () => {
             expect(output).toContain('__aotType(');
             expect(output).toContain('ƿprov');
             expect(output).toContain('propMetadatas');
+            expect(output).toContain('methodMetadatas');
+            expect(output).toContain('setup');
             expect(output).toContain('Injector');
         } finally {
             fs.rmSync(outDir, { recursive: true, force: true });

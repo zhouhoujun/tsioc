@@ -1,4 +1,4 @@
-import { Inject, Injectable, Injector } from '@tsdi/ioc';
+import { Autorun, Inject, Injectable, Injector } from '@tsdi/ioc';
 
 @Injectable()
 export class TypeInjectedService {
@@ -9,4 +9,13 @@ export class TypeInjectedService {
 export class TypeInjectedPropertyService {
     @Inject()
     injector!: Injector;
+}
+
+@Injectable()
+@Autorun({ propertyKey: 'setup' })
+export class TypeInjectedMethodService {
+    ready = false;
+    setup(@Inject() injector: Injector) {
+        this.ready = !!injector;
+    }
 }
