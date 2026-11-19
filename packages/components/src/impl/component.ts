@@ -41,6 +41,41 @@ import { COMPONENTS } from '../decorators/component';
  */
 const tempFacCaches = new WeakMap<ComponentDef, Map<TemplateCompiler, TemplateFactory>>();
 
+/**
+ * Cross-Application template factory cache.
+ *
+ * A compiled factory only captures static template data (renderer AST nodes,
+ * directive/component definitions, compiler options); it receives the renderer
+ * and injector at execution time. Reusing it is therefore safe when the
+ * renderer class, compiler class/options, template and the exact definition
+ * objects are identical. Keys use definition identity instead of names so two
+ * applications that declare different components cannot collide.
+ */
+const sharedTempFacCaches = new WeakMap<Function, Map<string, TemplateFactory>>();
+const definitionIds = new WeakMap<object, number>();
+let nextDefinitionId = 1;
+
+function definitionId(value: any): number {
+    if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
+        return 0;
+    }
+    let id = definitionIds.get(value);
+    if (!id) {
+        id = nextDefinitionId++;
+        definitionIds.set(value, id);
+    }
+    return id;
+}
+
+function definitionsSignature(defs?: any[]): string {
+    return (defs || []).map(def => definitionId(def)).join(',');
+}
+
+function compilerOptionsSignature(compiler: TemplateCompiler): string {
+    const options: any = (compiler as any)?.options || {};
+    const delimiters = options.delimiters || ['{{', '}}'];
+    return `${delimiters[0]}${delimiters[1]}|${options.templateTag || ''}|${options.containerTag || ''}`;
+}
 
 export class ComponentRefImpl<T> extends ComponentRef<T> {
 
@@ -143,15 +178,39 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
             if (this.injector.destroyed) {
                 return;
             }
-            factory = compiler.compile<T>(template, {
-                directives,
-                components,
-                customElements,
-                schemas: mergeTemplateSchemas(
-                    this.injector.get(TEMPLATE_SCHEMAS, null),
-                    def.schemas
-                )
-            });
+            const schemas = mergeTemplateSchemas(
+                this.injector.get(TEMPLATE_SCHEMAS, null),
+                def.schemas
+            );
+            const compilerCtor = (compiler as any)?.constructor as Function | undefined;
+            const sharedKey = typeof template === 'string' && compilerCtor
+                ? [
+                    definitionId((compiler as any)?.renderer?.constructor),
+                    compilerOptionsSignature(compiler),
+                    template,
+                    definitionsSignature(directives),
+                    definitionsSignature(components),
+                    definitionsSignature(customElements),
+                    definitionsSignature(schemas)
+                ].join('|')
+                : '';
+            let shared = compilerCtor ? sharedTempFacCaches.get(compilerCtor) : undefined;
+            factory = sharedKey ? shared?.get(sharedKey) : undefined;
+            if (!factory) {
+                factory = compiler.compile<T>(template, {
+                    directives,
+                    components,
+                    customElements,
+                    schemas
+                });
+                if (sharedKey && compilerCtor) {
+                    if (!shared) {
+                        shared = new Map();
+                        sharedTempFacCaches.set(compilerCtor, shared);
+                    }
+                    shared.set(sharedKey, factory);
+                }
+            }
             tempFacs.set(compiler, factory);
         }
         this._hostView?.destroy();
