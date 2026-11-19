@@ -108,7 +108,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             try {
                 const plan = JSON.parse(options.templatePlan) as TemplatePlan;
                 if (plan?.delimiter === '{{}}' && Array.isArray(plan.nodes)) {
-                    return createTemplatePlanFactory<C>(plan, this.renderer, this.delimiter);
+                    return createTemplatePlanFactory<C>(plan, this.renderer, this.delimiter, options.directives, options.components, options.customElements || []);
                 }
             } catch {
                 // Fall through to IR/parser paths.

@@ -1,27 +1,16 @@
-import { BINDINGS, RNode, RElement, RText, NodeType } from '../renderer/Node';
+import { BINDINGS, COMPONENTDEF, CUSTOM_ELEMENTS, DIRECTIVES, NodeType, RNode, RElement, RText } from '../renderer/Node';
 import { Renderer } from '../renderer/Renderer';
 import { ReactiveEffect } from '../effect';
 import { NodeInjector } from '../refs/injector';
 import { TemplateFactory } from '../refs/template';
+import { DirectiveDef } from '../refs/directive';
+import { ComponentDef } from '../refs/component';
 import { createTemplateRef } from '../impl/template';
-import {
-    binding, bindingEvent, bindingProperty, bindingInterpolationFactory, evaluateExpression
-} from '../impl/compiler-fns';
-
-/**
- * Serializable binding plan emitted by the AOT compiler.
- *
- * The plan contains the node tree and the binding instructions that the
- * previous runtime path derived from attribute names / text interpolation.
- * `createTemplatePlanFactory` executes it directly; it never calls
- * `generateNodeBindings` or `compileToFactory`.
- */
-export type TemplatePlanSegment = string | { expr: string };
+import { bindingAtrrbutes, bindingComponentFactory, bindingDirectiveFactory, bindingText } from '../impl/compiler-fns';
 
 export interface TemplatePlanText {
     kind: 'text';
     value: string;
-    segments?: TemplatePlanSegment[];
 }
 
 export interface TemplatePlanComment {
@@ -29,116 +18,158 @@ export interface TemplatePlanComment {
     value: string;
 }
 
-export interface TemplatePlanBinding {
-    kind: 'event' | 'property' | 'interpolation';
-    name: string;
-    expr: string;
-}
-
 export interface TemplatePlanElement {
     kind: 'element';
     tag: string;
     attrs: Array<[string, string]>;
-    bindings: TemplatePlanBinding[];
+    rawAttrs: Array<[string, string]>;
     children: TemplatePlanNode[];
 }
 
 export type TemplatePlanNode = TemplatePlanText | TemplatePlanComment | TemplatePlanElement;
 
 export interface TemplatePlan {
-    /** Only the default {{ }} delimiter is supported; other configs fall back. */
     delimiter: string;
     nodes: TemplatePlanNode[];
 }
 
-function bindingTextSegments(node: RText, segments: TemplatePlanSegment[], delimiter: RegExp): void {
-    binding(node, (target: RNode, context: any, effect, injector: NodeInjector) => {
-        if (injector.destroyed) {
-            return;
+function attrValue(attrs: Array<[string, string]>, name: string): string | undefined {
+    const lower = name.toLowerCase();
+    for (const [key, value] of attrs) {
+        if (key.toLowerCase() === lower) {
+            return value;
         }
-        const textNode = target as RText;
-        effect.run(() => {
-            let text = '';
-            for (const segment of segments) {
-                if (typeof segment === 'string') {
-                    text += segment;
-                } else {
-                    const value = evaluateExpression(segment.expr, context, injector, delimiter);
-                    text += value == null ? '' : String(value);
-                }
-            }
-            textNode.textContent = text;
-        });
-        return () => {
-            textNode.textContent = '';
-        };
-    });
+    }
+    return undefined;
 }
 
-function createElement(renderer: Renderer, node: TemplatePlanElement, injector: NodeInjector, context: any, effect: ReactiveEffect, delimiter: RegExp): RElement {
-    const element = renderer.createElement(node.tag);
-    element[BINDINGS] = [];
-    for (const [name, value] of node.attrs) {
-        renderer.setAttribute(element, name, value);
-    }
-    for (const bindingDef of node.bindings) {
-        if (bindingDef.kind === 'event') {
-            bindingEvent(element, `@${bindingDef.name}`, bindingDef.expr, renderer, delimiter);
-        } else if (bindingDef.kind === 'property') {
-            bindingProperty(element, `:${bindingDef.name}`, bindingDef.expr, renderer, delimiter);
-        } else {
-            bindingInterpolationFactory(element, bindingDef.name, bindingDef.expr, renderer, delimiter);
+function hasClass(attrs: Array<[string, string]>, name: string): boolean {
+    const value = attrValue(attrs, 'class');
+    return !!value && value.split(/\s+/).includes(name);
+}
+
+function matchesSelector(tag: string, attrs: Array<[string, string]>, selector: string): boolean {
+    const lowerTag = tag.toLowerCase();
+    for (const raw of (selector || '').split(',')) {
+        const part = raw.trim();
+        if (!part) {
+            continue;
+        }
+        if (part.startsWith('[') && part.endsWith(']')) {
+            const inner = part.slice(1, -1);
+            const name = inner.split(/[~|^$*=\s]/)[0];
+            if (name && attrValue(attrs, name) !== undefined) {
+                return true;
+            }
+            continue;
+        }
+        if (part.startsWith('.')) {
+            if (hasClass(attrs, part.slice(1))) {
+                return true;
+            }
+            continue;
+        }
+        if (part.toLowerCase() === lowerTag) {
+            return true;
         }
     }
-    for (const child of node.children) {
-        const created = createNode(renderer, child, injector, context, effect, delimiter);
-        if (created) {
-            element.appendChild(created);
+    return false;
+}
+
+function collectNodes(node: TemplatePlanNode, result: Array<{ node: RNode; plan: TemplatePlanNode }>): void {
+    // Filled after creation; kept for typing clarity in the traversal below.
+}
+
+function bindPlanNode(
+    node: RNode,
+    plan: TemplatePlanNode,
+    directives: DirectiveDef[],
+    components: ComponentDef[],
+    customElements: DirectiveDef[],
+    renderer: Renderer,
+    delimiter: RegExp
+): void {
+    node[BINDINGS] = [];
+    if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
+        bindingText(node as RText, (node as RText).textContent, renderer, delimiter);
+        return;
+    }
+    const element = node as RElement;
+    const attrs = (plan as TemplatePlanElement).rawAttrs.map(([name, value]) => ({ name, value }));
+    bindingAtrrbutes(element, attrs, renderer, delimiter);
+    const component = components.find(def => matchesSelector(String((element as any).localName || element.tagName || ''), (plan as TemplatePlanElement).rawAttrs, def.selector));
+    if (component) {
+        element[COMPONENTDEF] = component;
+        bindingComponentFactory(element, component, attrs, renderer, delimiter);
+    }
+    const matched: DirectiveDef[] = [];
+    for (const def of directives) {
+        if ((plan as TemplatePlanElement).rawAttrs.length && matchesSelector(String((element as any).localName || element.tagName || ''), (plan as TemplatePlanElement).rawAttrs, def.selector)) {
+            matched.push(def);
         }
     }
-    return element;
+    if (matched.length) {
+        matched.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+        element[DIRECTIVES] = matched;
+        matched.forEach(def => bindingDirectiveFactory(element, def, attrs, renderer, delimiter));
+    }
+    for (const def of customElements) {
+        if (matchesSelector(String((element as any).localName || element.tagName || ''), (plan as TemplatePlanElement).rawAttrs, def.selector)) {
+            const list = element[CUSTOM_ELEMENTS] || [];
+            list.push(def);
+            element[CUSTOM_ELEMENTS] = list;
+        }
+    }
+    const children = plan as TemplatePlanElement;
+    for (let i = 0; i < element.childNodes.length; i++) {
+        if (children.children[i]) {
+            bindPlanNode(element.childNodes[i], children.children[i], directives, components, customElements, renderer, delimiter);
+        }
+    }
 }
 
 function applyBindings(node: RNode | null, context: any, effect: ReactiveEffect, injector: NodeInjector): void {
-    if (!node) {
+    if (!node || injector.destroyed) {
         return;
     }
-    const bindings = node[BINDINGS];
-    if (bindings?.length) {
-        for (const binder of bindings) {
-            const unbinding = binder(node, context, effect, injector);
-            unbinding && injector.onDestroy(unbinding);
-        }
-    }
+    node[BINDINGS]?.forEach(binding => {
+        const unbinding = binding(node, context, effect, injector);
+        unbinding && injector.onDestroy(unbinding);
+    });
     node.childNodes?.forEach(child => applyBindings(child, context, effect, injector));
 }
 
-function createNode(renderer: Renderer, node: TemplatePlanNode, injector: NodeInjector, context: any, effect: ReactiveEffect, delimiter: RegExp): RNode | null {
+function createNode(renderer: Renderer, node: TemplatePlanNode): RNode {
     if (node.kind === 'text') {
-        const text = renderer.createText(node.value);
-        text[BINDINGS] = [];
-        if (node.segments?.length) {
-            bindingTextSegments(text, node.segments, delimiter);
-        }
-        return text;
+        return renderer.createText(node.value);
     }
     if (node.kind === 'comment') {
         return renderer.createComment(node.value);
     }
-    return createElement(renderer, node, injector, context, effect, delimiter);
+    const element = renderer.createElement(node.tag);
+    for (const [name, value] of node.attrs) {
+        renderer.setAttribute(element, name, value);
+    }
+    for (const child of node.children) {
+        element.appendChild(createNode(renderer, child));
+    }
+    return element;
 }
 
-/** Build a TemplateFactory directly from a serialized plan. */
-export function createTemplatePlanFactory<C>(plan: TemplatePlan, renderer: Renderer, delimiter: RegExp): TemplateFactory<C> {
+export function createTemplatePlanFactory<C>(
+    plan: TemplatePlan,
+    renderer: Renderer,
+    delimiter: RegExp,
+    directives: DirectiveDef[],
+    components: ComponentDef[],
+    customElements: DirectiveDef[]
+): TemplateFactory<C> {
     const rootNodes = (render: Renderer, injector: NodeInjector, context: C, effect: ReactiveEffect): RNode[] => {
-        const nodes: RNode[] = [];
-        for (const node of plan.nodes) {
-            const created = createNode(render, node, injector, context, effect, delimiter);
-            if (created) {
-                applyBindings(created, context, effect, injector);
-                nodes.push(created);
-            }
+        const nodes = plan.nodes.map(node => createNode(render, node));
+        for (let i = 0; i < nodes.length; i++) {
+            bindPlanNode(nodes[i], plan.nodes[i], directives, components, customElements, render, delimiter);
         }
+        Promise.resolve().then(() => nodes.forEach(node => applyBindings(node, context as any, effect, injector))).catch(() => undefined);
         return nodes;
     };
     return (host, injector) => createTemplateRef<C>(rootNodes, host, { injector });
