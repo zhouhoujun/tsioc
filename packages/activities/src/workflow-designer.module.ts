@@ -17,6 +17,7 @@ import { ButtonModule } from '@tsdi/components/common/button';
 import { DataTableModule } from '@tsdi/components/common/data-table';
 import { BreadcrumbModule } from '@tsdi/components/common/breadcrumb';
 import { KeymapPanelModule } from '@tsdi/components/common/keymap';
+import { ToastModule } from '@tsdi/components/common/toast';
 import { ProgressModule } from '@tsdi/components/common/progress';
 import { FormsModule } from '@tsdi/components/forms';
 import {
@@ -73,6 +74,7 @@ import {
         DataTableModule,
         BreadcrumbModule,
         KeymapPanelModule,
+        ToastModule,
         ProgressModule,
         FormsModule,
         WorkflowDesignerI18nModule

@@ -12,6 +12,7 @@ import { StatModule } from '@tsdi/components/common/stat';
 import { BadgeModule } from '@tsdi/components/common/badge';
 import { ButtonModule } from '@tsdi/components/common/button';
 import { KeymapPanelModule } from '@tsdi/components/common/keymap';
+import { ToastModule } from '@tsdi/components/common/toast';
 import { ProgressModule } from '@tsdi/components/common/progress';
 import { DataTableModule } from '@tsdi/components/common/data-table';
 import { BreadcrumbModule } from '@tsdi/components/common/breadcrumb';
@@ -81,6 +82,7 @@ import {
         BadgeModule,
         ButtonModule,
         KeymapPanelModule,
+        ToastModule,
         ProgressModule,
         DataTableModule,
         BreadcrumbModule,

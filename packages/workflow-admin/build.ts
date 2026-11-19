@@ -50,8 +50,9 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // create/edit dialog, reference field actions and the delete guard.
 // Raised again for the configuration-node index panel (~1.4 KB raw).
 // Raised to 1015 KB for the extracted publish/settings/deployments/rename
-// dialog components (~6 KB raw); keeps ~3 KB of headroom.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_040_000);
+// dialog components (~6 KB raw). Raised to 1020 KB for the toast strip and
+// its queue; keeps ~4 KB of headroom.
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_045_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
@@ -60,8 +61,9 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_040_000);
 // adds ~5.7 KB gzip to the bundled framework code.
 // Raised from 250 KB (2026-11) for the config-node reference picker (~2 KB)
 // and the config-node index panel (~2 KB), keeping ~3 KB of headroom.
-// Raised to 258 KB for the extracted designer dialogs (~2.5 KB gzip).
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 262_000);
+// Raised to 258 KB for the extracted designer dialogs (~2.5 KB gzip) and
+// 264 KB for the toast strip; keeps ~2 KB of headroom.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 264_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

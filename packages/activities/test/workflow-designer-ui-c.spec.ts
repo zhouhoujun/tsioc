@@ -681,6 +681,15 @@ describe('Workflow Designer UI', () => {
         expect(versions.release?.version).toBe(versions.items[0].version);
         expect(ref.instance.designer.message).toBe('workflow.message.published');
         expect(ref.instance.saveStateLabel).toContain('已保存');
+
+        // The shared toast queue paints the release confirmation and the ✕
+        // dismisses it without touching the document.
+        const toast = root.querySelector('.workflow-toast .console-toast') as any;
+        expect(toast).toBeTruthy();
+        expect(toast.textContent).toContain(`已发布 v${versions.release?.version}`);
+        (toast.querySelector('.toast-close') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-toast .console-toast')).toBeFalsy();
     });
 
     it('debounces code edits so typing does not rebuild the workflow per keystroke', async () => {

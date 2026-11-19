@@ -11,6 +11,8 @@ import { VisualWorkflowService } from '../VisualWorkflowService';
 import { createBlankWorkflowDefinition, createDefaultWorkflowDefinition, WorkflowDesigner } from '../workflow-designer';
 import { VisualWorkflowDefinition, WorkflowToolbarModel } from '../types';
 import { diffWorkflowDefinitions, WorkflowDiffResult } from '../workflow-diff';
+import { ToastService } from '@tsdi/components/common/toast';
+import { WorkflowDesignerToasts } from './workflow-designer-toasts';
 import { WorkflowAuditPanelComponent } from './workflow-audit-panel';
 import { WorkflowCredentialPanelComponent } from './workflow-credential-panel';
 import { WorkflowMetricsPanelComponent } from './workflow-metrics-panel';
@@ -136,6 +138,9 @@ interface WorkflowDocumentTab {
         <workflow-rename-panel v-if="showRename" :value="renameValue" :error="renameError"
             :locale="locale" :valueAction="renameInputAction" :keyAction="renameKeyAction"
             :confirmAction="commitRenamePressed" :cancelAction="cancelRenamePressed"></workflow-rename-panel>
+        <div class="workflow-toast" v-if="toasts.enabled">
+            <ui-toast-stack :items="toasts.items" :closeAction="dismissToast"></ui-toast-stack>
+        </div>
     </div>`
 })
 export class WorkflowDesignerComponent implements OnDestroy {
@@ -170,6 +175,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     private workflowTabs: WorkflowDocumentTab[] = [];
     private activeTabId = '';
+    private readonly toasts: WorkflowDesignerToasts;
     private tabSourceCache?: { key: string; source: TabBarSource };
     private reactiveEffect?: ReactiveEffect;
     private menuClickHandler?: (event: any) => void;
@@ -239,8 +245,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
         @Optional() @Inject(DOCUMENT) document?: any,
         @Optional() private translator?: Translator,
         @Optional() effect?: ReactiveEffect,
-        @Optional() private elementRef?: ElementRef
+        @Optional() private elementRef?: ElementRef,
+        @Optional() toastService?: ToastService
     ) {
+        this.toasts = new WorkflowDesignerToasts(toastService, (key, fallback, params) => this.t(key, fallback, params));
         this.documentRef = document;
         try {
             if (document) {
@@ -300,6 +308,9 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     onDestroy(): void {
         this.clearAutosaveTimer();
+        // The strip lives inside this surface; drop its transient queue so a
+        // remounted designer never inherits stale confirmations.
+        this.toasts.clear();
         this.actionBusUnsubscribe?.();
         this.actionBusUnsubscribe = undefined;
         const rootDocument = (globalThis as { document?: Document }).document;
@@ -961,6 +972,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
                 this.registerPluginNodes(result.plugin);
             }
             await this.refreshPlugins();
+            this.toasts.plugin(result.plugin?.name || id, true);
         } catch (error) {
             this.pluginError = (error as Error).message;
         } finally {
@@ -981,6 +993,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
                 this.unregisterPluginNodes(item);
             }
             await this.refreshPlugins();
+            this.toasts.plugin(item?.name || id, false);
         } catch (error) {
             this.pluginError = (error as Error).message;
         } finally {
@@ -999,12 +1012,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     /** Open the rename overlay for the active workflow document. */
-
-    readonly formatAuditTime = (at: number): string => {
-        const date = new Date(at);
-        const pad = (value: number) => String(value).padStart(2, '0');
-        return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-    };
 
     readonly cancelPublishPressed = (): void => (this.selfRef || this).cancelPublish();
 
@@ -1070,6 +1077,10 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     readonly settingsTimeoutAction = (value: string): void => {
         (this.selfRef || this).settingsTimeoutInput({ target: { value } } as any);
+    };
+
+    readonly dismissToast = (id: string): void => {
+        (this.selfRef || this).toasts.dismiss(id);
     };
 
     readonly pluginToggleAction = (item: WorkflowPluginManifest & { installed: boolean }): (() => void) =>
@@ -1226,25 +1237,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
     }
 
-    get auditColumns(): Array<{ key: string; label: string }> {
-        return [
-            { key: 'time', label: this.t('time', 'Time') },
-            { key: 'action', label: this.t('action', 'Action') },
-            { key: 'workflow', label: this.t('workflow', 'Workflow') },
-            { key: 'actor', label: this.t('actor', 'Actor') }
-        ];
-    }
-
-    get auditRows(): Array<Record<string, any>> {
-        return (this.auditItems || []).map(entry => ({
-            id: entry.id,
-            time: this.formatAuditTime(entry.at),
-            action: entry.action,
-            workflow: entry.workflowId || '',
-            actor: entry.actor || ''
-        }));
-    }
-
     @Computed()
     @Computed()
     get subflowTrail(): Array<{ id?: string; label: string; disabled?: boolean }> {
@@ -1301,6 +1293,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         try {
             await this.store.startDeployments();
             await this.refreshDeployments();
+            this.toasts.allDeployments(true);
         } catch (error) {
             this.deploymentError = (error as Error).message;
         } finally {
@@ -1317,6 +1310,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         try {
             await this.store.stopDeployments();
             await this.refreshDeployments();
+            this.toasts.allDeployments(false);
         } catch (error) {
             this.deploymentError = (error as Error).message;
         } finally {
@@ -1334,6 +1328,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
                 await this.store.startDeployments?.([item.workflowId]);
             }
             await this.refreshDeployments();
+            this.toasts.deployment(item.workflowId, item.running);
         } catch (error) {
             this.deploymentError = (error as Error).message;
         } finally {
@@ -1546,6 +1541,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
             this.lastAutosaveAt = Date.now();
             this.unsavedSince = undefined;
             this.saveState = this.designer.dirty ? 'dirty' : 'saved';
+            this.toasts.published(release.version);
         } catch (error) {
             this.saveState = 'error';
             this.libraryError = (error as Error).message;

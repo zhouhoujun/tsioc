@@ -569,4 +569,56 @@ workflow-canvas {
     min-height: 0;
 }
 
+.workflow-toast {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 60;
+    pointer-events: none;
+}
+
+.workflow-toast .console-toast-stack {
+    padding: 0;
+}
+
+.workflow-toast .console-toast-card {
+    background: var(--wf-theme-surface-alt, #0f172a);
+    border: 1px solid var(--wf-theme-border, #1e293b);
+    border-radius: 10px;
+    box-shadow: 0 12px 30px var(--wf-theme-shadow, rgba(0, 0, 0, 0.55));
+    color: var(--wf-theme-text, #e2e8f0);
+    pointer-events: auto;
+    padding: 8px 12px;
+    max-width: 320px;
+}
+
+.workflow-toast .console-toast {
+    display: block;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--wf-theme-text, #e2e8f0);
+}
+
+.workflow-toast .console-toast[data-tone="success"] {
+    color: #4ade80;
+}
+
+.workflow-toast .console-toast[data-tone="warning"] {
+    color: #fbbf24;
+}
+
+.workflow-toast .console-toast[data-tone="error"] {
+    color: var(--wf-theme-danger, #f87171);
+}
+
+.workflow-toast .toast-close {
+    color: var(--wf-theme-muted, #94a3b8);
+    cursor: pointer;
+    padding-left: 8px;
+}
+
+.workflow-toast .toast-close:hover {
+    color: var(--wf-theme-text, #e2e8f0);
+}
+
 `;

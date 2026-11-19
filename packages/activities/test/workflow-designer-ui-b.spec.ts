@@ -765,6 +765,8 @@ describe('Workflow Designer UI', () => {
         await waitFor(() => stoppedAll && String(root.querySelector('.workflow-deployment-row')?.textContent || '').includes('已停止'));
         expect(root.querySelector('.workflow-deployment-row .ui-badge')?.textContent).toContain('已停止');
         expect(stoppedAll).toBe(true);
+        await waitFor(() => String(root.querySelector('.workflow-toast .console-toast')?.textContent || '')
+            .includes('已停止全部部署'));
 
         (root.querySelector('.workflow-deployments .workflow-publish-close') as any).click();
         await flush();
