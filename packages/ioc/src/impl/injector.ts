@@ -38,7 +38,7 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
     private _destroyed = false;
 
     @nonEnumerable
-    protected _dsryCbs = new Set<DestroyCallback>();
+    protected _dsryCbs?: Set<DestroyCallback>;
 
     @nonEnumerable
     protected _runtime: Runtime | null = null;
@@ -286,12 +286,12 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         if (!callback) {
             this._destroying()
         } else {
-            this._dsryCbs.add(callback)
+            (this._dsryCbs ?? (this._dsryCbs = new Set<DestroyCallback>())).add(callback)
         }
     }
 
     offDestroy(callback: DestroyCallback) {
-        this._dsryCbs.delete(callback)
+        this._dsryCbs?.delete(callback)
     }
 
 
@@ -299,9 +299,9 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         if (this._destroyed) return;
         this._destroyed = true;
         try {
-            this._dsryCbs.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
+            this._dsryCbs?.forEach(cb => isFunction(cb) ? cb() : cb?.onDestroy());
         } finally {
-            this._dsryCbs.clear();
+            this._dsryCbs?.clear();
             this.clear()
         }
         if (this.scope === 'root') {
