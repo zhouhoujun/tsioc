@@ -378,7 +378,7 @@ import { Inject, Injectable } from '@tsdi/ioc';
 
 @Injectable()
 export class OptionInjectedService {
-    constructor(@Inject('TOKEN', { flags: 8, alias: 'x' }) readonly value?: string) {}
+    constructor(@Inject('TOKEN', { flags: 8, alias: TOKEN_ALIAS }) readonly value?: string) {}
 }
 `, { module: ts.ModuleKind.CommonJS });
         expect(emitted).toContain('__aotDeco(');
@@ -452,6 +452,21 @@ export class OptionPropertyService {
         ioc.InjectUtil.use(container, exported.OptionPropertyService);
         const service = container.get(exported.OptionPropertyService) as any;
         expect(service.value).toBe('property-fallback');
+    });
+
+
+    it('precompiles Inject alias options with getToken', () => {
+        const source = `
+import { Inject, Injectable } from '@tsdi/ioc';
+
+@Injectable()
+export class AliasedInjectionService {
+    constructor(@Inject('TOKEN', { alias: 'x' }) readonly value?: string) {}
+}
+`;
+        const emitted = transpileAot('aot-inject-alias.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotGetToken');
+        expect(emitted).toContain('__aotType(');
     });
 
     it('materializes component and directive definitions', () => {

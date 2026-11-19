@@ -551,7 +551,9 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
                 if (args[0]) {
                     token = selectorValueExpression(args[0]);
                 }
-                if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+                if (args[1] && ts.isStringLiteral(args[1])) {
+                    token = aliasedToken(token, args[1]);
+                } else if (args[1] && ts.isObjectLiteralExpression(args[1])) {
                     options = args[1];
                 } else if (args.length > 1) {
                     return undefined;
@@ -563,14 +565,15 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
                     token = selectorValueExpression(provider);
                 }
             }
+            const alias = optionProperty(options, 'alias');
+            if (alias) {
+                token = aliasedToken(token, alias);
+            }
             optionFlags = optionProperty(options, 'flags');
             nullable = optionProperty(options, 'nullable');
             defaultValue = optionProperty(options, 'defaultValue');
             multi = optionProperty(options, 'multi');
             resolver = optionProperty(options, 'resolver');
-            if (optionProperty(options, 'alias')) {
-                return undefined;
-            }
             continue;
         }
         if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host') {
@@ -994,6 +997,20 @@ function optionProperty(expression: ts.Expression | undefined, name: string): ts
     return property && ts.isPropertyAssignment(property) ? property.initializer : undefined;
 }
 
+function aliasedToken(token: ts.Expression | undefined, alias: ts.Expression | undefined): ts.Expression | undefined {
+    if (!token || !alias || !ts.isStringLiteral(alias)) {
+        return undefined;
+    }
+    if (activeTypeContext) {
+        activeTypeContext.usesGetToken = true;
+    }
+    return ts.factory.createCallExpression(
+        ts.factory.createIdentifier('__aotGetToken'),
+        undefined,
+        [token, alias]
+    );
+}
+
 function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: string): ts.Expression | undefined {
     const factory = ts.factory;
     let token: ts.Expression | undefined;
@@ -1014,7 +1031,9 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
                 if (args[0]) {
                     token = selectorValueExpression(args[0]);
                 }
-                if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+                if (args[1] && ts.isStringLiteral(args[1])) {
+                    token = aliasedToken(token, args[1]);
+                } else if (args[1] && ts.isObjectLiteralExpression(args[1])) {
                     options = args[1];
                 } else if (args.length > 1) {
                     return undefined;
@@ -1026,14 +1045,15 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
                     token = selectorValueExpression(provider);
                 }
             }
+            const alias = optionProperty(options, 'alias');
+            if (alias) {
+                token = aliasedToken(token, alias);
+            }
             optionFlags = optionProperty(options, 'flags');
             nullable = optionProperty(options, 'nullable');
             defaultValue = optionProperty(options, 'defaultValue');
             multi = optionProperty(options, 'multi');
             resolver = optionProperty(options, 'resolver');
-            if (optionProperty(options, 'alias')) {
-                return undefined;
-            }
             continue;
         }
         if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host') {
