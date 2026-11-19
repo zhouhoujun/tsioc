@@ -751,11 +751,19 @@ export function hasDelimiter(expr: string, delimiter: RegExp): boolean {
     return tester.test(expr);
 }
 
+const stableDelimiterCache = new WeakMap<RegExp, RegExp>();
+
 function createStableDelimiter(delimiter: RegExp): RegExp {
-    const flags = delimiter.flags.includes('g')
-        ? delimiter.flags
-        : `${delimiter.flags}g`;
-    return new RegExp(delimiter.source, flags);
+    let stable = stableDelimiterCache.get(delimiter);
+    if (!stable) {
+        const flags = delimiter.flags.includes('g')
+            ? delimiter.flags
+            : `${delimiter.flags}g`;
+        stable = new RegExp(delimiter.source, flags);
+        stableDelimiterCache.set(delimiter, stable);
+    }
+    stable.lastIndex = 0;
+    return stable;
 }
 
 /**
