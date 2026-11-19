@@ -225,6 +225,21 @@ export class AotCtorHost {
         }
     });
 
+
+    it('keeps selector-less view queries on the runtime pipeline', () => {
+        const emitted = transpileAot('aot-query-fallback.ts', `
+import { Component, ElementRef, ViewChild } from '@tsdi/components';
+
+@Component({ selector: 'aot-query-fallback', template: '<div><span #inner></span></div>' })
+export class AotQueryFallback {
+    @ViewChild()
+    inner?: ElementRef;
+}
+`, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotDeco(');
+        expect(emitted).not.toContain('viewChilds:');
+    });
+
     it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';

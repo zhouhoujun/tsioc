@@ -406,11 +406,14 @@ function queryMetadataExpression(decorator: ts.Decorator): ts.Expression | undef
     const factory = ts.factory;
     const args = decoratorArgs(decorator);
     if (args.length === 0) {
-        return factory.createObjectLiteralExpression([
-            factory.createPropertyAssignment('nullable', factory.createTrue())
-        ], false);
+        // No selector means the runtime decorator relies on design:type
+        // metadata; keep those classes on the decorator pipeline.
+        return undefined;
     }
     if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+        if (!args[0].properties.some(property => propertyName(property) === 'selector')) {
+            return undefined;
+        }
         const properties = args[0].properties.map(property => {
             if (!ts.isPropertyAssignment(property)) {
                 return property;
