@@ -312,6 +312,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "TLS config",
                 "description": "Reusable TLS options for outbound nodes"
             },
+            "websocket": {
+                "label": "WebSocket listener",
+                "description": "Shared WebSocket server for WebSocket in/out nodes"
+            },
             "mqtt": {
                 "label": "MQTT broker",
                 "description": "Shared MQTT broker connection for MQTT nodes"
@@ -739,6 +743,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "reply": "Reply with result"
             },
             "websocket-in": {
+                "websocket": "Listener",
                 "host": "Host",
                 "port": "Port",
                 "path": "Path",
@@ -778,6 +783,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "Payload path"
             },
             "websocket-out": {
+                "websocket": "Listener",
                 "url": "URL",
                 "payload": "Payload path",
                 "timeout": "Timeout",
@@ -797,6 +803,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "password": "Password",
                 "tls": "TLS config",
                 "keepalive": "Keepalive"
+            },
+            "websocket": {
+                "host": "Host",
+                "port": "Port",
+                "path": "Path",
+                "tls": "TLS config"
             },
             "file-in": {
                 "path": "Path",
@@ -1931,6 +1943,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "TLS 配置",
                 "description": "供出站节点复用的 TLS 选项"
             },
+            "websocket": {
+                "label": "WebSocket 监听器",
+                "description": "供 WebSocket 输入/输出节点共用的 WebSocket 服务"
+            },
             "mqtt": {
                 "label": "MQTT Broker",
                 "description": "供 MQTT 节点共用的 Broker 连接"
@@ -2358,6 +2374,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "reply": "回复执行结果"
             },
             "websocket-in": {
+                "websocket": "监听器",
                 "host": "主机",
                 "port": "端口",
                 "path": "路径",
@@ -2397,6 +2414,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "载荷路径"
             },
             "websocket-out": {
+                "websocket": "监听器",
                 "url": "URL",
                 "payload": "载荷路径",
                 "timeout": "超时",
@@ -2416,6 +2434,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "password": "密码",
                 "tls": "TLS 配置",
                 "keepalive": "心跳间隔"
+            },
+            "websocket": {
+                "host": "主机",
+                "port": "端口",
+                "path": "路径",
+                "tls": "TLS 配置"
             },
             "file-in": {
                 "path": "路径",

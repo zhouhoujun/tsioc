@@ -753,12 +753,18 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Message')],
         fields: [
+            configField({
+                key: 'websocket',
+                label: 'Listener',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'websocket-listener', create: true, edit: true }
+            }),
             configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0' }),
             configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
             configField({ key: 'path', label: 'Path', type: 'text', placeholder: '/ws', pattern: '^$|^\/[^\s]*$' }),
             configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { host: '0.0.0.0', port: 0, path: '', reply: false }
+        defaultConfig: { websocket: '', host: '0.0.0.0', port: 0, path: '', reply: false }
     },
     {
         type: 'global-config',
@@ -906,12 +912,18 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'url', label: 'URL', type: 'url', required: true, placeholder: 'ws://host:port/path', description: 'ws:// or wss:// endpoint.' }),
+            configField({
+                key: 'websocket',
+                label: 'Listener',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'websocket-listener', create: true, edit: true }
+            }),
+            configField({ key: 'url', label: 'URL', type: 'url', placeholder: 'ws://host:port/path', description: 'ws:// or wss:// endpoint.' }),
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 5000, min: 0, step: 1000, unit: 'ms' }),
             configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; leave empty for plain WebSocket.' })
         ],
-        defaultConfig: { url: '', payload: 'payload', timeout: 5000 }
+        defaultConfig: { websocket: '', url: '', payload: 'payload', timeout: 5000 }
     },
     {
         type: 'tls',
@@ -933,6 +945,31 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'rejectUnauthorized', label: 'Verify certificate', type: 'boolean', defaultValue: true })
         ],
         defaultConfig: { rejectUnauthorized: true }
+    },
+    {
+        type: 'websocket',
+        label: 'WebSocket listener',
+        description: 'Shared WebSocket server for WebSocket in/out nodes',
+        category: 'advanced',
+        configNode: true,
+        resource: 'websocket-listener',
+        icon: '⌁',
+        color: '#0ea5e9',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [],
+        fields: [
+            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0' }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({ key: 'path', label: 'Path', type: 'text', pattern: '^$|^\/[^\s]*$' }),
+            configField({
+                key: 'tls',
+                label: 'TLS config',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'tls', create: true, edit: true }
+            })
+        ],
+        defaultConfig: { host: '0.0.0.0', port: 0, path: '' }
     },
     {
         type: 'mqtt-out',

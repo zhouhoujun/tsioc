@@ -121,6 +121,58 @@ export async function resolveMqttConfig(
     };
 }
 
+/** Resolved listener settings for `websocket-in` / `websocket-out`. */
+export interface WorkflowWebSocketListenerSettings {
+    host: string;
+    port: number;
+    path?: string;
+    tls?: {
+        ca?: string;
+        cert?: string;
+        key?: string;
+        servername?: string;
+        rejectUnauthorized?: boolean;
+    };
+    /** Id of the referenced `websocket` config node, when one is used. */
+    listenerId?: string;
+}
+
+/**
+ * Resolve a `websocket` listener config node. Inline node values win so a
+ * single node can override the shared host/port/path without editing the
+ * config node; when no config node is referenced the node's own fields are
+ * used (the legacy server form).
+ */
+export async function resolveWebSocketListenerConfig(
+    config: Record<string, any>,
+    context: ActivityContext
+): Promise<WorkflowWebSocketListenerSettings> {
+    const listenerId = String(config?.websocket || '').trim();
+    const nodes = (context as any)?.configNodes || {};
+    const shared = listenerId ? nodes[listenerId] : undefined;
+    if (listenerId && !shared) {
+        throw new Error(`WebSocket config not found: ${listenerId}. Add a WebSocket listener config node or clear the reference.`);
+    }
+    const pick = (key: string): any => {
+        const local = config?.[key];
+        if (local !== undefined && local !== null && local !== '') {
+            return local;
+        }
+        return shared?.[key];
+    };
+    const host = String(await resolveCredentialValue(pick('host'), context) ?? '').trim() || '0.0.0.0';
+    const port = Math.max(0, Math.min(65535, Number(pick('port')) || 0));
+    const pathValue = String(await resolveCredentialValue(pick('path'), context) ?? '').trim();
+    const tlsId = String(pick('tls') || '').trim();
+    return {
+        host,
+        port,
+        path: pathValue || undefined,
+        tls: tlsId ? await resolveTlsOptions({ tls: tlsId }, context) : undefined,
+        listenerId: listenerId || undefined
+    };
+}
+
 /**
  * Resolve the TLS options referenced by a node's `tls` field. The referenced
  * `tls` config node lives in the workflow definition and is exposed to the
@@ -1077,7 +1129,8 @@ export async function executeVisualNode(
                 : transport === 'udp'
                     ? (context as any).udpSend
                     : (context as any).webSocketSend;
-            if (typeof sender !== 'function') {
+            const broadcastOnly = transport === 'websocket' && String(config.websocket || '').trim().length > 0;
+            if (!broadcastOnly && typeof sender !== 'function') {
                 return {
                     success: false,
                     error: new Error(
@@ -1092,11 +1145,39 @@ export async function executeVisualNode(
             const timeoutMs = Math.max(0, Number(config.timeout) || 0) || undefined;
             try {
                 if (transport === 'websocket') {
+                    const listenerId = String(config.websocket || '').trim();
+                    if (listenerId) {
+                        const broadcast = (context as any).webSocketBroadcast;
+                        if (typeof broadcast !== 'function') {
+                            return {
+                                success: false,
+                                error: new Error(
+                                    'WebSocket listener broadcasting requires a workflow host with listener access. '
+                                    + 'Run the workflow with `tsdi-agent serve` or inject a broadcaster.'
+                                ),
+                                data: { nodeId: node.id, transport }
+                            };
+                        }
+                        const settings = await resolveWebSocketListenerConfig(config, context);
+                        const clients = await broadcast({ ...settings, payload: body });
+                        return {
+                            success: true,
+                            data: {
+                                nodeId: node.id,
+                                transport,
+                                listener: listenerId,
+                                clients: Number(clients) || 0,
+                                bytes: body.length
+                            }
+                        };
+                    }
                     const url = String(await resolveCredentialValue(config.url, context) ?? '').trim();
                     if (!url) {
                         return {
                             success: false,
-                            error: new Error('WebSocket out needs a ws:// or wss:// URL.'),
+                            error: new Error(
+                                'WebSocket out needs a ws:// or wss:// URL, or a shared WebSocket listener config.'
+                            ),
                             data: { nodeId: node.id }
                         };
                     }
@@ -1232,6 +1313,7 @@ export async function executeVisualNode(
         }
         case 'global-config':
         case 'mqtt':
+        case 'websocket':
         case 'tls': {
             // Config node: it only carries settings for other nodes.
             return {

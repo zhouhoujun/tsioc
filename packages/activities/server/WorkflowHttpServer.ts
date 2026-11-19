@@ -62,6 +62,7 @@ import {
 } from './WorkflowExecutionStore';
 import { WorkflowMqttTransport } from './WorkflowMqtt';
 import { WorkflowNetTransport } from './WorkflowNetTransport';
+import { WorkflowWebSocketTransport } from './WorkflowWebSocket';
 import { WorkflowFileTransport } from './WorkflowFileTransport';
 import {
     InMemoryWorkflowContextStore,
@@ -210,6 +211,7 @@ export class WorkflowHttpController {
         @Inject(WORKFLOW_CREDENTIAL_STORE) private credentials: WorkflowCredentialStore,
         private mqtt: WorkflowMqttTransport,
         private netTransport: WorkflowNetTransport,
+        private webSocketTransport: WorkflowWebSocketTransport,
         private fileTransport: WorkflowFileTransport,
         @Inject(WORKFLOW_CONTEXT_STORE) private contextStore: WorkflowContextStore,
         private execution: VisualWorkflowService
@@ -220,6 +222,7 @@ export class WorkflowHttpController {
         this.execution.setTcpSender(message => this.netTransport.sendTcp(message));
         this.execution.setUdpSender(message => this.netTransport.sendUdp(message));
         this.execution.setWebSocketSender(message => this.netTransport.sendWebSocket(message));
+        this.execution.setWebSocketBroadcaster(message => this.webSocketTransport.broadcast(message));
         this.execution.setContextStore(this.contextStore);
         this.execution.setFileAccess({
             read: request => this.fileTransport.read(request),
@@ -1276,6 +1279,7 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
             WorkflowScheduleManager,
             WorkflowMqttTransport,
             WorkflowNetTransport,
+            WorkflowWebSocketTransport,
             ...features,
             // Register MIME providers after the transport feature. The feature
             // also imports MimeModule exports; re-registering here ensures the

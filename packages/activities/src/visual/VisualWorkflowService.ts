@@ -156,6 +156,15 @@ export interface WorkflowWebSocketSendRequest {
     tls?: WorkflowTlsOptions;
 }
 
+/** Broadcast payload for `websocket-out` when it references a shared listener. */
+export interface WorkflowWebSocketBroadcastRequest {
+    host: string;
+    port: number;
+    path?: string;
+    payload: string;
+    tls?: WorkflowTlsOptions;
+}
+
 let fallbackConfigRegistry: WorkflowNodeRegistry | undefined;
 
 /**
@@ -216,6 +225,7 @@ export class VisualWorkflowService {
     private tcpSender?: (message: WorkflowTcpSendRequest) => Promise<void> | void;
     private udpSender?: (message: WorkflowUdpSendRequest) => Promise<void> | void;
     private webSocketSender?: (message: WorkflowWebSocketSendRequest) => Promise<void> | void;
+    private webSocketBroadcaster?: (message: WorkflowWebSocketBroadcastRequest) => Promise<number> | number;
     private readonly registry: WorkflowNodeRegistry;
     private readonly pathInterceptor = new VisualExecutionPathInterceptor();
     private readonly policyInterceptor = new WorkflowNodePolicyInterceptor();
@@ -519,6 +529,13 @@ export class VisualWorkflowService {
         this.webSocketSender = sender;
     }
 
+    /** Host transport used by `websocket-out` when a shared listener is selected. */
+    setWebSocketBroadcaster(
+        broadcaster?: (message: WorkflowWebSocketBroadcastRequest) => Promise<number> | number
+    ): void {
+        this.webSocketBroadcaster = broadcaster;
+    }
+
     /** Host file access for `file-in` / `file-out` (workspace-sandboxed). */
     setFileAccess(access?: {
         read?: (request: WorkflowFileReadRequest) => Promise<WorkflowFileReadResult> | WorkflowFileReadResult;
@@ -721,6 +738,9 @@ export class VisualWorkflowService {
                 : undefined,
             webSocketSend: this.webSocketSender
                 ? (message: WorkflowWebSocketSendRequest) => this.webSocketSender!(message)
+                : undefined,
+            webSocketBroadcast: this.webSocketBroadcaster
+                ? (message: WorkflowWebSocketBroadcastRequest) => this.webSocketBroadcaster!(message)
                 : undefined,
             fileRead: this.fileReader
                 ? (request: WorkflowFileReadRequest) => this.fileReader!(request)

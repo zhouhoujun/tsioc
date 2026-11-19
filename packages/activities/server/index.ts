@@ -10,3 +10,4 @@ export * from './WorkflowMqtt';
 export * from './WorkflowNetTransport';
 export * from './WorkflowFileTransport';
 export * from './WorkflowContextStore';
+export * from './WorkflowWebSocket';

@@ -136,6 +136,37 @@ describe('Workflow outbound transports', () => {
         }
     });
 
+    it('broadcasts through a shared WebSocket listener config', async () => {
+        const requests: any[] = [];
+        service.setWebSocketBroadcaster(message => {
+            requests.push(message);
+            return 3;
+        });
+        const listener = registry.createNode('websocket', { x: 0, y: 0 }, {
+            id: 'websocket_1',
+            config: { host: '127.0.0.1', port: 9099, path: '/ws' }
+        });
+        const outNode = registry.createNode('websocket-out', { x: 200, y: 0 }, {
+            id: 'websocket_out_1',
+            config: { websocket: 'websocket_1', payload: 'payload' }
+        });
+        const result = await service.execute({
+            id: 'websocket-broadcast',
+            name: 'WebSocket broadcast',
+            nodes: [listener, outNode],
+            connections: []
+        }, { payload: { ok: true } });
+        expect(result.success).toBe(true);
+        expect(requests).toHaveLength(1);
+        expect(requests[0]).toMatchObject({
+            host: '127.0.0.1',
+            port: 9099,
+            path: '/ws',
+            payload: '{"ok":true}'
+        });
+        expect((result.data as any).clients).toEqual(3);
+    });
+
     it('resolves a TLS config node and its credential references', async () => {
         const sent: any[] = [];
         service.setTcpSender(message => {

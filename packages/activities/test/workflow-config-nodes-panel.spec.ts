@@ -35,14 +35,16 @@ describe('Workflow configuration-node index', () => {
         });
 
         const groups = panel().groups;
-        expect(groups.map(group => group.resource)).toEqual(['mqtt-broker', 'tls']);
+        expect(groups.map(group => group.resource)).toEqual(['mqtt-broker', 'tls', 'websocket-listener']);
         expect(groups[0].type).toBe('mqtt');
         expect(groups[0].items.map(item => item.name)).toEqual(['prod']);
         expect(groups[0].items[0].summary).toBe('mqtt://prod:1883');
         expect(groups[0].items[0].usedBy.length).toBe(1);
-        // The TLS group has no records yet, but still offers its create button.
+        // Empty groups still offer their create button.
         expect(groups[1].items).toEqual([]);
         expect(groups[1].type).toBe('tls');
+        expect(groups[2].items).toEqual([]);
+        expect(groups[2].type).toBe('websocket');
     });
 
     it('labels usage and distinguishes used from unused records', () => {
@@ -83,6 +85,22 @@ describe('Workflow configuration-node index', () => {
         ]);
         // Revealing drops the overlay so the canvas is visible again.
         expect(component.visible).toBe(false);
+    });
+
+    it('lists websocket listeners and exposes them to websocket nodes', () => {
+        const listener = designer.addNode('websocket', { x: 80, y: 80 }, {
+            name: 'hub', config: { host: '127.0.0.1', port: 8080, path: '/ws' }
+        })!;
+        const input = designer.addNode('websocket-in', { x: 300, y: 120 }, {
+            config: { websocket: listener.id }
+        })!;
+
+        const group = panel().groups.find(entry => entry.resource === 'websocket-listener')!;
+        expect(group.type).toBe('websocket');
+        expect(group.items.map(item => item.id)).toEqual([listener.id]);
+        expect(group.items[0].usedBy.length).toBe(1);
+        const signature = configNodesSignature(designer.definition, registry, input.type);
+        expect(signature).toContain('hub');
     });
 
     it('keeps reference pickers in the inspector in sync with record edits', () => {

@@ -7,6 +7,7 @@ import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowNodeRegistry } from '../src/visual/node-registry';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { WorkflowInboundRunner } from '../server/WorkflowInboundRunner';
+import { WorkflowWebSocketRegistry } from '../server/WorkflowWebSocket';
 import { VisualWorkflowDefinition } from '../src/visual/types';
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs = 4000): Promise<T> {
@@ -154,6 +155,115 @@ describe('Workflow inbound runner', () => {
             await handle.stop();
         }
         expect(handle.running).toBe(false);
+    });
+
+    it('shares one WebSocket listener between nodes that reference a config node', async () => {
+        const seen: string[] = [];
+        const definition: VisualWorkflowDefinition = {
+            id: 'websocket-shared',
+            name: 'WebSocket shared listener',
+            nodes: [
+                registry.createNode('websocket', { x: 0, y: 0 }, {
+                    id: 'websocket_1',
+                    config: { host: '127.0.0.1', port: 0, path: '/shared' }
+                }),
+                registry.createNode('websocket-in', { x: 0, y: 0 }, {
+                    id: 'ws_a',
+                    config: { websocket: 'websocket_1', reply: false }
+                }),
+                registry.createNode('websocket-in', { x: 0, y: 0 }, {
+                    id: 'ws_b',
+                    config: { websocket: 'websocket_1', reply: false }
+                }),
+                registry.createNode('task', { x: 0, y: 0 }, { id: 'echo_a', config: { action: 'echoA' } }),
+                registry.createNode('task', { x: 0, y: 0 }, { id: 'echo_b', config: { action: 'echoB' } })
+            ],
+            connections: [
+                { id: 'ca', sourceNodeId: 'ws_a', sourcePort: 'out', targetNodeId: 'echo_a', targetPort: 'in' },
+                { id: 'cb', sourceNodeId: 'ws_b', sourcePort: 'out', targetNodeId: 'echo_b', targetPort: 'in' }
+            ]
+        };
+        const handle = await runner.start(definition, {
+            context: {
+                actions: {
+                    echoA: () => {
+                        seen.push('a');
+                        return { echo: 'a' };
+                    },
+                    echoB: () => {
+                        seen.push('b');
+                        return { echo: 'b' };
+                    }
+                }
+            }
+        });
+        try {
+            // One server for the shared listener, reported once per node.
+            expect(handle.ports.length).toEqual(2);
+            expect(handle.ports[0]).toEqual(handle.ports[1]);
+            const client = new WebSocket(`ws://127.0.0.1:${handle.ports[0]}/shared`);
+            try {
+                await withTimeout(new Promise<void>((resolve, reject) => {
+                    client.once('open', () => {
+                        client.send('hello');
+                        resolve();
+                    });
+                    client.once('error', reject);
+                }));
+                await withTimeout(new Promise<void>(resolve => {
+                    const tick = () => seen.length >= 2 ? resolve() : setTimeout(tick, 10);
+                    tick();
+                }));
+                expect(seen.sort()).toEqual(['a', 'b']);
+            } finally {
+                client.close();
+            }
+        } finally {
+            await handle.stop();
+        }
+    });
+
+    it('keeps a shared listener alive for websocket-out broadcasts', async () => {
+        const definition: VisualWorkflowDefinition = {
+            id: 'websocket-out-only',
+            name: 'WebSocket out listener',
+            nodes: [
+                registry.createNode('websocket', { x: 0, y: 0 }, {
+                    id: 'websocket_1',
+                    config: { host: '127.0.0.1', port: 0, path: '/broadcast' }
+                }),
+                registry.createNode('websocket-out', { x: 200, y: 0 }, {
+                    id: 'ws_out_1',
+                    config: { websocket: 'websocket_1', payload: 'payload' }
+                })
+            ],
+            connections: []
+        };
+        const listeners = new WorkflowWebSocketRegistry();
+        const handle = await runner.start(definition, { webSocketRegistry: listeners });
+        expect(handle.ports.length).toEqual(1);
+        const client = new WebSocket(`ws://127.0.0.1:${handle.ports[0]}/broadcast`);
+        try {
+            await withTimeout(new Promise<void>((resolve, reject) => {
+                client.once('open', () => resolve());
+                client.once('error', reject);
+            }));
+            const message = new Promise<string>((resolve, reject) => {
+                client.once('message', data => resolve(data.toString()));
+                client.once('error', reject);
+            });
+            const sent = await listeners.broadcast({
+                host: '127.0.0.1',
+                port: handle.ports[0],
+                path: '/broadcast'
+            }, 'broadcast');
+            expect(sent).toEqual(1);
+            expect(await withTimeout(message)).toEqual('broadcast');
+        } finally {
+            client.close();
+            await handle.stop();
+        }
+        expect(listeners.listenerCount).toEqual(0);
     });
 
     it('starts no listener for workflows without inbound nodes', async () => {

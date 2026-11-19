@@ -477,6 +477,11 @@ host/port (WebSocket also accepts an upgrade `path`); `0` selects a free port an
 the handle reports the bound ports. WebSocket listeners load the optional `ws`
 package on demand.
 
+WebSocket nodes can share a `websocket` listener config node instead of
+repeating host/port/path (see below). Nodes that reference the same listener
+share one server, and the config node's fields are used unless the node
+overrides them inline.
+
 ```typescript
 import { WorkflowInboundRunner } from '@tsdi/activities/server';
 
@@ -603,7 +608,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 65 registered node types by label, description or type,
+- searchable palette: filter 66 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -845,6 +850,10 @@ through host transports:
   browser-only hosts get a clear error instead of a silent no-op
 - `payload` is a context path; non-string values are JSON-encoded
 - `timeout` bounds connect/send operations
+- `websocket-out` either connects to `url` (client mode) or, when it references
+  a `websocket` listener config node, broadcasts to every client connected to
+  that shared listener. Broadcasting reports the client count and fails with a
+  clear error when the listener is not running.
 
 ### TLS config
 
@@ -862,6 +871,12 @@ Referenced by `tcp-out` / `websocket-out` / `mqtt-out` through `"tls": "tls_1"`.
 The runtime resolves the node from the definition, resolves `{{credential:name}}`
 values, and hands the result to the transport. A missing id fails the node with
 `TLS config not found: <id>`.
+
+`websocket` is a config node too: it describes one WebSocket listener
+(`host`, `port`, `path` and an optional `tls` reference). `websocket-in` nodes
+that reference it subscribe to the shared server; `websocket-out` nodes that
+reference it broadcast to the connected clients instead of opening a new
+client connection.
 
 ### HTTP in security and uploads
 

@@ -6,7 +6,8 @@ import { ActivityContext, ActivityResult } from '../src/activities/Activity';
 import { VisualWorkflowDefinition, WorkflowExecutionOptions } from '../src/visual/types';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { sharedMqttRegistry, WorkflowMqttRegistry } from './WorkflowMqtt';
-import { resolveMqttConfig } from '../src/visual/workflow-runtime';
+import { resolveMqttConfig, resolveWebSocketListenerConfig } from '../src/visual/workflow-runtime';
+import { sharedWebSocketRegistry, WorkflowWebSocketRegistry } from './WorkflowWebSocket';
 import { configNodeMap } from '../src/visual/VisualWorkflowService';
 
 /** Message delivered to a `tcp-in` / `udp-in` node through `context.inbound`. */
@@ -38,6 +39,8 @@ export interface WorkflowInboundOptions {
     credentialResolver?: (name: string) => Promise<string | undefined> | string | undefined;
     /** Share one broker connection across listeners (defaults to the process registry). */
     mqttRegistry?: WorkflowMqttRegistry;
+    /** Share one WebSocket listener across nodes (defaults to the process registry). */
+    webSocketRegistry?: WorkflowWebSocketRegistry;
     /** Sandbox root for `watch` paths (falls back to context.workspaceRoot). */
     workspaceRoot?: string;
 }
@@ -164,6 +167,7 @@ export class WorkflowInboundRunner {
         };
 
         const mqttRegistry = options.mqttRegistry || sharedMqttRegistry;
+        const webSocketRegistry = options.webSocketRegistry || sharedWebSocketRegistry;
         const configNodes = options.configNodes || configNodeMap(definition);
         const mqttUnsubscribes: Array<() => Promise<void>> = [];
         const watchers: fs.FSWatcher[] = [];
@@ -331,81 +335,32 @@ export class WorkflowInboundRunner {
                     }
                 });
             } else if (node.type === 'websocket-in') {
-                let WebSocketServer: any;
+                let settings;
                 try {
-                    const module: any = await import('ws');
-                    WebSocketServer = module.WebSocketServer || module.default?.WebSocketServer;
-                } catch {
-                    WebSocketServer = undefined;
-                }
-                if (!WebSocketServer) {
+                    settings = await resolveWebSocketListenerConfig(config, {
+                        configNodes,
+                        resolveCredential: options.credentialResolver
+                    } as any);
+                } catch (error) {
                     await this.stopListeners(listeners, sockets);
-                    throw new Error('WebSocket inbound requires the optional "ws" package.');
+                    throw error;
                 }
-                const path = String(config.path || '');
-                const server = new WebSocketServer({ host, port, path: path || undefined });
-                const clients = new Set<any>();
-                server.on('connection', (socket: any) => {
-                    clients.add(socket);
-                    socket.on('close', () => clients.delete(socket));
-                    socket.on('error', () => clients.delete(socket));
-                    socket.on('message', (chunk: any) => {
-                        const remote = typeof socket._socket?.remoteAddress === 'string'
-                            ? { address: socket._socket.remoteAddress, port: socket._socket.remotePort }
-                            : undefined;
+                if (options.host) {
+                    settings = { ...settings, host: String(options.host) };
+                }
+                try {
+                    const handle = await webSocketRegistry.listen(settings, message => {
                         void dispatch(
                             node.id,
                             'websocket',
-                            chunk?.toString ? chunk.toString('utf8') : String(chunk ?? ''),
-                            remote,
-                            shouldReply ? payload => {
-                                try {
-                                    socket.send(payload);
-                                } catch (error) {
-                                    options.onError?.(error as Error);
-                                }
-                            } : undefined
+                            message.data,
+                            message.remote,
+                            shouldReply ? message.reply : undefined
                         );
                     });
-                });
-                try {
-                    const bound = await new Promise<number>((resolve, reject) => {
-                        const onError = (error: Error) => reject(error);
-                        server.once('error', onError);
-                        server.once('listening', () => {
-                            server.off('error', onError);
-                            const address = server.address();
-                            resolve(typeof address === 'object' && address ? address.port : port);
-                        });
-                    });
-                    ports.push(bound);
-                    listeners.push({
-                        port: bound,
-                        close: () => new Promise(resolve => {
-                            clients.forEach(client => {
-                                try {
-                                    client.terminate?.();
-                                } catch {
-                                    // already closed
-                                }
-                            });
-                            clients.clear();
-                            server.close(() => resolve());
-                        })
-                    });
+                    ports.push(handle.port);
+                    listeners.push({ port: handle.port, close: () => handle.close() });
                 } catch (error) {
-                    clients.forEach(client => {
-                        try {
-                            client.terminate?.();
-                        } catch {
-                            // already closed
-                        }
-                    });
-                    try {
-                        server.close();
-                    } catch {
-                        // already closed
-                    }
                     await this.stopListeners(listeners, sockets);
                     throw error;
                 }
@@ -451,6 +406,35 @@ export class WorkflowInboundRunner {
                     await this.stopListeners(listeners, sockets);
                     throw error;
                 }
+            }
+        }
+
+        // `websocket-out` nodes that broadcast through a shared listener keep
+        // that server alive for the lifetime of this run/deployment.
+        for (const node of definition.nodes || []) {
+            if (node.type !== 'websocket-out' || !String(node.config?.websocket || '').trim()) {
+                continue;
+            }
+            let settings;
+            try {
+                settings = await resolveWebSocketListenerConfig(node.config || {}, {
+                    configNodes,
+                    resolveCredential: options.credentialResolver
+                } as any);
+            } catch (error) {
+                await this.stopListeners(listeners, sockets);
+                throw error;
+            }
+            if (options.host) {
+                settings = { ...settings, host: String(options.host) };
+            }
+            try {
+                const handle = await webSocketRegistry.listen(settings);
+                ports.push(handle.port);
+                listeners.push({ port: handle.port, close: () => handle.close() });
+            } catch (error) {
+                await this.stopListeners(listeners, sockets);
+                throw error;
             }
         }
 
