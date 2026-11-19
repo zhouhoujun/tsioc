@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { assign, omit, pick, forIn, defer, delay, getTypes, getTypeChain, getParentType, hasItem, isBaseOf } from '../src/utils/lang';
+import { assign, omit, pick, forIn, defer, delay, getTypes, getTypeChain, getParentType, hasItem, isBaseOf, deepTypeChain } from '../src/utils/lang';
 import { getTypeName, isBasicType } from '../src/metadata/type';
 
 describe('Utils Lang Functions', () => {
@@ -169,8 +169,21 @@ describe('Utils Lang Functions', () => {
         });
     });
 
-    describe('getParentType', () => {
-        it('should return parent type', () => {
+    describe('deepTypeChain', () => {
+        it('caches per constructor without inheriting a parent cache', () => {
+            class Parent {}
+            class Child extends Parent {}
+            const parentChain: any[] = [];
+            const childChain: any[] = [];
+            deepTypeChain(Parent, type => { parentChain.push(type); });
+            deepTypeChain(Child, type => { childChain.push(type); });
+            expect(parentChain[0]).toBe(Parent);
+            expect(childChain[0]).toBe(Child);
+            expect(childChain).toContain(Parent);
+        });
+    });
+
+    describe('getParentType', () => {        it('should return parent type', () => {
             class Parent {}
             class Child extends Parent {}
             const parent = getParentType(Child);

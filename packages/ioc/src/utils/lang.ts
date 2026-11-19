@@ -228,12 +228,35 @@ export function getTypeChain(target: AbstractType): AbstractType[] {
  * @param {AbstractType} target
  * @param {(token: AbstractType) => any} express
  */
+const TYPE_CHAIN_CACHE = Symbol('TYPE_CHAIN_CACHE');
+
 export function deepTypeChain(target: AbstractType, express: (token: AbstractType) => any): void {
-    while (target) {
-        if (express(target) === false) {
-            break
+    if (!target) {
+        return;
+    }
+    let chain = (target as any)[TYPE_CHAIN_CACHE] as AbstractType[] | undefined;
+    if (!chain || !Object.prototype.hasOwnProperty.call(target, TYPE_CHAIN_CACHE)) {
+        chain = [];
+        let current = target;
+        while (current) {
+            chain.push(current);
+            current = getParentType(current);
         }
-        target = getParentType(target)
+        try {
+            Object.defineProperty(target, TYPE_CHAIN_CACHE, {
+                value: chain,
+                configurable: true,
+                writable: true,
+                enumerable: false
+            });
+        } catch {
+            // Frozen/sealed constructors fall back to walking the chain.
+        }
+    }
+    for (let i = 0, len = chain.length; i < len; i++) {
+        if (express(chain[i]) === false) {
+            break;
+        }
     }
 }
 
