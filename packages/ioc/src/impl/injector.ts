@@ -43,7 +43,7 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
     @nonEnumerable
     protected _runtime: Runtime | null = null;
 
-    protected _readyDefer = defer<void>();
+    protected _readyDefer?: Defer<void>;
     /**
      * factories.
      *
@@ -84,8 +84,12 @@ export abstract class AbstractInjector<TParent extends Injector = Injector> exte
         return true;
     }
 
+    protected getReadyDefer(): Defer<void> {
+        return this._readyDefer ?? (this._readyDefer = defer<void>());
+    }
+
     get ready() {
-        return this._readyDefer.promise
+        return this._readyDefer?.promise ?? Promise.resolve()
     }
 
     getRuntime(): Runtime {
@@ -346,7 +350,7 @@ export function assertNotDestroyed(injector: Injector): void {
 export class DefaultEnvironmentInjector extends AbstractInjector implements EnvironmentInjector {
     constructor(providers?: Provider[]) {
         super(null!, 'platform');
-        deferProcessProviders(this, providers, this._readyDefer)
+        deferProcessProviders(this, providers, () => this.getReadyDefer())
     }
 
     protected override initScope(scope?: InjectorScope): void {
@@ -367,7 +371,7 @@ export class StaticInjector extends AbstractInjector {
 
     constructor(parent: Injector, providers?: Provider[], scope?: InjectorScope) {
         super(parent, scope ?? 'static', true);
-        deferProcessProviders(this, providers, this._readyDefer)
+        deferProcessProviders(this, providers, () => this.getReadyDefer())
     }
 
     protected override initScope(scope?: InjectorScope): void {
@@ -390,7 +394,7 @@ export class DefaultInjector extends AbstractInjector {
 
     constructor(parent: Injector, providers?: Provider[], scope?: Omit<InjectorScope, 'static' | 'platform'>, isStatic?: boolean) {
         super(parent, scope as InjectorScope, isStatic)
-        deferProcessProviders(this, providers, this._readyDefer)
+        deferProcessProviders(this, providers, () => this.getReadyDefer())
     }
 
     override initScope(scope?: InjectorScope): void {
@@ -826,12 +830,11 @@ export namespace InjectUtil {
     }
 }
 
-export function deferProcessProviders(injector: Injector, providers: Provider[] | undefined, defer: Defer<void>) {
+export function deferProcessProviders(injector: Injector, providers: Provider[] | undefined, getDefer?: () => Defer<void>) {
     const ret = processProviders(injector, providers);
-    if (ret) {
+    if (ret && getDefer) {
+        const defer = getDefer();
         ret.then(defer.resolve).catch(defer.reject);
-    } else {
-        defer.resolve();
     }
 }
 

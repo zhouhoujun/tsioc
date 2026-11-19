@@ -74,7 +74,7 @@ export class ContextInjector<TParent extends Injector = Injector> extends Abstra
             this.records.set(Resolver, createRecord(() => new DefaultResolver(this.getResolver())));
         }
 
-        deferProcessProviders(this, options.providers, this._readyDefer);
+        deferProcessProviders(this, options.providers, () => this.getReadyDefer());
 
         this.targetType = options.targetType;
         this.propertyKey = options.propertyKey;

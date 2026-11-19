@@ -53,7 +53,7 @@ export class DefaultModuleRef<T = any> extends DefaultInjector implements Module
 
         return mergePromise(ps, () => {
             this._instance = this.get(this._type);
-            this._readyDefer.resolve()
+            this.getReadyDefer().resolve()
         });
     }
 
