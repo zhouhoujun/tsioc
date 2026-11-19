@@ -16,12 +16,12 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Module', 'Component', 'Directive'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Module', 'Configuration', 'Component', 'Directive'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
 const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
-    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive', 'Autorun'
+    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive', 'Autorun', 'Bean'
 ]);
 
 
@@ -294,6 +294,21 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
                 : args.length === 1 && ts.isObjectLiteralExpression(args[0])
                     ? args[0]
                     : undefined;
+        case 'Configuration': {
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([factory.createPropertyAssignment('static', factory.createTrue())], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                const hasStatic = args[0].properties.some(property => propertyName(property) === 'static' || propertyName(property) === 'singleton');
+                return hasStatic
+                    ? args[0]
+                    : factory.updateObjectLiteralExpression(args[0], [
+                        ...args[0].properties,
+                        factory.createPropertyAssignment('static', factory.createTrue())
+                    ]);
+            }
+            return undefined;
+        }
         case 'Pipe':
             if (args.length === 0) {
                 return factory.createObjectLiteralExpression([
@@ -695,6 +710,81 @@ function attachMethodMetadata(metadata: ts.Expression, node: ts.ClassDeclaration
     return withProperty(metadata, 'methodMetadatas', ts.factory.createArrayLiteralExpression(entries, false));
 }
 
+function beanMetadataExpression(decorator: ts.Decorator, member: ts.ClassElement): ts.Expression | undefined {
+    const factory = ts.factory;
+    const args = decoratorArgs(decorator);
+    let options: ts.Expression | undefined;
+    let provide: ts.Expression | undefined;
+    if (args[0] && ts.isObjectLiteralExpression(args[0])) {
+        options = args[0];
+        provide = optionProperty(options, 'provide');
+    } else if (args[0]) {
+        provide = selectorValueExpression(args[0]);
+        if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+            options = args[1];
+        } else if (args.length > 1) {
+            return undefined;
+        }
+    }
+    if (!provide) {
+        return undefined;
+    }
+    const properties: ts.ObjectLiteralElementLike[] = [
+        factory.createPropertyAssignment('provide', provide)
+    ];
+    if (options) {
+        for (const property of (options as ts.ObjectLiteralExpression).properties) {
+            const name = propertyName(property);
+            if (name === 'provide' || name === 'alias' || !ts.isPropertyAssignment(property)) {
+                continue;
+            }
+            properties.push(property);
+        }
+    }
+    return factory.createObjectLiteralExpression(properties, false);
+}
+
+function attachConfigurationMetadata(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
+    const configuration = decoratorsOf(node).find(decorator => decoratorName(decorator) === 'Configuration');
+    if (!configuration) {
+        return metadata;
+    }
+    const beans: ts.Expression[] = [];
+    for (const member of node.members) {
+        const key = memberKey(member);
+        if (!key) {
+            continue;
+        }
+        for (const decorator of decoratorsOf(member)) {
+            if (decoratorName(decorator) !== 'Bean') {
+                continue;
+            }
+            const bean = beanMetadataExpression(decorator, member);
+            if (!bean) {
+                continue;
+            }
+            const withKey = withProperty(bean, 'propertyKey', ts.factory.createStringLiteral(key));
+            beans.push(ts.factory.createObjectLiteralExpression([
+                ts.factory.createPropertyAssignment('propertyKey', ts.factory.createStringLiteral(key)),
+                ts.factory.createPropertyAssignment('metadata', withKey),
+                ts.factory.createPropertyAssignment('decorType', ts.factory.createStringLiteral(ts.isMethodDeclaration(member) ? 'method' : 'property'))
+            ], false));
+        }
+    }
+    if (!beans.length) {
+        return metadata;
+    }
+    const configOptions = precompiledDecoratorMetadata(configuration);
+    const configProviders = optionProperty(configOptions, 'providers');
+    const properties: ts.ObjectLiteralElementLike[] = [
+        ts.factory.createPropertyAssignment('beans', ts.factory.createArrayLiteralExpression(beans, false))
+    ];
+    if (configProviders) {
+        properties.push(ts.factory.createPropertyAssignment('providers', configProviders));
+    }
+    return withProperty(metadata, 'aotConfiguration', ts.factory.createObjectLiteralExpression(properties, false));
+}
+
 function attachServiceMembers(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
     const properties: ts.Expression[] = [];
     const runnables: ts.Expression[] = [];
@@ -740,6 +830,7 @@ function memberMetadataExpression(decorator: ts.Decorator, member: ts.ClassEleme
     switch (name) {
         case 'NoReactive':
         case 'Autorun':
+        case 'Bean':
             return factory.createObjectLiteralExpression([], false);
         case 'ViewChild':
         case 'ViewChildren':
@@ -1169,6 +1260,12 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 hasInjection = true;
                 continue;
             }
+            if (name === 'Bean') {
+                if (!beanMetadataExpression(decorator, member)) {
+                    return false;
+                }
+                continue;
+            }
             if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host' || name === 'Nullable' || name === 'NoReactive') {
                 continue;
             }
@@ -1577,6 +1674,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             precompiledMetadata = attachServiceMembers(precompiledMetadata, node);
                             precompiledMetadata = attachMethodMetadata(precompiledMetadata, node, true);
                             precompiledMetadata = attachNoReactiveMetadata(precompiledMetadata, node);
+                            precompiledMetadata = attachConfigurationMetadata(precompiledMetadata, node);
                         }
                         compiledTypeRecords = genericClassDecorators.slice().reverse().map(decorator =>
                             factory.createArrayLiteralExpression([

@@ -541,6 +541,30 @@ export class ImpurePipe {}
         expect(annotation.pure).toBe(false);
     });
 
+
+    it('precompiles Configuration bean providers', () => {
+        const source = `
+import { Bean, Configuration } from '@tsdi/core';
+
+@Configuration()
+export class AotConfiguration {
+    @Bean('BEAN_TOKEN')
+    makeBean() { return 'bean-value'; }
+}
+`;
+        const emitted = transpileAot('aot-config.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('aotConfiguration');
+        expect(emitted).toContain('BEAN_TOKEN');
+
+        const exported = loadModule(source);
+        const annotation: any = getClassRef(exported.AotConfiguration).getAnnotation();
+        expect(annotation.aotConfiguration?.beans?.length).toBe(1);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.AotConfiguration);
+        expect(container.get('BEAN_TOKEN')).toBe('bean-value');
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';
