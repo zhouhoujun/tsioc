@@ -666,17 +666,21 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
     for (const member of node.members) {
         if (ts.isConstructorDeclaration(member)) {
             for (const parameter of member.parameters) {
-                for (const decorator of decoratorsOf(parameter)) {
+                const decorators = decoratorsOf(parameter);
+                if (!decorators.length) {
+                    continue;
+                }
+                for (const decorator of decorators) {
                     const name = decoratorName(decorator);
-                    if (name === 'Optional' || name === 'Self' || name === 'SkipSelf' || name === 'Host') {
-                        continue;
-                    }
-                    if (name !== 'Inject' && name !== 'Autowired') {
+                    if (name !== 'Inject' && name !== 'Autowired'
+                        && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host') {
                         return false;
                     }
-                    if (!decoratorArgs(decorator)[0]) {
-                        return false;
-                    }
+                }
+                // Bare @Inject() needs design:type; only allow it when the plan
+                // can be materialized (type checker + concrete class).
+                if (!parameterDependency(parameter)) {
+                    return false;
                 }
             }
             continue;
