@@ -667,9 +667,29 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'DELETE', value: 'DELETE' }
                 ]
             }),
-            configField({ key: 'path', label: 'Path', type: 'text', placeholder: '/orders', description: 'Request path this node serves. Leave empty to accept any path.', pattern: '^$|^\/[^\s]*$' })
+            configField({ key: 'path', label: 'Path', type: 'text', placeholder: '/orders', description: 'Request path this node serves. Leave empty to accept any path.', pattern: '^$|^\/[^\s]*$' }),
+            configField({
+                key: 'authType',
+                label: 'Authentication',
+                type: 'select',
+                defaultValue: 'none',
+                options: [
+                    { label: 'None', value: 'none' },
+                    { label: 'Basic', value: 'basic' },
+                    { label: 'Bearer token', value: 'bearer' }
+                ],
+                group: 'Security'
+            }),
+            configField({ key: 'username', label: 'Username', type: 'text', group: 'Security', visibleWhen: { key: 'authType', equals: 'basic' } }),
+            configField({ key: 'password', label: 'Password', type: 'password', group: 'Security', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'token', label: 'Bearer token', type: 'password', group: 'Security', visibleWhen: { key: 'authType', equals: 'bearer' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'cors', label: 'Enable CORS', type: 'boolean', defaultValue: false, group: 'Security', description: 'Answer preflight requests and allow browser callers.' }),
+            configField({ key: 'corsOrigin', label: 'Allowed origin', type: 'text', defaultValue: '*', group: 'Security', visibleWhen: { key: 'cors', equals: true } }),
+            configField({ key: 'corsHeaders', label: 'Allowed headers', type: 'text', defaultValue: 'content-type, authorization', group: 'Security', visibleWhen: { key: 'cors', equals: true } }),
+            configField({ key: 'responseHeaders', label: 'Default response headers', type: 'json', defaultValue: {}, placeholder: '{ "cache-control": "no-store" }', group: 'Response' }),
+            configField({ key: 'upload', label: 'Accept file uploads', type: 'boolean', defaultValue: false, group: 'Response', description: 'Parse multipart bodies into request.files / request.fields.' })
         ],
-        defaultConfig: { method: 'ANY', path: '' }
+        defaultConfig: { method: 'ANY', path: '', authType: 'none', cors: false, responseHeaders: {}, upload: false }
     },
     {
         type: 'http-response',

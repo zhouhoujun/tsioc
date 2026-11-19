@@ -1025,6 +1025,8 @@ export async function executeVisualNode(
                     query: request.query || {},
                     headers: request.headers || {},
                     body: request.body,
+                    files: (request as any).files || {},
+                    fields: (request as any).fields || {},
                     payload: request.body
                 }
             };
@@ -1299,7 +1301,11 @@ export async function executeVisualNode(
             const body = bodyPath ? resolveWorkflowValue(bodyPath, context) : undefined;
             const statusCode = Math.max(100, Math.min(599, Number(config.statusCode) || 200));
             sink.statusCode = statusCode;
-            sink.headers = coerceJson(config.headers) || {};
+            // Merge so http-in default headers survive; the response node wins.
+            sink.headers = {
+                ...(sink.headers && typeof sink.headers === 'object' ? sink.headers : {}),
+                ...(coerceJson(config.headers) || {})
+            };
             sink.body = body;
             return {
                 success: true,

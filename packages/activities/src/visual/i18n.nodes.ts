@@ -712,7 +712,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "http-in": {
                 "method": "Method",
-                "path": "Path"
+                "path": "Path",
+                "authType": "Authentication",
+                "username": "Username",
+                "password": "Password",
+                "token": "Bearer token",
+                "cors": "Enable CORS",
+                "corsOrigin": "Allowed origin",
+                "corsHeaders": "Allowed headers",
+                "responseHeaders": "Default response headers",
+                "upload": "Accept file uploads"
             },
             "http-response": {
                 "statusCode": "Status code",
@@ -1026,7 +1035,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "path": "value"
             },
             "http-in": {
-                "path": "/orders"
+                "path": "/orders",
+                "corsHeaders": "content-type, authorization",
+                "responseHeaders": "{ \"cache-control\": \"no-store\" }"
             },
             "http-response": {
                 "headers": "{ \"x-flow\": \"done\" }",
@@ -1411,7 +1422,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "http-in": {
                 "method": "HTTP method that triggers this branch.",
-                "path": "Request path this node serves. Leave empty to accept any path."
+                "path": "Request path this node serves. Leave empty to accept any path.",
+                "password": "Use {{credential:name}} to read a stored credential.",
+                "token": "Use {{credential:name}} to read a stored credential.",
+                "cors": "Answer preflight requests and allow browser callers.",
+                "upload": "Parse multipart bodies into request.files / request.fields."
             },
             "http-response": {
                 "statusCode": "HTTP status code returned to the caller.",
@@ -1514,7 +1529,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "authentication": "Authentication",
             "input-range": "Input range",
             "output-range": "Output range",
-            "trigger": "Trigger"
+            "trigger": "Trigger",
+            "security": "Security",
+            "response": "Response"
         },
         "option": {
             "truthy": "is truthy",
@@ -2314,7 +2331,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "http-in": {
                 "method": "方法",
-                "path": "路径"
+                "path": "路径",
+                "authType": "认证方式",
+                "username": "用户名",
+                "password": "密码",
+                "token": "Bearer Token",
+                "cors": "启用 CORS",
+                "corsOrigin": "允许的来源",
+                "corsHeaders": "允许的请求头",
+                "responseHeaders": "默认响应头",
+                "upload": "接收文件上传"
             },
             "http-response": {
                 "statusCode": "状态码",
@@ -2612,7 +2638,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "path": "value"
             },
             "http-in": {
-                "path": "/orders"
+                "path": "/orders",
+                "corsHeaders": "content-type, authorization",
+                "responseHeaders": "{ \"cache-control\": \"no-store\" }"
             },
             "http-response": {
                 "headers": "{ \"x-flow\": \"done\" }",
@@ -2997,7 +3025,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "http-in": {
                 "method": "触发该分支的 HTTP 方法。",
-                "path": "该节点处理的请求路径，留空表示接受任意路径。"
+                "path": "该节点处理的请求路径，留空表示接受任意路径。",
+                "password": "使用 {{credential:name}} 读取已保存的凭据。",
+                "token": "使用 {{credential:name}} 读取已保存的凭据。",
+                "cors": "应答预检请求，允许浏览器调用。",
+                "upload": "把 multipart 请求解析到 request.files / request.fields。"
             },
             "http-response": {
                 "statusCode": "返回给调用方的 HTTP 状态码。",
@@ -3100,7 +3132,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "authentication": "认证",
             "input-range": "输入范围",
             "output-range": "输出范围",
-            "trigger": "触发"
+            "trigger": "触发",
+            "security": "安全",
+            "response": "响应"
         },
         "option": {
             "truthy": "为真",

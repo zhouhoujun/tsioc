@@ -863,6 +863,27 @@ The runtime resolves the node from the definition, resolves `{{credential:name}}
 values, and hands the result to the transport. A missing id fails the node with
 `TLS config not found: <id>`.
 
+### HTTP in security and uploads
+
+`http-in` guards and decorates webhook requests before a flow runs:
+
+```json
+{ "method": "POST", "path": "/orders",
+  "authType": "basic", "username": "hook-user", "password": "{{credential:hook-pass}}",
+  "cors": true, "corsOrigin": "https://app.example.com",
+  "responseHeaders": { "cache-control": "no-store" },
+  "upload": true }
+```
+
+- `authType: basic|bearer` validates the `Authorization` header against the
+  credential store; failures return 401 (basic also sends `WWW-Authenticate`)
+- `cors` answers `OPTIONS` preflight with 204 and allow-origin/methods/headers
+  before auth runs, and decorates normal responses
+- `responseHeaders` are applied first; an `http-response` node merges over them
+- `upload` parses `multipart/form-data` into `request.files` / `request.fields`
+  (multipart parsing is enabled by default; disable with `upload: false` on the
+  server options)
+
 ### File nodes
 
 `file-in`, `file-out` and `watch` run on the host and stay inside the workspace:

@@ -584,6 +584,103 @@ describe('Workflow HTTP microservice', () => {
         await request(`${base}/api/workflows/child-http`, { method: 'DELETE' });
     });
 
+    it('secures, decorates and accepts uploads on http-in webhooks', async () => {
+        const definition = {
+            id: 'hook-guard',
+            name: 'Hook guard',
+            nodes: [
+                {
+                    id: 'in_1', name: 'Hook', type: 'http-in',
+                    position: { x: 0, y: 0 },
+                    config: {
+                        method: 'POST',
+                        path: '/guarded',
+                        authType: 'basic',
+                        username: 'hook-user',
+                        password: '{{credential:hook-pass}}',
+                        cors: true,
+                        corsOrigin: 'https://example.test',
+                        responseHeaders: { 'x-workflow': 'guarded' }
+                    }
+                },
+                {
+                    id: 'fn_1', name: 'Echo', type: 'function',
+                    position: { x: 200, y: 0 },
+                    config: {
+                        code: 'return { payload: { ok: true, files: Object.keys(input.request.files || {}), fields: input.request.fields || {} } };'
+                    }
+                },
+                {
+                    id: 'out_1', name: 'Respond', type: 'http-response',
+                    position: { x: 400, y: 0 },
+                    config: { statusCode: 200, body: 'payload' }
+                }
+            ],
+            connections: [
+                { id: 'c1', sourceNodeId: 'in_1', sourcePort: 'out', targetNodeId: 'fn_1', targetPort: 'in' },
+                { id: 'c2', sourceNodeId: 'fn_1', sourcePort: 'out', targetNodeId: 'out_1', targetPort: 'in' }
+            ]
+        };
+        await request(`${base}/api/workflows/hook-guard`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        await request(`${base}/api/credentials/hook-pass`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ value: 'secret-pass' })
+        });
+
+        const unauthorized = await fetch(`${base}/api/workflows/hook-guard/hook/guarded`, { method: 'POST' });
+        expect(unauthorized.status).toBe(401);
+        expect(unauthorized.headers.get('www-authenticate')).toContain('Basic');
+
+        const preflight = await fetch(`${base}/api/workflows/hook-guard/hook/guarded`, { method: 'OPTIONS' });
+        expect(preflight.status).toBe(204);
+        expect(preflight.headers.get('access-control-allow-origin')).toBe('https://example.test');
+
+        const basic = Buffer.from('hook-user:secret-pass').toString('base64');
+        const authorized = await fetch(`${base}/api/workflows/hook-guard/hook/guarded`, {
+            method: 'POST',
+            headers: { authorization: `Basic ${basic}`, 'content-type': 'application/json' },
+            body: JSON.stringify({ hello: 'world' })
+        });
+        expect(authorized.status).toBe(200);
+        expect(authorized.headers.get('x-workflow')).toBe('guarded');
+        expect(await authorized.json()).toEqual({ ok: true, files: [], fields: {} });
+
+        const boundary = '----tsdi-boundary';
+        const multipart = [
+            `--${boundary}`,
+            'Content-Disposition: form-data; name="note"',
+            '',
+            'hello',
+            `--${boundary}`,
+            'Content-Disposition: form-data; name="file"; filename="a.txt"',
+            'Content-Type: text/plain',
+            '',
+            'file-body',
+            `--${boundary}--`,
+            ''
+        ].join('\r\n');
+        const uploaded = await fetch(`${base}/api/workflows/hook-guard/hook/guarded`, {
+            method: 'POST',
+            headers: {
+                authorization: `Basic ${basic}`,
+                'content-type': `multipart/form-data; boundary=${boundary}`
+            },
+            body: multipart
+        });
+        expect(uploaded.status).toBe(200);
+        const payload = await uploaded.json();
+        expect(payload.files).toEqual(['file']);
+        expect(payload.fields.note).toBe('hello');
+
+        await request(`${base}/api/credentials/hook-pass`, { method: 'DELETE' });
+        await request(`${base}/api/workflows/hook-guard`, { method: 'DELETE' });
+    });
+
     it('reports workflow metrics from execution history', async () => {
         const definition = {
             id: 'metrics-demo',

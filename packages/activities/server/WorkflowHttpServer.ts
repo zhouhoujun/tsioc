@@ -26,6 +26,7 @@ import {
     RequestBody,
     RequestParam,
     RequestPath,
+    Options,
     provideService,
     useCookie,
     useGuards,
@@ -37,6 +38,7 @@ import { useHttpTransport } from '@tsdi/http-microservice';
 import { LoggerModule } from '@tsdi/logger';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
 import {
+    IVisualWorkflowNode,
     VisualWorkflowDefinition,
     WorkflowDefinitionStore,
     WorkflowExecutionSnapshot,
@@ -417,6 +419,31 @@ export class WorkflowHttpController {
      * match the request method/path (`?path=/orders`) and `http-response`
      * nodes shape the status, headers and body returned to the caller.
      */
+    /** CORS preflight for webhook paths (answered 204 by enabled http-in nodes). */
+    @Options('/:id/hook')
+    hookOptions(@RequestPath('id') id: string, adapter: StatusMessageAdapter) {
+        return this.runHook(id, adapter);
+    }
+
+    @Options('/:id/hook/:path')
+    hookOptionsPath(
+        @RequestPath('id') id: string,
+        @RequestPath('path') path: string,
+        adapter: StatusMessageAdapter
+    ) {
+        return this.runHook(id, adapter, `/${path}`);
+    }
+
+    @Options('/:id/hook/:path/:sub')
+    hookOptionsSubPath(
+        @RequestPath('id') id: string,
+        @RequestPath('path') path: string,
+        @RequestPath('sub') sub: string,
+        adapter: StatusMessageAdapter
+    ) {
+        return this.runHook(id, adapter, `/${path}/${sub}`);
+    }
+
     @Post('/:id/hook')
     hookPost(@RequestPath('id') id: string, adapter: StatusMessageAdapter) {
         return this.runHook(id, adapter);
@@ -465,15 +492,126 @@ export class WorkflowHttpController {
         return this.runHook(id, adapter, `/${path}/${sub}`);
     }
 
+    /** The http-in node that owns this method/path (first match wins). */
+    private matchingHttpInNode(
+        definition: VisualWorkflowDefinition,
+        method: string,
+        requestedPath: string
+    ): IVisualWorkflowNode | undefined {
+        return (definition.nodes || []).find(node => {
+            if (node.type !== 'http-in') {
+                return false;
+            }
+            const config = node.config || {};
+            const declaredMethod = String(config.method || 'ANY').toUpperCase();
+            // A preflight request must find the node by path to answer CORS.
+            if (method !== 'OPTIONS' && declaredMethod !== 'ANY' && declaredMethod !== method) {
+                return false;
+            }
+            const declaredPath = String(config.path || '');
+            return !declaredPath || declaredPath === requestedPath;
+        });
+    }
+
+    private applyCorsHeaders(adapter: StatusMessageAdapter, node: IVisualWorkflowNode): void {
+        const config = node.config || {};
+        adapter.setHeader('Access-Control-Allow-Origin', String(config.corsOrigin || '*') as any);
+        adapter.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+        adapter.setHeader(
+            'Access-Control-Allow-Headers',
+            String(config.corsHeaders || 'content-type, authorization')
+        );
+        adapter.setHeader('Vary', 'Origin');
+    }
+
+    /** Validate http-in basic/bearer credentials (resolved through the store). */
+    private async authorizeHook(
+        node: IVisualWorkflowNode,
+        headers: Record<string, any>
+    ): Promise<{ status: number; message: string; headers: Record<string, string> } | undefined> {
+        const config = node.config || {};
+        const authType = String(config.authType || 'none');
+        if (authType === 'none') {
+            return undefined;
+        }
+        const raw = String(headers.authorization || headers.Authorization || '');
+        if (authType === 'basic') {
+            const encoded = raw.match(/^Basic\s+(.+)$/i)?.[1];
+            const expectedUser = String(await this.credentialsOf(config.username) ?? '');
+            const expectedPass = String(await this.credentialsOf(config.password) ?? '');
+            const actual = encoded ? Buffer.from(encoded, 'base64').toString('utf8') : '';
+            if (expectedUser && actual === `${expectedUser}:${expectedPass}`) {
+                return undefined;
+            }
+            return {
+                status: 401,
+                message: 'Unauthorized',
+                headers: { 'WWW-Authenticate': 'Basic realm="workflow"' }
+            };
+        }
+        if (authType === 'bearer') {
+            const provided = raw.match(/^Bearer\s+(.+)$/i)?.[1] || '';
+            const expected = String(await this.credentialsOf(config.token) ?? '');
+            if (expected && provided === expected) {
+                return undefined;
+            }
+            return { status: 401, message: 'Unauthorized', headers: {} };
+        }
+        return undefined;
+    }
+
+    private credentialValue(value: any): Promise<string | undefined> {
+        const text = String(value ?? '').trim();
+        const match = /^\{\{\s*credential:([^}]+?)\s*\}\}$/.exec(text);
+        if (!match) {
+            return Promise.resolve(text || undefined);
+        }
+        return this.credentials.getCredential(match[1].trim());
+    }
+
+    /** Alias kept short for the auth checks above. */
+    private credentialsOf(value: any): Promise<string | undefined> {
+        return this.credentialValue(value);
+    }
+
     private async runHook(id: string, adapter: StatusMessageAdapter, pathOverride?: string) {
         const definition = await this.definitionToRun(id);
         const request = (adapter as any).request || {};
         const query = (adapter.read('query') as Record<string, any>) || {};
         const headers = (adapter.read('headers') as Record<string, any>) || {};
-        const method = String(request.method || 'POST').toUpperCase();
+        const method = String(
+            (adapter as any).method || request.method || 'POST'
+        ).toUpperCase();
         const queryPath = typeof query.path === 'string' && query.path ? query.path : '';
         const requestedPath = pathOverride || queryPath || '/hook';
         const response: { statusCode?: number; headers?: Record<string, any>; body?: any } = {};
+        const hookNode = this.matchingHttpInNode(definition, method, requestedPath);
+
+        // CORS preflight short-circuits before auth: browsers never send credentials.
+        const cors = hookNode?.config?.cors === true;
+        if (cors && method === 'OPTIONS') {
+            this.applyCorsHeaders(adapter, hookNode);
+            adapter.setStatus(204);
+            return undefined;
+        }
+        if (cors) {
+            this.applyCorsHeaders(adapter, hookNode);
+        }
+
+        if (hookNode) {
+            const rejection = await this.authorizeHook(hookNode, headers);
+            if (rejection) {
+                adapter.setStatus(rejection.status);
+                Object.entries(rejection.headers).forEach(([name, value]) => adapter.setHeader(name, value));
+                return { error: rejection.message };
+            }
+            // Default headers declared on http-in; http-response nodes may override.
+            const declared = hookNode.config?.responseHeaders;
+            if (declared && typeof declared === 'object' && !Array.isArray(declared)) {
+                response.headers = { ...(declared as Record<string, any>) };
+            }
+        }
+
         const timeout = Math.max(0, Number((definition.metadata as any)?.timeout) || 0);
         const result = await this.execution.execute(definition, this.executionContext({
             request: {
@@ -481,7 +619,9 @@ export class WorkflowHttpController {
                 path: requestedPath,
                 query,
                 headers,
-                body: adapter.read('body')
+                body: adapter.read('body'),
+                files: (request as any).files,
+                fields: (request as any).fields
             },
             response
         }) as any, {
@@ -933,6 +1073,8 @@ export interface WorkflowHttpServerOptions {
     auditStore?: WorkflowAuditStore;
     /** Audit entries kept on disk (default 2000). */
     auditHistoryLimit?: number;
+    /** Enable multipart body parsing for `http-in` uploads (default true). */
+    upload?: boolean;
     /** Context storage override (SQLite next to the definition store by default). */
     contextStore?: WorkflowContextStore;
     /** Credential store override (encrypted SQLite by default when a key exists). */
@@ -1092,6 +1234,8 @@ export function createWorkflowHttpModule(options: WorkflowHttpServerOptions = {}
                     host: options.host || '127.0.0.1',
                     port: options.port ?? 3000
                 },
+                // http-in `upload` needs multipart bodies parsed into files/fields.
+                upload: options.upload === false ? false : { enabled: true },
                 asDefault: true
             })
         )
