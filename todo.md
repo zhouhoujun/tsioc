@@ -4865,3 +4865,10 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   `/rewind` 有 toast，shell 命令执行行保留 1 行。
 - 修复 `flattenProjectSessions(undefined|null)` 崩溃（`session.list_projects` 返回缺失时降级为空选择器），
   避免失败回显；新增 dialog-regressions 用例。
+
+## 2026-11-19 P3 验收补齐：设置页持久化
+- 页面开关经 console host `persistSettings` 落到 workspace settings store；新增用例断言
+  `showThinking` 写入 store（浏览器侧即 `settings.json` + `settings.ui.set`）。
+- 新增 `createRpcConsoleSettingsStore` 单测：一次 `settings.store.set` + 一次 `settings.ui.set`、
+  ui 值覆盖文件、终端 `messageLayout` 不被浏览器覆盖、RPC 失败静默。
+- 顺手去掉 keymap store 重复写 `keymap.json` 的冗余调用。

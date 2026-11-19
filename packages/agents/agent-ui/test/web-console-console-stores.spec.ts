@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { defaultAgentConsoleStatusline, defaultAgentConsoleTitle } from '../src';
-import { createRpcConsoleStores } from '../web-console';
+import { createRpcConsoleSettingsStore, createRpcConsoleStores } from '../web-console';
 
 interface RpcCall {
     method: string;
@@ -73,5 +73,69 @@ export class WebConsoleStoresTest {
         expect(await stores.title.load('/work')).toEqual(defaultAgentConsoleTitle);
         expect(await stores.rawMode.load('/work')).toEqual(false);
         expect(await stores.keymap.load('/work')).toEqual({});
+    }
+}
+
+@Suite('web console settings store')
+export class WebConsoleSettingsStoreTest {
+    @Test('save writes the workspace settings file and the gateway ui patch once')
+    async savesThroughBothRpcs() {
+        const calls: RpcCall[] = [];
+        const rpc = fakeRpc(calls, { 'settings.json': { showThinking: true, messageLayout: 'viewport' } });
+        const store = createRpcConsoleSettingsStore(rpc);
+        await store.load('/work');
+        await store.save('/work', {
+            showThinking: false,
+            personality: 'reviewer',
+            memoryInjection: true,
+            securityLevel: 'ask',
+            yoloMode: false
+        } as any);
+        const fileWrites = calls.filter(call => call.method === 'settings.store.set' && call.params?.name === 'settings.json');
+        const uiWrites = calls.filter(call => call.method === 'settings.ui.set');
+        expect(fileWrites.length).toEqual(1);
+        expect(uiWrites.length).toEqual(1);
+        expect(fileWrites[0].params.data.showThinking).toEqual(false);
+        // The terminal layout is never overwritten by the browser.
+        expect(fileWrites[0].params.data.messageLayout).toEqual('viewport');
+        expect(uiWrites[0].params).toMatchObject({
+            personality: 'reviewer',
+            memoryInjection: true,
+            securityLevel: 'ask',
+            yoloMode: false
+        });
+    }
+
+    @Test('load prefers gateway ui values over the settings file')
+    async loadMergesGatewayValues() {
+        const rpc = fakeRpc([], {
+            'settings.json': { showThinking: true, personality: 'stale', securityLevel: 'read-only' }
+        });
+        const store = createRpcConsoleSettingsStore({
+            request: async (method: string, params?: any) => {
+                if (method === 'settings.store.get') {
+                    return rpc.files[params?.name] ?? null;
+                }
+                if (method === 'settings.ui.get') {
+                    return { personality: 'reviewer', securityLevel: 'full', memoryInjection: false };
+                }
+                return null;
+            }
+        });
+        const settings = await store.load('/work');
+        expect(settings.personality).toEqual('reviewer');
+        expect(settings.securityLevel).toEqual('full');
+        expect(settings.memoryInjection).toEqual(false);
+        expect(settings.showThinking).toEqual(true);
+    }
+
+    @Test('RPC failures do not throw and keep the last loaded state')
+    async failuresAreQuiet() {
+        const store = createRpcConsoleSettingsStore({
+            request: async () => { throw new Error('offline'); }
+        });
+        const loaded = await store.load('/work');
+        expect(loaded.securityLevel).toEqual(undefined);
+        await store.save('/work', { yoloMode: true } as any);
     }
 }

@@ -5,7 +5,7 @@ import { ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { AgentModule } from '@tsdi/agent';
-import { AgentConsoleComponent, AgentConsoleSessionState, AgentUiModule } from '../src';
+import { AgentConsoleComponent, AgentConsoleSessionState, AgentConsoleSettingsStore, AgentUiModule } from '../src';
 import { mountAgentWebSettingsPage, type AgentWebSettingsPageHandle } from '../web-console/settings-page';
 
 async function settle(times = 128): Promise<void> {
@@ -20,14 +20,25 @@ export class AgentConsoleWebSettingsPageTest {
     dom!: any;
     ref!: ComponentRef<AgentConsoleComponent>;
     page!: AgentWebSettingsPageHandle;
+    saved: Array<Record<string, any>> = [];
 
     @BeforeEach()
     async init() {
         const { JSDOM } = require('jsdom');
         this.dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+        this.saved = [];
         this.ctx = await Application.run(AgentConsoleComponent, {
             deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
-            providers: [{ provide: DOCUMENT, useValue: this.dom.window.document }]
+            providers: [
+                { provide: DOCUMENT, useValue: this.dom.window.document },
+                {
+                    provide: AgentConsoleSettingsStore,
+                    useValue: {
+                        load: async () => ({}),
+                        save: async (_workspace: string, data: Record<string, any>) => { this.saved.push(data); }
+                    }
+                }
+            ]
         });
         this.ref = this.ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent>;
         this.page = await mountAgentWebSettingsPage({
@@ -98,6 +109,9 @@ export class AgentConsoleWebSettingsPageTest {
         // The row reflects the new value after the schema rebuild.
         const refreshed = this.pageElement.querySelector('[data-settings-row="thinking"]') as HTMLElement;
         expect(refreshed.textContent || '').toContain(before ? 'hidden' : 'shown');
+        // The page uses the same host persist path as the overlay: the value
+        // reaches the workspace settings store (browser = settings.json + ui).
+        expect(this.saved.some(patch => patch.showThinking === !before)).toEqual(true);
     }
 
     @Test('search filters the schema and section buttons switch sections')
