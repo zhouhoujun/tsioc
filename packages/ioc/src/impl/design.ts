@@ -134,6 +134,16 @@ export const dependencyInterceptor = (input: ClassRef, next: HandlerFn, context:
         }
     }
 
+    const aotProvidedIn = (input.getAnnotation() as any).aotProvidedIn;
+    if (aotProvidedIn?.target) {
+        const runtime = injector.getRuntime();
+        const prds = (aotProvidedIn.provide
+            ? { provide: aotProvidedIn.provide, useClass: type }
+            : type) as Provider;
+        runtime.setTypeProvider(aotProvidedIn.target, prds);
+        injector.onDestroy(() => runtime.removeTypeProvider(type, prds));
+    }
+
     if (input.provides.length) {
         const factory = () => injector.get(type);
         const records = injector[RECORDS];

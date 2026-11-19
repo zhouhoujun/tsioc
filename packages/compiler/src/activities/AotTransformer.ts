@@ -14,7 +14,7 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'Component', 'Directive'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Component', 'Directive'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
@@ -250,6 +250,22 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
             return args.length === 1
                 ? factory.createObjectLiteralExpression([factory.createPropertyAssignment('providers', args[0])], false)
                 : undefined;
+        case 'ProvidedIn':
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            if (args.length === 1) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('target', selectorValueExpression(args[0]))
+                ], false);
+            }
+            if (args.length === 2) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('target', selectorValueExpression(args[0])),
+                    factory.createPropertyAssignment('provide', selectorValueExpression(args[1]))
+                ], false);
+            }
+            return undefined;
         case 'Autorun': {
             const base = [
                 factory.createPropertyAssignment('auto', factory.createTrue()),

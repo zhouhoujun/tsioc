@@ -210,7 +210,14 @@ function applyRunnableDefines(def: Record<string, any>, records: PrecompiledType
         const record = records[i] as any;
         const decor = Array.isArray(record) ? record[0] : record?.decor;
         const meta = Array.isArray(record) ? record[1] : record?.metadata;
-        if (decor?.decorator !== '@Autorun' || !meta || typeof meta !== 'object') {
+        if (!meta || typeof meta !== 'object') {
+            continue;
+        }
+        if (decor?.decorator === '@ProvidedIn') {
+            def.aotProvidedIn = meta;
+            continue;
+        }
+        if (decor?.decorator !== '@Autorun') {
             continue;
         }
         const runnables = (def.runnables || (def.runnables = []));

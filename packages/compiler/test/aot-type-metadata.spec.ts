@@ -215,6 +215,30 @@ export class MethodAutorunService {
         expect(service.ready).toBe(true);
     });
 
+
+    it('precompiles @ProvidedIn registration metadata', () => {
+        const source = `
+import { Injectable, ProvidedIn } from '@tsdi/ioc';
+
+export class TargetToken {}
+
+@Injectable()
+@ProvidedIn(TargetToken)
+export class ProvidedService extends TargetToken {}
+`;
+        const emitted = transpileAot('aot-provided-in.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('ProvidedIn');
+        expect(emitted).toContain('target: TargetToken');
+
+        const exported = loadModule(source);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.ProvidedService);
+        const providers = container.getRuntime().getTypeProvider(exported.TargetToken) as any[];
+        expect(providers.some(provider => provider === exported.ProvidedService
+            || provider?.provide === exported.TargetToken)).toBe(true);
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';
