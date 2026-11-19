@@ -14,6 +14,10 @@ import { diffWorkflowDefinitions, WorkflowDiffResult } from '../workflow-diff';
 import { WorkflowAuditPanelComponent } from './workflow-audit-panel';
 import { WorkflowCredentialPanelComponent } from './workflow-credential-panel';
 import { WorkflowMetricsPanelComponent } from './workflow-metrics-panel';
+import { WorkflowDeploymentsPanelComponent } from './workflow-deployments-panel';
+import { WorkflowSettingsPanelComponent } from './workflow-settings-panel';
+import { WorkflowPublishPanelComponent } from './workflow-publish-panel';
+import { WorkflowRenamePanelComponent } from './workflow-rename-panel';
 import {
     WorkflowDefinitionStore,
     WorkflowDefinitionSummary,
@@ -74,24 +78,9 @@ interface WorkflowDocumentTab {
             :saveAction="saveWorkflow" :saveAsAction="saveWorkflowAs"
             :openAction="loadWorkflow" :removeAction="deleteWorkflow"
             :closeAction="closeLibrary"></workflow-library>
-        <div class="workflow-publish" v-if="showPublish">
-            <div class="workflow-publish-panel">
-                <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{publishTitle}}</span>
-                    <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="cancelLabel" [title]="cancelLabel" @click="cancelPublish">✕</button>
-                </div>
-                <div class="workflow-publish-name">{{designer.definition.name}}</div>
-                <div class="workflow-publish-meta">{{publishMeta}}</div>
-                <div class="workflow-publish-hint">{{publishHint}}</div>
-                <div class="workflow-publish-error" v-if="publishError">{{publishError}}</div>
-                <div class="workflow-publish-actions">
-                    <ui-button className="workflow-btn" :label="cancelLabel" :action="cancelPublishPressed"></ui-button>
-                    <ui-button className="workflow-btn workflow-btn-primary workflow-publish-confirm"
-                        tone="accent" :label="publishConfirmLabel" :action="confirmPublishPressed"></ui-button>
-                </div>
-            </div>
-        </div>
+        <workflow-publish-panel v-if="showPublish" :workflowName="designer.definition.name"
+            :meta="publishMeta" :hint="publishHint" :error="publishError" :locale="locale"
+            :confirmAction="confirmPublishPressed" :cancelAction="cancelPublishPressed"></workflow-publish-panel>
         <workflow-version-panel v-if="showVersions" :items="versionItems" :release="versionRelease"
             :visible="showVersions" :locale="locale" :error="versionError"
             :diff="versionDiff" :diffVersion="versionDiffVersion"
@@ -107,68 +96,17 @@ interface WorkflowDocumentTab {
             :nameAction="credentialNameAction" :valueAction="credentialValueAction"
             :saveAction="credentialPanelSave" :removeAction="credentialPanelRemove"
             :refreshAction="credentialPanelRefresh" :closeAction="credentialPanelClose"></workflow-credential-panel>
-        <div class="workflow-publish workflow-deployments" v-if="showDeployments">
-            <div class="workflow-publish-panel workflow-deployments-panel">
-                <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{deploymentsTitle}}</span>
-                    <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeDeployments">✕</button>
-                </div>
-                <div class="workflow-publish-error" v-if="deploymentError">{{deploymentError}}</div>
-                <div class="workflow-deployments-actions">
-                    <ui-button className="workflow-btn workflow-btn-primary" tone="accent"
-                        :label="deploymentStartAll" :disabled="deploymentBusy" :action="startAllDeploymentsPressed"></ui-button>
-                    <ui-button className="workflow-btn"
-                        :label="deploymentStopAll" :disabled="deploymentBusy" :action="stopAllDeploymentsPressed"></ui-button>
-                </div>
-                <div class="workflow-deployments-list" v-if="deploymentItems.length">
-                    <div class="workflow-deployment-row" v-for="item in deploymentItems"
-                        data-workflow-id="{{item.workflowId}}">
-                        <span class="workflow-deployment-id">{{item.workflowId}}</span>
-                        <ui-badge class="workflow-deployment-state"
-                            :label="item.running ? runningLabel : stoppedLabel"
-                            :tone="item.running ? 'success' : 'muted'"
-                            :dot="item.running"></ui-badge>
-                        <span class="workflow-deployment-runs">{{item.runs}}</span>
-                        <ui-button className="workflow-btn" size="xs"
-                            :label="item.running ? deploymentStop : deploymentStart"
-                            :disabled="deploymentBusy" :action="deploymentToggleAction(item)"></ui-button>
-                    </div>
-                </div>
-                <ui-empty class="workflow-deployments-empty" v-else icon="deploy" :title="deploymentsEmpty"></ui-empty>
-                <div class="workflow-publish-actions">
-                    <ui-button className="workflow-btn" :label="tr('close', 'Close')" :action="closeDeploymentsPressed"></ui-button>
-                </div>
-            </div>
-        </div>
+        <workflow-deployments-panel v-if="showDeployments" :items="deploymentItems"
+            :busy="deploymentBusy" :error="deploymentError" :locale="locale"
+            :startAllAction="startAllDeploymentsPressed" :stopAllAction="stopAllDeploymentsPressed"
+            :toggleAction="deploymentToggleAction" :closeAction="closeDeploymentsPressed"></workflow-deployments-panel>
         <workflow-metrics-panel v-if="showMetrics" :data="metricsData" :trend="metricsTrend"
             :rate="metricsRate" :windowMs="metricsWindow" :error="metricsError" :locale="locale"
             :windowAction="setMetricsWindowAction" :closeAction="closeMetricsPressed"></workflow-metrics-panel>
-        <div class="workflow-publish workflow-settings" v-if="showSettings">
-            <div class="workflow-publish-panel workflow-settings-panel">
-                <div class="workflow-publish-head">
-                    <span class="workflow-publish-title">{{settingsTitle}}</span>
-                    <button class="workflow-btn workflow-publish-close" type="button"
-                        [aria-label]="tr('close', 'Close')" [title]="tr('close', 'Close')" @click="closeSettings">✕</button>
-                </div>
-                <label class="workflow-group-field">
-                    <span>{{descriptionLabel}}</span>
-                    <textarea class="workflow-settings-description" rows="3"
-                        [value]="settingsDescription" @input="settingsDescriptionInput"></textarea>
-                </label>
-                <label class="workflow-group-field">
-                    <span>{{runTimeoutLabel}}</span>
-                    <input class="workflow-settings-timeout" type="number" min="0" step="100"
-                        [value]="settingsTimeout" @input="settingsTimeoutInput" />
-                </label>
-                <div class="workflow-publish-error" v-if="settingsError">{{settingsError}}</div>
-                <div class="workflow-publish-actions">
-                    <ui-button className="workflow-btn" :label="cancelLabel" :action="closeSettingsPressed"></ui-button>
-                    <ui-button className="workflow-btn workflow-btn-primary workflow-settings-save"
-                        tone="accent" :label="saveLabel" :action="saveSettingsPressed"></ui-button>
-                </div>
-            </div>
-        </div>
+        <workflow-settings-panel v-if="showSettings" :description="settingsDescription"
+            :timeout="settingsTimeout" :error="settingsError" :locale="locale"
+            :descriptionAction="settingsDescriptionAction" :timeoutAction="settingsTimeoutAction"
+            :saveAction="saveSettingsPressed" :cancelAction="closeSettingsPressed"></workflow-settings-panel>
         <div class="workflow-publish workflow-plugins" v-if="showPlugins">
             <div class="workflow-publish-panel workflow-plugins-panel">
                 <div class="workflow-publish-head">
@@ -195,24 +133,9 @@ interface WorkflowDocumentTab {
                 <ui-empty class="workflow-plugins-empty" v-else icon="plugin" :title="pluginsEmptyLabel"></ui-empty>
             </div>
         </div>
-        <div class="workflow-rename" v-if="showRename">
-            <div class="workflow-rename-panel">
-                <div class="workflow-rename-head">
-                    <span class="workflow-rename-title">{{renameTitle}}</span>
-                    <button class="workflow-btn workflow-rename-close" type="button"
-                        [aria-label]="cancelLabel" [title]="cancelLabel" @click="cancelRename"><icon name="close" size="sm"></icon></button>
-                </div>
-                <input class="workflow-rename-input" type="text" [value]="renameValue"
-                    placeholder="{{renamePlaceholder}}" aria-label="{{renameTitle}}"
-                    @input="renameInput" @keydown="renameKey" />
-                <div class="workflow-rename-error" v-if="renameError">{{renameError}}</div>
-                <div class="workflow-rename-actions">
-                    <ui-button className="workflow-btn" :label="cancelLabel" :action="cancelRenamePressed"></ui-button>
-                    <ui-button className="workflow-btn workflow-btn-primary"
-                        tone="accent" :label="renameConfirmLabel" :action="commitRenamePressed"></ui-button>
-                </div>
-            </div>
-        </div>
+        <workflow-rename-panel v-if="showRename" :value="renameValue" :error="renameError"
+            :locale="locale" :valueAction="renameInputAction" :keyAction="renameKeyAction"
+            :confirmAction="commitRenamePressed" :cancelAction="cancelRenamePressed"></workflow-rename-panel>
     </div>`
 })
 export class WorkflowDesignerComponent implements OnDestroy {
@@ -699,10 +622,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         return this.localeValue === 'zh-CN';
     }
 
-    get renameTitle(): string { return this.t('renameTitle', 'Rename workflow'); }
-    get renamePlaceholder(): string { return this.t('renamePlaceholder', 'Workflow name'); }
-    get renameConfirmLabel(): string { return this.t('renameConfirm', 'Rename'); }
-    get cancelLabel(): string { return this.t('cancel', 'Cancel'); }
 
     /** Template-facing translate helper (bindings cannot call the private method). */
     readonly tr = (key: string, fallback: string): string => {
@@ -981,17 +900,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         this.showLibrary = true;
     }
 
-    get pluginsTitle(): string { return this.t('pluginsTitle', 'Workflow plugins'); }
-    get closePluginsLabel(): string { return this.t('close', 'Close'); }
-    get pluginInstallLabel(): string { return this.t('pluginInstall', 'Install'); }
-    get pluginUninstallLabel(): string { return this.t('pluginUninstall', 'Uninstall'); }
-    get pluginInstalledLabel(): string { return this.t('pluginInstalled', 'Installed'); }
-    get pluginsEmptyLabel(): string { return this.t('pluginsEmpty', 'No plugins are available on this host.'); }
-
-    pluginNodeCount(item: WorkflowPluginManifest): string {
-        return this.t('pluginNodeCount', '{count} nodes', { count: item.nodes?.length || 0 });
-    }
-
     async openPlugins(): Promise<void> {
         this.showPlugins = true;
         this.pluginError = '';
@@ -1124,6 +1032,21 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     readonly closeSettingsPressed = (): void => (this.selfRef || this).closeSettings();
 
+    get pluginsTitle(): string { return this.t('pluginsTitle', 'Workflow plugins'); }
+    get pluginInstallLabel(): string { return this.t('pluginInstall', 'Install'); }
+    get pluginUninstallLabel(): string { return this.t('pluginUninstall', 'Uninstall'); }
+    get pluginInstalledLabel(): string { return this.t('pluginInstalled', 'Installed'); }
+    get pluginsEmptyLabel(): string { return this.t('pluginsEmpty', 'No plugins are available on this host.'); }
+    get closePluginsLabel(): string { return this.t('close', 'Close'); }
+
+    pluginNodeCount(item: WorkflowPluginManifest): string {
+        return this.t('pluginNodeCount', '{count} nodes', { count: item.nodes?.length || 0 });
+    }
+
+    readonly closePluginsPressed = (): void => {
+        void (this.selfRef || this).closePlugins();
+    };
+
     readonly saveSettingsPressed = (): void => (this.selfRef || this).saveSettings();
 
     readonly cancelRenamePressed = (): void => (this.selfRef || this).cancelRename();
@@ -1132,6 +1055,22 @@ export class WorkflowDesignerComponent implements OnDestroy {
 
     readonly deploymentToggleAction = (item: WorkflowDeploymentStatus): (() => void) =>
         () => (this.selfRef || this).toggleDeployment(item);
+
+    readonly renameInputAction = (value: string): void => {
+        (this.selfRef || this).renameInput({ target: { value } } as any);
+    };
+
+    readonly renameKeyAction = (event: any): void => {
+        (this.selfRef || this).renameKey(event);
+    };
+
+    readonly settingsDescriptionAction = (value: string): void => {
+        (this.selfRef || this).settingsDescriptionInput({ target: { value } } as any);
+    };
+
+    readonly settingsTimeoutAction = (value: string): void => {
+        (this.selfRef || this).settingsTimeoutInput({ target: { value } } as any);
+    };
 
     readonly pluginToggleAction = (item: WorkflowPluginManifest & { installed: boolean }): (() => void) =>
         () => (this.selfRef || this).togglePlugin(item);
@@ -1327,14 +1266,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
     };
 
-    get deploymentsTitle(): string { return this.t('deployments', 'Deployments'); }
-    get deploymentsEmpty(): string { return this.t('deploymentsEmpty', 'No workflows are deployed.'); }
-    get deploymentStartAll(): string { return this.t('deploymentStartAll', 'Start all'); }
-    get deploymentStopAll(): string { return this.t('deploymentStopAll', 'Stop all'); }
-    get deploymentStart(): string { return this.t('deploymentStart', 'Start'); }
-    get deploymentStop(): string { return this.t('deploymentStop', 'Stop'); }
-    get runningLabel(): string { return this.t('running', 'Running'); }
-    get stoppedLabel(): string { return this.t('stopped', 'Stopped'); }
 
     async openDeployments(): Promise<void> {
         this.showDeployments = true;
@@ -1477,10 +1408,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         this.metricsRate = 0;
     }
 
-    get settingsTitle(): string { return this.t('settings', 'Workflow settings'); }
-    get descriptionLabel(): string { return this.t('description', 'Description'); }
-    get runTimeoutLabel(): string { return this.t('runTimeout', 'Run timeout'); }
-    get saveLabel(): string { return this.t('save', 'Save'); }
 
     openSettings(): void {
         this.settingsDescription = this.designer?.definition.description || '';
@@ -1693,8 +1620,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
     };
 
-    get publishTitle(): string { return this.t('publishTitle', 'Publish workflow'); }
-    get publishConfirmLabel(): string { return this.t('publish', 'Publish'); }
     get publishHint(): string {
         return this.t(
             'publishHint',
