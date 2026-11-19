@@ -196,6 +196,35 @@ export class AotIrConsoleHost {
         }
     });
 
+
+    it('precompiles component constructor injection', async () => {
+        const source = `
+import { Component, Inject, Optional } from '@tsdi/components';
+
+@Component({ selector: 'aot-ctor-host', template: '<div class="value">{{value}}</div>' })
+export class AotCtorHost {
+    constructor(@Optional() @Inject('AOT_CTOR') readonly value?: string) {}
+}
+`;
+        const emitted = transpileAot('aot-ctor.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotComponent(');
+        expect(emitted).toContain('methodMetadatas');
+        expect(emitted).toContain('__aotFlags');
+
+        const exported = loadAotModule(source);
+        const ctx = await Application.run(exported.AotCtorHost, {
+            deps: [XmlTemplateModule, ComponentsModule],
+            providers: [{ provide: 'AOT_CTOR', useValue: 'injected' }]
+        });
+        try {
+            const ref = ctx.runners.getRef(exported.AotCtorHost) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.querySelector('.value')?.textContent).toBe('injected');
+        } finally {
+            await ctx.close();
+        }
+    });
+
     it('embeds IR for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';

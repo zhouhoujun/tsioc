@@ -534,13 +534,13 @@ function methodAutorunMetadata(decorator: ts.Decorator, key: string): ts.Express
     return undefined;
 }
 
-function attachMethodMetadata(metadata: ts.Expression, node: ts.ClassDeclaration): ts.Expression {
+function attachMethodMetadata(metadata: ts.Expression, node: ts.ClassDeclaration, includeConstructor = false): ts.Expression {
     const entries: ts.Expression[] = [];
     for (const member of node.members) {
-        if (ts.isConstructorDeclaration(member)) {
+        if (ts.isConstructorDeclaration(member) && !includeConstructor) {
             continue;
         }
-        const key = memberKey(member);
+        const key = ts.isConstructorDeclaration(member) ? 'constructor' : memberKey(member);
         if (!key) {
             continue;
         }
@@ -550,11 +550,11 @@ function attachMethodMetadata(metadata: ts.Expression, node: ts.ClassDeclaration
         }
         const params: ts.Expression[] = [];
         for (const parameter of parameters) {
-            const dep = parameterDependency(parameter);
-            if (!dep) {
+            const meta = parameterMetadataExpression(parameter, key);
+            if (!meta) {
                 return metadata;
             }
-            params.push(dep);
+            params.push(meta);
         }
         entries.push(ts.factory.createArrayLiteralExpression([
             ts.factory.createStringLiteral(key),
@@ -858,6 +858,32 @@ function parameterDependency(parameter: ts.ParameterDeclaration): ts.Expression 
     return flags.length
         ? ts.factory.createArrayLiteralExpression([token, ...flags], false)
         : token;
+}
+
+function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: string): ts.Expression | undefined {
+    const dep = parameterDependency(parameter);
+    if (!dep) {
+        return undefined;
+    }
+    const factory = ts.factory;
+    const properties: ts.ObjectLiteralElementLike[] = [];
+    if (ts.isArrayLiteralExpression(dep)) {
+        const [token, ...flags] = dep.elements;
+        if (token) {
+            properties.push(factory.createPropertyAssignment('provider', token));
+        }
+        if (flags.length) {
+            let merged = flags[0];
+            for (let i = 1; i < flags.length; i++) {
+                merged = factory.createBinaryExpression(merged, ts.SyntaxKind.BarToken, flags[i]);
+            }
+            properties.push(factory.createPropertyAssignment('flags', merged));
+        }
+    } else {
+        properties.push(factory.createPropertyAssignment('provider', dep));
+    }
+    properties.push(factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)));
+    return factory.createObjectLiteralExpression(properties, false);
 }
 
 function constructorDependencies(node: ts.ClassDeclaration): ts.Expression | undefined {
@@ -1309,6 +1335,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             }
                             if (precompiledMetadata) {
                                 precompiledMetadata = attachMemberMetadata(precompiledMetadata, node);
+                                precompiledMetadata = attachMethodMetadata(precompiledMetadata, node, true);
                                 precompiledMetadata = attachNoReactiveMetadata(precompiledMetadata, node);
                             }
                         } else {
