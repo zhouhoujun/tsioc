@@ -52,7 +52,11 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // Raised to 1015 KB for the extracted publish/settings/deployments/rename
 // dialog components (~6 KB raw). Raised to 1020 KB for the toast strip and
 // its queue; keeps ~4 KB of headroom.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_045_000);
+// Raised to 1100 KB (2026-11) after AOT template plans ship as object
+// literals instead of JSON strings: repeated plan keys add raw bytes but are
+// highly compressible, and parsing them at startup is skipped. The gzip
+// budget below stays the transfer gate.
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_130_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
@@ -63,7 +67,9 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_045_000);
 // and the config-node index panel (~2 KB), keeping ~3 KB of headroom.
 // Raised to 258 KB for the extracted designer dialogs (~2.5 KB gzip) and
 // 264 KB for the toast strip; keeps ~2 KB of headroom.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 264_000);
+// Raised to 272 KB (2026-11) with the AOT plan payload (object literals,
+// ~5.5 KB gzip) and the Node-RED parity panels; keeps ~2 KB of headroom.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 272_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

@@ -69,7 +69,7 @@ describe('shared AOT compiler', () => {
     });
 
 
-    it('precompiles template IR from templateUrl', () => {
+    it('precompiles a template plan from templateUrl', () => {
         const outDir = tempDir('template-url');
         try {
             const result = emitAotProject({
@@ -87,7 +87,7 @@ describe('shared AOT compiler', () => {
             });
             expect(result.success).toBe(true);
             const output = fs.readFileSync(path.join(outDir, 'test', 'fixtures', 'aot', 'template-url.js'), 'utf-8');
-            expect(output).toContain('templateIR:');
+            expect(output).toContain('templatePlan:');
             expect(output).toContain('title');
         } finally {
             fs.rmSync(outDir, { recursive: true, force: true });

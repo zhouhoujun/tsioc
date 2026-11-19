@@ -486,17 +486,21 @@ function attachTemplateIR(metadata: ts.Expression): ts.Expression {
         const name = propertyName(property);
         return name !== 'templateIR' && name !== 'templatePlan';
     });
-    properties.push(ts.factory.createPropertyAssignment(
-        'templateIR',
-        ts.factory.createStringLiteral(JSON.stringify(ir))
-    ));
     const plan = templatePlanFromIR(ir);
     if (plan) {
         // Emit the factory description as a real JS object (`ɵcmp` data),
         // not as a JSON string that every process must parse at startup.
+        // The plan carries the same information as the IR and is what the
+        // compiler executes, so shipping both would double every template's
+        // precompiled payload for nothing.
         properties.push(ts.factory.createPropertyAssignment(
             'templatePlan',
             valueExpression(plan)
+        ));
+    } else {
+        properties.push(ts.factory.createPropertyAssignment(
+            'templateIR',
+            ts.factory.createStringLiteral(JSON.stringify(ir))
         ));
     }
     return ts.factory.updateObjectLiteralExpression(metadata, properties);

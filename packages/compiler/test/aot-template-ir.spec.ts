@@ -28,13 +28,13 @@ function loadAotModule(source: string): Record<string, any> {
 }
 
 describe('AOT template IR', () => {
-    it('embeds renderer-neutral IR for inline templates', () => {
+    it('embeds a precompiled template plan for inline templates', () => {
         const emitted = transpileAot('aot-template-ir.ts', `
 import { Component } from '@tsdi/components';
 @Component({ selector: 'aot-ir-host', template: '<div class="ir">{{label}}</div>' })
 export class AotIrHost { label = 'hello'; }
 `, { module: ts.ModuleKind.CommonJS });
-        expect(emitted).toContain('templateIR:');
+        expect(emitted).toContain('templatePlan:');
     });
 
     it('renders controls, bindings and framework attributes from emitted IR', async () => {
@@ -92,7 +92,7 @@ export class AotMemberHost {
 `;
         const emitted = transpileAot('aot-member.ts', source, { module: ts.ModuleKind.CommonJS });
         expect(emitted).toContain('__aotComponent(');
-        expect(emitted).toContain('templateIR:');
+        expect(emitted).toContain('templatePlan:');
         expect(emitted).toContain('propertyKey: "label"');
 
         const exported = loadAotModule(source);
@@ -943,13 +943,13 @@ export class AotFallbackPlan {
         }
     });
 
-    it('embeds IR for block templates', () => {
+    it('embeds a precompiled template plan for block templates', () => {
         const emitted = transpileAot('aot-template-ir-block.ts', `
 import { Component } from '@tsdi/components';
 @Component({ selector: 'aot-ir-block', template: '@if (ok) { <span>yes</span> } @else { <span>no</span> }' })
 export class AotIrBlock { ok = true; }
 `, { module: ts.ModuleKind.CommonJS });
-        expect(emitted).toContain('templateIR:');
+        expect(emitted).toContain('templatePlan:');
         expect(emitted).toContain('v-if');
         expect(emitted).toContain('v-else');
     });
