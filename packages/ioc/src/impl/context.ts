@@ -68,7 +68,11 @@ export class ContextInjector<TParent extends Injector = Injector> extends Abstra
             this.records.set(c, val);
         });
 
-        this.records.set(Resolver, createRecord(() => new DefaultResolver(this.getResolver())))
+        // Without invocation-specific resolvers the runtime default resolver is
+        // identical; avoid allocating a per-context record (hot for JoinPoints).
+        if (options.resolvers?.length) {
+            this.records.set(Resolver, createRecord(() => new DefaultResolver(this.getResolver())));
+        }
 
         deferProcessProviders(this, options.providers, this._readyDefer);
 
