@@ -1,6 +1,6 @@
 import { applyPrecompiledType, getClassRef, getModuleType, AnnotationType, Injector, noPointcut } from '@tsdi/ioc';
 import { ComponentDef, ComponentFactory, ComponentOptions } from '../refs/component';
-import { DirectiveDef, DirectiveOptions, DirectiveType, Factoriable, factoryKey } from '../refs/directive';
+import { DirectiveDef, DirectiveFactory, DirectiveOptions, DirectiveType, Factoriable, factoryKey } from '../refs/directive';
 import { COMPONENTS } from './component';
 import { CUSTOM_ELEMENTS, DIRECTIVES, normalizeDirectiveSelector } from './directive';
 
@@ -58,6 +58,14 @@ export function applyPrecompiledComponent(
             return factory.create(target as any, { ...options, injector: ctx });
         };
     }
+
+    // `@Component` is a declaration decorator: the runtime decorator dispatch
+    // registers the invocation factory used when the component itself is the
+    // bootstrap target (`Application.run(MyComponent)`). The materialized AOT
+    // path skips that dispatch, so register the same factory here. Without it
+    // the app falls back to the default invocation and fails with
+    // "<Component> is invaild runnable, can not invocation without method param."
+    getClassRef(target).setInvocationFactory((ctx: Injector) => ctx.get(ComponentFactory));
 }
 
 /**
@@ -117,4 +125,9 @@ export function applyPrecompiledDirective(
             }
         };
     }
+
+    // Mirror the runtime `@Directive` declaration dispatch (see the component
+    // path above): the AOT materialized path must still register the directive
+    // invocation factory for bootstrap targets.
+    getClassRef(target).setInvocationFactory((ctx: Injector) => ctx.get(DirectiveFactory));
 }
