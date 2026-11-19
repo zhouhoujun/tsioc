@@ -1,4 +1,4 @@
-import { AfterViewInit, Attribute, Component, Computed, ElementRef, EventEmitter, OnDestroy, ViewChild } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, Computed, ElementRef, EventEmitter, OnDestroy, ViewChild, unwrapReactive } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 
@@ -74,8 +74,11 @@ interface MenuBarEntryView {
             <span class="menu-bar-label" v-if="label">{{label}}</span>
             <span class="menu-bar-caret" v-if="caret"><icon [name]="caret" [glyph]="caret" size="xs"></icon></span>
         </button>
-        <div class="menu-bar-popup" role="menu" v-show="open">
-            <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" trackBy="key" data-menu-key="{{entry.key}}">
+        <div class="menu-bar-popup" role="menu" v-show="open" [style]="popupStyle"
+            @scroll="onPopupScroll">
+            <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" trackBy="key" data-menu-key="{{entry.key}}"
+                @mouseleave="leaveSubmenu(entry.id)"
+                @focusout="blurSubmenu(entry.id, $event)">
                 <div class="menu-bar-separator" role="separator" v-if="entry.kind === 'separator'"></div>
                 <div class="menu-bar-group-title" v-if="entry.kind === 'title'">{{entry.label}}</div>
                 <button class="menu-bar-item {{entry.className}}" type="button" role="menuitem"
@@ -84,14 +87,15 @@ interface MenuBarEntryView {
                     [disabled]="entry.disabled"
                     aria-disabled="{{entry.disabled}}"
                     @click="choose(entry.id, $event)"
-                    @mouseenter="anchorSubmenu(entry.id, $event)">
+                    @mouseenter="hoverSubmenu(entry.id, $event)"
+                    @focus="hoverSubmenu(entry.id, $event)">
                     <span class="menu-bar-item-icon" v-if="entry.icon"><icon [name]="entry.icon" [glyph]="entry.icon" size="sm"></icon></span>
                     <span class="menu-bar-item-label">{{entry.label}}</span>
                     <span class="menu-bar-item-shortcut" v-if="entry.shortcut">{{entry.shortcut}}</span>
                     <span class="menu-bar-item-check" v-if="entry.checked"><icon name="check" size="xs"></icon></span>
                     <span class="menu-bar-item-caret" v-if="entry.children.length"><icon name="caret-right" size="xs"></icon></span>
                 </button>
-                <div [class]="'menu-bar-submenu' + (activeSubmenuKey === entry.id ? ' is-open' : '')"
+                <div [class]="'menu-bar-submenu' + (submenuOpen(entry.id) ? ' is-open' : '')"
                     [style]="submenuStyle(entry.id)" role="menu" v-if="entry.children.length">
                     <button class="menu-bar-item" type="button" role="menuitem"
                         v-for="child in entry.children"
@@ -125,9 +129,15 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     private _open = false;
     /** Id of the submenu parent currently expanded by click. */
     activeSubmenuKey = '';
+    /** Id of the submenu parent currently previewed by hover/focus. */
+    hoverSubmenuKey = '';
     /** Viewport coordinates of the open flyout (escapes the popup's clipping). */
     private submenuLeft = 0;
     private submenuTop = 0;
+    private submenuMaxHeight = 0;
+    /** Viewport budget for the scrollable popup, measured from the trigger. */
+    private popupMaxHeight = 0;
+    private popupAbove = false;
     private bound = false;
     private pointerHandler?: (event: any) => void;
     private keyHandler?: (event: any) => void;
@@ -145,6 +155,9 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
 
     onAfterViewInit(): void {
         markElementRefRaw(this.menuRoot);
+        if (this._open) {
+            this.anchorPopup();
+        }
     }
 
     @Attribute()
@@ -157,6 +170,17 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             return;
         }
         this._open = next;
+        if (next) {
+            // The popup always exists (it is only hidden), so the trigger can
+            // be measured immediately. Re-measure on the microtask as well in
+            // case the menu opened during the first render pass.
+            this.anchorPopup();
+            void Promise.resolve().then(() => {
+                if (this._open) {
+                    this.anchorPopup();
+                }
+            });
+        }
         this.openChange.emit(next);
     }
 
@@ -229,6 +253,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         this.open = !this._open;
         if (!this._open) {
             this.activeSubmenuKey = '';
+            this.hoverSubmenuKey = '';
         }
     }
 
@@ -244,8 +269,11 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             const opening = this.activeSubmenuKey !== id;
             if (opening) {
                 this.anchorSubmenu(id, event);
+                this.activeSubmenuKey = id;
+            } else {
+                this.activeSubmenuKey = '';
+                this.hoverSubmenuKey = '';
             }
-            this.activeSubmenuKey = opening ? id : '';
             return;
         }
         this.close();
@@ -255,6 +283,55 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     close(): void {
         this.open = false;
         this.activeSubmenuKey = '';
+        this.hoverSubmenuKey = '';
+    }
+
+    /**
+     * Preview a flyout as soon as the pointer (or keyboard focus) enters its
+     * parent row. The popup is a scroll container, so the flyout must switch to
+     * fixed coordinates before it becomes visible; otherwise it is clipped by
+     * the popup's overflow box — which is exactly what happened once long menus
+     * gained a scrollbar.
+     */
+    hoverSubmenu(id: string, event?: Event): void {
+        if (this.activeSubmenuKey && this.activeSubmenuKey !== id) {
+            this.activeSubmenuKey = '';
+        }
+        this.hoverSubmenuKey = id;
+        this.anchorSubmenu(id, event);
+    }
+
+    leaveSubmenu(id: string): void {
+        if (this.hoverSubmenuKey === id) {
+            this.hoverSubmenuKey = '';
+        }
+    }
+
+    /** Keep the flyout open while keyboard focus moves inside the same entry. */
+    blurSubmenu(id: string, event?: Event): void {
+        const next = (event as any)?.relatedTarget;
+        const root = unwrapReactive((event as any)?.currentTarget);
+        if (next && root?.contains?.(next)) {
+            return;
+        }
+        this.leaveSubmenu(id);
+    }
+
+    submenuOpen(id: string): boolean {
+        return this.activeSubmenuKey === id || this.hoverSubmenuKey === id;
+    }
+
+    /** Keep a visible flyout attached to its row while the popup scrolls. */
+    onPopupScroll(): void {
+        const id = this.activeSubmenuKey || this.hoverSubmenuKey;
+        if (!id) {
+            return;
+        }
+        const root = unwrapReactive(this.hostElement);
+        const item = root?.querySelector?.(`[data-menu-id="${id}"]`);
+        if (item) {
+            this.anchorSubmenuElement(item);
+        }
     }
 
     /**
@@ -263,32 +340,86 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
      * coordinates keep nested menus visible and clickable near the viewport edge.
      */
     anchorSubmenu(id: string, event?: Event): void {
-        if (this.activeSubmenuKey && this.activeSubmenuKey !== id) {
+        const target = unwrapReactive(event?.currentTarget as any);
+        if (!target) {
+            const root = unwrapReactive(this.hostElement);
+            const item = root?.querySelector?.(`[data-menu-id="${id}"]`);
+            if (!item) {
+                return;
+            }
+            this.anchorSubmenuElement(item);
             return;
         }
-        const target = event?.currentTarget as any;
+        this.anchorSubmenuElement(target);
+    }
+
+    protected anchorSubmenuElement(target: any): void {
+        target = unwrapReactive(target);
         const rect = target?.getBoundingClientRect?.();
         if (!rect) {
             return;
         }
         const win = target?.ownerDocument?.defaultView
-            || (globalThis as { innerWidth?: number }).innerWidth;
-        const width = 200;
+            || (globalThis as { innerHeight?: number });
+        const width = 240;
         const viewWidth = Number((win as any)?.innerWidth) || 1024;
         const viewHeight = Number((win as any)?.innerHeight) || 768;
         const left = rect.right + width + 8 > viewWidth
             ? Math.max(8, rect.left - width - 4)
             : rect.right + 4;
-        const top = Math.max(8, Math.min(rect.top - 6, viewHeight - 120));
+        const top = Math.max(8, Math.min(rect.top - 6, viewHeight - 160));
         this.submenuLeft = Math.round(left);
         this.submenuTop = Math.round(top);
+        // Only let the flyout scroll when it would actually leave the viewport.
+        this.submenuMaxHeight = Math.max(120, Math.round(viewHeight - top - 8));
     }
 
     submenuStyle(id: string): string {
-        if (this.activeSubmenuKey !== id) {
+        if (!this.submenuOpen(id)) {
             return '';
         }
-        return `position: fixed; left: ${this.submenuLeft}px; top: ${this.submenuTop}px; right: auto;`;
+        const maxHeight = this.submenuMaxHeight || 480;
+        return `position: fixed; left: ${this.submenuLeft}px; top: ${this.submenuTop}px; `
+            + `right: auto; max-height: ${maxHeight}px;`;
+    }
+
+    /**
+     * Bound the popup by the space between the trigger and the viewport edge
+     * instead of an arbitrary 60vh/480px cap. `max-height` alone never shows a
+     * scrollbar while the content fits, so short menus stay scrollbar-free even
+     * on small screens.
+     */
+    @Computed()
+    get popupStyle(): string {
+        if (!this._open) {
+            return '';
+        }
+        const vertical = this.popupAbove
+            ? 'top: auto; bottom: calc(100% + 6px);'
+            : 'top: calc(100% + 6px); bottom: auto;';
+        const maxHeight = Math.round(this.popupMaxHeight || 480);
+        return `${vertical} max-height: ${maxHeight}px;`;
+    }
+
+    protected anchorPopup(): void {
+        const root = unwrapReactive(this.hostElement);
+        const trigger = root?.querySelector?.('.menu-bar-trigger');
+        const rect = trigger?.getBoundingClientRect?.();
+        const win = trigger?.ownerDocument?.defaultView
+            || (globalThis as { innerHeight?: number });
+        const viewHeight = Number((win as any)?.innerHeight) || 768;
+        const margin = 12;
+        // jsdom and non-layout hosts report a zero rect; fall back to the full
+        // viewport so the CSS max-height still never creates a fixed cap.
+        if (!rect || (!rect.height && !rect.top && !rect.bottom)) {
+            this.popupAbove = false;
+            this.popupMaxHeight = Math.max(160, viewHeight - margin * 2);
+            return;
+        }
+        const below = viewHeight - rect.bottom - margin;
+        const above = rect.top - margin;
+        this.popupAbove = below < 240 && above > below;
+        this.popupMaxHeight = Math.max(160, this.popupAbove ? above : below);
     }
 
     protected itemClass(item: MenuBarItem, hasChildren = false): string {
@@ -350,7 +481,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             if (!this._open) {
                 return;
             }
-            const root = this.hostElement;
+            const root = unwrapReactive(this.hostElement);
             const target = event?.target as any;
             if (root && target && typeof root.contains === 'function' && root.contains(target)) {
                 return;
@@ -386,11 +517,11 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     }
 
     protected ownerDocument(): any {
-        return (this.hostElement as any)?.ownerDocument
+        return unwrapReactive(this.hostElement)?.ownerDocument
             || (globalThis as { document?: Document }).document;
     }
 
     protected get hostElement(): any {
-        return (this.menuRoot?.nativeElement || this.elementRef?.nativeElement) as any;
+        return unwrapReactive((this.menuRoot?.nativeElement || this.elementRef?.nativeElement) as any);
     }
 }

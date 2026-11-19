@@ -137,6 +137,98 @@ export class MenuBarDomTest {
         expect(root.querySelector('[data-menu-id="run"] .menu-bar-item-check')).toBeTruthy();
     }
 
+    @Test('bounds the popup by the viewport instead of a fixed 480px cap')
+    async boundsPopupToViewport() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        const menu = (this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>).instance;
+        menu.close();
+        await Promise.resolve();
+
+        const win = this.doc.defaultView as any;
+        Object.defineProperty(win, 'innerHeight', { value: 900, configurable: true });
+        Object.defineProperty(win, 'innerWidth', { value: 1200, configurable: true });
+        const trigger = root.querySelector('.menu-bar-trigger') as any;
+        trigger.getBoundingClientRect = () => ({ top: 100, bottom: 130, left: 900, right: 1000, width: 100, height: 30 });
+
+        trigger.click();
+        await Promise.resolve();
+        const popup = root.querySelector('.menu-bar-popup') as any;
+        // 900 - 130 (trigger bottom) - 12 (margin) = 758, far above the old
+        // min(60vh, 480px) cap that forced a scrollbar on tall windows.
+        expect(popup.getAttribute('style')).toContain('max-height: 758px');
+        expect(popup.getAttribute('style')).toContain('top: calc(100% + 6px)');
+    }
+
+    @Test('opens the popup upwards when the trigger sits near the bottom edge')
+    async flipsPopupAboveTrigger() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        const menu = (this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>).instance;
+        menu.close();
+        await Promise.resolve();
+
+        const win = this.doc.defaultView as any;
+        Object.defineProperty(win, 'innerHeight', { value: 900, configurable: true });
+        const trigger = root.querySelector('.menu-bar-trigger') as any;
+        trigger.getBoundingClientRect = () => ({ top: 800, bottom: 830, left: 900, right: 1000, width: 100, height: 30 });
+
+        trigger.click();
+        await Promise.resolve();
+        const popup = root.querySelector('.menu-bar-popup') as any;
+        expect(popup.getAttribute('style')).toContain('bottom: calc(100% + 6px)');
+        expect(popup.getAttribute('style')).toContain('top: auto');
+        expect(popup.getAttribute('style')).toContain('max-height: 788px');
+    }
+
+    @Test('anchors the flyout on hover so a scrolling popup cannot clip it')
+    async anchorsSubmenuOnHover() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        const menu = (this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>).instance;
+        menu.close();
+        await Promise.resolve();
+
+        const win = this.doc.defaultView as any;
+        Object.defineProperty(win, 'innerHeight', { value: 900, configurable: true });
+        Object.defineProperty(win, 'innerWidth', { value: 1200, configurable: true });
+
+        root.querySelector('.menu-bar-trigger').click();
+        await Promise.resolve();
+
+        const theme = root.querySelector('[data-menu-id="theme"]') as any;
+        theme.getBoundingClientRect = () => ({ top: 300, bottom: 330, left: 100, right: 320, width: 220, height: 30 });
+        theme.dispatchEvent(new (win as any).MouseEvent('mouseenter', { bubbles: false }));
+        await Promise.resolve();
+
+        const submenu = root.querySelector('.menu-bar-submenu') as any;
+        expect(submenu.className).toContain('is-open');
+        const style = submenu.getAttribute('style') || '';
+        expect(style).toContain('position: fixed');
+        expect(style).toContain('left: 324px');
+        expect(style).toContain('top: 294px');
+        // 900 - 294 (top) - 8 = 598: scrolls only if the flyout exceeds it.
+        expect(style).toContain('max-height: 598px');
+
+        theme.parentElement.dispatchEvent(new (win as any).MouseEvent('mouseleave', { bubbles: false }));
+        await Promise.resolve();
+        expect(submenu.className).not.toContain('is-open');
+
+        // Keyboard focus opens the same anchored flyout and keeps it open while
+        // focus stays inside the entry (for example tabbing into the children).
+        theme.dispatchEvent(new (win as any).FocusEvent('focus', { bubbles: false }));
+        await Promise.resolve();
+        expect(submenu.className).toContain('is-open');
+        expect(submenu.getAttribute('style')).toContain('position: fixed');
+
+        theme.parentElement.dispatchEvent(new (win as any).FocusEvent('focusout', {
+            bubbles: true,
+            relatedTarget: this.doc.body
+        }));
+        await Promise.resolve();
+        expect(submenu.className).not.toContain('is-open');
+    }
+
     @Test('Escape and outside clicks close the popup')
     async closesOnEscapeAndOutsideClick() {
         const selected: string[] = [];

@@ -60,7 +60,9 @@ menu-bar {
     z-index: 60;
     min-width: 220px;
     max-width: min(340px, calc(100vw - 24px));
-    max-height: min(60vh, 480px);
+    /* Fallback only: the component sets an inline budget measured from the
+       trigger, so the menu never scrolls before it reaches the viewport edge. */
+    max-height: calc(100vh - 24px);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 6px;
@@ -102,7 +104,7 @@ menu-bar {
     gap: 1px;
     min-width: 180px;
     max-width: min(280px, calc(100vw - 24px));
-    max-height: min(60vh, 480px);
+    max-height: calc(100vh - 24px);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 6px;
@@ -117,8 +119,6 @@ menu-bar {
     right: calc(100% + 2px);
 }
 
-.menu-bar-entry.has-submenu:hover .menu-bar-submenu,
-.menu-bar-entry.has-submenu:focus-within .menu-bar-submenu,
 .menu-bar-submenu.is-open {
     display: flex;
 }
