@@ -431,6 +431,29 @@ export class OptionInjectedService {
         expect(service.value).toBe('fallback');
     });
 
+
+    it('precompiles property injection options', () => {
+        const source = `
+import { Autowired, Injectable } from '@tsdi/ioc';
+
+@Injectable()
+export class OptionPropertyService {
+    @Autowired('MISSING', { nullable: true, defaultValue: 'property-fallback' })
+    value?: string;
+}
+`;
+        const emitted = transpileAot('aot-prop-options.ts', source, { module: ts.ModuleKind.CommonJS });
+        expect(emitted).toContain('__aotType(');
+        expect(emitted).toContain('propMetadatas');
+        expect(emitted).toContain('defaultValue');
+
+        const exported = loadModule(source);
+        const container = ioc.createInjector();
+        ioc.InjectUtil.use(container, exported.OptionPropertyService);
+        const service = container.get(exported.OptionPropertyService) as any;
+        expect(service.value).toBe('property-fallback');
+    });
+
     it('materializes component and directive definitions', () => {
         const source = `
 import { Component, Directive } from '@tsdi/components';

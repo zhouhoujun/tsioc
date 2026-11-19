@@ -531,20 +531,45 @@ function queryMetadataExpression(decorator: ts.Decorator, member: ts.ClassElemen
 
 function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undefined {
     const factory = ts.factory;
-    const flags: ts.Expression[] = [];
     let token: ts.Expression | undefined;
+    let options: ts.Expression | undefined;
     let hasInjection = false;
-    let nullable = false;
+    let nullable: ts.Expression | undefined;
+    let defaultValue: ts.Expression | undefined;
+    let multi: ts.Expression | undefined;
+    let resolver: ts.Expression | undefined;
+    let optionFlags: ts.Expression | undefined;
+    const flagExpressions: ts.Expression[] = [];
     for (const decorator of decoratorsOf(member)) {
         const name = decoratorName(decorator);
         if (name === 'Autowired' || name === 'Inject') {
             hasInjection = true;
             const args = decoratorArgs(decorator);
-            if (args.length > 1 || (args[0] && ts.isObjectLiteralExpression(args[0]))) {
-                return undefined;
+            if (args[0] && ts.isObjectLiteralExpression(args[0])) {
+                options = args[0];
+            } else {
+                if (args[0]) {
+                    token = selectorValueExpression(args[0]);
+                }
+                if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+                    options = args[1];
+                } else if (args.length > 1) {
+                    return undefined;
+                }
             }
-            if (args[0]) {
-                token = selectorValueExpression(args[0]);
+            if (!token) {
+                const provider = optionProperty(options, 'provider');
+                if (provider) {
+                    token = selectorValueExpression(provider);
+                }
+            }
+            optionFlags = optionProperty(options, 'flags');
+            nullable = optionProperty(options, 'nullable');
+            defaultValue = optionProperty(options, 'defaultValue');
+            multi = optionProperty(options, 'multi');
+            resolver = optionProperty(options, 'resolver');
+            if (optionProperty(options, 'alias')) {
+                return undefined;
             }
             continue;
         }
@@ -552,14 +577,14 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
             if (activeTypeContext) {
                 activeTypeContext.usesInjectFlags = true;
             }
-            flags.push(factory.createPropertyAccessExpression(
+            flagExpressions.push(factory.createPropertyAccessExpression(
                 factory.createIdentifier('__aotFlags'),
                 name
             ));
             continue;
         }
         if (name === 'Nullable') {
-            nullable = true;
+            nullable = factory.createTrue();
             continue;
         }
         if (name === 'NoReactive') {
@@ -587,20 +612,21 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
         }
         token = typeExpression(type);
     }
-    const properties: ts.ObjectLiteralElementLike[] = [];
-    if (token) {
-        properties.push(factory.createPropertyAssignment('provider', token));
-    }
-    if (nullable) {
-        properties.push(factory.createPropertyAssignment('nullable', factory.createTrue()));
-    }
-    if (flags.length) {
-        let merged = flags[0];
-        for (let i = 1; i < flags.length; i++) {
-            merged = factory.createBinaryExpression(merged, ts.SyntaxKind.BarToken, flags[i]);
+    const properties: ts.ObjectLiteralElementLike[] = [
+        factory.createPropertyAssignment('provider', token)
+    ];
+    if (flagExpressions.length || optionFlags) {
+        let merged = optionFlags ?? flagExpressions[0];
+        const startIndex = optionFlags ? 0 : 1;
+        for (let i = startIndex; i < flagExpressions.length; i++) {
+            merged = factory.createBinaryExpression(merged, ts.SyntaxKind.BarToken, flagExpressions[i]);
         }
         properties.push(factory.createPropertyAssignment('flags', merged));
     }
+    if (nullable) properties.push(factory.createPropertyAssignment('nullable', nullable));
+    if (defaultValue) properties.push(factory.createPropertyAssignment('defaultValue', defaultValue));
+    if (multi) properties.push(factory.createPropertyAssignment('multi', multi));
+    if (resolver) properties.push(factory.createPropertyAssignment('resolver', resolver));
     return factory.createObjectLiteralExpression(properties, false);
 }
 
