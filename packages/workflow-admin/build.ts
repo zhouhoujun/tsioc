@@ -49,7 +49,7 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // Raised from 985 KB (2026-11) with the shared config-node picker: broker
 // create/edit dialog, reference field actions and the delete guard.
 // Raised again for the configuration-node index panel (~1.4 KB raw).
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_010_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_020_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the

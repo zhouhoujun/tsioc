@@ -881,6 +881,23 @@ watch     { path: "data", recursive: false, debounce: 200, event: "all" }
   when the run handle stops
 - browser-only hosts fail with a diagnosable error instead of silently skipping
 
+### Link routing
+
+`link` has four modes (Node-RED semantics):
+
+| Mode | Behaviour |
+| --- | --- |
+| `out` | jumps into every `in` node sharing a link name; their branches run in order |
+| `in` | sink for deliveries; continues its own downstream |
+| `call` | runs a matching `in` branch and waits for a matching `return` |
+| `return` | hands the current message back to the pending call and stops the branch |
+
+- names are a comma separated list (`links: "job, alerts"`), matched by overlap
+- `call` has a `timeout` (default 5000 ms) and fails with
+  `Link call "..." timed out after <n>ms waiting for a link-return.`
+- a call with no matching `in` fails fast with `found no matching link-in node`
+- link-in/return nodes never start a flow on their own
+
 ### Sub-workflow ports
 
 `subprocess` maps data across the boundary:

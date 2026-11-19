@@ -315,12 +315,16 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'out',
                 options: [
                     { label: 'Link out', value: 'out' },
-                    { label: 'Link in', value: 'in' }
-                ]
+                    { label: 'Link in', value: 'in' },
+                    { label: 'Link call', value: 'call' },
+                    { label: 'Link return', value: 'return' }
+                ],
+                description: 'Link out jumps to matching link-in nodes; call waits for a matching link-return.'
             }),
-            configField({ key: 'links', label: 'Links', type: 'text', placeholder: 'flow-a, flow-b', description: 'Comma separated names shared by link-out and link-in nodes.' })
+            configField({ key: 'links', label: 'Links', type: 'text', placeholder: 'flow-a, flow-b', description: 'Comma separated names shared by link-out/link-in (or call/return).' }),
+            configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 5000, min: 0, step: 1000, unit: 'ms', visibleWhen: { key: 'mode', equals: 'call' } })
         ],
-        defaultConfig: { mode: 'out' }
+        defaultConfig: { mode: 'out', timeout: 5000 }
     },
     {
         type: 'html',

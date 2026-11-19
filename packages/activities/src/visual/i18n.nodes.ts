@@ -605,7 +605,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "link": {
                 "mode": "Mode",
-                "links": "Links"
+                "links": "Links",
+                "timeout": "Timeout"
             },
             "html": {
                 "field": "HTML path",
@@ -1296,7 +1297,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "active": "turn off to keep the node but skip its output"
             },
             "link": {
-                "mode": "Send from this node (link out) or receive from matching names (link in).",
+                "mode": "Link out jumps to matching link-in nodes; call waits for a matching link-return.",
                 "links": "Comma separated names shared by link-out and link-in nodes."
             },
             "html": {
@@ -1586,7 +1587,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "0": "0",
             "1": "1",
             "all": "All changes",
-            "rename": "Renames only"
+            "rename": "Renames only",
+            "call": "Link call",
+            "return": "Link return"
         }
     },
     "zh-CN": {
@@ -2188,7 +2191,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "link": {
                 "mode": "模式",
-                "links": "链接名"
+                "links": "链接名",
+                "timeout": "超时"
             },
             "html": {
                 "field": "HTML 路径",
@@ -2863,7 +2867,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "active": "关闭后保留节点但不再输出。"
             },
             "link": {
-                "mode": "从该节点发送（link out），或接收匹配名称的消息（link in）。",
+                "mode": "Link out 跳转到匹配的 Link in；Link call 等待匹配的 Link return 返回。",
                 "links": "link out 与 link in 共享的链接名，逗号分隔。"
             },
             "html": {
@@ -3153,7 +3157,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "0": "0",
             "1": "1",
             "all": "All changes",
-            "rename": "Renames only"
+            "rename": "Renames only",
+            "call": "Link call",
+            "return": "Link return"
         }
     }
 };

@@ -198,6 +198,9 @@ export interface WorkflowMqttPublishRequest {
     tls?: WorkflowTlsOptions;
 }
 
+/** Pending `link call` waits, keyed by execution state (never serialized). */
+const linkCallWaits = new WeakMap<object, Map<string, (result: ActivityResult) => void>>();
+
 @Injectable()
 export class VisualWorkflowService {
     private readonly executions = new Map<string, WorkflowExecutionState>();
@@ -999,6 +1002,13 @@ export class VisualWorkflowService {
             );
         }
 
+        if (node.type === 'link') {
+            return this.executeLinkNode(
+                node, plan, context, result, state, options, host,
+                visited, nodeHandler, resume, replayed, rerun
+            );
+        }
+
         return this.traverseOutgoing(
             node,
             plan,
@@ -1012,6 +1022,146 @@ export class VisualWorkflowService {
             resume,
             replayed,
             rerun
+        );
+    }
+
+    /**
+     * Node-RED style link routing:
+     * - `out` jumps into every matching `in` node (their branches run);
+     * - `in` continues downstream as usual;
+     * - `call` executes a matching `in` branch and waits for its `return`;
+     * - `return` hands the current message back to the pending call and stops.
+     */
+    private async executeLinkNode(
+        node: IVisualWorkflowNode,
+        plan: CompiledWorkflow,
+        context: ActivityContext,
+        result: ActivityResult,
+        state: WorkflowExecutionState,
+        options: WorkflowExecutionOptions,
+        host: VisualNodeRuntimeHost,
+        visited: Set<string>,
+        nodeHandler: VisualNodeHandlerLike,
+        resume: boolean,
+        replayed: Set<string>,
+        rerun: boolean
+    ): Promise<ActivityResult> {
+        const config = node.config || {};
+        const mode = String(config.mode || 'out');
+        const names = this.linkNames(config.links);
+        if (mode === 'in') {
+            // A link-in only continues its own branch; delivery is driven by
+            // the matching link-out/call.
+            return this.traverseOutgoing(node, plan, context, result, state, options, host, visited, nodeHandler, resume, replayed, rerun);
+        }
+        if (mode === 'return') {
+            const callId = String((context as any)?.linkCallId || '');
+            const waiter = callId ? linkCallWaits.get(state)?.get(callId) : undefined;
+            if (waiter) {
+                linkCallWaits.get(state)?.delete(callId);
+                // Hand the *incoming message* back, not the link node metadata.
+                const msg = (context as any)?.msg;
+                waiter({
+                    success: true,
+                    data: {
+                        nodeId: node.id,
+                        ...(msg ? { msg: { ...msg }, payload: msg.payload } : { payload: (context as any)?.payload })
+                    }
+                });
+            }
+            return result;
+        }
+        if (!names.length) {
+            return this.traverseOutgoing(node, plan, context, result, state, options, host, visited, nodeHandler, resume, replayed, rerun);
+        }
+        const targets = this.linkTargets(plan, node, names, mode === 'call' ? 'in' : 'in');
+        if (!targets.length) {
+            if (mode === 'call') {
+                return {
+                    success: false,
+                    error: new Error(`Link call "${names.join(', ')}" found no matching link-in node.`),
+                    data: { nodeId: node.id, links: names }
+                };
+            }
+            return this.traverseOutgoing(node, plan, context, result, state, options, host, visited, nodeHandler, resume, replayed, rerun);
+        }
+
+        if (mode === 'call') {
+            const callId = `${state.executionId}:${node.id}`;
+            const timeoutMs = Math.max(0, Number(config.timeout) || 0) || 5000;
+            let resolveReturn: (value: ActivityResult) => void = () => undefined;
+            const returned = new Promise<ActivityResult>(resolve => { resolveReturn = resolve; });
+            let waits = linkCallWaits.get(state);
+            if (!waits) {
+                waits = new Map();
+                linkCallWaits.set(state, waits);
+            }
+            waits.set(callId, resolveReturn);
+            const callContext = { ...this.mergeContext(context, result, {} as NodeConnection), linkCallId: callId };
+            let timer: any;
+            const timeout = new Promise<undefined>(resolve => {
+                timer = setTimeout(() => resolve(undefined), timeoutMs);
+                timer?.unref?.();
+            });
+            try {
+                for (const target of targets) {
+                    void this.executeFromNode(
+                        target, plan, callContext, state, options, host,
+                        new Set(visited), nodeHandler, resume, replayed, rerun
+                    );
+                }
+                const answer = await Promise.race([returned, timeout]);
+                if (!answer) {
+                    return {
+                        success: false,
+                        error: new Error(`Link call "${names.join(', ')}" timed out after ${timeoutMs}ms waiting for a link-return.`),
+                        data: { nodeId: node.id, links: names }
+                    };
+                }
+                // Continue the call site with the *returned* message.
+                const returnedMessage = (answer as any)?.data?.msg;
+                const merged: any = returnedMessage
+                    ? { ...context, msg: { ...returnedMessage }, payload: returnedMessage.payload }
+                    : { ...context };
+                return this.traverseOutgoing(node, plan, merged, answer, state, options, host, visited, nodeHandler, resume, replayed, rerun);
+            } finally {
+                if (timer) {
+                    clearTimeout(timer);
+                }
+                linkCallWaits.get(state)?.delete(callId);
+            }
+        }
+
+        // mode 'out': enter every matching link-in branch with the current message.
+        let last = result;
+        for (const target of targets) {
+            last = await this.executeFromNode(
+                target, plan, this.mergeContext(context, result, {} as NodeConnection),
+                state, options, host, visited, nodeHandler, resume, replayed, rerun
+            );
+        }
+        return last;
+    }
+
+    private linkNames(value: any): string[] {
+        return String(value || '')
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean);
+    }
+
+    private linkTargets(
+        plan: CompiledWorkflow,
+        node: IVisualWorkflowNode,
+        names: string[],
+        mode: 'in'
+    ): IVisualWorkflowNode[] {
+        const wanted = new Set(names);
+        return [...plan.nodes.values()].filter(candidate =>
+            candidate.type === 'link'
+            && candidate.id !== node.id
+            && String(candidate.config?.mode || 'out') === mode
+            && this.linkNames(candidate.config?.links).some(name => wanted.has(name))
         );
     }
 

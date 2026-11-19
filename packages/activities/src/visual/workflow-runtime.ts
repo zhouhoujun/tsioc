@@ -1727,7 +1727,8 @@ export async function executeVisualNode(
                 data: {
                     nodeId: node.id,
                     mode: String(config.mode || 'out'),
-                    links: String(config.links || '').split(',').map(item => item.trim()).filter(Boolean)
+                    links: String(config.links || '').split(',').map(item => item.trim()).filter(Boolean),
+                    timeout: Math.max(0, Number(config.timeout) || 0)
                 }
             };
         case 'scale': {
