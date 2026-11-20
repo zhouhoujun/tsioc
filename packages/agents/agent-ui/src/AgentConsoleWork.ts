@@ -131,6 +131,8 @@ export interface AgentConsoleWorkHost {
     spawnWorker?(goal: string, profile?: string, workspace?: string): Promise<{ taskId?: string; sessionId?: string; error?: string }>;
     /** Create/lookup a managed worktree for a worker (`/work spawn --worktree`). */
     createWorktree?(name?: string): Promise<string | undefined>;
+    /** Read-only worker report overlay. */
+    openTextOverlay?(title: string, lines: string[], visibleLines?: number): void;
 }
 
 function workStatusLabel(status: string, translator?: AgentUiTranslator | null): string {
@@ -154,6 +156,36 @@ function workStatusLabel(status: string, translator?: AgentUiTranslator | null):
         ? panelLabel(translator, 'toolRuns', name, fallback)
         : '';
     return fromToolRuns || formatAgentUiNotice(translator, name);
+}
+
+function showTaskReport(host: AgentConsoleWorkHost, task: Record<string, any>): void {
+    const result = task?.result || {};
+    const lines: string[] = [
+        formatAgentUiNotice(host.translator, 'workReportGoal', { goal: String(task?.goal || '') }),
+        formatAgentUiNotice(host.translator, 'workReportStatus', { status: String(task?.status || '') })
+    ];
+    const pushList = (key: string, value: unknown): void => {
+        const text = Array.isArray(value) ? value.filter(Boolean).join('; ') : String(value || '').trim();
+        if (text) lines.push(formatAgentUiNotice(host.translator, key, { value: text }));
+    };
+    if (task?.error) {
+        lines.push(formatAgentUiNotice(host.translator, 'workReportError', { error: String(task.error) }));
+    }
+    pushList('workReportSummary', result.summary);
+    pushList('workReportDiff', result.diff);
+    pushList('workReportCompleted', result.completed);
+    pushList('workReportNextSteps', result.nextSteps);
+    pushList('workReportRisks', result.risks);
+    pushList('workReportArtifacts', result.artifacts);
+    if (lines.length === 2) {
+        lines.push(formatAgentUiNotice(host.translator, 'workReportEmpty'));
+    }
+    const title = formatAgentUiNotice(host.translator, 'workReportTitle');
+    if (host.openTextOverlay) {
+        host.openTextOverlay(title, lines, Math.min(24, Math.max(4, lines.length)));
+    } else {
+        host.notify(lines.join('\n'));
+    }
 }
 
 /**
@@ -228,10 +260,16 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
     const row = rows.find(item => item.value === picked);
     if (!row) return;
     if (row.value.startsWith('task:')) {
+        const taskId = row.value.split(':')[1];
+        const task = (tasks || []).find(item => String(item?.id || '') === taskId) as Record<string, any> | undefined;
+        const hasReport = !!(task?.result || task?.error);
         const actions: AgentConsoleSelectOption[] = [
-            { label: formatAgentUiNotice(host.translator, 'workOpenSession'), value: 'open' },
-            { label: formatAgentUiNotice(host.translator, 'workCancelTask'), value: 'cancel' }
+            { label: formatAgentUiNotice(host.translator, 'workOpenSession'), value: 'open' }
         ];
+        if (hasReport) {
+            actions.push({ label: formatAgentUiNotice(host.translator, 'workOpenReport'), value: 'report' });
+        }
+        actions.push({ label: formatAgentUiNotice(host.translator, 'workCancelTask'), value: 'cancel' });
         if (row.status === 'failed') {
             actions.push({ label: formatAgentUiNotice(host.translator, 'workRetryTask'), value: 'retry' });
         }
@@ -244,6 +282,10 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
             )
             : 'open';
         if (!action) return;
+        if (action === 'report') {
+            showTaskReport(host, task || { id: taskId, status: row.status, goal: row.detail });
+            return;
+        }
         if (action === 'retry') {
             const goal = String(row.detail || '').trim();
             if (!goal) {
@@ -303,6 +345,7 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
         createWorktree: async (name?: string) => {
             const result = await ctx.state.worktreeCommand?.({ action: 'create', ...(name ? { name } : {}) });
             return result?.path;
-        }
+        },
+        openTextOverlay: (title: string, lines: string[], visibleLines?: number) => ctx.state.openTextOverlay(title, lines, visibleLines)
     };
 }

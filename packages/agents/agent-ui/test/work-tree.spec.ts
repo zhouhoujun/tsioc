@@ -166,6 +166,46 @@ export class WorkTreeTest {
         expect(spawned.length).toEqual(1);
     }
 
+    @Test('completed task rows open a read-only worker report')
+    async taskReport() {
+        const state = createState();
+        const overlays: Array<{ title: string; lines: string[] }> = [];
+        const responses: Array<string | undefined> = ['task:t3:child-b', 'report'];
+        const reportTask = {
+            id: 't3', sessionId: 'child-b', status: 'completed', goal: 'review auth',
+            startedAt: 3, finishedAt: 4,
+            result: {
+                summary: 'reviewed auth flow',
+                diff: 'src/auth.ts +2 -1',
+                completed: ['scan tokens', 'check redirects'],
+                nextSteps: ['add tests'],
+                risks: ['cookie scope'],
+                artifacts: ['auth.patch']
+            }
+        };
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: {
+                getDelegationTree: async () => TREE,
+                listAllBackgroundTasks: async () => [reportTask]
+            },
+            notify: () => undefined,
+            openSession: async () => undefined,
+            select: async () => responses.shift(),
+            openTextOverlay: (title: string, lines: string[]) => overlays.push({ title, lines })
+        };
+        await runWorkCommandView(host);
+        expect(overlays.length).toEqual(1);
+        expect(overlays[0].title).toEqual('Worker report');
+        const text = overlays[0].lines.join('\n');
+        expect(text).toContain('Goal: review auth');
+        expect(text).toContain('Summary: reviewed auth flow');
+        expect(text).toContain('Diff: src/auth.ts +2 -1');
+        expect(text).toContain('Next steps: add tests');
+        expect(text).toContain('Artifacts: auth.patch');
+    }
+
     @Test('failed task rows can be retried with the same goal')    async retries() {
         const state = createState();
         const spawned: string[] = [];

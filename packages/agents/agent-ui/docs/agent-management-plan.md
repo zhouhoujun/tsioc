@@ -266,7 +266,8 @@ interface SessionCheckpoint {
 
 1. **Background workers 闭环**
    - `◐` `/work spawn --worktree [name]` 已创建 managed worktree 并通过 `spawn_agent.workspace`
-     传给 worker（runner 设置 session workspace）；attach/报告查看、worktree reuse 选择仍待补。
+     传给 worker（runner 设置 session workspace）；任务行已提供只读 worker report 与
+     open/attach session；worktree reuse 选择仍待补。
    - `agent.worker.spawn`：从 `/work` 选择 profile + prompt + worktree 选项创建子 session/worker；写 delegation edge/background task。
    - 状态实时（SSE/事件驱动）：queued/running/waiting-input/done/failed；idle report 作为 Inbox 项 + 父 session 消息。
    - 操作：attach（新 tab/现有 tab）、cancel、retry、open worktree、查看报告。
