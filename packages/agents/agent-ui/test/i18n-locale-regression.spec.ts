@@ -54,7 +54,7 @@ function flattenCatalog(value: any, prefix = ''): Record<string, any> {
  * The only notice entries allowed to stay byte-identical across locales: they
  * are language-neutral data-row templates (placeholders + punctuation only).
  */
-const LANGUAGE_NEUTRAL_ROWS = new Set(['workspaceArrow', 'reviewFindingItem', 'riskTableRow']);
+const LANGUAGE_NEUTRAL_ROWS = new Set(['workspaceArrow', 'reviewFindingItem', 'riskTableRow', 'attentionTitle']);
 
 /**
  * U4 locale snapshot regression: locks the en/zh catalogs in lockstep, proves
@@ -68,7 +68,7 @@ export class AgentUiLocaleRegressionTest {
     noticeParity() {
         const enKeys = Object.keys(AGENT_UI_NOTICE_EN);
         const zhKeys = Object.keys(AGENT_UI_NOTICE_ZH);
-        expect(enKeys.length).toEqual(716);
+        expect(enKeys.length).toEqual(721);
         expect(zhKeys).toEqual(enKeys);
     }
 

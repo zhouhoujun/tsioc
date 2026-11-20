@@ -208,6 +208,9 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
   `Alt+]` / `Alt+[` / `Alt+Shift+T`。终端解码支持 xterm/kitty 的
   Ctrl(+Shift)+Tab 序列；关闭栈保留最近 10 个。
 - 测试：`session-tab-keys.spec.ts` + `session-tabs.spec.ts` 整合用例。
+- Web/PWA 系统通知：页面隐藏时，审批、待回答问题、turn 完成/失败通过
+  Notification API 提醒（首次点击/按键时申请权限；页面可见时不打扰）。
+  测试：`web-attention.spec.ts`。
 - `@file#Lx-Ly` 行范围引用：支持 `#L20-L45` / `#20-45` / 单行 `#L20`；
   只把选中行（最多 400 行）注入 `[Mention Context]`，suggestion 查询忽略
   range 后缀；超出 EOF 时回退为路径提示。测试：`workspace-mentions-range.spec.ts`。

@@ -10,6 +10,11 @@ import { NestedMessages } from '@tsdi/i18n';
 export const AGENT_UI_NOTICE_TAIL_EN: NestedMessages = {
 
   noClosedSessionTab: 'No closed session tab to reopen.',
+  attentionTitle: 'TSDI Agent',
+  attentionApproval: 'Approval needed: {tool}',
+  attentionQuestion: 'Question: {question}',
+  attentionTurnDone: 'Turn finished: {session}',
+  attentionTurnFailed: 'Turn failed: {session}',
   sessionSwitchBusy: 'Wait for the current turn to finish before switching sessions.',
   gitSnapshotRevertMessageConfirm: 'Revert working tree to snapshot of message {ref}?',
   gitSnapshotRestoreConfirm: 'Restore the working tree captured before the last git revert?',

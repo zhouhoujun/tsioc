@@ -39,6 +39,7 @@ import { mountAgentWebSettingsPage } from './settings-page';
 export { createRpcConsoleSettingsStore, createRpcConsoleStores } from './rpc-stores';
 import { loadAgentConsoleAttentionCounts } from './counts';
 import { keepTranscriptSelection } from './selection-anchor';
+import { installAgentWebAttention } from './notifications';
 
 /**
  * Ask the gateway for a fresh one-time pairing link. The browser is already
@@ -260,6 +261,12 @@ export async function mountAgentWebConsole(
         workspace: config.workspace || state.workspace || ''
     });
     state.pairAction = () => requestWebPairing(baseUrl, config.token, config.fetchImpl);
+    // Hidden-page attention notifications (approvals/questions/turn end).
+    const disposeAttention = installAgentWebAttention({
+        document: doc,
+        state,
+        effect: ctx.get(ReactiveEffect)
+    });
     // Browsers have a pointer: reveal each tab's close affordance on hover.
     state.tabCloseOnHover = true;
 
@@ -499,6 +506,7 @@ export async function mountAgentWebConsole(
             mount.removeEventListener('wheel', onWheel);
             mount.removeEventListener('keydown', onKeyDown);
             disposeContextMenu();
+            disposeAttention();
             doc.removeEventListener('keydown', onFinderShortcut);
             sidebar.dispose();
             indicator.removeEventListener('click', onIndicatorClick);
