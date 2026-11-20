@@ -215,4 +215,10 @@ export const AGENT_UI_NOTICE_ZH_PART1: NestedMessages = {
   lspFormatWritten: '{file}：已写入 {edits} 处编辑。',
   lspFormatPreview: '{file}：{edits} 处编辑（仅预览）。',
   lspFormatSummary: '{changed} 个文件已修改 · {unchanged} 个未变',
+  highlightsTitle: '更新内容 · {version}',
+  highlightsVersion: '版本 {version}',
+  highlightsItemLsp: 'LSP 诊断与格式化：`/check` 与 `/format`',
+  highlightsItemScanner: '只读 shell 命令可跳过审批（opt-in）',
+  highlightsItemUndo: '会话级 `/undo`/`/redo` 与 ordered approval rules',
+  highlightsItemWeb: 'Web/PWA 通知、配对与 attach 工作流',
 };

@@ -3,6 +3,7 @@ import { AGENT_CONSOLE_GLOBAL_ACTIONS, AGENT_CONSOLE_KEYMAP_CONTEXTS } from './A
 
 export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] = [
     { name: '/help', description: 'show command help, grouped by category', group: 'core' },
+    { name: '/highlights', description: 'show release highlights', group: 'core', aliases: ['/whatsnew'] },
 
     { name: '/status', description: 'show session status', group: 'core' },
     { name: '/btw', description: 'ask a side question about this conversation (not saved)', group: 'core', needsArgs: true, args: [{ name: 'question', variadic: true }] },

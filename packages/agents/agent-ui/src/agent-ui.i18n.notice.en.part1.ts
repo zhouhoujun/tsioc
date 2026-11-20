@@ -215,4 +215,10 @@ export const AGENT_UI_NOTICE_EN_PART1: NestedMessages = {
   lspFormatWritten: '{file}: {edits} edits written.',
   lspFormatPreview: '{file}: {edits} edits (preview only).',
   lspFormatSummary: '{changed} files changed · {unchanged} unchanged',
+  highlightsTitle: 'What\'s new · {version}',
+  highlightsVersion: 'Release {version}',
+  highlightsItemLsp: 'LSP diagnostics and formatting: `/check` and `/format`',
+  highlightsItemScanner: 'Opt-in read-only shell commands skip approval prompts',
+  highlightsItemUndo: 'Turn-level `/undo` and `/redo` with ordered approval rules',
+  highlightsItemWeb: 'Web/PWA notifications, pairing and attach workflows',
 };

@@ -18,6 +18,7 @@ import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { runHelpCommand } from './AgentConsoleHelpCommand';
+import { runHighlightsCommand } from './AgentConsoleHighlights';
 import { runSnapshotsCommand, type SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
 import { handlePair, handleRename, handleRestart, handleTitle } from './AgentConsoleSessionRenameCommands';
 import { mapTuiLayoutArg } from './AgentConsoleSettingsCommands';
@@ -95,12 +96,11 @@ async function guardDelegateNoArgs(ctx: CommandHandlerContext, _args: string, _r
     return method();
 }
 
-// ── /pwd ─────────────────────────────────────────────────────────────────────
-
 // ── Dispatch table ───────────────────────────────────────────────────────────
 
 export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/help': runHelpCommand,
+    '/highlights': runHighlightsCommand,
     '/model': handleModel,
     '/provider': handleProvider,
     '/init': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runInitCommand(a).then(() => true)),

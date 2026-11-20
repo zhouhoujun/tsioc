@@ -10,6 +10,7 @@ export function buildCommandContext(self: any, abortSignal?: AbortSignal): Comma
             abortSignal,
             transcriptNavigationController: self.transcriptNavigationController,
             executeCommand: (command: string) => self.handleCommand(command),
+            persistSettings: (patch: Record<string, any>) => self.persistSettings(patch),
             state: buildCommandHandlerState(self.state),
             notify: (m, d) => self.notify(m, d),
             translator: self.translator,

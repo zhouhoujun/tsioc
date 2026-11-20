@@ -5,6 +5,7 @@ import type { AgentConsoleThemeName } from './AgentConsoleTheme';
 import { AGENT_CONSOLE_KEYMAP_CONTEXTS, AgentConsoleKeymapContext } from './AgentConsoleKeymap';
 import { formatAgentUiNotice } from './agent-ui.i18n';
 import { applyPersistedLayout } from './AgentConsoleSettingsCommands';
+import { maybeShowHighlights } from './AgentConsoleHighlights';
 
 export async function restoreGlobalKeymap(self: any): Promise<void> {
         const persisted = await self.keymapStore?.load(self.state.workspace) || {};
@@ -184,6 +185,7 @@ export async function restoreSettings(self: any): Promise<void> {
         }
         if (persisted.planTodoFilter) { self.state.planTodoFilter = persisted.planTodoFilter; }
         if (Array.isArray(persisted.openSessionIds)) { self.state.setOpenSessionIds(persisted.openSessionIds); }
+        await maybeShowHighlights(self, persisted);
     }
 
 const settingsPersistenceQueues = new Map<string, Promise<void>>();

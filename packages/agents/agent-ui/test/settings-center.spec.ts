@@ -183,6 +183,20 @@ export class AgentConsoleSettingsCenterTest {
         expect(persisted[persisted.length - 1]).toEqual({ readOnlyShell: false });
     }
 
+    @Test('release highlights toggle persists the opt-out')
+    async highlightsToggle() {
+        const { component, state, persisted } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'highlights');
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(state.settingsCenterRows[index].value).toEqual('on');
+        state.settingsCenterIndex = index;
+        await handleSettingsCenterKey(component, 'return');
+        expect(component.options.ui.highlights).toEqual(false);
+        expect(persisted[persisted.length - 1]).toEqual({ highlights: false });
+        expect(state.settingsCenterRows.find((row: any) => row.id === 'highlights').value).toEqual('off');
+    }
+
     @Test('the workspace trust confirmation closes the page before the picker')
     async trustPickerClosesPage() {
         const { component, state } = await this.createConsoleWithPersist();

@@ -110,7 +110,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 
 ### P2 — 发布与诊断
 
-- 无 `/highlights`/版本更新提示（opencode 有）；无桌面通知；`AgentTuiConfig` 的通知字段未接线。
+- 无桌面通知；`AgentTuiConfig` 的通知字段未接线。
 
 ## 4. 对标 opencode / Codex（2026-11）
 
@@ -126,7 +126,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | `@file#Lx-Ly` | ❌（仅 @file） | ✅ | ◐ | **补** |
 | 会话 undo/redo（恢复 prompt） | ✅ `/undo` `/redo`（turn-first，文件级回退） | ✅ Ctrl+X U / R | ◐（rollout） | 已完成 |
 | `/btw` 侧问 | ❌ | ✅ | ❌ | 低成本补 |
-| `/highlights` 更新提示 | ❌ | ✅ | ◐ | 低成本补 |
+| `/highlights` 更新提示 | ✅ `/highlights`（升级后自动一次，可关闭） | ✅ | ◐ | 对齐 |
 | 模型切换 | ✅ `/model` + F2 最近 | ✅ Ctrl+X M / F2 | ✅ | 对齐 |
 | Agent profiles | ◐ archetype（命令切换） | ✅ `/agents`、Shift+Tab | ✅ profiles | AMS P0 |
 | 权限规则 | ✅ ordered rules（action/resource，last match）+ durable allow | ✅ ordered rules（action/resource/effect，last match）、durable allow、scanner | ✅ sandbox × approval policy + auto-review | 对齐（scanner opt-in） |
@@ -234,13 +234,13 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
   `lsp_diagnostics`，TUI/gateway 共用；错误/警告按 `file:line:col` 展示；
 - LSP formatter hook `/format <file...> [--check]`（`/fmt` 别名）：新增 `lsp_format`
   工具，默认写回、`--check` 预览，写入走 `fs` 审批类别与 workspace trust；
+- `/highlights` 发布说明浮层（`/whatsnew` 别名）：升级后按版本自动展示一次，设置页可关闭；
 - `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。
 
 按影响排序（未完成计划）：
 1. **持久化 turn 快照**：当前 turn 边界在进程内；补 DB 持久化与 Esc Esc 撤销手势。
-2. **`/highlights`**：发布说明浮层（opencode 风格），可配置关闭。
-3. **Agent Center/Inbox**：按 `docs/agent-management-plan.md` 的 P0/P1 落地（不重复设计）。
-4. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
+2. **Agent Center/Inbox**：按 `docs/agent-management-plan.md` 的 P0/P1 落地（不重复设计）。
+3. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
    `git diff --check`、source-size、bench 全绿。
 
 ### P4 — 门禁与文档

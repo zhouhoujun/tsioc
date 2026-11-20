@@ -16,6 +16,10 @@ export interface AgentConsoleSettingsData {
     approvalTimeoutMs?: number;
     /** Opt-in read-only shell scanner: inspection commands skip the prompt. */
     readOnlyShell?: boolean;
+    /** Show release highlights after an upgrade (default on once the feature has been seen). */
+    highlights?: boolean;
+    /** Highest release-highlights version the user has acknowledged. */
+    highlightsSeenVersion?: string;
     /** Project-scoped tool allow list (durable "always allow"). */
     approvalAllowRules?: string[];
     messageSelectionPageSize?: 4 | 6 | 10;
@@ -39,7 +43,7 @@ export interface AgentConsoleSettingsData {
 
 export function applyPersistedPreferences(
     options: any,
-    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean } | null | undefined
+    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean; highlights?: boolean } | null | undefined
 ): void {
     if (!options || !persisted) {
         return;
@@ -61,6 +65,9 @@ export function applyPersistedPreferences(
             ...(options.policy || {}),
             approval: { ...(options.policy?.approval || {}), readOnlyShell: persisted.readOnlyShell }
         };
+    }
+    if (typeof persisted.highlights === 'boolean') {
+        options.ui = { ...(options.ui || {}), highlights: persisted.highlights };
     }
 }
 
@@ -163,6 +170,8 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
             ? Math.max(1000, Math.min(300000, Math.floor(Number(parsed.approvalTimeoutMs))))
             : undefined,
         readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined,
+        highlights: typeof parsed?.highlights === 'boolean' ? parsed.highlights : undefined,
+        highlightsSeenVersion: typeof parsed?.highlightsSeenVersion === 'string' && parsed.highlightsSeenVersion.trim() ? parsed.highlightsSeenVersion.trim() : undefined,
         approvalAllowRules: sanitizeApprovalAllowRules(parsed?.approvalAllowRules),
         messageSelectionPageSize: [4, 6, 10].includes(Number(parsed?.messageSelectionPageSize))
             ? Number(parsed.messageSelectionPageSize) as 4 | 6 | 10
@@ -252,6 +261,8 @@ export class AgentConsoleSettingsStore {
             ...(data.transcriptWindowMessages ? { transcriptWindowMessages: data.transcriptWindowMessages } : {}),
             ...(data.approvalTimeoutMs ? { approvalTimeoutMs: data.approvalTimeoutMs } : {}),
             ...(typeof data.readOnlyShell === 'boolean' ? { readOnlyShell: data.readOnlyShell } : {}),
+            ...(typeof data.highlights === 'boolean' ? { highlights: data.highlights } : {}),
+            ...(data.highlightsSeenVersion ? { highlightsSeenVersion: data.highlightsSeenVersion } : {}),
             ...(data.messageSelectionPageSize ? { messageSelectionPageSize: data.messageSelectionPageSize } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),

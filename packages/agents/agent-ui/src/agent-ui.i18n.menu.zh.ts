@@ -341,6 +341,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         approvalTimeoutOption: '等待 {count} 秒以获得审批结果',
         readOnlyShellLabel: '只读命令跳过审批：{state}',
         readOnlyShellDescription: 'git status、ls、cat 等只读命令不再询问；管道、重定向与写操作仍需审批',
+        highlightsLabel: '发布亮点：{state}',
+        highlightsDescription: '升级后展示本次更新内容',
         pagerSizeLabel: '消息翻页大小：{count}',
         pagerSizeDescription: '转录导航中 PageUp/PageDown 一次移动的行数',
         pagerSizeTitle: '设置 · 消息翻页大小',

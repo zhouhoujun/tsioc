@@ -280,6 +280,12 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
         async host => {
             host.options.ui = { ...(host.options.ui || {}), terminalTitle: !(host.options.ui?.terminalTitle !== false) };
         }),
+    toggleRow('highlights', 'general', 'agent.menu.settings.highlightsLabel', 'Release highlights: {state}', 'agent.menu.settings.highlightsDescription', 'show what changed after an upgrade', 'workspace',
+        host => host.options.ui?.highlights !== false,
+        async (host, next: boolean) => {
+            host.options.ui = { ...(host.options.ui || {}), highlights: next };
+            await host.persistSettings({ highlights: next });
+        }, { defaultValue: true }),
     toggleRow('touch', 'general', 'agent.menu.settings.touchLabel', 'Touch mode: {state}', 'agent.menu.settings.touchDescription', 'swipe scrolls; taps still click', 'workspace',
         host => host.state.consoleOptions?.touchMode === true,
         async host => {

@@ -341,6 +341,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         approvalTimeoutOption: 'wait {count}s for an approval decision',
         readOnlyShellLabel: 'Skip approval for read-only commands: {state}',
         readOnlyShellDescription: 'git status, ls and cat run without prompting; pipes, redirects and writes still ask',
+        highlightsLabel: 'Release highlights: {state}',
+        highlightsDescription: 'show what changed after an upgrade',
         pagerSizeLabel: 'Message page size: {count}',
         pagerSizeDescription: 'rows moved by page up/down in transcript navigation',
         pagerSizeTitle: 'Settings · Message page size',

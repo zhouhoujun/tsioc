@@ -18,6 +18,8 @@ export interface CommandHandlerContext {
     readonly transcriptNavigationController: { setFocused(focused: boolean): void };
     /** Execute another slash command through the console dispatcher. */
     executeCommand?(command: string): Promise<boolean>;
+    /** Persist workspace-scoped console settings (used by /highlights). */
+    persistSettings?(patch: Record<string, any>): Promise<void>;
     /** Tool ports used by management actions (spawn worker / cancel task). */
     activateTool?(name: string): Promise<boolean>;
     invokeTool?(name: string, input: any): Promise<any>;
