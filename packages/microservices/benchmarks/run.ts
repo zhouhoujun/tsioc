@@ -10,6 +10,9 @@ import { dirname, resolve } from 'node:path';
 import { GatewayInterceptor } from '../gateway/src/gateway.interceptor';
 import { GatewayRuntime } from '../gateway/src/gateway.runtime';
 import { GatewayOptions, GatewayRouteOptions } from '../gateway/src/gateway.options';
+import { createInjector } from '@tsdi/ioc';
+import { createRequestContext, defaultFormatter, Transport } from '@tsdi/common';
+import { OptimizedRouter } from '../service/src';
 
 interface BenchmarkResult {
     scenario: string;
@@ -92,7 +95,80 @@ function benchmarkRouteMatch(routeCount: number, samples: number): BenchmarkResu
     };
 }
 
-function main(): void {
+
+interface TransportBenchmarkScenario {
+    protocol: string;
+    transport: Transport;
+    pattern(index: number): string;
+}
+
+const transportScenarios: TransportBenchmarkScenario[] = [
+    { protocol: 'mqtt', transport: Transport.MQTT, pattern: index => `sensor/${index}/+/value` },
+    { protocol: 'nats', transport: Transport.NATS, pattern: index => `sensor.${index}.*.value` },
+    { protocol: 'redis', transport: Transport.Redis, pattern: index => `sensor.${index}.*` },
+    { protocol: 'kafka', transport: Transport.Kafka, pattern: index => `sensor-${index}-+` }
+];
+
+/**
+ * Measures protocol-specific microservice route matching. The benchmark uses
+ * the real OptimizedRouter/trie and protocol `toParts`/wildcard tables; broker
+ * I/O is intentionally excluded.
+ */
+async function benchmarkTransportMatch(
+    scenario: TransportBenchmarkScenario,
+    routeCount: number,
+    samples: number
+): Promise<BenchmarkResult> {
+    const paths: string[] = [];
+    for (let i = 0; i < routeCount; i++) {
+        paths.push(scenario.pattern(i));
+    }
+    const router = new OptimizedRouter(
+        createInjector(),
+        defaultFormatter,
+        '',
+        scenario.transport,
+        { maxCacheSize: 4096 },
+        undefined,
+        true
+    );
+    paths.forEach(path => router.use({
+        path,
+        pattern: path,
+        handle: () => undefined
+    } as any));
+
+    const targetIndex = Math.floor(routeCount / 2);
+    const target = scenario.pattern(targetIndex);
+    const request = { topic: target, pattern: target, method: 'GET' } as any;
+    const context = createRequestContext(createInjector());
+    for (let i = 0; i < Math.min(100, samples); i++) {
+        await router.getRoute(request, context);
+    }
+
+    const durations: number[] = [];
+    const startedAll = process.hrtime.bigint();
+    for (let i = 0; i < samples; i++) {
+        const started = process.hrtime.bigint();
+        await router.getRoute(request, context);
+        durations.push(Number(process.hrtime.bigint() - started) / 1e6);
+    }
+    const totalMs = Number(process.hrtime.bigint() - startedAll) / 1e6;
+    durations.sort((a, b) => a - b);
+
+    return {
+        scenario: 'transport-route-match',
+        params: { protocol: scenario.protocol, routes: routeCount },
+        samples,
+        opsPerSecond: Math.round(samples / (totalMs / 1000)),
+        p50Ms: Number(percentile(durations, 0.5).toFixed(4)),
+        p99Ms: Number(percentile(durations, 0.99).toFixed(4)),
+        maxMs: Number(durations[durations.length - 1].toFixed(4)),
+        rssBytes: process.memoryUsage().rss
+    };
+}
+
+async function main(): Promise<void> {
     const routeSizes = (argValue('routes') ?? '100,1000,10000')
         .split(',')
         .map(value => Number(value.trim()))
@@ -101,6 +177,11 @@ function main(): void {
     const jsonPath = resolve(argValue('json') ?? resolve(__dirname, 'results/baseline.json'));
 
     const results = routeSizes.map(size => benchmarkRouteMatch(size, samples));
+    for (const scenario of transportScenarios) {
+        for (const size of routeSizes) {
+            results.push(await benchmarkTransportMatch(scenario, size, Math.min(samples, 1000)));
+        }
+    }
     const report: BenchmarkReport = {
         generatedAt: new Date().toISOString(),
         node: process.version,
@@ -123,4 +204,7 @@ function main(): void {
     console.log(`written: ${jsonPath}`);
 }
 
-main();
+main().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+});
