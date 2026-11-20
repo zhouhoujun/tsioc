@@ -4,6 +4,12 @@ import { Assert } from '../assert/assert';
 import { SuiteDescribe, ICaseDescribe } from '../reports/interface';
 import { UnitRunner } from './Runner';
 
+// Capture native timers at module load. Tests that intentionally replace
+// `global.setTimeout` to exercise shutdown fallbacks must not also replace the
+// runner's own timeout guard.
+const nativeSetTimeout = setTimeout;
+const nativeClearTimeout = clearTimeout;
+
 
 
 const gls = {
@@ -193,7 +199,7 @@ export class OldTestRunner implements UnitRunner {
 
     private runPromiseTimeout(result: Promise<any>, describe: string, timeout?: number): Promise<any> {
         const defer = lang.defer();
-        const timer = setTimeout(() => {
+        const timer = nativeSetTimeout(() => {
             const assert = this.injector.get(Assert);
             defer.reject(new assert.AssertionError({
                 message: `${describe}, timeout ${timeout}`,
@@ -202,10 +208,10 @@ export class OldTestRunner implements UnitRunner {
             }));
         }, timeout || this.timeout);
         result.then(value => {
-            clearTimeout(timer);
+            nativeClearTimeout(timer);
             defer.resolve(value);
         }, error => {
-            clearTimeout(timer);
+            nativeClearTimeout(timer);
             defer.reject(error);
         });
         return defer.promise;
@@ -213,9 +219,9 @@ export class OldTestRunner implements UnitRunner {
 
     private runDoneTimeout(fn: Function, describe: string, timeout?: number): Promise<any> {
         const defer = lang.defer();
-        let timer: any = setTimeout(() => {
+        let timer: any = nativeSetTimeout(() => {
             if (timer) {
-                clearTimeout(timer);
+                nativeClearTimeout(timer);
                 timer = null;
                 const assert = this.injector.get(Assert);
                 defer.reject(new assert.AssertionError({
@@ -230,7 +236,7 @@ export class OldTestRunner implements UnitRunner {
             if (!timer) {
                 return;
             }
-            clearTimeout(timer);
+            nativeClearTimeout(timer);
             timer = null;
             if (err) {
                 defer.reject(err);
@@ -243,7 +249,7 @@ export class OldTestRunner implements UnitRunner {
             fn(done);
         } catch (err) {
             if (timer) {
-                clearTimeout(timer);
+                nativeClearTimeout(timer);
                 timer = null;
             }
             defer.reject(err);
