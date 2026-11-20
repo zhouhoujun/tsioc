@@ -134,6 +134,9 @@ export function createRpcConsoleSettingsStore(rpc: { request(method: string, par
             if (typeof data.yoloMode === 'boolean') {
                 patch.yoloMode = data.yoloMode;
             }
+            if (Array.isArray(data.approvalAllowRules)) {
+                patch.approvalAllowRules = data.approvalAllowRules;
+            }
             // Share the rest of the workspace console settings with the gateway
             // (language, display, timeline, filters); preserve the terminal layout.
             const file = await readFile();

@@ -222,9 +222,8 @@ export class AppRpcServer {
                 return this.getSessionSandboxMode(params, context);
             case 'settings.ui.set': {
                 const applied = applyConsoleUiSettings(this.options, params || {});
-                if (applied.approvalTimeoutMs) {
-                    (this.runtime as any).setApprovalTimeout?.(applied.approvalTimeoutMs);
-                }
+                if (applied.approvalTimeoutMs) { (this.runtime as any).setApprovalTimeout?.(applied.approvalTimeoutMs); }
+                if (Array.isArray(applied.approvalAllowRules)) { (this.runtime as any).approvalManager?.setAllowRules?.(applied.approvalAllowRules); }
                 return applied;
             }
             case 'settings.ui.get': return readConsoleUiSettings(this.options.workspace || this.resolveWorkspace());

@@ -73,7 +73,7 @@ export class P287CommandSchemaFormEchoTest {
         expect(formatAgentConsoleCommandArgumentForm(getAgentConsoleCommandDefinition('/mcp')))
             .toEqual(['mode: enum(verbose|-v)']);
         expect(formatAgentConsoleCommandArgumentForm(getAgentConsoleCommandDefinition('/permissions')))
-            .toEqual(['area: enum(status|inspect|rules|level|readonly|plan|sandbox)', 'arg...: string']);
+            .toEqual(['area: enum(status|inspect|rules|allow|level|readonly|plan|sandbox)', 'arg...: string']);
     }
 
     @Test('argument form renders empty for argument-less commands')

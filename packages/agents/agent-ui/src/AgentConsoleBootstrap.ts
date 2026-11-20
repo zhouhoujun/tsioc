@@ -1,4 +1,5 @@
 import { formatAgentUiNotice } from './agent-ui.i18n';
+import { readProjectApprovalAllowRules, saveProjectApprovalAllowRules } from './AgentConsoleApprovalAllowRules';
 import { applyMissingSessionNotice } from './AgentConsoleSessionOpen';
 import { closeAgentConsoleSessionTab } from './AgentConsoleSessionTabClose';
 import { applySecurityLevel } from './AgentConsolePolicyCommands';
@@ -47,6 +48,17 @@ export async function bootstrapConsole(host: AgentConsoleBootstrapHost): Promise
             return true;
         }; host.state.sessionTabsAction = { select: (id: string) => void host.openSession(id, { background: true }), create: () => void host.openSession(), close: (id: string) => { void closeAgentConsoleSessionTab({ state: host.state, translator: host.translator, isTurnInProgress: () => host.isTurnInProgress(), notifyBusyState: (message: string) => host.notifyBusyState(message), openSession: sessionId => host.openSession(sessionId, { background: true }) }, id).then(() => host.sessionUiState.forget(id)); } };
         host.state.approvalAlwaysAllowAction = async (requestId: string) => { (host.resolvedApprovalManager as any)?.setAutoApprove?.(true); await host.resolveApprovalActionHandler('approve', requestId); host.notify(formatAgentUiNotice(host.translator, 'approvalAlwaysAllowed')); };
+        host.state.approvalAllowProjectAction = async (requestId: string) => {
+            const approval = (host.state.pendingApprovals || []).find((item: any) => item.id === requestId);
+            const toolName = String(approval?.toolName || '').trim();
+            if (toolName) {
+                const current = await readProjectApprovalAllowRules(host);
+                const rules = current.includes(toolName) ? current : [...current, toolName].slice(-50);
+                await saveProjectApprovalAllowRules(host, rules);
+            }
+            await host.resolveApprovalActionHandler('approve', requestId);
+            host.notify(formatAgentUiNotice(host.translator, 'approvalAlwaysAllowedProject', { tool: toolName || 'tool' }));
+        };
         host.state.globalKeyInputAction = (key: string, modifiers: any) => host.handleBrowserGlobalKeyInput(key, modifiers);
 host.state.onReviewAnnotationsPersist = (cache: any) => host.saveReviewAnnotationsCacheToDisk(cache);
         host.state.onReviewConclusionsWriteBack = (conclusions: any) => host.writeReviewConclusionsToMemory(conclusions);

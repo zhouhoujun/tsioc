@@ -119,6 +119,9 @@ export abstract class AgentConsoleFocusLayers extends AgentConsoleFocusTranscrip
         if (rawText === '\u001b' || rawText === '\u001b\u001b') return 'escape';
         // Uppercase A = "always allow for this session"; plain `a` stays approve.
         if (rawText === 'A') return 'approve-always';
+        // `p` only means "always allow (project)" inside the approval prompt;
+        // review lineage and scheduled-task toggle keep their own `p`.
+        if ((rawText === 'p' || rawText === 'P') && this.state.approvalsFocused) return 'approve-project';
         const normalized = String(rawText || '').trim().toLowerCase();
         switch (normalized) {
             case 'y': return 'copy';

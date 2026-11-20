@@ -14,6 +14,8 @@ export interface AgentConsoleSettingsData {
     queueMode?: boolean;
     transcriptWindowMessages?: 20 | 40 | 80 | 120;
     approvalTimeoutMs?: number;
+    /** Project-scoped tool allow list (durable "always allow"). */
+    approvalAllowRules?: string[];
     messageSelectionPageSize?: 4 | 6 | 10;
     activityVerbosity?: 'low' | 'medium' | 'high';
     timelineMode?: boolean;
@@ -151,6 +153,7 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         approvalTimeoutMs: Number.isFinite(Number(parsed?.approvalTimeoutMs)) && Number(parsed.approvalTimeoutMs) > 0
             ? Math.max(1000, Math.min(300000, Math.floor(Number(parsed.approvalTimeoutMs))))
             : undefined,
+        approvalAllowRules: sanitizeApprovalAllowRules(parsed?.approvalAllowRules),
         messageSelectionPageSize: [4, 6, 10].includes(Number(parsed?.messageSelectionPageSize))
             ? Number(parsed.messageSelectionPageSize) as 4 | 6 | 10
             : undefined,
@@ -180,6 +183,18 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         lastSessionId: typeof parsed?.lastSessionId === 'string' && parsed.lastSessionId.trim() ? parsed.lastSessionId.trim() : undefined,
         openSessionIds: sanitizeOpenSessionIds(parsed?.openSessionIds)
     };
+}
+
+/** Durable allow patterns are trimmed, deduplicated and bounded. */
+export function sanitizeApprovalAllowRules(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) {
+        return undefined;
+    }
+    const seen = new Set<string>();
+    const rules = value
+        .map(item => typeof item === 'string' ? item.trim() : '')
+        .filter(rule => rule && !seen.has(rule) && !!seen.add(rule));
+    return rules.length ? rules.slice(-50) : undefined;
 }
 
 /** Open tabs are bounded and deduplicated; the most recently opened ids win. */

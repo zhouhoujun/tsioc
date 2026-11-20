@@ -142,3 +142,47 @@ export class ApprovalEventSurfacingTest {
         expect(app.events.length).toEqual(0);
     }
 }
+
+@Suite('project approval allow rules')
+export class ProjectApprovalAllowRulesTest {
+    @Test('an allowed tool skips the prompt without an approval event')
+    async allowSkipsPrompt() {
+        const app = new RecordingApp();
+        const approvals = new ToolApprovalManager(
+            app as any,
+            new RandomUuidGenerator(),
+            new DefaultApprovalStrategy(['shell.exec']),
+            {}
+        );
+        approvals.setAllowRules(['shell.exec']);
+        const result = await approvals.checkApproval('shell.exec', { cmd: 'ls' }, 's1');
+        expect(result.decision).toEqual(ApprovalDecision.NOT_REQUIRED);
+        expect(app.requested().length).toEqual(0);
+    }
+
+    @Test('a trailing-* rule matches a tool family')
+    async prefixRule() {
+        const approvals = new ToolApprovalManager(
+            new RecordingApp() as any,
+            new RandomUuidGenerator(),
+            new DefaultApprovalStrategy(['shell.exec', 'fs.write']),
+            {}
+        );
+        approvals.setAllowRules(['shell.*']);
+        expect((await approvals.checkApproval('shell.exec', {}, 's1')).decision).toEqual(ApprovalDecision.NOT_REQUIRED);
+        expect((await approvals.checkApproval('fs.write', {}, 's1')).decision).not.toEqual(ApprovalDecision.NOT_REQUIRED);
+    }
+
+    @Test('auto-deny keeps precedence over a project allow rule')
+    async denyWins() {
+        const approvals = new ToolApprovalManager(
+            new RecordingApp() as any,
+            new RandomUuidGenerator(),
+            new DefaultApprovalStrategy([{ category: 'sandbox', mode: 'auto-deny' } as any]),
+            {}
+        );
+        approvals.setAllowRules(['terminal']);
+        const result = await approvals.checkApproval('terminal', {}, 's1');
+        expect(result.decision).toEqual(ApprovalDecision.DENIED);
+    }
+}

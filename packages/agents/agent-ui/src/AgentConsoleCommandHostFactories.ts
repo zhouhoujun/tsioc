@@ -105,6 +105,9 @@ export function policyCommandHost(self: any): PolicyCommandHost {
         setSessionSandboxMode: (sessionId: string, mode: SandboxMode | null) => self.setSessionSandboxMode(sessionId, mode),
         setYoloMode: (enabled: boolean) => self.setYoloMode(enabled, false),
         persistSettings: async (patch: Record<string, any>) => { await self.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await self.persistSettings(patch); },
+        approvalManager: self.resolvedApprovalManager,
+        resolvedApprovalManager: self.resolvedApprovalManager,
+        settingsStore: self.settingsStore,
         select: (title: string, options: any[], index?: number, hint?: string) => self.select(title, options, index, hint),
         runPlanCommand: (args: string) => self.runPlanCommand(args)
     };

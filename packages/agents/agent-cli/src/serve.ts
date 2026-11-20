@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Application } from '@tsdi/core';
 import { ServerCommonModule } from '@tsdi/platform-server/common';
-import { AGENT_OPTIONS } from '@tsdi/agent';
+import { AGENT_OPTIONS, AgentRuntime } from '@tsdi/agent';
 import { AgentUiConfigService } from '@tsdi/agent-ui';
 import { buildConsoleAgentOptions } from '@tsdi/agent-ui/console';
 import { applyPersistedModelProfile, applyPersistedPreferences } from '@tsdi/agent-ui';
@@ -112,6 +112,11 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
         ]
     });
 
+    if (Array.isArray(persistedConsole.approvalAllowRules) && persistedConsole.approvalAllowRules.length) {
+        // `serve` owns the turn process; restore durable project allow rules
+        // before the first browser/attach turn runs.
+        (app.get(AgentRuntime)?.approvalManager as any)?.setAllowRules?.(persistedConsole.approvalAllowRules);
+    }
     const gateway = app.get(GatewayServer) as GatewayServer;
     const address = gateway.address();
     const base = `http://${displayHost(host)}:${address?.port ?? port}`;

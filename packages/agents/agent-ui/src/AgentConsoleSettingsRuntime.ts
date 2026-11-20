@@ -106,6 +106,13 @@ export async function restoreSettings(self: any): Promise<void> {
         if (persisted.approvalTimeoutMs) {
             (self.runtime as any)?.setApprovalTimeout?.(persisted.approvalTimeoutMs);
         }
+        if (Array.isArray(persisted.approvalAllowRules)) {
+            try {
+                (self.resolvedApprovalManager as any)?.setAllowRules?.(persisted.approvalAllowRules);
+            } catch {
+                // Optional runtime surface; the next project approval will retry.
+            }
+        }
         if (persisted.messageSelectionPageSize) {
             self.state.consoleOptions = {
                 ...self.state.consoleOptions,

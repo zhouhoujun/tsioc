@@ -14,7 +14,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 | `/settings` | schema panel / web page | Esc/q/✕; type-to-filter | section strip + live filter | composer-wide overlay (TUI/web command); full page from the browser sidebar | fixed: overlay docks at composer width; the browser page applies toggles in place |
 | `/theme` | select | Esc/q/✕; type-to-filter | list | select card | no preview row |
 | `/tools` | select/text | Esc/q/✕ | tool list | select card | no-arg vs arg paths differ |
-| `/approvals` | custom approvals panel | `a/d/A/y`, arrows, Esc/✕ | list | custom panel | separate shell from DialogFrame |
+| `/approvals` | custom approvals panel | `a/d/A/p/y`, arrows, Esc/✕ | list | custom panel | separate shell from DialogFrame; `p` adds a durable project allow rule |
 | `/review` | text dialog | Esc/q/✕ | scroll | text card | fixed: summary/export/risk use titled `Review …` dialogs |
 | `/outputs` | command-output panel | arrows/Enter/Esc/✕ | filter mode | panel | close semantics differ from select |
 | `/mcp` | select/text | Esc/q/✕ | server/tool lists | select card | nested async menu |
@@ -26,7 +26,7 @@ Columns: entry -> current shell -> close/keys -> search/paging -> layout -> know
 | `/worktree` | text dialog (list) | Esc/q/✕ | - | text card | fixed: `list` opens a titled `Worktrees` dialog instead of a generic notice |
 | `/` menu | suggestion select | Esc/Tab/Enter | prefix filter | composer-attached | title/hint intentionally absent |
 | @mention | suggestion select | Esc/Tab/Enter | file filter | composer-attached | shares suggestion shell |
-| approval prompt | custom panel | `a/d/A/y`, Esc/✕ | list | custom panel | not on Dialog Stack |
+| approval prompt | custom panel | `a/d/A/p/y`, Esc/✕ | list | custom panel | not on Dialog Stack; `p` adds a durable project allow rule |
 | pending question | custom panel | digits/Enter/Esc/✕ | options | custom panel | not on Dialog Stack |
 
 ## Progress (2026-11)

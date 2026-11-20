@@ -122,4 +122,17 @@ export class WebConsoleSettingsStoreTest {
         });
         await store.save('/work', { securityLevel: 'ask' });
     }
+
+    @Test('forwards durable approval allow rules to the gateway')
+    async approvalAllowRules() {
+        const calls: RpcCall[] = [];
+        const store = createRpcConsoleSettingsStore(fakeRpc(null, calls, {}));
+        await store.save('/work', { approvalAllowRules: ['terminal', 'write_file'] });
+        expect(call(calls, 'settings.ui.set')?.params).toEqual({
+            approvalAllowRules: ['terminal', 'write_file']
+        });
+        expect(call(calls, 'settings.store.set')?.params.data).toMatchObject({
+            approvalAllowRules: ['terminal', 'write_file']
+        });
+    }
 }

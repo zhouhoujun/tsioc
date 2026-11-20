@@ -313,6 +313,7 @@ export class AgentConsoleSessionData {
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
     /** Approve the request and auto-approve the rest of the session (`A`). */
     approvalAlwaysAllowAction?: (requestId: string) => void | Promise<void>;
+    approvalAllowProjectAction?: (requestId: string) => void | Promise<void>;
     sessionTabsAction?: { select?: (id: string) => void; create?: () => void; close?: (id: string) => void };
     /** Most-recently closed session tabs, for Ctrl+Shift+T. */
     closedSessionTabIds: string[] = [];

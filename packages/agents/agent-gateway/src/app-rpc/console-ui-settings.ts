@@ -11,6 +11,20 @@ export interface ConsoleUiSettingsPatch {
     modelProfile?: string | null;
     /** Approval wait budget in milliseconds; new requests use it immediately. */
     approvalTimeoutMs?: number | null;
+    /** Project-scoped tool allow list applied to the runtime approval manager. */
+    approvalAllowRules?: string[] | null;
+}
+
+/** Durable allow rules: trimmed, deduplicated and bounded like the console store. */
+export function sanitizeApprovalAllowRules(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    const seen = new Set<string>();
+    return value
+        .map(item => typeof item === 'string' ? item.trim() : '')
+        .filter(rule => rule && !seen.has(rule) && !!seen.add(rule))
+        .slice(-50);
 }
 
 const SECURITY_LEVELS = ['read-only', 'ask', 'auto', 'full'];
@@ -41,7 +55,10 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
         ? Math.max(1000, Math.min(300000, Math.floor(Number(params.approvalTimeoutMs))))
         : undefined;
     (options as any).ui = ui;
-    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs);
+    const approvalAllowRules = Array.isArray(params.approvalAllowRules)
+        ? sanitizeApprovalAllowRules(params.approvalAllowRules)
+        : undefined;
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules);
     return {
         personality: ui.personality,
         memoryInjection: ui.memoryInjection,
@@ -49,7 +66,8 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
         yoloMode: params.yoloMode,
         thinkingLevel,
         modelProfile,
-        ...(approvalTimeoutMs ? { approvalTimeoutMs } : {})
+        ...(approvalTimeoutMs ? { approvalTimeoutMs } : {}),
+        ...(approvalAllowRules ? { approvalAllowRules } : {})
     };
 }
 
@@ -89,7 +107,7 @@ function consoleStoreFile(workspace: string, name: string): string | null {
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[] } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -102,7 +120,10 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
             securityLevel: SECURITY_LEVELS.includes(String(parsed?.securityLevel)) ? parsed.securityLevel : undefined,
             yoloMode: typeof parsed?.yoloMode === 'boolean' ? parsed.yoloMode : undefined,
             thinkingLevel: ['low', 'medium', 'high', 'max'].includes(String(parsed?.thinkingLevel)) ? parsed.thinkingLevel : undefined,
-            modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined
+            modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined,
+            approvalAllowRules: Array.isArray(parsed?.approvalAllowRules)
+                ? sanitizeApprovalAllowRules(parsed.approvalAllowRules)
+                : undefined
         };
     } catch {
         return {};
@@ -116,7 +137,8 @@ function persistConsoleUiSettings(
     yoloMode?: boolean,
     thinkingLevel?: string,
     modelProfile?: string,
-    approvalTimeoutMs?: number
+    approvalTimeoutMs?: number,
+    approvalAllowRules?: string[]
 ): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
@@ -153,6 +175,13 @@ function persistConsoleUiSettings(
     }
     if (approvalTimeoutMs) {
         next.approvalTimeoutMs = approvalTimeoutMs;
+    }
+    if (approvalAllowRules) {
+        if (approvalAllowRules.length) {
+            next.approvalAllowRules = approvalAllowRules;
+        } else {
+            delete next.approvalAllowRules;
+        }
     }
     try {
         fs.mkdirSync(path.dirname(file), { recursive: true });

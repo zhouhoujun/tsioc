@@ -68,6 +68,7 @@ export abstract class AgentConsoleFocusReviewLayers {
         }
         if (normalized === 'copy') return this.copyApproval();
         if (normalized === 'approve-always') return this.resolveApprovalAlways();
+        if (normalized === 'approve-project') return this.resolveApprovalProject();
         if (normalized === 'approve' || normalized === 'deny') return this.resolveApproval(normalized);
         return false;
     }
@@ -84,6 +85,13 @@ export abstract class AgentConsoleFocusReviewLayers {
         const state = this.state;
         if (!state.selectedApproval?.id) return false;
         await state.approvalAlwaysAllowAction?.(state.selectedApproval.id);
+        return true;
+    }
+
+    private async resolveApprovalProject(): Promise<boolean> {
+        const state = this.state;
+        if (!state.selectedApproval?.id) return false;
+        await state.approvalAllowProjectAction?.(state.selectedApproval.id);
         return true;
     }
 

@@ -1,6 +1,7 @@
 import { AgentDelegationMode, SandboxMode, describeSandboxCapabilities, detectSandboxExecTool } from '@tsdi/agent';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { explainAgentConsolePermission } from './AgentConsolePermissionInspector';
+import { readProjectApprovalAllowRules, saveProjectApprovalAllowRules } from './AgentConsoleApprovalAllowRules';
 
 export type AgentConsoleSecurityLevel = 'read-only' | 'ask' | 'auto' | 'full';
 
@@ -47,6 +48,10 @@ export interface PolicyCommandHost {
     runPlanCommand(args: string): Promise<any>;
     setYoloMode?(enabled: boolean): Promise<void> | void;
     persistSettings?(patch: Record<string, any>): Promise<void> | void;
+    /** Runtime approval manager that owns project-scoped allow rules. */
+    approvalManager?: any;
+    resolvedApprovalManager?: any;
+    settingsStore?: any;
     select?(title: string, options: Array<{ label: string; value: string; description?: string }>, index?: number, hint?: string): Promise<string | undefined>;
 }
 
@@ -195,6 +200,27 @@ export async function runPermissionsCommand(host: PolicyCommandHost, args: strin
     }
     if (tokens[0].toLowerCase() === 'inspect' || tokens[0].toLowerCase() === 'rules') {
         await showPermissionInspector(host, tokens[1]);
+        return;
+    }
+    if (tokens[0].toLowerCase() === 'allow') {
+        const action = tokens[1] ? tokens.slice(1).join(' ').trim() : '';
+        if (!action) {
+            const rules = await readProjectApprovalAllowRules(host);
+            host.state.openTextOverlay(
+                formatAgentUiNotice(host.translator, 'approvalRulesTitle'),
+                rules.length ? rules : [formatAgentUiNotice(host.translator, 'approvalRulesEmpty')],
+                Math.max(1, Math.min(24, rules.length))
+            );
+            return;
+        }
+        if (action.toLowerCase() === 'clear') {
+            await saveProjectApprovalAllowRules(host, []);
+            host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCleared'));
+            return;
+        }
+        const current = await readProjectApprovalAllowRules(host);
+        await saveProjectApprovalAllowRules(host, [...current.filter((rule: string) => rule !== action), action].slice(-50));
+        host.notify(formatAgentUiNotice(host.translator, 'approvalAlwaysAllowedProject', { tool: action }));
         return;
     }
     const area = tokens[0].toLowerCase();

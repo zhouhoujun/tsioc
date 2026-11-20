@@ -25,6 +25,7 @@ import { AgentConsoleTheme, AgentConsoleThemeStyles, defaultAgentConsoleTheme } 
         <label class="approval-detail" v-for="line in selectedApprovalDetailLines">{{line}}</label>
         <label class="approval-option approval-option-once" @click="approveSelected"><span class="approval-key" aria-hidden="true">a  </span>{{allowOnceLabel}}</label>
         <label class="approval-option approval-option-always" @click="approveAlwaysSelected"><span class="approval-key" aria-hidden="true">A  </span>{{allowAlwaysLabel}}</label>
+        <label class="approval-option approval-option-project" @click="approveProjectSelected"><span class="approval-key" aria-hidden="true">p  </span>{{allowProjectLabel}}</label>
         <label class="approval-option approval-option-deny" @click="denySelected"><span class="approval-key" aria-hidden="true">d  </span>{{denyLabel}}</label>
         <label class="dialog-hint approval-actions" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
     </div>
@@ -56,6 +57,7 @@ export class AgentConsoleApprovalsPanelComponent {
     async closeApproval(): Promise<void> { await this.denySelected(); }
     async approveSelected(): Promise<void> { await this.resolveSelected('approve'); }
     async approveAlwaysSelected(): Promise<void> { const approval = this.state.selectedApproval; if (approval) await this.state.approvalAlwaysAllowAction?.(approval.id); }
+    async approveProjectSelected(): Promise<void> { const approval = this.state.selectedApproval; if (approval) await this.state.approvalAllowProjectAction?.(approval.id); }
     async denySelected(): Promise<void> { await this.resolveSelected('deny'); }
     selectApproval(id: string): void { this.state.setSelectedApprovalId(id); this.state.setApprovalsFocused(true); }
     protected async resolveSelected(decision: 'approve' | 'deny'): Promise<void> {
@@ -64,6 +66,7 @@ export class AgentConsoleApprovalsPanelComponent {
     }
     get allowOnceLabel(): string { return this.translate('agent.approval.allowOnce', undefined, 'Allow once'); }
     get allowAlwaysLabel(): string { return this.translate('agent.approval.allowAlways', undefined, 'Always allow (session)'); }
+    get allowProjectLabel(): string { return this.translate('agent.approval.allowProject', undefined, 'Always allow (project)'); }
     get denyLabel(): string { return this.translate('agent.approval.deny', undefined, 'Deny'); }
     get allowOptionStyle() { return this.activeThemeStyles.toolsAccent; }
     get denyOptionStyle() { return this.activeThemeStyles.statusErrorValue; }

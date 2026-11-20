@@ -3,7 +3,9 @@ import * as os from 'os';
 import * as path from 'path';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import { RandomUuidGenerator } from '@tsdi/core';
 import { applyConsoleUiSettings, readConsoleStore, readConsoleUiSettings, writeConsoleStore } from '../src/app-rpc/console-ui-settings';
+import { AppRpcServer } from '../src/app-rpc/AppRpcServer';
 
 @Suite('gateway console UI settings (web/attach runtime)')
 export class ConsoleUiSettingsTest {
@@ -126,6 +128,50 @@ export class ConsoleUiSettingsTest {
             expect(applyConsoleUiSettings(options, { approvalTimeoutMs: 1 }).approvalTimeoutMs).toEqual(1000);
             expect(JSON.parse(fs.readFileSync(file, 'utf8')).approvalTimeoutMs).toEqual(1000);
             expect(applyConsoleUiSettings(options, { approvalTimeoutMs: 'nope' as any }).approvalTimeoutMs).toEqual(undefined);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('persists and restores the project approval allow rules')
+    approvalAllowRules() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+        try {
+            const options: any = { workspace, ui: {} };
+            const applied = applyConsoleUiSettings(options, {
+                approvalAllowRules: [' terminal ', 'terminal', 'write_file', '', 7 as any]
+            });
+            expect(applied.approvalAllowRules).toEqual(['terminal', 'write_file']);
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).approvalAllowRules).toEqual(['terminal', 'write_file']);
+            expect(readConsoleUiSettings(workspace).approvalAllowRules).toEqual(['terminal', 'write_file']);
+
+            applyConsoleUiSettings(options, { approvalAllowRules: [] });
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).approvalAllowRules).toEqual(undefined);
+            expect(readConsoleUiSettings(workspace).approvalAllowRules).toEqual(undefined);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
+    @Test('settings.ui.set applies allow rules to the runtime approval manager')
+    async dispatchAppliesRules() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        const applied: string[][] = [];
+        try {
+            const server = new AppRpcServer(
+                { approvalManager: { setAllowRules: (rules: string[]) => { applied.push([...rules]); } } } as any,
+                new RandomUuidGenerator(),
+                { has: async () => true } as any,
+                {} as any,
+                {} as any,
+                { authorize: async () => 'anonymous' } as any,
+                { track: () => undefined } as any,
+                {} as any,
+                { workspace } as any
+            );
+            await (server as any).dispatch('settings.ui.set', { approvalAllowRules: ['terminal'] }, {});
+            expect(applied).toEqual([['terminal']]);
         } finally {
             fs.rmSync(workspace, { recursive: true, force: true });
         }

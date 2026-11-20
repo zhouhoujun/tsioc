@@ -126,6 +126,9 @@ export abstract class ApprovalManager {
     abstract isConfigured(): boolean;
     abstract isAutoApproveEnabled(): boolean;
     abstract setAutoApprove(enabled: boolean): void;
+    /** Optional: project-scoped tool allow list (durable "always allow"). */
+    setAllowRules?(_rules: string[]): void;
+    getAllowRules?(): string[];
     /** Optional: hosts that expose an approval-timeout setting update it here. */
     setDefaultTimeout(_timeoutMs: number): void { /* no-op for managers without a queue policy */ }
 }
@@ -182,6 +185,9 @@ function summarizeApprovalInput(input: any): string | undefined {
 
 @Injectable()
 export class ToolApprovalManager extends ApprovalManager {
+    /** Project-scoped allow patterns; matched before surfacing a human prompt. */
+    private allowRules: string[] = [];
+
     private pending = new Map<string, {
         request: ApprovalRequest;
         resolve: (decision: ApprovalDecision) => void;
@@ -250,8 +256,30 @@ export class ToolApprovalManager extends ApprovalManager {
         return this.strategy?.requires(toolName, input) ?? false;
     }
 
+    setAllowRules(rules: string[]): void {
+        const seen = new Set<string>();
+        this.allowRules = (Array.isArray(rules) ? rules : []).map(rule => String(rule || '').trim()).filter(rule => rule && !seen.has(rule) && !!seen.add(rule)).slice(-50);
+    }
+
+    getAllowRules(): string[] {
+        return [...this.allowRules];
+    }
+
+    /** Exact tool name or a trailing-`*` prefix. */
+    private isAllowedByProjectRule(toolName: string): boolean {
+        return this.allowRules.some(pattern => pattern.endsWith('*')
+            ? toolName.startsWith(pattern.slice(0, -1))
+            : toolName === pattern);
+    }
+
     async checkApproval(toolName: string, input: any, sessionId: string, force = false): Promise<ApprovalResult> {
         if (!force && !this.requiresApproval(toolName, input)) {
+            return { decision: ApprovalDecision.NOT_REQUIRED };
+        }
+        // `auto-deny` rules keep precedence over project allow rules.
+        const autoDenyRule = this.options?.autoDeny === true
+            || this.strategy?.autoDenies?.(toolName, input) === true;
+        if (!force && !autoDenyRule && this.isAllowedByProjectRule(toolName)) {
             return { decision: ApprovalDecision.NOT_REQUIRED };
         }
         // Defensive sweep: requests whose timer already fired but were not yet
