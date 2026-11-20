@@ -527,6 +527,88 @@ function decoratorRecordExpression(decorator: ts.Decorator, delimiters: [string,
     return ts.factory.updateCallExpression(expression, expression.expression, expression.typeArguments, args);
 }
 
+const CONTROLLER_DECORATORS = new Set(['Controller', 'RestController']);
+const ROUTE_METHOD_DECORATORS: Record<string, string> = {
+    Get: 'GET',
+    Post: 'POST',
+    Put: 'PUT',
+    Patch: 'PATCH',
+    Delete: 'DELETE',
+    Head: 'HEAD',
+    Options: 'OPTIONS'
+};
+
+interface AotControllerRoute {
+    propertyKey: string;
+    pattern: string;
+    method: string;
+}
+
+/**
+ * Extract a static controller route manifest for the simple, common case:
+ * literal controller/method paths with no parameter or policy decorators.
+ *
+ * Anything that depends on runtime policy metadata returns `undefined` so the
+ * runtime `parseCtrl` path remains authoritative.
+ */
+function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | undefined {
+    const classDecorators = decoratorsOf(node);
+    const controllerDecorator = classDecorators.find(decorator => CONTROLLER_DECORATORS.has(decoratorName(decorator)));
+    if (!controllerDecorator || node.heritageClauses?.some(clause => clause.token === ts.SyntaxKind.ExtendsKeyword)) {
+        return undefined;
+    }
+    // Unknown/class-policy decorators would be lost by a static manifest.
+    if (classDecorators.some(decorator => !CONTROLLER_DECORATORS.has(decoratorName(decorator))
+        && !PRECOMPILABLE_CLASS_DECORATORS.has(decoratorName(decorator)))) {
+        return undefined;
+    }
+    const controllerArgs = decoratorArgs(controllerDecorator);
+    if (controllerArgs.length > 1) {
+        return undefined;
+    }
+    if (controllerArgs.length === 1 && !ts.isStringLiteralLike(controllerArgs[0])) {
+        return undefined;
+    }
+
+    const routes: AotControllerRoute[] = [];
+    for (const member of node.members) {
+        if (!ts.isMethodDeclaration(member)) {
+            continue;
+        }
+        const decorators = decoratorsOf(member);
+        const routeDecorator = decorators.find(decorator => !!ROUTE_METHOD_DECORATORS[decoratorName(decorator)]);
+        if (!routeDecorator) {
+            continue;
+        }
+        // The manifest is only safe when there are no other method/parameter
+        // decorators that contribute policies or argument resolvers.
+        if (decorators.length !== 1 || memberParameters(member).some(parameter => decoratorsOf(parameter).length)) {
+            return undefined;
+        }
+        const args = decoratorArgs(routeDecorator);
+        if (args.length > 1) {
+            return undefined;
+        }
+        let pattern = '';
+        if (args.length === 1) {
+            if (!ts.isStringLiteralLike(args[0])) {
+                return undefined;
+            }
+            pattern = args[0].text;
+        }
+        const propertyKey = memberKey(member);
+        if (!propertyKey) {
+            return undefined;
+        }
+        routes.push({
+            propertyKey,
+            pattern,
+            method: ROUTE_METHOD_DECORATORS[decoratorName(routeDecorator)]
+        });
+    }
+    return routes.length ? routes : undefined;
+}
+
 function withProperty(expression: ts.Expression, key: string, value: ts.Expression): ts.Expression {
     if (!ts.isObjectLiteralExpression(expression)) {
         return ts.factory.createObjectLiteralExpression([
@@ -1857,6 +1939,21 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                         [factory.createIdentifier(node.name!.text), decoratorsArray(fallbackRecords)]
                     )));
                     usesIoc = true;
+                }
+                const controllerRoutes = aotControllerRoutes(node);
+                if (controllerRoutes) {
+                    injections.push(factory.createExpressionStatement(factory.createBinaryExpression(
+                        factory.createPropertyAccessExpression(factory.createIdentifier(node.name!.text), 'ƿroutes'),
+                        ts.SyntaxKind.EqualsToken,
+                        factory.createArrayLiteralExpression(controllerRoutes.map(route =>
+                            factory.createObjectLiteralExpression([
+                                factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(route.propertyKey)),
+                                factory.createPropertyAssignment('pattern', factory.createStringLiteral(route.pattern)),
+                                factory.createPropertyAssignment('method', factory.createStringLiteral(route.method)),
+                                factory.createPropertyAssignment('options', factory.createObjectLiteralExpression([], false))
+                            ], false)
+                        ), false)
+                    )));
                 }
                 if (aspectDecorator) {
                     injections.push(factory.createExpressionStatement(factory.createCallExpression(
