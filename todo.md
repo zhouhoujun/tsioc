@@ -4872,3 +4872,11 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 新增 `createRpcConsoleSettingsStore` 单测：一次 `settings.store.set` + 一次 `settings.ui.set`、
   ui 值覆盖文件、终端 `messageLayout` 不被浏览器覆盖、RPC 失败静默。
 - 顺手去掉 keymap store 重复写 `keymap.json` 的冗余调用。
+
+## 2026-11-20 agent-ui 测试提速（AOT 完成后）
+- `unit.ts` 改为 5 组并行：`console-renderer`、`session-tab-isolation` 独立进程，其余按原序三等分；
+  按可用内存（1.2GB/worker）自动合并为 1–5 组，`AGENT_UI_TEST_GROUPS` / `AGENT_UI_TEST_SHARDS=1` 可控。
+- 覆盖：所有 1–5 组路径已验证，总计 2231 passing（含新增 `test-groups.spec.ts` 3 用例）。
+- 结果：单进程基线 209s（低负载）；5 组 **120.2s**（6.5GB 可用）/ gate 当次 144.3s；2 组 141.6s。
+- 采用“原序连续切片”而非耗时均衡：随机组合会让 DOM 文件以新顺序相遇，触发 teardown 绑定重跑
+  （`line is not defined`），这是本轮分片唯一可靠且已验证的切法。
