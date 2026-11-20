@@ -1,11 +1,16 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import * as zlib from 'zlib';
 import * as esbuild from 'esbuild';
 import { emitAotProject } from '../../compiler/src/AotCompiler';
 
 /**
- * Bundles the web console entry (src/web-console.ts) into a single browser
- * script (web/dist/agent-console.js).
+ * Builds the browser console as a site:
+ * - `web/dist/agent-console.js` + `web/dist/chunks/*-<hash>.js` (entry and
+ *   lazy chunks, ESM + code splitting, like packages/microservices/admin);
+ * - `web/dist/assets.json` (the service-worker precache manifest);
+ * - `web/dist/agent-console.standalone.js` (single-file IIFE for the VS Code
+ *   webview and Electron hosts, which load a classic <script>).
  *
  * Two-stage pipeline (same shape as packages/workflow-admin):
  * 1. `emitAotProject` precompiles the reachable graph as **ES modules**.
@@ -197,6 +202,47 @@ const nodeOnlyThirdPartyStubPlugin: esbuild.Plugin = {
     }
 };
 
+function gzipBytes(files: string[]): number {
+    const buffers = files.filter(file => fs.existsSync(file)).map(file => fs.readFileSync(file));
+    return zlib.gzipSync(Buffer.concat(buffers)).length;
+}
+
+/** Entry plus statically imported chunks (lazy `import()` chunks are excluded). */
+function initialSiteFiles(entry: string): string[] {
+    const files: string[] = [];
+    const visit = (file: string): void => {
+        if (!fs.existsSync(file) || files.includes(file)) {
+            return;
+        }
+        files.push(file);
+        const source = fs.readFileSync(file, 'utf-8');
+        const patterns = [
+            /\bfrom\s*["'](\.\/[^"']+)["']/g,
+            /\bimport\s*["'](\.\/[^"']+)["']/g
+        ];
+        for (const pattern of patterns) {
+            let match: RegExpExecArray | null;
+            while ((match = pattern.exec(source))) {
+                visit(path.resolve(path.dirname(file), match[1]));
+            }
+        }
+    };
+    visit(entry);
+    return files;
+}
+
+function reportSiteSizes(distDir: string, siteFiles: string[]): void {
+    const entry = path.join(distDir, 'agent-console.js');
+    const initial = initialSiteFiles(entry);
+    const initialBytes = initial.reduce((sum, file) => sum + fs.statSync(file).size, 0);
+    const lazy = siteFiles.filter(file => !initial.includes(file));
+    const lazyBytes = lazy.reduce((sum, file) => sum + fs.statSync(file).size, 0);
+    console.log(`web console initial JS: ${(initialBytes / 1024).toFixed(1)} KiB (gzip ${(gzipBytes(initial) / 1024).toFixed(1)} KiB)`);
+    if (lazy.length) {
+        console.log(`web console lazy chunks: ${(lazyBytes / 1024).toFixed(1)} KiB (gzip ${(gzipBytes(lazy) / 1024).toFixed(1)} KiB) in ${lazy.length} file(s)`);
+    }
+}
+
 async function main(): Promise<void> {
     compileWithTsc();
     const distDir = path.join(PACKAGE_DIR, 'web', 'dist');
@@ -236,13 +282,51 @@ async function main(): Promise<void> {
         console.warn(`markdown worker entry not found at ${workerEntry}, skipping worker bundle`);
     }
 
-    const outfile = path.join(distDir, 'agent-console.js');
+    // Embedders (VS Code webview, Electron) load a classic <script> from a
+    // single file, so keep a bundled IIFE artifact next to the site entry.
+    const standaloneOutfile = path.join(distDir, 'agent-console.standalone.js');
     await esbuild.build({
         ...sharedBuildOptions,
+        format: 'iife',
         entryPoints: [BUNDLE_ENTRY],
-        outfile,
+        outfile: standaloneOutfile,
     });
-    console.log(`web console bundle written to ${outfile}`);
+    console.log(`standalone embedder bundle written to ${standaloneOutfile}`);
+
+    // Site layout (same shape as packages/microservices/admin): write the
+    // entry plus hashed lazy chunks into the dist directory instead of one
+    // monolithic script. `header.js` still loads ./dist/agent-console.js; the
+    // entry imports its chunks relatively.
+    const chunksDir = path.join(distDir, 'chunks');
+    fs.rmSync(chunksDir, { recursive: true, force: true });
+    const result = await esbuild.build({
+        ...sharedBuildOptions,
+        entryPoints: [BUNDLE_ENTRY],
+        outdir: distDir,
+        entryNames: 'agent-console',
+        chunkNames: 'chunks/[name]-[hash]',
+        splitting: true,
+        metafile: true,
+    });
+    const outputFiles = Object.keys(result.metafile?.outputs || {})
+        .map(file => path.resolve(file))
+        .filter(file => file.startsWith(distDir) && file.endsWith('.js'))
+        .sort();
+    const outputs = outputFiles
+        .map(file => `./dist/${path.relative(distDir, file).split(path.sep).join('/')}`);
+    // The worker is built separately (classic worker entry); include it so the
+    // service worker can precache everything the page may load.
+    const workerAsset = fs.existsSync(workerOutfile) ? './dist/agent-console-markdown-worker.js' : undefined;
+    const assets = Array.from(new Set([
+        ...outputs,
+        ...(workerAsset ? [workerAsset] : [])
+    ])).sort();
+    fs.writeFileSync(
+        path.join(distDir, 'assets.json'),
+        `${JSON.stringify({ version: 1, entry: './dist/agent-console.js', assets }, null, 2)}\n`
+    );
+    console.log(`web console site written to ${distDir} (${assets.length} javascript asset(s))`);
+    reportSiteSizes(distDir, outputFiles);
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
 }
 

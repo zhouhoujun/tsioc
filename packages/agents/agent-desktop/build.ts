@@ -16,7 +16,7 @@ async function main(): Promise<void> {
         cwd: uiDir,
         stdio: 'inherit'
     });
-    fs.copyFileSync(path.join(uiDir, 'web', 'dist', 'agent-console.js'), path.join(resourcesDir, 'agent-console.js'));
+    fs.copyFileSync(path.join(uiDir, 'web', 'dist', 'agent-console.standalone.js'), path.join(resourcesDir, 'agent-console.js'));
     await build({
         entryPoints: [path.join(packageDir, 'src', 'main.ts')],
         outfile: path.join(outDir, 'main.js'),

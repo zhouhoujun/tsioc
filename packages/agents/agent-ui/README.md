@@ -18,7 +18,8 @@ npm install @tsdi/agent-ui
 
 ```shell
 npm run build          # Node build
-npm run build:web      # esbuild web bundle (agent-console.js)
+npm run build:web      # web site: dist/agent-console.js + dist/chunks/* + assets.json
+                       # (plus dist/agent-console.standalone.js for embedders)
 ```
 
 ## Test
@@ -105,6 +106,19 @@ Review: `/review` `/diff` `/approve`
 Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental`
 Delegation: `/delegation` `/goal` `/usage`
 System: `/ps` `/ide` `/feedback` `/keymap`
+
+## Web build layout
+
+`npm run build:web` emits a site instead of one monolithic script, mirroring
+`packages/microservices/admin`:
+
+- `web/dist/agent-console.js` — ESM entry loaded by `header.js`;
+- `web/dist/chunks/*-<hash>.js` — code-split lazy chunks (renderer variants,
+  shared modules); the build prints initial vs lazy JS sizes;
+- `web/dist/assets.json` — manifest the service worker uses to precache the
+  entry and every chunk for offline use;
+- `web/dist/agent-console.standalone.js` — single-file IIFE bundle kept for the
+  VS Code webview and Electron hosts, which load a classic `<script>`.
 
 ## Browser settings page
 
