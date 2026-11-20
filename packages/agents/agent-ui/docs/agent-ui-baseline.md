@@ -187,4 +187,4 @@ rm -f run-one.tmp.ts
   额外强制 initial gzip ≤700 KiB、最大 lazy chunk gzip ≤150 KiB（当前通过）。
   1k 切换 p50/p95 预算已落地为 opt-in：`AGENT_UI_SWITCH_BUDGET=1` 运行
   `tab-switch-long-session.spec.ts` 时强制 p50 ≤120ms、p95 ≤200ms（本次实测 83/95ms）；
-  测试墙钟与分片内存阈值仍未自动门禁。
+  测试墙钟提供 `AGENT_UI_TEST_WALL_BUDGET=<seconds>`（超时失败）；分片内存阈值仍未自动门禁。

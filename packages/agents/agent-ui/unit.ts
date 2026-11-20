@@ -54,6 +54,19 @@ function wantsCoverage(args: string[]): boolean {
     return args.some(arg => arg === '-c' || arg === '--coverage' || arg.startsWith('--coverage='));
 }
 
+/** Opt-in wall-clock budget (`AGENT_UI_TEST_WALL_BUDGET=<seconds>`). */
+function enforceWallBudget(startedAt: number, label: string): void {
+    const budget = Number(process.env.AGENT_UI_TEST_WALL_BUDGET);
+    if (!Number.isFinite(budget) || budget <= 0) {
+        return;
+    }
+    const seconds = (Date.now() - startedAt) / 1000;
+    if (seconds > budget) {
+        console.error(`[agent-ui] ${label} exceeded the ${budget}s wall-clock budget (${seconds.toFixed(1)}s).`);
+        process.exit(1);
+    }
+}
+
 /**
  * Workers are memory-bound, not CPU-bound: five ts-node processes on an 8GB
  * host swap and end up slower than one. Pick the count from currently
@@ -130,7 +143,9 @@ async function main(): Promise<void> {
     }
 
     if (wantsCoverage(args) || process.env.AGENT_UI_TEST_SHARDS === '1') {
+        const started = Date.now();
         await runTest('./test/**/*.ts', { baseURL: __dirname });
+        enforceWallBudget(started, 'single-process suite');
         await flushStdio();
         process.exit(0);
     }
@@ -143,7 +158,9 @@ async function main(): Promise<void> {
     const planned = names.reduce((sum, name) => sum + groups[name].length, 0);
     if (names.length === 1 || planned !== files.length) {
         // A missing/renamed spec would lose coverage: run one pass instead.
+        const started = Date.now();
         await runTest('./test/**/*.ts', { baseURL: __dirname });
+        enforceWallBudget(started, 'single-pass suite');
         await flushStdio();
         process.exit(0);
     }
@@ -178,6 +195,7 @@ async function main(): Promise<void> {
         process.exit(1);
     }
     console.log(`\n[agent-ui] ${names.length} groups passed · ${seconds}s`);
+    enforceWallBudget(started, 'parallel groups');
     await flushStdio();
     process.exit(0);
 }

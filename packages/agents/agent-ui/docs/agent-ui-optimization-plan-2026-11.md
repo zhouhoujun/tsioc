@@ -248,7 +248,8 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 2. **P4 收尾**：README/CHANGELOG/`docs/manual-test-checklist.md` 已完成；`build:web` 已写入
    initial raw/gzip 回归预算（`web-size-baseline.json`，可 `AGENT_UI_WEB_BUDGET_STRICT=1`
    强制 700/150 KiB 目标）；1k 切换预算已提供 `AGENT_UI_SWITCH_BUDGET=1`
-   （p50 ≤120ms / p95 ≤200ms）；测试墙钟与分片内存阈值仍待做。
+   （p50 ≤120ms / p95 ≤200ms）；测试墙钟提供 `AGENT_UI_TEST_WALL_BUDGET=<seconds>`
+   （超时失败）；分片内存阈值仍待做。
    `git diff --check`、source-size、bench 全绿。
 
 ### P4 — 门禁与文档
