@@ -52,7 +52,7 @@ export class RuntimeController {
         ]);
     });
 
-    it('falls back when a route method has parameter decorators', () => {
+    it('emits manifests for parameterized methods and leaves parameters to ClassRef metadata', () => {
         const output = transpileAot('aot-controller-complex.ts', `
 import { Controller, Get, RequestParam } from '@tsdi/service';
 
@@ -63,7 +63,25 @@ export class ComplexController {
 }
 `, { module: ts.ModuleKind.CommonJS });
 
-        expect(output).not.toContain('Controller.ƿroutes =');
+        expect(output).toContain('ComplexController.ƿroutes =');
+        expect(output).toContain('pattern: "/item/:id"');
+    });
+
+    it('falls back when a route method has another method decorator', () => {
+        const output = transpileAot('aot-controller-decorator.ts', `
+import { Controller, Get } from '@tsdi/service';
+
+function Custom() { return () => undefined; }
+
+@Controller('/api')
+export class DecoratedController {
+    @Get('/x')
+    @Custom()
+    read() { return 'x'; }
+}
+`, { module: ts.ModuleKind.CommonJS });
+
+        expect(output).not.toContain('DecoratedController.ƿroutes =');
     });
 
     it('emits literal route options for parameterless methods', () => {

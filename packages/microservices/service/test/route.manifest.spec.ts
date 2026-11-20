@@ -39,6 +39,7 @@ describe('controller route manifest', () => {
             getMethodDefines: () => {
                 throw new Error('metadata should not be scanned');
             },
+            getParameters: () => [{ type: String }],
             getAnnotation: () => ({})
         };
         const invocation = invocationOf(classRef, {
@@ -56,5 +57,6 @@ describe('controller route manifest', () => {
         expect(routes[0].method).toBe('POST');
         expect(routes[0].pathParams).toEqual({ tenant: 1 });
         expect(routes[0].handler).toBeInstanceOf(RouteHandler);
+        expect((routes[0].handler as any).invokeOpts?.resolvers?.length).toBeGreaterThan(0);
     });
 });

@@ -581,13 +581,11 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
         if (!routeDecorator) {
             continue;
         }
-        // The manifest is only safe when there are no other method/parameter
-        // decorators that contribute policies or argument resolvers. Methods
-        // with parameters need runtime resolver metadata; methods without
-        // parameters can carry literal route options safely.
-        if (decorators.length !== 1
-            || memberParameters(member).length
-            || memberParameters(member).some(parameter => decoratorsOf(parameter).length)) {
+        // The manifest is only safe when there are no other method decorators
+        // contributing policies. Parameter decorators only fill ClassRef
+        // parameter metadata, which the runtime still reads; manifest routes
+        // add the default transport resolver chain when parameters exist.
+        if (decorators.length !== 1) {
             return undefined;
         }
         const args = decoratorArgs(routeDecorator);

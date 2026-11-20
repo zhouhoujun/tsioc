@@ -1,5 +1,6 @@
 import { DecorDefine, Invocation } from '@tsdi/ioc';
 import { Pattern, PatternFormatter } from '@tsdi/common';
+import { MODEL_RESOLVERS, typeResolveInterceptor, createMessageResolveInterceptors } from '@tsdi/core';
 import { createRouteHandler } from './route.handler';
 import { MappingDef, RouteMappingMetadata } from './router';
 import { Route, Routes } from './route';
@@ -18,6 +19,7 @@ export interface ControllerRouteTemplate {
 }
 
 const templateCache = new WeakMap<object, ControllerRouteTemplate[]>();
+const defaultRouteResolvers = [MODEL_RESOLVERS, typeResolveInterceptor, ...createMessageResolveInterceptors()];
 
 function precompiledRoutes(invocation: Invocation): ControllerRouteTemplate[] | undefined {
     const manifest = (invocation.type as any)?.ƿroutes;
@@ -71,13 +73,23 @@ export function createControllerRoutes(
     pathParams: Record<string, number> | undefined,
     formatter: PatternFormatter
 ): Routes {
-    return compileControllerRouteTemplates(invocation).map(template => ({
-        path: formatter.format(template.pattern),
-        pattern: template.pattern,
-        prefix,
-        method: template.method,
-        pathParams: pathParams ? { ...pathParams } : undefined,
-        paths: template.paths,
-        handler: createRouteHandler(invocation, template.options, template.propertyKey)
-    } as Route));
+    return compileControllerRouteTemplates(invocation).map(template => {
+        const options = template.options ? { ...template.options } : {};
+        // Precompiled manifests do not carry decorator `appendProps` resolver
+        // metadata. When the method has parameters, restore the same default
+        // transport resolver chain the route decorators would have added.
+        if (!options.resolvers?.length
+            && invocation.classRef?.getParameters?.(template.propertyKey)?.length) {
+            options.resolvers = defaultRouteResolvers;
+        }
+        return {
+            path: formatter.format(template.pattern),
+            pattern: template.pattern,
+            prefix,
+            method: template.method,
+            pathParams: pathParams ? { ...pathParams } : undefined,
+            paths: template.paths,
+            handler: createRouteHandler(invocation, options, template.propertyKey)
+        } as Route;
+    });
 }
