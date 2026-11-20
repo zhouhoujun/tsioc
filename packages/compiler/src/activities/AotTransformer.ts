@@ -23,10 +23,10 @@ const PRECOMPILABLE_CLASS_DECORATORS = new Set([
 /** Member decorators whose metadata can be materialized statically. */
 const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
     'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive', 'Autorun', 'Bean',
-    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'Runner'
+    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'FilterHandler', 'Runner', 'Authorization', 'Interceptable', 'Filterable', 'Transactional'
 ]);
 const LIFECYCLE_DECORATORS = new Set([
-    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'Runner'
+    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'FilterHandler', 'Runner', 'Authorization', 'Interceptable', 'Filterable', 'Transactional'
 ]);
 const TRANSPORT_PARAMETER_SCOPES: Record<string, string> = {
     RequestHeader: 'headers',
@@ -67,6 +67,7 @@ interface TypeEmitContext {
     usesGetToken?: boolean;
     usesRepositoryResolver?: boolean;
     usesLoggerResolver?: boolean;
+    usesTransactionResolver?: boolean;
 }
 let activeTypeContext: TypeEmitContext | undefined;
 
@@ -1293,6 +1294,60 @@ function memberMetadataExpression(decorator: ts.Decorator, member: ts.ClassEleme
                 return args[0];
             }
             return undefined;
+        case 'Authorization':
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([], false);
+            }
+            if (args.length === 1 && ts.isStringLiteralLike(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('role', args[0])
+                ], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            return undefined;
+        case 'Interceptable':
+        case 'Filterable': {
+            if (!args.length || !args[0]) {
+                return undefined;
+            }
+            const properties: ts.ObjectLiteralElementLike[] = [
+                factory.createPropertyAssignment('target', selectorValueExpression(args[0]))
+            ];
+            if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+                properties.push(...args[1].properties);
+            } else if (args.length > 1) {
+                return undefined;
+            }
+            return factory.createObjectLiteralExpression(properties, false);
+        }
+        case 'Transactional': {
+            const properties: ts.ObjectLiteralElementLike[] = [];
+            if (args[0] && ts.isObjectLiteralExpression(args[0])) {
+                properties.push(...args[0].properties);
+            } else if (args.length > 0) {
+                return undefined;
+            }
+            if (!properties.some(property => ts.isPropertyAssignment(property)
+                && ts.isIdentifier(property.name)
+                && property.name.text === 'propagation')) {
+                properties.push(factory.createPropertyAssignment('propagation', factory.createStringLiteral('REQUIRED')));
+            }
+            if (activeTypeContext) {
+                activeTypeContext.usesTransactionResolver = true;
+            }
+            properties.push(factory.createPropertyAssignment(
+                'aotMethodOptions',
+                factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment(
+                        'resolvers',
+                        factory.createArrayLiteralExpression([factory.createIdentifier('__aotTransactionResolver')], false)
+                    )
+                ], false)
+            ));
+            return factory.createObjectLiteralExpression(properties, false);
+        }
         case 'Runner':
             if (args.length === 0) {
                 return factory.createObjectLiteralExpression([], false);
@@ -1306,6 +1361,7 @@ function memberMetadataExpression(decorator: ts.Decorator, member: ts.ClassEleme
                 return args[0];
             }
             return undefined;
+        case 'FilterHandler':
         case 'EventHandler':
         case 'ExceptionHandler': {
             if (!args.length) {
@@ -2557,6 +2613,9 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
             }
             if (activeTypeContext?.usesLoggerResolver) {
                 addHelperBinding('__aotLoggerResolvers', '@tsdi/logger', 'LOGGER_RESOLVERS');
+            }
+            if (activeTypeContext?.usesTransactionResolver) {
+                addHelperBinding('__aotTransactionResolver', '@tsdi/repository', 'TransactionResolver');
             }
             return factory.updateSourceFile(sourceFile, [...imports, ...statements]);
         };

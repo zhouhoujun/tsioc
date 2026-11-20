@@ -245,6 +245,9 @@ export class ClassRef<T = any> {
                 parameterIndex: Array.isArray(record) ? record[4] : record.parameterIndex,
                 metadata
             } as DecorDefine);
+            if (metadata?.aotMethodOptions && kind !== 'class') {
+                this.setMethodOptions(propertyKey, metadata.aotMethodOptions);
+            }
             if (decor?.decorator === '@Runner') {
                 const runnable = {
                     ...metadata,

@@ -130,6 +130,53 @@ export class HandlerService {
         expect(ref.getDefines(ref.methodDecors[1]).length).toBe(1);
     });
 
+    it('precompiles Transactional method options', () => {
+        const source = `
+import { Injectable } from '@tsdi/ioc';
+import { Transactional } from '@tsdi/repository';
+
+@Injectable()
+export class TransactionService {
+    @Transactional()
+    save() {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(TransactionService');
+        expect(output).toContain('__aotTransactionResolver');
+        const exported = load(source);
+        const ref = getClassRef(exported.TransactionService as any);
+        const options = ref.getMethodOptions('save') as any;
+        expect(options?.resolvers?.length).toBeGreaterThan(0);
+    });
+
+    it('precompiles Authorization and filter/interceptor method metadata', () => {
+        const source = `
+import { Injectable } from '@tsdi/ioc';
+import { Authorization } from '@tsdi/security';
+import { Interceptable, Filterable } from '@tsdi/core';
+
+@Injectable()
+export class PolicyService {
+    @Authorization('admin')
+    secure() {}
+
+    @Interceptable('target')
+    intercept() {}
+
+    @Filterable('target')
+    filter() {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(PolicyService');
+        expect(output).not.toContain('__aotDeco(PolicyService');
+        const exported = load(source);
+        const ref = getClassRef(exported.PolicyService as any);
+        expect(ref.methodDecors.length).toBe(3);
+        expect(ref.getDefines(ref.methodDecors[0]).length).toBe(1);
+    });
+
     it('precompiles InjectLog resolver metadata', () => {
         const source = `
 import { Injectable } from '@tsdi/ioc';
