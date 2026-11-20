@@ -104,7 +104,7 @@ function createFinderFixture(): {
     const now = Date.now();
     state.setSessions([
         { id: 'root', current: true, title: 'Main session', projectKey: 'workspace:/repo/alpha', projectLabel: 'alpha', updatedAt: now - 60_000 } as any,
-        { id: 'other', current: false, title: 'Reviewer', projectKey: 'workspace:/repo/beta', projectLabel: 'beta', updatedAt: now - 3_600_000 } as any,
+        { id: 'other', current: false, title: 'Reviewer', projectKey: 'workspace:/repo/beta', projectLabel: 'beta', updatedAt: now - 60_000 } as any,
         { id: 'ancient', current: false, title: 'Ancient work', projectKey: 'workspace:/repo/beta', projectLabel: 'beta', updatedAt: now - 10 * 24 * 60 * 60 * 1000 } as any
     ]);
     return {

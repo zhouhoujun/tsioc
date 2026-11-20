@@ -2,7 +2,9 @@ import {
     AgentMemoryRecord,
     AgentMessage,
     AgentRuntime,
+    AgentScheduler,
     AgentTurnResult,
+    ScheduledAgentTask,
     SessionSearchMatch,
     StreamChunk,
     SynthesisReport
@@ -61,5 +63,28 @@ export class AgentConsoleRemoteRuntime extends AgentRuntime {
 
     synthesizeExperiences(): SynthesisReport {
         return { totalSessions: 0, processedSessions: 0, patterns: [], errors: [] };
+    }
+}
+
+/** Gateway-only scheduler: jobs live in the gateway runtime, not the browser. */
+export class AgentConsoleRemoteScheduler extends AgentScheduler {
+    async start(): Promise<void> {
+        // No local scheduler.
+    }
+
+    async stop(): Promise<void> {
+        // No local scheduler.
+    }
+
+    async schedule(task: ScheduledAgentTask): Promise<ScheduledAgentTask> {
+        return task;
+    }
+
+    async cancel(): Promise<void> {
+        // No local scheduler.
+    }
+
+    getTasks(): ScheduledAgentTask[] {
+        return [];
     }
 }

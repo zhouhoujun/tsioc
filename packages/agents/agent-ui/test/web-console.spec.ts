@@ -8,7 +8,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { ComponentsModule } from '@tsdi/components';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DOCUMENT } from '@tsdi/common';
-import { AgentModule, AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, defaultAgentOptions } from '@tsdi/agent';
+import { AgentModule, AgentRuntime, AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, defaultAgentOptions } from '@tsdi/agent';
 import {
     AgentConsoleComponent,
     AgentConsoleRemoteEventBridge,
@@ -17,6 +17,7 @@ import {
     HttpAgentConsoleAppRpc
 } from '../src';
 import { mountAgentWebConsole, registerAgentWebConsolePwa, requestWebPairing } from '../web-console';
+import { AgentConsoleRemoteRuntime } from '../web-console/remote-runtime';
 import * as legacyWebEntry from '../web';
 
 @Suite('Agent web console entry')
@@ -225,8 +226,45 @@ export class AgentWebConsoleTest {
         }
     }
 
-    @Test('mounting restores a persisted model profile without failing')
-    async mountAppliesPersistedModelProfile() {
+    @Test('browser console boots with a gateway-only runtime (no TypeORM adapter)')
+    async bootsRemoteRuntime() {
+        const doc = this.dom.window.document;
+        const container = doc.createElement('div');
+        doc.body.appendChild(container);
+        const previousDocument = (globalThis as any).document;
+        (globalThis as any).document = doc;
+        const fetchImpl = (async (url: string) => {
+            if (String(url).includes('/api/events')) {
+                return new Response('event: connected\ndata: {}\n\n', {
+                    status: 200,
+                    headers: { 'Content-Type': 'text/event-stream' }
+                });
+            }
+            return new Response(JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                result: { sessionId: 'w1', id: 'w1', messages: [], sections: [], items: [], todos: [], steps: [] }
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }) as any;
+        let mounted: any;
+        try {
+            mounted = await mountAgentWebConsole({
+                baseUrl: 'http://localhost:3100',
+                sessionId: 'w1',
+                fetchImpl,
+                mount: container,
+                state: new AgentConsoleSessionState(new InMemoryCommandExecutionControl()),
+                pwa: false,
+                reconnectDelayMs: 100_000
+            });
+            expect(mounted.ctx.get(AgentRuntime)).toBeInstanceOf(AgentConsoleRemoteRuntime);
+        } finally {
+            (globalThis as any).document = previousDocument;
+            await mounted?.dispose?.();
+        }
+    }
+
+    @Test('mounting restores a persisted model profile without failing')    async mountAppliesPersistedModelProfile() {
         const doc = this.dom.window.document;
         const container = doc.createElement('div');
         doc.body.appendChild(container);

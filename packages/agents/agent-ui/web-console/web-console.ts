@@ -6,9 +6,8 @@ import { ToastService } from '@tsdi/components/common/toast';
 import { installStyleSheet, UI_CSS, UI_STYLE_ID } from '@tsdi/components/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DomOverlayAnchors, DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentRuntime, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentRuntime, AgentScheduler, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions, InMemoryCommandExecutionControl } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
-import { AgentModule } from '@tsdi/agent';
 import {
     AgentConsoleComponent,
     AgentConsoleKeymapStore,
@@ -28,7 +27,7 @@ import {
 } from '@tsdi/agent-ui';
 import type { AgentConsoleOptions } from '@tsdi/agent-ui';
 import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
-import { AgentConsoleRemoteRuntime } from './remote-runtime';
+import { AgentConsoleRemoteRuntime, AgentConsoleRemoteScheduler } from './remote-runtime';
 import { openAgentConsoleDialogDeepLink } from './dialog-deeplink';
 import { focusWebConsoleComposer } from './focus-composer';
 import { routeAgentConsoleWheel } from './wheel-routing';
@@ -207,10 +206,12 @@ export async function mountAgentWebConsole(
         }
     };
     const ctx = await Application.run(AgentConsoleComponent, {
-        deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
+        deps: [AgentUiModule, HtmlTemplateModule, ComponentsModule],
         providers: [
             { provide: DOCUMENT, useValue: doc },
             { provide: AgentRuntime, useValue: new AgentConsoleRemoteRuntime() },
+            { provide: AgentScheduler, useValue: new AgentConsoleRemoteScheduler() },
+            { provide: COMMAND_EXECUTION_CONTROL, useValue: new InMemoryCommandExecutionControl() },
             { provide: ConsoleTerminalSurfaceAccessor, useValue: surfaceAccessor },
             { provide: AGENT_CONSOLE_APP_RPC, useValue: rpc },
             { provide: AGENT_CONSOLE_MARKDOWN_COMPONENT, useValue: AgentConsoleWebMarkdownComponent },
