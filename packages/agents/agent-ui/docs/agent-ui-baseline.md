@@ -120,7 +120,7 @@ rm -f run-one.tmp.ts
 
 | 包 | 结果 |
 | --- | --- |
-| `@tsdi/agent` | 1101 passing |
+| `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 594 passing |
 | `@tsdi/agent-ui` | **2292 passing**（2 组） |
@@ -169,3 +169,5 @@ rm -f run-one.tmp.ts
   `policy.approval.requireApproval` 并持久化 `approvalRequireApproval`，审批策略通过 live
   provider 立即生效（无需重建 manager）；空列表自动回退默认规则，避免重启后静默放开审批。
   per-session override 与图形化规则表单仍待补。
+- AMS P1.2 补充：`/permissions inspect <tool> [resource]` 已同时展示有序规则的最终匹配
+  （action / 规则序号 / 规则描述），与 `DefaultApprovalStrategy` 的 last-match-wins 一致。

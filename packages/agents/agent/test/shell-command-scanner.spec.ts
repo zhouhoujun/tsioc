@@ -146,8 +146,7 @@ export class ShellCommandScannerTest {
     }
 
     @Test('live policy rules apply without rebuilding the strategy')
-    strategyReadsRulesLive() {
-        let rules: any[] = ['shell.exec'];
+    strategyReadsRulesLive() {        let rules: any[] = ['shell.exec'];
         const strategy = new DefaultApprovalStrategy(['shell.exec'], false, undefined, () => rules);
         expect(strategy.requires('terminal', { command: 'ls' })).toEqual(true);
         expect(strategy.requires('write_file', { path: 'a' })).toEqual(false);
@@ -183,5 +182,18 @@ export class ShellCommandScannerTest {
         expect(manager.requiresApproval('terminal', { command: 'git status' })).toEqual(false);
         options.policy.approval.readOnlyShell = false;
         expect(manager.requiresApproval('terminal', { command: 'git status' })).toEqual(true);
+    }
+
+    @Test('explain reports the last matching ordered rule')
+    explainsRules() {
+        const strategy = new DefaultApprovalStrategy([
+            'shell.exec',
+            { category: 'sandbox', action: 'allow', resource: 'git *' },
+            { category: 'sandbox', action: 'ask' }
+        ]);
+        expect(strategy.explain('terminal', { command: 'git status' }))
+            .toMatchObject({ decision: 'ask', index: 2, explicit: true });
+        expect(strategy.explain('read_file', { path: 'a.ts' }))
+            .toMatchObject({ decision: undefined, explicit: false });
     }
 }

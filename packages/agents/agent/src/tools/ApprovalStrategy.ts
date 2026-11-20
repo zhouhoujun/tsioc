@@ -29,6 +29,15 @@ export interface ApprovalRuleObject {
 
 export type ApprovalRule = string | ApprovalRuleObject;
 
+export interface ApprovalRuleExplanation {
+    decision?: 'ask' | 'allow' | 'deny';
+    /** Last matching rule (ordered rules: last match wins). */
+    rule?: ApprovalRule;
+    index?: number;
+    /** True when the last match was an object rule (the scanner must not relax it). */
+    explicit: boolean;
+}
+
 const RESOURCE_KEYS = ['path', 'filePath', 'target', 'command', 'cmd', 'url', 'cwd', 'pattern', 'query'];
 
 export class DefaultApprovalStrategy implements ApprovalStrategy {
@@ -61,18 +70,28 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         return this.decide(toolName, input) === 'deny';
     }
 
-    private decide(toolName: string, input: any): 'ask' | 'allow' | 'deny' | undefined {
+    /** Explain the last matching ordered rule without applying the shell scanner. */
+    explain(toolName: string, input?: any): ApprovalRuleExplanation {
+        return this.explainRules(toolName, input);
+    }
+
+    private explainRules(toolName: string, input: any): ApprovalRuleExplanation {
         const toolCategory = classifyApprovalCategory(toolName);
         let decision: 'ask' | 'allow' | 'deny' | undefined;
         // Object rules are explicit user intent; the scanner must not override
         // them. The last matching rule still wins, as documented.
         let explicit = false;
+        let matched: ApprovalRule | undefined;
+        let matchedIndex: number | undefined;
         const rules = this.liveRules?.() ?? this.rules;
-        for (const rule of rules) {
+        for (let index = 0; index < rules.length; index++) {
+            const rule = rules[index];
             if (typeof rule === 'string') {
                 if (this.matchesPattern(toolName, rule)) {
                     decision = 'ask';
                     explicit = false;
+                    matched = rule;
+                    matchedIndex = index;
                     continue;
                 }
                 // Default rules name a category member (`shell.exec`, `fs.write`)
@@ -81,18 +100,28 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
                 if (toolCategory && ruleCategory && toolCategory === ruleCategory) {
                     decision = 'ask';
                     explicit = false;
+                    matched = rule;
+                    matchedIndex = index;
                 }
             } else if (this.matchesRule(toolName, input, rule)) {
                 decision = rule.action ?? (rule.mode === 'auto-deny' ? 'deny' : 'ask');
                 explicit = true;
+                matched = rule;
+                matchedIndex = index;
             }
         }
-        if (decision === 'ask' && !explicit && toolCategory === 'sandbox' && this.readOnlyShell?.()) {
+        return { decision, explicit, ...(matched !== undefined ? { rule: matched, index: matchedIndex } : {}) };
+    }
+
+    private decide(toolName: string, input: any): 'ask' | 'allow' | 'deny' | undefined {
+        const toolCategory = classifyApprovalCategory(toolName);
+        const explained = this.explainRules(toolName, input);
+        if (explained.decision === 'ask' && !explained.explicit && toolCategory === 'sandbox' && this.readOnlyShell?.()) {
             if (inspectShellCommand(approvalCommand(input)).readOnly) {
                 return 'allow';
             }
         }
-        return decision;
+        return explained.decision;
     }
 
     private matchesRule(toolName: string, input: any, rule: ApprovalRuleObject): boolean {

@@ -2,7 +2,8 @@ import { AgentDelegationMode, SandboxMode, describeSandboxCapabilities, detectSa
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { explainAgentConsolePermission } from './AgentConsolePermissionInspector';
 import { readProjectApprovalAllowRules, saveProjectApprovalAllowRules } from './AgentConsoleApprovalAllowRules';
-import { runApprovalRulesCommand } from './AgentConsoleApprovalRuleCommands';
+import { runApprovalRulesCommand, describeApprovalRule, readEffectiveApprovalRules } from './AgentConsoleApprovalRuleCommands';
+import { DefaultApprovalStrategy } from '@tsdi/agent';
 
 export type AgentConsoleSecurityLevel = 'read-only' | 'ask' | 'auto' | 'full';
 
@@ -121,7 +122,7 @@ export async function runDelegationModeCommand(host: PolicyCommandHost, args: st
     }
 }
 
-async function showPermissionInspector(host: PolicyCommandHost, tool?: string): Promise<void> {
+async function showPermissionInspector(host: PolicyCommandHost, tool?: string, resource?: string): Promise<void> {
     const state = host.state;
     const sessionId = String(state.sessionId || '');
     let profile: any;
@@ -160,6 +161,8 @@ async function showPermissionInspector(host: PolicyCommandHost, tool?: string): 
         formatAgentUiNotice(host.translator, 'permissionWritePathsLine', { value: writePaths || '-' })
     ];
     const target = String(tool || '').trim();
+    const approvalRules = readEffectiveApprovalRules(host.options);
+    lines.push(formatAgentUiNotice(host.translator, 'permissionApprovalRulesLine', { count: approvalRules.length }));
     if (target) {
         const decision = explainAgentConsolePermission(target, {
             level,
@@ -185,6 +188,14 @@ async function showPermissionInspector(host: PolicyCommandHost, tool?: string): 
         lines.push(formatAgentUiNotice(host.translator, 'permissionReasonLine', {
             reason: formatAgentUiNotice(host.translator, reasonKey, { pattern: decision.pattern || '' })
         }));
+        const approval = new DefaultApprovalStrategy(approvalRules).explain(target, resource || undefined);
+        lines.push(approval.decision
+            ? formatAgentUiNotice(host.translator, 'permissionApprovalMatchLine', {
+                decision: approval.decision.toUpperCase(),
+                index: (approval.index ?? 0) + 1,
+                rule: approval.rule !== undefined ? describeApprovalRule(approval.rule) : '-'
+            })
+            : formatAgentUiNotice(host.translator, 'permissionApprovalNoMatchLine'));
     }
     host.state.openTextOverlay(
         formatAgentUiNotice(host.translator, 'permissionsTitle'),
@@ -200,7 +211,7 @@ export async function runPermissionsCommand(host: PolicyCommandHost, args: strin
         return;
     }
     if (tokens[0].toLowerCase() === 'inspect') {
-        await showPermissionInspector(host, tokens[1]);
+        await showPermissionInspector(host, tokens[1], tokens.slice(2).join(' '));
         return;
     }
     if (tokens[0].toLowerCase() === 'rules' || tokens[0].toLowerCase() === 'rule') {
