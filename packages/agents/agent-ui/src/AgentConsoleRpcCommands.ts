@@ -50,11 +50,88 @@ export async function runApproveRetryCommand(host: AgentConsoleRpcCommandHost): 
     return true;
 }
 
+function writeQueue(host: AgentConsoleRpcCommandHost, queue: Array<{ command?: boolean; input: string; attachments: any[] }>): void {
+    if (queue.length) {
+        host.queuedPrompts.set(host.state.sessionId, queue);
+    } else {
+        host.queuedPrompts.delete(host.state.sessionId);
+    }
+    host.state.setQueuedPromptCount(queue.length);
+}
+
+/**
+ * Interactive queue panel: pick an entry, then edit/remove/move it.
+ * Uses the existing select overlay, so it works identically in TUI and web.
+ */
+export async function runQueueManage(host: AgentConsoleRpcCommandHost): Promise<void> {
+    const queue = [...(host.queuedPrompts.get(host.state.sessionId) || [])];
+    if (!queue.length) {
+        host.notify(formatAgentUiNotice(host.translator, 'noQueuedPrompts'));
+        return;
+    }
+    const options = queue.map((entry, index) => ({
+        label: `${index + 1}. ${entry.command ? formatAgentUiNotice(host.translator, 'queuedCommandBadge') : ''}${entry.input}`,
+        value: String(index),
+        description: entry.attachments.length
+            ? formatAgentUiNotice(host.translator, entry.attachments.length === 1 ? 'queuedAttachmentSuffix' : 'queuedAttachmentsSuffix', { count: entry.attachments.length })
+            : undefined
+    }));
+    const picked = await host.select(
+        formatAgentUiNotice(host.translator, 'queueManageTitle'),
+        options,
+        0,
+        formatAgentUiNotice(host.translator, 'queueManageHint')
+    );
+    const index = Number(picked);
+    if (picked === undefined || !Number.isInteger(index) || index < 0 || index >= queue.length) {
+        return;
+    }
+    const action = await host.select(
+        formatAgentUiNotice(host.translator, 'queueActionTitle'),
+        [
+            { label: formatAgentUiNotice(host.translator, 'queueActionEdit'), value: 'edit' },
+            { label: formatAgentUiNotice(host.translator, 'queueActionMoveUp'), value: 'up' },
+            { label: formatAgentUiNotice(host.translator, 'queueActionMoveDown'), value: 'down' },
+            { label: formatAgentUiNotice(host.translator, 'queueActionRemove'), value: 'remove' }
+        ],
+        0,
+        formatAgentUiNotice(host.translator, 'queueActionHint')
+    );
+    if (!action) {
+        return;
+    }
+    if (action === 'edit') {
+        const [entry] = queue.splice(index, 1);
+        writeQueue(host, queue);
+        host.state.setInput(entry.input, entry.input.length);
+        host.state.setPendingAttachments((entry.attachments || []).slice());
+        host.state.refreshInputSuggestions?.();
+        host.notify(formatAgentUiNotice(host.translator, 'queueEditLoaded', { index: index + 1 }));
+        return;
+    }
+    if (action === 'remove') {
+        queue.splice(index, 1);
+        writeQueue(host, queue);
+        host.notify(formatAgentUiNotice(host.translator, 'queueRemoved', { index: index + 1 }));
+        return;
+    }
+    const target = action === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= queue.length) {
+        host.notify(formatAgentUiNotice(host.translator, 'queueMoveEdge', {
+            edge: formatAgentUiNotice(host.translator, action === 'up' ? 'queueEdgeTop' : 'queueEdgeBottom')
+        }));
+        return;
+    }
+    const [entry] = queue.splice(index, 1);
+    queue.splice(target, 0, entry);
+    writeQueue(host, queue);
+    host.notify(formatAgentUiNotice(host.translator, 'queueMoved', { from: index + 1, to: target + 1 }));
+}
+
 export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: string): Promise<boolean> {
     const parsed = String(args || '').trim();
     const queue = host.queuedPrompts.get(host.state.sessionId) || [];
-    if (!parsed || parsed.toLowerCase() === 'list') {
-        if (!queue.length) {
+    if (!parsed || parsed.toLowerCase() === 'list') {        if (!queue.length) {
             host.notify(formatAgentUiNotice(host.translator, 'noQueuedPrompts'));
             return true;
         }
@@ -64,6 +141,10 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
                 : ''}`
         );
         host.pushCommandOutput('/queue list', `${formatAgentUiNotice(host.translator, 'queuedPromptsTitle', { count: queue.length })}\n${lines.join('\n')}`);
+        return true;
+    }
+    if (parsed.toLowerCase() === 'manage') {
+        await runQueueManage(host);
         return true;
     }
     if (parsed.toLowerCase() === 'clear') {

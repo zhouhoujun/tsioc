@@ -830,6 +830,36 @@ export class VmSubmitTest {
         expect(state.queuedPromptCount).toEqual(0);
     }
 
+    @Test('queue manage panel moves, edits and guards the edges')
+    async queueManagePanel() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+        for (const prompt of ['first prompt', 'second prompt', 'third prompt']) {
+            state.setInput(prompt);
+            await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        }
+
+        const picks: string[] = ['0', 'down'];
+        (component as any).select = async () => picks.shift();
+        await (component as any).handleCommand('/queue manage');
+        expect(state.notice).toContain('Moved queued prompt 1 to position 2.');
+        await (component as any).handleCommand('/queue');
+        let text = state.commandOutputs.filter(entry => entry.command === '/queue list').pop()?.text || '';
+        expect(text.indexOf('second prompt')).toBeLessThan(text.indexOf('first prompt'));
+
+        picks.push('2', 'edit');
+        await (component as any).handleCommand('/queue manage');
+        expect(state.notice).toContain('Loaded queued prompt 3');
+        expect(state.input).toEqual('third prompt');
+        expect(state.queuedPromptCount).toEqual(2);
+
+        picks.push('0', 'up');
+        await (component as any).handleCommand('/queue manage');
+        expect(state.notice).toContain('Already at the top of the queue.');
+        expect(state.queuedPromptCount).toEqual(2);
+    }
+
     @Test('queue command reorders queued prompts with move')
     async queueCommandMoves() {
         const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
