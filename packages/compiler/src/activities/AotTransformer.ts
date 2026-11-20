@@ -527,21 +527,37 @@ function decoratorRecordExpression(decorator: ts.Decorator, delimiters: [string,
     return ts.factory.updateCallExpression(expression, expression.expression, expression.typeArguments, args);
 }
 
-const CONTROLLER_DECORATORS = new Set(['Controller', 'RestController']);
-const ROUTE_METHOD_DECORATORS: Record<string, string> = {
+const CONTROLLER_DECORATORS = new Set(['Controller', 'RestController', 'RouteMapping']);
+const ROUTE_METHOD_DECORATORS: Record<string, string | undefined> = {
     Get: 'GET',
     Post: 'POST',
     Put: 'PUT',
     Patch: 'PATCH',
     Delete: 'DELETE',
     Head: 'HEAD',
-    Options: 'OPTIONS'
+    Options: 'OPTIONS',
+    RouteMapping: undefined
 };
+const REQUEST_METHOD_NAMES = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
+
+function isRouteMethodDecorator(name: string): boolean {
+    return Object.prototype.hasOwnProperty.call(ROUTE_METHOD_DECORATORS, name);
+}
+
+function routeMappingMethod(expression: ts.Expression): string | undefined {
+    if (ts.isStringLiteralLike(expression) && REQUEST_METHOD_NAMES.has(expression.text.toUpperCase())) {
+        return expression.text.toUpperCase();
+    }
+    if (ts.isIdentifier(expression) && REQUEST_METHOD_NAMES.has(expression.text.toUpperCase())) {
+        return expression.text.toUpperCase();
+    }
+    return undefined;
+}
 
 interface AotControllerRoute {
     propertyKey: string;
     pattern: string;
-    method: string;
+    method?: string;
     options?: ts.Expression;
 }
 
@@ -618,7 +634,7 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
             continue;
         }
         const decorators = decoratorsOf(member);
-        const routeDecorator = decorators.find(decorator => !!ROUTE_METHOD_DECORATORS[decoratorName(decorator)]);
+        const routeDecorator = decorators.find(decorator => isRouteMethodDecorator(decoratorName(decorator)));
         if (!routeDecorator) {
             continue;
         }
@@ -640,11 +656,25 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
             }
             pattern = args[0].text;
         }
+        const decoratorNameValue = decoratorName(routeDecorator);
+        let method = ROUTE_METHOD_DECORATORS[decoratorNameValue];
         let methodOptions: ts.Expression | undefined;
         if (args.length === 2) {
-            methodOptions = optionsArgument(args[1]);
-            if (!methodOptions) {
-                return undefined;
+            if (decoratorNameValue === 'RouteMapping') {
+                const explicitMethod = routeMappingMethod(args[1]);
+                if (explicitMethod) {
+                    method = explicitMethod;
+                } else {
+                    methodOptions = optionsArgument(args[1]);
+                    if (!methodOptions) {
+                        return undefined;
+                    }
+                }
+            } else {
+                methodOptions = optionsArgument(args[1]);
+                if (!methodOptions) {
+                    return undefined;
+                }
             }
         }
         const propertyKey = memberKey(member);
@@ -654,7 +684,7 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
         routes.push({
             propertyKey,
             pattern,
-            method: ROUTE_METHOD_DECORATORS[decoratorName(routeDecorator)],
+            method,
             options: routeOptionsExpression(classOptions, methodOptions)
         });
     }
@@ -2001,7 +2031,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             factory.createObjectLiteralExpression([
                                 factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(route.propertyKey)),
                                 factory.createPropertyAssignment('pattern', factory.createStringLiteral(route.pattern)),
-                                factory.createPropertyAssignment('method', factory.createStringLiteral(route.method)),
+                                ...(route.method ? [factory.createPropertyAssignment('method', factory.createStringLiteral(route.method))] : []),
                                 factory.createPropertyAssignment('options', route.options ?? factory.createObjectLiteralExpression([], false))
                             ], false)
                         ), false)

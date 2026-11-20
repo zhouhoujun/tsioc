@@ -103,6 +103,28 @@ export class CallOptionsController {
         expect(exported.CallOptionsController.ƿroutes[0].options.timeout).toBe(2000);
     });
 
+    it('emits RouteMapping controller and method manifests', () => {
+        const output = transpileAot('aot-route-mapping.ts', `
+import { RouteMapping } from '@tsdi/service';
+import { GET, POST } from '@tsdi/common';
+
+@RouteMapping('/api/mapped')
+export class MappedController {
+    @RouteMapping('/hello', 'GET')
+    hello() { return 'hello'; }
+
+    @RouteMapping('/data', POST)
+    data() { return 'data'; }
+}
+`, { module: ts.ModuleKind.CommonJS });
+        const exported = loadAotOutput(output);
+
+        expect(exported.MappedController.ƿroutes).toEqual([
+            { propertyKey: 'hello', pattern: '/hello', method: 'GET', options: {} },
+            { propertyKey: 'data', pattern: '/data', method: 'POST', options: {} }
+        ]);
+    });
+
     it('falls back when a route method has another method decorator', () => {
         const output = transpileAot('aot-controller-decorator.ts', `
 import { Controller, Get } from '@tsdi/service';
