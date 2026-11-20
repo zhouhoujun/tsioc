@@ -516,6 +516,16 @@ export class VisualWorkflowService {
         this.mqttPublisher = publisher;
     }
 
+    /** Registry used for config-node resolution by host-side runners. */
+    getRegistry(): WorkflowNodeRegistry {
+        return this.registry;
+    }
+
+    /** Resolve a credential through the host resolver (used by inbound listeners). */
+    resolveCredential(name: string): Promise<string | undefined> | string | undefined {
+        return this.credentialResolver?.(name);
+    }
+
     /** Host transports for the outbound network nodes. */
     setTcpSender(sender?: (message: WorkflowTcpSendRequest) => Promise<void> | void): void {
         this.tcpSender = sender;

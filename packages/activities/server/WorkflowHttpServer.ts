@@ -49,7 +49,7 @@ import {
     validateVisualWorkflowDraft
 } from '../src/visual';
 import { toWorkflowExecutionSnapshot, VisualWorkflowService } from '../src/visual/VisualWorkflowService';
-import { WorkflowScheduleManager } from './WorkflowScheduleManager';
+import { WorkflowScheduleManager, workflowHasInboundTriggers, workflowHasScheduleTrigger } from './WorkflowScheduleManager';
 import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowPluginCatalog } from '../src/plugins/catalog';
 import { WorkflowPluginRegistry } from '../src/plugins/plugin-registry';
@@ -268,7 +268,7 @@ export class WorkflowHttpController {
             throw new BadRequestException(validation.errors.join('; '));
         }
         const summary = await this.store.save(definition);
-        this.schedules.restart(id, definition);
+        await this.schedules.restart(id, definition);
         await this.audit.record('save', id, (body as any)?.updatedBy);
         return { summary, definition };
     }
@@ -282,7 +282,7 @@ export class WorkflowHttpController {
             throw new BadRequestException(validation.errors.join('; '));
         }
         const summary = await this.store.save(definition);
-        this.schedules.restart(id, definition);
+        await this.schedules.restart(id, definition);
         await this.audit.record('save-version', id, (body as any)?.createdBy);
         const version = await this.versions.append(definition, {
             kind: 'save',
@@ -303,7 +303,7 @@ export class WorkflowHttpController {
             throw new BadRequestException(validation.errors.join('; '));
         }
         const summary = await this.store.save(definition);
-        this.schedules.restart(id, definition);
+        await this.schedules.restart(id, definition);
         await this.audit.record('publish', id, (body as any)?.publishedBy);
         const version = await this.versions.append(definition, {
             kind: 'publish',
@@ -383,7 +383,7 @@ export class WorkflowHttpController {
         if (!removed) {
             throw new NotFoundException(`Workflow not found: ${id}`);
         }
-        this.schedules.stop(id);
+        await this.schedules.stop(id);
         await this.history.removeWorkflow(id);
         await this.versions.removeWorkflow(id);
         await this.audit.record('delete', id);
@@ -392,7 +392,7 @@ export class WorkflowHttpController {
 
     @Delete('/')
     async clear() {
-        this.schedules.stopAll();
+        await this.schedules.stopAll();
         await this.store.clear();
         await this.history.clear();
         await this.versions.clear();
@@ -660,7 +660,7 @@ export class WorkflowHttpController {
         if (!definition) {
             throw new NotFoundException(`Workflow not found: ${id}`);
         }
-        const status = this.schedules.start(id, definition, {
+        const status = await this.schedules.start(id, definition, {
             context: this.executionContext(body?.context),
             execution: body?.execution,
             onResult: (result: any) => {
@@ -682,7 +682,7 @@ export class WorkflowHttpController {
 
     @Delete('/:id/schedule')
     async stopSchedule(@RequestPath('id') id: string) {
-        const stopped = this.schedules.stop(id);
+        const stopped = await this.schedules.stop(id);
         await this.audit.record('schedule-stop', id);
         return { stopped };
     }
@@ -940,10 +940,10 @@ export class WorkflowDeploymentController {
         const started: WorkflowDeploymentStatus[] = [];
         for (const id of requested) {
             const definition = await this.store.get(id);
-            if (!definition || !this.isSchedulable(definition)) {
+            if (!definition || !this.isDeployable(definition)) {
                 continue;
             }
-            started.push(this.schedules.start(id, definition, {
+            started.push(await this.schedules.start(id, definition, {
                 context: this.executionContext(body?.context),
                 execution: body?.execution,
                 onResult: result => {
@@ -958,15 +958,19 @@ export class WorkflowDeploymentController {
     }
 
     @Post('/stop')
-    stop(@RequestBody() body: { workflowIds?: string[] } = {}): { stopped: number } {
+    async stop(@RequestBody() body: { workflowIds?: string[] } = {}): Promise<{ stopped: number }> {
         const ids = Array.isArray(body?.workflowIds) ? body.workflowIds.map(String) : [];
         let stopped = 0;
         if (!ids.length) {
             const count = this.schedules.list().length;
-            this.schedules.stopAll();
+            await this.schedules.stopAll();
             stopped = count;
         } else {
-            stopped = ids.filter(id => this.schedules.stop(id)).length;
+            for (const id of ids) {
+                if (await this.schedules.stop(id)) {
+                    stopped += 1;
+                }
+            }
         }
         void this.audit.record('deployment-stop', undefined, undefined, {
             workflows: ids.length ? ids : 'all',
@@ -975,14 +979,8 @@ export class WorkflowDeploymentController {
         return { stopped };
     }
 
-    private isSchedulable(definition: VisualWorkflowDefinition): boolean {
-        return (definition.nodes || []).some(node => {
-            if (node.type !== 'inject') {
-                return false;
-            }
-            const trigger = String(node.config?.trigger || 'manual');
-            return trigger === 'interval' || trigger === 'once' || trigger === 'cron';
-        });
+    private isDeployable(definition: VisualWorkflowDefinition): boolean {
+        return workflowHasScheduleTrigger(definition) || workflowHasInboundTriggers(definition);
     }
 
     private executionContext(context: Record<string, any> = {}): Record<string, any> {

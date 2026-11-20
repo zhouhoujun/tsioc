@@ -795,13 +795,20 @@ Scheduled runs persist execution snapshots, restart automatically when the
 workflow is saved/published, and stop when the workflow is deleted or cleared.
 
 Batch deployment endpoints and the designer **Deployments** dialog manage every
-stored workflow with an interval/once/cron inject:
+stored workflow with an interval/once/cron inject **or a long-lived inbound
+node** (`tcp-in`, `udp-in`, `websocket-in`, `mqtt-in`, `watch`):
 
 ```text
-GET  /api/deployments         # running schedules
-POST /api/deployments/start   # start all schedulable workflows (or workflowIds)
+GET  /api/deployments         # running deployments
+POST /api/deployments/start   # start all deployable workflows (or workflowIds)
 POST /api/deployments/stop    # stop all or the given workflowIds
 ```
+
+Deployment status includes `ports`, the bound listener ports (ephemeral `0`
+ports are resolved). Starting/stopping a deployment now also starts/releases
+the inbound listeners, so deployed webhooks, sockets and file watchers accept
+traffic without a separate runner process. Saving or publishing a running
+workflow restarts its listeners as part of the same deployment entry.
 
 ### MQTT nodes
 

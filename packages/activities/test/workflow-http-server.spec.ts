@@ -826,7 +826,17 @@ describe('Workflow HTTP microservice', () => {
             nodes: [{ id: 'task_d', name: 'Task', type: 'task', position: { x: 0, y: 0 } }],
             connections: []
         };
-        for (const definition of [scheduled, plain]) {
+        const inbound = {
+            id: 'deploy-c',
+            name: 'Deploy C',
+            nodes: [{
+                id: 'tcp_in_d', name: 'TCP listener', type: 'tcp-in',
+                position: { x: 0, y: 0 },
+                config: { host: '127.0.0.1', port: 0, reply: false }
+            }],
+            connections: []
+        };
+        for (const definition of [scheduled, plain, inbound]) {
             await request(`${base}/api/workflows/${definition.id}`, {
                 method: 'PUT',
                 headers: { 'content-type': 'application/json' },
@@ -839,19 +849,47 @@ describe('Workflow HTTP microservice', () => {
             method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
         });
         expect(started.status).toBe(200);
-        expect(started.body.started.map((item: any) => item.workflowId)).toEqual(['deploy-a']);
+        const startedIds = started.body.started.map((item: any) => item.workflowId);
+        expect(startedIds).toContain('deploy-a');
+        expect(startedIds).toContain('deploy-c');
+        expect(startedIds).not.toContain('deploy-b');
         const listed = await request(`${base}/api/deployments`);
-        expect(listed.body.length).toBe(1);
-        expect(listed.body[0].running).toBe(true);
+        expect(listed.body.length).toBe(2);
+        expect(listed.body.every((item: any) => item.running)).toBe(true);
+
+        // The deployed TCP listener really accepts traffic and records a run.
+        const listener = listed.body.find((item: any) => item.workflowId === 'deploy-c');
+        expect(listener.ports.length).toBe(1);
+        expect(listener.ports[0]).toBeGreaterThan(0);
+        await new Promise<void>((resolve, reject) => {
+            const socket = net.connect(listener.ports[0], '127.0.0.1', () => {
+                socket.write('hello\n');
+                socket.end();
+                resolve();
+            });
+            socket.once('error', reject);
+        });
+        const deadline = Date.now() + 3000;
+        let runs: any[] = [];
+        while (Date.now() < deadline) {
+            runs = (await request(`${base}/api/executions?workflowId=deploy-c`)).body;
+            if (runs.length) {
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        expect(runs.length).toBeGreaterThan(0);
+        expect(runs[0].status).toBe('completed');
 
         const stopped = await request(`${base}/api/deployments/stop`, {
             method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
         });
-        expect(stopped.body.stopped).toBe(1);
+        expect(stopped.body.stopped).toBe(2);
         expect((await request(`${base}/api/deployments`)).body).toEqual([]);
 
         await request(`${base}/api/workflows/deploy-a`, { method: 'DELETE' });
         await request(`${base}/api/workflows/deploy-b`, { method: 'DELETE' });
+        await request(`${base}/api/workflows/deploy-c`, { method: 'DELETE' });
     });
 
     it('starts, reports and stops deployed workflow schedules', async () => {
