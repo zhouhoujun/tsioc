@@ -74,7 +74,8 @@ describe('Workflow designer translations', () => {
             }
             for (const key of ['inspectorTitle', 'enabled', 'webhookUrl', 'enableNode', 'disableNode', 'nodesSelected', 'boxSelect', 'copy', 'cut', 'paste', 'alignLeft', 'distributeHorizontal', 'messages', 'debugSearch', 'noMessages', 'runtimeState', 'clearRuntimeState', 'groupSelection', 'ungroup', 'groupSettings', 'groupName', 'groupColor', 'settings', 'runTimeout', 'metrics', 'lastHour', 'lastDay', 'lastWeek', 'metricsRuns', 'deployments', 'deploymentsEmpty', 'audit', 'auditEmpty', 'auditUnavailable', 'refresh', 'time', 'workflow', 'actor', 'node',
             'credentials', 'credentialsEmpty', 'credentialsUnavailable',
-            'credentialName', 'credentialValue', 'credentialNameRequired', 'credentialValueRequired', 'deploymentStartAll', 'deploymentStopAll', 'deploymentStart', 'deploymentStop', 'running', 'stopped', 'deploymentsUnavailable', 'metricsSuccess', 'metricsAvg', 'metricsLast', 'metricsUnavailable', 'openSubflow', 'quickAdd', 'quickAddPlaceholder', 'quickAddEmpty', 'findNode', 'findPlaceholder', 'findEmpty', 'plugins', 'pluginInstall', 'pluginUninstall', 'name', 'run', 'save']) {
+            'credentialName', 'credentialValue', 'credentialNameRequired', 'credentialValueRequired', 'deploymentStartAll', 'deploymentStopAll', 'deploymentStart', 'deploymentStop', 'running', 'stopped', 'deploymentsUnavailable', 'metricsSuccess', 'metricsAvg', 'metricsLast', 'metricsUnavailable', 'openSubflow', 'quickAdd', 'quickAddPlaceholder', 'quickAddEmpty', 'findNode', 'findPlaceholder', 'findEmpty', 'plugins', 'pluginInstall', 'pluginUninstall', 'name', 'run', 'save',
+            'adminBack', 'adminSessions', 'sessionsEmpty', 'auditSubtitle']) {
                 expect(messages.ui?.[key]).toBeTruthy();
             }
         }

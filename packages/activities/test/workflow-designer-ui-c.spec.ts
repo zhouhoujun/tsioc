@@ -654,6 +654,25 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.selectedNodeIds).toEqual(['task_3']);
     });
 
+    it('lets the host take over global menu actions', async () => {
+        const actions: string[] = [];
+        ref.instance.menuAction = action => {
+            actions.push(action);
+            return action === 'plugins';
+        };
+
+        ref.instance.toolbarAction('plugins');
+        await flush();
+        expect(actions).toContain('plugins');
+        expect(root.querySelector('.workflow-plugins')).toBeFalsy();
+
+        // Unhandled actions still open the designer dialog.
+        ref.instance.toolbarAction('settings');
+        await flush();
+        expect(actions).toContain('settings');
+        expect(root.querySelector('.workflow-settings')).toBeTruthy();
+    });
+
     it('publishes the active workflow from the menu and records a release', async () => {
         const store = new InMemoryWorkflowDefinitionStore();
         ref.instance.store = store;

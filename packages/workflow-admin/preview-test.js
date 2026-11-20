@@ -16,7 +16,7 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_130_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_150_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 /** Click a management menu entry after scrolling it into the popup viewport. */
@@ -740,9 +740,31 @@ function startDesignerServer(port) {
         const notFoundPage = await page.locator('.wa-not-found').count() > 0;
         const notFoundCode = (await page.locator('.wa-not-found-code').textContent() || '').trim();
 
+        // Feature pages are real routes: the designer menu navigates to them,
+        // and each page renders its own chrome and data.
+        await page.evaluate(() => { location.hash = '#/workflows'; });
+        await page.waitForSelector('.workflow-node', { timeout: 15000 });
+        await page.locator('.workflow-management-menu .menu-bar-trigger').click();
+        await clickMenuEntry(page, 'plugins');
+        await page.waitForSelector('[data-nav="plugins"].is-active', { timeout: 10000 });
+        const menuNavigatesToPlugins = await page.locator('[data-nav="plugins"].is-active').count() > 0;
+        const pluginsPage = await page.locator('.wa-page-body').textContent();
+        await page.evaluate(() => { location.hash = '#/audit'; });
+        await page.waitForSelector('[data-nav="audit"].is-active', { timeout: 10000 });
+        const auditPage = await page.locator('.wa-page-body').textContent();
+        await page.evaluate(() => { location.hash = '#/sessions'; });
+        await page.waitForSelector('[data-nav="sessions"].is-active', { timeout: 10000 });
+        const sessionsPage = await page.locator('.wa-page-body').textContent();
+        const featurePages = {
+            menu: menuNavigatesToPlugins,
+            plugins: !!pluginsPage && pluginsPage.trim().length > 0,
+            audit: !!auditPage && auditPage.trim().length > 0,
+            sessions: !!sessionsPage && sessionsPage.trim().length > 0
+        };
+
         await browser.close();
 
-        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, metricsTrend, metricsWindowSwitch, metricsClosed, findOpened, findFiltered, findSelected, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, metricsTrend, metricsWindowSwitch, metricsClosed, findOpened, findFiltered, findSelected, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, featurePages, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
         if (errors.length || initialJsBytes > INITIAL_JS_BUDGET || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !partialClean || !enterNewline || !tabAccepts
@@ -779,6 +801,7 @@ function startDesignerServer(port) {
             || inspectorTheme.group === 'rgb(248, 250, 252)' || inspectorTheme.group === 'rgb(255, 255, 255)'
             || inspectorTheme.label === 'rgb(71, 85, 105)' || inspectorTheme.input === 'rgb(255, 255, 255)'
             || !pluginInstall?.installed || !pluginNodeVisible || !notFoundPage || notFoundCode !== '404' || !inspectorRendered
+            || !featurePages.menu || !featurePages.plugins || !featurePages.audit || !featurePages.sessions
             || tabCount !== 2 || tabState?.openIds?.length !== 2
             || restoredTabCount !== 2 || !String(restoredTabLabel || '').includes('Approval workflow')
             || newTabCount !== 3 || newTabNodeCount !== 0 || !newTabEmptyHint

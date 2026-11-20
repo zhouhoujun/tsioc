@@ -5,6 +5,10 @@ export const WORKFLOW_ADMIN_LOGIN_PATH = 'login';
 /** Canonical designer landing area (no specific document selected). */
 export const WORKFLOW_ADMIN_WORKFLOWS_PATH = 'workflows';
 export const WORKFLOW_ADMIN_WORKFLOW_PATH = 'workflows/:id';
+/** Standalone admin feature pages. */
+export const WORKFLOW_ADMIN_PLUGINS_PATH = 'plugins';
+export const WORKFLOW_ADMIN_SESSIONS_PATH = 'sessions';
+export const WORKFLOW_ADMIN_AUDIT_PATH = 'audit';
 
 /**
  * Root Angular-style route configuration.

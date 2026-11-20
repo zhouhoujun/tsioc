@@ -227,6 +227,248 @@
             padding: 18px;
             color: var(--wa-shell-danger);
         }
+
+        /* Admin feature pages (Plugins / Sessions / Audit). */
+        .wa-page {
+            min-height: 100%;
+            padding: 24px clamp(16px, 4vw, 48px) 48px;
+        }
+        .wa-page-header {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .wa-page-heading { min-width: 0; }
+        .wa-page-back {
+            color: var(--wa-shell-muted);
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .wa-page-back:hover { color: var(--wa-shell-accent); }
+        .wa-page-title {
+            margin: 6px 0 0;
+            font-size: 22px;
+            font-weight: 650;
+            color: var(--wa-shell-text);
+        }
+        .wa-page-subtitle {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: var(--wa-shell-muted);
+        }
+        .wa-page-nav {
+            margin-left: auto;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .wa-page-nav-item {
+            padding: 6px 10px;
+            border-radius: 7px;
+            border: 1px solid transparent;
+            color: var(--wa-shell-muted);
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .wa-page-nav-item:hover {
+            border-color: var(--wa-shell-border);
+            color: var(--wa-shell-text);
+        }
+        .wa-page-nav-item.is-active {
+            background: var(--wa-shell-accent);
+            color: var(--wa-shell-accent-text);
+        }
+        .wa-page-body {
+            margin-top: 20px;
+            max-width: 1100px;
+        }
+        .wa-page-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .wa-page-search,
+        .wa-page-select {
+            border: 1px solid var(--wa-shell-border);
+            border-radius: 8px;
+            background: var(--wa-shell-surface);
+            color: var(--wa-shell-text);
+            font-size: 13px;
+            padding: 7px 10px;
+        }
+        .wa-page-search { flex: 1 1 260px; max-width: 380px; }
+        .wa-page-select { min-width: 150px; }
+        .wa-page-action.ui-button,
+        .wa-page .ui-button {
+            border: 1px solid var(--wa-shell-border);
+            border-radius: 7px;
+            background: var(--wa-shell-surface);
+            color: var(--wa-shell-text);
+            font-size: 12px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+        .wa-page .ui-button:hover { border-color: var(--wa-shell-accent); }
+        .wa-page .ui-button.is-disabled { opacity: 0.55; cursor: default; }
+        .wa-page-error {
+            margin: 0 0 12px;
+            padding: 8px 10px;
+            border: 1px solid var(--wa-shell-danger);
+            border-radius: 8px;
+            color: var(--wa-shell-danger);
+            font-size: 12px;
+        }
+        .wa-plugin-list,
+        .wa-session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .wa-plugin-row,
+        .wa-session-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid var(--wa-shell-border);
+            border-radius: 10px;
+            background: var(--wa-shell-surface);
+        }
+        .wa-plugin-main,
+        .wa-session-main { flex: 1 1 auto; min-width: 0; }
+        .wa-plugin-title,
+        .wa-session-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--wa-shell-text);
+            flex-wrap: wrap;
+        }
+        .wa-plugin-version,
+        .wa-plugin-id,
+        .wa-plugin-nodes,
+        .wa-session-meta {
+            color: var(--wa-shell-muted);
+            font-size: 11px;
+        }
+        .wa-plugin-meta {
+            display: flex;
+            gap: 10px;
+            margin-top: 3px;
+        }
+        .wa-plugin-description {
+            margin: 6px 0 0;
+            font-size: 12px;
+            color: var(--wa-shell-muted);
+        }
+        .wa-session-meta {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+        .wa-session-error {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--wa-shell-danger);
+            overflow-wrap: anywhere;
+        }
+        .wa-session-status { flex: 0 0 auto; }
+        .wa-page .ui-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--wa-shell-border);
+            font-size: 11px;
+            color: var(--wa-shell-muted);
+        }
+        .wa-page .ui-badge[data-tone="success"] {
+            border-color: #16a34a;
+            color: #16a34a;
+        }
+        .wa-page .ui-badge[data-tone="error"] {
+            border-color: var(--wa-shell-danger);
+            color: var(--wa-shell-danger);
+        }
+        .wa-page .ui-badge[data-tone="info"] {
+            border-color: var(--wa-shell-accent);
+            color: var(--wa-shell-accent);
+        }
+        .wa-page .ui-badge[data-tone="warning"] {
+            border-color: #d97706;
+            color: #d97706;
+        }
+        .wa-page .ui-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: currentColor;
+        }
+        .wa-page .ui-data-table {
+            border: 1px solid var(--wa-shell-border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--wa-shell-surface);
+        }
+        .wa-page .ui-data-table-head,
+        .wa-page .ui-data-table-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            padding: 9px 12px;
+        }
+        .wa-page .ui-data-table-head {
+            border-bottom: 1px solid var(--wa-shell-border);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--wa-shell-muted);
+        }
+        .wa-page .ui-data-table-row {
+            border-bottom: 1px solid var(--wa-shell-border);
+            font-size: 12px;
+            color: var(--wa-shell-text);
+        }
+        .wa-page .ui-data-table-row:last-child { border-bottom: 0; }
+        .wa-page .ui-data-table-cell { flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; }
+        .wa-page .ui-data-table-sep { flex: 0 0 auto; opacity: 0.3; }
+        .wa-page .ui-data-table-empty {
+            padding: 18px 12px;
+            font-size: 12px;
+            color: var(--wa-shell-muted);
+        }
+        .wa-page .ui-empty {
+            padding: 32px 16px;
+            text-align: center;
+            color: var(--wa-shell-muted);
+        }
+        .wa-page .ui-empty-title { margin: 8px 0 0; font-size: 14px; color: var(--wa-shell-text); }
+        .wa-page .ui-empty-hint { margin: 4px 0 0; font-size: 12px; }
+        .wa-page-toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 90;
+        }
+        .wa-page-toast .console-toast-stack { padding: 0; }
+        .wa-page-toast .console-toast-card {
+            background: var(--wa-shell-surface);
+            border: 1px solid var(--wa-shell-border);
+            border-radius: 10px;
+            box-shadow: var(--wa-shell-shadow);
+            padding: 8px 12px;
+            max-width: 340px;
+        }
+        .wa-page-toast .console-toast { font-size: 12px; color: var(--wa-shell-text); }
+        .wa-page-toast .console-toast[data-tone="success"] { color: #16a34a; }
+        .wa-page-toast .console-toast[data-tone="error"] { color: var(--wa-shell-danger); }
+        .wa-page-toast .toast-close { cursor: pointer; color: var(--wa-shell-muted); margin-left: 8px; }
     </style>
 </head>
 <body>

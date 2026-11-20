@@ -36,6 +36,13 @@ export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
                 this.http.delete(`/api/plugins/${encodeURIComponent(id)}`)
             ) as any
         };
+        designer.menuAction = action => {
+            if (action === 'plugins' || action === 'audit') {
+                void this.router.navigateByUrl(`/${action}`);
+                return true;
+            }
+            return false;
+        };
         designer.autosave = true;
         designer.autosaveDelay = 1200;
         designer.autosaveMinInterval = 3000;

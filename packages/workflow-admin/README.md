@@ -11,7 +11,7 @@ the server-side Activity library or protocol plugins.
 
 ## Features
 
-- drag/click palette with 35 generic node types and component search,
+- drag/click palette with 66 registered node types and component search,
 - SVG-native canvas with pointer pan, `Ctrl` + wheel zoom-at-cursor, fit view,
   auto layout, grid snapping, click-to-connect and forgiving node-body drops,
 - node inspector rendered by the JSON-configured shared `dynamic-form`
@@ -26,6 +26,10 @@ the server-side Activity library or protocol plugins.
   document, closing the active tab selects its neighbour, and the open-tab set
   is restored from localStorage on startup,
 - workflow library, run history replay and execution log,
+- standalone admin pages at `#/plugins`, `#/sessions` and `#/audit` for the
+  plugin catalog, host-wide execution sessions (with cancel) and the audit log;
+  the designer menu navigates to the plugin/audit pages instead of opening the
+  in-canvas dialogs,
 - autosave with `Saved / Unsaved / Saving / Save failed` state plus manual save,
 - global shortcuts: `Ctrl+S` save, `Ctrl+O` library, `Ctrl+Enter` run,
   `Ctrl+Z/Y`, `Ctrl+D`, `Delete`, and `?` / `F1` shortcut sheet,

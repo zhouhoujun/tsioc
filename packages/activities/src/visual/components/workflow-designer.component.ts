@@ -170,6 +170,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @Attribute() autosaveMaxDelay = 15000;
     /** Host hook invoked whenever the open document tabs change. */
     @Attribute() tabChangeAction?: (state: { openIds: string[]; activeId?: string }) => void;
+    /** Host hook for global menu actions; return true when handled. */
+    @Attribute() menuAction?: (action: string) => boolean | void;
 
     @ViewChild('preview', WorkflowDesignerPreviewComponent) preview?: WorkflowDesignerPreviewComponent;
 
@@ -633,7 +635,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         return this.localeValue === 'zh-CN';
     }
 
-
     /** Template-facing translate helper (bindings cannot call the private method). */
     readonly tr = (key: string, fallback: string): string => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
@@ -786,6 +787,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
         // Toolbar menus and shortcuts can run while an inspector edit is still
         // inside its burst delay; commit it before the command reads the document.
         self.preview?.inspector?.formBlur();
+        if (self.menuAction?.(action) === true) { return; }
         if (action.startsWith('language:')) {
             const locale = action.slice('language:'.length);
             if (locale === 'en' || locale === 'zh-CN') {
@@ -1144,7 +1146,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         }
     }
 
-
     credentialNameInput(event: any): void {
         this.credentialName = String(event?.target?.value ?? '');
         this.credentialError = '';
@@ -1257,7 +1258,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
             void self.openWorkflowTab(item.id);
         }
     };
-
 
     async openDeployments(): Promise<void> {
         this.showDeployments = true;
@@ -1402,7 +1402,6 @@ export class WorkflowDesignerComponent implements OnDestroy {
         this.metricsTrend = [];
         this.metricsRate = 0;
     }
-
 
     openSettings(): void {
         this.settingsDescription = this.designer?.definition.description || '';
