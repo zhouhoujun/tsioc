@@ -398,6 +398,10 @@ export class TuiRenderer extends ConsoleRenderer {
                     );
                 }
             }
+            const declaredOptionIndex = element.getAttribute('data-option-index');
+            const optionIndex = declaredOptionIndex !== null && declaredOptionIndex !== undefined && String(declaredOptionIndex).trim() !== ''
+                ? Number(declaredOptionIndex)
+                : undefined;
             clickTargets.push({
                 node: element,
                 x: targetX,
@@ -405,7 +409,8 @@ export class TuiRenderer extends ConsoleRenderer {
                 width: targetWidth,
                 height: lines.length - clickStart,
                 interactive: this.hasPointerHandler(element) ? 'pointer' : 'focus',
-                hoverable: this.resolveHoverable(element)
+                hoverable: this.resolveHoverable(element),
+                ...(Number.isFinite(optionIndex as number) ? { optionIndex } : {})
             });
         };
 

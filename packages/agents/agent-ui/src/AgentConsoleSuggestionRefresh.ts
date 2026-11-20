@@ -50,6 +50,7 @@ export function refreshInputSuggestions(state: AgentConsoleSessionState): void {
             const selectedIndex = Math.max(0, options.findIndex(option => option.value === selectedValue));
             state.selectMenu = {
                 title: AGENT_CONSOLE_SUGGESTIONS_TITLE,
+                kind: 'suggestion',
                 hint: state.consoleOptions.suggestionsHint,
                 options,
                 selectedIndex

@@ -1863,9 +1863,11 @@ export class TuiTerminalSurface {
         if (this.destroyed || !node?.dispatchEvent) {
             return false;
         }
-        node.dispatchEvent(optionIndex == null
-            ? { type: 'click', target: node } as unknown as Event
-            : { type: 'select-option', target: node, optionIndex } as unknown as Event);
+        const tag = String((node as any)?.tagName || '').toLowerCase();
+        const useOptionEvent = optionIndex != null && tag === 'select';
+        node.dispatchEvent(useOptionEvent
+            ? { type: 'select-option', target: node, optionIndex } as unknown as Event
+            : { type: 'click', target: node } as unknown as Event);
         return true;
     }
 

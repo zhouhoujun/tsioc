@@ -9,6 +9,20 @@
  * keeps the residual TypeOrm module chain from crashing at load by stubbing
  * its node-only driver deps and aliasing `global`.
  */
+import { Module } from '@tsdi/ioc';
+
+/**
+ * Browser-safe module used by `AgentUiModule`.
+ *
+ * The real `AgentModule` (and everything it exports) is Node-only: it
+ * registers TypeORM-backed stores and an `IntervalAgentScheduler` that needs a
+ * `TypeormAdapter`. Web hosts talk to the gateway over App RPC and provide
+ * `AgentRuntime`/`AgentScheduler` stubs themselves, so this module stays empty.
+ */
+@Module({})
+export class AgentModule {
+}
+
 export { AGENT_CONSOLE_APP_RPC } from './ui/AgentConsoleAppRpc';
 export type { AgentConsoleAppRpc } from './ui/AgentConsoleAppRpc';
 export { AGENT_OPTIONS, AGENT_WORKSPACE_TRUST } from './tokens';
@@ -29,7 +43,6 @@ export type { DelegationTreeNode } from './harness/DelegationGraphStore';
 export type { ExchangeMetricsSnapshot } from './memory/ExchangeMetrics';
 export type { AgentTurnResult } from './runtime/AgentTurnResult';
 export type { AgentDelegationMode } from './runtime/DelegationMode';
-export { AgentModule } from './agent.module';
 export { AgentRuntime } from './runtime/AgentRuntime';
 export { AgentScheduler } from './scheduler/AgentScheduler';
 export { AgentTurnCancelledError } from './runtime/AgentTurnCancelledError';

@@ -9,6 +9,7 @@ import type { AgentConsoleParsedCommandArguments } from './AgentConsoleCommandRe
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { NavFilter, NavSelection, SessionSearchMatch } from '@tsdi/agent';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
+import { formatSessionAge } from './AgentConsoleFormatters';
 import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 
 export async function handleSearch(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {

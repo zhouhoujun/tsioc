@@ -14,7 +14,9 @@ import { getDisplayWidth } from '../../src/display-width';
         <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
         <label class="dialog-title" v-show="title">{{title}}</label>
         <div class="dialog-body" [style]="scrollStyle">
-            <label class="dialog-line" v-for="line in lines">{{line}}</label>
+            <label class="dialog-line" data-cell-width="0" v-for="(line, index) in lines"
+                data-option-index="{{lineOptionIndexes && lineOptionIndexes[index] !== undefined ? lineOptionIndexes[index] : ''}}"
+                @click="activateLine(index)">{{line}}</label>
         </div>
         <label class="dialog-hint" v-show="hint">{{hint}}</label>
         <v-content></v-content>
@@ -35,6 +37,12 @@ export class DialogComponent {
     @Attribute() maxHeight = '60vh';
     /** Extra classes for hosts that keep their own skin/selectors. */
     @Attribute() className = '';
+    /** Span the host width instead of fitting the content. */
+    @Attribute() fullWidth = false;
+    /** Optional click handlers aligned with `lines` (rows/actions). */
+    @Attribute() lineActions: Array<(() => void) | undefined> = [];
+    /** Optional option index exposed to pointer hit-testing for each line. */
+    @Attribute() lineOptionIndexes: Array<number | undefined> = [];
     @Attribute() closeAction?: () => void;
 
     get scrollStyle(): Record<string, string> {
@@ -52,7 +60,11 @@ export class DialogComponent {
     }
 
     get widthClass(): string {
-        return `dialog-w-${this.resolveContentWidth()}`;
+        return this.fullWidth ? '' : `dialog-w-${this.resolveContentWidth()}`;
+    }
+
+    activateLine(index: number): void {
+        this.lineActions?.[index]?.();
     }
 
     /** Fit the modal to its content so a tall QR panel leaves the transcript visible. */

@@ -75,8 +75,8 @@ export interface AgentConsoleInputTokenRange {
     token: string;
 }
 
-export function isAgentConsoleSuggestionMenu(menu?: { title?: string | null } | null): boolean {
-    return menu?.title === AGENT_CONSOLE_SUGGESTIONS_TITLE;
+export function isAgentConsoleSuggestionMenu(menu?: { title?: string | null; kind?: string | null } | null): boolean {
+    return menu?.kind === 'suggestion' || menu?.title === AGENT_CONSOLE_SUGGESTIONS_TITLE;
 }
 
 export const AGENT_CONSOLE_PSEUDO_MENTIONS = ['@workspace', '@model', '@tools', '@session'];

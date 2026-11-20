@@ -93,16 +93,18 @@ export class SessionProjectDialogsTest {
         await this.ctx?.close();
     }
 
-    @Test('/sessions lists the project sessions without a dead load-more row')
+    @Test('/sessions opens a searchable dialog with the project sessions')
     async sessionsPanel() {
         await this.instance.handleCommand('/sessions');
         await settle();
+        expect(this.state.selectMenu?.title).toEqual('Sessions');
+        const labels = (this.state.selectMenu?.options || []).map((option: any) => option.label);
+        expect(labels.join('\n')).toContain('Fix login flow');
+        expect(labels.join('\n')).toContain('Refactor runtime');
         this.surface.render();
-        const frame = this.surface.lastRenderedLines.join('\n');
-        expect(frame).toContain('Fix login flow');
-        expect(frame).toContain('Refactor runtime');
-        expect(frame).toContain('Project A');
-        expect(frame).not.toContain('Load more');
+        expect(this.surface.lastRenderedLines.join('\n')).not.toContain('Load more');
+        await this.state.cancelSelectMenu();
+        await settle();
     }
 
     @Test('/projects offers every project and no load-more row')
@@ -126,15 +128,28 @@ export class SessionProjectDialogsTest {
         await settle();
     }
 
-    @Test('archived sessions carry a badge in the /sessions panel')
-    async archivedBadge() {
+    @Test('the /sessions dialog filters live and opens the highlighted session')
+    async sessionsDialogSearch() {
+        await this.instance.handleCommand('/sessions');
+        await settle();
+        expect(this.state.selectMenu?.title).toEqual('Sessions');
+        expect((this.state.selectMenu?.options || []).map((option: any) => option.value)).toEqual(['s0', 's1']);
+        expect(this.state.focusLayers.handleMenuInput('refactor', 'refactor')).toEqual(true);
+        expect((this.state.selectMenu?.options || []).map((option: any) => option.value)).toEqual(['s1']);
+        await this.state.confirmSelectMenu('s1');
+        await settle();
+        expect(this.state.sessionId).toEqual('s1');
+    }
+
+    @Test('archived sessions carry a badge in the /sessions dialog')    async archivedBadge() {
         this.projectGroups[0].sessions[1].archived = true;
         await this.instance.handleCommand('/sessions');
         await settle();
-        this.surface.render();
-        const frame = this.surface.lastRenderedLines.join('\n');
-        expect(frame).toContain('Refactor runtime');
-        expect(frame).toContain('[archived]');
+        const labels = (this.state.selectMenu?.options || []).map((option: any) => option.label).join('\n');
+        expect(labels).toContain('Refactor runtime');
+        expect(labels).toContain('[archived]');
+        await this.state.cancelSelectMenu();
+        await settle();
     }
 
     @Test('/projects: Esc in the session picker returns to the project list')
@@ -163,11 +178,17 @@ export class SessionProjectDialogsTest {
         await this.instance.handleCommand('/sessions zzz-missing');
         await settle();
         this.surface.render();
-        expect(this.surface.lastRenderedLines.join('\n')).toContain('no sessions match "zzz-missing"');
+        expect(this.surface.lastRenderedLines.join('\n')).toContain('No sessions matching');
+        this.instance.clearNotice();
+        this.state.closeTextOverlay();
+        await settle();
     }
 
     @Test('a tall dialog keeps its title and close affordance inside the viewport')
     async tallDialogClipping() {
+        this.instance.clearNotice();
+        this.state.closeTextOverlay();
+        await this.state.cancelSelectMenu();
         this.state.openSelectMenu(
             'Very tall dialog',
             Array.from({ length: 40 }, (_value, index) => ({ label: `Choice ${index + 1}`, value: `v${index}` })),
@@ -179,7 +200,13 @@ export class SessionProjectDialogsTest {
         const lines = this.surface.lastRenderedLines.map(line => line.replace(/\x1b\[[0-9;]*m/g, ''));
         const titleRow = lines.findIndex(line => line.includes('Very tall dialog'));
         const topBorderRow = lines.findIndex(line => line.includes('╭'));
-        const bottomBorderRow = lines.findIndex(line => line.includes('╰'));
+        let bottomBorderRow = -1;
+        for (let index = lines.length - 1; index >= 0; index--) {
+            if (lines[index].includes('╰')) {
+                bottomBorderRow = index;
+                break;
+            }
+        }
         const inputRow = lines.findIndex(line => line.includes('Ask code or files'));
         expect(titleRow).toBeGreaterThan(0);
         // Window position and hint stay readable when the list is clipped.

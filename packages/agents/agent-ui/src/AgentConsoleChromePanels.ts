@@ -352,6 +352,106 @@ export class AgentConsoleSelectPanelComponent {
 }
 
 @Component({
+    selector: 'agent-console-command-dialog-panel',
+    imports: [DialogComponent],
+    template: `
+    <dialog-panel
+        :title="dialogTitle"
+        :lines="dialogView.lines"
+        :lineActions="dialogView.actions"
+        :lineOptionIndexes="dialogView.indexes"
+        :hint="dialogHint"
+        :ariaLabel="accessibilityLabel"
+        :fullWidth="true"
+        :maxHeight="'60vh'"
+        @closeAction="closeMenu"></dialog-panel>
+    `
+})
+export class AgentConsoleCommandDialogPanelComponent {
+    constructor(
+        private state: AgentConsoleSessionState
+    ) {
+    }
+
+    get menu(): AgentConsoleSelectMenu | undefined {
+        return this.state.selectMenu;
+    }
+
+    get visibleOptionCount(): number {
+        const configured = Number(this.state.consoleOptions.selectVisibleOptions) || 12;
+        const maxRows = Number(this.state.maxOverlayVisibleLines) || 0;
+        return maxRows > 0 ? Math.max(3, Math.min(configured, maxRows)) : configured;
+    }
+
+    get dialogTitle(): string {
+        const menu = this.menu;
+        return menu ? `${menu.title || ''}${menu.filter ? ` · ${menu.filter}` : ''}` : '';
+    }
+
+    get dialogLines(): string[] {
+        return this.dialogView.lines;
+    }
+
+    get dialogView(): { lines: string[]; actions: Array<(() => void) | undefined>; indexes: Array<number | undefined> } {
+        const menu = this.menu;
+        if (!menu) {
+            return { lines: [], actions: [], indexes: [] };
+        }
+        const lines: string[] = [];
+        const actions: Array<(() => void) | undefined> = [];
+        const indexes: Array<number | undefined> = [];
+        const push = (line: string, action?: () => void, index?: number): void => {
+            lines.push(line);
+            actions.push(action);
+            indexes.push(index);
+        };
+        const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount);
+        if (window.count < menu.options.length) {
+            push(`${window.start + 1}-${window.start + window.count}/${menu.options.length}`);
+        }
+        menu.options.slice(window.start, window.start + window.count).forEach((option, offset) => {
+            const index = window.start + offset;
+            const description = option.description ? `  ${option.description}` : '';
+            push(
+                `${index === menu.selectedIndex ? '›' : ' '} ${index + 1}. ${option.label}${description}`,
+                () => { void this.selectOptionAt(index); },
+                index
+            );
+        });
+        const detail = this.state.selectedSelectMenuOption?.detail;
+        if (typeof detail === 'string') {
+            detail.split('\n').map(line => line.trim()).filter(Boolean).slice(0, 6)
+                .forEach(line => push(line));
+        }
+        return { lines, actions, indexes };
+    }
+
+    async selectOptionAt(index: number): Promise<void> {
+        const option = this.menu?.options[index];
+        if (!option) {
+            return;
+        }
+        await this.state.confirmSelectMenu(option.value);
+    }
+
+    get dialogHint(): string {
+        return this.menu?.hint || '';
+    }
+
+    get accessibilityLabel(): string {
+        const menu = this.menu;
+        if (!menu) {
+            return 'Dialog';
+        }
+        return `${menu.title || 'Dialog'}. ${menu.options.length} options. Selected ${menu.selectedIndex + 1} of ${menu.options.length}.`;
+    }
+
+    async closeMenu(): Promise<void> {
+        await this.state.cancelSelectMenu();
+    }
+}
+
+@Component({
     selector: 'agent-console-which-key-panel',
     imports: [KeymapPanelComponent],
     template: `

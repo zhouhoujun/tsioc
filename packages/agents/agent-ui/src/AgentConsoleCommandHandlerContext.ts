@@ -88,7 +88,7 @@ export interface CommandHandlerContext {
     // ── UI primitives ──
     notify(message: string, duration?: number): void;
     pushCommandOutput(command: string, text: string, kind?: AgentConsoleCommandOutputEntry['kind']): void;
-    select(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
+    select(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string, kind?: string): Promise<string | undefined>;
 
     // ── transcript pager (base-layer surface owns the mechanics) ──
     openPager(query?: string): boolean;

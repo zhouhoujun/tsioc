@@ -15,7 +15,7 @@ export function buildCommandContext(self: any, abortSignal?: AbortSignal): Comma
             notify: (m, d) => self.notify(m, d),
             translator: self.translator,
             pushCommandOutput: (c, t, k) => self.pushCommandOutput(c, t, k),
-            select: (t, o, i, h) => self.select(t, o, i, h),
+            select: (t, o, i, h, k) => self.select(t, o, i, h, k),
             isTurnInProgress: () => self.isTurnInProgress(),
             notifyBusyState: () => self.notifyBusyState(),
             sessionService: self.sessionService,

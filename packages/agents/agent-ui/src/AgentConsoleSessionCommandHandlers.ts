@@ -1,6 +1,7 @@
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import type { SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
 import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel } from './agent-ui.i18n';
+import { formatSessionAge } from './AgentConsoleFormatters';
 import { runSnapshotsCommand } from './AgentConsoleSnapshotCommands';
 
 export async function handleSession(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
@@ -13,15 +14,7 @@ export async function handleSession(ctx: CommandHandlerContext, args: string, _r
         await ctx.openSession(args);
         return true;
     }
-    if (!ctx.state.sessions.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsAvailable'));
-        return true;
-    }
-    ctx.state.closeReview();
-    ctx.state.closeGitSnapshotDetail();
-    ctx.transcriptNavigationController.setFocused(false);
-    ctx.state.setSessionsFocused(true);
-    return true;
+    return openSessionsDialog(ctx);
 }
 
 // ── /new ─────────────────────────────────────────────────────────────────────
@@ -33,21 +26,60 @@ export async function handleNew(ctx: CommandHandlerContext, args: string, _resol
 
 // ── /sessions ────────────────────────────────────────────────────────────────
 
-export async function handleSessions(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+/**
+ * Rendered by the shared `SelectComponent` (`@tsdi/components/common/select`) via
+ * `ctx.select`; this module only projects sessions into its options and does not
+ * own dialog chrome or filtering.
+ */
+async function openSessionsDialog(ctx: CommandHandlerContext, query = ''): Promise<boolean> {
     await ctx.refreshSessions();
-    const sessionQuery = String(args || '').trim();
-    const currentSession = ctx.state.sessions.find(item => item.current);
-    const projectScope = currentSession?.projectKey || currentSession?.projectId;
-    ctx.state.setNavFilter({ ...(sessionQuery ? { text: sessionQuery } : {}), ...(projectScope ? { projectId: projectScope } : {}) });
-    if (!ctx.state.sessions.length) {
-        ctx.notify(formatAgentUiNotice(ctx.translator, 'sessionsAvailable'));
+    const search = String(query || '').trim().toLowerCase();
+    const current = ctx.state.sessions.find(item => item.current);
+    const scope = current?.projectKey || current?.projectId || current?.workspace;
+    const inScope = scope
+        ? ctx.state.sessions.filter(item => (item.projectKey || item.projectId || item.workspace) === scope)
+        : ctx.state.sessions;
+    const candidates = (inScope.length ? inScope : ctx.state.sessions).slice();
+    const matched = search
+        ? candidates.filter(item => [item.title, item.id, item.workspace, item.projectLabel, item.summary]
+            .some(value => String(value || '').toLowerCase().includes(search)))
+        : candidates;
+    if (!matched.length) {
+        ctx.notify(formatAgentUiNotice(
+            ctx.translator,
+            search ? 'noSessionsMatching' : 'sessionsAvailable',
+            search ? { rawQuery: query } : undefined
+        ));
         return true;
     }
-    ctx.state.closeReview();
-    ctx.state.closeGitSnapshotDetail();
-    ctx.transcriptNavigationController.setFocused(false);
-    ctx.state.setSessionsFocused(true);
+    matched.sort((left, right) => Number(right.updatedAt || 0) - Number(left.updatedAt || 0));
+    void ctx.select(
+        panelLabel(ctx.translator, 'sessions', 'title', 'Sessions'),
+        matched.map(item => {
+            const title = String(item.title || '').trim() || item.id;
+            const currentBadge = item.current ? ` [${panelLabel(ctx.translator, 'sessions', 'current', 'current')}]` : '';
+            const archivedBadge = item.archived ? ` [${panelLabel(ctx.translator, 'sessions', 'archived', 'archived')}]` : '';
+            const pinnedBadge = item.pinned ? ' 📌' : '';
+            return {
+                label: `${title}${currentBadge}${archivedBadge} (${item.messageCount ?? '?'})${pinnedBadge}${formatSessionAge(item.updatedAt)}`,
+                value: item.id,
+                description: item.workspace || item.summary || '',
+                detail: item.summary
+            };
+        }),
+        0,
+        ctx.state.consoleOptions.selectHint,
+        'sessions'
+    ).then(selected => {
+        if (selected) {
+            void ctx.openSession(selected);
+        }
+    }).catch(() => undefined);
     return true;
+}
+
+export async function handleSessions(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+    return openSessionsDialog(ctx, args);
 }
 
 // ── /resume ──────────────────────────────────────────────────────────────────

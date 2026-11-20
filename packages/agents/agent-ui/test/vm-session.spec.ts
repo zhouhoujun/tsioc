@@ -88,7 +88,8 @@ export class VmSessionTest {
 
         component.input = '/session';
         await component.submit();
-        expect(component.notice).toEqual('No sessions available.');
+        expect(component.sessionState.selectMenu?.title).toEqual('Sessions');
+        await component.sessionState.cancelSelectMenu();
         expect(sessionService.ensuredSessionIds).toEqual([]);
 
         component.input = '/new scratch';

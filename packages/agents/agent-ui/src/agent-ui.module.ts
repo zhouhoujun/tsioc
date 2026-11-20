@@ -1,6 +1,5 @@
 import { Module } from '@tsdi/ioc';
-import { TransformModule } from '@tsdi/core';
-import { ComponentsModule } from '@tsdi/components';
+import { TransformModule } from '@tsdi/core';import { ComponentsModule } from '@tsdi/components';
 import { BaseComponentsModule } from '@tsdi/components/common';
 import { ToastModule, ToastService } from '@tsdi/components/common/toast';
 import { TAB_BAR_SOURCE, TabBarModule } from '@tsdi/components/common/tab-bar';
@@ -73,6 +72,7 @@ import {
     AgentConsoleMessagesPanelComponent,
     AgentConsoleErrorMessageItemComponent,
     AgentConsoleSelectPanelComponent,
+    AgentConsoleCommandDialogPanelComponent,
     AgentConsoleWhichKeyPanelComponent,
     AgentConsoleHealthPopoverComponent,
     AgentConsolePendingQuestionPanelComponent,
@@ -103,6 +103,10 @@ import {
 } from './AgentConsoleMessageTemplates';
 import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponents';
 
+/**
+ * `AgentModule` is the real Node module; the browser build aliases
+ * `@tsdi/agent` to `web-entry`, whose `AgentModule` is an empty placeholder.
+ */
 @Module({
     imports: [
         ComponentsModule,
@@ -172,6 +176,7 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
         AgentConsoleGitSnapshotPanelComponent,
         AgentConsoleActivityPanelComponent,
         AgentConsoleSelectPanelComponent,
+        AgentConsoleCommandDialogPanelComponent,
         AgentConsoleWhichKeyPanelComponent,
         AgentConsoleHealthPopoverComponent
     ],
@@ -266,6 +271,7 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
         AgentConsoleGitSnapshotPanelComponent,
         AgentConsoleActivityPanelComponent,
         AgentConsoleSelectPanelComponent,
+        AgentConsoleCommandDialogPanelComponent,
         AgentConsoleWhichKeyPanelComponent,
         AgentConsoleHealthPopoverComponent,
         AgentConsoleSessionState,

@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2301 passing**（2 组） |
+| `@tsdi/agent-ui` | **2302 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -163,6 +163,11 @@ rm -f run-one.tmp.ts
 - P2 部分完成：`/queue move <n> <m>` 支持排队 prompt 重排；`/queue manage` 打开交互面板
   （编辑 / 上移 / 下移 / 删除，TUI 与 Web 共用同一 select overlay），边界有提示；
   Alt+Enter 优先与拖动/批量操作仍待补。
+- `/sessions` 对话框：使用共享 `DialogComponent`（`@tsdi/components/common/dialog`）渲染，
+  按当前项目/workspace 作用域列出会话（标题 + 相对时间 + 当前/archived/pinned 徽标），
+  输入即过滤（标题/id/workspace/project/summary），Enter 切换、Esc 关闭；`/sessions <query>`
+  预先过滤。输入框 slash/mention/参数子菜单与 pending question/确认仍保持 menu 弹层；
+  `/theme`、`/provider` 等简单选择保持选择菜单，不升级为 dialog。
 - AMS P0 补充：`/agents default [name]` 读取/设置新会话默认代理档案，持久化 `defaultArchetype`
   并在 TUI/Web/attach 启动时恢复到 `policy.defaultArchetype`。
 - AMS P1.2 部分完成：`/permissions rules` 查看有序审批规则，`add <tool|category>` /

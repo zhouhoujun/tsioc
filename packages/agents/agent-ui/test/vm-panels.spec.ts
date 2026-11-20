@@ -166,7 +166,8 @@ export class VmPanelsTest {
         );
 
         expect(component.input).toEqual('');
-        expect(component.showSessionsPanel).toEqual(true);
+        expect(component.sessionState.selectMenu?.title).toEqual('Sessions');
+        await component.sessionState.cancelSelectMenu();
     }
 
     @Test('terminal input navigates input history with arrow keys')

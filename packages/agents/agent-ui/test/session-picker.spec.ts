@@ -164,38 +164,38 @@ export class SessionPickerTest {
         expect(state.sessionsFocused).toEqual(true);
     }
 
-    @Test('/sessions <query> opens the picker with that search')
+    @Test('/sessions opens a searchable dialog scoped to the current project')
     async commandPrefilters() {
-        const filters: any[] = [];
-        const focused: boolean[] = [];
+        const calls: Array<{ title: string; options: any[]; hint?: string }> = [];
+        const opened: string[] = [];
+        const now = Date.now();
         const ctx: any = {
             refreshSessions: async () => undefined,
             notify: () => undefined,
-            transcriptNavigationController: { setFocused: () => undefined },
             state: {
-                sessions: [{ id: 's1' }],
-                setNavFilter: (filter: any) => filters.push(filter),
-                closeReview: () => undefined,
-                closeGitSnapshotDetail: () => undefined,
-                setSessionsFocused: (value: boolean) => focused.push(value)
-            }
+                sessions: [
+                    { id: 's1', current: true, title: 'Probe title', projectKey: 'proj-9', updatedAt: now - 60_000, messageCount: 2 },
+                    { id: 's2', current: false, title: 'Other project', projectKey: 'proj-8', updatedAt: now - 120_000, messageCount: 1 }
+                ],
+                consoleOptions: { selectHint: 'type to filter' }
+            },
+            select: async (title: string, options: any[], _index: number, hint?: string) => {
+                calls.push({ title, options, hint });
+                return options[0]?.value;
+            },
+            openSession: async (id: string) => { opened.push(id); }
         };
-        await COMMAND_HANDLERS['/sessions'](ctx, 'probe title', { command: '/sessions', matches: ['/sessions'] });
-        expect(filters).toEqual([{ text: 'probe title' }]);
-        expect(focused).toEqual([true]);
+        await COMMAND_HANDLERS['/sessions'](ctx, '', { command: '/sessions', matches: ['/sessions'] });
+        expect(calls.length).toEqual(1);
+        expect(calls[0].title).toEqual('Sessions');
+        // Scoped to the current project, not every project in the database.
+        expect(calls[0].options.map(option => option.value)).toEqual(['s1']);
+        expect(calls[0].options[0].label).toContain('Probe title');
+        expect(calls[0].options[0].label).toContain('[current]');
+        expect(opened).toEqual(['s1']);
 
-        // With a current project the picker stays scoped to it (the request is
-        // project/workspace sessions, not every project in the database).
-        const scoped: any[] = [];
-        const scopedCtx: any = {
-            ...ctx,
-            state: {
-                ...ctx.state,
-                sessions: [{ id: 's1' }, { id: 's2', current: true, projectKey: 'proj-9' }],
-                setNavFilter: (filter: any) => scoped.push(filter)
-            }
-        };
-        await COMMAND_HANDLERS['/sessions'](scopedCtx, '', { command: '/sessions', matches: ['/sessions'] });
-        expect(scoped).toEqual([{ projectId: 'proj-9' }]);
+        await COMMAND_HANDLERS['/sessions'](ctx, 'other', { command: '/sessions', matches: ['/sessions'] });
+        // Query pre-filters the scoped list; project scope still applies.
+        expect(calls.length).toEqual(1);
     }
 }

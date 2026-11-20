@@ -16,6 +16,7 @@ export interface AgentConsolePanelVisibility {
     working: boolean;
     toolRuns: boolean;
     select: boolean;
+    commandDialog: boolean;
     suggestion: boolean;
     whichKey: boolean;
     healthPopover: boolean;
@@ -47,7 +48,8 @@ export function resolveAgentConsolePanelVisibility(state: AgentConsoleSessionSta
         tools: state.toolsFocused,
         working: state.status === 'running' || state.status === 'reasoning',
         toolRuns: state.toolRunsFocused,
-        select: !!state.selectMenu && !isAgentConsoleSuggestionMenu(state.selectMenu),
+        select: !!state.selectMenu && !isAgentConsoleSuggestionMenu(state.selectMenu) && state.selectMenu.kind !== 'sessions',
+        commandDialog: !!state.selectMenu && state.selectMenu.kind === 'sessions',
         suggestion: !!state.selectMenu && isAgentConsoleSuggestionMenu(state.selectMenu),
         whichKey: state.whichKeyVisible,
         healthPopover: state.healthPopoverVisible,
@@ -83,6 +85,7 @@ export abstract class AgentConsolePanelVisibilityHost {
     get showWorkingPanel(): boolean { return this.panels.working; }
     get showToolRunsPanel(): boolean { return this.panels.toolRuns; }
     get showSelectPanel(): boolean { return this.panels.select; }
+    get showCommandDialogPanel(): boolean { return this.panels.commandDialog; }
     get showSuggestionPanel(): boolean { return this.panels.suggestion; }
     get showWhichKeyPanel(): boolean { return this.panels.whichKey; }
     get showHealthPopover(): boolean { return this.panels.healthPopover; }

@@ -330,7 +330,7 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
         <agent-console-tool-runs-panel v-show="panels.toolRuns && !panels.messageDetail"></agent-console-tool-runs-panel>
         <agent-console-pending-question-panel renderRegion="menu" v-show="panels.pendingQuestion"></agent-console-pending-question-panel>
         <agent-console-settings-center-panel renderRegion="menu" v-show="panels.settingsCenter"></agent-console-settings-center-panel>
-        <agent-console-select-panel renderRegion="menu" v-show="panels.suggestion"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="panels.select"></agent-console-select-panel>
+        <agent-console-select-panel renderRegion="menu" v-show="panels.suggestion"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="panels.select"></agent-console-select-panel><agent-console-command-dialog-panel renderRegion="dialog" v-show="panels.commandDialog"></agent-console-command-dialog-panel>
         <agent-console-text-overlay-panel renderRegion="dialog" v-show="panels.textOverlay"></agent-console-text-overlay-panel>
         <toast-stack renderRegion="toast" :items="state.toasts" :messageWidth="toastMessageWidth" @closeAction="dismissToast"></toast-stack>
         <agent-console-status-panel renderRegion="footer" v-show="panels.status && !panels.messageDetail"></agent-console-status-panel>
@@ -877,12 +877,12 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         this.showNotice('');
     }
 
-    async select(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string): Promise<string | undefined> {
+    async select(title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): Promise<string | undefined> {
         return new Promise(resolve => {
             const resolveSelection = async (value: string | undefined) => {
                 resolve(value);
             };
-            this.state.openSelectMenu(title, options, selectedIndex, hint);
+            this.state.openSelectMenu(title, options, selectedIndex, hint, kind);
             this.state.selectMenuAction = resolveSelection;
         });
     }

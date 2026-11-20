@@ -775,7 +775,9 @@ export class VmMentionsTest {
             { id: 'chat-b', projectKey: 'project:exam-system', projectLabel: 'exam-system' },
             { id: 'chat-c', projectKey: 'workspace:/tmp/project-c', projectLabel: '/tmp/project-c' }
         ]);
-        expect(component.sessionState.sessionsFocused).toEqual(true);
+        expect(component.sessionState.selectMenu?.title).toEqual('Sessions');
+        expect((component.sessionState.selectMenu?.options || []).length).toBeGreaterThan(0);
+        await component.sessionState.cancelSelectMenu();
     }
 
     @Test('sessions command preserves focus summary labels from grouped sessions')
