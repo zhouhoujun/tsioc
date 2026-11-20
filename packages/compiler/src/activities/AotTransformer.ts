@@ -69,6 +69,7 @@ interface TypeEmitContext {
     usesRepositoryResolver?: boolean;
     usesLoggerResolver?: boolean;
     usesTransactionResolver?: boolean;
+    usesI18nLocale?: boolean;
 }
 let activeTypeContext: TypeEmitContext | undefined;
 
@@ -926,9 +927,27 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
     let repositoryModel: ts.Expression | undefined;
     let repositoryConnection: ts.Expression | undefined;
     let loggerName: ts.Expression | undefined;
+    let configValue: ts.Expression | undefined;
     const flagExpressions: ts.Expression[] = [];
     for (const decorator of decoratorsOf(member)) {
         const name = decoratorName(decorator);
+        if (name === 'Config') {
+            if (!ts.isPropertyDeclaration(member)) {
+                return undefined;
+            }
+            const args = decoratorArgs(decorator);
+            if (args.length === 1 && ts.isStringLiteralLike(args[0])) {
+                configValue = factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('key', args[0])
+                ], false);
+            } else if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                configValue = args[0];
+            } else {
+                return undefined;
+            }
+            hasInjection = true;
+            continue;
+        }
         if (name === 'Repository' || name === 'InjectRepository') {
             if (!ts.isPropertyDeclaration(member)) {
                 return undefined;
@@ -1018,6 +1037,9 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
             continue;
         }
         return undefined;
+    }
+    if (configValue) {
+        return withProperty(configValue, 'propertyKey', factory.createStringLiteral((member.name as ts.Identifier).text));
     }
     if (repositoryModel) {
         const properties: ts.ObjectLiteralElementLike[] = [
@@ -1358,6 +1380,16 @@ function memberMetadataExpression(decorator: ts.Decorator, member: ts.ClassEleme
             ));
             return factory.createObjectLiteralExpression(properties, false);
         }
+        case 'Config':
+            if (args.length === 1 && ts.isStringLiteralLike(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('key', args[0])
+                ], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            return undefined;
         case 'ApiModelProperty':
             if (args.length === 0) {
                 return factory.createObjectLiteralExpression([], false);
@@ -1561,7 +1593,7 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
         let hasInjection = false;
         for (const decorator of decoratorsOf(member)) {
             const name = decoratorName(decorator);
-            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectRepository' || name === 'InjectLog' || name === 'Log') {
+            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectRepository' || name === 'Config' || name === 'InjectLog' || name === 'Log') {
                 hasInjection = true;
                 continue;
             }
@@ -1579,7 +1611,7 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             const decorators = decoratorsOf(parameter);
             for (const decorator of decorators) {
                 const name = decoratorName(decorator);
-                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
+                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Config' && name !== 'Locale' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                     && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                     && !TRANSPORT_PARAMETER_SCOPES[name]) {
                     return false;
@@ -1723,6 +1755,8 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
     let loggerName: ts.Expression | undefined;
     let apiParameter: ts.Expression | undefined;
     let apiParameterScope: string | undefined;
+    let configValue: ts.Expression | undefined;
+    let localeValue = false;
     const flagExpressions: ts.Expression[] = [];
     for (const decorator of decoratorsOf(parameter)) {
         const name = decoratorName(decorator);
@@ -1750,6 +1784,29 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
             loggerName = args[0] && ts.isStringLiteralLike(args[0]) ? args[0] : undefined;
             if (activeTypeContext) {
                 activeTypeContext.usesLoggerResolver = true;
+            }
+            continue;
+        }
+        if (name === 'Locale') {
+            if (decoratorArgs(decorator).length) {
+                return undefined;
+            }
+            localeValue = true;
+            if (activeTypeContext) {
+                activeTypeContext.usesI18nLocale = true;
+            }
+            continue;
+        }
+        if (name === 'Config') {
+            const args = decoratorArgs(decorator);
+            if (args.length === 1 && ts.isStringLiteralLike(args[0])) {
+                configValue = factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('key', args[0])
+                ], false);
+            } else if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                configValue = args[0];
+            } else {
+                return undefined;
             }
             continue;
         }
@@ -1842,6 +1899,15 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
         properties.push(factory.createPropertyAssignment('scope', factory.createStringLiteral(transportScope)));
         properties.push(factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)));
         return factory.createObjectLiteralExpression(properties, false);
+    }
+    if (localeValue) {
+        return factory.createObjectLiteralExpression([
+            factory.createPropertyAssignment('locale', factory.createIdentifier('__aotI18nLocale')),
+            factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key))
+        ], false);
+    }
+    if (configValue) {
+        return withProperty(configValue, 'propertyKey', factory.createStringLiteral(key));
     }
     if (apiParameter) {
         const properties: ts.ObjectLiteralElementLike[] = [
@@ -1944,7 +2010,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 for (const decorator of decorators) {
                     const name = decoratorName(decorator);
-                    if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
+                    if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Config' && name !== 'Locale' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                         && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                         && !TRANSPORT_PARAMETER_SCOPES[name]) {
                         return false;
@@ -1978,7 +2044,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 continue;
             }
-            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectRepository' || name === 'InjectLog' || name === 'Log') {
+            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectRepository' || name === 'Config' || name === 'InjectLog' || name === 'Log') {
                 hasInjection = true;
                 continue;
             }
@@ -2002,7 +2068,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             const decorators = decoratorsOf(parameter);
             for (const decorator of decorators) {
                 const name = decoratorName(decorator);
-                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
+                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Config' && name !== 'Locale' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                     && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                     && !TRANSPORT_PARAMETER_SCOPES[name]) {
                     return false;
@@ -2720,6 +2786,9 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
             }
             if (activeTypeContext?.usesTransactionResolver) {
                 addHelperBinding('__aotTransactionResolver', '@tsdi/repository', 'TransactionResolver');
+            }
+            if (activeTypeContext?.usesI18nLocale) {
+                addHelperBinding('__aotI18nLocale', '@tsdi/i18n', 'I18N_LOCALE');
             }
             return factory.updateSourceFile(sourceFile, [...imports, ...statements]);
         };

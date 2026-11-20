@@ -21,7 +21,9 @@ function load(source: string): Record<string, any> {
                     ? nodeRequire('../../aop/src')
                     : id === '@tsdi/repository'
                         ? nodeRequire('../../repository/src')
-                        : nodeRequire(id);
+                        : id === '@tsdi/config'
+                            ? nodeRequire('../../microservices/config/src')
+                            : nodeRequire(id);
     const execute = new Function('exports', 'require', 'module', output);
     execute(module.exports, localRequire, module);
     return module.exports;
@@ -128,6 +130,46 @@ export class HandlerService {
         expect(ref.methodDecors.length).toBe(2);
         expect(ref.getDefines(ref.methodDecors[0]).length).toBe(1);
         expect(ref.getDefines(ref.methodDecors[1]).length).toBe(1);
+    });
+
+    it('precompiles i18n Locale parameter metadata', () => {
+        const source = `
+import { Injectable } from '@tsdi/ioc';
+import { Locale } from '@tsdi/i18n';
+
+@Injectable()
+export class LocaleService {
+    translate(@Locale() locale: string) {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(LocaleService');
+        expect(output).toContain('__aotI18nLocale');
+        const exported = load(source);
+        const ref = getClassRef(exported.LocaleService as any);
+        expect((ref.getParameters('translate')?.[0] as any)?.locale).toBeDefined();
+    });
+
+    it('precompiles Config property and parameter metadata', () => {
+        const source = `
+import { Injectable } from '@tsdi/ioc';
+import { Config } from '@tsdi/config';
+
+@Injectable()
+export class ConfigService {
+    @Config('app.port')
+    port: number;
+
+    load(@Config('app.name') name: string) {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(ConfigService');
+        expect(output).not.toContain('__aotDeco(ConfigService');
+        const exported = load(source);
+        const ref = getClassRef(exported.ConfigService as any);
+        expect((ref.getAnnotation().propMetadatas.get('port')?.[0] as any)?.key).toBe('app.port');
+        expect((ref.getParameters('load')?.[0] as any)?.key).toBe('app.name');
     });
 
     it('precompiles InjectRepository and Refs aliases', () => {
