@@ -86,6 +86,7 @@
    - worker session 的 workspace 指向 worktree；
    - 同名 worktree 已存在时复用而不是重复创建；
    - 任务完成后 `/work` → task → View worker report 可查看报告。
+   命名形式使用 `--worktree=feature`；裸 `--worktree` 会打开现有 worktree 选择菜单（含“创建新的”）。
 
 ## 4. 数据与门禁
 

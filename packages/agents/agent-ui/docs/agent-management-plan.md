@@ -265,9 +265,9 @@ interface SessionCheckpoint {
 ### P1 —“管得住”（2–3 个迭代）
 
 1. **Background workers 闭环**
-   - `◐` `/work spawn --worktree [name]` 已创建/复用 managed worktree 并通过 `spawn_agent.workspace`
-     传给 worker（`activate:false`，不切换父会话；同名 worktree 复用）；任务行已提供只读
-     worker report 与 open/attach session；交互式 worktree 选择仍待补。
+   - `◐` `/work spawn --worktree[=name]` 已创建/复用 managed worktree 并通过 `spawn_agent.workspace`
+     传给 worker（`activate:false`，不切换父会话；同名 worktree 复用；裸 flag 打开选择菜单）；
+     任务行已提供只读 worker report 与 open/attach session。
    - `agent.worker.spawn`：从 `/work` 选择 profile + prompt + worktree 选项创建子 session/worker；写 delegation edge/background task。
    - 状态实时（SSE/事件驱动）：queued/running/waiting-input/done/failed；idle report 作为 Inbox 项 + 父 session 消息。
    - 操作：attach（新 tab/现有 tab）、cancel、retry、open worktree、查看报告。

@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2296 passing**（2 组） |
+| `@tsdi/agent-ui` | **2297 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -174,11 +174,11 @@ rm -f run-one.tmp.ts
   （action / 规则序号 / 规则描述），与 `DefaultApprovalStrategy` 的 last-match-wins 一致。
 - P4 文档收尾：README 命令表、CHANGELOG Unreleased、`docs/manual-test-checklist.md`
   （PTY + Chrome + 数据安全场景）已更新。
-- AMS P1.1 部分完成：`/work spawn --worktree [name] [--profile <name>] <goal>` 会先创建/复用
+- AMS P1.1 部分完成：`/work spawn --worktree[=name] [--profile <name>] <goal>` 会先创建/复用
   managed worktree，并把路径作为 `spawn_agent.workspace` 传给 worker；**不会切换父会话 workspace**
-  （`activate:false`），已存在的同名 worktree 会复用。`NestedAgentRunner` 在 worker turn 前调用
-  `setSessionWorkspace`。任务行新增只读 **Worker report**（summary/diff/completed/next steps/
-  risks/artifacts），attach 复用 open session；交互式 worktree 选择仍待补。
+  （`activate:false`），已存在的同名 worktree 会复用；裸 `--worktree` 打开现有 worktree 选择菜单
+  （含新建）。`NestedAgentRunner` 在 worker turn 前调用 `setSessionWorkspace`。任务行新增只读
+  **Worker report**（summary/diff/completed/next steps/risks/artifacts），attach 复用 open session。
 - P4 Web 预算：`build:web` 现在写出 `web/dist/size-report.json`，并与
   `web-size-baseline.json` 比较；initial raw/gzip 超过 3%（且 ≥16 KiB gzip / ≥64 KiB raw）
   直接失败。当前基线 initial 2085.5 KiB / gzip 545.4 KiB。`AGENT_UI_WEB_BUDGET_STRICT=1`

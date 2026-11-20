@@ -131,6 +131,8 @@ export interface AgentConsoleWorkHost {
     spawnWorker?(goal: string, profile?: string, workspace?: string): Promise<{ taskId?: string; sessionId?: string; error?: string }>;
     /** Create/lookup a managed worktree for a worker (`/work spawn --worktree`). */
     createWorktree?(name?: string): Promise<string | undefined>;
+    /** Existing managed worktrees for interactive worker selection. */
+    listWorktrees?(): Promise<Array<{ path: string; branch?: string }>>;
     /** Read-only worker report overlay. */
     openTextOverlay?(title: string, lines: string[], visibleLines?: number): void;
 }
@@ -198,12 +200,18 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
         const rest = tokens.slice(1);
         const profileIndex = rest.findIndex(token => token === '--profile' || token === '-p');
         const profile = profileIndex >= 0 ? rest[profileIndex + 1] : undefined;
-        const worktreeIndex = rest.findIndex(token => token === '--worktree' || token === '-w');
-        const rawWorktreeName = worktreeIndex >= 0 ? rest[worktreeIndex + 1] : undefined;
-        const worktreeName = rawWorktreeName && !rawWorktreeName.startsWith('-') ? rawWorktreeName : undefined;
+        const worktreeIndex = rest.findIndex(token =>
+            token === '--worktree' || token === '-w'
+            || token.startsWith('--worktree=') || token.startsWith('-w=')
+        );
+        const worktreeToken = worktreeIndex >= 0 ? rest[worktreeIndex] : undefined;
+        const inlineWorktreeName = worktreeToken?.includes('=')
+            ? worktreeToken.slice(worktreeToken.indexOf('=') + 1).trim()
+            : '';
+        const worktreeName = inlineWorktreeName || undefined;
         const goal = rest.filter((_token, index) =>
             (profileIndex < 0 || (index !== profileIndex && index !== profileIndex + 1))
-            && (worktreeIndex < 0 || (index !== worktreeIndex && index !== worktreeIndex + 1))
+            && index !== worktreeIndex
         ).join(' ').trim();
         if (!goal) {
             host.notify(formatAgentUiNotice(host.translator, 'workSpawnUsage'));
@@ -211,7 +219,28 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
         }
         let workspace: string | undefined;
         if (worktreeIndex >= 0) {
-            workspace = await host.createWorktree?.(worktreeName);
+            if (worktreeName) {
+                workspace = await host.createWorktree?.(worktreeName);
+            } else if (host.listWorktrees && host.select) {
+                const items = await host.listWorktrees().catch(() => []);
+                const picked = await host.select(
+                    formatAgentUiNotice(host.translator, 'workWorktreePickTitle'),
+                    [
+                        { label: formatAgentUiNotice(host.translator, 'workWorktreePickNew'), value: '__new__' },
+                        ...items.map(item => ({
+                            label: String(item.path || '').split(/[\\/]/).filter(Boolean).pop() || item.path,
+                            value: item.path,
+                            description: item.path
+                        }))
+                    ],
+                    0,
+                    formatAgentUiNotice(host.translator, 'workWorktreePickHint')
+                );
+                if (!picked) return;
+                workspace = picked === '__new__' ? await host.createWorktree?.() : picked;
+            } else {
+                workspace = await host.createWorktree?.();
+            }
             if (!workspace) {
                 host.notify(formatAgentUiNotice(host.translator, 'workWorktreeFailed'));
                 return;
@@ -356,6 +385,10 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
                 return item.path === requested || base === requested || item.branch === requested;
             });
             return existing?.path;
+        },
+        listWorktrees: async () => {
+            const result = await ctx.state.worktreeCommand?.({ action: 'list' }).catch(() => undefined);
+            return (result?.items || []).map(item => ({ path: item.path, branch: item.branch }));
         },
         openTextOverlay: (title: string, lines: string[], visibleLines?: number) => ctx.state.openTextOverlay(title, lines, visibleLines)
     };

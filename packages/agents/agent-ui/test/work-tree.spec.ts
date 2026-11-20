@@ -155,13 +155,13 @@ export class WorkTreeTest {
                 return '/w/.worktrees/feature';
             }
         };
-        await runWorkCommandView(host, 'spawn --worktree feature refactor auth');
+        await runWorkCommandView(host, 'spawn --worktree=feature refactor auth');
         expect(created).toEqual(['feature']);
         expect(spawned).toEqual([{ goal: 'refactor auth', profile: undefined, workspace: '/w/.worktrees/feature' }]);
         expect(notices[0]).toContain('task-wt');
 
         host.createWorktree = async () => undefined;
-        await runWorkCommandView(host, 'spawn --worktree broken task');
+        await runWorkCommandView(host, 'spawn --worktree=broken task');
         expect(notices[notices.length - 1]).toContain('Unable to create a worktree');
         expect(spawned.length).toEqual(1);
     }
@@ -206,8 +206,36 @@ export class WorkTreeTest {
         expect(text).toContain('Artifacts: auth.patch');
     }
 
-    @Test('worker worktree creation does not switch the parent session and reuses existing names')
-    async workerWorktreePort() {
+    @Test('/work spawn --worktree without a name offers existing worktrees and a new option')
+    async picksWorktree() {
+        const state = createState();
+        const spawned: Array<{ goal: string; workspace?: string }> = [];
+        let created = 0;
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: null,
+            notify: () => undefined,
+            openSession: async () => undefined,
+            spawnWorker: async (goal: string, _profile?: string, workspace?: string) => {
+                spawned.push({ goal, workspace });
+                return { taskId: 'task-pick' };
+            },
+            createWorktree: async () => { created += 1; return '/w/.worktrees/new'; },
+            listWorktrees: async () => [{ path: '/w/.worktrees/existing', branch: 'wt/existing' }],
+            select: async () => '/w/.worktrees/existing'
+        };
+        await runWorkCommandView(host, 'spawn --worktree refactor auth');
+        expect(spawned[0]).toEqual({ goal: 'refactor auth', workspace: '/w/.worktrees/existing' });
+        expect(created).toEqual(0);
+
+        host.select = async () => '__new__';
+        await runWorkCommandView(host, 'spawn --worktree add tests');
+        expect(created).toEqual(1);
+        expect(spawned[1]).toEqual({ goal: 'add tests', workspace: '/w/.worktrees/new' });
+    }
+
+    @Test('worker worktree creation does not switch the parent session and reuses existing names')    async workerWorktreePort() {
         const requests: any[] = [];
         const ctx: any = {
             state: {
