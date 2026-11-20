@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1100 passing |
 | `@tsdi/agent-gateway` | 400 passing |
 | `@tsdi/agent-tools` | 594 passing |
-| `@tsdi/agent-ui` | **2283 passing**（2 组） |
+| `@tsdi/agent-ui` | **2284 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -160,3 +160,5 @@ rm -f run-one.tmp.ts
   与文件级撤销在进程重启后仍可用；删除会话时同步清理历史行。测试覆盖真实 sqljs 文件库
   关闭/重开后的 `undo` + `redo`。
 - 已知限制：`/format` 等控制台直调工具仍不进入 turn 文件快照（先 `/snapshot` 可回退）。
+- P2 部分完成：`/queue move <n> <m>` 支持排队 prompt 重排（`remove`/`edit`/`clear` 原有能力不变），
+  队列面板与 Alt+Enter 优先仍待补。

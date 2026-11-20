@@ -286,7 +286,8 @@ interface SessionCheckpoint {
 
 ### P2 —“协同”（3+ 个迭代，实验）
 
-1. **Queue / steer 管理面**：每 tab 队列面板（重排、取消、Alt+Enter 优先、Mod+Enter steer）；Web 同步。
+1. **Queue / steer 管理面**：`/queue move <n> <m>` 已支持重排；每 tab 队列面板
+   （可视化重排、取消、Alt+Enter 优先、Mod+Enter steer）与 Web 同步仍待补。
 2. **Cross-session messaging / agent teams（opt-in）**：共享任务列表 + 消息；权限 `session.message`；TUI/Web 消息面板；默认关闭。
 3. **Remote 聚合**：Agent Center 读取多个 gateway（本地 + attach）；只读优先，再开放 spawn/cancel；URL/配对复用。
 4. **Verbosity & 活动摘要**：low/medium/high；一次 run 的工具/thought 合并为可折叠活动行（参考 opencode v2.3），默认 low。

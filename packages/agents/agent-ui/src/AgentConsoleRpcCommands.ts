@@ -76,6 +76,27 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
         host.notify(formatAgentUiNotice(host.translator, 'clearedQueuedPrompts', { queueLength: queue.length, plural: queue.length === 1 ? '' : 's' }));
         return true;
     }
+    const move = /^move\s+(\d+)\s+(\d+)$/i.exec(parsed);
+    if (move) {
+        const from = Number(move[1]) - 1;
+        const to = Number(move[2]) - 1;
+        if (!Number.isInteger(from) || from < 0 || from >= queue.length) {
+            host.notify(formatAgentUiNotice(host.translator, 'queueEntryMissing', { index: move[1] }));
+            return true;
+        }
+        if (!Number.isInteger(to) || to < 0 || to >= queue.length) {
+            host.notify(formatAgentUiNotice(host.translator, 'queueEntryMissing', { index: move[2] }));
+            return true;
+        }
+        if (from !== to) {
+            const [entry] = queue.splice(from, 1);
+            queue.splice(to, 0, entry);
+            host.queuedPrompts.set(host.state.sessionId, queue);
+            host.state.setQueuedPromptCount(queue.length);
+        }
+        host.notify(formatAgentUiNotice(host.translator, 'queueMoved', { from: from + 1, to: to + 1 }));
+        return true;
+    }
     const manage = /^(remove|edit)\s+(\d+)$/i.exec(parsed);
     if (manage) {
         const index = Number(manage[2]) - 1;

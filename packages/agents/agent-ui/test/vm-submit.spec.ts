@@ -830,6 +830,36 @@ export class VmSubmitTest {
         expect(state.queuedPromptCount).toEqual(0);
     }
 
+    @Test('queue command reorders queued prompts with move')
+    async queueCommandMoves() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+
+        for (const prompt of ['first prompt', 'second prompt', 'third prompt']) {
+            state.setInput(prompt);
+            await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        }
+        expect(state.queuedPromptCount).toEqual(3);
+
+        await (component as any).handleCommand('/queue move 1 3');
+        expect(state.notice).toContain('Moved queued prompt 1 to position 3.');
+        await (component as any).handleCommand('/queue');
+        const listed = state.commandOutputs.filter(entry => entry.command === '/queue list').pop();
+        const text = listed?.text || '';
+        expect(text.indexOf('second prompt')).toBeLessThan(text.indexOf('third prompt'));
+        expect(text.indexOf('third prompt')).toBeLessThan(text.indexOf('first prompt'));
+
+        await (component as any).handleCommand('/queue move 1 9');
+        expect(state.notice).toContain('No queued prompt at 9.');
+        expect(state.queuedPromptCount).toEqual(3);
+
+        // Moving to the same position is a no-op but still acknowledges it.
+        await (component as any).handleCommand('/queue move 1 1');
+        expect(state.notice).toContain('Moved queued prompt 1 to position 1.');
+        expect(state.queuedPromptCount).toEqual(3);
+    }
+
     @Test('/worktree enter switches to the matching managed worktree')
     async worktreeEnterSwitchesWorkspace() {
         const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
