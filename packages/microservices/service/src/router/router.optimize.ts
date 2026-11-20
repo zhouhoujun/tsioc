@@ -18,6 +18,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     private cache: Map<string, TrieRoute | null> = new Map();
     private matchCache: Map<string, Route | null> = new Map();
     private microMatchCache: Map<string, Route[] | null> = new Map();
+    private microComposeCache: Map<string, Route> = new Map();
     private params: Map<string, Map<string, Record<string, string>>> = new Map();
     private regExps: Map<RegExp, Route> = new Map();
     private regCache: Map<string, Route> = new Map();
@@ -300,6 +301,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         this.regCache.clear();
         this.matchCache.clear();
         this.microMatchCache.clear();
+        this.microComposeCache.clear();
         this.params.clear();
     }
 
@@ -549,6 +551,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                 return route;
             }
             if (routes.length > 1) {
+                const composed = this.microComposeCache.get(matchKey);
+                if (composed) {
+                    return composed;
+                }
                 if (!parts) {
                     parts = this.options.toParts(url);
                 }
@@ -561,10 +567,12 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
                         return route.handle(input, context);
                     };
                 });
-                return {
+                const route = {
                     path: url,
                     handle: composeHandlers(handles)
                 };
+                this.setCache(this.microComposeCache, matchKey, route);
+                return route;
             }
         }
 
@@ -629,6 +637,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         this.cache.clear();
         this.matchCache.clear();
         this.microMatchCache.clear();
+        this.microComposeCache.clear();
         this.params.clear();
         this.assets = [];
         this._routes = [];
