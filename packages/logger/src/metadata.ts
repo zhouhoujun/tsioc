@@ -211,6 +211,9 @@ const loggerResolvers = [
     // }
 ] as ResolveInterceptorLike[];
 
+/** Shared logger injection resolvers for the precompiled AOT path. */
+export const LOGGER_RESOLVERS = loggerResolvers;
+
 
 /**
  * InjectLog decorator, for method or class.

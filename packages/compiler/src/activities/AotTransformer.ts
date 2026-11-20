@@ -28,6 +28,14 @@ const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
 const LIFECYCLE_DECORATORS = new Set([
     'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'Runner'
 ]);
+const TRANSPORT_PARAMETER_SCOPES: Record<string, string> = {
+    RequestHeader: 'headers',
+    RequestPath: 'path',
+    RequestParam: 'query',
+    RequestBody: 'body',
+    Payload: 'payload',
+    Topic: 'topic'
+};
 
 
 export interface AotPrecompileOptions {
@@ -57,6 +65,8 @@ interface TypeEmitContext {
     moduleKind?: ts.ModuleKind;
     usesInjectFlags?: boolean;
     usesGetToken?: boolean;
+    usesRepositoryResolver?: boolean;
+    usesLoggerResolver?: boolean;
 }
 let activeTypeContext: TypeEmitContext | undefined;
 
@@ -902,10 +912,50 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
     let multi: ts.Expression | undefined;
     let resolver: ts.Expression | undefined;
     let optionFlags: ts.Expression | undefined;
+    let repositoryModel: ts.Expression | undefined;
+    let repositoryConnection: ts.Expression | undefined;
+    let loggerName: ts.Expression | undefined;
     const flagExpressions: ts.Expression[] = [];
     for (const decorator of decoratorsOf(member)) {
         const name = decoratorName(decorator);
-        if (name === 'Autowired' || name === 'Inject') {
+        if (name === 'Repository') {
+            if (!ts.isPropertyDeclaration(member)) {
+                return undefined;
+            }
+            const args = decoratorArgs(decorator);
+            if (!args.length || args.length > 2 || !args[0]) {
+                return undefined;
+            }
+            hasInjection = true;
+            repositoryModel = selectorValueExpression(args[0]);
+            if (args[1] && ts.isStringLiteralLike(args[1])) {
+                repositoryConnection = args[1];
+            } else if (args[1]) {
+                return undefined;
+            }
+            if (activeTypeContext) {
+                activeTypeContext.usesRepositoryResolver = true;
+            }
+            continue;
+        }
+        if (name === 'InjectLog' || name === 'Log') {
+            if (!ts.isPropertyDeclaration(member)) {
+                return undefined;
+            }
+            const args = decoratorArgs(decorator);
+            if (args.length > 1) {
+                return undefined;
+            }
+            hasInjection = true;
+            loggerName = args[0] && ts.isStringLiteralLike(args[0])
+                ? args[0]
+                : undefined;
+            if (activeTypeContext) {
+                activeTypeContext.usesLoggerResolver = true;
+            }
+            continue;
+        }
+        if (name === 'Autowired' || name === 'Inject' || name === 'Param') {
             hasInjection = true;
             const args = decoratorArgs(decorator);
             if (args[0] && ts.isObjectLiteralExpression(args[0])) {
@@ -957,6 +1007,35 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
             continue;
         }
         return undefined;
+    }
+    if (repositoryModel) {
+        const properties: ts.ObjectLiteralElementLike[] = [
+            factory.createPropertyAssignment('model', repositoryModel)
+        ];
+        if (repositoryConnection) {
+            properties.push(factory.createPropertyAssignment('connection', repositoryConnection));
+        }
+        properties.push(factory.createPropertyAssignment(
+            'resolver',
+            factory.createArrayLiteralExpression([factory.createIdentifier('__aotRepositoryResolver')], false)
+        ));
+        return factory.createObjectLiteralExpression(properties, false);
+    }
+    if (loggerName !== undefined || decoratorsOf(member).some(decorator => ['InjectLog', 'Log'].includes(decoratorName(decorator)))) {
+        const properties: ts.ObjectLiteralElementLike[] = [];
+        if (loggerName) {
+            properties.push(factory.createPropertyAssignment('logname', loggerName));
+        } else {
+            const owner = (member.parent as ts.ClassDeclaration | undefined)?.name;
+            if (owner) {
+                properties.push(factory.createPropertyAssignment('target', factory.createIdentifier(owner.text)));
+            }
+        }
+        properties.push(factory.createPropertyAssignment(
+            'resolver',
+            factory.createArrayLiteralExpression([factory.createIdentifier('__aotLoggerResolvers')], false)
+        ));
+        return factory.createObjectLiteralExpression(properties, false);
     }
     if (!hasInjection) {
         return undefined;
@@ -1380,7 +1459,7 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
         let hasInjection = false;
         for (const decorator of decoratorsOf(member)) {
             const name = decoratorName(decorator);
-            if (name === 'Autowired' || name === 'Inject') {
+            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectLog' || name === 'Log') {
                 hasInjection = true;
                 continue;
             }
@@ -1398,8 +1477,9 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             const decorators = decoratorsOf(parameter);
             for (const decorator of decorators) {
                 const name = decoratorName(decorator);
-                if (name !== 'Inject' && name !== 'Autowired'
-                    && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host') {
+                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log'
+                    && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
+                    && !TRANSPORT_PARAMETER_SCOPES[name]) {
                     return false;
                 }
             }
@@ -1458,7 +1538,7 @@ function parameterDependency(parameter: ts.ParameterDeclaration): ts.Expression 
     const flags: ts.Expression[] = [];
     for (const decorator of decoratorsOf(parameter)) {
         const name = decoratorName(decorator);
-        if (name === 'Inject' || name === 'Autowired') {
+        if (name === 'Inject' || name === 'Autowired' || name === 'Param') {
             const args = decoratorArgs(decorator);
             if (args.length > 1 || (args[0] && ts.isObjectLiteralExpression(args[0]))) {
                 return undefined;
@@ -1533,10 +1613,56 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
     let multi: ts.Expression | undefined;
     let resolver: ts.Expression | undefined;
     let optionFlags: ts.Expression | undefined;
+    let transportScope: string | undefined;
+    let transportField: ts.Expression | undefined;
+    let transportOptions: ts.Expression | undefined;
+    let repositoryModel: ts.Expression | undefined;
+    let repositoryConnection: ts.Expression | undefined;
+    let loggerName: ts.Expression | undefined;
     const flagExpressions: ts.Expression[] = [];
     for (const decorator of decoratorsOf(parameter)) {
         const name = decoratorName(decorator);
-        if (name === 'Inject' || name === 'Autowired') {
+        if (name === 'Repository') {
+            const args = decoratorArgs(decorator);
+            if (!args.length || args.length > 2 || !args[0]) {
+                return undefined;
+            }
+            repositoryModel = selectorValueExpression(args[0]);
+            if (args[1] && ts.isStringLiteralLike(args[1])) {
+                repositoryConnection = args[1];
+            } else if (args[1]) {
+                return undefined;
+            }
+            if (activeTypeContext) {
+                activeTypeContext.usesRepositoryResolver = true;
+            }
+            continue;
+        }
+        if (name === 'InjectLog' || name === 'Log') {
+            const args = decoratorArgs(decorator);
+            if (args.length > 1) {
+                return undefined;
+            }
+            loggerName = args[0] && ts.isStringLiteralLike(args[0]) ? args[0] : undefined;
+            if (activeTypeContext) {
+                activeTypeContext.usesLoggerResolver = true;
+            }
+            continue;
+        }
+        if (TRANSPORT_PARAMETER_SCOPES[name]) {
+            const args = decoratorArgs(decorator);
+            transportScope = TRANSPORT_PARAMETER_SCOPES[name];
+            if (args[0]) {
+                transportField = selectorValueExpression(args[0]);
+            }
+            if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+                transportOptions = args[1];
+            } else if (args.length > 1) {
+                return undefined;
+            }
+            continue;
+        }
+        if (name === 'Inject' || name === 'Autowired' || name === 'Param') {
             const args = decoratorArgs(decorator);
             if (args[0] && ts.isObjectLiteralExpression(args[0])) {
                 options = args[0];
@@ -1584,6 +1710,56 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
             continue;
         }
         return undefined;
+    }
+    if (transportScope) {
+        if (activeTypeContext) {
+            activeTypeContext.usesInjectFlags = true;
+        }
+        const properties: ts.ObjectLiteralElementLike[] = [];
+        if (transportOptions) {
+            properties.push(ts.factory.createSpreadAssignment(transportOptions));
+        }
+        if (transportField) {
+            properties.push(factory.createPropertyAssignment('field', transportField));
+        }
+        properties.push(factory.createPropertyAssignment(
+            'flags',
+            factory.createPropertyAccessExpression(factory.createIdentifier('__aotFlags'), 'Request')
+        ));
+        properties.push(factory.createPropertyAssignment('scope', factory.createStringLiteral(transportScope)));
+        properties.push(factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)));
+        return factory.createObjectLiteralExpression(properties, false);
+    }
+    if (repositoryModel) {
+        const properties: ts.ObjectLiteralElementLike[] = [
+            factory.createPropertyAssignment('model', repositoryModel)
+        ];
+        if (repositoryConnection) {
+            properties.push(factory.createPropertyAssignment('connection', repositoryConnection));
+        }
+        properties.push(factory.createPropertyAssignment(
+            'resolver',
+            factory.createArrayLiteralExpression([factory.createIdentifier('__aotRepositoryResolver')], false)
+        ));
+        properties.push(factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)));
+        return factory.createObjectLiteralExpression(properties, false);
+    }
+    if (loggerName !== undefined || decoratorsOf(parameter).some(decorator => ['InjectLog', 'Log'].includes(decoratorName(decorator)))) {
+        const properties: ts.ObjectLiteralElementLike[] = [];
+        if (loggerName) {
+            properties.push(factory.createPropertyAssignment('logname', loggerName));
+        } else {
+            const owner = (parameter.parent?.parent as ts.ClassDeclaration | undefined)?.name;
+            if (owner) {
+                properties.push(factory.createPropertyAssignment('target', factory.createIdentifier(owner.text)));
+            }
+        }
+        properties.push(factory.createPropertyAssignment(
+            'resolver',
+            factory.createArrayLiteralExpression([factory.createIdentifier('__aotLoggerResolvers')], false)
+        ));
+        properties.push(factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)));
+        return factory.createObjectLiteralExpression(properties, false);
     }
     if (!token) {
         const type = parameter.type;
@@ -1647,8 +1823,9 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 for (const decorator of decorators) {
                     const name = decoratorName(decorator);
-                    if (name !== 'Inject' && name !== 'Autowired'
-                        && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host') {
+                    if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log'
+                        && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
+                        && !TRANSPORT_PARAMETER_SCOPES[name]) {
                         return false;
                     }
                 }
@@ -1674,7 +1851,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 continue;
             }
-            if (name === 'Autowired' || name === 'Inject') {
+            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectLog' || name === 'Log') {
                 hasInjection = true;
                 continue;
             }
@@ -1698,8 +1875,9 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             const decorators = decoratorsOf(parameter);
             for (const decorator of decorators) {
                 const name = decoratorName(decorator);
-                if (name !== 'Inject' && name !== 'Autowired'
-                    && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host') {
+                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log'
+                    && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
+                    && !TRANSPORT_PARAMETER_SCOPES[name]) {
                     return false;
                 }
             }
@@ -2373,6 +2551,12 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
             }
             if (usesNoPointcut) {
                 addHelperBinding('__aotNoPointcut', '@tsdi/aop', 'registerPrecompiledNoPointcut');
+            }
+            if (activeTypeContext?.usesRepositoryResolver) {
+                addHelperBinding('__aotRepositoryResolver', '@tsdi/repository', 'RepositoryArgumentResolver');
+            }
+            if (activeTypeContext?.usesLoggerResolver) {
+                addHelperBinding('__aotLoggerResolvers', '@tsdi/logger', 'LOGGER_RESOLVERS');
             }
             return factory.updateSourceFile(sourceFile, [...imports, ...statements]);
         };

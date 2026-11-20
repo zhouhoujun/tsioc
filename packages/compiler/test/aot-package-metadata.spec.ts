@@ -19,7 +19,9 @@ function load(source: string): Record<string, any> {
                 ? nodeRequire('../../logger/src')
                 : id === '@tsdi/aop'
                     ? nodeRequire('../../aop/src')
-                    : nodeRequire(id);
+                    : id === '@tsdi/repository'
+                        ? nodeRequire('../../repository/src')
+                        : nodeRequire(id);
     const execute = new Function('exports', 'require', 'module', output);
     execute(module.exports, localRequire, module);
     return module.exports;
@@ -128,6 +130,92 @@ export class HandlerService {
         expect(ref.getDefines(ref.methodDecors[1]).length).toBe(1);
     });
 
+    it('precompiles InjectLog resolver metadata', () => {
+        const source = `
+import { Injectable } from '@tsdi/ioc';
+import { InjectLog } from '@tsdi/logger';
+
+@Injectable()
+export class LoggerService {
+    @InjectLog() logger: any;
+
+    write(@InjectLog('audit') audit: any) {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(LoggerService');
+        expect(output).toContain('__aotLoggerResolvers');
+        const exported = load(source);
+        const ref = getClassRef(exported.LoggerService as any);
+        expect((ref.getAnnotation().propMetadatas.get('logger')?.[0] as any)?.resolver?.length).toBeGreaterThan(0);
+        expect((ref.getParameters('write')?.[0] as any)?.logname).toBe('audit');
+    });
+
+    it('precompiles Repository resolver metadata', () => {
+        const source = `
+import { Injectable } from '@tsdi/ioc';
+import { Repository } from '@tsdi/repository';
+
+export class UserModel {}
+
+@Injectable()
+export class RepositoryService {
+    @Repository(UserModel)
+    users: any;
+
+    load(@Repository(UserModel) repository: any) {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(RepositoryService');
+        expect(output).toContain('__aotRepositoryResolver');
+        const exported = load(source);
+        const ref = getClassRef(exported.RepositoryService as any);
+        expect((ref.getAnnotation().propMetadatas.get('users')?.[0] as any)?.model).toBe(exported.UserModel);
+        const params = ref.getParameters('load') as any[];
+        expect(params[0].resolver?.[0]).toBeDefined();
+    });
+
+    it('precompiles Param token metadata', () => {
+        const source = `
+import { Injectable, Param } from '@tsdi/ioc';
+
+@Injectable()
+export class ParamService {
+    receive(@Param('TOKEN') token: any) {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(ParamService');
+        const exported = load(source);
+        const ref = getClassRef(exported.ParamService as any);
+        const params = ref.getParameters('receive') as any[];
+        expect(params[0].provider).toBe('TOKEN');
+    });
+
+    it('precompiles transport request parameter metadata', () => {
+        const source = `
+import { Injectable } from '@tsdi/ioc';
+import { RequestBody, RequestParam } from '@tsdi/service';
+
+@Injectable()
+export class RequestHandlerService {
+    receive(@RequestBody() body: any, @RequestParam('page') page: number) {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(RequestHandlerService');
+        expect(output).not.toContain('__aotDeco(RequestHandlerService');
+        const exported = load(source);
+        const ref = getClassRef(exported.RequestHandlerService as any);
+        const params = ref.getParameters('receive') as any[];
+        expect(params.length).toBe(2);
+        expect(params[0].scope).toBe('body');
+        expect(params[0].flags & 128).toBe(128);
+        expect(params[1].scope).toBe('query');
+        expect(params[1].field).toBe('page');
+    });
+
     it('replays Runner method records as runnables', () => {
         const source = `
 import { Injectable } from '@tsdi/ioc';
@@ -178,7 +266,7 @@ export class ParseObjectIdPipe {
         expect(output).toContain('__aotType(TypeormAdapter');
         expect(output).toContain('__aotType(SwaggerService');
         expect(output).toContain('__aotType(ParseObjectIdPipe');
-        expect(output).toContain('__aotDeco(');
+        expect(output).not.toContain('__aotDeco(');
         expect(output).not.toContain('__decorate');
     });
 });
