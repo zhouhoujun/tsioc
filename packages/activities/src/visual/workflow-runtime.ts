@@ -797,9 +797,18 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
         const response = await fetchImpl(String(url), {
             method: String(config.method || 'GET').toUpperCase(),
             headers: Object.keys(headers).length ? headers : undefined,
-            body: config.body === undefined || config.body === '' ? undefined : String(config.body)
+            body: config.body === undefined || config.body === '' ? undefined : String(config.body),
+            redirect: config.followRedirects === false ? 'manual' : 'follow'
         });
         const text = await response.text();
+        const responseHeaders: Record<string, string> = {};
+        try {
+            response.headers?.forEach?.((value: string, key: string) => {
+                responseHeaders[key] = value;
+            });
+        } catch {
+            // Headers are optional metadata; never fail the request over them.
+        }
         const responseType = String(config.responseType || 'auto');
         let body: any = text;
         if (responseType !== 'text') {
@@ -819,7 +828,14 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
         return {
             success: response.ok,
             error: response.ok ? undefined : new Error(`HTTP ${response.status}`),
-            data: { nodeId: node.id, status: response.status, body }
+            data: {
+                nodeId: node.id,
+                status: response.status,
+                statusCode: response.status,
+                headers: responseHeaders,
+                responseUrl: response.url || String(url),
+                body
+            }
         };
     } catch (error) {
         return {

@@ -1210,11 +1210,12 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'UTF-8 text', value: 'text' }
                 ],
                 group: 'Request',}),
+            configField({ key: 'followRedirects', label: 'Follow redirects', type: 'boolean', defaultValue: true, group: 'Request' }),
             configField({ key: 'retry', label: 'Retries', type: 'number', defaultValue: 0, min: 0, max: 20, step: 1, group: 'Reliability',}),
             configField({ key: 'retryDelay', label: 'Retry delay', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',}),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',})
         ],
-        defaultConfig: { method: 'GET' }
+        defaultConfig: { method: 'GET', followRedirects: true }
     },
     {
         type: 'assign',

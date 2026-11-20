@@ -469,12 +469,24 @@ describe('Workflow data & trigger nodes', () => {
         };
         try {
             const request = await service.execute(chain([
-                { type: 'http-request', config: { url: 'https://example.com/api', authType: 'basic', username: 'user', password: 'pass' } }
+                { type: 'http-request', config: {
+                    url: 'https://example.com/api',
+                    authType: 'basic',
+                    username: 'user',
+                    password: 'pass',
+                    followRedirects: false
+                } }
             ]), {});
             expect(request.success).toBe(true);
+            const httpState: any = Object.entries(request.data?.executionState?.nodeStates || {})
+                .find(([id]) => id.startsWith('http-request'))?.[1];
+            expect(httpState?.result?.data?.statusCode).toBe(200);
+            expect(httpState?.result?.data?.responseUrl).toBe('https://example.com/api');
+            expect(httpState?.result?.data?.headers?.['content-type']).toBe('application/json');
         } finally {
             (globalThis as any).fetch = original;
         }
+        expect(captured.init.redirect).toBe('manual');
         expect(captured.init.headers.Authorization).toBe(`Basic ${Buffer.from('user:pass').toString('base64')}`);
     });
 
