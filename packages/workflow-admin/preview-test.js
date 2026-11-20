@@ -582,6 +582,7 @@ function startDesignerServer(port) {
         await page.waitForTimeout(120);
         const themeMenuItems = await page.locator('.menu-bar-submenu [data-menu-id^="theme:"]').count();
         await page.evaluate(() => window.workflowDesigner.setTheme('solarized'));
+        await page.waitForFunction(() => document.querySelector('.workflow-designer')?.getAttribute('data-theme') === 'solarized');
         await page.waitForTimeout(220);
         const solarizedTheme = await page.evaluate(() => {
             const designer = document.querySelector('.workflow-designer');
@@ -607,7 +608,8 @@ function startDesignerServer(port) {
         // Theme switching is exposed only through the menu submenu.
         const inlineThemeToggle = await page.locator('.workflow-toolbar [title="Toggle theme"]').count();
         await page.evaluate(() => window.workflowDesigner.setTheme('dark'));
-        await page.waitForTimeout(120);
+        await page.waitForFunction(() => document.querySelector('.workflow-designer')?.getAttribute('data-theme') === 'dark');
+        await page.waitForTimeout(180);
         const darkTheme = await page.evaluate(() => {
             const designer = document.querySelector('.workflow-designer');
             return {

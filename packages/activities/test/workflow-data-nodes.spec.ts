@@ -740,6 +740,14 @@ describe('Workflow data & trigger nodes', () => {
         expect(ignoreFirst.data?.executionState?.nodeStates.rbe_1.result?.data?.items).toEqual([
             { v: 2 }, { v: 3 }
         ]);
+
+        const deadband = await service.execute(chain([
+            { type: 'inject', config: { payload: { items: [{ v: 1 }, { v: 1.2 }, { v: 2 }, { v: 2.1 }, { v: 4 }] } } },
+            { type: 'rbe', config: { field: 'items', path: 'v', mode: 'deadband', deadband: 0.5 } }
+        ]), {});
+        expect(deadband.data?.executionState?.nodeStates.rbe_1.result?.data?.items).toEqual([
+            { v: 1 }, { v: 2 }, { v: 4 }
+        ]);
     });
 
     it('rate-limits delay nodes across executions', async () => {

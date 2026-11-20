@@ -712,6 +712,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "Array path",
                 "path": "Item path",
                 "mode": "Report",
+                "deadband": "Change at least",
                 "ignoreFirst": "Ignore initial value"
             },
             "combine": {
@@ -1654,6 +1655,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "ms": "ms",
             "s": "s",
             "value": "On value change",
+            "deadband": "On value changes by",
             "ANY": "Any method",
             "out": "Link out",
             "in": "Link in",
@@ -2383,6 +2385,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "数组路径",
                 "path": "元素路径",
                 "mode": "上报方式",
+                "deadband": "最小变化量",
                 "ignoreFirst": "忽略初始值"
             },
             "combine": {
@@ -3301,6 +3304,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "ms": "毫秒",
             "s": "秒",
             "value": "按值变化",
+            "deadband": "按值变化幅度",
             "info": "信息",
             "warn": "告警",
             "error": "错误",

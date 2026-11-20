@@ -463,7 +463,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
             configField({ key: 'field', label: 'Array path', type: 'text', typed: true, placeholder: 'items', description: 'Context path to the array to filter.' }),
-            configField({ key: 'path', label: 'Item path', type: 'text', typed: true, placeholder: 'value', description: 'Property compared between consecutive items.', visibleWhen: { key: 'mode', equals: 'value' } }),
+            configField({ key: 'path', label: 'Item path', type: 'text', typed: true, placeholder: 'value', description: 'Property compared between consecutive items.', visibleWhen: { key: 'mode', in: ['value', 'deadband'] } }),
             configField({
                 key: 'mode',
                 label: 'Report',
@@ -471,9 +471,11 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'value',
                 options: [
                     { label: 'On value change', value: 'value' },
-                    { label: 'On any change', value: 'change' }
+                    { label: 'On any change', value: 'change' },
+                    { label: 'On value changes by', value: 'deadband' }
                 ]
             }),
+            configField({ key: 'deadband', label: 'Change at least', type: 'number', defaultValue: 0.5, min: 0, step: 0.1, visibleWhen: { key: 'mode', equals: 'deadband' } }),
             configField({ key: 'ignoreFirst', label: 'Ignore initial value', type: 'boolean', defaultValue: false })
         ],
         defaultConfig: { mode: 'value', ignoreFirst: false }

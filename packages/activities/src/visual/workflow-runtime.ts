@@ -1897,21 +1897,33 @@ export async function executeVisualNode(
             const wholeItem = String(config.mode || 'value') === 'change' || !path;
             const filtered: any[] = [];
             const ignoreFirst = config.ignoreFirst === true;
+            const deadband = Math.max(0, Number(config.deadband) || 0);
+            const mode = String(config.mode || 'value');
             let previous: string | undefined;
+            let previousRaw: any;
             let hasPrevious = false;
             for (const item of items) {
-                const key = JSON.stringify(wholeItem ? item : resolveFrom(item, path));
+                const raw = wholeItem ? item : resolveFrom(item, path);
+                const key = JSON.stringify(raw);
                 if (!hasPrevious) {
                     previous = key;
+                    previousRaw = raw;
                     hasPrevious = true;
                     if (!ignoreFirst) {
                         filtered.push(item);
                     }
                     continue;
                 }
-                if (key !== previous) {
+                let changed: boolean;
+                if (mode === 'deadband' && Number.isFinite(Number(raw)) && Number.isFinite(Number(previousRaw))) {
+                    changed = Math.abs(Number(raw) - Number(previousRaw)) > deadband;
+                } else {
+                    changed = key !== previous;
+                }
+                if (changed) {
                     filtered.push(item);
                     previous = key;
+                    previousRaw = raw;
                 }
             }
             return { success: true, data: { nodeId: node.id, items: filtered, count: filtered.length } };
