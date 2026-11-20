@@ -52,7 +52,7 @@ export class RuntimeController {
         ]);
     });
 
-    it('falls back when a route method has parameter or policy decorators', () => {
+    it('falls back when a route method has parameter decorators', () => {
         const output = transpileAot('aot-controller-complex.ts', `
 import { Controller, Get, RequestParam } from '@tsdi/service';
 
@@ -66,17 +66,36 @@ export class ComplexController {
         expect(output).not.toContain('Controller.ƿroutes =');
     });
 
-    it('falls back when a route decorator has runtime policy arguments', () => {
+    it('emits literal route options for parameterless methods', () => {
         const output = transpileAot('aot-controller-policy.ts', `
 import { Controller, Get } from '@tsdi/service';
 
+const Guard = () => true;
+
 @Controller('/api')
 export class PolicyController {
-    @Get('/private', { guards: [] })
+    @Get('/private', { guards: [Guard] })
     read() { return 'private'; }
 }
 `, { module: ts.ModuleKind.CommonJS });
 
-        expect(output).not.toContain('Controller.ƿroutes =');
+        expect(output).toContain('PolicyController.ƿroutes =');
+        expect(output).toContain('guards: [Guard]');
+    });
+
+    it('falls back when policy arguments are not object literals', () => {
+        const output = transpileAot('aot-controller-options.ts', `
+import { Controller, Get } from '@tsdi/service';
+
+const options = { guards: [] };
+
+@Controller('/api')
+export class OptionsController {
+    @Get('/private', options)
+    read() { return 'private'; }
+}
+`, { module: ts.ModuleKind.CommonJS });
+
+        expect(output).not.toContain('OptionsController.ƿroutes =');
     });
 });

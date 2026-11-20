@@ -542,6 +542,7 @@ interface AotControllerRoute {
     propertyKey: string;
     pattern: string;
     method: string;
+    options?: ts.Expression;
 }
 
 /**
@@ -581,20 +582,31 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
             continue;
         }
         // The manifest is only safe when there are no other method/parameter
-        // decorators that contribute policies or argument resolvers.
-        if (decorators.length !== 1 || memberParameters(member).some(parameter => decoratorsOf(parameter).length)) {
+        // decorators that contribute policies or argument resolvers. Methods
+        // with parameters need runtime resolver metadata; methods without
+        // parameters can carry literal route options safely.
+        if (decorators.length !== 1
+            || memberParameters(member).length
+            || memberParameters(member).some(parameter => decoratorsOf(parameter).length)) {
             return undefined;
         }
         const args = decoratorArgs(routeDecorator);
-        if (args.length > 1) {
+        if (args.length > 2) {
             return undefined;
         }
         let pattern = '';
-        if (args.length === 1) {
+        if (args.length >= 1) {
             if (!ts.isStringLiteralLike(args[0])) {
                 return undefined;
             }
             pattern = args[0].text;
+        }
+        let options: ts.Expression | undefined;
+        if (args.length === 2) {
+            if (!isObjectLiteralExpression(args[1])) {
+                return undefined;
+            }
+            options = args[1];
         }
         const propertyKey = memberKey(member);
         if (!propertyKey) {
@@ -603,7 +615,8 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
         routes.push({
             propertyKey,
             pattern,
-            method: ROUTE_METHOD_DECORATORS[decoratorName(routeDecorator)]
+            method: ROUTE_METHOD_DECORATORS[decoratorName(routeDecorator)],
+            options
         });
     }
     return routes.length ? routes : undefined;
@@ -1950,7 +1963,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                                 factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(route.propertyKey)),
                                 factory.createPropertyAssignment('pattern', factory.createStringLiteral(route.pattern)),
                                 factory.createPropertyAssignment('method', factory.createStringLiteral(route.method)),
-                                factory.createPropertyAssignment('options', factory.createObjectLiteralExpression([], false))
+                                factory.createPropertyAssignment('options', route.options ?? factory.createObjectLiteralExpression([], false))
                             ], false)
                         ), false)
                     )));
