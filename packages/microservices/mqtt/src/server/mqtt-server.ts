@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, watchSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import * as mqtt from 'mqtt';
 import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_FILTERS, MQTT_BIND_GUARDS } from './options';
@@ -22,6 +22,8 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private destroy$: Subject<void>;
     private runtime?: ConsumerRuntime;
+    private stopRouteWatch?: () => void;
+    private subscribedTopics = new Set<string>();
 
     private get consumerRuntime(): ConsumerRuntime {
         return this.runtime ??= new ConsumerRuntime({ metrics: this.consumerMetrics ?? undefined, labels: { transport: 'mqtt' },
@@ -60,6 +62,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             this.logger.info(getTypeName(this), 'connected to MQTT broker:', url);
 
             const topics = this.resolveSubscribeTopics();
+            this.subscribedTopics = new Set(topics.map(item => item.topic));
             topics.forEach(({ topic, qos }) => {
                 this.client?.subscribe(topic, { qos: qos ?? 0 }, (err) => {
                     if (err) {
@@ -68,6 +71,9 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                         this.logger.info(`Subscribed to topic '${topic}'`);
                     }
                 });
+            });
+            this.stopRouteWatch = watchSubscribePatterns(this.options, this.injector, () => {
+                this.reconcileSubscribedTopics();
             });
         });
 
@@ -93,6 +99,9 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     async onShutdown(): Promise<void> {
+        this.stopRouteWatch?.();
+        this.stopRouteWatch = undefined;
+        this.subscribedTopics.clear();
         if (!this.client) return;
 
         this.destroy$.next();
@@ -143,6 +152,39 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         });
         this.client = null;
 
+    }
+
+    private reconcileSubscribedTopics(): void {
+        const client = this.client;
+        if (!client) {
+            return;
+        }
+        const desired = this.resolveSubscribeTopics();
+        const next = new Set(desired.map(item => item.topic));
+        for (const topic of next) {
+            if (this.subscribedTopics.has(topic)) {
+                continue;
+            }
+            const qos = desired.find(item => item.topic === topic)?.qos ?? 0;
+            client.subscribe(topic, { qos }, err => {
+                if (err) {
+                    this.logger.error(`Failed to subscribe to topic '${topic}':`, err);
+                } else {
+                    this.logger.info(`Subscribed to topic '${topic}'`);
+                }
+            });
+        }
+        for (const topic of this.subscribedTopics) {
+            if (next.has(topic)) {
+                continue;
+            }
+            client.unsubscribe(topic, (err: any) => {
+                if (err) {
+                    this.logger.error(`Failed to unsubscribe from topic '${topic}':`, err);
+                }
+            });
+        }
+        this.subscribedTopics = next;
     }
 
     private resolveSubscribeTopics(): Array<{ topic: string; qos?: 0 | 1 | 2 }> {

@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, watchSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import * as amqp from 'amqplib';
 import { AmqpServOptions, AMQP_SERV_OPTIONS, AMQP_BIND_INTERCEPTORS, AMQP_BIND_FILTERS, AMQP_BIND_GUARDS } from './options';
@@ -27,6 +27,8 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private starting?: Promise<void>;
     private queueName?: string;
     private retryQueue?: string;
+    private stopRouteWatch?: () => void;
+    private boundRoutingKeys = new Set<string>();
     private runtime?: ConsumerRuntime;
     @InjectLog() logger!: Logger;
 
@@ -85,6 +87,12 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             for (const routingKey of routingKeys) {
                 await this.channel.bindQueue(q.queue, exchange, routingKey);
             }
+            this.boundRoutingKeys = new Set(routingKeys);
+            this.stopRouteWatch = watchSubscribePatterns(this.options, this.injector, () => {
+                this.reconcileRoutingKeys().catch(err => {
+                    this.logger.error('AMQP routing-key reconciliation error:', err);
+                });
+            });
 
             await this.declareRetryAndDeadLetter(q.queue, !!queue);
 
@@ -101,7 +109,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 // Await the handler so processing failures are observed (and
                 // retried/dead-lettered) instead of becoming unhandled
                 // rejections while the delivery is silently acked.
-                this.handleMessage(msg, exchange, routingKeys[0]).catch(err => {
+                this.handleMessage(msg, exchange, msg.fields.routingKey).catch(err => {
                     this.logger.error('AMQP request handling error:', err);
                 });
             }, { noAck: false });
@@ -124,6 +132,9 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     async onShutdown(): Promise<void> {
+        this.stopRouteWatch?.();
+        this.stopRouteWatch = undefined;
+        this.boundRoutingKeys.clear();
         this.destroy$.next();
         this.destroy$.complete();
 
@@ -242,6 +253,35 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             return true;
         }
         return false;
+    }
+
+    private async reconcileRoutingKeys(): Promise<void> {
+        const channel = this.channel;
+        const queue = this.queueName;
+        if (!channel || !queue) {
+            return;
+        }
+        const exchange = this.options.exchange || 'tsdi';
+        const desired = new Set(mergeSubscribePatterns(
+            this.options.routingKey ? [this.options.routingKey] : undefined,
+            getSubscribePatterns(this.options, this.injector),
+            ['*.microservice']
+        ));
+        for (const routingKey of desired) {
+            if (this.boundRoutingKeys.has(routingKey)) {
+                continue;
+            }
+            await channel.bindQueue(queue, exchange, routingKey);
+            this.logger.info(`Bound AMQP routing key '${routingKey}'`);
+        }
+        for (const routingKey of this.boundRoutingKeys) {
+            if (desired.has(routingKey)) {
+                continue;
+            }
+            await channel.unbindQueue(queue, exchange, routingKey);
+            this.logger.info(`Unbound AMQP routing key '${routingKey}'`);
+        }
+        this.boundRoutingKeys = desired;
     }
 
     private async handleMessage(msg: amqp.ConsumeMessage, _exchange: string, _routingKey: string): Promise<void> {

@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getServiceRouterToken, getSubscribePatterns, mergeSubscribePatterns } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getServiceRouterToken, getSubscribePatterns, mergeSubscribePatterns, watchSubscribePatterns } from '@tsdi/service';
 import { Subject, race, take, takeUntil } from 'rxjs';
 import Redis from 'ioredis';
 import { RedisServOptions, REDIS_SERV_OPTIONS, REDIS_BIND_INTERCEPTORS, REDIS_BIND_FILTERS, REDIS_BIND_GUARDS } from './options';
@@ -19,6 +19,9 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     @InjectLog() logger!: Logger;
 
     private destroy$: Subject<void>;
+    private stopRouteWatch?: () => void;
+    private directChannels = new Set<string>();
+    private patternChannels = new Set<string>();
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
@@ -70,6 +73,11 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
                 }
             });
         }
+        this.directChannels = new Set(directChannels);
+        this.patternChannels = new Set(patternChannels);
+        this.stopRouteWatch = watchSubscribePatterns(this.options, this.injector, () => {
+            this.reconcileChannels();
+        });
 
         this.subscriber.on(Events.MESSAGE, (channel: string, message: string) => {
             this.handleMessage(channel, message);
@@ -97,6 +105,10 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     }
 
     async onShutdown(): Promise<void> {
+        this.stopRouteWatch?.();
+        this.stopRouteWatch = undefined;
+        this.directChannels.clear();
+        this.patternChannels.clear();
         this.destroy$.next();
         this.destroy$.complete();
 
@@ -114,6 +126,46 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             await this.closeRedisClient(this.publisher);
             this.publisher = null;
         }
+    }
+
+    private reconcileChannels(): void {
+        const subscriber = this.subscriber as Redis;
+        const patternSubscriber = this.patternSubscriber as Redis;
+        if (!subscriber || !patternSubscriber) {
+            return;
+        }
+        const channels = this.resolveChannels();
+        const nextDirect = new Set(channels.filter(channel => !this.isPatternChannel(channel)));
+        const nextPattern = new Set(channels.filter(channel => this.isPatternChannel(channel)));
+
+        const addedDirect = [...nextDirect].filter(channel => !this.directChannels.has(channel));
+        const removedDirect = [...this.directChannels].filter(channel => !nextDirect.has(channel));
+        if (addedDirect.length) {
+            subscriber.subscribe(...addedDirect, (err: any) => {
+                if (err) this.logger.error('Redis subscribe error:', err);
+            });
+        }
+        if (removedDirect.length) {
+            subscriber.unsubscribe(...removedDirect, (err: any) => {
+                if (err) this.logger.error('Redis unsubscribe error:', err);
+            });
+        }
+
+        const addedPattern = [...nextPattern].filter(channel => !this.patternChannels.has(channel));
+        const removedPattern = [...this.patternChannels].filter(channel => !nextPattern.has(channel));
+        if (addedPattern.length) {
+            patternSubscriber.psubscribe(...addedPattern, (err: any) => {
+                if (err) this.logger.error('Redis pattern subscribe error:', err);
+            });
+        }
+        if (removedPattern.length) {
+            patternSubscriber.punsubscribe(...removedPattern, (err: any) => {
+                if (err) this.logger.error('Redis pattern unsubscribe error:', err);
+            });
+        }
+
+        this.directChannels = nextDirect;
+        this.patternChannels = nextPattern;
     }
 
     private resolveChannels(): string[] {

@@ -2,7 +2,7 @@ import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { createRequestContext, RequestContext, Transport, REQUEST } from '@tsdi/common';
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, watchSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import { Kafka, Consumer, Producer, EachMessagePayload } from 'kafkajs';
 import { KafkaServOptions, KAFKA_SERV_OPTIONS, KAFKA_BIND_INTERCEPTORS, KAFKA_BIND_FILTERS, KAFKA_BIND_GUARDS } from './options';
@@ -15,6 +15,9 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     consumer?: Consumer | null;
     producer?: Producer | null;
     private kafka?: Kafka;
+    private stopRouteWatch?: () => void;
+    private topicSignature = '';
+    private restarting?: Promise<void>;
 
     @InjectLog() logger!: Logger;
     private destroy$: Subject<void>;
@@ -57,20 +60,17 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             this.logger.info(getTypeName(this), `connected to Kafka, brokers: ${(this.options.brokerCompatBrokers?.length ? this.options.brokerCompatBrokers : (this.options.brokers || ['localhost:9092'])).join(',')}`);
 
             const topics = this.resolveTopics();
+            this.topicSignature = this.topicsSignature(topics);
             for (const t of topics) {
                 await this.consumer.subscribe({ topic: t.topic, fromBeginning: t.fromBeginning ?? this.options.fromBeginning ?? false });
                 this.logger.info(`Subscribed to Kafka topic '${t.topic}'`);
             }
 
-            await this.consumer.run({
-                // At-least-once commits only after the handler succeeds; letting
-                // kafkajs auto-commit would mark the offset as soon as the
-                // callback resolves, which can skip a failed message.
-                autoCommit: !this.isAtLeastOnce(),
-                partitionsConsumedConcurrently: this.options.concurrency,
-                eachMessage: async (payload: EachMessagePayload) => {
-                    await this.consumeMessage(payload);
-                }
+            await this.runConsumer(this.consumer);
+            this.stopRouteWatch = watchSubscribePatterns(this.options, this.injector, () => {
+                this.reconcileTopics().catch(err => {
+                    this.logger.error('Kafka topic reconciliation error:', err);
+                });
             });
 
             if (!this.options.microservice) {
@@ -83,6 +83,8 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     }
 
     async onShutdown(): Promise<void> {
+        this.stopRouteWatch?.();
+        this.stopRouteWatch = undefined;
         this.destroy$.next();
         this.destroy$.complete();
         const stats = this.runtime?.stats();
@@ -94,6 +96,63 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         if (this.consumer) { await this.consumer.disconnect(); this.consumer = null; }
         if (this.producer) { await this.producer.disconnect(); this.producer = null; }
 
+    }
+
+    private topicsSignature(topics: Array<{ topic: string | RegExp }>): string {
+        return topics.map(item => String(item.topic)).sort().join('\u0000');
+    }
+
+    private runConsumer(consumer: Consumer): Promise<void> {
+        return consumer.run({
+            // At-least-once commits only after the handler succeeds; letting
+            // kafkajs auto-commit would mark the offset as soon as the
+            // callback resolves, which can skip a failed message.
+            autoCommit: !this.isAtLeastOnce(),
+            partitionsConsumedConcurrently: this.options.concurrency,
+            eachMessage: async (payload: EachMessagePayload) => {
+                await this.consumeMessage(payload);
+            }
+        });
+    }
+
+    private async reconcileTopics(): Promise<void> {
+        if (!this.kafka || this.restarting) {
+            return;
+        }
+        const topics = this.resolveTopics();
+        const signature = this.topicsSignature(topics);
+        if (signature === this.topicSignature) {
+            return;
+        }
+        this.topicSignature = signature;
+        this.restarting = (async () => {
+            const previous = this.consumer;
+            this.consumer = null;
+            try {
+                if (previous) {
+                    await previous.disconnect();
+                }
+                if (!this.kafka || this.destroy$.isStopped) {
+                    return;
+                }
+                const next = this.kafka.consumer({ groupId: this.options.groupId || 'tsdi-group' });
+                await next.connect();
+                for (const t of topics) {
+                    await next.subscribe({ topic: t.topic, fromBeginning: t.fromBeginning ?? this.options.fromBeginning ?? false });
+                }
+                this.consumer = next;
+                await this.runConsumer(next);
+                this.logger.info(`Kafka consumer resubscribed to topics: ${topics.map(t => String(t.topic)).join(', ')}`);
+            } catch (error) {
+                this.consumer = null;
+                throw error;
+            }
+        })();
+        try {
+            await this.restarting;
+        } finally {
+            this.restarting = undefined;
+        }
     }
 
     private resolveTopics(): Array<{ topic: string | RegExp; fromBeginning?: boolean }> {

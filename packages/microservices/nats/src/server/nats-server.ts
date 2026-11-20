@@ -5,7 +5,7 @@ import { connect, StringCodec, NatsConnection, Subscription } from 'nats';
 import {
     createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, watchSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
 import { NatsServOptions, NATS_SERV_OPTIONS, NATS_BIND_INTERCEPTORS, NATS_BIND_FILTERS, NATS_BIND_GUARDS } from './options';
 
@@ -18,6 +18,8 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     nc: NatsConnection | null = null;
     subscriptions: Subscription[] = [];
+    private subjectSubscriptions = new Map<string, Subscription>();
+    private stopRouteWatch?: () => void;
     private starting?: Promise<void>;
     @InjectLog() logger!: Logger;
 
@@ -67,29 +69,12 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             this.logger.info(getTypeName(this), 'connected to NATS:', this.options.url || 'nats://127.0.0.1:4222');
 
             const subjects = mergeSubscribePatterns(this.options.subjects, getSubscribePatterns(this.options, this.injector), ['>']);
-            const sc = StringCodec();
-
             for (const subject of subjects) {
-                const sub = this.nc.subscribe(subject, { queue: this.options.queue || 'microservices' });
-                this.subscriptions.push(sub);
-
-                (async () => {
-                    for await (const msg of sub) {
-                        try {
-                            // Await before pulling the next message so handler
-                            // failures are observed instead of becoming unhandled
-                            // rejections, and processing stays ordered per subject.
-                            await this.handleMessage(subject, msg.data, sc, msg);
-                        } catch (err) {
-                            this.logger.error('NATS request handling error:', err);
-                        }
-                    }
-                })().catch(err => {
-                    this.logger.error('NATS subscription error:', err);
-                });
-
-                this.logger.info(`Subscribed to NATS subject '${subject}'`);
+                this.subscribeSubject(subject);
             }
+            this.stopRouteWatch = watchSubscribePatterns(this.options, this.injector, () => {
+                this.reconcileSubjects();
+            });
 
             this.nc.closed().then(() => {
                 this.logger.info('NATS connection closed');
@@ -107,6 +92,9 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     }
 
     async onShutdown(): Promise<void> {
+        this.stopRouteWatch?.();
+        this.stopRouteWatch = undefined;
+        this.subjectSubscriptions.clear();
         this.destroy$.next();
         this.destroy$.complete();
 
@@ -139,6 +127,58 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             await connection.close();
         } catch {
             // ignore close failures during shutdown
+        }
+    }
+
+    private subscribeSubject(subject: string): void {
+        if (!this.nc || this.subjectSubscriptions.has(subject)) {
+            return;
+        }
+        const sub = this.nc.subscribe(subject, { queue: this.options.queue || 'microservices' });
+        this.subjectSubscriptions.set(subject, sub);
+        this.subscriptions.push(sub);
+        const sc = StringCodec();
+
+        (async () => {
+            for await (const msg of sub) {
+                try {
+                    // Await before pulling the next message so handler failures
+                    // are observed instead of becoming unhandled rejections.
+                    await this.handleMessage(subject, msg.data, sc, msg);
+                } catch (err) {
+                    this.logger.error('NATS request handling error:', err);
+                }
+            }
+        })().catch(err => {
+            this.logger.error('NATS subscription error:', err);
+        });
+        this.logger.info(`Subscribed to NATS subject '${subject}'`);
+    }
+
+    private reconcileSubjects(): void {
+        if (!this.nc) {
+            return;
+        }
+        const desired = new Set(mergeSubscribePatterns(
+            this.options.subjects,
+            getSubscribePatterns(this.options, this.injector),
+            ['>']
+        ));
+        for (const subject of desired) {
+            this.subscribeSubject(subject);
+        }
+        for (const [subject, sub] of this.subjectSubscriptions) {
+            if (desired.has(subject)) {
+                continue;
+            }
+            try {
+                sub.unsubscribe();
+            } catch {
+                // ignore unsubscribe errors
+            }
+            this.subjectSubscriptions.delete(subject);
+            this.subscriptions = this.subscriptions.filter(item => item !== sub);
+            this.logger.info(`Unsubscribed from NATS subject '${subject}'`);
         }
     }
 

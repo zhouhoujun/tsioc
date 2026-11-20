@@ -76,6 +76,39 @@ export function getSubscribeSource(route: Route): Pattern | undefined {
     return isDefined(route.pattern) ? route.pattern ?? undefined : route.path;
 }
 
+/**
+ * Watch route-table revisions and coalesce subscription updates per tick.
+ * The callback receives the full desired pattern set; transport servers apply
+ * a diff against their current broker subscriptions.
+ */
+export function watchSubscribePatterns(
+    config: ServiceConfig,
+    injector: Injector,
+    listener: (patterns: string[]) => void
+): () => void {
+    const router = getSubscribeRouter(config, injector);
+    const changes = (router as any)?.changes as { subscribe?: (next: () => void) => { unsubscribe(): void } } | undefined;
+    if (!changes?.subscribe) {
+        return () => undefined;
+    }
+    let scheduled = false;
+    const subscription = changes.subscribe(() => {
+        if (scheduled) {
+            return;
+        }
+        scheduled = true;
+        queueMicrotask(() => {
+            scheduled = false;
+            try {
+                listener(getSubscribePatterns(config, injector));
+            } catch {
+                // Broker sync failures are logged by the transport adapter.
+            }
+        });
+    });
+    return () => subscription.unsubscribe();
+}
+
 export function mergeSubscribePatterns(explicit: string[] | undefined, discovered: string[], fallback?: string[]): string[] {
     const merged = new Set<string>();
 
