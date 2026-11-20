@@ -81,6 +81,11 @@
    - 终端 attach 的同一 session 也生效。
 4. 队列面板在窄屏（移动端抽屉）可操作，不遮挡输入框。
 5. `/format` 写入受 workspace trust 保护：未信任 workspace 应拒绝并给出 trust 指引。
+6. `/work spawn --worktree feature <goal>`：
+   - 父会话 workspace 不变；
+   - worker session 的 workspace 指向 worktree；
+   - 同名 worktree 已存在时复用而不是重复创建；
+   - 任务完成后 `/work` → task → View worker report 可查看报告。
 
 ## 4. 数据与门禁
 

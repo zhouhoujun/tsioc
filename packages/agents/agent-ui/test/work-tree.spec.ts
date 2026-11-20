@@ -2,7 +2,7 @@ import { InMemoryCommandExecutionControl } from '@tsdi/agent';
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AgentConsoleSessionState } from '../src';
-import { buildWorkRows, runWorkCommandView } from '../src/AgentConsoleWork';
+import { buildWorkRows, runWorkCommandView, workCommandHost } from '../src/AgentConsoleWork';
 
 const TREE = {
     sessionId: 'root',
@@ -204,6 +204,31 @@ export class WorkTreeTest {
         expect(text).toContain('Diff: src/auth.ts +2 -1');
         expect(text).toContain('Next steps: add tests');
         expect(text).toContain('Artifacts: auth.patch');
+    }
+
+    @Test('worker worktree creation does not switch the parent session and reuses existing names')
+    async workerWorktreePort() {
+        const requests: any[] = [];
+        const ctx: any = {
+            state: {
+                worktreeCommand: async (request: any) => {
+                    requests.push(request);
+                    if (request.action === 'create') {
+                        if (request.name === 'existing') throw new Error('exists');
+                        return { action: 'create', path: '/w/.worktrees/feature', branch: 'wt/feature' };
+                    }
+                    return {
+                        action: 'list',
+                        items: [{ path: '/w/.worktrees/existing', branch: 'wt/existing' }]
+                    };
+                }
+            }
+        };
+        const host = workCommandHost(ctx);
+        expect(await host.createWorktree?.('feature')).toEqual('/w/.worktrees/feature');
+        expect(requests[0]).toEqual({ action: 'create', name: 'feature', activate: false });
+        expect(await host.createWorktree?.('existing')).toEqual('/w/.worktrees/existing');
+        expect(requests[requests.length - 1]).toEqual({ action: 'list' });
     }
 
     @Test('failed task rows can be retried with the same goal')    async retries() {

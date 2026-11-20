@@ -343,8 +343,19 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
             }
         },
         createWorktree: async (name?: string) => {
-            const result = await ctx.state.worktreeCommand?.({ action: 'create', ...(name ? { name } : {}) });
-            return result?.path;
+            const requested = String(name || '').trim() || `worker-${Date.now().toString(36)}`;
+            try {
+                const result = await ctx.state.worktreeCommand?.({ action: 'create', name: requested, activate: false });
+                if (result?.path) return result.path;
+            } catch {
+                // Name collision: reuse the managed worktree if it already exists.
+            }
+            const list = await ctx.state.worktreeCommand?.({ action: 'list' }).catch(() => undefined);
+            const existing = (list?.items || []).find(item => {
+                const base = String(item.path || '').split(/[\\/]/).filter(Boolean).pop();
+                return item.path === requested || base === requested || item.branch === requested;
+            });
+            return existing?.path;
         },
         openTextOverlay: (title: string, lines: string[], visibleLines?: number) => ctx.state.openTextOverlay(title, lines, visibleLines)
     };

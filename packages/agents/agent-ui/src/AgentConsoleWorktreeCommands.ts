@@ -7,6 +7,12 @@ export interface AgentConsoleWorktreeRequest {
     force?: boolean;
     /** Skip the interactive confirmation for destructive actions. */
     yes?: boolean;
+    /**
+     * `create`: also switch the current session to the new worktree.
+     * Defaults to true for `/worktree create`; `/work spawn --worktree` passes
+     * false so only the worker is isolated.
+     */
+    activate?: boolean;
 }
 
 export interface AgentConsoleWorktreeResult {

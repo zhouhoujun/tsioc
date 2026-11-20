@@ -219,7 +219,7 @@ export async function runAgentConsole(
         const runtime = ctx?.get ? ctx.get(AgentRuntime) : undefined;
         if (bootstrapped && runtime) {
             const manager = new WorktreeManager(bootstrapped.workspace);
-            bootstrapped.worktreeCommand = async (request: { action: 'create' | 'list' | 'merge' | 'remove'; name?: string; force?: boolean }) => {
+            bootstrapped.worktreeCommand = async (request: { action: 'create' | 'list' | 'merge' | 'remove'; name?: string; force?: boolean; activate?: boolean }) => {
                 if (request.action === 'list') {
                     return { action: 'list' as const, items: await manager.list() };
                 }
@@ -232,8 +232,10 @@ export async function runAgentConsole(
                     return { action: 'remove' as const };
                 }
                 const created = await manager.create(request.name!);
-                await runtime.setSessionWorkspace(bootstrapped.sessionId, created.path);
-                bootstrapped.workspace = created.path;
+                if (request.activate !== false) {
+                    await runtime.setSessionWorkspace(bootstrapped.sessionId, created.path);
+                    bootstrapped.workspace = created.path;
+                }
                 return { action: 'create' as const, path: created.path, branch: created.branch };
             };
         }
