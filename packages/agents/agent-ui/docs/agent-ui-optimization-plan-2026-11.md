@@ -240,9 +240,11 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 - `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。
 
 按影响排序（未完成计划）：
-1. **Esc Esc 撤销手势**：复用 `/undo` 的 turn 级恢复（opencode 对比项）。
-2. **Agent Center/Inbox**：按 `docs/agent-management-plan.md` 的 P0/P1 落地（不重复设计）。
-3. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
+1. **Agent Center/Inbox 后续**：按 `docs/agent-management-plan.md` 继续 P1（background worker
+   attach/worktree、permissions 规则审阅面）与 P2（queue/steer 管理面）。
+   说明：Esc Esc 已用于“编辑上一条用户消息”（`AgentConsoleEditModeHandlers`），不再叠加撤销手势，
+   撤销统一走 `/undo`。
+2. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
    `git diff --check`、source-size、bench 全绿。
 
 ### P4 — 门禁与文档
