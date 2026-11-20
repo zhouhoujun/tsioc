@@ -24,6 +24,37 @@ describe('GatewayAdminController', () => {
         expect(state.services).toEqual(['orders-service', 'users-service']);
     });
 
+    it('exposes service router snapshots and conflicts', () => {
+        const routes = [{ path: '/api/users', method: 'GET', pattern: '/api/users' }];
+        const router = {
+            transport: 'HTTP',
+            routes,
+            snapshot: () => ({
+                revision: 7,
+                routes,
+                conflicts: [{ path: '/api/users', method: 'GET', routes }]
+            })
+        };
+        const controller = new GatewayAdminController(
+            new GatewayRuntime(),
+            { routes: [] } as any,
+            new InMemoryWorkflowDefinitionStore(),
+            undefined as any,
+            undefined as any,
+            undefined as any,
+            undefined as any,
+            [router] as any,
+            []
+        );
+
+        expect(controller.serviceRouteTables()).toEqual([{
+            transport: 'HTTP',
+            revision: 7,
+            routes: [{ path: '/api/users', method: 'GET', pattern: '/api/users' }],
+            conflicts: [{ path: '/api/users', method: 'GET' }]
+        }]);
+    });
+
     it('applies edited routes to the live gateway runtime', () => {
         const { controller, runtime } = createController();
         controller.updateRoutes({

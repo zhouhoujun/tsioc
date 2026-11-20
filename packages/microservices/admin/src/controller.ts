@@ -1,6 +1,6 @@
 import { Inject, Injectable, token } from '@tsdi/ioc';
 import { BadRequestException, NotFoundException } from '@tsdi/common';
-import { Controller, Delete, Get, Post, Put, RequestBody, RequestPath, ServiceFeatureFn, ServiceFeatureKind, useStatics } from '@tsdi/service';
+import { Controller, Delete, Get, Post, Put, RequestBody, RequestPath, ServiceFeatureFn, ServiceFeatureKind, useStatics, Router, ROUTERS, MESSAGE_ROUTERS } from '@tsdi/service';
 import { GatewayConfigService, GatewayInterceptor, GatewayMatchPreviewRequest, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_OPTIONS } from '@tsdi/gateway';
 import {
     InMemoryWorkflowDefinitionStore,
@@ -34,6 +34,13 @@ export interface GatewayDoctorReport {
     openCircuits: number;
     alerts: number;
     checks: GatewayDoctorCheck[];
+}
+
+export interface AdminServiceRouteTable {
+    transport: string | number | null;
+    revision?: number;
+    routes: Array<{ path: string; method?: string | string[]; pattern?: any }>;
+    conflicts?: Array<{ path: string; method: string }>;
 }
 
 export interface GatewayAdminState {
@@ -71,7 +78,9 @@ export class GatewayAdminController {
         @Inject(GATEWAY_ADMIN_AUTH_OPTIONS, { nullable: true }) private authOptions?: GatewayAdminAuthOptions,
         @Inject(GatewayInterceptor, { nullable: true }) private gateway?: GatewayInterceptor,
         @Inject(ServiceDiscovery, { nullable: true }) private discovery?: ServiceDiscovery,
-        @Inject(GatewayConfigService, { nullable: true }) private configService?: GatewayConfigService
+        @Inject(GatewayConfigService, { nullable: true }) private configService?: GatewayConfigService,
+        @Inject(ROUTERS, { nullable: true }) private routers?: Router[],
+        @Inject(MESSAGE_ROUTERS, { nullable: true }) private messageRouters?: Router[]
     ) {
         this.store = store ?? new InMemoryWorkflowDefinitionStore();
     }
@@ -111,6 +120,32 @@ export class GatewayAdminController {
                 }))
             };
         }));
+    }
+
+    /**
+     * Service-router tables (REST + message transports) for diagnostics.
+     * Consumes the router `snapshot()`/`revision`/`conflicts` APIs.
+     */
+    @Get('/service-routes')
+    serviceRouteTables(): AdminServiceRouteTable[] {
+        const routers = [...(this.routers ?? []), ...(this.messageRouters ?? [])];
+        return routers.map(router => {
+            const snapshot = (router as any).snapshot?.();
+            const routes = snapshot?.routes ?? router.routes ?? [];
+            return {
+                transport: router.transport ?? null,
+                revision: snapshot?.revision,
+                routes: routes.map((route: any) => ({
+                    path: route.path,
+                    method: route.method,
+                    pattern: route.pattern instanceof RegExp ? String(route.pattern) : route.pattern
+                })),
+                conflicts: snapshot?.conflicts?.map((conflict: any) => ({
+                    path: conflict.path,
+                    method: conflict.method
+                }))
+            };
+        });
     }
 
     /** Runtime counters for the admin overview. */
