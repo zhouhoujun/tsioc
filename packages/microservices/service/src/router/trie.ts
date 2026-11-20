@@ -5,6 +5,7 @@ export class TrieRoute {
 
     private routes: Route[] = [];
     private loading?: Promise<void>;
+    private methodCache = new Map<string, Route[]>();
     children: Map<string, TrieRoute> = new Map();
 
     constructor(
@@ -17,9 +18,20 @@ export class TrieRoute {
     }
 
     filter(method?: string) {
-        return this.routes
+        const key = method ?? '*';
+        const cached = this.methodCache.get(key);
+        if (cached) {
+            return cached;
+        }
+        const matched = this.routes
             .filter(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || (method && route.method?.includes(method))))
             .sort((left, right) => (right.priority ?? 0) - (left.priority ?? 0));
+        this.methodCache.set(key, matched);
+        return matched;
+    }
+
+    private invalidateMethodCache(): void {
+        this.methodCache.clear();
     }
 
     has(route: Route) {
@@ -70,9 +82,11 @@ export class TrieRoute {
                 if (index > -1) {
                     this.routes.splice(index, 1);
                 }
+                this.invalidateMethodCache();
             }
             this.routes = [];
             this.children.clear();
+            this.methodCache.clear();
             this.loading = undefined;
             return;
         }
@@ -80,7 +94,11 @@ export class TrieRoute {
         if (route) {
             const troute = await this.recursive(this, pathParts, index, false);
             if (troute) {
-                troute.routes?.splice(troute.routes.indexOf(route), 1);
+                const routeIndex = troute.routes?.indexOf(route) ?? -1;
+                if (routeIndex > -1) {
+                    troute.routes.splice(routeIndex, 1);
+                    troute.invalidateMethodCache();
+                }
                 route.children?.forEach(child => troute.remove(this.options.toParts(child.path), 0));
             }
 
@@ -97,6 +115,7 @@ export class TrieRoute {
         if (!this.has(route)) {
             ret = true;
             this.routes.push(route);
+            this.invalidateMethodCache();
         }
         if (route.children) {
             route.children.forEach(r => this.insert(r));

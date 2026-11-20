@@ -432,6 +432,14 @@ describe('optimized router', () => {
             priority: 1,
             handle: () => of('low')
         } as any);
+        const low = await new Promise<any>((resolve, reject) => {
+            router.handle(
+                { url: '/priority', method: 'GET' } as any,
+                createRequestContext(createInjector())
+            ).subscribe({ next: resolve, error: reject });
+        });
+        expect(low).toBe('low');
+
         router.use({
             path: '/priority',
             pattern: '/priority',
@@ -439,7 +447,6 @@ describe('optimized router', () => {
             priority: 10,
             handle: () => of('high')
         } as any);
-
         const result = await new Promise<any>((resolve, reject) => {
             router.handle(
                 { url: '/priority', method: 'GET' } as any,
