@@ -98,6 +98,27 @@ describe('Workflow data & trigger nodes', () => {
         expect(triggerResult.data?.executionState?.nodeStates.trigger_1.result?.data.triggered).toBe(true);
     });
 
+    it('injects timestamps and environment values', async () => {
+        const before = Date.now();
+        const timestamp = await service.execute(chain([
+            { type: 'inject', config: { payloadType: 'timestamp' } }
+        ]), {});
+        const stamp = timestamp.data?.executionState?.nodeStates.inject_0.result?.data?.payload;
+        expect(typeof stamp).toBe('number');
+        expect(stamp).toBeGreaterThanOrEqual(before);
+
+        const fromEnv = await service.execute(chain([
+            { type: 'inject', config: { payloadType: 'env', payloadValue: 'REGION' } }
+        ]), { env: { REGION: 'eu' } });
+        expect(fromEnv.data?.executionState?.nodeStates.inject_0.result?.data?.payload).toBe('eu');
+
+        const missing = await service.execute(chain([
+            { type: 'inject', config: { payloadType: 'env', payloadValue: 'MISSING' } }
+        ]), {});
+        expect(missing.success).toBe(false);
+        expect(missing.error?.message).toContain('Environment variable');
+    });
+
     it('supports workflows whose entry is an inject trigger', () => {
         const definition = chain([
             { type: 'inject', config: { payload: {} } },

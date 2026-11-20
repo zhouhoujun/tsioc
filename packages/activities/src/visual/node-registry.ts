@@ -130,12 +130,14 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'JSON', value: 'json' },
                     { label: 'String', value: 'string' },
                     { label: 'Number', value: 'number' },
-                    { label: 'Boolean', value: 'boolean' }
+                    { label: 'Boolean', value: 'boolean' },
+                    { label: 'Timestamp (ms)', value: 'timestamp' },
+                    { label: 'Environment variable', value: 'env' }
                 ],
                 group: 'Payload'
             }),
             configField({ key: 'payload', label: 'Payload fields', type: 'json', defaultValue: {}, group: 'Payload', visibleWhen: { key: 'payloadType', equals: 'json' } }),
-            configField({ key: 'payloadValue', label: 'Payload value', type: 'text', group: 'Payload', visibleWhen: { key: 'payloadType', notEquals: 'json' } }),
+            configField({ key: 'payloadValue', label: 'Payload value', type: 'text', group: 'Payload', visibleWhen: { key: 'payloadType', in: ['string', 'number', 'boolean', 'env'] } }),
             configField({ key: 'topic', label: 'Topic', type: 'text', maxLength: 200, placeholder: 'orders.created', group: 'Payload' })
         ],
         defaultConfig: { trigger: 'manual', payloadType: 'json', payload: {}, onceDelay: 0, interval: 1, intervalUnit: 's', repeatCount: 1 }

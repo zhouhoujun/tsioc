@@ -1054,6 +1054,18 @@ export async function executeVisualNode(
             } else if (payloadType === 'boolean') {
                 const bool = config.payloadValue === undefined ? config.payload : config.payloadValue;
                 payload = bool === true || bool === 'true' || bool === 1 || bool === '1';
+            } else if (payloadType === 'timestamp') {
+                payload = Date.now();
+            } else if (payloadType === 'env') {
+                const name = String(config.payloadValue ?? '').trim();
+                payload = name ? (context as any).env?.[name] : undefined;
+                if (payload === undefined) {
+                    return {
+                        success: false,
+                        error: new Error(`Environment variable "${name || '(empty)'}" is not available.`),
+                        data: { nodeId: node.id }
+                    };
+                }
             } else {
                 payload = coerceJson(config.payload ?? {});
             }

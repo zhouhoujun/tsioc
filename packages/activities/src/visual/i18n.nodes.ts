@@ -1667,6 +1667,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "call": "Link call",
             "return": "Link return",
             "env": "Environment (env)",
+            "timestamp": "Timestamp (ms)",
             "global": "Global"
         }
     },
@@ -3315,6 +3316,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "call": "Link call",
             "return": "Link return",
             "env": "Environment (env)",
+            "timestamp": "时间戳（毫秒）",
             "global": "Global"
         }
     }
