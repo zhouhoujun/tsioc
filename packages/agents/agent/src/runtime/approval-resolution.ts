@@ -23,7 +23,13 @@ export function resolveRuntimeApprovalManager(input: RuntimeApprovalResolution):
         return undefined;
     }
     const options = resolveApprovalPolicyOptions(input.options, input.autoReview);
-    const strategy = new DefaultApprovalStrategy(input.required);
+    // Read the opt-in flag live: a settings toggle updates the same options
+    // object, so the already-configured manager picks it up on the next call.
+    const strategy = new DefaultApprovalStrategy(
+        input.required,
+        false,
+        () => input.options.policy?.approval?.readOnlyShell === true
+    );
     if (input.approvalManager instanceof ToolApprovalManager) {
         input.approvalManager.configure(strategy, options);
         return input.approvalManager;

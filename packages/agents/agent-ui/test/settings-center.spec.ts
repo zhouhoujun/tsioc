@@ -166,6 +166,23 @@ export class AgentConsoleSettingsCenterTest {
         expect(row.value).toEqual('60s');
     }
 
+    @Test('read-only shell scanner toggle applies live and persists')
+    async readOnlyShellRow() {
+        const { component, state, persisted } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings permissions');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'readOnlyShell');
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(state.settingsCenterRows[index].value).toEqual('off');
+        state.settingsCenterIndex = index;
+        await handleSettingsCenterKey(component, 'return');
+        expect(component.options.policy.approval.readOnlyShell).toEqual(true);
+        expect(persisted[persisted.length - 1]).toEqual({ readOnlyShell: true });
+        expect(state.settingsCenterRows.find((row: any) => row.id === 'readOnlyShell').value).toEqual('on');
+        await handleSettingsCenterKey(component, 'return');
+        expect(component.options.policy.approval.readOnlyShell).toEqual(false);
+        expect(persisted[persisted.length - 1]).toEqual({ readOnlyShell: false });
+    }
+
     @Test('the workspace trust confirmation closes the page before the picker')
     async trustPickerClosesPage() {
         const { component, state } = await this.createConsoleWithPersist();

@@ -51,6 +51,7 @@ export * from './tools/ToolActivationStore';
 export * from './tools/SessionToolActivationStore';
 export * from './tools/ToolLoopDetector';
 export * from './tools/ToolApprovalManager';
+export * from './tools/shell-command-scanner';
 export * from './tools/BuiltinTools';
 
 export * from './context/AgentContextManager';

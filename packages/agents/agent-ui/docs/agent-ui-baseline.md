@@ -120,9 +120,9 @@ rm -f run-one.tmp.ts
 
 | 包 | 结果 |
 | --- | --- |
-| `@tsdi/agent` | 1087 passing |
-| `@tsdi/agent-gateway` | 399 passing |
-| `@tsdi/agent-ui` | **2268 passing**（5 组，298.9s 高负载：109 + 11 + 754 + 624 + 770） |
+| `@tsdi/agent` | 1098 passing |
+| `@tsdi/agent-gateway` | 400 passing |
+| `@tsdi/agent-ui` | **2270 passing**（5 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -139,5 +139,10 @@ rm -f run-one.tmp.ts
   项目级 durable allow（`p` / `/permissions allow`）、会话级 `/undo`/`/redo`
   （恢复 prompt + 消息 + 文件改动；无 checkpoint 时回退文件级）。
 - P3 已完成：ordered approval rules（action/resource，last match wins）。
-- P3 未完成：shell 命令扫描器、LSP 诊断/formatter。
+- P3 已完成：shell 命令扫描器（opt-in `policy.approval.readOnlyShell`；`git status` / `ls` /
+  `cat` 等只读命令跳过审批，管道/重定向/命令替换/未知命令/写标志仍 `ask`；显式对象规则优先；
+  设置页 Permissions 段可开关，TUI 与 `settings.ui.set`（Web/attach）共用同一持久化字段）。
+  字符串类别规则（如 `shell.exec`）仍可被扫描器放宽；需要强制询问某条命令时使用
+  `{ category: 'sandbox', resource: '...', action: 'ask' }` 对象规则。
+- P3 未完成：LSP 诊断/formatter。
 - 已知限制：turn undo 边界保存在进程内，重启后不可撤销；会话快照 `/snapshot` 仍可显式持久化。

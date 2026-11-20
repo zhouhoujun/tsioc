@@ -334,6 +334,24 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
             }
         },
         host => String(Math.round((Number(host.options?.policy?.limits?.approvalTimeoutMs) || 30000) / 1000)) + 's', ['/permissions timeout']),
+    toggleRow('readOnlyShell', 'permissions', 'agent.menu.settings.readOnlyShellLabel', 'Skip approval for read-only commands: {state}', 'agent.menu.settings.readOnlyShellDescription', 'git status, ls and cat run without prompting; pipes, redirects and writes still ask', 'workspace',
+        host => host.options?.policy?.approval?.readOnlyShell === true,
+        async host => {
+            const next = host.options?.policy?.approval?.readOnlyShell !== true;
+            try {
+                if (host.appRpc) {
+                    await host.appRpc.request('settings.ui.set', { readOnlyShell: next }).catch(() => undefined);
+                }
+                host.options.policy = {
+                    ...(host.options.policy || {}),
+                    approval: { ...(host.options.policy?.approval || {}), readOnlyShell: next }
+                };
+                await host.persistSettings({ readOnlyShell: next });
+            } catch (error: any) {
+                host.notify(error?.message || String(error));
+            }
+        },
+        { defaultValue: false }),
     actionRow('workspaceTrust', 'permissions', 'agent.menu.settings.trustLabel', 'Workspace trust: {state}', 'agent.menu.settings.trustDescription', 'mutating tools are blocked until the workspace is trusted', 'workspace', 'immediate',
         host => trustAgentConsoleWorkspace(host), host => describeAgentConsoleWorkspaceTrust(host), ['/permissions trust']),
     actionRow('permissionsInspect', 'permissions', 'agent.menu.settings.fieldPermissionsInspect', 'Permission inspector', 'agent.menu.settings.fieldPermissionsInspectDescription', 'explain why a tool would be allowed or denied', 'workspace', 'none',

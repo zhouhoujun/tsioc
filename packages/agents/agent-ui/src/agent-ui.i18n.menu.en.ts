@@ -339,6 +339,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         approvalTimeoutDescription: 'how long an approval waits before it times out',
         approvalTimeoutTitle: 'Settings · Approval timeout',
         approvalTimeoutOption: 'wait {count}s for an approval decision',
+        readOnlyShellLabel: 'Skip approval for read-only commands: {state}',
+        readOnlyShellDescription: 'git status, ls and cat run without prompting; pipes, redirects and writes still ask',
         pagerSizeLabel: 'Message page size: {count}',
         pagerSizeDescription: 'rows moved by page up/down in transcript navigation',
         pagerSizeTitle: 'Settings · Message page size',

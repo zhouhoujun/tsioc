@@ -11,17 +11,9 @@ import { AgentPromptOptions } from './agent-prompt-options';
 export interface AgentSessionOptions {
     summaryThreshold?: number;
     recentMessages?: number;
-    /**
-     * P74: automatically generate a session title after the first user message
-     * (default: true). When false, titles are only set explicitly through
-     * SessionStore.setTitle (e.g. the gateway `/title` route).
-     */
+    /** P74: generate a session title after the first user message (default: true); explicit SessionStore.setTitle wins. */
     autoTitle?: boolean;
-    /**
-     * P74: automatically generate a display summary (persisted as
-     * `focusSummary` project metadata) for new sessions (default: true).
-     * Existing manually-set focusSummary values are never overwritten.
-     */
+    /** P74: generate a persisted `focusSummary` for new sessions (default: true); existing values are kept. */
     autoSummary?: boolean;
     /** P74: max title length enforced by the deterministic fallback (default 60). */
     titleMaxLength?: number;
@@ -325,6 +317,8 @@ export interface AgentPolicyApproval {
     requireApproval?: ApprovalRule[];
     /** Whether an injected ApprovalReviewer may resolve approval requests without a human (falls back to `AgentToolOptions.approvalAutoReview`, then false). */
     autoReview?: boolean;
+    /** Opt-in shell scanner: read-only inspection commands (`git status`, `ls`, ...) skip approval; see `inspectShellCommand`. */
+    readOnlyShell?: boolean;
 }
 
 /** A7: OS sandbox settings folded into the policy source chain (default < workspace < session < request). */
@@ -388,6 +382,10 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         .map(item => item?.approval?.autoReview)
         .filter((value): value is boolean => typeof value === 'boolean')
         .pop();
+    const approvalReadOnlyShell = overrides
+        .map(item => item?.approval?.readOnlyShell)
+        .filter((value): value is boolean => typeof value === 'boolean')
+        .pop();
     const retryMaxRetries = overrides
         .map(item => item?.retry?.maxRetries)
         .filter((value): value is number => typeof value === 'number')
@@ -431,11 +429,12 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         ...(defaultArchetype ? { defaultArchetype } : {}),
         ...(delegationMode ? { delegationMode } : {}),
         ...(verificationWriteTools ? { verification: { writeTools: verificationWriteTools.slice() } } : {}),
-        ...(approvalRequireApproval || approvalAutoReview !== undefined
+        ...(approvalRequireApproval || approvalAutoReview !== undefined || approvalReadOnlyShell !== undefined
             ? {
                 approval: {
                     ...(approvalRequireApproval ? { requireApproval: approvalRequireApproval.slice() } : {}),
-                    ...(approvalAutoReview !== undefined ? { autoReview: approvalAutoReview } : {})
+                    ...(approvalAutoReview !== undefined ? { autoReview: approvalAutoReview } : {}),
+                    ...(approvalReadOnlyShell !== undefined ? { readOnlyShell: approvalReadOnlyShell } : {})
                 }
             }
             : {}),

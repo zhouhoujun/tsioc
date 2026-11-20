@@ -70,6 +70,30 @@ export class ConsoleUiSettingsTest {
         }
     }
 
+    @Test('applies and persists the opt-in read-only shell scanner')
+    readOnlyShell() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+        try {
+            const options: any = { workspace, ui: {} };
+            const applied = applyConsoleUiSettings(options, { readOnlyShell: true });
+            expect(applied.readOnlyShell).toEqual(true);
+            expect(options.policy.approval.readOnlyShell).toEqual(true);
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).readOnlyShell).toEqual(true);
+            expect(readConsoleUiSettings(workspace).readOnlyShell).toEqual(true);
+
+            applyConsoleUiSettings(options, { readOnlyShell: false });
+            expect(options.policy.approval.readOnlyShell).toEqual(false);
+            expect(readConsoleUiSettings(workspace).readOnlyShell).toEqual(false);
+
+            // Non-boolean values are ignored, not coerced truthy.
+            applyConsoleUiSettings(options, { readOnlyShell: 'yes' as any });
+            expect(options.policy.approval.readOnlyShell).toEqual(false);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('creates the settings file when the workspace has none yet')
     createsMissingFile() {
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));

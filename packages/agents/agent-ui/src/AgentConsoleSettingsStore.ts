@@ -14,6 +14,8 @@ export interface AgentConsoleSettingsData {
     queueMode?: boolean;
     transcriptWindowMessages?: 20 | 40 | 80 | 120;
     approvalTimeoutMs?: number;
+    /** Opt-in read-only shell scanner: inspection commands skip the prompt. */
+    readOnlyShell?: boolean;
     /** Project-scoped tool allow list (durable "always allow"). */
     approvalAllowRules?: string[];
     messageSelectionPageSize?: 4 | 6 | 10;
@@ -37,7 +39,7 @@ export interface AgentConsoleSettingsData {
 
 export function applyPersistedPreferences(
     options: any,
-    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max' } | null | undefined
+    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean } | null | undefined
 ): void {
     if (!options || !persisted) {
         return;
@@ -52,6 +54,13 @@ export function applyPersistedPreferences(
     options.ui = ui;
     if (persisted.thinkingLevel) {
         options.model = { ...(options.model || {}), reasoningEffort: persisted.thinkingLevel };
+    }
+    if (typeof persisted.readOnlyShell === 'boolean') {
+        // The approval strategy reads this live from the shared options object.
+        options.policy = {
+            ...(options.policy || {}),
+            approval: { ...(options.policy?.approval || {}), readOnlyShell: persisted.readOnlyShell }
+        };
     }
 }
 
@@ -153,6 +162,7 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         approvalTimeoutMs: Number.isFinite(Number(parsed?.approvalTimeoutMs)) && Number(parsed.approvalTimeoutMs) > 0
             ? Math.max(1000, Math.min(300000, Math.floor(Number(parsed.approvalTimeoutMs))))
             : undefined,
+        readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined,
         approvalAllowRules: sanitizeApprovalAllowRules(parsed?.approvalAllowRules),
         messageSelectionPageSize: [4, 6, 10].includes(Number(parsed?.messageSelectionPageSize))
             ? Number(parsed.messageSelectionPageSize) as 4 | 6 | 10
@@ -241,6 +251,7 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.queueMode === 'boolean' ? { queueMode: data.queueMode } : {}),
             ...(data.transcriptWindowMessages ? { transcriptWindowMessages: data.transcriptWindowMessages } : {}),
             ...(data.approvalTimeoutMs ? { approvalTimeoutMs: data.approvalTimeoutMs } : {}),
+            ...(typeof data.readOnlyShell === 'boolean' ? { readOnlyShell: data.readOnlyShell } : {}),
             ...(data.messageSelectionPageSize ? { messageSelectionPageSize: data.messageSelectionPageSize } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),

@@ -72,6 +72,17 @@ export class PersistedPreferencesTest {
         expect(options.model.model).toEqual('gpt-6.1-sol');
     }
 
+    @Test('applyPersistedPreferences restores the opt-in shell scanner into the policy')
+    readOnlyShell() {
+        const options: any = { ui: {}, policy: { limits: { maxTurns: 4 }, approval: { autoReview: true } } };
+        applyPersistedPreferences(options, { readOnlyShell: true });
+        expect(options.policy.approval).toEqual({ autoReview: true, readOnlyShell: true });
+        expect(options.policy.limits).toEqual({ maxTurns: 4 });
+
+        applyPersistedPreferences(options, { readOnlyShell: false });
+        expect(options.policy.approval.readOnlyShell).toEqual(false);
+    }
+
     @Test('applyPersistedModelProfile restores the active profile (and live provider/model ids)')
     restoresModelProfile() {
         const options: any = {

@@ -1,5 +1,6 @@
 import type { ApprovalStrategy } from './ToolApprovalManager';
 import { ApprovalCategory, classifyApprovalCategory } from './approval-categories';
+import { approvalCommand, inspectShellCommand } from './shell-command-scanner';
 
 /**
  * A3: granular approval rules (mirroring Codex granular permissions).
@@ -33,10 +34,13 @@ const RESOURCE_KEYS = ['path', 'filePath', 'target', 'command', 'cmd', 'url', 'c
 export class DefaultApprovalStrategy implements ApprovalStrategy {
     private rules: ApprovalRule[];
     readonly autoReview: boolean;
+    /** Live opt-in flag: read on every decision so a settings toggle applies at once. */
+    private readOnlyShell?: () => boolean;
 
-    constructor(blocked?: ApprovalRule[], autoReview = false) {
+    constructor(blocked?: ApprovalRule[], autoReview = false, readOnlyShell?: () => boolean) {
         this.rules = blocked ?? ['shell.exec', 'fs.write', 'fs.delete', 'db.execute', 'deploy', 'sudo.exec', 'playwright_browser', 'admin.*'];
         this.autoReview = autoReview;
+        this.readOnlyShell = readOnlyShell;
     }
 
     requires(toolName: string, input: any): boolean {
@@ -57,10 +61,14 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
     private decide(toolName: string, input: any): 'ask' | 'allow' | 'deny' | undefined {
         const toolCategory = classifyApprovalCategory(toolName);
         let decision: 'ask' | 'allow' | 'deny' | undefined;
+        // Object rules are explicit user intent; the scanner must not override
+        // them. The last matching rule still wins, as documented.
+        let explicit = false;
         for (const rule of this.rules) {
             if (typeof rule === 'string') {
                 if (this.matchesPattern(toolName, rule)) {
                     decision = 'ask';
+                    explicit = false;
                     continue;
                 }
                 // Default rules name a category member (`shell.exec`, `fs.write`)
@@ -68,9 +76,16 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
                 const ruleCategory = classifyApprovalCategory(rule);
                 if (toolCategory && ruleCategory && toolCategory === ruleCategory) {
                     decision = 'ask';
+                    explicit = false;
                 }
             } else if (this.matchesRule(toolName, input, rule)) {
                 decision = rule.action ?? (rule.mode === 'auto-deny' ? 'deny' : 'ask');
+                explicit = true;
+            }
+        }
+        if (decision === 'ask' && !explicit && toolCategory === 'sandbox' && this.readOnlyShell?.()) {
+            if (inspectShellCommand(approvalCommand(input)).readOnly) {
+                return 'allow';
             }
         }
         return decision;

@@ -11,6 +11,8 @@ export interface ConsoleUiSettingsPatch {
     modelProfile?: string | null;
     /** Approval wait budget in milliseconds; new requests use it immediately. */
     approvalTimeoutMs?: number | null;
+    /** Opt-in read-only shell scanner for the shared runtime policy. */
+    readOnlyShell?: boolean;
     /** Project-scoped tool allow list applied to the runtime approval manager. */
     approvalAllowRules?: string[] | null;
 }
@@ -55,10 +57,17 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
         ? Math.max(1000, Math.min(300000, Math.floor(Number(params.approvalTimeoutMs))))
         : undefined;
     (options as any).ui = ui;
+    const readOnlyShell = typeof params.readOnlyShell === 'boolean' ? params.readOnlyShell : undefined;
+    if (readOnlyShell !== undefined) {
+        (options as any).policy = {
+            ...((options as any).policy || {}),
+            approval: { ...((options as any).policy?.approval || {}), readOnlyShell }
+        };
+    }
     const approvalAllowRules = Array.isArray(params.approvalAllowRules)
         ? sanitizeApprovalAllowRules(params.approvalAllowRules)
         : undefined;
-    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules);
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules, readOnlyShell);
     return {
         personality: ui.personality,
         memoryInjection: ui.memoryInjection,
@@ -67,6 +76,7 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
         thinkingLevel,
         modelProfile,
         ...(approvalTimeoutMs ? { approvalTimeoutMs } : {}),
+        ...(readOnlyShell !== undefined ? { readOnlyShell } : {}),
         ...(approvalAllowRules ? { approvalAllowRules } : {})
     };
 }
@@ -107,7 +117,7 @@ function consoleStoreFile(workspace: string, name: string): string | null {
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[] } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -123,7 +133,8 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
             modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined,
             approvalAllowRules: Array.isArray(parsed?.approvalAllowRules)
                 ? sanitizeApprovalAllowRules(parsed.approvalAllowRules)
-                : undefined
+                : undefined,
+            readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined
         };
     } catch {
         return {};
@@ -138,7 +149,8 @@ function persistConsoleUiSettings(
     thinkingLevel?: string,
     modelProfile?: string,
     approvalTimeoutMs?: number,
-    approvalAllowRules?: string[]
+    approvalAllowRules?: string[],
+    readOnlyShell?: boolean
 ): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
@@ -182,6 +194,9 @@ function persistConsoleUiSettings(
         } else {
             delete next.approvalAllowRules;
         }
+    }
+    if (typeof readOnlyShell === 'boolean') {
+        next.readOnlyShell = readOnlyShell;
     }
     try {
         fs.mkdirSync(path.dirname(file), { recursive: true });
