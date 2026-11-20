@@ -467,9 +467,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'On value change', value: 'value' },
                     { label: 'On any change', value: 'change' }
                 ]
-            })
+            }),
+            configField({ key: 'ignoreFirst', label: 'Ignore initial value', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { mode: 'value' }
+        defaultConfig: { mode: 'value', ignoreFirst: false }
     },
     {
         type: 'scale',
@@ -1074,6 +1075,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 ],
                 group: 'Delay',}),
             configField({ key: 'delay', label: 'Delay', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', visibleWhen: { key: 'mode', equals: 'fixed' }, description: 'Pause before continuing.',}),
+            configField({ key: 'override', label: 'Allow msg.delay override', type: 'boolean', defaultValue: false, group: 'Delay', visibleWhen: { key: 'mode', equals: 'fixed' } }),
             configField({ key: 'randomMin', label: 'Minimum', type: 'number', defaultValue: 100, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', visibleWhen: { key: 'mode', equals: 'random' } }),
             configField({ key: 'randomMax', label: 'Maximum', type: 'number', defaultValue: 500, min: 0, max: 600000, step: 100, unit: 'ms', group: 'Delay', visibleWhen: { key: 'mode', equals: 'random' } }),
             configField({ key: 'rateCount', label: 'Messages per window', type: 'number', defaultValue: 1, min: 1, max: 10000, step: 1, group: 'Delay', visibleWhen: { key: 'mode', equals: 'rate' }, description: 'How many messages may pass inside the rate window.' }),
@@ -1329,9 +1331,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'field', label: 'Field', type: 'text', typed: true, placeholder: 'value', description: 'Path to the CSV text or array.',}),
             configField({ key: 'delimiter', label: 'Delimiter', type: 'text', defaultValue: ',', placeholder: ',', description: 'Single character used between columns.',}),
             configField({ key: 'header', label: 'First row is header', type: 'boolean', defaultValue: true, visibleWhen: { key: 'mode', equals: 'parse' } }),
-            configField({ key: 'columns', label: 'Columns', type: 'text', placeholder: 'name, age', group: 'Options', description: 'Optional comma-separated columns to keep when parsing or stringifying.' })
+            configField({ key: 'columns', label: 'Columns', type: 'text', placeholder: 'name, age', group: 'Options', description: 'Optional comma-separated columns to keep when parsing or stringifying.' }),
+            configField({ key: 'parseNumbers', label: 'Parse numbers', type: 'boolean', defaultValue: false, group: 'Options' })
         ],
-        defaultConfig: { mode: 'parse', delimiter: ',', header: true }
+        defaultConfig: { mode: 'parse', delimiter: ',', header: true, parseNumbers: false }
     },
     {
         type: 'change',

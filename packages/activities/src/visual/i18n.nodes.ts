@@ -410,6 +410,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "delay": {
                 "mode": "Mode",
                 "delay": "Delay",
+                "override": "Allow msg.delay override",
                 "randomMin": "Minimum",
                 "randomMax": "Maximum",
                 "unit": "Unit",
@@ -460,7 +461,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "Value path",
                 "delimiter": "Delimiter",
                 "header": "First row is header",
-                "columns": "Columns"
+                "columns": "Columns",
+                "parseNumbers": "Parse numbers"
             },
             "change": {
                 "action": "Action",
@@ -706,7 +708,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "rbe": {
                 "field": "Array path",
                 "path": "Item path",
-                "mode": "Report"
+                "mode": "Report",
+                "ignoreFirst": "Ignore initial value"
             },
             "combine": {
                 "fields": "Fields",
@@ -2070,6 +2073,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "delay": {
                 "mode": "模式",
                 "delay": "延迟",
+                "override": "允许 msg.delay 覆盖",
                 "randomMin": "最小值",
                 "randomMax": "最大值",
                 "unit": "单位",
@@ -2120,7 +2124,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "取值路径",
                 "delimiter": "分隔符",
                 "header": "首行为表头",
-                "columns": "列"
+                "columns": "列",
+                "parseNumbers": "解析数字"
             },
             "change": {
                 "action": "操作",
@@ -2366,7 +2371,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "rbe": {
                 "field": "数组路径",
                 "path": "元素路径",
-                "mode": "上报方式"
+                "mode": "上报方式",
+                "ignoreFirst": "忽略初始值"
             },
             "combine": {
                 "fields": "字段",

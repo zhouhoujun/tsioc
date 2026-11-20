@@ -941,6 +941,12 @@ export async function executeVisualNode(
             const unit = String(config.unit || 'ms');
             const factor = unit === 's' ? 1000 : unit === 'min' ? 60000 : 1;
             let delay = Math.max(0, Number(config.delay ?? config.duration ?? 0) || 0) * factor;
+            if (mode === 'fixed' && config.override === true) {
+                const override = Number(resolveWorkflowValue('delay', context));
+                if (Number.isFinite(override) && override >= 0) {
+                    delay = override;
+                }
+            }
             if (mode === 'random') {
                 const min = Math.max(0, Number(config.randomMin) || 0) * factor;
                 const max = Math.max(min, (Number(config.randomMax) || 0) * factor || min);
@@ -1576,6 +1582,18 @@ export async function executeVisualNode(
                 if (columns.length) {
                     value = (value as any[]).map((row: any) => Object.fromEntries(columns.map(column => [column, row?.[column]])));
                 }
+                if (config.parseNumbers === true) {
+                    const toNumber = (cell: any): any => {
+                        if (typeof cell !== 'string') {
+                            return cell;
+                        }
+                        const text = cell.trim();
+                        return /^-?\d+(\.\d+)?$/.test(text) ? Number(text) : cell;
+                    };
+                    value = (value as any[]).map((row: any) => Array.isArray(row)
+                        ? row.map(toNumber)
+                        : Object.fromEntries(Object.entries(row).map(([key, cell]) => [key, toNumber(cell)])));
+                }
                 return { success: true, data: { nodeId: node.id, value, items: value, count: value.length } };
             } catch (error) {
                 return { success: false, error: error as Error, data: { nodeId: node.id } };
@@ -1814,14 +1832,22 @@ export async function executeVisualNode(
             const path = String(config.path || '').trim();
             const wholeItem = String(config.mode || 'value') === 'change' || !path;
             const filtered: any[] = [];
+            const ignoreFirst = config.ignoreFirst === true;
             let previous: string | undefined;
             let hasPrevious = false;
             for (const item of items) {
                 const key = JSON.stringify(wholeItem ? item : resolveFrom(item, path));
-                if (!hasPrevious || key !== previous) {
-                    filtered.push(item);
+                if (!hasPrevious) {
                     previous = key;
                     hasPrevious = true;
+                    if (!ignoreFirst) {
+                        filtered.push(item);
+                    }
+                    continue;
+                }
+                if (key !== previous) {
+                    filtered.push(item);
+                    previous = key;
                 }
             }
             return { success: true, data: { nodeId: node.id, items: filtered, count: filtered.length } };

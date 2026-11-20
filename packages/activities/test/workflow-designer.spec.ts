@@ -37,7 +37,7 @@ describe('Visual Workflow Designer', () => {
             expect(registry.get('filter')?.fields?.find(field => field.key === 'path')?.typed).toBe(true);
 
             const delayKeys = registry.get('delay')?.fields?.map(field => field.key);
-            expect(delayKeys).toEqual(['mode', 'delay', 'randomMin', 'randomMax', 'rateCount', 'rateWindow', 'rateAction']);
+            expect(delayKeys).toEqual(['mode', 'delay', 'override', 'randomMin', 'randomMax', 'rateCount', 'rateWindow', 'rateAction']);
             const templateKeys = registry.get('template')?.fields?.map(field => field.key);
             expect(templateKeys).toEqual(['template', 'syntax', 'target', 'output']);
         });

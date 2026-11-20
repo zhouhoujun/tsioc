@@ -619,6 +619,21 @@ describe('Workflow data & trigger nodes', () => {
         expect(fallback.data?.executionState?.nodeStates.switch_1.result?.data?.route).toBe(2);
     });
 
+    it('lets msg.delay override a fixed delay', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { delay: 10 } } },
+            { type: 'delay', config: { mode: 'fixed', delay: 500, override: true } }
+        ]), {});
+        const state = result.data?.executionState?.nodeStates.delay_1;
+        expect(state?.result?.data?.delayed).toBe(10);
+
+        const ignored = await service.execute(chain([
+            { type: 'inject', config: { payload: { delay: 10 } } },
+            { type: 'delay', config: { mode: 'fixed', delay: 0, override: false } }
+        ]), {});
+        expect(ignored.data?.executionState?.nodeStates.delay_1.result?.data?.delayed).toBe(0);
+    });
+
     it('parses and stringifies YAML and filters RBE changes', async () => {
         const parsed = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 'name: Ada\nitems:\n  - 1\n  - 2' } } },
@@ -648,6 +663,14 @@ describe('Workflow data & trigger nodes', () => {
         ]), {});
         expect(anyChange.data?.executionState?.nodeStates.rbe_1.result?.data?.items).toEqual([
             { v: 1, x: 'a' }, { v: 1, x: 'b' }, { v: 2, x: 'c' }
+        ]);
+
+        const ignoreFirst = await service.execute(chain([
+            { type: 'inject', config: { payload: { items: [{ v: 1 }, { v: 2 }, { v: 3 }] } } },
+            { type: 'rbe', config: { field: 'items', path: 'v', ignoreFirst: true } }
+        ]), {});
+        expect(ignoreFirst.data?.executionState?.nodeStates.rbe_1.result?.data?.items).toEqual([
+            { v: 2 }, { v: 3 }
         ]);
     });
 
@@ -794,6 +817,15 @@ describe('Workflow data & trigger nodes', () => {
             { type: 'csv', config: { field: 'value', mode: 'parse', header: true, columns: 'name' } }
         ]), {});
         expect(csv.data?.executionState?.nodeStates.csv_1.result?.data?.value).toEqual([{ name: 'A' }, { name: 'B' }]);
+
+        const numeric = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 'name,age\nA,10\nB,20' } } },
+            { type: 'csv', config: { field: 'value', mode: 'parse', header: true, parseNumbers: true } }
+        ]), {});
+        expect(numeric.data?.executionState?.nodeStates.csv_1.result?.data?.value).toEqual([
+            { name: 'A', age: 10 },
+            { name: 'B', age: 20 }
+        ]);
     });
 
     it('extracts HTML attributes', async () => {
