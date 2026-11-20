@@ -288,6 +288,35 @@ describe('Workflow MQTT transport', () => {
         }
     });
 
+    it('passes the shared broker keepalive to the publisher', async () => {
+        const injector: Injector = createInjector();
+        InjectUtil.use(injector, WorkflowModule);
+        const registry = injector.get(WorkflowNodeRegistry);
+        const service = injector.get(VisualWorkflowService);
+        const published: any[] = [];
+        service.setMqttPublisher(message => {
+            published.push(message);
+        });
+        const definition = {
+            id: 'mqtt-keepalive-flow',
+            name: 'MQTT keepalive flow',
+            nodes: [
+                registry.createNode('mqtt', { x: 0, y: 0 }, {
+                    id: 'mqtt_1',
+                    config: { url: 'mqtt://broker:1883', keepalive: 30 }
+                }),
+                registry.createNode('mqtt-out', { x: 200, y: 0 }, {
+                    id: 'mqtt_out',
+                    config: { mqtt: 'mqtt_1', topic: 'sensors/out', payload: 'payload' }
+                })
+            ],
+            connections: []
+        };
+        const result = await service.execute(definition, { payload: { value: 1 } });
+        expect(result.success).toBe(true);
+        expect(published[0].keepalive).toBe(30);
+    });
+
     it('passes a resolved TLS config node to the MQTT transport', async () => {
         const injector: Injector = createInjector();
         InjectUtil.use(injector, WorkflowModule);

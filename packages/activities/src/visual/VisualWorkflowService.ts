@@ -205,6 +205,7 @@ export interface WorkflowMqttPublishRequest {
     clientId?: string;
     username?: string;
     password?: string;
+    keepalive?: number;
     tls?: WorkflowTlsOptions;
 }
 

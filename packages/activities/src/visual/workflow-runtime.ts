@@ -81,6 +81,7 @@ export interface WorkflowMqttSettings {
     clientId?: string;
     username?: string;
     password?: string;
+    keepalive?: number;
     tls?: { ca?: string; cert?: string; key?: string; servername?: string; rejectUnauthorized?: boolean };
 }
 
@@ -117,6 +118,7 @@ export async function resolveMqttConfig(
         clientId: pick('clientId') ? String(pick('clientId')) : undefined,
         username: String(await resolveCredentialValue(pick('username'), context) ?? '') || undefined,
         password: String(await resolveCredentialValue(pick('password'), context) ?? '') || undefined,
+        keepalive: Number.isFinite(Number(pick('keepalive'))) ? Number(pick('keepalive')) : undefined,
         tls: tlsId ? await resolveTlsOptions({ tls: tlsId }, context) : undefined
     };
 }
@@ -1437,6 +1439,7 @@ export async function executeVisualNode(
                 clientId: settings.clientId,
                 username: settings.username,
                 password: settings.password,
+                keepalive: settings.keepalive,
                 tls: settings.tls
             });
             return {

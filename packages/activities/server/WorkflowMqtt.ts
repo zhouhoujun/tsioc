@@ -604,6 +604,7 @@ export class WorkflowMqttTransport implements OnDestroy {
         clientId?: string;
         username?: string;
         password?: string;
+        keepalive?: number;
         tls?: MqttTlsOptions;
     }): Promise<void> {
         await this.registry.publish({
@@ -611,6 +612,7 @@ export class WorkflowMqttTransport implements OnDestroy {
             clientId: message.clientId,
             username: message.username,
             password: message.password,
+            keepalive: message.keepalive,
             tls: message.tls
         }, {
             topic: message.topic,
