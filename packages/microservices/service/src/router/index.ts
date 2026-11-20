@@ -2,6 +2,7 @@ export * from './route';
 export * from './router';
 export * from './route.handler';
 export * from './route.registry';
+export * from './route.table';
 export * from './router.optimize';
 export * from './router.providers';
 export * from './subscriptions';

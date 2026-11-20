@@ -403,6 +403,52 @@ describe('optimized router', () => {
         }
     });
 
+    it('orders compiled routes by specificity and reports conflicts', () => {
+        const router = createRouter();
+        const handle = () => of('static');
+        const wildcard = { path: '/users/*', pattern: '/users/*', method: 'GET', handle: () => of('wildcard') } as any;
+        const param = { path: '/users/:id', pattern: '/users/:id', method: 'GET', handle: () => of('param') } as any;
+        const staticRoute = { path: '/users/new', pattern: '/users/new', method: 'GET', handle } as any;
+        const duplicate = { path: '/users/new', pattern: '/users/new', method: 'GET', handle } as any;
+
+        router.registerRoutes('ordered', [wildcard, param, staticRoute, duplicate]);
+
+        expect(router.compiledTable().routes.map(route => route.path)).toEqual([
+            '/users/new',
+            '/users/:id',
+            '/users/*'
+        ]);
+        expect(router.getRouteConflicts().length).toBe(1);
+        expect(router.getRouteConflicts()[0].path).toBe('/users/new');
+        expect(router.snapshot().conflicts.length).toBe(1);
+    });
+
+    it('uses explicit route priority before declaration order', async () => {
+        const router = createRouter();
+        router.use({
+            path: '/priority',
+            pattern: '/priority',
+            method: 'GET',
+            priority: 1,
+            handle: () => of('low')
+        } as any);
+        router.use({
+            path: '/priority',
+            pattern: '/priority',
+            method: 'GET',
+            priority: 10,
+            handle: () => of('high')
+        } as any);
+
+        const result = await new Promise<any>((resolve, reject) => {
+            router.handle(
+                { url: '/priority', method: 'GET' } as any,
+                createRequestContext(createInjector())
+            ).subscribe({ next: resolve, error: reject });
+        });
+        expect(result).toBe('high');
+    });
+
     it('revalidates cached misses after a route is registered later', async () => {
         const router = createRouter();
         const first = await router.getRoute(

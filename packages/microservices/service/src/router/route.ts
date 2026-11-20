@@ -54,6 +54,11 @@ export interface Route {
      * path is wildcard or not.
      */
     isWildcard?: boolean;
+
+    /**
+     * Explicit route priority. Higher values win before path specificity.
+     */
+    priority?: number;
     /**
      * request method.
      */

@@ -13,11 +13,13 @@ export class TrieRoute {
 
 
     find(method?: string) {
-        return this.routes.find(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || (method && route.method?.includes(method))));
+        return this.filter(method)[0];
     }
 
     filter(method?: string) {
-        return this.routes.filter(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || (method && route.method?.includes(method))));
+        return this.routes
+            .filter(route => (route.handler || route.handle) && (!route.method || route.method === '*' || route.method === method || (method && route.method?.includes(method))))
+            .sort((left, right) => (right.priority ?? 0) - (left.priority ?? 0));
     }
 
     has(route: Route) {

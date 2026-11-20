@@ -8,7 +8,8 @@ import { AssetRoute, Route, ROUTES, Routes } from './route';
 import { MappingDef, RouteHanlder, RouteMappingMetadata, RoutePatterns, Router } from './router';
 import { TrieOptions, TrieRoute, TrieRouter, Wlidcard } from './trie';
 import { RouteHandler, createRouteHandler } from './route.handler';
-import { RouteRegistry, RouteSourceSnapshot, RouteTableChange, RouteTableSnapshot } from './route.registry';
+import { RouteRegistry, RouteSourceSnapshot, RouteTableChange } from './route.registry';
+import { CompiledRouteSnapshot, CompiledRouteTable, compareRoutes, RouteConflict } from './route.table';
 
 export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
@@ -22,6 +23,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     private assets: AssetRoute[] = [];
     private readonly maxCacheSize: number;
     private readonly registry = new RouteRegistry();
+    private regexRoutes: Route[] = [];
+    private rejectedRoutes: Route[] = [];
+    private batchDepth = 0;
+    private cacheDirty = false;
 
     private _routes: Routes = [];
     get routes(): Routes {
@@ -62,8 +67,29 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return this.registry.changes;
     }
 
-    snapshot(): RouteTableSnapshot {
-        return this.registry.snapshot(this._routes);
+    snapshot(): CompiledRouteSnapshot {
+        const table = this.compiledTable();
+        return {
+            revision: table.revision,
+            routes: table.routes,
+            conflicts: this.getRouteConflicts()
+        };
+    }
+
+    /** Compile the current route set into a deterministic, read-only view. */
+    compiledTable(): CompiledRouteTable {
+        return new CompiledRouteTable(this._routes, this.registry.revision);
+    }
+
+    /** Duplicate/ambiguous routes rejected by the matcher, plus active ones. */
+    getRouteConflicts(): readonly RouteConflict[] {
+        if (!this.rejectedRoutes.length) {
+            return this.compiledTable().conflicts;
+        }
+        return new CompiledRouteTable(
+            this._routes.concat(this.rejectedRoutes),
+            this.registry.revision
+        ).conflicts;
     }
 
     listRouteSources(): RouteSourceSnapshot[] {
@@ -129,9 +155,15 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         }
         if (isRegExp(route.pattern)) {
             this.regExps.set(route.pattern, route);
+            this.regexRoutes.push(route);
+            this.regexRoutes.sort(compareRoutes);
             this.routes.push(route);
         } else if (this.trieRouter.insert(route)) {
             this.routes.push(route);
+        } else {
+            // Keep rejected duplicates for diagnostics/snapshots without
+            // changing matcher behavior (first registration still wins).
+            this.rejectedRoutes.push(route);
         }
         callback?.(route);
         return this;
@@ -189,6 +221,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     /** Clear every route (including manual `use` routes) and install a new set. */
     resetRoutes(routes: Routes): this {
         this.detachRoutes(this._routes.slice());
+        this.rejectedRoutes = [];
         this.registry.clearSources();
         this.attachRoutes(routes);
         this.registry.touch('reset', undefined, routes);
@@ -196,15 +229,35 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     }
 
     private attachRoutes(routes: readonly Route[]): void {
-        routes.forEach(route => this.use(route));
+        this.withBatch(() => routes.forEach(route => this.use(route)));
     }
 
     private detachRoutes(routes: readonly Route[]): void {
-        routes.forEach(route => this.removeRoute(route));
-        this.invalidateCaches();
+        this.withBatch(() => routes.forEach(route => this.removeRoute(route)));
+    }
+
+    private withBatch(action: () => void): void {
+        this.batchDepth += 1;
+        try {
+            action();
+        } finally {
+            this.batchDepth -= 1;
+            if (this.batchDepth === 0 && this.cacheDirty) {
+                this.cacheDirty = false;
+                this.clearCaches();
+            }
+        }
     }
 
     private invalidateCaches(): void {
+        if (this.batchDepth > 0) {
+            this.cacheDirty = true;
+            return;
+        }
+        this.clearCaches();
+    }
+
+    private clearCaches(): void {
         this.cache.clear();
         this.regCache.clear();
         this.matchCache.clear();
@@ -227,12 +280,20 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         }
         if (isRegExp(route.pattern)) {
             this.regExps.delete(route.pattern);
+            const regexIndex = this.regexRoutes.indexOf(route);
+            if (regexIndex > -1) {
+                this.regexRoutes.splice(regexIndex, 1);
+            }
         } else {
             this.trieRouter.remove(route);
         }
         const index = this._routes.indexOf(route);
         if (index > -1) {
             this._routes.splice(index, 1);
+        }
+        const rejectedIndex = this.rejectedRoutes.indexOf(route);
+        if (rejectedIndex > -1) {
+            this.rejectedRoutes.splice(rejectedIndex, 1);
         }
     }
 
@@ -434,9 +495,10 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             if (!this.regExps.size) return;
             let route = this.regCache.get(url);
             if (!route) {
-                for (const regExp of this.regExps.keys()) {
+                for (const candidate of this.regexRoutes) {
+                    const regExp = candidate.pattern as RegExp;
                     if (regExp.test(url)) {
-                        route = this.regExps.get(regExp);
+                        route = candidate;
                         break;
                     }
                 }
@@ -558,6 +620,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         this.params.clear();
         this.assets = [];
         this._routes = [];
+        this.regexRoutes = [];
+        this.rejectedRoutes = [];
         this.trieRouter.remove();
     }
 
