@@ -94,6 +94,27 @@ export class ConsoleUiSettingsTest {
         }
     }
 
+    @Test('applies and persists the default agent profile')
+    defaultArchetype() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+        try {
+            const options: any = { workspace, ui: {} };
+            const applied = applyConsoleUiSettings(options, { defaultArchetype: 'plan' });
+            expect(applied.defaultArchetype).toEqual('plan');
+            expect(options.policy.defaultArchetype).toEqual('plan');
+            expect(options.defaultArchetype).toEqual('plan');
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).defaultArchetype).toEqual('plan');
+            expect(readConsoleUiSettings(workspace).defaultArchetype).toEqual('plan');
+
+            // Empty values are ignored instead of clearing silently.
+            applyConsoleUiSettings(options, { defaultArchetype: '   ' });
+            expect(readConsoleUiSettings(workspace).defaultArchetype).toEqual('plan');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('creates the settings file when the workspace has none yet')
     createsMissingFile() {
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));

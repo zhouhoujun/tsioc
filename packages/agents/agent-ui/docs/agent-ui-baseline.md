@@ -121,9 +121,9 @@ rm -f run-one.tmp.ts
 | 包 | 结果 |
 | --- | --- |
 | `@tsdi/agent` | 1100 passing |
-| `@tsdi/agent-gateway` | 400 passing |
+| `@tsdi/agent-gateway` | 401 passing |
 | `@tsdi/agent-tools` | 594 passing |
-| `@tsdi/agent-ui` | **2284 passing**（2 组） |
+| `@tsdi/agent-ui` | **2286 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -162,3 +162,5 @@ rm -f run-one.tmp.ts
 - 已知限制：`/format` 等控制台直调工具仍不进入 turn 文件快照（先 `/snapshot` 可回退）。
 - P2 部分完成：`/queue move <n> <m>` 支持排队 prompt 重排（`remove`/`edit`/`clear` 原有能力不变），
   队列面板与 Alt+Enter 优先仍待补。
+- AMS P0 补充：`/agents default [name]` 读取/设置新会话默认代理档案，持久化 `defaultArchetype`
+  并在 TUI/Web/attach 启动时恢复到 `policy.defaultArchetype`。

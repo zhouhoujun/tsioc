@@ -18,7 +18,10 @@ function createHost(overrides: Record<string, any> = {}): any {
         switched,
         state,
         translator: null,
+        defaultProfile: 'build',
         notify: (message: string) => notices.push(message),
+        getDefaultProfile: () => 'build',
+        setDefaultProfile: async (name: string) => { switched.push(`default:${name}`); },
         runtime: {
             getSessionArchetype: () => 'build',
             listArchetypes: () => ['build', 'plan', 'review'],
@@ -109,5 +112,20 @@ export class AgentProfilesTest {
         await runAgentsCommandView(host, 'plan');
         expect(opened).toEqual(0);
         expect(host.switched).toEqual(['plan']);
+    }
+
+    @Test('/agents default [name] reads or sets the default profile')
+    async defaultProfile() {
+        const host = createHost();
+        await runAgentsCommandView(host, 'default');
+        expect(host.notices[host.notices.length - 1]).toContain('build');
+
+        await runAgentsCommandView(host, 'default plan');
+        expect(host.switched).toEqual(['default:plan']);
+        expect(host.notices[host.notices.length - 1]).toContain('plan');
+
+        await runAgentsCommandView(host, 'default missing');
+        expect(host.notices[host.notices.length - 1]).toContain('Unknown agent profile');
+        expect(host.switched).toEqual(['default:plan']);
     }
 }

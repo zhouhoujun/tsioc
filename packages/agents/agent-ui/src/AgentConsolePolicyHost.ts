@@ -50,7 +50,18 @@ export abstract class AgentConsolePolicyHost extends AgentConsoleModelHost {
             appRpc: this.appRpc,
             runtime: this.runtime,
             notify: (message: string) => this.notify(message),
-            rpcRequestContext: () => this.rpcRequestContext()
+            rpcRequestContext: () => this.rpcRequestContext(),
+            getDefaultProfile: () => String(this.options.policy?.defaultArchetype || this.options.defaultArchetype || 'build'),
+            setDefaultProfile: async (name: string) => {
+                const normalized = String(name || '').trim().toLowerCase();
+                if (!normalized) return;
+                this.options.policy = { ...(this.options.policy || {}), defaultArchetype: normalized };
+                this.options.defaultArchetype = normalized;
+                if (this.appRpc) {
+                    await this.appRpc.request('settings.ui.set', { defaultArchetype: normalized }, this.rpcRequestContext()).catch(() => undefined);
+                }
+                await this.persistSettings({ defaultArchetype: normalized });
+            }
         };
         return runAgentsCommandView(host, args);
     }

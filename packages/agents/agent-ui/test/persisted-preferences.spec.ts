@@ -83,6 +83,15 @@ export class PersistedPreferencesTest {
         expect(options.policy.approval.readOnlyShell).toEqual(false);
     }
 
+    @Test('applyPersistedPreferences restores the default agent profile')
+    defaultArchetype() {
+        const options: any = { ui: {}, policy: { limits: { maxTurns: 4 } } };
+        applyPersistedPreferences(options, { defaultArchetype: 'plan' });
+        expect(options.policy.defaultArchetype).toEqual('plan');
+        expect(options.defaultArchetype).toEqual('plan');
+        expect(options.policy.limits).toEqual({ maxTurns: 4 });
+    }
+
     @Test('applyPersistedModelProfile restores the active profile (and live provider/model ids)')
     restoresModelProfile() {
         const options: any = {

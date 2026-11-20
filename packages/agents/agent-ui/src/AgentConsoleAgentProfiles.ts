@@ -22,6 +22,9 @@ export interface AgentProfileHost {
     } | null;
     notify(message: string): void;
     rpcRequestContext?(): any;
+    /** Default profile used when a session has no explicit override. */
+    getDefaultProfile?(): string;
+    setDefaultProfile?(name: string): Promise<void> | void;
 }
 
 /** Candidate profiles: app RPC (gateway) → runtime registry → built-in default. */
@@ -93,10 +96,16 @@ export async function switchAgentProfile(host: AgentProfileHost, name: string): 
 
 /**
  * `/agents [name]` — choose or switch the agent profile for this session.
+ * `/agents default [name]` reads or sets the default profile for new sessions.
  * `/archetype` remains an alias for the same view.
  */
 export async function runAgentsCommandView(host: AgentProfileHost, args: string): Promise<void> {
     const requested = String(args || '').trim().toLowerCase();
+    const tokens = requested.split(/\s+/).filter(Boolean);
+    if (tokens[0] === 'default' || tokens[0] === 'set-default') {
+        await handleDefaultProfile(host, tokens[1]);
+        return;
+    }
     const current = host.state.activeArchetype
         || host.runtime?.getSessionArchetype?.(host.state.sessionId)
         || 'build';
@@ -116,4 +125,20 @@ export async function runAgentsCommandView(host: AgentProfileHost, args: string)
         return;
     }
     await switchAgentProfile(host, selected);
+}
+
+async function handleDefaultProfile(host: AgentProfileHost, name?: string): Promise<void> {
+    if (!name) {
+        const current = host.getDefaultProfile?.() || 'build';
+        host.notify(formatAgentUiNotice(host.translator, 'agentsDefaultCurrent', { name: current }));
+        return;
+    }
+    const normalized = String(name).trim().toLowerCase();
+    const profiles = await listAgentProfiles(host);
+    if (!profiles.some(profile => profile.name.toLowerCase() === normalized)) {
+        host.notify(formatAgentUiNotice(host.translator, 'agentsDefaultUnknown', { name: normalized }));
+        return;
+    }
+    await host.setDefaultProfile?.(normalized);
+    host.notify(formatAgentUiNotice(host.translator, 'agentsDefaultSet', { name: normalized }));
 }

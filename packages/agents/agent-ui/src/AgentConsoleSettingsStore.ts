@@ -20,6 +20,8 @@ export interface AgentConsoleSettingsData {
     highlights?: boolean;
     /** Highest release-highlights version the user has acknowledged. */
     highlightsSeenVersion?: string;
+    /** Default agent profile (archetype) for new sessions. */
+    defaultArchetype?: string;
     /** Project-scoped tool allow list (durable "always allow"). */
     approvalAllowRules?: string[];
     messageSelectionPageSize?: 4 | 6 | 10;
@@ -43,7 +45,7 @@ export interface AgentConsoleSettingsData {
 
 export function applyPersistedPreferences(
     options: any,
-    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean; highlights?: boolean } | null | undefined
+    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean; highlights?: boolean; defaultArchetype?: string } | null | undefined
 ): void {
     if (!options || !persisted) {
         return;
@@ -68,6 +70,10 @@ export function applyPersistedPreferences(
     }
     if (typeof persisted.highlights === 'boolean') {
         options.ui = { ...(options.ui || {}), highlights: persisted.highlights };
+    }
+    if (typeof persisted.defaultArchetype === 'string' && persisted.defaultArchetype.trim()) {
+        options.policy = { ...(options.policy || {}), defaultArchetype: persisted.defaultArchetype.trim() };
+        options.defaultArchetype = persisted.defaultArchetype.trim();
     }
 }
 
@@ -172,6 +178,7 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined,
         highlights: typeof parsed?.highlights === 'boolean' ? parsed.highlights : undefined,
         highlightsSeenVersion: typeof parsed?.highlightsSeenVersion === 'string' && parsed.highlightsSeenVersion.trim() ? parsed.highlightsSeenVersion.trim() : undefined,
+        defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined,
         approvalAllowRules: sanitizeApprovalAllowRules(parsed?.approvalAllowRules),
         messageSelectionPageSize: [4, 6, 10].includes(Number(parsed?.messageSelectionPageSize))
             ? Number(parsed.messageSelectionPageSize) as 4 | 6 | 10
@@ -263,6 +270,7 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.readOnlyShell === 'boolean' ? { readOnlyShell: data.readOnlyShell } : {}),
             ...(typeof data.highlights === 'boolean' ? { highlights: data.highlights } : {}),
             ...(data.highlightsSeenVersion ? { highlightsSeenVersion: data.highlightsSeenVersion } : {}),
+            ...(data.defaultArchetype ? { defaultArchetype: data.defaultArchetype } : {}),
             ...(data.messageSelectionPageSize ? { messageSelectionPageSize: data.messageSelectionPageSize } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),

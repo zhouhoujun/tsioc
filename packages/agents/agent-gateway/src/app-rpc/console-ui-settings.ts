@@ -13,6 +13,8 @@ export interface ConsoleUiSettingsPatch {
     approvalTimeoutMs?: number | null;
     /** Opt-in read-only shell scanner for the shared runtime policy. */
     readOnlyShell?: boolean;
+    /** Default agent profile (archetype) applied to the shared runtime options. */
+    defaultArchetype?: string | null;
     /** Project-scoped tool allow list applied to the runtime approval manager. */
     approvalAllowRules?: string[] | null;
 }
@@ -64,10 +66,17 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
             approval: { ...((options as any).policy?.approval || {}), readOnlyShell }
         };
     }
+    const defaultArchetype = typeof params.defaultArchetype === 'string' && params.defaultArchetype.trim()
+        ? params.defaultArchetype.trim()
+        : undefined;
+    if (defaultArchetype) {
+        (options as any).policy = { ...((options as any).policy || {}), defaultArchetype };
+        (options as any).defaultArchetype = defaultArchetype;
+    }
     const approvalAllowRules = Array.isArray(params.approvalAllowRules)
         ? sanitizeApprovalAllowRules(params.approvalAllowRules)
         : undefined;
-    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules, readOnlyShell);
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules, readOnlyShell, defaultArchetype);
     return {
         personality: ui.personality,
         memoryInjection: ui.memoryInjection,
@@ -77,6 +86,7 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
         modelProfile,
         ...(approvalTimeoutMs ? { approvalTimeoutMs } : {}),
         ...(readOnlyShell !== undefined ? { readOnlyShell } : {}),
+        ...(defaultArchetype ? { defaultArchetype } : {}),
         ...(approvalAllowRules ? { approvalAllowRules } : {})
     };
 }
@@ -117,7 +127,7 @@ function consoleStoreFile(workspace: string, name: string): string | null {
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean; defaultArchetype?: string } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -134,7 +144,8 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
             approvalAllowRules: Array.isArray(parsed?.approvalAllowRules)
                 ? sanitizeApprovalAllowRules(parsed.approvalAllowRules)
                 : undefined,
-            readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined
+            readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined,
+            defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined
         };
     } catch {
         return {};
@@ -150,7 +161,8 @@ function persistConsoleUiSettings(
     modelProfile?: string,
     approvalTimeoutMs?: number,
     approvalAllowRules?: string[],
-    readOnlyShell?: boolean
+    readOnlyShell?: boolean,
+    defaultArchetype?: string
 ): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
@@ -197,6 +209,9 @@ function persistConsoleUiSettings(
     }
     if (typeof readOnlyShell === 'boolean') {
         next.readOnlyShell = readOnlyShell;
+    }
+    if (defaultArchetype) {
+        next.defaultArchetype = defaultArchetype;
     }
     try {
         fs.mkdirSync(path.dirname(file), { recursive: true });
