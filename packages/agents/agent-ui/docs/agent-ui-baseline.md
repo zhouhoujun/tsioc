@@ -120,7 +120,7 @@ rm -f run-one.tmp.ts
 
 | 包 | 结果 |
 | --- | --- |
-| `@tsdi/agent` | 1084 passing |
+| `@tsdi/agent` | 1087 passing |
 | `@tsdi/agent-gateway` | 399 passing |
 | `@tsdi/agent-ui` | **2268 passing**（5 组，298.9s 高负载：109 + 11 + 754 + 624 + 770） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
@@ -129,6 +129,8 @@ rm -f run-one.tmp.ts
 说明：
 
 - 本次高负载（load average ~10）下仍选择 5 组；低负载时 4 组约 108s。
+- ordered approval rules 拆分后 `ToolApprovalManager.ts` 从 626 行降到 551 行，新文件
+  `tools/ApprovalStrategy.ts`（<600）承载规则求值。
   组数由可用内存自动决定，也可通过 `AGENT_UI_TEST_GROUPS=<1..5>` 强制。
 - `source-size` 的外部阻塞（activities workflow-designer）已不再阻塞，当前全量通过。
 - 投影缓存（按 transcript 复用 display 列表）微基准约 5%，已并入 P2；
@@ -136,5 +138,6 @@ rm -f run-one.tmp.ts
 - P3 已完成：tab 键盘循环/恢复、`@file#Lx-Ly`、Web/PWA 通知、`/btw`、
   项目级 durable allow（`p` / `/permissions allow`）、会话级 `/undo`/`/redo`
   （恢复 prompt + 消息 + 文件改动；无 checkpoint 时回退文件级）。
-- P3 剩余：ordered approval rules 与 shell 命令扫描器、LSP 诊断/formatter。
+- P3 已完成：ordered approval rules（action/resource，last match wins）。
+- P3 未完成：shell 命令扫描器、LSP 诊断/formatter。
 - 已知限制：turn undo 边界保存在进程内，重启后不可撤销；会话快照 `/snapshot` 仍可显式持久化。

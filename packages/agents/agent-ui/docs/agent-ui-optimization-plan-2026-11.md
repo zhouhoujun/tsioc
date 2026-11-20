@@ -129,7 +129,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | `/highlights` 更新提示 | ❌ | ✅ | ◐ | 低成本补 |
 | 模型切换 | ✅ `/model` + F2 最近 | ✅ Ctrl+X M / F2 | ✅ | 对齐 |
 | Agent profiles | ◐ archetype（命令切换） | ✅ `/agents`、Shift+Tab | ✅ profiles | AMS P0 |
-| 权限规则 | ◐ level + session allow | ✅ ordered rules（action/resource/effect，last match）、durable allow、scanner | ✅ sandbox × approval policy + auto-review | **高优先补齐**（AMS P1） |
+| 权限规则 | ✅ ordered rules（action/resource，last match）+ durable allow | ✅ ordered rules（action/resource/effect，last match）、durable allow、scanner | ✅ sandbox × approval policy + auto-review | 仅剩 shell scanner |
 | LSP 诊断 | ❌ | ✅ | ◐ | **补**（先只读诊断面板） |
 | Formatter | ❌ | ✅ | ◐ | 补 hook（复用现有工具） |
 | OS 通知 | ◐ 配置字段，无实现 | ✅ | ◐ | **补**（unfocused 时 approval/question/done） |
@@ -222,18 +222,23 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
   只把选中行（最多 400 行）注入 `[Mention Context]`，suggestion 查询忽略
   range 后缀；超出 EOF 时回退为路径提示。测试：`workspace-mentions-range.spec.ts`。
 
-按影响排序（剩余）：
-1. **durable approvals（基础版已完成）**：项目级 “always allow”（工具名 + 尾部 `*` 前缀，
-   持久化到 settings、启动恢复、`/permissions allow` 列表/清理）；auto-deny 规则优先。
-   仍缺：ordered action/resource/effect 规则与 shell 命令扫描器（未知命令保守 `ask`）。
-2. **会话 undo/redo（基础版已完成）**：`/undo`/`/redo` 恢复 prompt、消息与文件改动；turn 边界
-   目前保存在进程内，持久化 turn 快照与 Esc Esc 仍可后续补充。
-3. **composer `!` shell mode** 与 **`@file#Lx-Ly`** 行范围引用。
-4. **tab 键盘**：Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+T 恢复关闭；关闭后焦点策略。
-5. **LSP 诊断面板 + formatter hook**：先只读诊断（错误/警告跳转），再保存/完成后格式化。
-6. **OS 通知**：unfocused 时 approval/question/done；复用 `AgentTuiConfig` 通知字段。
-7. `/btw`、`/highlights` 低成本补齐。
-8. Agent Center/Inbox 按 `docs/agent-management-plan.md` 的 P0/P1 落地（不重复设计）。
+已完成（本轮及最近提交）：
+- durable 项目级 allow（`p` / `/permissions allow`，启动恢复、Web/attach 同步）；
+- ordered approval rules：`action: ask|allow|deny`、`resource`（path/command/url，含 `*`）、
+  legacy `mode`，**last match wins**，auto-deny 优先于项目 allow；`DefaultApprovalStrategy`
+  已拆到 `tools/ApprovalStrategy.ts`；
+- 会话级 `/undo`/`/redo`（prompt + 消息 + 文件改动，无 checkpoint 时回退文件级）；
+- `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。
+
+按影响排序（未完成计划）：
+1. **shell 命令扫描器**：对只读命令（`ls`/`cat`/`git status` 等）减少审批询问，
+   管道/重定向/命令替换/未知命令保守 `ask`；建议先做 opt-in 开关。
+2. **LSP 诊断面板 + formatter hook**：先只读诊断（错误/警告跳转），再保存/完成后格式化。
+3. **持久化 turn 快照**：当前 turn 边界在进程内；补 DB 持久化与 Esc Esc 撤销手势。
+4. **`/highlights`**：发布说明浮层（opencode 风格），可配置关闭。
+5. **Agent Center/Inbox**：按 `docs/agent-management-plan.md` 的 P0/P1 落地（不重复设计）。
+6. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
+   `git diff --check`、source-size、bench 全绿。
 
 ### P4 — 门禁与文档
 

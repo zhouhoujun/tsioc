@@ -1,9 +1,9 @@
 import { Abstract, Injectable, Optional, Inject, token } from '@tsdi/ioc';
-import { ApprovalCategory, ApprovalCategoryMetadata, APPROVAL_CATEGORY_DEFINITIONS, classifyApprovalCategory } from './approval-categories';
 import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent } from '../runtime/AgentEvents';
 import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
 import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
+export { ApprovalRule, ApprovalRuleObject, DefaultApprovalStrategy } from './ApprovalStrategy';
 
 export interface ApprovalStrategy {
     requires(toolName: string, input: any): boolean;
@@ -17,22 +17,6 @@ export interface ApprovalStrategy {
 }
 
 export const AgentApprovalStrategy = token<ApprovalStrategy>('AgentApprovalStrategy');
-
-/**
- * A3: granular approval categories (mirroring Codex granular permissions).
- * Rules can be expressed as a string tool pattern (backward compatible) or as
- * a category-scoped object with an optional name allowlist and decision mode.
- */
-
-export interface ApprovalRuleObject {
-    category: ApprovalCategory;
-    /** Tool names / patterns within the category; when omitted the whole category matches. */
-    names?: string[];
-    /** 'ask' (default) surfaces a human approval; 'auto-deny' rejects without prompting. */
-    mode?: 'ask' | 'auto-deny';
-}
-
-export type ApprovalRule = string | ApprovalRuleObject;
 
 /**
  * A2: automatic approval review. An optional reviewer inspects the gated tool
@@ -564,61 +548,3 @@ export class ToolApprovalManager extends ApprovalManager {
  * are network-oriented) classify deterministically.
  */
 export { ApprovalCategory, ApprovalCategoryMetadata, APPROVAL_CATEGORY_DEFINITIONS, classifyApprovalCategory } from './approval-categories';
-
-export class DefaultApprovalStrategy implements ApprovalStrategy {
-    private rules: ApprovalRule[];
-    readonly autoReview: boolean;
-
-    constructor(blocked?: ApprovalRule[], autoReview = false) {
-        this.rules = blocked ?? ['shell.exec', 'fs.write', 'fs.delete', 'db.execute', 'deploy', 'sudo.exec', 'playwright_browser', 'admin.*'];
-        this.autoReview = autoReview;
-    }
-
-    requires(toolName: string, input: any): boolean {
-        const toolCategory = classifyApprovalCategory(toolName);
-        for (const rule of this.rules) {
-            if (typeof rule === 'string') {
-                if (this.matchesPattern(toolName, rule)) return true;
-                // Default rules name a category member (`shell.exec`, `fs.write`)
-                // rather than a tool; match those by the tool's category.
-                const ruleCategory = classifyApprovalCategory(rule);
-                if (toolCategory && ruleCategory && toolCategory === ruleCategory) return true;
-            } else if (this.matchesRule(toolName, input, rule)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    reasonDetail(toolName: string): { code: string; params?: Record<string, any> } { return { code: 'tool-requires-approval', params: { tool: toolName } }; }
-
-    reason(toolName: string, _input: any): string {
-        return `Tool "${toolName}" requires approval.`;
-    }
-
-    autoDenies(toolName: string, input: any): boolean {
-        for (const rule of this.rules) {
-            if (typeof rule === 'object' && rule.mode === 'auto-deny' && this.matchesRule(toolName, input, rule)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private matchesRule(toolName: string, _input: any, rule: ApprovalRuleObject): boolean {
-        if (classifyApprovalCategory(toolName) !== rule.category) {
-            return false;
-        }
-        if (rule.names && rule.names.length > 0) {
-            return rule.names.some(pattern => this.matchesPattern(toolName, pattern));
-        }
-        return true;
-    }
-
-    private matchesPattern(toolName: string, pattern: string): boolean {
-        if (pattern.endsWith('*')) {
-            return toolName.startsWith(pattern.slice(0, -1));
-        }
-        return toolName === pattern;
-    }
-}

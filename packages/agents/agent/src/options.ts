@@ -61,7 +61,7 @@ export interface AgentToolOptions {
     maxParallelTools?: number;
     /** Tool names that are safe to run in parallel (read-only tools) */
     parallelSafeTools?: string[];
-    /** Tool names/patterns or category rules requiring approval before execution (A3 granular form). */
+    /** Tool names/patterns or category rules requiring approval (A3; object rules are ordered last-match-wins with action/resource). */
     requireApproval?: ApprovalRule[];
     /** Approval timeout in ms */
     approvalTimeoutMs?: number;

@@ -613,6 +613,63 @@ export class BuiltinToolsTest {
         expect(strategy.requires('web_search', {})).toEqual(true);
     }
 
+    @Test('ordered approval rules use the last matching action')
+    orderedRulesLastMatchWins() {
+        const allowThenAsk = new DefaultApprovalStrategy([
+            { category: 'sandbox', action: 'allow' },
+            { category: 'sandbox', names: ['terminal'], action: 'ask' }
+        ]);
+        expect(allowThenAsk.requires('terminal', {})).toEqual(true);
+        expect(allowThenAsk.autoDenies('terminal', {})).toEqual(false);
+
+        const askThenAllow = new DefaultApprovalStrategy([
+            { category: 'sandbox', names: ['terminal'], action: 'ask' },
+            { category: 'sandbox', action: 'allow' }
+        ]);
+        expect(askThenAllow.requires('terminal', {})).toEqual(false);
+
+        const allowThenDeny = new DefaultApprovalStrategy([
+            { category: 'sandbox', action: 'allow' },
+            { category: 'sandbox', names: ['terminal'], action: 'deny' }
+        ]);
+        expect(allowThenDeny.requires('terminal', {})).toEqual(true);
+        expect(allowThenDeny.autoDenies('terminal', {})).toEqual(true);
+
+        const denyThenAllow = new DefaultApprovalStrategy([
+            { category: 'sandbox', names: ['terminal'], action: 'deny' },
+            { category: 'sandbox', action: 'allow' }
+        ]);
+        expect(denyThenAllow.requires('terminal', {})).toEqual(false);
+        expect(denyThenAllow.autoDenies('terminal', {})).toEqual(false);
+    }
+
+    @Test('a later string rule still asks after an earlier allow')
+    orderedStringRuleAsks() {
+        const strategy = new DefaultApprovalStrategy([
+            { category: 'network', names: ['web_search'], action: 'allow' },
+            'web_search'
+        ]);
+        expect(strategy.requires('web_search', {})).toEqual(true);
+        expect(strategy.autoDenies('web_search', {})).toEqual(false);
+    }
+
+    @Test('resource patterns scope deny rules to matching inputs')
+    resourceScopedRules() {
+        const strategy = new DefaultApprovalStrategy([
+            { category: 'fs', names: ['write_file'], resource: '.env', action: 'deny' }
+        ]);
+        expect(strategy.requires('write_file', { filePath: '/app/.env' })).toEqual(true);
+        expect(strategy.autoDenies('write_file', { filePath: '/app/.env' })).toEqual(true);
+        expect(strategy.requires('write_file', { filePath: '/app/src/config.ts' })).toEqual(false);
+        expect(strategy.requires('write_file', { filePath: '/app/.env.local' })).toEqual(false);
+
+        const wildcard = new DefaultApprovalStrategy([
+            { category: 'sandbox', resource: 'git *', action: 'deny' }
+        ]);
+        expect(wildcard.autoDenies('terminal', { command: 'git push origin main' })).toEqual(true);
+        expect(wildcard.autoDenies('terminal', { command: 'npm test' })).toEqual(false);
+    }
+
     @Test('category classifier resolves tools by names and prefixes')
     categoryClassifierResolvesTools() {
         expect(classifyApprovalCategory('web_search')).toEqual('network');
