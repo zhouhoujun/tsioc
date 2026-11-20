@@ -141,5 +141,12 @@ export class AgentConsoleLongSessionTabSwitchBudgetTest {
         const p95 = samples[Math.min(samples.length - 1, Math.floor(samples.length * 0.95))];
         console.log(`[long-session-switch] p50=${p50}ms p95=${p95}ms samples=${samples.length} messages=1000`);
         expect(samples.length).toEqual(this.ids.length * 2);
+        // Wall-clock budgets are opt-in: the normal suite stays deterministic on
+        // loaded CI hosts, while `AGENT_UI_SWITCH_BUDGET=1` enforces the
+        // documented p50/p95 limits (load average <= 3).
+        if (process.env.AGENT_UI_SWITCH_BUDGET === '1') {
+            expect(p50).toBeLessThanOrEqual(120);
+            expect(p95).toBeLessThanOrEqual(200);
+        }
     }
 }

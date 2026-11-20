@@ -95,3 +95,15 @@
 - 涉及 components 的改动另跑 components ×4 + bench；本轮 agent-ui/agent 改动不需要改 components。
 - Web 预算：`npm run build:web` 必须通过 `web-size-baseline.json` 回归检查；
   需要目标模式时运行 `AGENT_UI_WEB_BUDGET_STRICT=1 npm run build:web`。
+- 1k 切换预算（opt-in）：
+  ```bash
+cd packages/agents/agent-ui
+cat > run-switch.tmp.ts <<'EOF'
+import { runTest } from '@tsdi/unit';
+runTest('./test/tab-switch-long-session.spec.ts', { baseURL: __dirname })
+    .catch((err: Error) => { console.error('RUNNER-FAIL', err); process.exit(1); });
+EOF
+AGENT_UI_SWITCH_BUDGET=1 npx ts-node --transpile-only -r tsconfig-paths/register run-switch.tmp.ts
+rm -f run-switch.tmp.ts
+  ```
+  预算：p50 ≤120ms、p95 ≤200ms（负载需 ≤3）。

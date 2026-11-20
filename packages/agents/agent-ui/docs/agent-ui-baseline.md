@@ -182,4 +182,6 @@ rm -f run-one.tmp.ts
   `web-size-baseline.json` 比较；initial raw/gzip 超过 3%（且 ≥16 KiB gzip / ≥64 KiB raw）
   直接失败。当前基线 initial 2085.5 KiB / gzip 545.4 KiB。`AGENT_UI_WEB_BUDGET_STRICT=1`
   额外强制 initial gzip ≤700 KiB、最大 lazy chunk gzip ≤150 KiB（当前通过）。
-  1k 切换 p50/p95 与测试墙钟仍未写入自动阈值。
+  1k 切换 p50/p95 预算已落地为 opt-in：`AGENT_UI_SWITCH_BUDGET=1` 运行
+  `tab-switch-long-session.spec.ts` 时强制 p50 ≤120ms、p95 ≤200ms（本次实测 83/95ms）；
+  测试墙钟与分片内存阈值仍未自动门禁。
