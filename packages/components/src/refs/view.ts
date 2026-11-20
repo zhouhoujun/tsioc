@@ -113,6 +113,9 @@ export abstract class EmbeddedViewRef<C> extends ViewRef<C> {
   /** Per-view local ref/component index used by ViewChild queries. */
   abstract get queryIndex(): ViewQueryIndex | undefined;
 
+  /** Remove this view's dependency functions without destroying its nodes. */
+  disposeBindings?(): void;
+
   // 添加计算属性缓存
   abstract get computedCache(): Map<string, { value: any, deps: Set<any> }>;
   abstract get localRefIndex(): Map<string, any>;

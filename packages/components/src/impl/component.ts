@@ -620,6 +620,9 @@ export class ComponentRefImpl<T> extends ComponentRef<T> {
         });
         this.contentQueryIndex?.clear();
         this.contentQueryIndex = undefined;
+        // Stop the component template's bindings before `onDestroy` writes
+        // state; otherwise those writes re-run them with a dead view context.
+        this.hostView?.disposeBindings?.();
         (this.instance as OnDestroy)?.onDestroy?.();
         super.clean();
         this.hostView?.destroy();

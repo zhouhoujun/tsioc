@@ -69,20 +69,31 @@ export class EmbeddedViewRefImpl<C> implements EmbeddedViewRef<C> {
      *
      * @memberof EmbeddedViewRefImpl
      */
+    /**
+     * Remove this view's dependency functions without touching its nodes.
+     * Owners that call `onDestroy` hooks before destroying the view dispose
+     * here first, so teardown writes cannot re-run dying bindings.
+     */
+    disposeBindings(): void {
+        this.scope?.dispose();
+        this.scope = undefined;
+    }
+
     destroy(): void {
         if (this._isDestroyed) return;
 
         this._isDestroyed = true;
+
+        // Remove this view's dependency functions before tearing its nodes
+        // down: onDestroy hooks may write state, and those writes must not
+        // re-run bindings whose loop variables are already gone.
+        this.disposeBindings();
 
         this.injector.detachNodes(this.rootNodes);
 
         // 执行所有销毁回调
         this._destroyCallbacks.forEach(callback => callback());
         this._destroyCallbacks = [];
-
-        // Remove the dependency functions registered by this view's bindings.
-        this.scope?.dispose();
-        this.scope = undefined;
 
         // Detach from the parent query index and release our own entries.
         if (this.queryIndex) {
