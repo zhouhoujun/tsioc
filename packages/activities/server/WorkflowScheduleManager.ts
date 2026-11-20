@@ -26,7 +26,7 @@ interface ScheduleEntry {
     options: WorkflowScheduleOptions;
 }
 
-const INBOUND_NODE_TYPES = new Set(['tcp-in', 'udp-in', 'websocket-in', 'mqtt-in', 'watch']);
+const INBOUND_NODE_TYPES = new Set(['tcp-in', 'udp-in', 'websocket-in', 'mqtt-in', 'watch', 'tail']);
 
 /** A workflow deployable at startup: inject schedule or long-lived inbound listener. */
 export function workflowHasScheduleTrigger(definition: VisualWorkflowDefinition | undefined): boolean {

@@ -1329,6 +1329,27 @@ export async function executeVisualNode(
                 }
             };
         }
+        case 'tail': {
+            const inbound = (context as any).inbound;
+            if (!inbound) {
+                return { success: true, data: { nodeId: node.id, waiting: true, reason: 'No file line yet' } };
+            }
+            if (inbound.nodeId !== node.id || String(inbound.transport || '') !== 'tail') {
+                return { success: true, data: { nodeId: node.id, matched: false, reason: 'File line belongs to another listener' } };
+            }
+            return {
+                success: true,
+                data: {
+                    nodeId: node.id,
+                    matched: true,
+                    transport: 'tail',
+                    path: inbound.path,
+                    payload: inbound.payload ?? inbound.data,
+                    line: inbound.payload ?? inbound.data,
+                    meta: { path: inbound.path }
+                }
+            };
+        }
         case 'global-config':
         case 'mqtt':
         case 'websocket':

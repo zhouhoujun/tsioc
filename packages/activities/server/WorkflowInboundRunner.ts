@@ -13,7 +13,7 @@ import { configNodeMap } from '../src/visual/VisualWorkflowService';
 /** Message delivered to a `tcp-in` / `udp-in` node through `context.inbound`. */
 export interface WorkflowInboundMessage {
     nodeId: string;
-    transport: 'tcp' | 'udp' | 'websocket' | 'mqtt' | 'watch';
+    transport: 'tcp' | 'udp' | 'websocket' | 'mqtt' | 'watch' | 'tail';
     data: string;
     /** MQTT topic the message arrived on. */
     topic?: string;
@@ -122,7 +122,7 @@ export class WorkflowInboundRunner {
 
         const dispatch = async (
             nodeId: string,
-            transport: 'tcp' | 'udp' | 'websocket' | 'mqtt' | 'watch',
+            transport: 'tcp' | 'udp' | 'websocket' | 'mqtt' | 'watch' | 'tail',
             data: string,
             remote: WorkflowInboundMessage['remote'],
             reply: ((payload: string) => void) | undefined,
@@ -174,7 +174,7 @@ export class WorkflowInboundRunner {
         const inboundNodes = (definition.nodes || []).filter(node =>
             node.type === 'tcp-in' || node.type === 'udp-in'
             || node.type === 'websocket-in' || node.type === 'mqtt-in'
-            || node.type === 'watch'
+            || node.type === 'watch' || node.type === 'tail'
         );
 
         for (const node of inboundNodes) {
@@ -332,6 +332,104 @@ export class WorkflowInboundRunner {
                             clearTimeout(timer);
                         }
                         timers.clear();
+                    }
+                });
+            } else if (node.type === 'tail') {
+                const requested = String(config.path || '').trim();
+                const workspaceRoot = String(
+                    (options.context as any)?.workspaceRoot || options.workspaceRoot || process.cwd()
+                );
+                const target = path.isAbsolute(requested)
+                    ? path.resolve(requested)
+                    : path.resolve(workspaceRoot, requested);
+                const relative = path.relative(path.resolve(workspaceRoot), target);
+                if (!requested) {
+                    await this.stopListeners(listeners, sockets);
+                    throw new Error('Tail requires a file path.');
+                }
+                if (relative.startsWith('..') || path.isAbsolute(relative)) {
+                    await this.stopListeners(listeners, sockets);
+                    throw new Error(
+                        `Tail path "${requested}" is outside the allowed workspace root (${workspaceRoot}).`
+                    );
+                }
+                let initialSize = 0;
+                try {
+                    const stat = fs.statSync(target);
+                    if (stat.isDirectory()) {
+                        throw new Error(`Tail path is a directory: ${target}.`);
+                    }
+                    initialSize = stat.size;
+                } catch (error) {
+                    await this.stopListeners(listeners, sockets);
+                    throw error instanceof Error && /directory/.test(error.message)
+                        ? error
+                        : new Error(`Tail file does not exist: ${target}.`);
+                }
+                const splitLines = config.split !== false;
+                let position = initialSize;
+                let pending = '';
+                const emitLine = (line: string) => {
+                    if (line === '') {
+                        return;
+                    }
+                    void dispatch(
+                        node.id,
+                        'tail',
+                        line,
+                        undefined,
+                        undefined,
+                        undefined,
+                        { path: target }
+                    );
+                };
+                const emitChunk = (chunk: string) => {
+                    if (!splitLines) {
+                        emitLine(chunk);
+                        return;
+                    }
+                    pending += chunk;
+                    const lines = pending.split(/\r?\n/);
+                    pending = lines.pop() ?? '';
+                    for (const line of lines) {
+                        emitLine(line);
+                    }
+                };
+                if (config.sendWholeFile === true) {
+                    const initial = fs.readFileSync(target, 'utf8');
+                    for (const line of initial.split(/\r?\n/)) {
+                        emitLine(line);
+                    }
+                }
+                const watcher = fs.watch(target, () => {
+                    try {
+                        const size = fs.statSync(target).size;
+                        if (size < position) {
+                            // Truncated or replaced: start reading from the top again.
+                            position = 0;
+                            pending = '';
+                        }
+                        if (size === position) {
+                            return;
+                        }
+                        const fd = fs.openSync(target, 'r');
+                        const length = size - position;
+                        const buffer = Buffer.alloc(length);
+                        fs.readSync(fd, buffer, 0, length, position);
+                        fs.closeSync(fd);
+                        position = size;
+                        emitChunk(buffer.toString('utf8'));
+                    } catch (error) {
+                        options.onError?.(error as Error);
+                    }
+                });
+                watcher.on('error', error => {
+                    options.onError?.(error as Error);
+                });
+                listeners.push({
+                    port: 0,
+                    close: async () => {
+                        watcher.close();
                     }
                 });
             } else if (node.type === 'websocket-in') {

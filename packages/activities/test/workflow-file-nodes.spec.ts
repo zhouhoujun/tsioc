@@ -158,4 +158,42 @@ describe('Workflow file nodes', () => {
         }
         expect(handle.running).toBe(false);
     });
+
+    it('starts a run for every tailed line', async () => {
+        const file = path.join(root, 'tail.log');
+        fs.writeFileSync(file, 'first\n');
+        const runner = new WorkflowInboundRunner(service);
+        const lines: string[] = [];
+        const handle = await runner.start({
+            id: 'tail-flow',
+            name: 'Tail flow',
+            nodes: [
+                registry.createNode('tail', { x: 0, y: 0 }, {
+                    id: 'tail_1',
+                    config: { path: 'tail.log', split: true, sendWholeFile: true }
+                })
+            ],
+            connections: []
+        }, {
+            workspaceRoot: root,
+            onResult: (_result, message) => lines.push(message.data)
+        });
+        try {
+            await withTimeout(new Promise<void>(resolve => {
+                const tick = () => lines.length >= 1 ? resolve() : setTimeout(tick, 20);
+                tick();
+            }));
+            expect(lines).toEqual(['first']);
+
+            fs.appendFileSync(file, 'second\nthird\n');
+            await withTimeout(new Promise<void>(resolve => {
+                const tick = () => lines.length >= 3 ? resolve() : setTimeout(tick, 20);
+                tick();
+            }));
+            expect(lines).toEqual(['first', 'second', 'third']);
+        } finally {
+            await handle.stop();
+        }
+        expect(handle.running).toBe(false);
+    });
 });

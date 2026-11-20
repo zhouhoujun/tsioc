@@ -1541,6 +1541,23 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { path: '', recursive: false, debounce: 200, event: 'all' }
     },
     {
+        type: 'tail',
+        label: 'Tail',
+        description: 'Start the flow for each new line appended to a file',
+        category: 'trigger',
+        icon: '≋',
+        color: '#0f766e',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [port('out', 'out', 'output', 'Line')],
+        fields: [
+            configField({ key: 'path', label: 'Path', type: 'text', required: true, placeholder: 'logs/app.log', description: 'File to tail (workspace-relative or absolute).' }),
+            configField({ key: 'split', label: 'Split lines', type: 'boolean', defaultValue: true, description: 'Emit one message per line instead of one per appended chunk.' }),
+            configField({ key: 'sendWholeFile', label: 'Send whole file on start', type: 'boolean', defaultValue: false })
+        ],
+        defaultConfig: { path: '', split: true, sendWholeFile: false }
+    },
+    {
         type: 'command',
         label: 'Command',
         description: 'Run a host-provided command executor',

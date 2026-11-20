@@ -209,7 +209,12 @@ function startDesignerServer(port) {
         // Tab is the explicit accept key.
         await page.keyboard.press('Control+A');
         await page.keyboard.type('con');
-        await page.waitForTimeout(500);
+        // Wait for the debounced lint pass to settle; a stale marker from the
+        // previous snippet must not be mistaken for a partial-input error.
+        await page.waitForFunction(() => {
+            const status = document.querySelector('.workflow-field[data-field-key="code"] .workflow-code-status')?.textContent || '';
+            return !status.includes('⚠') && !status.includes('△');
+        }, { timeout: 3000 }).catch(() => undefined);
         const partialStatus = (await page.locator('.workflow-field[data-field-key="code"] .workflow-code-status').textContent()) || '';
         const partialClean = !partialStatus.includes('⚠') && !partialStatus.includes('△');
         await page.keyboard.press('Enter');
@@ -770,7 +775,7 @@ function startDesignerServer(port) {
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !partialClean || !enterNewline || !tabAccepts
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
-            || paletteFiltered < 1 || paletteFiltered >= 66 || paletteRestored !== 66
+            || paletteFiltered < 1 || paletteFiltered >= 67 || paletteRestored !== 67
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
             || !credentialDialog.open || credentialDialog.title !== 'Credentials'
             || credentialSaved.rows !== 1 || !credentialSaved.names.includes('preview-token') || credentialSaved.leaked

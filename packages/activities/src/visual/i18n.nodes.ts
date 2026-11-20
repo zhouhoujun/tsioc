@@ -332,6 +332,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "Watch",
                 "description": "Start the flow when a file or folder changes"
             },
+            "tail": {
+                "label": "Tail",
+                "description": "Start the flow for each new line appended to a file"
+            },
             "global-config": {
                 "label": "Global config",
                 "description": "Workflow variables exposed through env or global"
@@ -832,6 +836,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "debounce": "Debounce",
                 "event": "Event"
             },
+            "tail": {
+                "path": "Path",
+                "split": "Split lines",
+                "sendWholeFile": "Send whole file on start"
+            },
             "global-config": {
                 "values": "Values",
                 "scope": "Scope"
@@ -1113,6 +1122,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "watch": {
                 "path": "data"
+            },
+            "tail": {
+                "path": "logs/app.log"
             },
             "global-config": {
                 "values": "{ \"region\": \"eu\", \"retries\": 3 }"
@@ -1529,6 +1541,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "recursive": "Watch nested directories as well.",
                 "debounce": "Wait this long before emitting a change.",
                 "event": "Restrict to renames or content changes."
+            },
+            "tail": {
+                "path": "File to tail (workspace-relative or absolute).",
+                "split": "Emit one message per line instead of one per appended chunk."
             },
             "global-config": {
                 "scope": "env values are visible to every node as env.<name>; global values are shared across workflows."
@@ -1975,6 +1991,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "watch": {
                 "label": "文件监听",
                 "description": "文件或目录变化时启动流程"
+            },
+            "tail": {
+                "label": "文件尾部",
+                "description": "文件追加新行时启动流程"
             },
             "global-config": {
                 "label": "全局配置",
@@ -2476,6 +2496,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "debounce": "去抖",
                 "event": "事件类型"
             },
+            "tail": {
+                "path": "路径",
+                "split": "按行拆分",
+                "sendWholeFile": "启动时读取整个文件"
+            },
             "global-config": {
                 "values": "变量",
                 "scope": "作用域"
@@ -2741,6 +2766,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "watch": {
                 "path": "data"
+            },
+            "tail": {
+                "path": "logs/app.log"
             },
             "global-config": {
                 "values": "{ \"region\": \"eu\", \"retries\": 3 }"
@@ -3157,6 +3185,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "recursive": "同时监听子目录。",
                 "debounce": "事件合并等待时间。",
                 "event": "只响应重命名或内容变更。"
+            },
+            "tail": {
+                "path": "要跟踪的文件（工作区相对路径或绝对路径）。",
+                "split": "每行输出一条消息，而不是按追加块输出。"
             },
             "global-config": {
                 "scope": "env 变量以 env.<name> 对所有节点可见；global 变量在工作流之间共享。"

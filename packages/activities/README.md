@@ -608,7 +608,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 66 registered node types by label, description or type,
+- searchable palette: filter 67 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -796,7 +796,7 @@ workflow is saved/published, and stop when the workflow is deleted or cleared.
 
 Batch deployment endpoints and the designer **Deployments** dialog manage every
 stored workflow with an interval/once/cron inject **or a long-lived inbound
-node** (`tcp-in`, `udp-in`, `websocket-in`, `mqtt-in`, `watch`):
+node** (`tcp-in`, `udp-in`, `websocket-in`, `mqtt-in`, `watch`, `tail`):
 
 ```text
 GET  /api/deployments         # running deployments
@@ -908,12 +908,13 @@ client connection.
 
 ### File nodes
 
-`file-in`, `file-out` and `watch` run on the host and stay inside the workspace:
+`file-in`, `file-out`, `watch` and `tail` run on the host and stay inside the workspace:
 
 ```text
 file-out  { path: "data/out.json", payload: "payload", append: false, mkdir: true }
 file-in   { path: "data/out.json", encoding: "utf8", parse: "auto" }
 watch     { path: "data", recursive: false, debounce: 200, event: "all" }
+tail      { path: "logs/app.log", split: true, sendWholeFile: false }
 ```
 
 - every path is resolved against the workspace root; escaping it fails with
@@ -922,6 +923,10 @@ watch     { path: "data", recursive: false, debounce: 200, event: "all" }
 - `watch` starts one run per debounced change with
   `context.inbound = { transport: "watch", path, event }`; the watcher is closed
   when the run handle stops
+- `tail` starts one run per appended line (`split: true`, the default) or per
+  appended chunk, with `context.inbound = { transport: "tail", path, line }`.
+  `sendWholeFile` replays the current file on start; truncation resets the
+  read offset. The watcher is released with the deployment/run handle.
 - browser-only hosts fail with a diagnosable error instead of silently skipping
 
 ### Global config and context
