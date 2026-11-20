@@ -28,6 +28,7 @@ import { handleApprovals, handleApproveDeny, handleCancel, handleClear, handleCo
 import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineCommands';
 import { handleProjects, handleSearch, handleSections, handleThreads, handleThreadplan } from './AgentConsoleSessionCommands';
 import { handleReview } from './AgentConsoleReviewCommands';
+import { runLspDiagnosticsCommand } from './AgentConsoleLspDiagnostics';
 import { handleSideQuestion } from './AgentConsoleSideQuestion';
 import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
 import { handleDialogCommand } from './AgentConsoleDialogCommands';
@@ -133,6 +134,8 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/threadplan': handleThreadplan,
     '/threadreview': (ctx, _args) => guardDelegateNoArgs(ctx, '', { command: '/threadreview', matches: [] }, () => ctx.openThreadCodingTaskReviewSelector()),
     '/review': handleReview,
+    '/check': runLspDiagnosticsCommand,
+    '/lsp': runLspDiagnosticsCommand,
     '/diff': (ctx, args) => ctx.openWorktreeDiff(args),
     '/theme': (ctx, args, meta) => ctx.runThemeCommand(canonicalArgsOf(meta, args)),
     '/thinking': (ctx, args, meta) => ctx.runThinkingCommand(canonicalArgsOf(meta, args)),

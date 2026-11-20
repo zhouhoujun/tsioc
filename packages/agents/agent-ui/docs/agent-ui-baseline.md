@@ -122,7 +122,7 @@ rm -f run-one.tmp.ts
 | --- | --- |
 | `@tsdi/agent` | 1098 passing |
 | `@tsdi/agent-gateway` | 400 passing |
-| `@tsdi/agent-ui` | **2270 passing**（5 组） |
+| `@tsdi/agent-ui` | **2274 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -144,5 +144,8 @@ rm -f run-one.tmp.ts
   设置页 Permissions 段可开关，TUI 与 `settings.ui.set`（Web/attach）共用同一持久化字段）。
   字符串类别规则（如 `shell.exec`）仍可被扫描器放宽；需要强制询问某条命令时使用
   `{ category: 'sandbox', resource: '...', action: 'ask' }` 对象规则。
-- P3 未完成：LSP 诊断/formatter。
+- P3 已完成：LSP 只读诊断面板 `/check <file...>`（别名 `/lsp`）：复用 `tools.invoke` 调用
+  `lsp_diagnostics`，TUI 走本地 ToolRegistry、Web/attach 走 gateway；错误/警告按
+  `file:line:col` 展示，缺失 server 返回安装提示，工具异常不会中断其它文件。
+- P3 未完成：LSP formatter hook。
 - 已知限制：turn undo 边界保存在进程内，重启后不可撤销；会话快照 `/snapshot` 仍可显式持久化。
