@@ -874,6 +874,32 @@ describe('Workflow data & trigger nodes', () => {
         expect(reset.data?.executionState?.nodeStates.task_2.status).toBe('skipped');
     });
 
+    it('extends the pending trigger delay instead of emitting twice', async () => {
+        let calls = 0;
+        const context = {
+            actions: {
+                record: () => {
+                    calls += 1;
+                    return calls;
+                }
+            }
+        };
+        const definition = chain([
+            { type: 'inject', config: { payload: {} } },
+            { type: 'trigger', config: { delay: 80, newMessage: 'extend', payload: { step: 1 } } },
+            { type: 'task', config: { action: 'record' } }
+        ]);
+        const first = service.execute(definition, context);
+        await new Promise(resolve => setTimeout(resolve, 30));
+        const second = await service.execute(definition, context);
+        const firstResult = await first;
+
+        expect(firstResult.data?.executionState?.nodeStates.trigger_1.result?.data?.superseded).toBe(true);
+        expect(firstResult.data?.executionState?.nodeStates.trigger_1.result?.data?.triggered).toBe(false);
+        expect(second.data?.executionState?.nodeStates.trigger_1.result?.data?.triggered).toBe(true);
+        expect(calls).toBe(1);
+    });
+
     it('fails HTTP requests without a URL instead of skipping them', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: {} } },

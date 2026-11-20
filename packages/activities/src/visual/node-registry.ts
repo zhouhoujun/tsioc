@@ -1051,7 +1051,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'parallel',
                 options: [
                     { label: 'Run every message', value: 'parallel' },
-                    { label: 'Restart pending delay', value: 'restart' }
+                    { label: 'Restart pending delay', value: 'restart' },
+                    { label: 'Extend pending delay', value: 'extend' }
                 ],
                 description: 'How concurrent messages through this trigger are handled.'
             }),

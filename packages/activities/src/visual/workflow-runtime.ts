@@ -1475,6 +1475,7 @@ export async function executeVisualNode(
             if (resolveWorkflowValue('reset', context) === true) {
                 state.triggerResetVersion = resetVersion + 1;
                 state.triggerGeneration = (Number(state.triggerGeneration) || 0) + 1;
+                state.triggerDeadline = 0;
                 return {
                     success: true,
                     data: { nodeId: node.id, dropped: true, reset: true, triggered: false }
@@ -1482,9 +1483,17 @@ export async function executeVisualNode(
             }
             const generation = (Number(state.triggerGeneration) || 0) + 1;
             state.triggerGeneration = generation;
+            let deadline = Date.now() + delay;
+            if (mode === 'extend') {
+                const existing = Number(state.triggerDeadline) || 0;
+                if (existing > Date.now()) {
+                    deadline = existing + delay;
+                }
+                state.triggerDeadline = deadline;
+            }
             let superseded = false;
             let reset = false;
-            const stopped = !(await pause(delay, () => {
+            const stopped = !(await pause(Math.max(0, deadline - Date.now()), () => {
                 if (extras?.cancelled?.()) {
                     return true;
                 }
@@ -1493,7 +1502,7 @@ export async function executeVisualNode(
                     superseded = true;
                     return true;
                 }
-                if (mode === 'restart' && Number(state.triggerGeneration) !== generation) {
+                if ((mode === 'restart' || mode === 'extend') && Number(state.triggerGeneration) !== generation) {
                     superseded = true;
                     return true;
                 }
