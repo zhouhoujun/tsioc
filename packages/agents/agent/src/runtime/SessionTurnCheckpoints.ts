@@ -18,10 +18,15 @@ export interface SessionTurnUndoResult {
     files?: number;
 }
 
-interface SessionTurnRedoEntry {
+export interface SessionTurnRedoEntry {
     checkpoint: SessionTurnCheckpoint;
     messages: AgentMessage[];
     files: number;
+}
+
+export interface SessionTurnHistorySnapshot {
+    undo: SessionTurnCheckpoint[];
+    redo: SessionTurnRedoEntry[];
 }
 
 const MAX_DEPTH = 20;
@@ -38,13 +43,41 @@ export class SessionTurnCheckpoints {
     private undoStacks = new Map<string, SessionTurnCheckpoint[]>();
     private redoStacks = new Map<string, SessionTurnRedoEntry[]>();
 
-    record(sessionId: string, checkpoint: SessionTurnCheckpoint): void {
-        const stack = this.undoStacks.get(sessionId) ?? [];
+    record(sessionId: string, checkpoint: SessionTurnCheckpoint): void {        const stack = this.undoStacks.get(sessionId) ?? [];
         stack.push(checkpoint);
         if (stack.length > MAX_DEPTH) {
             stack.splice(0, stack.length - MAX_DEPTH);
         }
         this.undoStacks.set(sessionId, stack);
+        this.redoStacks.delete(sessionId);
+    }
+
+    /** Persistable copy of both stacks (shallow: entries are never mutated in place). */
+    snapshot(sessionId: string): SessionTurnHistorySnapshot {
+        return {
+            undo: [...(this.undoStacks.get(sessionId) ?? [])],
+            redo: [...(this.redoStacks.get(sessionId) ?? [])]
+        };
+    }
+
+    /** Restore persisted stacks; malformed entries are ignored defensively. */
+    restore(sessionId: string, data: Partial<SessionTurnHistorySnapshot> | null | undefined): void {
+        const undo = Array.isArray(data?.undo) ? data!.undo.filter(entry => !!entry && typeof entry.messageCount === 'number') : [];
+        const redo = Array.isArray(data?.redo) ? data!.redo.filter(entry => !!entry?.checkpoint) : [];
+        if (undo.length) {
+            this.undoStacks.set(sessionId, undo.slice(-MAX_DEPTH));
+        } else {
+            this.undoStacks.delete(sessionId);
+        }
+        if (redo.length) {
+            this.redoStacks.set(sessionId, redo.slice(-MAX_DEPTH));
+        } else {
+            this.redoStacks.delete(sessionId);
+        }
+    }
+
+    clear(sessionId: string): void {
+        this.undoStacks.delete(sessionId);
         this.redoStacks.delete(sessionId);
     }
 

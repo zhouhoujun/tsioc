@@ -75,6 +75,8 @@ export * from './harness/WeaknessMiner';
 export * from './harness/HarnessProfile';
 
 export * from './harness/TypeOrmTurnDiagnosticsStore';
+export * from './runtime/TurnHistoryStore';
+export * from './runtime/TypeOrmTurnHistoryStore';
 export * from './harness/SummaryQualityScorer';
 export * from './harness/SummaryQualityStore';
 

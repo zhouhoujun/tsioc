@@ -60,8 +60,7 @@ export class AgentSessionEntity {
 }
 
 @Entity()
-export class AgentSessionSnapshotEntity {
-    @PrimaryGeneratedColumn('uuid')
+export class AgentSessionSnapshotEntity {    @PrimaryGeneratedColumn('uuid')
     id!: string;
 
     @Column()
@@ -630,6 +629,35 @@ export class AgentCommandExchangeEntity {
 
     @Column({ type: 'bigint' })
     timestamp!: number;
+}
+
+/**
+ * Persisted turn undo/redo history (turn boundaries + redo payloads) and the
+ * matching file-snapshot stacks, so `/undo` survives a process restart.
+ * One row per session; the arrays are bounded by the in-memory stack limits.
+ */
+@Entity()
+export class AgentTurnHistoryEntity {
+    @PrimaryGeneratedColumn('uuid')
+    id!: string;
+
+    @Column({ unique: true })
+    sessionId!: string;
+
+    @Column({ type: 'simple-json', nullable: true })
+    turnUndo!: any[] | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    turnRedo!: any[] | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    fileUndo!: any[] | null;
+
+    @Column({ type: 'simple-json', nullable: true })
+    fileRedo!: any[] | null;
+
+    @Column({ type: 'bigint' })
+    updatedAt!: number;
 }
 
 export { AgentMemoryEntity } from './entities-memory';

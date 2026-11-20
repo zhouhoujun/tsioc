@@ -92,8 +92,8 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 - composer `!` shell mode（opencode）；
 - `@path#Lx-Ly` 行范围引用（opencode）；
 - 会话级 undo/redo（已实现：`/undo` 先回滚最近一轮的 prompt/消息/文件改动并把 prompt 放回输入框，
-  `/redo` 重做；无 turn checkpoint 的宿主回退到原文件级 undo/redo。turn 边界保存在进程内，
-  重启后不再可撤销）；
+  `/redo` 重做；无 turn checkpoint 的宿主回退到原文件级 undo/redo。turn 边界与文件快照已
+  持久化（`AgentTurnHistoryEntity`），进程重启后仍可撤销/重做）；
 - durable “always allow” 项目级规则（已实现：审批面板 `p`、`/permissions allow [<tool>|clear]`，
   持久化 `approvalAllowRules`，auto-deny 始终优先）；
 - OS 通知（配置字段已有，未找到实现调用）；
@@ -137,7 +137,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | 分享/导出 | ✅ `/share` `/export` | ✅ | ◐ | 对齐 |
 | Desktop/Mobile | ✅ Desktop + PWA/配对 | ✅ Desktop/Mobile | ◐ cloud | 对齐 |
 | Agent Center / Inbox | ◐ 命令+对话框 | ✅ Session Tree/最近 | ✅ agents command center | AMS P0 |
-| Checkpoints/rewind | ✅ `/rewind` 文件级 + `/undo` 会话轮次 | ✅ undo/redo | ◐ rollout | 补持久化 turn 快照 |
+| Checkpoints/rewind | ✅ `/rewind` 文件级 + `/undo` 会话轮次（turn/文件历史已持久化） | ✅ undo/redo | ◐ rollout | 对齐 |
 | Worktree | ✅ `/worktree` | ✅ 每 session/subagent | ✅ | 对齐 |
 | Remote/attach | ✅ serve/attach/pairing | ✅ server URL | ✅ `--remote` | 对齐 |
 
@@ -235,10 +235,12 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 - LSP formatter hook `/format <file...> [--check]`（`/fmt` 别名）：新增 `lsp_format`
   工具，默认写回、`--check` 预览，写入走 `fs` 审批类别与 workspace trust；
 - `/highlights` 发布说明浮层（`/whatsnew` 别名）：升级后按版本自动展示一次，设置页可关闭；
+- turn undo/redo 持久化：`AgentTurnHistoryEntity` 保存 turn 边界、redo 消息与文件快照栈，
+  `TurnHistoryController` 懒加载/串行写回，重启后 `/undo`、`/redo` 与文件级撤销仍可用；
 - `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。
 
 按影响排序（未完成计划）：
-1. **持久化 turn 快照**：当前 turn 边界在进程内；补 DB 持久化与 Esc Esc 撤销手势。
+1. **Esc Esc 撤销手势**：复用 `/undo` 的 turn 级恢复（opencode 对比项）。
 2. **Agent Center/Inbox**：按 `docs/agent-management-plan.md` 的 P0/P1 落地（不重复设计）。
 3. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
    `git diff --check`、source-size、bench 全绿。

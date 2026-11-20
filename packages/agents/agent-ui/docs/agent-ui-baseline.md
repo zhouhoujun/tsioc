@@ -120,7 +120,7 @@ rm -f run-one.tmp.ts
 
 | 包 | 结果 |
 | --- | --- |
-| `@tsdi/agent` | 1098 passing |
+| `@tsdi/agent` | 1100 passing |
 | `@tsdi/agent-gateway` | 400 passing |
 | `@tsdi/agent-tools` | 594 passing |
 | `@tsdi/agent-ui` | **2283 passing**（2 组） |
@@ -155,4 +155,8 @@ rm -f run-one.tmp.ts
   或在 turn 内由 agent 调用 `lsp_format`（支持 `captureFileSnapshot`）。
 - P3 已完成：`/highlights` 发布说明浮层（`/whatsnew` 别名）；`highlightsSeenVersion` 记录确认，
   下次版本升级自动展示一次；设置页 General 段可关闭（`highlights`），关闭后 `/highlights` 仍可手动打开。
-- 已知限制：turn undo 边界保存在进程内，重启后不可撤销；会话快照 `/snapshot` 仍可显式持久化。
+- P3 已完成：turn undo/redo 持久化：新增 `AgentTurnHistoryEntity`（每会话一行，turn 边界 +
+  redo 消息 + 文件快照栈）；`TurnHistoryController` 按会话懒加载/串行写回，`/undo`、`/redo`
+  与文件级撤销在进程重启后仍可用；删除会话时同步清理历史行。测试覆盖真实 sqljs 文件库
+  关闭/重开后的 `undo` + `redo`。
+- 已知限制：`/format` 等控制台直调工具仍不进入 turn 文件快照（先 `/snapshot` 可回退）。

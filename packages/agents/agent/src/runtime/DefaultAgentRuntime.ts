@@ -3,6 +3,8 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationArguments, ApplicationContext, RunContext, Runner, UuidGenerator, createRunContext } from '@tsdi/core';
 import { AgentRuntime, AgentTurnUndoResult, CancelTurnResult, CompactNowResult, FileUndoRedoResult } from './AgentRuntime';
 import { SessionTurnCheckpoints } from './SessionTurnCheckpoints';
+import { TurnHistoryStore } from './TurnHistoryStore';
+import { TurnHistoryController } from './TurnHistoryController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -171,6 +173,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
     protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints();
+    private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
@@ -201,7 +204,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() protected goalStore?: GoalStore,
         @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) protected clock?: AgentClock,
         @Optional() @Inject(AGENT_WORKSPACE_TRUST, { defaultValue: null }) protected workspaceTrust?: AgentWorkspaceTrustResolver | null,
-        @Optional() @Inject(AGENT_TELEMETRY) protected telemetry?: import('../harness/AgentTelemetry').AgentTelemetry
+        @Optional() @Inject(AGENT_TELEMETRY) protected telemetry?: import('../harness/AgentTelemetry').AgentTelemetry,
+        @Optional() protected turnHistoryStore?: TurnHistoryStore
     ) {
         super();
         this.tokenBudgetTracker = new TokenBudgetTracker(this.options.tokenBudget);
@@ -895,43 +899,38 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return { compensated, toolCallIds };
     }
 
+    private get turnHistory(): TurnHistoryController {
+        return this.turnHistoryController ??= new TurnHistoryController(this.turnHistoryStore, {
+            sessions: this.sessions, checkpoints: this.sessionTurnCheckpoints, fileSnapshots: this.fileSnapshotStore,
+            undoFile: id => this.undoFileChange(id), redoFile: id => this.redoFileChange(id)
+        });
+    }
+
     override async undoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
         if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; }
-        return this.sessionTurnCheckpoints.undo(sessionId, this.sessions, this.fileSnapshotStore, id => this.undoFileChange(id));
+        return this.turnHistory.undo(sessionId);
     }
 
     override async redoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
         if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; }
-        return this.sessionTurnCheckpoints.redo(sessionId, this.sessions, id => this.redoFileChange(id));
+        return this.turnHistory.redo(sessionId);
     }
 
     private async recordSessionTurnCheckpoint(sessionId: string, prompt: string): Promise<void> {
-        try {
-            const state = await this.sessions.get(sessionId);
-            this.sessionTurnCheckpoints.record(sessionId, {
-                messageCount: state.messages.length,
-                fileCount: this.fileSnapshotStore?.list(sessionId).length ?? 0,
-                prompt: String(prompt || ''),
-                createdAt: Date.now()
-            });
-        } catch { /* Undo then falls back to per-file snapshots for this turn. */ }
+        try { await this.turnHistory.record(sessionId, prompt); } catch { /* Undo falls back to per-file snapshots. */ }
     }
 
     override async undoFileChange(sessionId: string): Promise<FileUndoRedoResult> {
         const snapshot = this.fileSnapshotStore?.undo(sessionId);
-        if (!snapshot) {
-            return { filePath: '', restored: 'none' };
-        }
-        await this.restoreFileSnapshot(snapshot, 'before');
+        if (!snapshot) return { filePath: '', restored: 'none' };
+        await this.restoreFileSnapshot(snapshot, 'before'); await this.turnHistory.afterFileChange(sessionId);
         return { filePath: snapshot.filePath, restored: snapshot.before === null ? 'deleted' : 'content', snapshot };
     }
 
     override async redoFileChange(sessionId: string): Promise<FileUndoRedoResult> {
         const snapshot = this.fileSnapshotStore?.redo(sessionId);
-        if (!snapshot) {
-            return { filePath: '', restored: 'none' };
-        }
-        await this.restoreFileSnapshot(snapshot, 'after');
+        if (!snapshot) return { filePath: '', restored: 'none' };
+        await this.restoreFileSnapshot(snapshot, 'after'); await this.turnHistory.afterFileChange(sessionId);
         return { filePath: snapshot.filePath, restored: snapshot.after === null ? 'deleted' : 'content', snapshot };
     }
 
@@ -1007,6 +1006,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         try {
             const resolved = await this.resolveFileSnapshotAfter(snapshot);
             this.fileSnapshotStore.push(sessionId, resolved);
+            await this.turnHistory.afterFileChange(sessionId);
         } catch {
             // a snapshot failure must not break a successful tool call
         }

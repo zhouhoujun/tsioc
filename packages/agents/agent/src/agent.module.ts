@@ -59,6 +59,8 @@ import { CompactionHistoryStore } from './harness/CompactionHistoryStore';
 import { TypeOrmCompactionHistoryStore } from './harness/TypeOrmCompactionHistoryStore';
 import { TurnDiagnosticsStore } from './harness/TurnDiagnosticsStore';
 import { TypeOrmTurnDiagnosticsStore } from './harness/TypeOrmTurnDiagnosticsStore';
+import { TurnHistoryStore } from './runtime/TurnHistoryStore';
+import { TypeOrmTurnHistoryStore } from './runtime/TypeOrmTurnHistoryStore';
 import { WeaknessMiner } from './harness/WeaknessMiner';
 import { SummaryQualityStore } from './harness/SummaryQualityStore';
 import { TypeOrmSummaryQualityStore } from './harness/TypeOrmSummaryQualityStore';
@@ -106,6 +108,8 @@ import { AgentClock, SystemAgentClock, AGENT_CLOCK } from './runtime/Clock';
         { provide: CompactionHistoryStore, useExisting: TypeOrmCompactionHistoryStore, asDefault: true },
         TypeOrmTurnDiagnosticsStore,
         { provide: TurnDiagnosticsStore, useExisting: TypeOrmTurnDiagnosticsStore, asDefault: true },
+        TypeOrmTurnHistoryStore,
+        { provide: TurnHistoryStore, useExisting: TypeOrmTurnHistoryStore, asDefault: true },
         WeaknessMiner,
         TypeOrmSummaryQualityStore,
         { provide: SummaryQualityStore, useExisting: TypeOrmSummaryQualityStore, asDefault: true },

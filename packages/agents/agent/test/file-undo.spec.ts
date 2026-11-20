@@ -178,6 +178,25 @@ export class FileSnapshotStoreTest {
         expect(listed.length).toEqual(1);
         expect(listed[0].filePath).toEqual('/b');
     }
+
+    @Test('snapshot/restore round-trips both stacks and clamps the undo depth')
+    snapshotRestoreRoundTrip() {
+        const store = new FileSnapshotStore(2);
+        store.push('s1', snapshot('/a', 'v0', 'v1'));
+        store.push('s1', snapshot('/b', 'v1', 'v2'));
+        store.push('s1', snapshot('/c', 'v2', 'v3'));
+        store.undo('s1');
+        const saved = store.snapshot('s1');
+        expect(saved.undo.map(item => item.filePath)).toEqual(['/b']);
+        expect(saved.redo.map(item => item.filePath)).toEqual(['/c']);
+
+        const restored = new FileSnapshotStore(2);
+        restored.restore('s1', saved);
+        expect(restored.list('s1').map(item => item.filePath)).toEqual(['/b']);
+        expect(restored.listRedo('s1').map(item => item.filePath)).toEqual(['/c']);
+        restored.restore('s1', null);
+        expect(restored.list('s1')).toEqual([]);
+    }
 }
 
 class SnapshotWriteTool {
@@ -370,6 +389,52 @@ export class RuntimeTurnUndoRedoTest {
             expect((await runtime.getMessages('s1')).length).toBeGreaterThan(0);
         } finally {
             await ctx.close();
+            await fs.promises.rm(tmp, { recursive: true, force: true });
+        }
+    }
+
+    @Test('turn undo and file snapshots survive a process restart')
+    async persistsAcrossRestart() {
+        const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'turn-undo-persist-'));
+        const filePath = path.join(tmp, 'note.txt');
+        const dbFile = path.join(tmp, 'agent.db');
+        await fs.promises.writeFile(filePath, 'original', 'utf8');
+        const create = async () => {
+            const tool = new SnapshotWriteTool(filePath);
+            const ctx = await Application.run(AgentModule, {
+                providers: [
+                    ...provideAgentOrm({
+                        type: 'sqljs' as any,
+                        autoLoadEntities: false as any,
+                        synchronize: true,
+                        autoSave: true,
+                        location: dbFile,
+                        entities: [] as any
+                    } as any),
+                    { provide: ModelAdapter, useValue: new SingleToolCallModelAdapter('snapshot_write') },
+                    { provide: ToolRegistry, useValue: new SnapshotWriteRegistry(tool) },
+                    { provide: FileAdapter, useValue: new NodeTestFileAdapter() }
+                ]
+            });
+            return { ctx, runtime: ctx.get(AgentRuntime) };
+        };
+        const first = await create();
+        await first.runtime.runTurn('s1', 'write it');
+        expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('updated');
+        await first.ctx.close();
+
+        const second = await create();
+        try {
+            const undone = await second.runtime.undoTurn('s1');
+            expect(undone).toEqual({ restored: true, prompt: 'write it', files: 1 });
+            expect(await second.runtime.getMessages('s1')).toEqual([]);
+            expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('original');
+
+            const redone = await second.runtime.redoTurn('s1');
+            expect(redone.restored).toEqual(true);
+            expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('updated');
+        } finally {
+            await second.ctx.close();
             await fs.promises.rm(tmp, { recursive: true, force: true });
         }
     }

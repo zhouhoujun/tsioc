@@ -102,6 +102,31 @@ export class FileSnapshotStore {
         return [...(this.redoStacks.get(sessionId) ?? [])];
     }
 
+    /** Persistable copy of both stacks (entries are never mutated after push). */
+    snapshot(sessionId: string): { undo: FileSnapshot[]; redo: FileSnapshot[] } {
+        return {
+            undo: [...(this.undoStacks.get(sessionId) ?? [])],
+            redo: [...(this.redoStacks.get(sessionId) ?? [])]
+        };
+    }
+
+    /** Restore persisted stacks and clamp them to the current limits. */
+    restore(sessionId: string, data: { undo?: FileSnapshot[]; redo?: FileSnapshot[] } | null | undefined): void {
+        const undo = Array.isArray(data?.undo) ? data!.undo.filter(item => !!item && typeof item.filePath === 'string') : [];
+        const redo = Array.isArray(data?.redo) ? data!.redo.filter(item => !!item && typeof item.filePath === 'string') : [];
+        if (undo.length) {
+            this.enforceLimits(undo);
+            this.undoStacks.set(sessionId, undo);
+        } else {
+            this.undoStacks.delete(sessionId);
+        }
+        if (redo.length) {
+            this.redoStacks.set(sessionId, redo);
+        } else {
+            this.redoStacks.delete(sessionId);
+        }
+    }
+
     clear(sessionId: string): void {
         this.undoStacks.delete(sessionId);
         this.redoStacks.delete(sessionId);

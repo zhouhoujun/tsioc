@@ -12,6 +12,7 @@ import { AgentMessage, normalizeAgentMessageParts } from '../runtime/AgentMessag
 import { AgentUsageRecord } from '../runtime/UsageSummary';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMessageEntity, AgentSessionEntity, AgentSessionSnapshotEntity } from './entities';
+import { clearSessionRows, deleteSessionRows } from './session-row-cleanup';
 import { truncateSessionMessages } from './SessionMessageTruncation';
 import { readMessageUsageRecords, readOwnerPrincipalId, readSessionFacts, readToolPayload } from './TypeOrmSessionReads';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
@@ -511,15 +512,11 @@ export class TypeOrmSessionStore extends SessionStore {
     }
 
     async delete(sessionId: string): Promise<void> {
-        await this.adapter.getRepository(AgentMessageEntity).delete({ sessionId } as any);
-        await this.adapter.getRepository(AgentSessionSnapshotEntity).delete({ sessionId } as any);
-        await this.adapter.getRepository(AgentSessionEntity).delete({ sessionId } as any);
+        await deleteSessionRows(this.adapter, sessionId);
     }
 
     async clear(): Promise<void> {
-        await this.adapter.getRepository(AgentMessageEntity).clear();
-        await this.adapter.getRepository(AgentSessionSnapshotEntity).clear();
-        await this.adapter.getRepository(AgentSessionEntity).clear();
+        await clearSessionRows(this.adapter);
     }
 
     async search(query: string, options: SessionSearchOptions = {}): Promise<SessionSearchMatch[]> {
