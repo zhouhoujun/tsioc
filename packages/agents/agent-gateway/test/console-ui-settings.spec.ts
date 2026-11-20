@@ -115,6 +115,33 @@ export class ConsoleUiSettingsTest {
         }
     }
 
+    @Test('applies and persists ordered approval rules')
+    approvalRequireApproval() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+        try {
+            const options: any = { workspace, ui: {}, policy: { approval: { autoReview: true } } };
+            const rules: any[] = [
+                'shell.exec',
+                { category: 'sandbox', action: 'allow', resource: 'git status*' },
+                { category: 'fs', action: 'deny', names: ['write_file'] }
+            ];
+            const applied = applyConsoleUiSettings(options, { approvalRequireApproval: rules });
+            expect(applied.approvalRequireApproval).toEqual(rules);
+            expect(options.policy.approval).toEqual({ autoReview: true, requireApproval: rules });
+            expect(JSON.parse(fs.readFileSync(file, 'utf8')).approvalRequireApproval).toEqual(rules);
+            expect(readConsoleUiSettings(workspace).approvalRequireApproval).toEqual(rules);
+
+            // Malformed entries are dropped instead of crashing the runtime.
+            const sanitized = applyConsoleUiSettings(options, {
+                approvalRequireApproval: [42, { category: '' }, { category: 'fs', action: 'bogus' }] as any
+            });
+            expect(sanitized.approvalRequireApproval).toEqual([{ category: 'fs' }]);
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('creates the settings file when the workspace has none yet')
     createsMissingFile() {
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));

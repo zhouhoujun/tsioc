@@ -28,7 +28,8 @@ export function resolveRuntimeApprovalManager(input: RuntimeApprovalResolution):
     const strategy = new DefaultApprovalStrategy(
         input.required,
         false,
-        () => input.options.policy?.approval?.readOnlyShell === true
+        () => input.options.policy?.approval?.readOnlyShell === true,
+        () => input.options.policy?.approval?.requireApproval
     );
     if (input.approvalManager instanceof ToolApprovalManager) {
         input.approvalManager.configure(strategy, options);

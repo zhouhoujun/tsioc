@@ -92,6 +92,15 @@ export class PersistedPreferencesTest {
         expect(options.policy.limits).toEqual({ maxTurns: 4 });
     }
 
+    @Test('applyPersistedPreferences restores ordered approval rules')
+    approvalRules() {
+        const options: any = { ui: {}, policy: { approval: { readOnlyShell: true } } };
+        const rules: any[] = ['shell.exec', { category: 'fs', action: 'deny' }];
+        applyPersistedPreferences(options, { approvalRequireApproval: rules });
+        expect(options.policy.approval.requireApproval).toEqual(rules);
+        expect(options.policy.approval.readOnlyShell).toEqual(true);
+    }
+
     @Test('applyPersistedModelProfile restores the active profile (and live provider/model ids)')
     restoresModelProfile() {
         const options: any = {

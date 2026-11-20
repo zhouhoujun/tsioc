@@ -2,6 +2,7 @@ import { AgentDelegationMode, SandboxMode, describeSandboxCapabilities, detectSa
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { explainAgentConsolePermission } from './AgentConsolePermissionInspector';
 import { readProjectApprovalAllowRules, saveProjectApprovalAllowRules } from './AgentConsoleApprovalAllowRules';
+import { runApprovalRulesCommand } from './AgentConsoleApprovalRuleCommands';
 
 export type AgentConsoleSecurityLevel = 'read-only' | 'ask' | 'auto' | 'full';
 
@@ -198,8 +199,12 @@ export async function runPermissionsCommand(host: PolicyCommandHost, args: strin
         await showSandboxCapabilities(host);
         return;
     }
-    if (tokens[0].toLowerCase() === 'inspect' || tokens[0].toLowerCase() === 'rules') {
+    if (tokens[0].toLowerCase() === 'inspect') {
         await showPermissionInspector(host, tokens[1]);
+        return;
+    }
+    if (tokens[0].toLowerCase() === 'rules' || tokens[0].toLowerCase() === 'rule') {
+        await runApprovalRulesCommand(host, tokens.slice(1).join(' '));
         return;
     }
     if (tokens[0].toLowerCase() === 'allow') {

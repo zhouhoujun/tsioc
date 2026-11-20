@@ -145,6 +145,21 @@ export class ShellCommandScannerTest {
         expect(strategy.requires('terminal', { command: 'ls' })).toEqual(false);
     }
 
+    @Test('live policy rules apply without rebuilding the strategy')
+    strategyReadsRulesLive() {
+        let rules: any[] = ['shell.exec'];
+        const strategy = new DefaultApprovalStrategy(['shell.exec'], false, undefined, () => rules);
+        expect(strategy.requires('terminal', { command: 'ls' })).toEqual(true);
+        expect(strategy.requires('write_file', { path: 'a' })).toEqual(false);
+
+        rules = [{ category: 'fs', action: 'deny' }];
+        expect(strategy.autoDenies('write_file', { path: 'a' })).toEqual(true);
+        expect(strategy.requires('terminal', { command: 'ls' })).toEqual(false);
+
+        rules = [{ category: 'sandbox', action: 'allow' }];
+        expect(strategy.requires('terminal', { command: 'ls' })).toEqual(false);
+    }
+
     @Test('policy layering keeps the scanner flag, last explicit boolean wins')
     policyLayering() {
         expect(resolveAgentPolicy(undefined, { approval: { readOnlyShell: true } }).approval)

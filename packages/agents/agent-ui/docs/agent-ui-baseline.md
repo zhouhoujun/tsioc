@@ -120,10 +120,10 @@ rm -f run-one.tmp.ts
 
 | 包 | 结果 |
 | --- | --- |
-| `@tsdi/agent` | 1100 passing |
-| `@tsdi/agent-gateway` | 401 passing |
+| `@tsdi/agent` | 1101 passing |
+| `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 594 passing |
-| `@tsdi/agent-ui` | **2286 passing**（2 组） |
+| `@tsdi/agent-ui` | **2292 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -164,3 +164,8 @@ rm -f run-one.tmp.ts
   队列面板与 Alt+Enter 优先仍待补。
 - AMS P0 补充：`/agents default [name]` 读取/设置新会话默认代理档案，持久化 `defaultArchetype`
   并在 TUI/Web/attach 启动时恢复到 `policy.defaultArchetype`。
+- AMS P1.2 部分完成：`/permissions rules` 查看有序审批规则，`add <tool|category>` /
+  `add <ask|allow|deny> <category> [resource]` / `remove <n>` / `clear confirm`；规则写入
+  `policy.approval.requireApproval` 并持久化 `approvalRequireApproval`，审批策略通过 live
+  provider 立即生效（无需重建 manager）；空列表自动回退默认规则，避免重启后静默放开审批。
+  per-session override 与图形化规则表单仍待补。

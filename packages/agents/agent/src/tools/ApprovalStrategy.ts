@@ -36,11 +36,14 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
     readonly autoReview: boolean;
     /** Live opt-in flag: read on every decision so a settings toggle applies at once. */
     private readOnlyShell?: () => boolean;
+    /** Live rule list: settings edits apply without rebuilding the manager. */
+    private liveRules?: () => ApprovalRule[] | undefined;
 
-    constructor(blocked?: ApprovalRule[], autoReview = false, readOnlyShell?: () => boolean) {
+    constructor(blocked?: ApprovalRule[], autoReview = false, readOnlyShell?: () => boolean, liveRules?: () => ApprovalRule[] | undefined) {
         this.rules = blocked ?? ['shell.exec', 'fs.write', 'fs.delete', 'db.execute', 'deploy', 'sudo.exec', 'playwright_browser', 'admin.*'];
         this.autoReview = autoReview;
         this.readOnlyShell = readOnlyShell;
+        this.liveRules = liveRules;
     }
 
     requires(toolName: string, input: any): boolean {
@@ -64,7 +67,8 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         // Object rules are explicit user intent; the scanner must not override
         // them. The last matching rule still wins, as documented.
         let explicit = false;
-        for (const rule of this.rules) {
+        const rules = this.liveRules?.() ?? this.rules;
+        for (const rule of rules) {
             if (typeof rule === 'string') {
                 if (this.matchesPattern(toolName, rule)) {
                     decision = 'ask';

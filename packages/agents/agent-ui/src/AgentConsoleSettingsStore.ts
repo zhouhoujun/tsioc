@@ -1,5 +1,6 @@
 import { FileAdapter } from '@tsdi/common';
 import { defaultAgentProviderRegistry } from '@tsdi/agent';
+import type { ApprovalRule } from '@tsdi/agent';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
 
@@ -22,6 +23,8 @@ export interface AgentConsoleSettingsData {
     highlightsSeenVersion?: string;
     /** Default agent profile (archetype) for new sessions. */
     defaultArchetype?: string;
+    /** Ordered approval rules (string tool/category patterns or category objects). */
+    approvalRequireApproval?: ApprovalRule[];
     /** Project-scoped tool allow list (durable "always allow"). */
     approvalAllowRules?: string[];
     messageSelectionPageSize?: 4 | 6 | 10;
@@ -45,7 +48,7 @@ export interface AgentConsoleSettingsData {
 
 export function applyPersistedPreferences(
     options: any,
-    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean; highlights?: boolean; defaultArchetype?: string } | null | undefined
+    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean; highlights?: boolean; defaultArchetype?: string; approvalRequireApproval?: ApprovalRule[] } | null | undefined
 ): void {
     if (!options || !persisted) {
         return;
@@ -74,6 +77,13 @@ export function applyPersistedPreferences(
     if (typeof persisted.defaultArchetype === 'string' && persisted.defaultArchetype.trim()) {
         options.policy = { ...(options.policy || {}), defaultArchetype: persisted.defaultArchetype.trim() };
         options.defaultArchetype = persisted.defaultArchetype.trim();
+    }
+    if (Array.isArray(persisted.approvalRequireApproval)) {
+        // The approval strategy reads this live from the shared options object.
+        options.policy = {
+            ...(options.policy || {}),
+            approval: { ...(options.policy?.approval || {}), requireApproval: persisted.approvalRequireApproval }
+        };
     }
 }
 
@@ -179,6 +189,7 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         highlights: typeof parsed?.highlights === 'boolean' ? parsed.highlights : undefined,
         highlightsSeenVersion: typeof parsed?.highlightsSeenVersion === 'string' && parsed.highlightsSeenVersion.trim() ? parsed.highlightsSeenVersion.trim() : undefined,
         defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined,
+        approvalRequireApproval: sanitizeApprovalRequireApproval(parsed?.approvalRequireApproval),
         approvalAllowRules: sanitizeApprovalAllowRules(parsed?.approvalAllowRules),
         messageSelectionPageSize: [4, 6, 10].includes(Number(parsed?.messageSelectionPageSize))
             ? Number(parsed.messageSelectionPageSize) as 4 | 6 | 10
@@ -211,9 +222,49 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
     };
 }
 
-/** Durable allow patterns are trimmed, deduplicated and bounded. */
-export function sanitizeApprovalAllowRules(value: unknown): string[] | undefined {
+/** Ordered approval rules: strings or category objects; unknown shapes are dropped. */
+export function sanitizeApprovalRequireApproval(value: unknown): ApprovalRule[] | undefined {
     if (!Array.isArray(value)) {
+        return undefined;
+    }
+    const rules: ApprovalRule[] = [];
+    for (const item of value) {
+        if (typeof item === 'string') {
+            const rule = item.trim();
+            if (rule) rules.push(rule);
+            continue;
+        }
+        if (!item || typeof item !== 'object') {
+            continue;
+        }
+        const category = String((item as any).category || '').trim();
+        if (!category) {
+            continue;
+        }
+        const action = ['ask', 'allow', 'deny'].includes((item as any).action) ? (item as any).action : undefined;
+        const mode = (item as any).mode === 'auto-deny' ? 'auto-deny' : undefined;
+        const names = Array.isArray((item as any).names)
+            ? (item as any).names.map((name: unknown) => String(name || '').trim()).filter(Boolean).slice(0, 50)
+            : undefined;
+        const rawResource = (item as any).resource;
+        const resource = typeof rawResource === 'string' && rawResource.trim()
+            ? rawResource.trim()
+            : Array.isArray(rawResource)
+                ? rawResource.map((entry: unknown) => String(entry || '').trim()).filter(Boolean).slice(0, 50)
+                : undefined;
+        rules.push({
+            category: category as any,
+            ...(names?.length ? { names } : {}),
+            ...(resource && (!Array.isArray(resource) || resource.length) ? { resource } : {}),
+            ...(action ? { action } : {}),
+            ...(mode ? { mode } : {})
+        });
+    }
+    return rules.length ? rules : undefined;
+}
+
+/** Durable allow patterns are trimmed, deduplicated and bounded. */
+export function sanitizeApprovalAllowRules(value: unknown): string[] | undefined {    if (!Array.isArray(value)) {
         return undefined;
     }
     const seen = new Set<string>();
@@ -271,6 +322,7 @@ export class AgentConsoleSettingsStore {
             ...(typeof data.highlights === 'boolean' ? { highlights: data.highlights } : {}),
             ...(data.highlightsSeenVersion ? { highlightsSeenVersion: data.highlightsSeenVersion } : {}),
             ...(data.defaultArchetype ? { defaultArchetype: data.defaultArchetype } : {}),
+            ...(data.approvalRequireApproval?.length ? { approvalRequireApproval: data.approvalRequireApproval } : {}),
             ...(data.messageSelectionPageSize ? { messageSelectionPageSize: data.messageSelectionPageSize } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { AgentOptions } from '@tsdi/agent';
+import type { ApprovalRule } from '@tsdi/agent';
 
 export interface ConsoleUiSettingsPatch {
     personality?: string | null;
@@ -15,13 +16,55 @@ export interface ConsoleUiSettingsPatch {
     readOnlyShell?: boolean;
     /** Default agent profile (archetype) applied to the shared runtime options. */
     defaultArchetype?: string | null;
+    /** Ordered approval rules (string patterns or category objects). */
+    approvalRequireApproval?: ApprovalRule[] | null;
     /** Project-scoped tool allow list applied to the runtime approval manager. */
     approvalAllowRules?: string[] | null;
 }
 
-/** Durable allow rules: trimmed, deduplicated and bounded like the console store. */
-export function sanitizeApprovalAllowRules(value: unknown): string[] {
+/** Ordered approval rules: strings or category objects; unknown shapes are dropped. */
+export function sanitizeApprovalRequireApproval(value: unknown): ApprovalRule[] {
     if (!Array.isArray(value)) {
+        return [];
+    }
+    const rules: ApprovalRule[] = [];
+    for (const item of value) {
+        if (typeof item === 'string') {
+            const rule = item.trim();
+            if (rule) rules.push(rule);
+            continue;
+        }
+        if (!item || typeof item !== 'object') {
+            continue;
+        }
+        const category = String((item as any).category || '').trim();
+        if (!category) {
+            continue;
+        }
+        const action = ['ask', 'allow', 'deny'].includes((item as any).action) ? (item as any).action : undefined;
+        const mode = (item as any).mode === 'auto-deny' ? 'auto-deny' : undefined;
+        const names = Array.isArray((item as any).names)
+            ? (item as any).names.map((name: unknown) => String(name || '').trim()).filter(Boolean).slice(0, 50)
+            : undefined;
+        const rawResource = (item as any).resource;
+        const resource = typeof rawResource === 'string' && rawResource.trim()
+            ? rawResource.trim()
+            : Array.isArray(rawResource)
+                ? rawResource.map((entry: unknown) => String(entry || '').trim()).filter(Boolean).slice(0, 50)
+                : undefined;
+        rules.push({
+            category: category as any,
+            ...(names?.length ? { names } : {}),
+            ...(resource && (!Array.isArray(resource) || resource.length) ? { resource } : {}),
+            ...(action ? { action } : {}),
+            ...(mode ? { mode } : {})
+        });
+    }
+    return rules;
+}
+
+/** Durable allow rules: trimmed, deduplicated and bounded like the console store. */
+export function sanitizeApprovalAllowRules(value: unknown): string[] {    if (!Array.isArray(value)) {
         return [];
     }
     const seen = new Set<string>();
@@ -73,10 +116,19 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
         (options as any).policy = { ...((options as any).policy || {}), defaultArchetype };
         (options as any).defaultArchetype = defaultArchetype;
     }
+    const approvalRequireApproval = Array.isArray(params.approvalRequireApproval)
+        ? sanitizeApprovalRequireApproval(params.approvalRequireApproval)
+        : undefined;
+    if (approvalRequireApproval) {
+        (options as any).policy = {
+            ...((options as any).policy || {}),
+            approval: { ...((options as any).policy?.approval || {}), requireApproval: approvalRequireApproval }
+        };
+    }
     const approvalAllowRules = Array.isArray(params.approvalAllowRules)
         ? sanitizeApprovalAllowRules(params.approvalAllowRules)
         : undefined;
-    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules, readOnlyShell, defaultArchetype);
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules, readOnlyShell, defaultArchetype, approvalRequireApproval);
     return {
         personality: ui.personality,
         memoryInjection: ui.memoryInjection,
@@ -87,6 +139,7 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
         ...(approvalTimeoutMs ? { approvalTimeoutMs } : {}),
         ...(readOnlyShell !== undefined ? { readOnlyShell } : {}),
         ...(defaultArchetype ? { defaultArchetype } : {}),
+        ...(approvalRequireApproval ? { approvalRequireApproval } : {}),
         ...(approvalAllowRules ? { approvalAllowRules } : {})
     };
 }
@@ -127,7 +180,7 @@ function consoleStoreFile(workspace: string, name: string): string | null {
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean; defaultArchetype?: string } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean; defaultArchetype?: string; approvalRequireApproval?: ApprovalRule[] } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -145,7 +198,10 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
                 ? sanitizeApprovalAllowRules(parsed.approvalAllowRules)
                 : undefined,
             readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined,
-            defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined
+            defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined,
+            approvalRequireApproval: Array.isArray(parsed?.approvalRequireApproval)
+                ? sanitizeApprovalRequireApproval(parsed.approvalRequireApproval)
+                : undefined
         };
     } catch {
         return {};
@@ -162,7 +218,8 @@ function persistConsoleUiSettings(
     approvalTimeoutMs?: number,
     approvalAllowRules?: string[],
     readOnlyShell?: boolean,
-    defaultArchetype?: string
+    defaultArchetype?: string,
+    approvalRequireApproval?: ApprovalRule[]
 ): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
@@ -212,6 +269,13 @@ function persistConsoleUiSettings(
     }
     if (defaultArchetype) {
         next.defaultArchetype = defaultArchetype;
+    }
+    if (Array.isArray(approvalRequireApproval)) {
+        if (approvalRequireApproval.length) {
+            next.approvalRequireApproval = approvalRequireApproval;
+        } else {
+            delete next.approvalRequireApproval;
+        }
     }
     try {
         fs.mkdirSync(path.dirname(file), { recursive: true });
