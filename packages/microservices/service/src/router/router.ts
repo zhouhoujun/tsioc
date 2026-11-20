@@ -39,6 +39,12 @@ export abstract class Router<T = RouteHanlder> implements RequestHandler<Readabl
      */
     abstract get transport(): Transport | null;
 
+    /**
+     * Optional transport instance name, used to disambiguate multiple routers
+     * of the same transport protocol.
+     */
+    readonly name?: string;
+
     asDefault?: boolean;
 
     abstract get routes(): Routes;

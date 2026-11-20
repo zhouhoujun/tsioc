@@ -33,14 +33,22 @@ export function getSubscribeRoutes(config: ServiceConfig, injector: Injector): R
     });
 }
 
+const subscribePatternCache = new WeakMap<Router, { revision: number; patterns: string[] }>();
+
 export function getSubscribePatterns(config: ServiceConfig, injector: Injector): string[] {
     const router = getSubscribeRouter(config, injector);
     if (!router) {
         return [];
     }
+    const revision = (router as any).revision as number | undefined;
+    if (typeof revision === 'number') {
+        const cached = subscribePatternCache.get(router);
+        if (cached?.revision === revision) {
+            return cached.patterns.slice();
+        }
+    }
     const seen = new Set<string>();
-
-    return getSubscribeRoutes(config, injector)
+    const patterns = getSubscribeRoutes(config, injector)
         .map(route => formatSubscribePattern(route, router))
         .filter((pattern): pattern is string => !!pattern)
         .filter(pattern => {
@@ -50,6 +58,10 @@ export function getSubscribePatterns(config: ServiceConfig, injector: Injector):
             seen.add(pattern);
             return true;
         });
+    if (typeof revision === 'number') {
+        subscribePatternCache.set(router, { revision, patterns: patterns.slice() });
+    }
+    return patterns;
 }
 
 export function formatSubscribePattern(route: Route, router: Router): string | undefined {

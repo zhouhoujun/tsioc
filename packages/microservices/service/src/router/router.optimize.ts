@@ -45,7 +45,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         readonly transport: Transport | null = null,
         options?: Partial<TrieOptions>,
         routes?: Routes,
-        private microservice?: boolean
+        private microservice?: boolean,
+        readonly name: string = ''
     ) {
         super()
         this.options = {

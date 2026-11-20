@@ -13,6 +13,16 @@ import { getRouter } from './router/router.providers';
 
 export { Topic, Payload } from '@tsdi/core';
 
+function registerRouteSource(router: Router, source: string, routes: Route[]): () => void {
+    const target = router as any;
+    if (typeof target.registerRoutes === 'function' && typeof target.removeRoutes === 'function') {
+        target.registerRoutes(source, routes);
+        return () => target.removeRoutes(source);
+    }
+    routes.forEach(route => router.use(route));
+    return () => routes.forEach(route => router.unuse(route));
+}
+
 /**
  * Subscribe decorator, use to handle subscribe message event.
  *
@@ -69,6 +79,7 @@ export const Subscribe: Subscribe = createDecorator<SubscribeMetadata>('Subscrib
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
 
+            const byRouter = new Map<Router, Route[]>();
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.transport, true);
@@ -84,8 +95,21 @@ export const Subscribe: Subscribe = createDecorator<SubscribeMetadata>('Subscrib
                     paths: metadata.paths,
                     handler
                 } as Route;
-                router.use(route);
-                invocation.onDestroy(() => router.unuse(route));
+                const routes = byRouter.get(router);
+                if (routes) {
+                    routes.push(route);
+                } else {
+                    byRouter.set(router, [route]);
+                }
+            });
+            let sourceIndex = 0;
+            byRouter.forEach((routes, router) => {
+                const remove = registerRouteSource(
+                    router,
+                    `@Subscribe:${typeRef.className}:${sourceIndex++}`,
+                    routes
+                );
+                invocation.onDestroy(remove);
             });
         }
     }
@@ -156,6 +180,7 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
             const injector = ctx.injector;
             const invocation = typeRef.createInvocation(injector);
 
+            const byRouter = new Map<Router, Route[]>();
             defines.forEach(def => {
                 const metadata = def.metadata;
                 const router = getRouter(injector, metadata.transport, true);
@@ -171,8 +196,21 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
                     paths: metadata.paths,
                     handler
                 } as Route;
-                router.use(route);
-                invocation.onDestroy(() => router.unuse(route));
+                const routes = byRouter.get(router);
+                if (routes) {
+                    routes.push(route);
+                } else {
+                    byRouter.set(router, [route]);
+                }
+            });
+            let sourceIndex = 0;
+            byRouter.forEach((routes, router) => {
+                const remove = registerRouteSource(
+                    router,
+                    `@Handle:${typeRef.className}:${sourceIndex++}`,
+                    routes
+                );
+                invocation.onDestroy(remove);
             });
         },
 
