@@ -20,6 +20,8 @@ export interface AotProjectOptions {
     sourceMap?: boolean;
     /** Throw when TypeScript reports errors or skips emit. */
     throwOnError?: boolean;
+    /** Template interpolation delimiters (default `['{{', '}}']`). */
+    delimiters?: [string, string];
 }
 
 export interface AotProjectResult {
@@ -196,7 +198,11 @@ export function emitAotProject(options: AotProjectOptions = {}): AotProjectResul
     const outputFiles: string[] = [];
     const program = acquireProgram(rootNames, compilerOptions);
     const transformers: ts.CustomTransformers = {
-        before: [createAotTransformer({ typeChecker: program.getTypeChecker(), moduleKind: compilerOptions.module })]
+        before: [createAotTransformer({
+            typeChecker: program.getTypeChecker(),
+            moduleKind: compilerOptions.module,
+            delimiters: options.delimiters
+        })]
     };
 
     const emitResult = program.emit(undefined, (fileName, text, writeByteOrderMark, _onError, sourceFiles) => {

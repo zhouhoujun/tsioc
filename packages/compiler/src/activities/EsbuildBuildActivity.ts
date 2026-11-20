@@ -105,6 +105,9 @@ export class EsbuildBuildActivity extends Activity {
     @Attribute()
     aot = false;
 
+    @Attribute()
+    delimiters?: [string, string];
+
     /** Lower decorators to precompiled metadata registrations. */
     @Attribute()
     designMetadata = true;
@@ -428,7 +431,8 @@ export class EsbuildBuildActivity extends Activity {
         return transpileAot(filePath, source, {
             target: this.target,
             module: this.aotModuleKind(),
-            designMetadata: this.designMetadata
+            designMetadata: this.designMetadata,
+            delimiters: this.delimiters
         });
     }
 
@@ -436,7 +440,8 @@ export class EsbuildBuildActivity extends Activity {
         return createAotEsbuildPlugin({
             target: this.target,
             module: this.aotModuleKind(),
-            designMetadata: this.designMetadata
+            designMetadata: this.designMetadata,
+            delimiters: this.delimiters
         });
     }
 

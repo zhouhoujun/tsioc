@@ -29,6 +29,8 @@ const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
 export interface AotPrecompileOptions {
     /** Emit design:* metadata (needed by IoC injection). Default true. */
     designMetadata?: boolean;
+    /** Template interpolation delimiters (default `['{{', '}}']`). */
+    delimiters?: [string, string];
     /** Used to emit Object for interfaces/type-only aliases in design metadata. */
     typeChecker?: ts.TypeChecker;
     /**
@@ -470,7 +472,7 @@ function valueExpression(value: any): ts.Expression {
     return factory.createVoidZero();
 }
 
-function attachTemplateIR(metadata: ts.Expression): ts.Expression {
+function attachTemplateIR(metadata: ts.Expression, delimiters: [string, string]): ts.Expression {
     if (!ts.isObjectLiteralExpression(metadata)) {
         return metadata;
     }
@@ -478,7 +480,7 @@ function attachTemplateIR(metadata: ts.Expression): ts.Expression {
     if (!templateText) {
         return metadata;
     }
-    const ir = templateToIR(templateText);
+    const ir = templateToIR(templateText, delimiters);
     if (!ir) {
         return metadata;
     }
@@ -486,7 +488,7 @@ function attachTemplateIR(metadata: ts.Expression): ts.Expression {
         const name = propertyName(property);
         return name !== 'templateIR' && name !== 'templatePlan';
     });
-    const plan = templatePlanFromIR(ir);
+    const plan = templatePlanFromIR(ir, delimiters);
     if (plan) {
         // Emit the factory description as a real JS object (`ɵcmp` data),
         // not as a JSON string that every process must parse at startup.
@@ -512,7 +514,7 @@ function attachTemplateIR(metadata: ts.Expression): ts.Expression {
  * The Component call in the compact decorator record then receives the same
  * `templateIR` / `templatePlan` data a fully precompiled class would.
  */
-function decoratorRecordExpression(decorator: ts.Decorator): ts.Expression {
+function decoratorRecordExpression(decorator: ts.Decorator, delimiters: [string, string]): ts.Expression {
     const expression = decorator.expression;
     if (decoratorName(decorator) !== 'Component' || !ts.isCallExpression(expression)) {
         return expression;
@@ -521,7 +523,7 @@ function decoratorRecordExpression(decorator: ts.Decorator): ts.Expression {
     if (!args.length || !isObjectLiteralExpression(args[0])) {
         return expression;
     }
-    args[0] = attachTemplateIR(args[0]);
+    args[0] = attachTemplateIR(args[0], delimiters);
     return ts.factory.updateCallExpression(expression, expression.expression, expression.typeArguments, args);
 }
 
@@ -1605,6 +1607,7 @@ function designMetadataCall(className: string, key: string, metadataKey: string,
  */
 export function createAotTransformer(options: AotPrecompileOptions = {}) {
     const designMetadata = options.designMetadata !== false;
+    const delimiters = options.delimiters || ['{{', '}}'] as [string, string];
     activeTypeChecker = options.typeChecker;
     return (context: ts.TransformationContext) => {
         const factory = context.factory;
@@ -1723,7 +1726,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                 });
 
                 genericClassDecorators.slice().reverse().forEach(decorator => {
-                    records.push({ expression: decoratorRecordExpression(decorator), kind: 'class' });
+                    records.push({ expression: decoratorRecordExpression(decorator, delimiters), kind: 'class' });
                 });
 
                 let compiledTypeRecords: ts.Expression[] | undefined;
@@ -1750,7 +1753,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                                 genericClassDecorators.find(decorator => decoratorName(decorator) === (hasComponent ? 'Component' : 'Directive'))!
                             );
                             if (hasComponent && precompiledMetadata) {
-                                precompiledMetadata = attachTemplateIR(precompiledMetadata);
+                                precompiledMetadata = attachTemplateIR(precompiledMetadata, delimiters);
                             }
                             if (precompiledMetadata) {
                                 precompiledMetadata = attachMemberMetadata(precompiledMetadata, node);

@@ -68,6 +68,9 @@ export class AotCompileActivity extends Activity {
     tsconfig?: string;
 
     @Attribute()
+    delimiters?: [string, string];
+
+    @Attribute()
     exclude: string[] = ['node_modules', '**/*.spec.ts', '**/*.test.ts', '**/*.d.ts'];
 
     async execute(context: ActivityContext): Promise<ActivityResult> {
@@ -86,6 +89,7 @@ export class AotCompileActivity extends Activity {
                 rootNames: files.map(file => path.resolve(file)),
                 declaration: this.declaration,
                 sourceMap: this.sourcemap,
+                delimiters: this.delimiters,
                 compilerOptions: {
                     outDir: this.outDir,
                     target: normalizeTarget(this.target),

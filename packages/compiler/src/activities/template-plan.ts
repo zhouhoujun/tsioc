@@ -26,11 +26,11 @@ export interface TemplatePlan {
     nodes: TemplatePlanNode[];
 }
 
-const DEFAULT_DELIMITER = '{{}}';
+const DEFAULT_DELIMITERS: [string, string] = ['{{', '}}'];
 const UNSUPPORTED_TAGS = new Set<string>();
 const BINDING_ATTR = /^(?:@|:|\[|v-|\*)/;
 
-function planNode(node: TemplateIRNode): TemplatePlanNode | null {
+function planNode(node: TemplateIRNode, delimiters: [string, string]): TemplatePlanNode | null {
     if (node.kind === 'text') {
         return { kind: 'text', value: node.value };
     }
@@ -56,13 +56,13 @@ function planNode(node: TemplateIRNode): TemplatePlanNode | null {
     const rawAttrs: Array<[string, string]> = [];
     for (const [name, value] of node.attrs as Array<[string, string, string?]>) {
         rawAttrs.push([name, value]);
-        if (!BINDING_ATTR.test(name) && !name.startsWith('#') && !value.includes('{{')) {
+        if (!BINDING_ATTR.test(name) && !name.startsWith('#') && !value.includes(delimiters[0])) {
             attrs.push([name, value]);
         }
     }
     const children: TemplatePlanNode[] = [];
     for (const child of node.children) {
-        const planned = planNode(child);
+        const planned = planNode(child, delimiters);
         if (!planned) {
             return null;
         }
@@ -71,14 +71,17 @@ function planNode(node: TemplateIRNode): TemplatePlanNode | null {
     return { kind: 'element', tag: node.tag, namespace: node.namespace, attrs, rawAttrs, children };
 }
 
-export function templatePlanFromIR(ir: TemplateIRNode[]): TemplatePlan | null {
+export function templatePlanFromIR(
+    ir: TemplateIRNode[],
+    delimiters: [string, string] = DEFAULT_DELIMITERS
+): TemplatePlan | null {
     const nodes: TemplatePlanNode[] = [];
     for (const node of ir) {
-        const planned = planNode(node);
+        const planned = planNode(node, delimiters);
         if (!planned) {
             return null;
         }
         nodes.push(planned);
     }
-    return { delimiter: DEFAULT_DELIMITER, nodes };
+    return { delimiter: `${delimiters[0]}${delimiters[1]}`, nodes };
 }

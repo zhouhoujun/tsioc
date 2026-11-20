@@ -64,6 +64,7 @@ export function transpileAot(
         transformers: {
             before: [createAotTransformer({
                 designMetadata: options.designMetadata,
+                delimiters: options.delimiters,
                 typeChecker: options.typeChecker,
                 moduleKind: compilerOptions.module
             })]

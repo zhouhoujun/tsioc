@@ -92,7 +92,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
     protected get delimiter() {
         if (!this._delimiter) {
             const [open, close] = this.options.delimiters || ['{{', '}}'];
-            this._delimiter = new RegExp(`${open}(.*?)${close}`, 'g');
+            const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            this._delimiter = new RegExp(`${escape(open)}(.*?)${escape(close)}`, 'g');
         }
         return this._delimiter;
     }
@@ -104,7 +105,7 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
      */
     compile<C>(template: T, options: CompilerOptions): TemplateFactory<C> {
         const templateText = typeof template === 'string' ? template : '';
-        if (options.templatePlan && this.delimiter.source === '{{(.*?)}}') {
+        if (options.templatePlan) {
             let plan: TemplatePlan | undefined;
             if (typeof options.templatePlan === 'string') {
                 try {
@@ -115,7 +116,8 @@ export abstract class AbstractTemplateCompiler<T = any> extends TemplateCompiler
             } else {
                 plan = options.templatePlan;
             }
-            if (plan?.delimiter === '{{}}' && Array.isArray(plan.nodes)) {
+            const [open, close] = this.options.delimiters || ['{{', '}}'];
+            if (plan?.delimiter === `${open}${close}` && Array.isArray(plan.nodes)) {
                 return createTemplatePlanFactory<C>(plan, this.renderer, this.delimiter, options.directives, options.components, options.customElements || []);
             }
         }

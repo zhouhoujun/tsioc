@@ -22,6 +22,8 @@ export interface RunCompilerOptions {
     minify?: boolean;
     aot?: boolean;
     aotManifest?: string;
+    /** Template interpolation delimiters (default `['{{', '}}']`). */
+    delimiters?: [string, string];
     tsconfig?: string;
     exclude?: string[];
     /** Legacy taskfile block (`module`, `sourceMap`, ...). */
@@ -107,6 +109,7 @@ export async function runCompiler(options: RunCompilerOptions = {}): Promise<Run
             rootNames: files.map(file => path.resolve(cwd, file)),
             declaration,
             sourceMap,
+            delimiters: options.delimiters,
             compilerOptions: {
                 outDir,
                 target: normalizeTarget(target),

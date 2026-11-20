@@ -80,8 +80,8 @@ function convert(entry: any, inheritedNamespace?: string): TemplateIRNode[] | nu
     return [{ kind: 'element', tag, namespace, attrs, children: convertedChildren }];
 }
 
-export function templateToIR(template: string): TemplateIRNode[] | null {
+export function templateToIR(template: string, delimiters: [string, string] = ['{{', '}}']): TemplateIRNode[] | null {
     if (!template) return null;
-    try { return convert(new XMLParser(PARSER_OPTIONS).parse(transformBlocks(template).trim())); }
+    try { return convert(new XMLParser(PARSER_OPTIONS).parse(transformBlocks(template, delimiters).trim())); }
     catch { return null; }
 }

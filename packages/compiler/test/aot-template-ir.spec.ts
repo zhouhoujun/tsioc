@@ -7,7 +7,7 @@ import { Application } from '@tsdi/core';
 import { DOCUMENT } from '@tsdi/common';
 import { Component, ComponentsModule } from '@tsdi/components';
 import { ComponentRef } from '../../components/src/refs/component';
-import { HtmlTemplateModule, HtmlTemplateParser } from '../../components/html/src';
+import { HtmlTemplateModule, HtmlTemplateParser, HTML_COMPILER_OPTIONS } from '../../components/html/src';
 import { XmlTemplateModule } from '../../components/xml/src';
 import { ConsoleTemplateModule } from '../../components/console/src';
 import { transpileAot } from '../src/activities/AotTransform';
@@ -990,6 +990,58 @@ export class AotPlanSwitch {
             await new Promise(resolve => setTimeout(resolve, 0));
             expect(root.querySelector('.d')).toBeFalsy();
             expect(root.querySelector('.b')?.textContent).toBe('B');
+            expect(parses).toBe(0);
+        } finally {
+            proto.parse = originalParse;
+            await ctx?.close();
+            dom.window.close();
+        }
+    });
+
+    it('precompiles templates with custom interpolation delimiters', async () => {
+        const source = `
+import { Component } from '@tsdi/components';
+
+@Component({
+    selector: 'aot-custom-delimiter',
+    template: '<div class="custom">[[title]]</div>'
+})
+export class AotCustomDelimiter {
+    title = 'custom-value';
+}
+`;
+        const delimiters: [string, string] = ['[[', ']]'];
+        const emitted = transpileAot('aot-custom-delimiter.ts', source, {
+            module: ts.ModuleKind.CommonJS,
+            delimiters
+        });
+        expect(emitted).toContain('templatePlan: {');
+        expect(emitted).toContain('delimiter: "[[]]"');
+
+        const exported = loadAotOutput(emitted);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const proto = HtmlTemplateParser.prototype as any;
+        const originalParse = proto.parse;
+        let parses = 0;
+        proto.parse = function (...args: any[]) {
+            parses += 1;
+            return originalParse.apply(this, args);
+        };
+        let ctx: any;
+        try {
+            ctx = await Application.run(exported.AotCustomDelimiter, {
+                deps: [HtmlTemplateModule, ComponentsModule],
+                providers: [
+                    { provide: DOCUMENT, useValue: dom.window.document },
+                    { provide: HTML_COMPILER_OPTIONS, useValue: { delimiters } }
+                ]
+            });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            const ref = ctx.runners.getRef(exported.AotCustomDelimiter) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            expect(root.className).toContain('custom');
+            expect(root.textContent).toBe('custom-value');
             expect(parses).toBe(0);
         } finally {
             proto.parse = originalParse;

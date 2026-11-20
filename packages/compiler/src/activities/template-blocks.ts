@@ -2,11 +2,11 @@
 // Keep the two implementations behaviorally identical.
 const BLOCK_MARKERS = ['@if', '@switch'];
 
-export function transformBlocks(template: string): string {
+export function transformBlocks(template: string, delimiters: [string, string] = ['{{', '}}']): string {
     if (!template || !BLOCK_MARKERS.some(marker => template.includes(marker))) {
         return template;
     }
-    return new BlockTransformer(template).transform();
+    return new BlockTransformer(template, delimiters).transform();
 }
 
 class BlockTransformer {
@@ -15,8 +15,13 @@ class BlockTransformer {
     private quote: string | null = null;
     private escaped = false;
 
-    constructor(private readonly input: string) {
+    private readonly open: string;
+    private readonly close: string;
+
+    constructor(private readonly input: string, delimiters: [string, string]) {
         this.length = input.length;
+        this.open = delimiters[0];
+        this.close = delimiters[1];
     }
 
     transform(): string {
@@ -31,7 +36,7 @@ class BlockTransformer {
                 break;
             }
 
-            if (!this.isQuoted() && this.startsWith('{{')) {
+            if (!this.isQuoted() && this.startsWith(this.open)) {
                 output += this.readInterpolation();
                 continue;
             }
@@ -192,7 +197,7 @@ class BlockTransformer {
         output += this.consumeChar();
 
         while (!this.eof()) {
-            if (this.startsWith('}}')) {
+            if (this.startsWith(this.close)) {
                 output += this.consumeChar();
                 output += this.consumeChar();
                 return output;
