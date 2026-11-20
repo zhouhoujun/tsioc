@@ -71,12 +71,50 @@ export abstract class AgentConsoleRuntimeCommandHost extends AgentConsoleSetting
     }
 
     protected async runUndoCommand(): Promise<void> {
+        if (await this.runTurnUndoRedo('undo')) {
+            return;
+        }
         await this.runFileUndoRedo('undo');
     }
 
     protected async runRedoCommand(): Promise<void> {
+        if (await this.runTurnUndoRedo('redo')) {
+            return;
+        }
         await this.runFileUndoRedo('redo');
     }
+
+    /**
+     * Turn-level undo/redo (opencode parity): revert the latest prompt and the
+     * work that followed it, then return the prompt to the composer. Hosts or
+     * runtimes without turn checkpoints fall back to per-file undo.
+     */
+    protected async runTurnUndoRedo(direction: 'undo' | 'redo'): Promise<boolean> {
+        const sessionId = this.state.sessionId;
+        try {
+            const result = this.appRpc
+                ? await this.appRpc.request(direction === 'undo' ? 'session.undo_turn' : 'session.redo_turn', { sessionId }, this.rpcRequestContext())
+                : direction === 'undo'
+                    ? await this.runtime.undoTurn(sessionId)
+                    : await this.runtime.redoTurn(sessionId);
+            if (!result?.restored) {
+                return false;
+            }
+            if (direction === 'undo' && typeof result.prompt === 'string') {
+                this.state.setInput(result.prompt, result.prompt.length);
+            }
+            this.state.setMessages(await this.loadSessionMessages(sessionId));
+            this.notify(direction === 'undo'
+                ? formatAgentUiNotice(this.translator, 'undidTurn', { files: result.files ?? 0 })
+                : formatAgentUiNotice(this.translator, 'redidTurn', { files: result.files ?? 0 }));
+            return true;
+        } catch {
+            // Unknown RPC (older gateway) / unsupported runtime: file undo.
+            return false;
+        }
+    }
+
+    protected abstract loadSessionMessages(sessionId?: string): Promise<import('@tsdi/agent').AgentMessage[]>;
 
     protected async runFileUndoRedo(direction: 'undo' | 'redo'): Promise<void> {
         const sessionId = this.state.sessionId;

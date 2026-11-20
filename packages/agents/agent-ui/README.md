@@ -107,6 +107,7 @@ Browser/PWA: while the page is hidden, approvals, pending questions and turn com
 Side questions: `/btw <question>` answers from the current context without adding to the transcript
 Mentions: `@path` attaches a file/dir hint; `@path#L20-L45` (or `#20-45`) attaches that line range
 Tabs: `ctrl+tab` / `ctrl+shift+tab` cycle tabs (`alt+]` / `alt+[` in browsers); `ctrl+shift+t` (`alt+shift+t`) reopens the last closed tab
+History: `/undo` reverts the latest prompt, messages and file changes (prompt returns to the composer); `/redo` re-applies the undone turn
 Review: `/review` `/diff` `/approve`
 Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental`
 Delegation: `/delegation` `/goal` `/usage`

@@ -21,6 +21,7 @@ import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mo
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
 import { answerSideQuestion } from './side-question';
+import { redoSessionTurn, undoSessionTurn } from './turn-undo';
 import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
 import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
@@ -202,6 +203,8 @@ export class AppRpcServer {
             case 'session.search':
                 return this.searchSessions(params, context);
             case 'session.side_question': return answerSideQuestion(this as any, params, context);
+            case 'session.undo_turn': return undoSessionTurn(this as any, params, context);
+            case 'session.redo_turn': return redoSessionTurn(this as any, params, context);
             case 'session.delete':
                 return this.deleteSession(requireSessionId(params), context);
             case 'session.export':

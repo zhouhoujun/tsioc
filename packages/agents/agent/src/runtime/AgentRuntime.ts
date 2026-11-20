@@ -40,6 +40,14 @@ export interface CompactNowResult {
     error?: string;
 }
 
+export interface AgentTurnUndoResult {
+    restored: boolean;
+    /** Prompt restored to the composer by `/undo`. */
+    prompt?: string;
+    /** File changes reverted (undo) or re-applied (redo). */
+    files?: number;
+}
+
 export interface FileUndoRedoResult {
     filePath: string;
     restored: 'content' | 'deleted' | 'none';
@@ -289,6 +297,20 @@ export abstract class AgentRuntime {
      */
     async redoFileChange(_sessionId: string): Promise<FileUndoRedoResult> {
         return { filePath: '', restored: 'none' };
+    }
+
+    /**
+     * Revert the latest user prompt and everything that turn produced (messages
+     * and file changes). The prompt is returned so the host can put it back in
+     * the composer. Override in runtimes that record turn checkpoints.
+     */
+    async undoTurn(_sessionId: string): Promise<AgentTurnUndoResult> {
+        return { restored: false };
+    }
+
+    /** Re-apply the last undone turn (messages and file changes). */
+    async redoTurn(_sessionId: string): Promise<AgentTurnUndoResult> {
+        return { restored: false };
     }
 
     /**

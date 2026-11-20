@@ -80,7 +80,8 @@ export class HooksRpcTest {
         const method: AgentAppRpcMethod = 'session.sandbox_mode.set';
         expect(AGENT_APP_RPC_METHODS).toContain(method);
         expect(AGENT_APP_RPC_METHODS).toContain('session.side_question');
-        expect(AGENT_APP_RPC_METHODS.length).toEqual(147);
+        expect(AGENT_APP_RPC_METHODS).toContain('session.undo_turn');
+        expect(AGENT_APP_RPC_METHODS.length).toEqual(149);
     }
 
     @Test('typed client forwards only known methods')
@@ -94,6 +95,6 @@ export class HooksRpcTest {
         expect(calls[0]).toEqual({ method: 'session.list', params: {} });
         expect(client.has('hooks.trust.list')).toEqual(true);
         expect(client.has('does.not.exist')).toEqual(false);
-        expect(client.methods.length).toEqual(147);
+        expect(client.methods.length).toEqual(149);
     }
 }

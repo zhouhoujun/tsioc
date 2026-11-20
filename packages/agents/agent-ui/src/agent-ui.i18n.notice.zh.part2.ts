@@ -175,6 +175,8 @@ export const AGENT_UI_NOTICE_ZH_PART2: NestedMessages = {
   shellMultilineDraftMode: 'Shell 多行草稿模式：输入各行内容，然后用 `!` 提交运行。`!!` 退出。',
   shellCommandUsageHint: '用法：`!<command>` 运行本地 shell 命令。`!!` 进入多行草稿模式。',
   shellDraftIsEmpty: 'Shell 草稿为空。请先输入内容，然后用 `!` 提交运行。',
+  undidTurn: '已撤销最近一轮（恢复 {files} 个文件改动），提示词已放回输入框。',
+  redidTurn: '已重做最近一轮（重新应用 {files} 个文件改动）。',
   undidFile: '已撤销 {filePath}（{restored}）。',
   redidFile: '已重做 {filePath}（{restored}）。',
   failedUndo: '撤销失败：{error}',

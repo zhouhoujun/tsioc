@@ -18,9 +18,9 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
    组合/并行分片出现 `line is not defined`、`{{value}}` 字面量；测试只能按“原序连续切片”分组。
 2. **首屏体积与加载策略**：站点 initial JS 4223 KiB / gzip 1103 KiB，几乎没有特性级 `import()`，
    设置页、评审、诊断、语音、MCP/插件详情等低频界面都在入口。
-3. **交互与 opencode/Codex 的差距**：会话级 undo（恢复 prompt）、LSP 诊断/格式化、OS 通知、
-   ordered approval rules / shell 扫描器等仍缺；`!` shell mode、`@file#Lx-Ly`、tab 键盘切换、
-   `/btw`、项目级 durable allow 已完成。
+3. **交互与 opencode/Codex 的差距**：LSP 诊断/格式化、OS 通知、ordered approval rules /
+   shell 扫描器等仍缺；`!` shell mode、`@file#Lx-Ly`、tab 键盘切换、`/btw`、项目级 durable allow、
+   会话级 `/undo`/`/redo`（恢复 prompt + 工作）已完成。
 4. **大规模性能**：1k 消息 tab 切换 p50 76–115ms（state 43–67ms + paint 25–56ms），scrollback
    全量渲染，对话框开合仍需整屏重绘。
 
@@ -91,7 +91,9 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 
 - composer `!` shell mode（opencode）；
 - `@path#Lx-Ly` 行范围引用（opencode）；
-- 会话级 undo/redo（恢复 prompt + 工作，而不是仅文件改动）；
+- 会话级 undo/redo（已实现：`/undo` 先回滚最近一轮的 prompt/消息/文件改动并把 prompt 放回输入框，
+  `/redo` 重做；无 turn checkpoint 的宿主回退到原文件级 undo/redo。turn 边界保存在进程内，
+  重启后不再可撤销）；
 - durable “always allow” 项目级规则（已实现：审批面板 `p`、`/permissions allow [<tool>|clear]`，
   持久化 `approvalAllowRules`，auto-deny 始终优先）；
 - OS 通知（配置字段已有，未找到实现调用）；
@@ -122,7 +124,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | Enter 运行中行为 | 默认排队；steer 需显式开启 | Enter steer；Ctrl+X Enter queue | queue/steer | 默认值需确认，补更清晰的状态提示 |
 | `!` shell mode | ❌ | ✅ | ✅（shell 工具） | **补** |
 | `@file#Lx-Ly` | ❌（仅 @file） | ✅ | ◐ | **补** |
-| 会话 undo/redo（恢复 prompt） | ◐（仅文件 undo/redo） | ✅ Ctrl+X U / R | ◐（rollout） | **补**（与 `/rewind`/checkpoint 统一） |
+| 会话 undo/redo（恢复 prompt） | ✅ `/undo` `/redo`（turn-first，文件级回退） | ✅ Ctrl+X U / R | ◐（rollout） | 已完成 |
 | `/btw` 侧问 | ❌ | ✅ | ❌ | 低成本补 |
 | `/highlights` 更新提示 | ❌ | ✅ | ◐ | 低成本补 |
 | 模型切换 | ✅ `/model` + F2 最近 | ✅ Ctrl+X M / F2 | ✅ | 对齐 |
@@ -135,7 +137,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | 分享/导出 | ✅ `/share` `/export` | ✅ | ◐ | 对齐 |
 | Desktop/Mobile | ✅ Desktop + PWA/配对 | ✅ Desktop/Mobile | ◐ cloud | 对齐 |
 | Agent Center / Inbox | ◐ 命令+对话框 | ✅ Session Tree/最近 | ✅ agents command center | AMS P0 |
-| Checkpoints/rewind | ◐ `/rewind` 文件级 | ✅ undo/redo | ◐ rollout | 补会话级快照 |
+| Checkpoints/rewind | ✅ `/rewind` 文件级 + `/undo` 会话轮次 | ✅ undo/redo | ◐ rollout | 补持久化 turn 快照 |
 | Worktree | ✅ `/worktree` | ✅ 每 session/subagent | ✅ | 对齐 |
 | Remote/attach | ✅ serve/attach/pairing | ✅ server URL | ✅ `--remote` | 对齐 |
 
@@ -224,7 +226,8 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 1. **durable approvals（基础版已完成）**：项目级 “always allow”（工具名 + 尾部 `*` 前缀，
    持久化到 settings、启动恢复、`/permissions allow` 列表/清理）；auto-deny 规则优先。
    仍缺：ordered action/resource/effect 规则与 shell 命令扫描器（未知命令保守 `ask`）。
-2. **会话 undo/redo**：恢复 prompt + 工作（与 `/rewind`/checkpoint 统一）；Esc Esc 可选。
+2. **会话 undo/redo（基础版已完成）**：`/undo`/`/redo` 恢复 prompt、消息与文件改动；turn 边界
+   目前保存在进程内，持久化 turn 快照与 Esc Esc 仍可后续补充。
 3. **composer `!` shell mode** 与 **`@file#Lx-Ly`** 行范围引用。
 4. **tab 键盘**：Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+T 恢复关闭；关闭后焦点策略。
 5. **LSP 诊断面板 + formatter hook**：先只读诊断（错误/警告跳转），再保存/完成后格式化。

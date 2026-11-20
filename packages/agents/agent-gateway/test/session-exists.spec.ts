@@ -160,3 +160,59 @@ export class SideQuestionRpcTest {
         expect(thrown).toBeTruthy();
     }
 }
+
+@Suite('turn undo/redo RPC')
+export class TurnUndoRpcTest {
+    private build(runtime: any) {
+        return new AppRpcServer(
+            runtime,
+            new RandomUuidGenerator(),
+            { has: async () => true, get: async () => ({ sessionId: 'chat-1', messages: [] }) } as any,
+            {} as any,
+            {} as any,
+            { authorize: async () => 'anonymous' } as any,
+            { track: () => undefined } as any,
+            {} as any
+        );
+    }
+
+    @Test('session.undo_turn returns the restored prompt and file count')
+    async undo() {
+        const calls: string[] = [];
+        const server = this.build({
+            undoTurn: async (sessionId: string) => {
+                calls.push(sessionId);
+                return { restored: true, prompt: 'write it', files: 1 };
+            }
+        });
+        expect(await (server as any).dispatch('session.undo_turn', { sessionId: 'chat-1' }, {}))
+            .toEqual({ restored: true, prompt: 'write it', files: 1 });
+        expect(calls).toEqual(['chat-1']);
+    }
+
+    @Test('session.redo_turn forwards the request')
+    async redo() {
+        const calls: string[] = [];
+        const server = this.build({
+            redoTurn: async (sessionId: string) => {
+                calls.push(sessionId);
+                return { restored: true, prompt: 'write it', files: 1 };
+            }
+        });
+        expect(await (server as any).dispatch('session.redo_turn', { sessionId: 'chat-1' }, {}))
+            .toEqual({ restored: true, prompt: 'write it', files: 1 });
+        expect(calls).toEqual(['chat-1']);
+    }
+
+    @Test('session.undo_turn requires a session id')
+    async requiresSession() {
+        const server = this.build({ undoTurn: async () => ({ restored: false }) });
+        let thrown: any = null;
+        try {
+            await (server as any).dispatch('session.undo_turn', {}, {});
+        } catch (error) {
+            thrown = error;
+        }
+        expect(thrown).toBeTruthy();
+    }
+}

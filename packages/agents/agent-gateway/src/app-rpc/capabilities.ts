@@ -28,6 +28,8 @@ const AGENT_APP_RPC_METHOD_IDS = [
     'session.messages',
     'session.search',
     'session.side_question',
+    'session.undo_turn',
+    'session.redo_turn',
     'session.delete',
     'session.export',
     'session.plan_mode.set',

@@ -12,6 +12,7 @@ import { AgentMessage, normalizeAgentMessageParts } from '../runtime/AgentMessag
 import { AgentUsageRecord } from '../runtime/UsageSummary';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMessageEntity, AgentSessionEntity, AgentSessionSnapshotEntity } from './entities';
+import { truncateSessionMessages } from './SessionMessageTruncation';
 import { readMessageUsageRecords, readOwnerPrincipalId, readSessionFacts, readToolPayload } from './TypeOrmSessionReads';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
@@ -94,14 +95,9 @@ export class TypeOrmSessionStore extends SessionStore {
         return readSessionMessagePage(this.adapter, sessionId, options, invalidCursor);
     }
 
-    async has(sessionId: string): Promise<boolean> {
-        return !!(await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any }));
-    }
+    async has(sessionId: string): Promise<boolean> { return !!(await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any })); }
 
-    async listSessionIds(): Promise<string[]> {
-        const sessions = await this.adapter.getRepository(AgentSessionEntity).find({ order: { createdAt: 'ASC' } as any });
-        return sessions.map(session => session.sessionId);
-    }
+    async listSessionIds(): Promise<string[]> { return (await this.adapter.getRepository(AgentSessionEntity).find({ order: { createdAt: 'ASC' } as any })).map(session => session.sessionId); }
 
     async listProjects(): Promise<AgentSessionProjectIndex[]> {
         const sessions = await this.adapter.getRepository(AgentSessionEntity).find();
@@ -217,6 +213,10 @@ export class TypeOrmSessionStore extends SessionStore {
             metadata: message.metadata
         }));
         return this.get(sessionId);
+    }
+
+    async truncateMessages(sessionId: string, keepCount: number): Promise<void> {
+        await truncateSessionMessages(this.adapter, sessionId, keepCount);
     }
 
     async listSections(sessionId: string): Promise<AgentSessionSection[]> {

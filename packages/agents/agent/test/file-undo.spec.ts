@@ -313,3 +313,64 @@ export class RuntimeFileUndoRedoTest {
         } finally { await ctx.close(); }
     }
 }
+
+@Suite('DefaultAgentRuntime turn undo/redo')
+export class RuntimeTurnUndoRedoTest {
+    private async createRuntime(tmp: string, filePath: string) {
+        const store = new FileSnapshotStore();
+        const tool = new SnapshotWriteTool(filePath);
+        const ctx = await Application.run(AgentModule, { providers: [...provideAgentOrm({ type: 'sqljs' as any, autoLoadEntities: false as any, synchronize: true, autoSave: false, entities: [] } as any), ...[{ provide: ModelAdapter, useValue: new SingleToolCallModelAdapter('snapshot_write') },
+            { provide: ToolRegistry, useValue: new SnapshotWriteRegistry(tool) },
+            { provide: FileSnapshotStore, useValue: store },
+            { provide: FileAdapter, useValue: new NodeTestFileAdapter() }]] });
+        return { ctx, runtime: ctx.get(AgentRuntime) };
+    }
+
+    @Test('undoTurn reverts the prompt/messages and file work, redo restores both')
+    async undoAndRedo() {
+        const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'turn-undo-'));
+        const filePath = path.join(tmp, 'note.txt');
+        await fs.promises.writeFile(filePath, 'original', 'utf8');
+        const { ctx, runtime } = await this.createRuntime(tmp, filePath);
+        try {
+            await runtime.runTurn('s1', 'write it');
+            const turnMessages = await runtime.getMessages('s1');
+            expect(turnMessages.length).toBeGreaterThan(0);
+            expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('updated');
+
+            const undone = await runtime.undoTurn('s1');
+            expect(undone).toEqual({ restored: true, prompt: 'write it', files: 1 });
+            expect(await runtime.getMessages('s1')).toEqual([]);
+            expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('original');
+
+            const redone = await runtime.redoTurn('s1');
+            expect(redone).toEqual({ restored: true, prompt: 'write it', files: 1 });
+            const restored = await runtime.getMessages('s1');
+            expect(restored.length).toEqual(turnMessages.length);
+            expect(restored[0].role).toEqual('user');
+            expect(restored[0].content).toEqual('write it');
+            expect(await fs.promises.readFile(filePath, 'utf8')).toEqual('updated');
+        } finally {
+            await ctx.close();
+            await fs.promises.rm(tmp, { recursive: true, force: true });
+        }
+    }
+
+    @Test('sending a new prompt clears the redo branch')
+    async newPromptAcceptsRevert() {
+        const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'turn-undo-'));
+        const filePath = path.join(tmp, 'note.txt');
+        await fs.promises.writeFile(filePath, 'original', 'utf8');
+        const { ctx, runtime } = await this.createRuntime(tmp, filePath);
+        try {
+            await runtime.runTurn('s1', 'write it');
+            await runtime.undoTurn('s1');
+            await runtime.runTurn('s1', 'write again');
+            expect((await runtime.redoTurn('s1')).restored).toEqual(false);
+            expect((await runtime.getMessages('s1')).length).toBeGreaterThan(0);
+        } finally {
+            await ctx.close();
+            await fs.promises.rm(tmp, { recursive: true, force: true });
+        }
+    }
+}

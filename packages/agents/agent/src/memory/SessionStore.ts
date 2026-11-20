@@ -260,6 +260,11 @@ export abstract class SessionStore {
     abstract moveSection(sessionId: string, sectionId: string, beforeId?: string): Promise<void>;
     abstract deleteSection(sessionId: string, sectionId: string): Promise<void>;
     abstract appendRaw(sessionId: string, message: AgentMessage): Promise<AgentState>;
+
+    /** Remove messages after the first `keepCount` rows (turn-level undo). */
+    async truncateMessages(_sessionId: string, _keepCount: number): Promise<void> {
+        throw new Error('truncateMessages is not supported by this session store.');
+    }
     abstract setSummary(sessionId: string, summary: string): Promise<void>;
     abstract setTitle(sessionId: string, title?: string): Promise<void>;
     abstract setPinned(sessionId: string, pinned: boolean): Promise<void>;

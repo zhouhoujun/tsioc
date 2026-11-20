@@ -175,6 +175,8 @@ export const AGENT_UI_NOTICE_EN_PART2: NestedMessages = {
   shellMultilineDraftMode: 'Shell multiline draft mode: type lines, then submit with `!` to run. `!!` exits.',
   shellCommandUsageHint: 'Usage: `!<command>` runs a local shell command. `!!` enters multiline draft mode.',
   shellDraftIsEmpty: 'Shell draft is empty. Type lines first, then submit with `!` to run.',
+  undidTurn: 'Undid the latest turn ({files} file change(s)). The prompt is back in the composer.',
+  redidTurn: 'Redid the latest turn ({files} file change(s)).',
   undidFile: 'Undid {filePath} ({restored}).',
   redidFile: 'Redid {filePath} ({restored}).',
   failedUndo: 'Failed to undo: {error}',

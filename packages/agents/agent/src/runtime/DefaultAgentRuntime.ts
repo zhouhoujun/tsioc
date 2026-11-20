@@ -1,7 +1,8 @@
 import { FileAdapter } from '@tsdi/common';
 import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationArguments, ApplicationContext, RunContext, Runner, UuidGenerator, createRunContext } from '@tsdi/core';
-import { AgentRuntime, CancelTurnResult, CompactNowResult, FileUndoRedoResult } from './AgentRuntime';
+import { AgentRuntime, AgentTurnUndoResult, CancelTurnResult, CompactNowResult, FileUndoRedoResult } from './AgentRuntime';
+import { SessionTurnCheckpoints } from './SessionTurnCheckpoints';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -170,6 +171,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
     protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>();
+    protected sessionTurnCheckpoints = new SessionTurnCheckpoints();
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
@@ -344,6 +346,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             input.message?.metadata,
             input.message?.parts
         );
+        await this.recordSessionTurnCheckpoint(input.sessionId, input.message?.content ?? input.input);
         const appended = await this.sessions.append(input.sessionId, userMessage);
         if (appended.messages.length === 1) {
             await this.ensureSessionTitle(input.sessionId).catch(() => undefined);
@@ -891,6 +894,26 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentCompensationEvent(this, sessionId, reason, compensated, toolCallIds)).catch(() => {});
         }
         return { compensated, toolCallIds };
+    }
+
+    override async undoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
+        return this.sessionTurnCheckpoints.undo(sessionId, this.sessions, this.fileSnapshotStore, id => this.undoFileChange(id));
+    }
+
+    override async redoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
+        return this.sessionTurnCheckpoints.redo(sessionId, this.sessions, id => this.redoFileChange(id));
+    }
+
+    private async recordSessionTurnCheckpoint(sessionId: string, prompt: string): Promise<void> {
+        try {
+            const state = await this.sessions.get(sessionId);
+            this.sessionTurnCheckpoints.record(sessionId, {
+                messageCount: state.messages.length,
+                fileCount: this.fileSnapshotStore?.list(sessionId).length ?? 0,
+                prompt: String(prompt || ''),
+                createdAt: Date.now()
+            });
+        } catch { /* Undo then falls back to per-file snapshots for this turn. */ }
     }
 
     override async undoFileChange(sessionId: string): Promise<FileUndoRedoResult> {
