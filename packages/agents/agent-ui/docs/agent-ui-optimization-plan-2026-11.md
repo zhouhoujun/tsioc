@@ -162,9 +162,24 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 
 风险：投影/查询索引/内容投影回归（components ×4 + agent-ui 全套 + bench 门禁）。
 
-### P1 — 首屏与包体（3–5 天）
+### P1 — 首屏与包体（阶段 1 已实施 2026-11-20）
 
-工作项：
+**已完成（阶段 1）**：
+- 定位到初始包 2MB+ 的真实来源：`AgentModule → TypeORM → cli-highlight →
+  highlight.js 全语言 + parse5`，以及全部 SQL driver；浏览器控制台走 RPC，
+  从不打开本地库。`build-web.ts` 增加 `typeorm` 浏览器 stub（装饰器/operators/
+  DataSource/Repository 空实现）。
+- 初始 JS：**4220.6 KiB → 2041.5 KiB（gzip 1101.7 → 533.8 KiB）**，达到 ≤700 KiB
+  阶段目标；worker/standalone 保持。
+- 关闭入口的跨 chunk `splitting`：实测 `@tsdi/ioc` 共享 chunk 存在 ESM 循环
+  （`ModuleRef extends Injector`），加载时报 `Class extends value undefined`。
+  站点仍输出 `dist/agent-console.js` + `assets.json` + worker + standalone；
+  真正的特性级 lazy chunk 需要先拆 ioc 循环（纳入 P0 阶段 2 / P1 后续）。
+- 已知验证缺口：本机 Chromium 缺系统库，无法跑真实页面 mount；Node ESM 已确认
+  bundle 可加载（stub 前后 mount 在 JSDOM 下同样报 DI 错误，非本次引入）。真实
+  浏览器回归纳入 P4。
+
+剩余工作项（阶段 2）：
 1. 入口只保留 console shell + 当前会话；设置页、评审/差异、诊断、语音、MCP/插件详情、
    Provider wizard、Markdown 渲染 worker 改为 `import()`；命令/面板首次打开时加载并缓存。
 2. 关键路径预取（hover/输入 `/` 时预取设置与评审 chunk）；失败降级为同步占位。

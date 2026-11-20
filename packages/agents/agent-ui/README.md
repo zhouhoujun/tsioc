@@ -18,7 +18,7 @@ npm install @tsdi/agent-ui
 
 ```shell
 npm run build          # Node build
-npm run build:web      # web site: dist/agent-console.js + dist/chunks/* + assets.json
+npm run build:web      # web site: dist/agent-console.js + assets.json
                        # (plus dist/agent-console.standalone.js for embedders)
 ```
 
@@ -112,13 +112,18 @@ System: `/ps` `/ide` `/feedback` `/keymap`
 `npm run build:web` emits a site instead of one monolithic script, mirroring
 `packages/microservices/admin`:
 
-- `web/dist/agent-console.js` — ESM entry loaded by `header.js`;
-- `web/dist/chunks/*-<hash>.js` — code-split lazy chunks (renderer variants,
-  shared modules); the build prints initial vs lazy JS sizes;
+- `web/dist/agent-console.js` — ESM entry loaded by `header.js` (initial
+  2042 KiB / gzip 534 KiB after the TypeORM browser stub);
 - `web/dist/assets.json` — manifest the service worker uses to precache the
-  entry and every chunk for offline use;
+  entry and other build assets for offline use;
 - `web/dist/agent-console.standalone.js` — single-file IIFE bundle kept for the
   VS Code webview and Electron hosts, which load a classic `<script>`.
+
+Cross-chunk code splitting is intentionally disabled for the entry: the shared
+`@tsdi/ioc` graph contains ESM cycles (`ModuleRef extends Injector`), so esbuild
+hoisting it into a shared chunk produces `Class extends value undefined` at
+load. Lazy feature chunks stay tracked in the optimization plan until those
+cycles are broken.
 
 ## Browser settings page
 

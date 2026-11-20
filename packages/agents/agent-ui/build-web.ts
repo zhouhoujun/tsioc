@@ -144,6 +144,60 @@ const tscOutputAliasPlugin: esbuild.Plugin = {
     }
 };
 
+/**
+ * The browser console talks to the gateway over RPC and never opens a local
+ * database, but `AgentModule` statically pulls the TypeOrm stores. TypeORM's
+ * browser build imports `cli-highlight` (all of highlight.js + parse5) and
+ * every SQL driver; together that is ~2MB of dead initial payload. The stores
+ * are never instantiated in the browser, so a decorator/operator stub is
+ * enough to let the entity modules load.
+ */
+const TYPEORM_STUB = `
+const decorator = () => () => undefined;
+export class DataSource {
+    constructor(options) { this.options = options; this.isInitialized = false; }
+    getRepository() { return new Repository(); }
+    getTreeRepository() { return new TreeRepository(); }
+    getMongoRepository() { return new MongoRepository(); }
+    getMetadata() { return []; }
+    initialize() { this.isInitialized = true; return Promise.resolve(this); }
+    destroy() { this.isInitialized = false; return Promise.resolve(); }
+}
+export class EntityManager {}
+export class Repository {}
+export class TreeRepository extends Repository {}
+export class MongoRepository extends Repository {}
+export class EntitySchema {
+    constructor(options) { this.options = options; }
+    setOptions(options) { this.options = options; }
+}
+export const getMetadataArgsStorage = () => new Proxy(function () { return []; }, {
+    get: () => []
+});
+export const Entity = decorator;
+export const Column = decorator;
+export const Index = decorator;
+export const PrimaryColumn = decorator;
+export const PrimaryGeneratedColumn = decorator;
+export const In = value => ({ _type: 'in', _value: value });
+export const LessThan = value => ({ _type: 'lessThan', _value: value });
+export const MoreThan = value => ({ _type: 'moreThan', _value: value });
+`;
+
+const typeormBrowserStubPlugin: esbuild.Plugin = {
+    name: 'typeorm-browser-stub',
+    setup(build) {
+        build.onResolve({ filter: /^typeorm(\/.*)?$/ }, (): ResolveResult => ({
+            path: 'typeorm-browser-stub',
+            namespace: 'typeorm-browser-stub'
+        }));
+        build.onLoad({ filter: /.*/, namespace: 'typeorm-browser-stub' }, (): esbuild.OnLoadResult => ({
+            contents: TYPEORM_STUB,
+            loader: 'js'
+        }));
+    }
+};
+
 const nodeBuiltinStubPlugin: esbuild.Plugin = {
     name: 'node-builtin-stub',
     setup(build) {
@@ -258,9 +312,12 @@ function verifySiteBuild(distDir: string, assets: string[], standalone: string):
         }
     };
     checkImports(entry);
-    for (const chunk of fs.readdirSync(path.join(distDir, 'chunks'))) {
-        if (chunk.endsWith('.js')) {
-            checkImports(path.join(distDir, 'chunks', chunk));
+    const chunksDir = path.join(distDir, 'chunks');
+    if (fs.existsSync(chunksDir)) {
+        for (const chunk of fs.readdirSync(chunksDir)) {
+            if (chunk.endsWith('.js')) {
+                checkImports(path.join(chunksDir, chunk));
+            }
         }
     }
     if (fs.existsSync(standalone)) {
@@ -297,7 +354,8 @@ async function main(): Promise<void> {
         legalComments: 'none',
         // Ship a compact browser bundle; pass --dev for readable stack traces.
         minify: !process.argv.includes('--dev'),
-        plugins: [nodeOnlyThirdPartyStubPlugin, tscOutputAliasPlugin, nodeBuiltinStubPlugin],
+        drop: process.argv.includes('--dev') ? [] : ['console', 'debugger'],
+        plugins: [typeormBrowserStubPlugin, nodeOnlyThirdPartyStubPlugin, tscOutputAliasPlugin, nodeBuiltinStubPlugin],
         nodePaths: [path.join(ROOT, 'node_modules')],
         external: [
             'jsdom',
@@ -333,10 +391,13 @@ async function main(): Promise<void> {
     });
     console.log(`standalone embedder bundle written to ${standaloneOutfile}`);
 
-    // Site layout (same shape as packages/microservices/admin): write the
-    // entry plus hashed lazy chunks into the dist directory instead of one
-    // monolithic script. `header.js` still loads ./dist/agent-console.js; the
-    // entry imports its chunks relatively.
+    // Site layout: the entry is emitted into the web directory with an asset
+    // manifest. `splitting` stays off: the shared ioc/component graph has ESM
+    // cycles (`ModuleRef extends Injector`), and esbuild hoists them into a
+    // shared chunk whose evaluation order is undefined (`Class extends value
+    // undefined`). The standalone embedder bundle and the TypeORM stub below
+    // still keep the entry small; real lazy feature chunks are tracked in
+    // docs/agent-ui-optimization-plan-2026-11.md (needs the cycles broken).
     const chunksDir = path.join(distDir, 'chunks');
     fs.rmSync(chunksDir, { recursive: true, force: true });
     const result = await esbuild.build({
@@ -344,8 +405,7 @@ async function main(): Promise<void> {
         entryPoints: [BUNDLE_ENTRY],
         outdir: distDir,
         entryNames: 'agent-console',
-        chunkNames: 'chunks/[name]-[hash]',
-        splitting: true,
+        splitting: false,
         metafile: true,
     });
     const outputFiles = Object.keys(result.metafile?.outputs || {})
@@ -354,6 +414,10 @@ async function main(): Promise<void> {
         .sort();
     const outputs = outputFiles
         .map(file => `./dist/${path.relative(distDir, file).split(path.sep).join('/')}`);
+    fs.writeFileSync(
+        path.join(distDir, 'bundle-meta.json'),
+        JSON.stringify(result.metafile, null, 2)
+    );
     // The worker is built separately (classic worker entry); include it so the
     // service worker can precache everything the page may load.
     const workerAsset = fs.existsSync(workerOutfile) ? './dist/agent-console-markdown-worker.js' : undefined;
