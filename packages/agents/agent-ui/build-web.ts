@@ -231,6 +231,46 @@ function initialSiteFiles(entry: string): string[] {
     return files;
 }
 
+/**
+ * Fail the build when the site layout is inconsistent: the manifest must point
+ * at real files, the entry's static imports must resolve, and the embedder
+ * bundle must stay a classic script (no top-level ESM syntax).
+ */
+function verifySiteBuild(distDir: string, assets: string[], standalone: string): void {
+    const webRoot = path.join(PACKAGE_DIR, 'web');
+    const missing = assets.filter(asset => !fs.existsSync(path.join(webRoot, asset)));
+    if (missing.length) {
+        throw new Error(`web site manifest points at missing files: ${missing.join(', ')}`);
+    }
+    const entry = path.join(distDir, 'agent-console.js');
+    if (!fs.existsSync(entry)) {
+        throw new Error(`web site entry missing: ${entry}`);
+    }
+    const checkImports = (file: string): void => {
+        const source = fs.readFileSync(file, 'utf-8');
+        const pattern = /\b(?:from|import)\s*["'](\.\/[^"']+)["']/g;
+        let match: RegExpExecArray | null;
+        while ((match = pattern.exec(source))) {
+            const target = path.resolve(path.dirname(file), match[1]);
+            if (!fs.existsSync(target)) {
+                throw new Error(`web site chunk import missing: ${match[1]} (from ${path.basename(file)})`);
+            }
+        }
+    };
+    checkImports(entry);
+    for (const chunk of fs.readdirSync(path.join(distDir, 'chunks'))) {
+        if (chunk.endsWith('.js')) {
+            checkImports(path.join(distDir, 'chunks', chunk));
+        }
+    }
+    if (fs.existsSync(standalone)) {
+        const source = fs.readFileSync(standalone, 'utf-8');
+        if (/^\s*(?:import|export)\s/m.test(source)) {
+            throw new Error('standalone embedder bundle must not contain top-level import/export');
+        }
+    }
+}
+
 function reportSiteSizes(distDir: string, siteFiles: string[]): void {
     const entry = path.join(distDir, 'agent-console.js');
     const initial = initialSiteFiles(entry);
@@ -326,6 +366,7 @@ async function main(): Promise<void> {
         `${JSON.stringify({ version: 1, entry: './dist/agent-console.js', assets }, null, 2)}\n`
     );
     console.log(`web console site written to ${distDir} (${assets.length} javascript asset(s))`);
+    verifySiteBuild(distDir, assets, standaloneOutfile);
     reportSiteSizes(distDir, outputFiles);
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
 }
