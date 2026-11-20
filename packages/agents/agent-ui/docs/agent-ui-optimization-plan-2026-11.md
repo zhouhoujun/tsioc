@@ -200,9 +200,16 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 验收（1k 消息，同 harness A/B）：切换 p50 ≤70ms、p95 ≤120ms；对话框开合 p90 ≤40ms；
 paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 
-### P3 — 交互与生态对齐（1–2 周）
+### P3 — 交互与生态对齐（进行中）
 
-按影响排序：
+**已完成（2026-11-20）**：
+- session tab 键盘导航：`Ctrl+Tab` / `Ctrl+Shift+Tab` 循环可见 tab；
+  `Ctrl+Shift+T` 恢复最近关闭的 tab；浏览器保留快捷键冲突时可用
+  `Alt+]` / `Alt+[` / `Alt+Shift+T`。终端解码支持 xterm/kitty 的
+  Ctrl(+Shift)+Tab 序列；关闭栈保留最近 10 个。
+- 测试：`session-tab-keys.spec.ts` + `session-tabs.spec.ts` 整合用例。
+
+按影响排序（剩余）：
 1. **durable approvals**：ordered rules（action/resource/effect，last match wins）+ 项目级
    “always allow” + inspector 可撤销；shell 命令扫描器对未知命令保守 `ask`。
 2. **会话 undo/redo**：恢复 prompt + 工作（与 `/rewind`/checkpoint 统一）；Esc Esc 可选。

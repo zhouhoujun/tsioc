@@ -59,7 +59,10 @@ export type AgentConsoleGlobalAction =
     | 'queue-follow-up'
     | 'clear-scrollback'
     | 'clear-input'
-    | 'stash-draft';
+    | 'stash-draft'
+    | 'tab-next'
+    | 'tab-prev'
+    | 'tab-reopen';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
@@ -67,5 +70,6 @@ export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'thread-child-first', 'thread-cycle-next', 'thread-cycle-prev', 'thread-parent',
     'message-page-up', 'message-page-down', 'message-half-page-up', 'message-half-page-down', 'message-line-up', 'message-line-down', 'message-first', 'message-last', 'message-last-user', 'message-prev-user', 'message-next-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
-    'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode', 'command-outputs', 'queue-follow-up', 'clear-scrollback', 'clear-input', 'stash-draft'
+    'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode', 'command-outputs', 'queue-follow-up', 'clear-scrollback', 'clear-input', 'stash-draft',
+    'tab-next', 'tab-prev', 'tab-reopen'
 ];

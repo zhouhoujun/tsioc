@@ -3,6 +3,7 @@ import type { AgentConsoleGlobalAction, AgentConsoleKeymap, AgentConsoleKeymapCo
 import { decodeGlobalKey } from './AgentConsoleStreamHelpers';
 import { isAgentConsoleMessageNavigationAction, isAgentConsoleThreadNavigationAction } from './AgentConsoleKeymap';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
+import { normalizeAgentConsoleBrowserKey as normalizeBrowserKey } from './AgentConsoleKeyNormalization';
 
 /**
  * Host surface required by the global key input controller.
@@ -74,6 +75,8 @@ export interface AgentConsoleGlobalKeyInputHost {
     cycleRecentModel(delta: 1 | -1): Promise<void>;
     cycleModelVariant(): Promise<void>;
     queueDraft(): boolean;
+    cycleSessionTab(delta: 1 | -1): boolean;
+    reopenClosedSessionTab(): Promise<boolean>;
 }
 
 /**
@@ -105,13 +108,7 @@ export async function handleBrowserGlobalKeyInputView(
         await host.interruptTurn();
         return true;
     }
-    const normalizedKey = ctrlKey
-        ? (altKey ? `ctrl+alt+${rawKey}` : `ctrl+${rawKey}`)
-        : /^f\d{1,2}$/.test(rawKey)
-            ? (modifiers.shiftKey ? `shift+${rawKey}` : rawKey)
-            : modifiers.shiftKey && /^[A-Z]$/.test(String(key || ''))
-                ? `shift+${rawKey}`
-                : rawKey;
+    const normalizedKey = normalizeBrowserKey(key, modifiers);
     const arrowKeys: Record<string, string> = {
         arrowup: 'up',
         arrowdown: 'down',

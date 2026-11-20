@@ -21,6 +21,7 @@ import {
     resolveFocusedCodingTask as resolveFocusedCodingTaskFn
 } from './AgentConsoleCodingTaskHandlers';
 import { refreshSessionsView } from './AgentConsoleSessionRefresh';
+import { cycleAgentConsoleSessionTab, reopenClosedAgentConsoleSessionTab } from './AgentConsoleSessionTabNavigation';
 import { AgentConsolePanelVisibilityHost } from './AgentConsolePanelVisibility';
 
 /** Project/session scope projections shared by the console facade. */
@@ -28,6 +29,16 @@ export abstract class AgentConsoleProjectHost extends AgentConsolePanelVisibilit
     protected abstract sessionService?: AgentConsoleSessionService | null;
     protected abstract codingTaskCtx(): CodingTaskHandlerContext;
     protected abstract updateTerminalTitle(): void;
+
+    /** Ctrl+Tab / Ctrl+Shift+Tab: cycle the visible session tabs. */
+    cycleSessionTab(delta: 1 | -1): boolean {
+        return cycleAgentConsoleSessionTab(this as any, delta);
+    }
+
+    /** Ctrl+Shift+T: reopen the most recently closed session tab. */
+    async reopenClosedSessionTab(): Promise<boolean> {
+        return reopenClosedAgentConsoleSessionTab(this as any);
+    }
 
     protected async refreshSessions(currentSessionId = this.state.sessionId): Promise<void> {
         return refreshSessionsView({

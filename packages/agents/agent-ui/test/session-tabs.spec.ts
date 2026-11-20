@@ -208,6 +208,48 @@ export class SessionTabsTest {
         }
     }
 
+    @Test('Ctrl+Tab cycles tabs and a closed tab can be restored')
+    async keyboardTabNavigation() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
+        try {
+            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+            const instance: any = ref.instance;
+            const state: any = instance.sessionState;
+            const selected: string[] = [];
+            state.setSessions([
+                { id: 'session-a', current: true, title: 'Alpha', workspace: '/work/a' },
+                { id: 'session-b', current: false, title: 'Beta', workspace: '/work/a' },
+                { id: 'session-c', current: false, title: 'Gamma', workspace: '/work/a' }
+            ]);
+            state.setOpenSessionIds(['session-a', 'session-b', 'session-c']);
+            state.configure({ sessionId: 'session-a' });
+            state.sessionTabsAction = {
+                select: (id: string) => {
+                    selected.push(id);
+                    state.configure({ sessionId: id });
+                }
+            };
+
+            await instance.handleTerminalInput({ text: '', partial: false }, '\u001b[1;5I');
+            expect(state.sessionId).toEqual('session-b');
+            await instance.handleTerminalInput({ text: '', partial: false }, '\u001b[1;5I');
+            expect(state.sessionId).toEqual('session-c');
+            await instance.handleTerminalInput({ text: '', partial: false }, '\u001b[1;6I');
+            expect(state.sessionId).toEqual('session-b');
+
+            // Close Gamma (inactive), then restore it with the reopen action.
+            state.sessionTabsAction.close?.('session-c');
+            state.setOpenSessionIds(['session-a', 'session-b']);
+            state.closedSessionTabIds = ['session-c'];
+            await instance.reopenClosedSessionTab();
+            expect(state.openSessionIds).toContain('session-c');
+            expect(selected).toContain('session-c');
+        } finally {
+            await ctx.close();
+        }
+    }
+
     @Test('tabs stay on the current project and restore the recorded open set')
     async scopesAndRestoresTabs() {
         const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });

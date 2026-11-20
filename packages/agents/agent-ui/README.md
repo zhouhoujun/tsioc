@@ -102,6 +102,7 @@ Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors
 Queue: `/queue [list|clear|remove <n>|edit <n>]` while a turn is running
 Steer: `/steer [on|off]` makes Enter during a running turn interrupt it and start a new turn (persisted per workspace)
 Input: `/editor` `/stash` `/apps` `/skills` `/mcp` `/plugins` `/voice`
+Tabs: `ctrl+tab` / `ctrl+shift+tab` cycle tabs (`alt+]` / `alt+[` in browsers); `ctrl+shift+t` (`alt+shift+t`) reopens the last closed tab
 Review: `/review` `/diff` `/approve`
 Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental`
 Delegation: `/delegation` `/goal` `/usage`

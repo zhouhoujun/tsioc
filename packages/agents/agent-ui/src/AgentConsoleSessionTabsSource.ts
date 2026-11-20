@@ -3,7 +3,8 @@ import { TranslatorService } from '@tsdi/i18n';
 import { getDisplayWidth } from '@tsdi/components/common';
 import { TabBarSource, TabItem } from '@tsdi/components/common/tab-bar';
 import { AgentConsoleSessionState, AgentConsoleSessionItem } from './AgentConsoleSessionState';
-import { resolveSessionProjectKey } from './AgentConsoleProjectProjection';
+import { resolveAgentConsoleSessionTabs } from './AgentConsoleSessionTabList';
+export { resolveAgentConsoleSessionTabs } from './AgentConsoleSessionTabList';
 import { formatAgentUiLabel } from './agent-ui.i18n';
 
 /**
@@ -11,31 +12,6 @@ import { formatAgentUiLabel } from './agent-ui.i18n';
  * when a previous exit recorded open tabs, only that open set. Sessions deleted
  * or archived since the last exit fall back to the project's current sessions.
  */
-export function resolveAgentConsoleSessionTabs(state: AgentConsoleSessionState): AgentConsoleSessionItem[] {
-    const sessions = (state.sessions || []).filter(session => session && session.id);
-    const anchor = sessions.find(session => session.id === state.sessionId)
-        || sessions.find(session => session.current);
-    const projectKey = anchor ? resolveSessionProjectKey(anchor) : '';
-    const scoped = projectKey
-        ? sessions.filter(session => resolveSessionProjectKey(session) === projectKey)
-        : sessions;
-    const openIds = (state.openSessionIds || []).filter(Boolean);
-    if (!openIds.length) {
-        return scoped;
-    }
-    const open = new Set(openIds);
-    const visible = scoped.filter(session => open.has(session.id) || session.id === state.sessionId);
-    if (!visible.length) {
-        return scoped;
-    }
-    const order = new Map(openIds.map((id, index) => [id, index]));
-    return visible.sort((left, right) => {
-        const leftOrder = order.has(left.id) ? order.get(left.id)! : Number.MAX_SAFE_INTEGER;
-        const rightOrder = order.has(right.id) ? order.get(right.id)! : Number.MAX_SAFE_INTEGER;
-        return leftOrder - rightOrder;
-    });
-}
-
 /**
  * Agent-ui data/actions for the shared `tab-bar`. It scopes the strip to
  * the current project/workspace, applies the console theme and forwards tab

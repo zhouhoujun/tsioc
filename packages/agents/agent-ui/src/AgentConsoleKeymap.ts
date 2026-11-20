@@ -62,7 +62,16 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+t': 'model-variant-cycle',
     'ctrl+alt+k': 'which-key-toggle',
     'ctrl+x h': 'status-health',
-    'ctrl+x g': 'timeline-mode'
+    'ctrl+x g': 'timeline-mode',
+    /** opencode-style tab navigation; Ctrl+Shift+T reopens the last closed tab. */
+    'ctrl+tab': 'tab-next',
+    'ctrl+shift+tab': 'tab-prev',
+    'ctrl+shift+t': 'tab-reopen',
+    // Browsers reserve Ctrl+Tab / Ctrl+Shift+T; these aliases keep the same
+    // actions reachable from the web console.
+    'alt+]': 'tab-next',
+    'alt+[': 'tab-prev',
+    'alt+shift+t': 'tab-reopen'
 };
 export function normalizeAgentConsoleKeySequence(value: string): string {
     return String(value || '').trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');

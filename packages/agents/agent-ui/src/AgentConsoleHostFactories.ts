@@ -66,8 +66,7 @@ export function globalKeyInputHost(self: any): AgentConsoleGlobalKeyInputHost {
         dismissFocusLayer: () => self.state.focusLayers.dismiss(self.transcriptNavigationController),
         handleFocusKey: (key: string) => self.state.handleFocusKey(key, self.transcriptNavigationController),
         globalKeymap: self.globalKeymap,
-        get globalKeyPending() { return self.globalKeyPending; },
-        set globalKeyPending(value) { self.globalKeyPending = value; },
+        get globalKeyPending() { return self.globalKeyPending; }, set globalKeyPending(value) { self.globalKeyPending = value; },
         get keymapRecording() { return self.keymapRecording; },
         set keymapRecording(value) { self.keymapRecording = value; },
         get commandPaletteQuery() { return self.commandPaletteQuery; },
@@ -95,7 +94,8 @@ export function globalKeyInputHost(self: any): AgentConsoleGlobalKeyInputHost {
         toggleModelFavorite: () => self.toggleModelFavorite(),
         cycleRecentModel: (delta: 1 | -1) => self.cycleRecentModel(delta),
         cycleModelVariant: () => self.cycleModelVariant(),
-        queueDraft: () => self.queueDraft()
+        queueDraft: () => self.queueDraft(),
+        cycleSessionTab: (delta: 1 | -1) => self.cycleSessionTab(delta), reopenClosedSessionTab: () => self.reopenClosedSessionTab()
     };
 }
 export function terminalInputHost(self: any): AgentConsoleTerminalInputHost {

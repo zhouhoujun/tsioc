@@ -1,6 +1,17 @@
 export function decodeGlobalKey(raw: string): string {
     if (raw === '\u001b') return 'escape';
     if (raw === '\t') return 'tab';
+    // xterm modifyOtherKeys / kitty / CSI-u encodings for Ctrl(+Shift)+Tab.
+    const tabCombo: Record<string, string> = {
+        '\u001b[27;5;9~': 'ctrl+tab',
+        '\u001b[1;5I': 'ctrl+tab',
+        '\u001b[9;5u': 'ctrl+tab',
+        '\u001b[27;6;9~': 'ctrl+shift+tab',
+        '\u001b[1;6I': 'ctrl+shift+tab',
+        '\u001b[9;6u': 'ctrl+shift+tab'
+    };
+    const tabKey = tabCombo[raw];
+    if (tabKey) return tabKey;
     const arrows: Record<string, string> = {
         '\u001b[A': 'up',
         '\u001b[B': 'down',

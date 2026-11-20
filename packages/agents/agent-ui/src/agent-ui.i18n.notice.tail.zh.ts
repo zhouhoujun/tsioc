@@ -9,6 +9,7 @@ import { NestedMessages } from '@tsdi/i18n';
  */
 export const AGENT_UI_NOTICE_TAIL_ZH: NestedMessages = {
 
+  noClosedSessionTab: '没有可恢复的已关闭会话标签。',
   sessionSwitchBusy: '请等待当前轮次结束后再切换会话。',
   gitSnapshotRevertMessageConfirm: '将工作区恢复到消息 {ref} 的快照？',
   gitSnapshotRestoreConfirm: '恢复最近一次 git 回退前捕获的工作区？',

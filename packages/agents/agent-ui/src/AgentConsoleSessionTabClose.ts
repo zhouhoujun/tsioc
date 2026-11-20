@@ -1,6 +1,7 @@
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentUiTranslator, formatAgentUiNotice } from './agent-ui.i18n';
-import { resolveAgentConsoleSessionTabs } from './AgentConsoleSessionTabsSource';
+import { resolveAgentConsoleSessionTabs } from './AgentConsoleSessionTabList';
+import { rememberClosedAgentConsoleSessionTab } from './AgentConsoleSessionTabNavigation';
 
 export interface AgentConsoleSessionTabCloseHost {
     state: AgentConsoleSessionState;
@@ -29,6 +30,9 @@ export async function closeAgentConsoleSessionTab(host: AgentConsoleSessionTabCl
     const tabs = resolveAgentConsoleSessionTabs(state);
     const index = tabs.findIndex(session => session.id === closingId);
     const remaining = tabs.filter(session => session.id !== closingId);
+    if (tabs.some(session => session.id === closingId)) {
+        rememberClosedAgentConsoleSessionTab(state, closingId);
+    }
     state.setOpenSessionIds((state.openSessionIds || []).filter(openId => openId !== closingId));
     if (closingId !== state.sessionId) {
         return;
