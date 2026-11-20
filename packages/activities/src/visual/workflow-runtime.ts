@@ -1693,12 +1693,21 @@ export async function executeVisualNode(
                     }
                     // Mutate the context in place so later rules keep operating
                     // on the whole message instead of the previous value.
-                    changeContextValue(
-                        context,
-                        rule.field,
-                        action,
-                        coerceJson(rule.value)
-                    );
+                    const valueFrom = String(rule.valueFrom || 'literal');
+                    const valuePath = String(rule.valuePath || '').trim();
+                    let ruleValue: any;
+                    if (valueFrom === 'msg') {
+                        ruleValue = resolveFrom((context as any).msg || { payload: (context as any).payload }, valuePath);
+                    } else if (valueFrom === 'flow') {
+                        ruleValue = resolveFrom((context as any).flow || {}, valuePath);
+                    } else if (valueFrom === 'global') {
+                        ruleValue = resolveFrom((context as any).global || {}, valuePath);
+                    } else if (valueFrom === 'env') {
+                        ruleValue = resolveFrom((context as any).env || {}, valuePath);
+                    } else {
+                        ruleValue = coerceJson(rule.value);
+                    }
+                    changeContextValue(context, rule.field, action, ruleValue);
                     applied.push(rule.field);
                 }
                 return {

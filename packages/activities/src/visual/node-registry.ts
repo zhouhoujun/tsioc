@@ -1385,7 +1385,22 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     configField({ key: 'to', label: 'To field', type: 'text', typed: true, pattern: VALUE_PATH_PATTERN, placeholder: 'variables.renamed', visibleWhen: { key: 'action', equals: 'move' } }),
                     configField({ key: 'search', label: 'Search for', type: 'text', visibleWhen: { key: 'action', equals: 'replace' } }),
                     configField({ key: 'replace', label: 'Replace with', type: 'text', visibleWhen: { key: 'action', equals: 'replace' } }),
-                    configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', in: ['set', 'append'] }, description: 'New value or item to append.' })
+                    configField({
+                        key: 'valueFrom',
+                        label: 'Value from',
+                        type: 'select',
+                        defaultValue: 'literal',
+                        options: [
+                            { label: 'Literal / JSON', value: 'literal' },
+                            { label: 'Message property', value: 'msg' },
+                            { label: 'Flow context', value: 'flow' },
+                            { label: 'Global context', value: 'global' },
+                            { label: 'Environment', value: 'env' }
+                        ],
+                        visibleWhen: { key: 'action', in: ['set', 'append'] }
+                    }),
+                    configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', in: ['set', 'append'] }, description: 'New value or item to append.' }),
+                    configField({ key: 'valuePath', label: 'Value path', type: 'text', visibleWhen: { key: 'action', in: ['set', 'append'] } })
                 ]
             })
         ],

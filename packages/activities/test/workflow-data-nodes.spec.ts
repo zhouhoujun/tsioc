@@ -985,6 +985,13 @@ describe('Workflow data & trigger nodes', () => {
         expect(movedContext.variables.name).toBeUndefined();
         expect(movedContext.variables.renamed).toBe('Ada');
         expect(movedContext.variables.text).toBe('hello there');
+
+        const fromEnv = await service.execute(chain([
+            { type: 'change', config: { rules: [
+                { action: 'set', field: 'variables.region', valueFrom: 'env', valuePath: 'REGION' }
+            ] } }
+        ]), { env: { REGION: 'eu' } });
+        expect(fromEnv.data?.executionState?.nodeStates.change_0.result?.data?.value?.variables?.region).toBe('eu');
     });
 
     it('runs generic link, HTML and XML nodes', async () => {

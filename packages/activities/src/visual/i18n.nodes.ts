@@ -472,7 +472,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "rules": "Rules",
                 "to": "To field",
                 "search": "Search for",
-                "replace": "Replace with"
+                "replace": "Replace with",
+                "valueFrom": "Value from",
+                "valuePath": "Value path"
             },
             "statistics": {
                 "field": "Array path",
@@ -1580,6 +1582,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "else": "else",
             "move": "Move",
             "replace": "Search and replace",
+            "literal": "Literal / JSON",
+            "msg": "Message property",
+            "flow": "Flow context",
             "equals": "equals",
             "not-equals": "not equals",
             "gt": "greater than",
@@ -2138,7 +2143,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "rules": "规则",
                 "to": "目标字段",
                 "search": "查找内容",
-                "replace": "替换为"
+                "replace": "替换为",
+                "valueFrom": "取值来源",
+                "valuePath": "取值路径"
             },
             "statistics": {
                 "field": "数组路径",
@@ -3230,6 +3237,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "else": "否则",
             "move": "移动",
             "replace": "查找并替换",
+            "literal": "字面量 / JSON",
+            "msg": "消息属性",
+            "flow": "Flow 上下文",
             "equals": "等于",
             "not-equals": "不等于",
             "gt": "大于",
