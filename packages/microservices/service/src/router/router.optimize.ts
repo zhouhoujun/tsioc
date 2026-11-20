@@ -8,6 +8,7 @@ import { AssetRoute, Route, ROUTES, Routes } from './route';
 import { MappingDef, RouteHanlder, RouteMappingMetadata, RoutePatterns, Router } from './router';
 import { TrieOptions, TrieRoute, TrieRouter, Wlidcard } from './trie';
 import { RouteHandler, createRouteHandler } from './route.handler';
+import { RouteRegistry, RouteSourceSnapshot, RouteTableChange, RouteTableSnapshot } from './route.registry';
 
 export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
@@ -20,6 +21,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     private regCache: Map<string, Route> = new Map();
     private assets: AssetRoute[] = [];
     private readonly maxCacheSize: number;
+    private readonly registry = new RouteRegistry();
 
     private _routes: Routes = [];
     get routes(): Routes {
@@ -47,7 +49,25 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         };
         this.trieRouter = new TrieRouter(this.options);
         this.maxCacheSize = Math.max(options?.maxCacheSize ?? 2048, 1);
-        routes?.forEach(route => this.trieRouter.insert(route));
+        routes?.forEach(route => this.use(route));
+    }
+
+    /** Current route table revision. */
+    get revision(): number {
+        return this.registry.revision;
+    }
+
+    /** Route-table change stream for gateways/admin/swagger. */
+    get changes(): Observable<RouteTableChange> {
+        return this.registry.changes;
+    }
+
+    snapshot(): RouteTableSnapshot {
+        return this.registry.snapshot(this._routes);
+    }
+
+    listRouteSources(): RouteSourceSnapshot[] {
+        return this.registry.listSources();
     }
 
 
@@ -55,9 +75,8 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     use(route: Route): this;
     use(route: Pattern, handler: RouteHanlder, callback?: (route: Route) => void): this;
     use(arg: Route | Pattern, handler?: RouteHanlder, callback?: (route: Route) => void): this {
-        this.cache.clear();
-        this.matchCache.clear();
-        this.microMatchCache.clear();
+        this.invalidateCaches();
+        this.registry.bump();
         let route: Route;
         if (handler) {
             route = {
@@ -121,14 +140,76 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     unuse(route: Route): this {
         this.removeRoute(route);
         // A removed route can change the winner for any cached URL; keep the
-        // existing conservative invalidation until the registry/revision work
-        // lands.
+        // existing conservative invalidation for manual route mutation.
+        this.invalidateCaches();
+        this.registry.bump();
+        return this
+    }
+
+    /**
+     * Register or replace a named dynamic route source.
+     *
+     * Re-registering the same source replaces its previous routes atomically
+     * from the caller's point of view and emits one `register` change.
+     */
+    registerRoutes(source: string, routes: Routes): this {
+        const previous = this.registry.getSource(source);
+        if (previous?.length) {
+            this.detachRoutes(previous);
+        }
+        this.attachRoutes(routes);
+        this.registry.setSource(source, routes);
+        this.registry.touch('register', source, routes);
+        return this;
+    }
+
+    /** Replace a source's route set, emitting a single `replace` change. */
+    replaceRoutes(source: string, routes: Routes): this {
+        const previous = this.registry.getSource(source);
+        if (previous?.length) {
+            this.detachRoutes(previous);
+        }
+        this.attachRoutes(routes);
+        this.registry.setSource(source, routes);
+        this.registry.touch('replace', source, routes);
+        return this;
+    }
+
+    /** Remove every route owned by a source. */
+    removeRoutes(source: string): this {
+        const previous = this.registry.deleteSource(source);
+        if (!previous?.length) {
+            return this;
+        }
+        this.detachRoutes(previous);
+        this.registry.touch('remove', source, previous);
+        return this;
+    }
+
+    /** Clear every route (including manual `use` routes) and install a new set. */
+    resetRoutes(routes: Routes): this {
+        this.detachRoutes(this._routes.slice());
+        this.registry.clearSources();
+        this.attachRoutes(routes);
+        this.registry.touch('reset', undefined, routes);
+        return this;
+    }
+
+    private attachRoutes(routes: readonly Route[]): void {
+        routes.forEach(route => this.use(route));
+    }
+
+    private detachRoutes(routes: readonly Route[]): void {
+        routes.forEach(route => this.removeRoute(route));
+        this.invalidateCaches();
+    }
+
+    private invalidateCaches(): void {
         this.cache.clear();
         this.regCache.clear();
         this.matchCache.clear();
         this.microMatchCache.clear();
         this.params.clear();
-        return this
     }
 
     private removeRoute(route: Route): void {
@@ -468,6 +549,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
 
     onDestroy(): void {
+        this.registry.destroy();
         this.regCache.clear();
         this.regExps.clear();
         this.cache.clear();

@@ -352,6 +352,57 @@ describe('optimized router', () => {
         expect(second).toBeTruthy();
     });
 
+    it('manages dynamic route sources with revisions and change events', async () => {
+        const router = createRouter();
+        const context = createRequestContext(createInjector());
+        const changes: any[] = [];
+        const subscription = router.changes.subscribe(change => changes.push(change));
+        const a = { path: '/source-a', pattern: '/source-a', handle: () => of('a') } as any;
+        const b = { path: '/source-b', pattern: '/source-b', handle: () => of('b') } as any;
+        const c = { path: '/source-c', pattern: '/source-c', handle: () => of('c') } as any;
+
+        try {
+            router.registerRoutes('source-a', [a]);
+            expect(router.routes).toContain(a);
+            expect(router.snapshot().routes).toContain(a);
+            expect(router.listRouteSources().map(item => item.source)).toEqual(['source-a']);
+            expect(router.revision).toBeGreaterThan(0);
+            expect(await router.getRoute({ url: '/source-a', method: 'GET' } as any, context)).toBeTruthy();
+
+            router.replaceRoutes('source-a', [b]);
+            expect(router.routes).not.toContain(a);
+            expect(router.routes).toContain(b);
+            expect(await router.getRoute(
+                { url: '/source-a', method: 'GET' } as any,
+                createRequestContext(createInjector())
+            )).toBeUndefined();
+            expect(await router.getRoute(
+                { url: '/source-b', method: 'GET' } as any,
+                createRequestContext(createInjector())
+            )).toBeTruthy();
+
+            router.removeRoutes('source-a');
+            expect(router.routes).not.toContain(b);
+            expect(router.listRouteSources()).toEqual([]);
+
+            router.resetRoutes([c]);
+            expect(router.routes).toEqual([c]);
+            expect(await router.getRoute(
+                { url: '/source-c', method: 'GET' } as any,
+                createRequestContext(createInjector())
+            )).toBeTruthy();
+
+            expect(changes.map(change => change.type)).toEqual([
+                'register', 'replace', 'remove', 'reset'
+            ]);
+            expect(changes.map(change => change.revision)).toEqual(
+                changes.map(change => change.revision).slice().sort((left, right) => left - right)
+            );
+        } finally {
+            subscription.unsubscribe();
+        }
+    });
+
     it('revalidates cached misses after a route is registered later', async () => {
         const router = createRouter();
         const first = await router.getRoute(
