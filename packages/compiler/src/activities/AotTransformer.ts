@@ -17,17 +17,18 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Module', 'Configuration', 'Component', 'Directive', 'Runner'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Module', 'Configuration', 'Component', 'Directive', 'Runner', 'Api', 'ApiModel'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
 const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
     'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive', 'Autorun', 'Bean',
-    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'FilterHandler', 'Runner', 'Authorization', 'Interceptable', 'Filterable', 'Transactional'
+    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'FilterHandler', 'Runner', 'Authorization', 'Interceptable', 'Filterable', 'Transactional', 'ApiOperation'
 ]);
 const LIFECYCLE_DECORATORS = new Set([
-    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'FilterHandler', 'Runner', 'Authorization', 'Interceptable', 'Filterable', 'Transactional'
+    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'FilterHandler', 'Runner', 'Authorization', 'Interceptable', 'Filterable', 'Transactional', 'ApiOperation'
 ]);
+const PROPERTY_RECORD_DECORATORS = new Set(['ApiModelProperty', 'State']);
 const TRANSPORT_PARAMETER_SCOPES: Record<string, string> = {
     RequestHeader: 'headers',
     RequestPath: 'path',
@@ -327,6 +328,14 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
             }
             return undefined;
         }
+        case 'Api':
+        case 'ApiModel':
+            if (args.length === 1 && ts.isStringLiteralLike(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('description', args[0])
+                ], false);
+            }
+            return undefined;
         case 'Runner': {
             if (args.length === 0) {
                 return factory.createObjectLiteralExpression([], false);
@@ -1348,6 +1357,42 @@ function memberMetadataExpression(decorator: ts.Decorator, member: ts.ClassEleme
             ));
             return factory.createObjectLiteralExpression(properties, false);
         }
+        case 'ApiModelProperty':
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            return undefined;
+        case 'State':
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([], false);
+            }
+            if (args.length === 1 && ts.isStringLiteralLike(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('alias', args[0])
+                ], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            return undefined;
+        case 'ApiOperation': {
+            if (args.length === 0 || args.length > 3 || !ts.isStringLiteralLike(args[0])) {
+                return undefined;
+            }
+            const properties: ts.ObjectLiteralElementLike[] = [
+                factory.createPropertyAssignment('summary', args[0])
+            ];
+            if (args[1]) {
+                properties.push(factory.createPropertyAssignment('response', selectorValueExpression(args[1])));
+            }
+            if (args[2]) {
+                properties.push(factory.createPropertyAssignment('description', args[2]));
+            }
+            return factory.createObjectLiteralExpression(properties, false);
+        }
         case 'Runner':
             if (args.length === 0) {
                 return factory.createObjectLiteralExpression([], false);
@@ -1533,7 +1578,7 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             const decorators = decoratorsOf(parameter);
             for (const decorator of decorators) {
                 const name = decoratorName(decorator);
-                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log'
+                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                     && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                     && !TRANSPORT_PARAMETER_SCOPES[name]) {
                     return false;
@@ -1675,6 +1720,8 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
     let repositoryModel: ts.Expression | undefined;
     let repositoryConnection: ts.Expression | undefined;
     let loggerName: ts.Expression | undefined;
+    let apiParameter: ts.Expression | undefined;
+    let apiParameterScope: string | undefined;
     const flagExpressions: ts.Expression[] = [];
     for (const decorator of decoratorsOf(parameter)) {
         const name = decoratorName(decorator);
@@ -1703,6 +1750,15 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
             if (activeTypeContext) {
                 activeTypeContext.usesLoggerResolver = true;
             }
+            continue;
+        }
+        if (name === 'ApiParam' || name === 'ApiQuery' || name === 'ApiHeader' || name === 'ApiBody') {
+            const args = decoratorArgs(decorator);
+            if (args.length !== 1 || !ts.isObjectLiteralExpression(args[0])) {
+                return undefined;
+            }
+            apiParameter = args[0];
+            apiParameterScope = name === 'ApiParam' ? 'path' : name === 'ApiQuery' ? 'query' : name === 'ApiHeader' ? 'header' : 'body';
             continue;
         }
         if (TRANSPORT_PARAMETER_SCOPES[name]) {
@@ -1783,6 +1839,14 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
             factory.createPropertyAccessExpression(factory.createIdentifier('__aotFlags'), 'Request')
         ));
         properties.push(factory.createPropertyAssignment('scope', factory.createStringLiteral(transportScope)));
+        properties.push(factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)));
+        return factory.createObjectLiteralExpression(properties, false);
+    }
+    if (apiParameter) {
+        const properties: ts.ObjectLiteralElementLike[] = [
+            factory.createSpreadAssignment(apiParameter),
+            factory.createPropertyAssignment('in', factory.createStringLiteral(apiParameterScope!))
+        ];
         properties.push(factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(key)));
         return factory.createObjectLiteralExpression(properties, false);
     }
@@ -1879,7 +1943,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 for (const decorator of decorators) {
                     const name = decoratorName(decorator);
-                    if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log'
+                    if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                         && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                         && !TRANSPORT_PARAMETER_SCOPES[name]) {
                         return false;
@@ -1901,8 +1965,14 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 continue;
             }
-            if (LIFECYCLE_DECORATORS.has(name)) {
+            if (LIFECYCLE_DECORATORS.has(name) || name === 'ApiOperation') {
                 if (!ts.isMethodDeclaration(member) || !memberMetadataExpression(decorator, member)) {
+                    return false;
+                }
+                continue;
+            }
+            if (PROPERTY_RECORD_DECORATORS.has(name)) {
+                if (!ts.isPropertyDeclaration(member) || !memberMetadataExpression(decorator, member)) {
                     return false;
                 }
                 continue;
@@ -1931,7 +2001,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             const decorators = decoratorsOf(parameter);
             for (const decorator of decorators) {
                 const name = decoratorName(decorator);
-                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log'
+                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                     && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                     && !TRANSPORT_PARAMETER_SCOPES[name]) {
                     return false;
@@ -2175,7 +2245,7 @@ function lifecycleMethodRecords(node: ts.ClassDeclaration): ts.Expression[] {
         if (!key) {
             continue;
         }
-        const isStatic = !!((member.modifiers as ts.NodeArray<ts.ModifierLike> | undefined)?.some(
+        const isStatic = !!(((member as any).modifiers as ts.NodeArray<ts.ModifierLike> | undefined)?.some(
             modifier => modifier.kind === ts.SyntaxKind.StaticKeyword
         ));
         for (const decorator of decoratorsOf(member)) {
@@ -2192,6 +2262,38 @@ function lifecycleMethodRecords(node: ts.ClassDeclaration): ts.Expression[] {
                     : decorator.expression,
                 metadata,
                 ts.factory.createNumericLiteral(isStatic ? 5 : 2),
+                ts.factory.createStringLiteral(key)
+            ], false));
+        }
+    }
+    return records;
+}
+
+function propertyRecordExpressions(node: ts.ClassDeclaration): ts.Expression[] {
+    const records: ts.Expression[] = [];
+    for (const member of node.members) {
+        const key = memberKey(member);
+        if (!key) {
+            continue;
+        }
+        const isStatic = !!(((member as any).modifiers as ts.NodeArray<ts.ModifierLike> | undefined)?.some(
+            modifier => modifier.kind === ts.SyntaxKind.StaticKeyword
+        ));
+        for (const decorator of decoratorsOf(member)) {
+            const name = decoratorName(decorator);
+            if (!PROPERTY_RECORD_DECORATORS.has(name)) {
+                continue;
+            }
+            const metadata = memberMetadataExpression(decorator, member);
+            if (!metadata) {
+                continue;
+            }
+            records.push(ts.factory.createArrayLiteralExpression([
+                ts.isCallExpression(decorator.expression)
+                    ? decorator.expression.expression
+                    : decorator.expression,
+                metadata,
+                ts.factory.createNumericLiteral(isStatic ? 4 : 1),
                 ts.factory.createStringLiteral(key)
             ], false));
         }
@@ -2371,6 +2473,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                             ], false)
                         );
                         compiledTypeRecords.push(...lifecycleMethodRecords(node));
+                        compiledTypeRecords.push(...propertyRecordExpressions(node));
                     }
                 } else if (!componentLike
                     && !aspectDecorator

@@ -130,6 +130,32 @@ export class HandlerService {
         expect(ref.getDefines(ref.methodDecors[1]).length).toBe(1);
     });
 
+    it('precompiles Swagger Api class, operation and parameter metadata', () => {
+        const source = `
+import { Injectable } from '@tsdi/ioc';
+import { Api, ApiOperation, ApiParam, ApiModelProperty } from '@tsdi/swagger';
+
+@Api('users api')
+@Injectable()
+export class ApiService {
+    @ApiModelProperty({ description: 'id field' })
+    id = '';
+
+    @ApiOperation('list users', undefined, 'returns users')
+    list(@ApiParam({ name: 'id', description: 'user id' }) id: string) {}
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(ApiService');
+        expect(output).not.toContain('__aotDeco(ApiService');
+        const exported = load(source);
+        const ref = getClassRef(exported.ApiService as any);
+        expect(ref.getClassdDefines().some(def => def.metadata.description === 'users api')).toBe(true);
+        expect(ref.getMethodDefines(def => def.metadata.summary === 'list users').length).toBe(1);
+        expect((ref.getParameters('list')?.[0] as any)?.in).toBe('path');
+        expect(ref.getPropDefines('id').some(def => (def.metadata as any).description === 'id field')).toBe(true);
+    });
+
     it('precompiles Transactional method options', () => {
         const source = `
 import { Injectable } from '@tsdi/ioc';
