@@ -901,8 +901,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private get turnHistory(): TurnHistoryController {
         return this.turnHistoryController ??= new TurnHistoryController(this.turnHistoryStore, {
-            sessions: this.sessions, checkpoints: this.sessionTurnCheckpoints, fileSnapshots: this.fileSnapshotStore,
-            undoFile: id => this.undoFileChange(id), redoFile: id => this.redoFileChange(id)
+            sessions: this.sessions, checkpoints: this.sessionTurnCheckpoints, fileSnapshots: this.fileSnapshotStore, undoFile: id => this.undoFileChange(id), redoFile: id => this.redoFileChange(id)
         });
     }
 

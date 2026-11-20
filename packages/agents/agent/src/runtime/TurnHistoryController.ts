@@ -1,7 +1,7 @@
 import type { FileSnapshotStore } from '../harness/FileSnapshotStore';
 import type { SessionStore } from '../memory/SessionStore';
 import type { SessionTurnCheckpoints, SessionTurnUndoResult } from './SessionTurnCheckpoints';
-import type { TurnHistoryStore } from './TurnHistoryStore';
+import { TurnHistoryStore } from './TurnHistoryStore';
 
 export interface TurnHistoryHost {
     sessions: SessionStore;

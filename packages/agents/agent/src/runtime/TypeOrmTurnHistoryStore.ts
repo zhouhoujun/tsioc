@@ -1,16 +1,19 @@
-import { Inject, Injectable } from '@tsdi/ioc';
+import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentTurnHistoryEntity } from '../memory/entities';
 import { TurnHistoryRecord, TurnHistoryStore } from './TurnHistoryStore';
 
 @Injectable()
 export class TypeOrmTurnHistoryStore extends TurnHistoryStore {
-    constructor(@Inject(TypeormAdapter) private adapter: TypeormAdapter) {
+    constructor(@Optional() @Inject(TypeormAdapter) private adapter?: TypeormAdapter) {
         super();
     }
 
     async load(sessionId: string): Promise<TurnHistoryRecord | null> {
-        const repo = this.adapter.getRepository(AgentTurnHistoryEntity);
+        const repo = this.adapter?.getRepository(AgentTurnHistoryEntity) as any;
+        if (!repo) {
+            return null;
+        }
         const row: any = await repo.findOne({ where: { sessionId } as any });
         if (!row) {
             return null;
@@ -24,7 +27,10 @@ export class TypeOrmTurnHistoryStore extends TurnHistoryStore {
     }
 
     async save(sessionId: string, record: TurnHistoryRecord): Promise<void> {
-        const repo = this.adapter.getRepository(AgentTurnHistoryEntity);
+        const repo = this.adapter?.getRepository(AgentTurnHistoryEntity) as any;
+        if (!repo) {
+            return;
+        }
         const existing: any = await repo.findOne({ where: { sessionId } as any });
         const row: any = existing ?? repo.create({ sessionId } as any);
         row.sessionId = sessionId;
@@ -37,6 +43,10 @@ export class TypeOrmTurnHistoryStore extends TurnHistoryStore {
     }
 
     async delete(sessionId: string): Promise<void> {
-        await this.adapter.getRepository(AgentTurnHistoryEntity).delete({ sessionId } as any);
+        const repo = this.adapter?.getRepository(AgentTurnHistoryEntity) as any;
+        if (!repo) {
+            return;
+        }
+        await repo.delete({ sessionId } as any);
     }
 }

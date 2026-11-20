@@ -6,7 +6,7 @@ import { ToastService } from '@tsdi/components/common/toast';
 import { installStyleSheet, UI_CSS, UI_STYLE_ID } from '@tsdi/components/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DomOverlayAnchors, DomTranscriptFollower, measureDomConsoleColumns } from '@tsdi/components/html';
-import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
+import { AGENT_CONSOLE_APP_RPC, AGENT_OPTIONS, AgentRuntime, COMMAND_EXECUTION_CONTROL, CommandExecutionControlPort, defaultAgentOptions } from '@tsdi/agent';
 import { AGENT_IDE_BRIDGE } from '@tsdi/agent-ui';
 import { AgentModule } from '@tsdi/agent';
 import {
@@ -28,6 +28,7 @@ import {
 } from '@tsdi/agent-ui';
 import type { AgentConsoleOptions } from '@tsdi/agent-ui';
 import { AgentConsoleWebMarkdownComponent } from './AgentConsoleWebMarkdown';
+import { AgentConsoleRemoteRuntime } from './remote-runtime';
 import { openAgentConsoleDialogDeepLink } from './dialog-deeplink';
 import { focusWebConsoleComposer } from './focus-composer';
 import { routeAgentConsoleWheel } from './wheel-routing';
@@ -209,6 +210,7 @@ export async function mountAgentWebConsole(
         deps: [AgentModule, AgentUiModule, HtmlTemplateModule, ComponentsModule],
         providers: [
             { provide: DOCUMENT, useValue: doc },
+            { provide: AgentRuntime, useValue: new AgentConsoleRemoteRuntime() },
             { provide: ConsoleTerminalSurfaceAccessor, useValue: surfaceAccessor },
             { provide: AGENT_CONSOLE_APP_RPC, useValue: rpc },
             { provide: AGENT_CONSOLE_MARKDOWN_COMPONENT, useValue: AgentConsoleWebMarkdownComponent },

@@ -8,6 +8,7 @@
 - Added `/permissions rules` editing and ordered-rule explanation in `/permissions inspect`.
 - Added `/queue manage` interactive reorder/edit/remove panel and `/queue move <n> <m>`.
 - Persisted turn undo/redo boundaries, redo payloads and file snapshots (`AgentTurnHistoryEntity`); `/undo` and `/redo` survive restarts.
+- Fixed web console startup in browsers (`/web`): provide a gateway-only `AgentRuntime` stub instead of constructing `DefaultAgentRuntime` (which needs a TypeORM adapter).
 - Split browser embedding into `@tsdi/agent-ui/web-console` while preserving `@tsdi/agent-ui/web` compatibility.
 - Keep shell/TUI integration in `@tsdi/agent-ui/console` and remove platform component references from shared UI sources.
 - Consume renderer-neutral primitives and utilities from `@tsdi/components/common`.
