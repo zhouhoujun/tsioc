@@ -93,3 +93,5 @@
   git diff --check
   ```
 - 涉及 components 的改动另跑 components ×4 + bench；本轮 agent-ui/agent 改动不需要改 components。
+- Web 预算：`npm run build:web` 必须通过 `web-size-baseline.json` 回归检查；
+  需要目标模式时运行 `AGENT_UI_WEB_BUDGET_STRICT=1 npm run build:web`。

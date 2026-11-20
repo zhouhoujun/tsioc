@@ -334,9 +334,67 @@ function reportSiteSizes(distDir: string, siteFiles: string[]): void {
     const initialBytes = initial.reduce((sum, file) => sum + fs.statSync(file).size, 0);
     const lazy = siteFiles.filter(file => !initial.includes(file));
     const lazyBytes = lazy.reduce((sum, file) => sum + fs.statSync(file).size, 0);
-    console.log(`web console initial JS: ${(initialBytes / 1024).toFixed(1)} KiB (gzip ${(gzipBytes(initial) / 1024).toFixed(1)} KiB)`);
+    const initialGzipBytes = gzipBytes(initial);
+    const lazyGzipBytes = gzipBytes(lazy);
+    console.log(`web console initial JS: ${(initialBytes / 1024).toFixed(1)} KiB (gzip ${(initialGzipBytes / 1024).toFixed(1)} KiB)`);
     if (lazy.length) {
-        console.log(`web console lazy chunks: ${(lazyBytes / 1024).toFixed(1)} KiB (gzip ${(gzipBytes(lazy) / 1024).toFixed(1)} KiB) in ${lazy.length} file(s)`);
+        console.log(`web console lazy chunks: ${(lazyBytes / 1024).toFixed(1)} KiB (gzip ${(lazyGzipBytes / 1024).toFixed(1)} KiB) in ${lazy.length} file(s)`);
+    }
+    const report = {
+        initialBytes,
+        initialGzipBytes,
+        lazyBytes,
+        lazyGzipBytes,
+        lazyChunkCount: lazy.length,
+        largestLazyGzipBytes: lazy.length ? Math.max(...lazy.map(file => gzipBytes([file]))) : 0
+    };
+    fs.writeFileSync(path.join(distDir, 'size-report.json'), JSON.stringify(report, null, 2));
+    checkSiteBudget(report);
+}
+
+interface WebSizeReport {
+    initialBytes: number;
+    initialGzipBytes: number;
+    lazyBytes: number;
+    lazyGzipBytes: number;
+    lazyChunkCount: number;
+    largestLazyGzipBytes: number;
+}
+
+/**
+ * Regression budget: the committed baseline is the measured build. Growth is
+ * allowed up to 3% / 16 KiB (gzip) so dependency updates do not flap, while a
+ * real regression fails the production build (and the agents gate).
+ * `AGENT_UI_WEB_BUDGET_STRICT=1` additionally enforces the optimization-plan
+ * targets (initial gzip <= 700 KiB, largest lazy chunk <= 150 KiB gzip).
+ */
+function checkSiteBudget(report: WebSizeReport): void {
+    const baselinePath = path.join(PACKAGE_DIR, 'web-size-baseline.json');
+    if (!fs.existsSync(baselinePath)) {
+        fs.writeFileSync(baselinePath, JSON.stringify(report, null, 2));
+        console.log(`web size baseline written to ${baselinePath}`);
+        return;
+    }
+    const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8')) as WebSizeReport;
+    const gzipLimit = Math.max(16 * 1024, Math.ceil(baseline.initialGzipBytes * 1.03));
+    const rawLimit = Math.max(64 * 1024, Math.ceil(baseline.initialBytes * 1.03));
+    if (report.initialGzipBytes > gzipLimit || report.initialBytes > rawLimit) {
+        throw new Error(
+            `web console initial bundle exceeded the regression budget: `
+            + `${(report.initialBytes / 1024).toFixed(1)} KiB / gzip ${(report.initialGzipBytes / 1024).toFixed(1)} KiB `
+            + `(baseline ${(baseline.initialBytes / 1024).toFixed(1)} KiB / gzip ${(baseline.initialGzipBytes / 1024).toFixed(1)} KiB). `
+            + `Update web-size-baseline.json only with an intentional bundle change.`
+        );
+    }
+    if (process.env.AGENT_UI_WEB_BUDGET_STRICT === '1') {
+        const initialTarget = 700 * 1024;
+        const lazyChunkTarget = 150 * 1024;
+        if (report.initialGzipBytes > initialTarget) {
+            throw new Error(`web console initial gzip ${(report.initialGzipBytes / 1024).toFixed(1)} KiB exceeds the strict 700 KiB target.`);
+        }
+        if (report.largestLazyGzipBytes > lazyChunkTarget) {
+            throw new Error(`largest lazy chunk gzip ${(report.largestLazyGzipBytes / 1024).toFixed(1)} KiB exceeds the strict 150 KiB target.`);
+        }
     }
 }
 

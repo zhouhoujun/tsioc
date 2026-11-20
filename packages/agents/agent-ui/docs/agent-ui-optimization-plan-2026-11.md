@@ -244,13 +244,15 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
    attach/worktree、permissions 规则审阅面）与 P2（queue/steer 管理面）。
    说明：Esc Esc 已用于“编辑上一条用户消息”（`AgentConsoleEditModeHandlers`），不再叠加撤销手势，
    撤销统一走 `/undo`。
-2. **P4 收尾**：README/CHANGELOG/`docs/manual-test-checklist.md` 已完成；initial gzip /
-   切换 p50/p95 / 测试墙钟写入 gate 阈值仍待做（等特性级懒加载后再设，避免立即失败的预算）；
+2. **P4 收尾**：README/CHANGELOG/`docs/manual-test-checklist.md` 已完成；`build:web` 已写入
+   initial raw/gzip 回归预算（`web-size-baseline.json`，可 `AGENT_UI_WEB_BUDGET_STRICT=1`
+   强制 700/150 KiB 目标）；1k 切换 p50/p95 与测试墙钟阈值仍待做。
    `git diff --check`、source-size、bench 全绿。
 
 ### P4 — 门禁与文档
 
-- 把 initial gzip、切换 p50/p95、测试墙钟、分片内存写入 gate 预算与 baseline 文档；
+- 把 initial gzip、切换 p50/p95、测试墙钟、分片内存写入 gate 预算与 baseline 文档
+  （initial gzip 已落地：`build:web` + `web-size-baseline.json`，超 3% 失败；strict 目标 700/150 KiB）；
 - 更新 README（web 站点布局、命令/快捷键、settings 页面）；
 - 真实 PTY + 浏览器手测清单；`git diff --check`、source-size、bench 全绿。
 

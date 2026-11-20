@@ -173,5 +173,9 @@ rm -f run-one.tmp.ts
 - AMS P1.2 补充：`/permissions inspect <tool> [resource]` 已同时展示有序规则的最终匹配
   （action / 规则序号 / 规则描述），与 `DefaultApprovalStrategy` 的 last-match-wins 一致。
 - P4 文档收尾：README 命令表、CHANGELOG Unreleased、`docs/manual-test-checklist.md`
-  （PTY + Chrome + 数据安全场景）已更新。initial gzip / 1k 切换 p50/p95 仍未写入自动
-  gate 阈值（当前数字见第 3 节），避免在未完成特性级懒加载前设置会立即失败的预算。
+  （PTY + Chrome + 数据安全场景）已更新。
+- P4 Web 预算：`build:web` 现在写出 `web/dist/size-report.json`，并与
+  `web-size-baseline.json` 比较；initial raw/gzip 超过 3%（且 ≥16 KiB gzip / ≥64 KiB raw）
+  直接失败。当前基线 initial 2085.5 KiB / gzip 545.4 KiB。`AGENT_UI_WEB_BUDGET_STRICT=1`
+  额外强制 initial gzip ≤700 KiB、最大 lazy chunk gzip ≤150 KiB（当前通过）。
+  1k 切换 p50/p95 与测试墙钟仍未写入自动阈值。

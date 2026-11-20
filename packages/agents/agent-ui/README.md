@@ -121,7 +121,8 @@ System: `/ps` `/ide` `/feedback` `/keymap`
 `packages/microservices/admin`:
 
 - `web/dist/agent-console.js` — ESM entry loaded by `header.js` (initial
-  2042 KiB / gzip 534 KiB after the TypeORM browser stub);
+  2085.5 KiB / gzip 545.4 KiB after the TypeORM browser stub; the build fails if
+  this regresses past the committed `web-size-baseline.json` budget);
 - `web/dist/assets.json` — manifest the service worker uses to precache the
   entry and other build assets for offline use;
 - `web/dist/agent-console.standalone.js` — single-file IIFE bundle kept for the
