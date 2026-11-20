@@ -170,8 +170,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>();
-    protected sessionTurnCheckpoints = new SessionTurnCheckpoints();
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints();
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
 
@@ -897,10 +896,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     override async undoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
+        if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; }
         return this.sessionTurnCheckpoints.undo(sessionId, this.sessions, this.fileSnapshotStore, id => this.undoFileChange(id));
     }
 
     override async redoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
+        if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; }
         return this.sessionTurnCheckpoints.redo(sessionId, this.sessions, id => this.redoFileChange(id));
     }
 
