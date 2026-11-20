@@ -3,4 +3,5 @@ export * from './lsp-client';
 export * from './lsp-manager';
 export * from './lsp-install';
 export * from './lsp.tools';
+export * from './lsp-format';
 export * from './lsp-feedback';

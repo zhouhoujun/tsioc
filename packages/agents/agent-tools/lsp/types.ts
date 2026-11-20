@@ -69,11 +69,17 @@ export interface LspDocumentSymbolResult {
     symbols: LspSymbol[];
 }
 
+export interface LspTextEdit {
+    range: LspRange;
+    newText: string;
+}
+
 export interface LspCapabilities {
     definitionProvider: boolean;
     referencesProvider: boolean;
     documentSymbolProvider: boolean;
     diagnosticProvider: boolean;
+    documentFormattingProvider: boolean;
 }
 
 export interface LspRequestParams {

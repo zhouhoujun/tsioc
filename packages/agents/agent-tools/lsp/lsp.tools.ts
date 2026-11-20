@@ -38,7 +38,7 @@ function toRelativePath(uri: string, baseDir?: string): string {
     return filePath;
 }
 
-function unavailable(manager: LspServerManager, extension: string): any {
+export function unavailable(manager: LspServerManager, extension: string): any {
     const hint = manager.installHintFor(extension);
     return {
         available: false,

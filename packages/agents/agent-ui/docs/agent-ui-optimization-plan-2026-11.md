@@ -18,7 +18,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
    组合/并行分片出现 `line is not defined`、`{{value}}` 字面量；测试只能按“原序连续切片”分组。
 2. **首屏体积与加载策略**：站点 initial JS 4223 KiB / gzip 1103 KiB，几乎没有特性级 `import()`，
    设置页、评审、诊断、语音、MCP/插件详情等低频界面都在入口。
-3. **交互与 opencode/Codex 的差距**：LSP formatter hook、OS 通知仍缺；LSP 只读诊断面板、
+3. **交互与 opencode/Codex 的差距**：OS 通知仍缺；LSP 只读诊断面板与 formatter hook、
    ordered approval rules / shell 扫描器、`!` shell mode、`@file#Lx-Ly`、tab 键盘切换、`/btw`、
    项目级 durable allow、会话级 `/undo`/`/redo`（恢复 prompt + 工作）已完成。
 4. **大规模性能**：1k 消息 tab 切换 p50 76–115ms（state 43–67ms + paint 25–56ms），scrollback
@@ -130,8 +130,8 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | 模型切换 | ✅ `/model` + F2 最近 | ✅ Ctrl+X M / F2 | ✅ | 对齐 |
 | Agent profiles | ◐ archetype（命令切换） | ✅ `/agents`、Shift+Tab | ✅ profiles | AMS P0 |
 | 权限规则 | ✅ ordered rules（action/resource，last match）+ durable allow | ✅ ordered rules（action/resource/effect，last match）、durable allow、scanner | ✅ sandbox × approval policy + auto-review | 对齐（scanner opt-in） |
-| LSP 诊断 | ✅ `/check [paths]` 只读诊断面板（`/lsp` 别名） | ✅ | ◐ | 已完成面板；formatter 仍缺 |
-| Formatter | ❌ | ✅ | ◐ | 补 hook（复用现有工具） |
+| LSP 诊断 | ✅ `/check [paths]` 只读诊断面板（`/lsp` 别名） | ✅ | ◐ | 对齐 |
+| Formatter | ✅ `/format [paths] [--check]`（LSP `textDocument/formatting`） | ✅ | ◐ | 对齐 |
 | OS 通知 | ◐ 配置字段，无实现 | ✅ | ◐ | **补**（unfocused 时 approval/question/done） |
 | MCP/plugins/skills/hooks | ✅ | ✅ | ✅ | 对齐 |
 | 分享/导出 | ✅ `/share` `/export` | ✅ | ◐ | 对齐 |
@@ -232,14 +232,15 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
   未知命令仍 `ask`，显式对象规则优先；设置页与 `settings.ui.set` 持久化同一开关；
 - LSP 只读诊断面板 `/check <file...>`（`/lsp` 别名）：经 `tools.invoke` 调用
   `lsp_diagnostics`，TUI/gateway 共用；错误/警告按 `file:line:col` 展示；
+- LSP formatter hook `/format <file...> [--check]`（`/fmt` 别名）：新增 `lsp_format`
+  工具，默认写回、`--check` 预览，写入走 `fs` 审批类别与 workspace trust；
 - `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。
 
 按影响排序（未完成计划）：
-1. **LSP formatter hook**：在保存/完成后格式化（复用现有 LSP server 与工具端口）。
-2. **持久化 turn 快照**：当前 turn 边界在进程内；补 DB 持久化与 Esc Esc 撤销手势。
-3. **`/highlights`**：发布说明浮层（opencode 风格），可配置关闭。
-4. **Agent Center/Inbox**：按 `docs/agent-management-plan.md` 的 P0/P1 落地（不重复设计）。
-5. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
+1. **持久化 turn 快照**：当前 turn 边界在进程内；补 DB 持久化与 Esc Esc 撤销手势。
+2. **`/highlights`**：发布说明浮层（opencode 风格），可配置关闭。
+3. **Agent Center/Inbox**：按 `docs/agent-management-plan.md` 的 P0/P1 落地（不重复设计）。
+4. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
    `git diff --check`、source-size、bench 全绿。
 
 ### P4 — 门禁与文档

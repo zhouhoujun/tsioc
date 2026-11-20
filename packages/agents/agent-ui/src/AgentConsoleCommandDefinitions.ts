@@ -106,6 +106,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/worktree', description: 'managed worktrees: /worktree [create] <name> | list | enter [name] | merge [name] | remove [name] [--force] [--yes]', group: 'review', args: [{ name: 'args', variadic: true }] },
     { name: '/diff', description: 'worktree diff: /diff [--staged|--unstaged|--untracked|paths]', group: 'review', args: [{ name: 'pathOrFlag', variadic: true }] },
     { name: '/check', description: 'run LSP diagnostics for files: /check <path...>', group: 'review', args: [{ name: 'path', variadic: true }], aliases: ['/lsp'] },
+    { name: '/format', description: 'format files with the configured LSP server: /format <path...> [--check]', group: 'review', args: [{ name: 'path', variadic: true }], aliases: ['/fmt'] },
     { name: '/approvals', description: 'approvals', group: 'review' },
     {
         name: '/approve',

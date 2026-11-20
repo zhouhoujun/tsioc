@@ -16,6 +16,7 @@ import {
     LspReferencesTool,
     LspSymbolsTool
 } from '../lsp/lsp.tools';
+import { LspFormatTool, applyLspTextEdits } from '../lsp/lsp-format';
 import { LspServerOptions } from '../lsp/types';
 
 const MOCK_SERVER_SOURCE = `
@@ -46,7 +47,8 @@ function handle(msg) {
         definitionProvider: true,
         referencesProvider: true,
         documentSymbolProvider: true,
-        diagnosticProvider: { interFileDependencies: true, workspaceDiagnostics: false }
+        diagnosticProvider: { interFileDependencies: true, workspaceDiagnostics: false },
+        documentFormattingProvider: true
       },
       serverInfo: { name: 'mock-lsp' }
     } });
@@ -74,6 +76,12 @@ function handle(msg) {
     send({ jsonrpc: '2.0', id: msg.id, result: { kind: 'full', resultId: 'r1', items: [
       { range: { start: { line: 3, character: 0 }, end: { line: 3, character: 5 } }, severity: 1, message: 'mock error' }
     ] } });
+    return;
+  }
+  if (msg.method === 'textDocument/formatting') {
+    send({ jsonrpc: '2.0', id: msg.id, result: [
+      { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } }, newText: '// formatted\\n' }
+    ] });
     return;
   }
   if (msg.method === 'shutdown') { send({ jsonrpc: '2.0', id: msg.id, result: null }); return; }
@@ -165,6 +173,7 @@ export class LspClientTest {
             expect(capabilities.referencesProvider).toEqual(true);
             expect(capabilities.documentSymbolProvider).toEqual(true);
             expect(capabilities.diagnosticProvider).toEqual(true);
+            expect(capabilities.documentFormattingProvider).toEqual(true);
             expect(client.getCapabilities().definitionProvider).toEqual(true);
             await client.close();
         } finally {
@@ -196,10 +205,26 @@ export class LspClientTest {
             expect(diagnostics.length).toEqual(1);
             expect(diagnostics[0].message).toEqual('mock error');
 
+            const edits = await client.formatDocument(uri);
+            expect(edits.length).toEqual(1);
+            expect(edits[0].newText).toEqual('// formatted\n');
+
             await client.close();
         } finally {
             await fs.rm(path.dirname(script), { recursive: true, force: true });
         }
+    }
+
+    @Test('applies text edits from the end of the document')
+    appliesFormattingEdits() {
+        const text = 'one\ntwo\nthree\n';
+        const updated = applyLspTextEdits(text, [
+            { range: { start: { line: 2, character: 0 }, end: { line: 2, character: 5 } }, newText: 'THREE' },
+            { range: { start: { line: 0, character: 0 }, end: { line: 0, character: 3 } }, newText: 'ONE' },
+            { range: { start: { line: 1, character: 3 }, end: { line: 1, character: 3 } }, newText: '!' }
+        ]);
+        expect(updated).toEqual('ONE\ntwo!\nTHREE\n');
+        expect(applyLspTextEdits(text, [])).toEqual(text);
     }
 
     @Test('caches publishDiagnostics notifications per uri')
@@ -383,8 +408,7 @@ export class LspToolsTest {
     }
 
     @Test('lsp_symbols returns document symbols')
-    async symbolsToolReturnsSymbols() {
-        const script = await writeMockServer();
+    async symbolsToolReturnsSymbols() {        const script = await writeMockServer();
         try {
             const tool = new LspSymbolsTool({ lsp: { servers: { '.ts': mockServerOptions(script) } } });
             const result = await tool.invoke({ filePath: '/ws/sample.ts' }, { sessionId: 's1', workspace: '/ws', memory: {} as any });
@@ -392,6 +416,43 @@ export class LspToolsTest {
             expect(result.symbolCount).toEqual(1);
             expect(result.symbols[0].name).toEqual('main');
             expect(result.symbols[0].kind).toEqual(12);
+        } finally {
+            await disposeLspManagers();
+            await fs.rm(path.dirname(script), { recursive: true, force: true });
+        }
+    }
+
+    @Test('lsp_format writes formatted content and can preview without writing')
+    async formatToolWritesAndPreviews() {
+        const script = await writeMockServer();
+        const filePath = path.join(path.dirname(script), 'sample.ts');
+        try {
+            await fs.writeFile(filePath, 'const a = 1;', 'utf8');
+            const tool = new LspFormatTool({ lsp: { servers: { '.ts': mockServerOptions(script) } } });
+            const written = await tool.invoke({ filePath }, { sessionId: 's1', workspace: path.dirname(script), memory: {} as any });
+            expect(written).toMatchObject({ available: true, changed: true, written: true, editCount: 1 });
+            expect(await fs.readFile(filePath, 'utf8')).toEqual('// formatted\nconst a = 1;');
+
+            await fs.writeFile(filePath, 'const b = 2;', 'utf8');
+            const preview = await tool.invoke({ filePath, write: false }, { sessionId: 's1', workspace: path.dirname(script), memory: {} as any });
+            expect(preview).toMatchObject({ available: true, changed: true, written: false });
+            expect(await fs.readFile(filePath, 'utf8')).toEqual('const b = 2;');
+        } finally {
+            await disposeLspManagers();
+            await fs.rm(path.dirname(script), { recursive: true, force: true });
+        }
+    }
+
+    @Test('lsp_format reports servers without formatting support')
+    async formatToolReportsUnsupportedServer() {
+        const script = await writeFeedbackMockServer();
+        const filePath = path.join(path.dirname(script), 'sample.ts');
+        try {
+            await fs.writeFile(filePath, 'const a = 1;', 'utf8');
+            const tool = new LspFormatTool({ lsp: { servers: { '.ts': mockServerOptions(script) } } });
+            const result = await tool.invoke({ filePath }, { sessionId: 's1', workspace: path.dirname(script), memory: {} as any });
+            expect(result.available).toEqual(false);
+            expect(result.message).toContain('does not support document formatting');
         } finally {
             await disposeLspManagers();
             await fs.rm(path.dirname(script), { recursive: true, force: true });

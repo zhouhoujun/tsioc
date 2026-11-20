@@ -206,4 +206,13 @@ export const AGENT_UI_NOTICE_EN_PART1: NestedMessages = {
   lspSeverityWarning: 'warning',
   lspSeverityInformation: 'info',
   lspSeverityHint: 'hint',
+  lspFormatTitle: 'LSP formatting',
+  lspFormatUsage: 'Usage: /format <file> [more files] [--check] — format files with the configured LSP server.',
+  lspFormatUnsupported: 'Tool invocation is not available in this host.',
+  lspFormatUnavailable: '{file}: {message}',
+  lspFormatFailed: '{file}: {error}',
+  lspFormatUnchanged: '{file}: already formatted.',
+  lspFormatWritten: '{file}: {edits} edits written.',
+  lspFormatPreview: '{file}: {edits} edits (preview only).',
+  lspFormatSummary: '{changed} files changed · {unchanged} unchanged',
 };

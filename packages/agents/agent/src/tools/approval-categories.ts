@@ -9,7 +9,7 @@ export type ApprovalCategory = 'sandbox' | 'network' | 'mcp' | 'skill' | 'fs';
 
 export const APPROVAL_CATEGORY_DEFINITIONS: Record<ApprovalCategory, { names: string[]; prefixes: string[] }> = {
     fs: {
-        names: ['write_file', 'edit_file', 'apply_patch', 'delete_file', 'move_file', 'copy_file', 'mkdir', 'fs.write', 'fs.delete', 'fs.rename', 'fs.move', 'fs.copy', 'fs.mkdir'],
+        names: ['write_file', 'edit_file', 'apply_patch', 'delete_file', 'move_file', 'copy_file', 'mkdir', 'fs.write', 'fs.delete', 'fs.rename', 'fs.move', 'fs.copy', 'fs.mkdir', 'lsp_format'],
         prefixes: ['fs.'],
     },
     network: {

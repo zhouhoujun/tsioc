@@ -206,4 +206,13 @@ export const AGENT_UI_NOTICE_ZH_PART1: NestedMessages = {
   lspSeverityWarning: '警告',
   lspSeverityInformation: '信息',
   lspSeverityHint: '提示',
+  lspFormatTitle: 'LSP 格式化',
+  lspFormatUsage: '用法：/format <文件> [更多文件] [--check] — 用已配置的 LSP server 格式化文件。',
+  lspFormatUnsupported: '当前宿主不支持工具调用。',
+  lspFormatUnavailable: '{file}：{message}',
+  lspFormatFailed: '{file}：{error}',
+  lspFormatUnchanged: '{file}：已是格式化状态。',
+  lspFormatWritten: '{file}：已写入 {edits} 处编辑。',
+  lspFormatPreview: '{file}：{edits} 处编辑（仅预览）。',
+  lspFormatSummary: '{changed} 个文件已修改 · {unchanged} 个未变',
 };

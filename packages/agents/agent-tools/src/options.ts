@@ -361,6 +361,7 @@ export type AgentToolItem =
     | 'lsp_references'
     | 'lsp_diagnostics'
     | 'lsp_symbols'
+    | 'lsp_format'
     | 'ai_cli';
 
 export interface AgentToolsRegistrationOptions {

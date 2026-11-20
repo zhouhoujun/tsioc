@@ -84,7 +84,7 @@ import { ModelRoutingTool } from '../model-routing/model-routing.tool';
 import { PollTool } from '../poll/poll.tool';
 import { AiCliTool } from '../ai-cli/ai-cli.tool';
 import { LspDefinitionTool, LspReferencesTool, LspDiagnosticsTool, LspSymbolsTool } from '../lsp/lsp.tools';
-
+import { LspFormatTool } from '../lsp/lsp-format';
 function provideCodingTaskTool(): Provider {
     return {
         provider(injector: Injector) {
@@ -214,9 +214,9 @@ const toolItems = {
     lsp_definition: LspDefinitionTool,
     lsp_references: LspReferencesTool,
     lsp_diagnostics: LspDiagnosticsTool,
-    lsp_symbols: LspSymbolsTool
+    lsp_symbols: LspSymbolsTool,
+    lsp_format: LspFormatTool
 } as const satisfies Record<AgentToolItem, ProvdierOf<AgentTool>>;
-
 const toolGroups = {
     filesystem: ['read_file', 'list_dir', 'stat', 'glob_search', 'content_search', 'watch_files'],
     filesystem_write: ['write_file', 'edit_file', 'apply_patch', 'mkdir', 'copy_file', 'move_file', 'delete_file'],
@@ -254,7 +254,7 @@ const toolGroups = {
     model_routing: ['model_routing'],
     poll: ['poll'],
     ai_cli: ['ai_cli'],
-    lsp: ['lsp_definition', 'lsp_references', 'lsp_diagnostics', 'lsp_symbols']
+    lsp: ['lsp_definition', 'lsp_references', 'lsp_diagnostics', 'lsp_symbols', 'lsp_format']
 } as const satisfies Record<AgentToolGroup, AgentToolItem[]>;
 
 const defaultToolGroups: AgentToolGroup[] = ['filesystem', 'filesystem_write', 'utility', 'web', 'planning', 'scheduling', 'memory', 'project', 'registry', 'agent', 'knowledge', 'git', 'review', 'cron', 'llm', 'canvas', 'approval', 'pipeline', 'kanban', 'backup', 'model_routing', 'poll'];

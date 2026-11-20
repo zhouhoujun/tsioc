@@ -26,6 +26,7 @@ export class ApprovalCategoryTest {
         expect(strategy.requires('edit_file', {})).toEqual(true);
         expect(strategy.requires('apply_patch', {})).toEqual(true);
         expect(strategy.requires('delete_file', {})).toEqual(true);
+        expect(strategy.requires('lsp_format', {})).toEqual(true);
         expect(strategy.requires('read_file', {})).toEqual(false);
         expect(strategy.requires('terminal', {})).toEqual(false);
     }
@@ -52,6 +53,7 @@ export class ApprovalCategoryTest {
     fsCategory() {
         expect(classifyApprovalCategory('write_file')).toEqual('fs');
         expect(classifyApprovalCategory('delete_file')).toEqual('fs');
+        expect(classifyApprovalCategory('lsp_format')).toEqual('fs');
         expect(classifyApprovalCategory('terminal')).toEqual('sandbox');
         expect(classifyApprovalCategory('read_file')).toBeUndefined();
     }

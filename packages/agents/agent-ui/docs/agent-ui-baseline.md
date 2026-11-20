@@ -122,7 +122,8 @@ rm -f run-one.tmp.ts
 | --- | --- |
 | `@tsdi/agent` | 1098 passing |
 | `@tsdi/agent-gateway` | 400 passing |
-| `@tsdi/agent-ui` | **2274 passing**（2 组） |
+| `@tsdi/agent-tools` | 594 passing |
+| `@tsdi/agent-ui` | **2278 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -147,5 +148,9 @@ rm -f run-one.tmp.ts
 - P3 已完成：LSP 只读诊断面板 `/check <file...>`（别名 `/lsp`）：复用 `tools.invoke` 调用
   `lsp_diagnostics`，TUI 走本地 ToolRegistry、Web/attach 走 gateway；错误/警告按
   `file:line:col` 展示，缺失 server 返回安装提示，工具异常不会中断其它文件。
-- P3 未完成：LSP formatter hook。
+- P3 已完成：LSP formatter hook `/format <file...> [--check]`（别名 `/fmt`）：新增
+  `lsp_format` 工具（`textDocument/formatting` + 文本编辑应用），默认写回、`--check` 仅预览；
+  写入属于文件变更（审批类别 `fs`，`tools.invoke` 走 workspace trust）。
+  注意：`/format` 由控制台直接调用工具，不进入 turn 文件快照；需要可回退时先 `/snapshot`，
+  或在 turn 内由 agent 调用 `lsp_format`（支持 `captureFileSnapshot`）。
 - 已知限制：turn undo 边界保存在进程内，重启后不可撤销；会话快照 `/snapshot` 仍可显式持久化。

@@ -9,7 +9,8 @@ import {
     LspPosition,
     LspRequestParams,
     LspServerOptions,
-    LspSymbol
+    LspSymbol,
+    LspTextEdit
 } from './types';
 
 interface PendingRequest {
@@ -36,7 +37,8 @@ export class LspClient {
         definitionProvider: false,
         referencesProvider: false,
         documentSymbolProvider: false,
-        diagnosticProvider: false
+        diagnosticProvider: false,
+        documentFormattingProvider: false
     };
     private diagnosticsByUri = new Map<string, LspDiagnostic[]>();
     private openDocuments = new Set<string>();
@@ -163,6 +165,28 @@ export class LspClient {
             textDocument: { uri }
         });
         return { uri, symbols: this.normalizeSymbols(result) };
+    }
+
+    /**
+     * Request whole-document formatting. The caller must open/update the
+     * document first (`didOpen`/`didChange`) so the server formats the real
+     * contents, then apply the returned edits itself.
+     */
+    async formatDocument(uri: string, options?: { tabSize?: number; insertSpaces?: boolean }): Promise<LspTextEdit[]> {
+        await this.ensureInitialized();
+        const result = await this.request<any>('textDocument/formatting', {
+            textDocument: { uri },
+            options: {
+                tabSize: Number.isFinite(Number(options?.tabSize)) && Number(options?.tabSize) > 0 ? Math.floor(Number(options?.tabSize)) : 4,
+                insertSpaces: options?.insertSpaces !== false
+            }
+        });
+        if (!Array.isArray(result)) {
+            return [];
+        }
+        return result
+            .filter(edit => edit && edit.range && typeof edit.newText === 'string')
+            .map(edit => ({ range: edit.range, newText: edit.newText }));
     }
 
     async close(): Promise<void> {
@@ -317,7 +341,8 @@ export class LspClient {
             definitionProvider: !!capabilities?.definitionProvider,
             referencesProvider: !!capabilities?.referencesProvider,
             documentSymbolProvider: !!capabilities?.documentSymbolProvider,
-            diagnosticProvider: !!capabilities?.diagnosticProvider
+            diagnosticProvider: !!capabilities?.diagnosticProvider,
+            documentFormattingProvider: !!capabilities?.documentFormattingProvider
         };
     }
 

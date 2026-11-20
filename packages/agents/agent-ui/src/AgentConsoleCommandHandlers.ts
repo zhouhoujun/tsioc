@@ -29,6 +29,7 @@ import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineComm
 import { handleProjects, handleSearch, handleSections, handleThreads, handleThreadplan } from './AgentConsoleSessionCommands';
 import { handleReview } from './AgentConsoleReviewCommands';
 import { runLspDiagnosticsCommand } from './AgentConsoleLspDiagnostics';
+import { runFormatCommand } from './AgentConsoleFormatCommand';
 import { handleSideQuestion } from './AgentConsoleSideQuestion';
 import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
 import { handleDialogCommand } from './AgentConsoleDialogCommands';
@@ -135,7 +136,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/threadreview': (ctx, _args) => guardDelegateNoArgs(ctx, '', { command: '/threadreview', matches: [] }, () => ctx.openThreadCodingTaskReviewSelector()),
     '/review': handleReview,
     '/check': runLspDiagnosticsCommand,
-    '/lsp': runLspDiagnosticsCommand,
+    '/format': runFormatCommand,
     '/diff': (ctx, args) => ctx.openWorktreeDiff(args),
     '/theme': (ctx, args, meta) => ctx.runThemeCommand(canonicalArgsOf(meta, args)),
     '/thinking': (ctx, args, meta) => ctx.runThinkingCommand(canonicalArgsOf(meta, args)),
