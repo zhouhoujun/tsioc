@@ -67,6 +67,25 @@ export class ComplexController {
         expect(output).toContain('pattern: "/item/:id"');
     });
 
+    it('installs merged class and method options on ƿroutes', () => {
+        const output = transpileAot('aot-controller-options-runtime.ts', `
+import { Controller, Get } from '@tsdi/service';
+
+const Guard = () => true;
+const methodOptions = { timeout: 2000 };
+
+@Controller('/api', [Guard])
+export class OptionsRuntimeController {
+    @Get('/private', methodOptions)
+    read() { return 'private'; }
+}
+`, { module: ts.ModuleKind.CommonJS });
+        const exported = loadAotOutput(output);
+
+        expect(exported.OptionsRuntimeController.ƿroutes[0].options.timeout).toBe(2000);
+        expect(exported.OptionsRuntimeController.ƿroutes[0].options.guards.length).toBe(1);
+    });
+
     it('falls back when a route method has another method decorator', () => {
         const output = transpileAot('aot-controller-decorator.ts', `
 import { Controller, Get } from '@tsdi/service';
@@ -101,19 +120,22 @@ export class PolicyController {
         expect(output).toContain('guards: [Guard]');
     });
 
-    it('falls back when policy arguments are not object literals', () => {
+    it('supports identifier route options and class-level guards', () => {
         const output = transpileAot('aot-controller-options.ts', `
 import { Controller, Get } from '@tsdi/service';
 
-const options = { guards: [] };
+const Guard = () => true;
+const options = { guards: [Guard] };
 
-@Controller('/api')
+@Controller('/api', [Guard])
 export class OptionsController {
     @Get('/private', options)
     read() { return 'private'; }
 }
 `, { module: ts.ModuleKind.CommonJS });
 
-        expect(output).not.toContain('OptionsController.ƿroutes =');
+        expect(output).toContain('OptionsController.ƿroutes =');
+        expect(output).toContain('options');
+        expect(output).toContain('guards: [Guard]');
     });
 });

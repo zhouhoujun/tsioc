@@ -545,12 +545,35 @@ interface AotControllerRoute {
     options?: ts.Expression;
 }
 
+function routeOptionsExpression(
+    classOptions: ts.Expression | undefined,
+    methodOptions: ts.Expression | undefined
+): ts.Expression {
+    const spreads: ts.SpreadAssignment[] = [];
+    if (classOptions) {
+        spreads.push(ts.factory.createSpreadAssignment(classOptions));
+    }
+    if (methodOptions) {
+        spreads.push(ts.factory.createSpreadAssignment(methodOptions));
+    }
+    return spreads.length
+        ? ts.factory.createObjectLiteralExpression(spreads, false)
+        : ts.factory.createObjectLiteralExpression([], false);
+}
+
+function optionsArgument(expression: ts.Expression): ts.Expression | undefined {
+    if (ts.isObjectLiteralExpression(expression)
+        || ts.isIdentifier(expression)
+        || ts.isPropertyAccessExpression(expression)) {
+        return expression;
+    }
+    return undefined;
+}
+
 /**
  * Extract a static controller route manifest for the simple, common case:
- * literal controller/method paths with no parameter or policy decorators.
- *
- * Anything that depends on runtime policy metadata returns `undefined` so the
- * runtime `parseCtrl` path remains authoritative.
+ * literal controller/method paths. Class/method options may be object
+ * literals or value identifiers; anything else falls back to `parseCtrl`.
  */
 function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | undefined {
     const classDecorators = decoratorsOf(node);
@@ -564,11 +587,27 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
         return undefined;
     }
     const controllerArgs = decoratorArgs(controllerDecorator);
-    if (controllerArgs.length > 1) {
+    if (controllerArgs.length > 2) {
         return undefined;
     }
-    if (controllerArgs.length === 1 && !ts.isStringLiteralLike(controllerArgs[0])) {
-        return undefined;
+    let classOptions: ts.Expression | undefined;
+    if (controllerArgs.length >= 1 && !ts.isStringLiteralLike(controllerArgs[0])) {
+        if (controllerArgs.length === 2 || !ts.isObjectLiteralExpression(controllerArgs[0])) {
+            return undefined;
+        }
+        classOptions = controllerArgs[0];
+    }
+    if (controllerArgs.length === 2) {
+        if (ts.isArrayLiteralExpression(controllerArgs[1])) {
+            classOptions = ts.factory.createObjectLiteralExpression([
+                ts.factory.createPropertyAssignment('guards', controllerArgs[1])
+            ], false);
+        } else {
+            classOptions = optionsArgument(controllerArgs[1]);
+            if (!classOptions) {
+                return undefined;
+            }
+        }
     }
 
     const routes: AotControllerRoute[] = [];
@@ -599,12 +638,12 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
             }
             pattern = args[0].text;
         }
-        let options: ts.Expression | undefined;
+        let methodOptions: ts.Expression | undefined;
         if (args.length === 2) {
-            if (!isObjectLiteralExpression(args[1])) {
+            methodOptions = optionsArgument(args[1]);
+            if (!methodOptions) {
                 return undefined;
             }
-            options = args[1];
         }
         const propertyKey = memberKey(member);
         if (!propertyKey) {
@@ -614,7 +653,7 @@ function aotControllerRoutes(node: ts.ClassDeclaration): AotControllerRoute[] | 
             propertyKey,
             pattern,
             method: ROUTE_METHOD_DECORATORS[decoratorName(routeDecorator)],
-            options
+            options: routeOptionsExpression(classOptions, methodOptions)
         });
     }
     return routes.length ? routes : undefined;
