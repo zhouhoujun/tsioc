@@ -95,22 +95,24 @@ mountAgentWebConsole(document.getElementById('app')!, {
 
 ## TUI commands (~70)
 
-Core: `/help` `/btw` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` (settings center; `/settings menu` for the classic tabs) `/compact`
+Core: `/help` `/btw` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` (settings center; `/settings menu` for the classic tabs) `/compact` `/highlights` (aliases `/whatsnew`)
+Agents: `/agents` / `/archetype` switches the session profile; `/agents default [name]` reads or sets the default profile for new sessions
 Session: `/resume` `/archive` `/fork` `/side` `/share` `/unshare` `/sections` `/threads`
 Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
 Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors/final answer
-Queue: `/queue [list|clear|remove <n>|edit <n>]` while a turn is running
+Queue: `/queue [list|manage|clear|remove <n>|edit <n>|move <n> <m>]` while a turn is running (`manage` opens an edit/move/remove panel)
 Steer: `/steer [on|off]` makes Enter during a running turn interrupt it and start a new turn (persisted per workspace)
 Input: `/editor` `/stash` `/apps` `/skills` `/mcp` `/plugins` `/voice`
-Permissions: `/permissions allow [<tool>|clear]` manages durable project allow rules; the approval panel's `p` action adds the current tool
+Permissions: `/permissions level|status|inspect|rules|allow`; `inspect <tool> [resource]` explains profile gates and the last matching ordered rule; `rules` lists/adds/removes/reset the persisted `approvalRequireApproval` list; the approval panel's `p` action adds a durable project allow rule
+Diagnostics: `/check <file...>` (alias `/lsp`) runs read-only LSP diagnostics; `/format <file...> [--check]` (alias `/fmt`) formats through the configured LSP server and writes back unless `--check`
 Browser/PWA: while the page is hidden, approvals, pending questions and turn completion raise system notifications (permission is requested on the first click/keypress)
 Side questions: `/btw <question>` answers from the current context without adding to the transcript
 Mentions: `@path` attaches a file/dir hint; `@path#L20-L45` (or `#20-45`) attaches that line range
 Tabs: `ctrl+tab` / `ctrl+shift+tab` cycle tabs (`alt+]` / `alt+[` in browsers); `ctrl+shift+t` (`alt+shift+t`) reopens the last closed tab
-History: `/undo` reverts the latest prompt, messages and file changes (prompt returns to the composer); `/redo` re-applies the undone turn
+History: `/undo` reverts the latest prompt, messages and file changes (prompt returns to the composer); `/redo` re-applies the undone turn. Turn boundaries and file snapshots are persisted, so this survives a process restart. `/rewind` is the file-level selector.
 Review: `/review` `/diff` `/approve`
 Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental`
-Delegation: `/delegation` `/goal` `/usage`
+Delegation: `/delegation` `/goal` `/usage` `/work` `/inbox`
 System: `/ps` `/ide` `/feedback` `/keymap`
 
 ## Web build layout

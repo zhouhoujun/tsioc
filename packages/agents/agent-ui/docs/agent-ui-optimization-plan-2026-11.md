@@ -244,7 +244,8 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
    attach/worktree、permissions 规则审阅面）与 P2（queue/steer 管理面）。
    说明：Esc Esc 已用于“编辑上一条用户消息”（`AgentConsoleEditModeHandlers`），不再叠加撤销手势，
    撤销统一走 `/undo`。
-2. **P4 收尾**：initial gzip / 切换 p50/p95 / 测试墙钟写入 gate 预算；README/手测清单；
+2. **P4 收尾**：README/CHANGELOG/`docs/manual-test-checklist.md` 已完成；initial gzip /
+   切换 p50/p95 / 测试墙钟写入 gate 阈值仍待做（等特性级懒加载后再设，避免立即失败的预算）；
    `git diff --check`、source-size、bench 全绿。
 
 ### P4 — 门禁与文档

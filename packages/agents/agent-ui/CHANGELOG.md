@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added `/check` (read-only LSP diagnostics) and `/format` (LSP `textDocument/formatting`, write or `--check` preview).
+- Added `/highlights` release-notes overlay with `highlightsSeenVersion` and a settings opt-out.
+- Added `/agents default [name]` and persisted `defaultArchetype` for new sessions.
+- Added `/permissions rules` editing and ordered-rule explanation in `/permissions inspect`.
+- Added `/queue manage` interactive reorder/edit/remove panel and `/queue move <n> <m>`.
+- Persisted turn undo/redo boundaries, redo payloads and file snapshots (`AgentTurnHistoryEntity`); `/undo` and `/redo` survive restarts.
 - Split browser embedding into `@tsdi/agent-ui/web-console` while preserving `@tsdi/agent-ui/web` compatibility.
 - Keep shell/TUI integration in `@tsdi/agent-ui/console` and remove platform component references from shared UI sources.
 - Consume renderer-neutral primitives and utilities from `@tsdi/components/common`.

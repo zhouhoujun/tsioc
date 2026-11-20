@@ -172,3 +172,6 @@ rm -f run-one.tmp.ts
   per-session override 与图形化规则表单仍待补。
 - AMS P1.2 补充：`/permissions inspect <tool> [resource]` 已同时展示有序规则的最终匹配
   （action / 规则序号 / 规则描述），与 `DefaultApprovalStrategy` 的 last-match-wins 一致。
+- P4 文档收尾：README 命令表、CHANGELOG Unreleased、`docs/manual-test-checklist.md`
+  （PTY + Chrome + 数据安全场景）已更新。initial gzip / 1k 切换 p50/p95 仍未写入自动
+  gate 阈值（当前数字见第 3 节），避免在未完成特性级懒加载前设置会立即失败的预算。
