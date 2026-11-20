@@ -33,6 +33,7 @@ export interface TemplatePlanComment {
 export interface TemplatePlanElement {
     kind: 'element';
     tag: string;
+    namespace?: string;
     attrs: Array<[string, string]>;
     rawAttrs: Array<[string, string]>;
     children: TemplatePlanNode[];
@@ -294,7 +295,7 @@ function collectPlanBindings(
         let matched: DirectiveDef[] = [];
         let custom: DirectiveDef[] = [];
         if (tag !== 'v-template') {
-            const probe = renderer.createElement(plan.tag);
+            const probe = renderer.createElement(plan.tag, plan.namespace);
             for (const [name, value] of plan.attrs) {
                 renderer.setAttribute(probe, name, value);
             }
@@ -339,8 +340,8 @@ function createNode(renderer: Renderer, node: TemplatePlanNode, ctx: PlanBuildCo
     const element = isProjectionOutletTag(tag)
         ? renderer.createElement('v-content')
         : switchTemplate
-            ? renderer.createElement('v-container')
-            : renderer.createElement(node.tag);
+            ? renderer.createElement(node.namespace?.includes('svg') ? 'g' : 'v-container', node.namespace)
+            : renderer.createElement(node.tag, node.namespace);
     element[BINDINGS] = [];
     ctx.planByNode.set(element, node);
     if (isProjectionOutletTag(tag)) {
@@ -369,6 +370,9 @@ function createNode(renderer: Renderer, node: TemplatePlanNode, ctx: PlanBuildCo
     }
     ctx.childrenByElement.set(element, children);
     if (switchTemplate) {
+        if (node.namespace?.includes('svg')) {
+            renderer.setAttribute(element, 'data-v-container', '');
+        }
         ctx.switchWrappers.add(element);
     } else if (transparent) {
         ctx.transparentTemplates.set(element, children);

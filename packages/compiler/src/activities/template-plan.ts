@@ -13,6 +13,7 @@ export interface TemplatePlanComment {
 export interface TemplatePlanElement {
     kind: 'element';
     tag: string;
+    namespace?: string;
     attrs: Array<[string, string]>;
     rawAttrs: Array<[string, string]>;
     children: TemplatePlanNode[];
@@ -67,7 +68,7 @@ function planNode(node: TemplateIRNode): TemplatePlanNode | null {
         }
         children.push(planned);
     }
-    return { kind: 'element', tag: node.tag, attrs, rawAttrs, children };
+    return { kind: 'element', tag: node.tag, namespace: node.namespace, attrs, rawAttrs, children };
 }
 
 export function templatePlanFromIR(ir: TemplateIRNode[]): TemplatePlan | null {

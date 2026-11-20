@@ -1009,12 +1009,53 @@ export class AotIrBlock { ok = true; }
         expect(emitted).toContain('v-else');
     });
 
-    it('leaves SVG templates on the runtime parser', () => {
+    it('precompiles SVG and MathML templates with namespaces', async () => {
         const emitted = transpileAot('aot-template-ir-svg.ts', `
 import { Component } from '@tsdi/components';
-@Component({ selector: 'aot-ir-svg', template: '<svg><circle /></svg>' })
+@Component({ selector: 'aot-ir-svg', template: '<div class="root"><svg viewBox="0 0 10 10"><circle class="dot" cx="1" cy="1" r="1" /></svg><math><mi class="var">x</mi></math></div>' })
 export class AotIrSvg {}
 `, { module: ts.ModuleKind.CommonJS });
-        expect(emitted).not.toContain('templateIR:');
+        expect(emitted).toContain('templatePlan: {');
+        expect(emitted).toContain('http://www.w3.org/2000/svg');
+        expect(emitted).toContain('http://www.w3.org/1998/Math/MathML');
+
+        const exported = loadAotModule(`
+import { Component } from '@tsdi/components';
+@Component({ selector: 'aot-ir-svg', template: '<div class="root"><svg viewBox="0 0 10 10"><circle class="dot" cx="1" cy="1" r="1" /></svg><math><mi class="var">x</mi></math></div>' })
+export class AotIrSvg {}
+`);
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+        const proto = HtmlTemplateParser.prototype as any;
+        const originalParse = proto.parse;
+        let parses = 0;
+        proto.parse = function (...args: any[]) {
+            parses += 1;
+            return originalParse.apply(this, args);
+        };
+        let ctx: any;
+        try {
+            ctx = await Application.run(exported.AotIrSvg, {
+                deps: [HtmlTemplateModule, ComponentsModule],
+                providers: [{ provide: DOCUMENT, useValue: dom.window.document }]
+            });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            const ref = ctx.runners.getRef(exported.AotIrSvg) as ComponentRef<any>;
+            const root = ref.hostView.rootNodes[0] as any;
+            const svg = root.querySelector('svg');
+            const dot = root.querySelector('.dot');
+            const math = root.querySelector('math');
+            const variable = root.querySelector('.var');
+            expect(svg?.namespaceURI).toBe('http://www.w3.org/2000/svg');
+            expect(dot?.namespaceURI).toBe('http://www.w3.org/2000/svg');
+            expect(svg?.getAttribute('viewBox')).toBe('0 0 10 10');
+            expect(math?.namespaceURI).toBe('http://www.w3.org/1998/Math/MathML');
+            expect(variable?.namespaceURI).toBe('http://www.w3.org/1998/Math/MathML');
+            expect(parses).toBe(0);
+        } finally {
+            proto.parse = originalParse;
+            await ctx?.close();
+            dom.window.close();
+        }
     });
 });

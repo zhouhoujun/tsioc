@@ -112,6 +112,7 @@ function sameIR(left: TemplateIRNode[], right: TemplateIRNode[]): boolean {
         }
         const other = b as any;
         if (String(a.tag).toLowerCase() !== String(other.tag).toLowerCase()
+            || a.namespace !== other.namespace
             || a.attrs.length !== other.attrs.length) {
             return false;
         }
