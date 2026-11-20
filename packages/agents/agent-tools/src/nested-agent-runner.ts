@@ -36,6 +36,8 @@ export interface NestedAgentRunRequest {
     archetype?: string;
     skills?: string[];
     permissions?: { allow?: string[]; deny?: string[] };
+    /** Optional workspace for the worker session (managed worktree). */
+    workspace?: string;
 }
 
 export interface DelegatedAgentReport {
@@ -243,7 +245,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             secrets: input.secrets,
             archetype: input.archetype,
             skills: input.skills,
-            permissions: input.permissions
+            permissions: input.permissions,
+            workspace: input.workspace
         });
         return this.toSpawnAgentResult(result, sessionId);
     }
@@ -268,7 +271,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             secrets: input.secrets,
             archetype: input.archetype,
             skills: input.skills,
-            permissions: input.permissions
+            permissions: input.permissions,
+            workspace: input.workspace
         }, input.sessionId ?? 'system');
         return {
             output: `Background task '${task.id}' started. Use the task id to poll status or collect results when it completes.`,
@@ -296,7 +300,8 @@ export class DelegatingSpawnAgentAdapter extends SpawnAgentAdapter {
             secrets: input.secrets,
             archetype: input.archetype,
             skills: input.skills,
-            permissions: input.permissions
+            permissions: input.permissions,
+            workspace: input.workspace
         }));
         if (inputs[0]?.concurrency) {
             for (const req of requests) {

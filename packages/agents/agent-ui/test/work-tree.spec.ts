@@ -134,8 +134,39 @@ export class WorkTreeTest {
         expect(notices[1]).toContain('Usage: /work spawn');
     }
 
-    @Test('failed task rows can be retried with the same goal')
-    async retries() {
+    @Test('/work spawn --worktree creates a worktree and passes it to the worker')
+    async spawnsInWorktree() {
+        const state = createState();
+        const notices: string[] = [];
+        const spawned: Array<{ goal: string; profile?: string; workspace?: string }> = [];
+        const created: Array<string | undefined> = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: null,
+            notify: (message: string) => notices.push(message),
+            openSession: async () => undefined,
+            spawnWorker: async (goal: string, profile?: string, workspace?: string) => {
+                spawned.push({ goal, profile, workspace });
+                return { taskId: 'task-wt', sessionId: 'child-wt' };
+            },
+            createWorktree: async (name?: string) => {
+                created.push(name);
+                return '/w/.worktrees/feature';
+            }
+        };
+        await runWorkCommandView(host, 'spawn --worktree feature refactor auth');
+        expect(created).toEqual(['feature']);
+        expect(spawned).toEqual([{ goal: 'refactor auth', profile: undefined, workspace: '/w/.worktrees/feature' }]);
+        expect(notices[0]).toContain('task-wt');
+
+        host.createWorktree = async () => undefined;
+        await runWorkCommandView(host, 'spawn --worktree broken task');
+        expect(notices[notices.length - 1]).toContain('Unable to create a worktree');
+        expect(spawned.length).toEqual(1);
+    }
+
+    @Test('failed task rows can be retried with the same goal')    async retries() {
         const state = createState();
         const spawned: string[] = [];
         const responses: Array<string | undefined> = ['task:t9:root', 'retry'];

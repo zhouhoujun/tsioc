@@ -159,6 +159,9 @@ export class LightweightAgentRunner extends NestedAgentRunner {
         if (!explicitProfile && workerProfile) {
             runtime.setSessionModelProfile(sessionId, workerProfile);
         }
+        if (request.workspace) {
+            await runtime.setSessionWorkspace(sessionId, request.workspace);
+        }
 
         let succeeded = false;
         try {

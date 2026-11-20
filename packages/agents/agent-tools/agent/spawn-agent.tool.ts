@@ -42,6 +42,8 @@ export interface SpawnAgentInput {
      * gateway events instead of blocking the current turn.
      */
     background?: boolean;
+    /** Optional workspace (e.g. a managed worktree) for the worker session. */
+    workspace?: string;
 }
 
 export interface SpawnAgentResult {
@@ -116,6 +118,10 @@ export class SpawnAgentTool implements AgentTool {
             background: {
                 type: 'boolean',
                 description: 'Run the sub-agent in the background (fire-and-collect). Returns immediately with a task id; completion is reported through gateway events.'
+            },
+            workspace: {
+                type: 'string',
+                description: 'Workspace directory for the worker session (for example a managed worktree). Defaults to the parent workspace.'
             }
         },
         required: ['goal']
@@ -148,7 +154,8 @@ export class SpawnAgentTool implements AgentTool {
                     deny: Array.isArray(input.permissions.deny) ? input.permissions.deny.filter((item: any) => typeof item === 'string') : undefined
                 }
                 : undefined,
-            background: input?.background === true
+            background: input?.background === true,
+            workspace: typeof input?.workspace === 'string' && input.workspace.trim() ? input.workspace.trim() : undefined
         });
         return {
             goal,

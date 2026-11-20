@@ -3612,11 +3612,13 @@ export class AgentToolsPackageTest {
             goal: 'explore',
             archetype: 'explore',
             skills: ['api-conventions'],
-            permissions: { allow: ['read_file'], deny: ['terminal'] }
+            permissions: { allow: ['read_file'], deny: ['terminal'] },
+            workspace: '/w/.worktrees/feature'
         }, createSessionContext());
         expect(seen?.archetype).toEqual('explore');
         expect(seen?.skills).toEqual(['api-conventions']);
         expect(seen?.permissions).toEqual({ allow: ['read_file'], deny: ['terminal'] });
+        expect(seen?.workspace).toEqual('/w/.worktrees/feature');
     }
 
     @Test('spawn agent requires adapter and requests delegation')
@@ -7071,8 +7073,25 @@ export class AgentToolsPackageTest {
         expect(clearSessions[0]).toEqual(filterSessions[0].split(':')[0]);
     }
 
-    @Test('lightweight agent runner applies and clears session model profile for worker class')
-    async lightweightAgentRunnerAppliesWorkerModelProfile() {
+    @Test('lightweight agent runner applies the worker workspace')
+    async lightweightAgentRunnerAppliesWorkspace() {
+        const workspaces: string[] = [];
+        const mockRuntime = {
+            start: async () => {},
+            runTurn: async (_sessionId: string, _prompt: string) => {
+                return { message: { content: 'done', metadata: {} } };
+            },
+            getMessages: async () => [],
+            setSessionWorkspace: async (sessionId: string, workspace?: string) => {
+                workspaces.push(`${sessionId}:${workspace}`);
+            }
+        };
+        const runner = new LightweightAgentRunner(new RandomUuidGenerator(), mockRuntime as any);
+        await runner.run({ prompt: 'test', sessionId: 'wt-1', workspace: '/w/.worktrees/feature' });
+        expect(workspaces).toEqual(['wt-1:/w/.worktrees/feature']);
+    }
+
+    @Test('lightweight agent runner applies and clears session model profile for worker class')    async lightweightAgentRunnerAppliesWorkerModelProfile() {
         const setProfiles: string[] = [];
         const clearSessions: string[] = [];
         const mockRuntime = {

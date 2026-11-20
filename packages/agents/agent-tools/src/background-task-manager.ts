@@ -41,6 +41,8 @@ export interface BackgroundTaskRunRequest {
     archetype?: string;
     skills?: string[];
     permissions?: { allow?: string[]; deny?: string[] };
+    /** Optional workspace for the worker session (managed worktree). */
+    workspace?: string;
 }
 
 export interface BackgroundTaskRunResult {

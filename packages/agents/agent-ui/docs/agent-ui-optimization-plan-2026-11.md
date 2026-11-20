@@ -241,7 +241,7 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 
 按影响排序（未完成计划）：
 1. **Agent Center/Inbox 后续**：按 `docs/agent-management-plan.md` 继续 P1（background worker
-   attach/worktree、permissions 规则审阅面）与 P2（queue/steer 管理面）。
+   attach/报告闭环、permissions 图形表单/per-session override）与 P2（queue/steer 优先键）。
    说明：Esc Esc 已用于“编辑上一条用户消息”（`AgentConsoleEditModeHandlers`），不再叠加撤销手势，
    撤销统一走 `/undo`。
 2. **P4 收尾**：README/CHANGELOG/`docs/manual-test-checklist.md` 已完成；`build:web` 已写入

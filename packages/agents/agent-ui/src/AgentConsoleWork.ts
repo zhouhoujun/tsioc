@@ -128,7 +128,9 @@ export interface AgentConsoleWorkHost {
     /** Cancel one background task (task-row action). */
     cancelTask?(taskId: string): Promise<boolean>;
     /** Spawn a background worker (spawn/retry actions). */
-    spawnWorker?(goal: string, profile?: string): Promise<{ taskId?: string; sessionId?: string; error?: string }>;
+    spawnWorker?(goal: string, profile?: string, workspace?: string): Promise<{ taskId?: string; sessionId?: string; error?: string }>;
+    /** Create/lookup a managed worktree for a worker (`/work spawn --worktree`). */
+    createWorktree?(name?: string): Promise<string | undefined>;
 }
 
 function workStatusLabel(status: string, translator?: AgentUiTranslator | null): string {
@@ -164,12 +166,26 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
         const rest = tokens.slice(1);
         const profileIndex = rest.findIndex(token => token === '--profile' || token === '-p');
         const profile = profileIndex >= 0 ? rest[profileIndex + 1] : undefined;
-        const goal = rest.filter((_token, index) => profileIndex < 0 || (index !== profileIndex && index !== profileIndex + 1)).join(' ').trim();
+        const worktreeIndex = rest.findIndex(token => token === '--worktree' || token === '-w');
+        const rawWorktreeName = worktreeIndex >= 0 ? rest[worktreeIndex + 1] : undefined;
+        const worktreeName = rawWorktreeName && !rawWorktreeName.startsWith('-') ? rawWorktreeName : undefined;
+        const goal = rest.filter((_token, index) =>
+            (profileIndex < 0 || (index !== profileIndex && index !== profileIndex + 1))
+            && (worktreeIndex < 0 || (index !== worktreeIndex && index !== worktreeIndex + 1))
+        ).join(' ').trim();
         if (!goal) {
             host.notify(formatAgentUiNotice(host.translator, 'workSpawnUsage'));
             return;
         }
-        const result = await host.spawnWorker?.(goal, profile);
+        let workspace: string | undefined;
+        if (worktreeIndex >= 0) {
+            workspace = await host.createWorktree?.(worktreeName);
+            if (!workspace) {
+                host.notify(formatAgentUiNotice(host.translator, 'workWorktreeFailed'));
+                return;
+            }
+        }
+        const result = await host.spawnWorker?.(goal, profile, workspace);
         host.notify(result && !result.error
             ? formatAgentUiNotice(host.translator, 'workSpawned', {
                 task: result.taskId || result.sessionId || '',
@@ -263,13 +279,14 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
             const result = await ctx.sessionService?.cancelBackgroundTasks?.([taskId]);
             return !!(result && Array.isArray(result.cancelled) && result.cancelled.includes(taskId));
         },
-        spawnWorker: async (goal: string, profile?: string) => {
+        spawnWorker: async (goal: string, profile?: string, workspace?: string) => {
             try {
                 await ctx.activateTool?.('spawn_agent');
                 const output = await ctx.invokeTool?.('spawn_agent', {
                     goal,
                     background: true,
-                    ...(profile ? { archetype: profile } : {})
+                    ...(profile ? { archetype: profile } : {}),
+                    ...(workspace ? { workspace } : {})
                 });
                 const parsed = typeof output === 'string' && output.trim().startsWith('{')
                     ? (() => { try { return JSON.parse(output); } catch { return undefined; } })()
@@ -282,6 +299,10 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
             } catch (error) {
                 return { error: error instanceof Error ? error.message : String(error) };
             }
+        },
+        createWorktree: async (name?: string) => {
+            const result = await ctx.state.worktreeCommand?.({ action: 'create', ...(name ? { name } : {}) });
+            return result?.path;
         }
     };
 }
