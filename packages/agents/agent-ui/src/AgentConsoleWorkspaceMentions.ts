@@ -21,6 +21,8 @@ export interface AgentConsoleWorkspaceMentionResolver {
 }
 
 const WORKSPACE_SUGGESTION_LIMIT = 12;
+/** Upper bound for `@file#Lx-Ly` context so one mention cannot flood a prompt. */
+export const AGENT_CONSOLE_MENTION_RANGE_MAX_LINES = 400;
 const WORKSPACE_SCAN_LIMIT = 2000;
 const WORKSPACE_SCAN_DEPTH = 6;
 const WORKSPACE_IGNORED_DIRECTORIES = new Set([
@@ -35,6 +37,29 @@ const WORKSPACE_IGNORED_DIRECTORIES = new Set([
     '.next',
     '.turbo'
 ]);
+
+export interface AgentConsoleMentionRange {
+    path: string;
+    start: number;
+    end: number;
+}
+
+/**
+ * Parse opencode-style line ranges: `file.ts#L20-L45`, `file.ts#20-45` or a
+ * single line `file.ts#L20`. Missing/invalid ranges leave the mention as a path.
+ */
+export function parseAgentConsoleMentionRange(mention: string): AgentConsoleMentionRange | undefined {
+    const match = String(mention || '').match(/^(.*?)#L?(\d+)(?:-L?(\d+))?$/);
+    if (!match) {
+        return undefined;
+    }
+    const start = Number(match[2]);
+    const end = match[3] ? Number(match[3]) : start;
+    if (!Number.isFinite(start) || start < 1 || !Number.isFinite(end)) {
+        return undefined;
+    }
+    return { path: match[1], start, end: Math.max(start, end) };
+}
 
 interface WorkspaceTarget {
     absolutePath: string;
@@ -58,7 +83,8 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         if (/^@(skill|plugin):/i.test(activeToken)) {
             return catalogSuggestions.slice(0, limit);
         }
-        const query = this.normalizeWorkspaceQuery(activeToken);
+        // A trailing `#Lx-Ly` belongs to the selected file, not its name.
+        const query = this.normalizeWorkspaceQuery(activeToken).replace(/#L?\d+(?:-L?\d+)?$/, '');
         if (!workspace || !this.fileAdapter) {
             return catalogSuggestions.slice(0, limit);
         }
@@ -119,7 +145,8 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
         if (!workspace || !this.fileAdapter) {
             return [];
         }
-        const target = this.resolveWorkspaceTarget(workspace, mentionName, true);
+        const range = parseAgentConsoleMentionRange(mentionName);
+        const target = this.resolveWorkspaceTarget(workspace, range?.path ?? mentionName, true);
         if (!target) {
             return [];
         }
@@ -136,7 +163,21 @@ export class AgentConsoleWorkspaceMentionsProvider implements AgentConsoleWorksp
             ];
         }
         if (stats.isFile()) {
-            return [target.relativePath];
+            if (!range) {
+                return [target.relativePath];
+            }
+            const lines = (await this.fileAdapter.readText(target.absolutePath)).split(/\r?\n/);
+            if (range.start > lines.length) {
+                // A range beyond EOF keeps the mention usable as a path hint.
+                return [target.relativePath];
+            }
+            const start = range.start;
+            const end = Math.min(range.end, start + AGENT_CONSOLE_MENTION_RANGE_MAX_LINES - 1, lines.length);
+            const width = String(end).length;
+            return [
+                `${target.relativePath} (lines ${start}-${end}):`,
+                ...lines.slice(start - 1, end).map((line, index) => `${String(start + index).padStart(width, ' ')} | ${line}`)
+            ];
         }
         return [];
     }
