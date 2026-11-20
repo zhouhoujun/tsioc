@@ -300,6 +300,58 @@ describe('optimized router', () => {
         expect((router as any).matchCache.size).toBeLessThanOrEqual(3);
     });
 
+    it('removes dynamic routes and their patterns on unuse', async () => {
+        const router = createRouter();
+        const context = createRequestContext(createInjector());
+        const route = { path: '/dynamic', pattern: '/dynamic', handle: () => of('dynamic') } as any;
+
+        router.use(route);
+        expect(router.routes).toContain(route);
+        expect(router.getPatterns().routes).toContain('/dynamic');
+        expect(await router.getRoute({ url: '/dynamic', method: 'GET' } as any, context)).toBeTruthy();
+
+        router.unuse(route);
+
+        expect(router.routes).not.toContain(route);
+        expect(router.getPatterns().routes).not.toContain('/dynamic');
+        expect(await router.getRoute(
+            { url: '/dynamic', method: 'GET' } as any,
+            createRequestContext(createInjector())
+        )).toBeUndefined();
+    });
+
+    it('deduplicates concurrent lazy route loads', async () => {
+        const router = createRouter();
+        let loads = 0;
+        router.use({
+            path: '/lazy',
+            loadChildren: async () => {
+                loads += 1;
+                await new Promise(resolve => setTimeout(resolve, 10));
+                return [{
+                    path: '/child',
+                    pattern: '/child',
+                    handle: () => of('lazy-child')
+                }];
+            }
+        } as any);
+
+        const [first, second] = await Promise.all([
+            router.getRoute(
+                { url: '/lazy/child', method: 'GET' } as any,
+                createRequestContext(createInjector())
+            ),
+            router.getRoute(
+                { url: '/lazy/child', method: 'GET' } as any,
+                createRequestContext(createInjector())
+            )
+        ]);
+
+        expect(loads).toBe(1);
+        expect(first).toBeTruthy();
+        expect(second).toBeTruthy();
+    });
+
     it('revalidates cached misses after a route is registered later', async () => {
         const router = createRouter();
         const first = await router.getRoute(

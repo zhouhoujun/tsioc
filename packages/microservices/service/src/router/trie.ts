@@ -4,6 +4,7 @@ import { Route, Routes } from './route';
 export class TrieRoute {
 
     private routes: Route[] = [];
+    private loading?: Promise<void>;
     children: Map<string, TrieRoute> = new Map();
 
     constructor(
@@ -63,10 +64,14 @@ export class TrieRoute {
     async remove(pathParts?: string[], index = 0, route?: Route) {
         if (!pathParts) {
             if (route) {
-                this.routes.splice(this.routes.indexOf(route), 1);
+                const index = this.routes.indexOf(route);
+                if (index > -1) {
+                    this.routes.splice(index, 1);
+                }
             }
             this.routes = [];
             this.children.clear();
+            this.loading = undefined;
             return;
         }
 
@@ -162,12 +167,25 @@ export class TrieRoute {
     }
 
     protected async load() {
+        if (this.loading) {
+            return this.loading;
+        }
         const unloadeds = this.routes.filter(r => r.loaded === false);
-        for (const route of unloadeds) {
-            const routers = await this.options.loader(route);
-            route.children = routers;
-            routers?.forEach(route => this.insert(route));
-            route.loaded = true;
+        if (!unloadeds.length) {
+            return;
+        }
+        this.loading = (async () => {
+            for (const route of unloadeds) {
+                const routers = await this.options.loader(route);
+                route.children = routers;
+                routers?.forEach(route => this.insert(route));
+                route.loaded = true;
+            }
+        })();
+        try {
+            await this.loading;
+        } finally {
+            this.loading = undefined;
         }
     }
 

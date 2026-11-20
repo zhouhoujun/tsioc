@@ -119,13 +119,40 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     }
 
     unuse(route: Route): this {
-        this.trieRouter.remove(route);
+        this.removeRoute(route);
+        // A removed route can change the winner for any cached URL; keep the
+        // existing conservative invalidation until the registry/revision work
+        // lands.
         this.cache.clear();
         this.regCache.clear();
         this.matchCache.clear();
         this.microMatchCache.clear();
         this.params.clear();
         return this
+    }
+
+    private removeRoute(route: Route): void {
+        if (!route) {
+            return;
+        }
+        if (route.children?.length) {
+            route.children.forEach(child => this.removeRoute(child));
+        }
+        if ((route as AssetRoute).assets) {
+            const assetIndex = this.assets.indexOf(route as AssetRoute);
+            if (assetIndex > -1) {
+                this.assets.splice(assetIndex, 1);
+            }
+        }
+        if (isRegExp(route.pattern)) {
+            this.regExps.delete(route.pattern);
+        } else {
+            this.trieRouter.remove(route);
+        }
+        const index = this._routes.indexOf(route);
+        if (index > -1) {
+            this._routes.splice(index, 1);
+        }
     }
 
     getPatterns(): RoutePatterns {
@@ -238,13 +265,16 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
         } else if (route.loadChildren) {
             const res = route.loadChildren();
-            const module = await (isObservable(res) ? lastValueFrom(res) : res);
-            if (isType(module)) {
+            const loaded = await (isObservable(res) ? lastValueFrom(res) : res);
+            if (isArray(loaded)) {
+                return loaded;
+            }
+            if (isType(loaded)) {
                 const runtime = this.injector.getRuntime();
-                if (!runtime.getModules().has(module)) {
-                    await this.injector.get(ModuleRef).import(module, true);
+                if (!runtime.getModules().has(loaded)) {
+                    await this.injector.get(ModuleRef).import(loaded, true);
                 }
-                const routes = runtime.getModules().get(module)?.injector.get(ROUTES);
+                const routes = runtime.getModules().get(loaded)?.injector.get(ROUTES);
                 return routes?.map(r => {
                     r.prefix = route.path;
                     if (route.pathParams) {
