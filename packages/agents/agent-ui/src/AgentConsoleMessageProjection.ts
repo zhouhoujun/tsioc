@@ -1,11 +1,12 @@
 import type { AgentMessage } from '@tsdi/agent';
+import { unwrapReactive } from '@tsdi/components';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { projectAgentConsoleArtifactMainline, projectAgentConsoleConversationMainline, projectAgentConsoleDecisionMainline, projectAgentConsoleDiagnosticMainline, projectAgentConsoleExecutionMainline, projectAgentConsoleTimelineDurations } from './AgentConsoleSessionContentPresenter';
 import { aggregateAgentConsoleActivity } from './AgentConsoleActivityAggregation';
 import { DEFAULT_TIMELINE_LABELS, TimelineWindowMessage, fillTimelineLabel, formatTimelineClockTime, formatTimelineSessionDuration, isError, truncateTimelineRowText } from './AgentConsoleTimelineWindow';
 import { shouldProjectCommandExecution } from './AgentConsoleCommandEcho';
 
-const displayMessagesCache = new WeakMap<object, {
+interface DisplayMessagesCacheEntry {
     messages: AgentMessage[];
     planMessage: AgentMessage | null;
     fileChangeMessage: AgentMessage | null;
@@ -18,7 +19,14 @@ const displayMessagesCache = new WeakMap<object, {
     timelineLabels: AgentConsoleSessionState['consoleOptions']['timelineLabels'];
     expandedMessageIds?: string[];
     result: AgentMessage[];
-}>();
+}
+const displayMessagesCache = new WeakMap<object, DisplayMessagesCacheEntry>();
+/**
+ * Per-transcript projection, keyed by the raw messages array. Tabs keep their
+ * own transcript array, so switching back to a previously visited tab reuses
+ * its projected display list instead of re-running the mainline projections.
+ */
+const sessionDisplayMessagesCache = new WeakMap<object, DisplayMessagesCacheEntry>();
 
 export function resolveDisplayMessages(state: AgentConsoleSessionState): AgentMessage[] {
     const planTodos = state.planTodos;
@@ -29,24 +37,30 @@ export function resolveDisplayMessages(state: AgentConsoleSessionState): AgentMe
     // key out of the default (high) path avoids re-projecting a long transcript
     // every time an ordinary long message is expanded.
     const activityAggregation = !state.timelineMode && state.activityVerbosity !== 'high';
-    const cached = displayMessagesCache.get(state);
-    if (cached
-        && cached.messages === state.messages
-        && cached.planMessage === state.planMessage
-        && cached.fileChangeMessage === state.fileChangeMessage
-        && cached.commandExecutionMessages === state.commandExecutionMessages
-        && cached.timelineMode === state.timelineMode
-        && cached.showThinking === state.showThinking
-        && cached.planTodos === planTodos
-        && cached.planSignature === planSignature
-        && cached.consoleOptions === state.consoleOptions
-        && cached.timelineLabels === state.consoleOptions.timelineLabels
-        && (!activityAggregation || cached.expandedMessageIds === state.expandedMessageIds)) {
+    const rawMessages = unwrapReactive(state.messages);
+    const matches = (entry: DisplayMessagesCacheEntry | undefined): entry is DisplayMessagesCacheEntry => !!entry
+        && entry.messages === rawMessages
+        && entry.planMessage === state.planMessage
+        && entry.fileChangeMessage === state.fileChangeMessage
+        && entry.commandExecutionMessages === state.commandExecutionMessages
+        && entry.timelineMode === state.timelineMode
+        && entry.showThinking === state.showThinking
+        && entry.planTodos === planTodos
+        && entry.planSignature === planSignature
+        && entry.consoleOptions === state.consoleOptions
+        && entry.timelineLabels === state.consoleOptions.timelineLabels
+        && (!activityAggregation || entry.expandedMessageIds === state.expandedMessageIds);
+    // Prefer this state's last projection; otherwise a per-transcript entry
+    // from an earlier tab visit. Checking both is required: the state slot may
+    // hold another tab while the per-transcript entry is still valid.
+    const stateEntry = displayMessagesCache.get(state);
+    const cached = matches(stateEntry) ? stateEntry : sessionDisplayMessagesCache.get(rawMessages);
+    if (cached && matches(cached)) {
         return cached.result;
     }
     const result = buildDisplayMessages(state);
-    displayMessagesCache.set(state, {
-        messages: state.messages,
+    const entry: DisplayMessagesCacheEntry = {
+        messages: rawMessages,
         planMessage: state.planMessage,
         fileChangeMessage: state.fileChangeMessage,
         commandExecutionMessages: state.commandExecutionMessages,
@@ -58,7 +72,9 @@ export function resolveDisplayMessages(state: AgentConsoleSessionState): AgentMe
         timelineLabels: state.consoleOptions.timelineLabels,
         expandedMessageIds: activityAggregation ? state.expandedMessageIds : undefined,
         result
-    });
+    };
+    displayMessagesCache.set(state, entry);
+    sessionDisplayMessagesCache.set(rawMessages, entry);
     return result;
 }
 
