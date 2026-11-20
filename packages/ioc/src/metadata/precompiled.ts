@@ -278,7 +278,7 @@ function applyRunnableDefines(def: Record<string, any>, records: PrecompiledType
         if (!meta || typeof meta !== 'object') {
             continue;
         }
-        if (decor?.decorator === '@ProvidedIn') {
+        if (decor?.decorator === '@ProvidedIn' || decor?.decorator === '@Refs') {
             def.aotProvidedIn = meta;
             continue;
         }

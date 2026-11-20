@@ -130,6 +130,27 @@ export class HandlerService {
         expect(ref.getDefines(ref.methodDecors[1]).length).toBe(1);
     });
 
+    it('precompiles InjectRepository and Refs aliases', () => {
+        const source = `
+import { Refs } from '@tsdi/ioc';
+import { InjectRepository } from '@tsdi/repository';
+
+export class UserModel {}
+
+@Refs(UserModel)
+export class AliasRepositoryService {
+    @InjectRepository(UserModel)
+    users: any;
+}
+`;
+        const output = compile(source);
+        expect(output).toContain('__aotType(AliasRepositoryService');
+        expect(output).toContain('__aotRepositoryResolver');
+        const exported = load(source);
+        const ref = getClassRef(exported.AliasRepositoryService as any);
+        expect((ref.getAnnotation().propMetadatas.get('users')?.[0] as any)?.model).toBe(exported.UserModel);
+    });
+
     it('precompiles Swagger Api class, operation and parameter metadata', () => {
         const source = `
 import { Injectable } from '@tsdi/ioc';

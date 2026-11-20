@@ -17,7 +17,7 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Module', 'Configuration', 'Component', 'Directive', 'Runner', 'Api', 'ApiModel'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Refs', 'Pipe', 'NoReactive', 'Module', 'Configuration', 'Component', 'Directive', 'Runner', 'Api', 'ApiModel'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
@@ -387,6 +387,7 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
             }
             return undefined;
         case 'ProvidedIn':
+        case 'Refs':
             if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
                 return args[0];
             }
@@ -928,7 +929,7 @@ function servicePropertyMetadata(member: ts.ClassElement): ts.Expression | undef
     const flagExpressions: ts.Expression[] = [];
     for (const decorator of decoratorsOf(member)) {
         const name = decoratorName(decorator);
-        if (name === 'Repository') {
+        if (name === 'Repository' || name === 'InjectRepository') {
             if (!ts.isPropertyDeclaration(member)) {
                 return undefined;
             }
@@ -1560,7 +1561,7 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
         let hasInjection = false;
         for (const decorator of decoratorsOf(member)) {
             const name = decoratorName(decorator);
-            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectLog' || name === 'Log') {
+            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectRepository' || name === 'InjectLog' || name === 'Log') {
                 hasInjection = true;
                 continue;
             }
@@ -1578,7 +1579,7 @@ function memberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             const decorators = decoratorsOf(parameter);
             for (const decorator of decorators) {
                 const name = decoratorName(decorator);
-                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
+                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                     && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                     && !TRANSPORT_PARAMETER_SCOPES[name]) {
                     return false;
@@ -1725,7 +1726,7 @@ function parameterMetadataExpression(parameter: ts.ParameterDeclaration, key: st
     const flagExpressions: ts.Expression[] = [];
     for (const decorator of decoratorsOf(parameter)) {
         const name = decoratorName(decorator);
-        if (name === 'Repository') {
+        if (name === 'Repository' || name === 'InjectRepository') {
             const args = decoratorArgs(decorator);
             if (!args.length || args.length > 2 || !args[0]) {
                 return undefined;
@@ -1943,7 +1944,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 for (const decorator of decorators) {
                     const name = decoratorName(decorator);
-                    if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
+                    if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                         && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                         && !TRANSPORT_PARAMETER_SCOPES[name]) {
                         return false;
@@ -1977,7 +1978,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 continue;
             }
-            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectLog' || name === 'Log') {
+            if (name === 'Autowired' || name === 'Inject' || name === 'Param' || name === 'Repository' || name === 'InjectRepository' || name === 'InjectLog' || name === 'Log') {
                 hasInjection = true;
                 continue;
             }
@@ -2001,7 +2002,7 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
             const decorators = decoratorsOf(parameter);
             for (const decorator of decorators) {
                 const name = decoratorName(decorator);
-                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
+                if (name !== 'Inject' && name !== 'Autowired' && name !== 'Param' && name !== 'Repository' && name !== 'InjectRepository' && name !== 'InjectLog' && name !== 'Log' && name !== 'ApiParam' && name !== 'ApiQuery' && name !== 'ApiHeader' && name !== 'ApiBody'
                     && name !== 'Optional' && name !== 'Self' && name !== 'SkipSelf' && name !== 'Host'
                     && !TRANSPORT_PARAMETER_SCOPES[name]) {
                     return false;
