@@ -1,7 +1,7 @@
 import { Observable, Subject } from 'rxjs';
 import { Route, Routes } from './route';
 
-export type RouteTableChangeType = 'register' | 'replace' | 'remove' | 'reset';
+export type RouteTableChangeType = 'register' | 'replace' | 'remove' | 'reset' | 'use' | 'unuse';
 
 /** A committed route-table change. */
 export interface RouteTableChange {

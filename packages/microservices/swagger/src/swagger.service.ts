@@ -116,8 +116,6 @@ export class SwaggerService {
 
         this.buildDoc(router, doc, getModelResolver);
 
-        this.watchRouteChanges(router, doc, getModelResolver);
-
         const prefix = opts.prefix ?? 'api-doc';
         const baseHref = `/${String(prefix).replace(/^\/+|\/+$/g, '')}/`;
         const swaggerRoot = getAbsoluteFSPath();
@@ -157,6 +155,9 @@ export class SwaggerService {
         });
         router.use(joinPath(prefix, 'favicon-32x32.png'), sendAsset('favicon-32x32.png', 'image/png'));
         router.use(joinPath(prefix, 'favicon-16x16.png'), sendAsset('favicon-16x16.png', 'image/png'));
+
+        // Subscribe only after installing Swagger's own asset routes.
+        this.watchRouteChanges(router, doc, getModelResolver);
 
         try {
             const httpRefs = ctx.runners.getRefs(HttpServer);

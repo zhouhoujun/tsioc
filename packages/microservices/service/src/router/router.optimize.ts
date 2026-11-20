@@ -103,7 +103,9 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     use(route: Pattern, handler: RouteHanlder, callback?: (route: Route) => void): this;
     use(arg: Route | Pattern, handler?: RouteHanlder, callback?: (route: Route) => void): this {
         this.invalidateCaches();
-        this.registry.bump();
+        if (this.batchDepth > 0) {
+            this.registry.bump();
+        }
         let route: Route;
         if (handler) {
             route = {
@@ -125,6 +127,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             this.assets.push(route as AssetRoute);
             this.routes.push(route);
             callback?.(route);
+            this.emitManualChange('use', route);
             return this;
         }
         if (this.formatter.isRegExp && this.formatter.parseRegExp) {
@@ -167,6 +170,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             this.rejectedRoutes.push(route);
         }
         callback?.(route);
+        this.emitManualChange('use', route);
         return this;
     }
 
@@ -175,8 +179,18 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         // A removed route can change the winner for any cached URL; keep the
         // existing conservative invalidation for manual route mutation.
         this.invalidateCaches();
-        this.registry.bump();
+        if (this.batchDepth > 0) {
+            this.registry.bump();
+        } else {
+            this.registry.touch('unuse', undefined, [route]);
+        }
         return this
+    }
+
+    private emitManualChange(type: 'use' | 'unuse', route: Route): void {
+        if (this.batchDepth === 0) {
+            this.registry.touch(type, undefined, [route]);
+        }
     }
 
     /**

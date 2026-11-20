@@ -456,6 +456,22 @@ describe('optimized router', () => {
         expect(result).toBe('high');
     });
 
+    it('emits change events for manual use and unuse', () => {
+        const router = createRouter();
+        const changes: any[] = [];
+        const subscription = router.changes.subscribe(change => changes.push(change));
+        try {
+            router.use('/manual', () => of('manual'));
+            expect(changes.at(-1)?.type).toBe('use');
+            expect(router.revision).toBeGreaterThan(0);
+
+            router.unuse(router.routes.find(route => route.path === '/manual')!);
+            expect(changes.at(-1)?.type).toBe('unuse');
+        } finally {
+            subscription.unsubscribe();
+        }
+    });
+
     it('revalidates cached misses after a route is registered later', async () => {
         const router = createRouter();
         const first = await router.getRoute(
