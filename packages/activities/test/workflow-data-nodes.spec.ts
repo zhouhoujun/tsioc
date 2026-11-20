@@ -572,6 +572,38 @@ describe('Workflow data & trigger nodes', () => {
         expect(text.data?.executionState?.nodeStates.combine_1.result?.data?.value).toBe('hello world');
     });
 
+    it('routes switch rules past the fourth output', async () => {
+        const definition: VisualWorkflowDefinition = {
+            id: 'switch-eight',
+            name: 'Switch eight',
+            nodes: [
+                registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: { level: 7 } } }),
+                registry.createNode('switch', { x: 200, y: 0 }, { id: 'switch_1', config: {
+                    field: 'level',
+                    rules: [
+                        { operator: 'is-empty' },
+                        { operator: 'is-empty' },
+                        { operator: 'is-empty' },
+                        { operator: 'is-empty' },
+                        { operator: 'is-empty' },
+                        { operator: 'is-empty' },
+                        { operator: 'is-empty' },
+                        { operator: 'equals', value: '7' }
+                    ]
+                } }),
+                registry.createNode('task', { x: 400, y: 0 }, { id: 'task_eighth', config: { result: { eighth: true } } })
+            ],
+            connections: [
+                { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'switch_1', targetPort: 'in' },
+                { id: 'c2', sourceNodeId: 'switch_1', sourcePort: 'route-8', targetNodeId: 'task_eighth', targetPort: 'in' }
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const states = result.data?.executionState?.nodeStates || {};
+        expect(states.switch_1.result?.data?.route).toBe(8);
+        expect(states.task_eighth.status).toBe('success');
+    });
+
     it('matches every switch rule when check-all is enabled and supports else', async () => {
         const definition: VisualWorkflowDefinition = {
             id: 'switch-checkall',

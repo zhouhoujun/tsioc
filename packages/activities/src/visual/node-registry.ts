@@ -228,7 +228,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
     {
         type: 'switch',
         label: 'Switch',
-        description: 'Route to one of four outputs using ordered rules',
+        description: 'Route to one of eight outputs using ordered rules',
         category: 'flow',
         icon: '⇉',
         color: '#f97316',
@@ -239,6 +239,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('route-2', 'route-2', 'output', '2'),
             port('route-3', 'route-3', 'output', '3'),
             port('route-4', 'route-4', 'output', '4'),
+            port('route-5', 'route-5', 'output', '5'),
+            port('route-6', 'route-6', 'output', '6'),
+            port('route-7', 'route-7', 'output', '7'),
+            port('route-8', 'route-8', 'output', '8'),
             port('default', 'default', 'output', 'Default'),
             port('error', 'error', 'output', 'Error')
         ],
@@ -497,7 +501,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
     {
         type: 'router',
         label: 'Router',
-        description: 'Route to one of four outputs using ordered rules',
+        description: 'Route to one of eight outputs using ordered rules',
         category: 'flow',
         icon: '⇶',
         color: '#d97706',
@@ -508,6 +512,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('route-2', 'route-2', 'output', '2'),
             port('route-3', 'route-3', 'output', '3'),
             port('route-4', 'route-4', 'output', '4'),
+            port('route-5', 'route-5', 'output', '5'),
+            port('route-6', 'route-6', 'output', '6'),
+            port('route-7', 'route-7', 'output', '7'),
+            port('route-8', 'route-8', 'output', '8'),
             port('default', 'default', 'output', 'Default'),
             port('error', 'error', 'output', 'Error')
         ],
