@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { SwaggerService } from '../src';
 import { InjectFlags, Invocation } from '@tsdi/ioc';
+import { Subject } from 'rxjs';
 
 describe('SwaggerService coverage', () => {
     let service: SwaggerService;
@@ -87,6 +88,48 @@ describe('SwaggerService coverage', () => {
         });
         expect(doc.components.schemas.UserModel.properties.name.type).toBe('string');
         expect(doc.components.schemas.UserModel.properties.age.type).toBe('number');
+    });
+
+    it('rebuilds the OpenAPI document when dynamic route sources change', () => {
+        const invocation = Object.create(Invocation.prototype);
+        invocation.classRef = {
+            className: 'DynamicController',
+            getClassdDefines: () => [{ metadata: { route: '/dynamic', description: 'dynamic routes' } }],
+            getMethodDefines: (propertyKey?: any, filter?: any) => {
+                if (typeof propertyKey === 'function') {
+                    filter = propertyKey;
+                    propertyKey = undefined;
+                }
+                const defs = propertyKey
+                    ? []
+                    : [{ propertyKey: 'list', metadata: { route: '/list', method: 'GET' } }];
+                return filter ? defs.filter(filter) : defs;
+            },
+            getReturnning: () => undefined,
+            getParameters: () => []
+        };
+        const router = {
+            routes: [{ path: '/dynamic', controller: invocation }],
+            changes: new Subject<any>()
+        } as any;
+        const doc = {
+            openapi: '3.0.0',
+            info: { title: 'test', version: '1.0.0' },
+            paths: {},
+            components: { schemas: {} },
+            tags: []
+        } as any;
+
+        service.buildDoc(router, doc, () => undefined);
+        (service as any).watchRouteChanges(router, doc, () => undefined);
+        expect(doc.paths['/dynamic/list']?.get).toBeTruthy();
+
+        router.routes = [];
+        router.changes.next({ type: 'remove', revision: 1, routes: [] });
+
+        expect(doc.paths).toEqual({});
+        expect(doc.tags).toEqual([]);
+        service.onDestroy();
     });
 
     it('creates multipart body schema and custom html snippets', () => {

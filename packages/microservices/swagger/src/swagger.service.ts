@@ -2,7 +2,8 @@ import { ApplicationContext, MODEL_RESOLVERS, ModelArgumentResolver, Started, Tr
 import { AbstractType, Exception, InjectFlags, Injectable, Invocation, Type, getTypeName, Injector, isFunction, isNil, isString, isType, lang } from '@tsdi/ioc';
 import { InjectLog, Logger } from '@tsdi/logger';
 import { LOCALHOST, joinPath, ContentType, CONTENT_TYPE, Transport } from '@tsdi/common';
-import { RouteMappingMetadata, Router, getRouter, SetupServices } from '@tsdi/service';
+import { RouteMappingMetadata, Router, RouteTableChange, getRouter, SetupServices } from '@tsdi/service';
+import { Subscription } from 'rxjs';
 import { DBPropertyMetadata, MissingModelFieldException } from '@tsdi/repository';
 import { HTTP_SERV_OPTIONS, HttpServer } from '@tsdi/http-microservice';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
@@ -21,6 +22,7 @@ export class SwaggerService {
 
 
     private swaggerInit?: string;
+    private changeSubscription?: Subscription;
 
     protected resolveRouter(injector: Injector, transport?: Transport, microservice?: boolean): Router {
         let current: Injector | null | undefined = injector;
@@ -114,6 +116,8 @@ export class SwaggerService {
 
         this.buildDoc(router, doc, getModelResolver);
 
+        this.watchRouteChanges(router, doc, getModelResolver);
+
         const prefix = opts.prefix ?? 'api-doc';
         const baseHref = `/${String(prefix).replace(/^\/+|\/+$/g, '')}/`;
         const swaggerRoot = getAbsoluteFSPath();
@@ -167,6 +171,37 @@ export class SwaggerService {
 
     }
 
+
+    /**
+     * Rebuild the OpenAPI document when a dynamic route source changes.
+     * Manual `router.use` routes existing before setup are included in the
+     * initial build; source APIs emit changes and keep the document current.
+     */
+    protected watchRouteChanges(
+        router: Router,
+        doc: OpenAPIObject,
+        modelResolver: (type: any) => ModelArgumentResolver | undefined
+    ): void {
+        this.changeSubscription?.unsubscribe();
+        const changes = (router as any).changes as { subscribe?: (next: (change: RouteTableChange) => void) => Subscription } | undefined;
+        if (!changes?.subscribe) {
+            return;
+        }
+        this.changeSubscription = changes.subscribe(() => {
+            try {
+                doc.paths = {};
+                doc.tags = [];
+                this.buildDoc(router, doc, modelResolver);
+            } catch (error) {
+                this.logger?.error?.('Failed to rebuild Swagger document after route change', error);
+            }
+        });
+    }
+
+    onDestroy(): void {
+        this.changeSubscription?.unsubscribe();
+        this.changeSubscription = undefined;
+    }
 
     buildDoc(router: Router, jsonDoc: OpenAPIObject, modelResolver: (type: any) => ModelArgumentResolver | undefined, prefix?: string) {
         router.routes.forEach(v => {
