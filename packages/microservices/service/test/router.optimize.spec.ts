@@ -472,6 +472,29 @@ describe('optimized router', () => {
         }
     });
 
+    it('reloads lazy route sources after the loader resolves', async () => {
+        const router = createRouter();
+        let version = 'a';
+        router.registerLazyRoutes('lazy-source', async () => [{
+            path: `/lazy-${version}`,
+            pattern: `/lazy-${version}`,
+            handle: () => of(version)
+        } as any]);
+
+        await router.reloadRoutes('lazy-source');
+        expect(router.listRouteSources().map(item => item.source)).toEqual(['lazy-source']);
+        expect(router.routes.some(route => route.path === '/lazy-a')).toBe(true);
+
+        version = 'b';
+        await router.reloadRoutes('lazy-source');
+        expect(router.routes.some(route => route.path === '/lazy-a')).toBe(false);
+        expect(router.routes.some(route => route.path === '/lazy-b')).toBe(true);
+
+        router.removeRoutes('lazy-source');
+        await router.reloadRoutes('lazy-source');
+        expect(router.routes.some(route => route.path === '/lazy-b')).toBe(false);
+    });
+
     it('revalidates cached misses after a route is registered later', async () => {
         const router = createRouter();
         const first = await router.getRoute(

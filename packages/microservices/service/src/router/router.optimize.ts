@@ -26,6 +26,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     private readonly registry = new RouteRegistry();
     private regexRoutes: Route[] = [];
     private rejectedRoutes: Route[] = [];
+    private routeLoaders = new Map<string, () => Routes | Promise<Routes>>();
     private batchDepth = 0;
     private cacheDirty = false;
 
@@ -222,8 +223,29 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         return this;
     }
 
+    /** Register a lazy source loader; call `reloadRoutes` to materialize it. */
+    registerLazyRoutes(source: string, loader: () => Routes | Promise<Routes>): this {
+        this.routeLoaders.set(source, loader);
+        return this;
+    }
+
+    /**
+     * Reload a source from its registered loader (or an explicit loader).
+     * The previous route set is replaced only after the new set resolves.
+     */
+    async reloadRoutes(source: string, loader?: () => Routes | Promise<Routes>): Promise<this> {
+        const resolve = loader ?? this.routeLoaders.get(source);
+        if (!resolve) {
+            return this;
+        }
+        const routes = await resolve();
+        this.replaceRoutes(source, routes);
+        return this;
+    }
+
     /** Remove every route owned by a source. */
     removeRoutes(source: string): this {
+        this.routeLoaders.delete(source);
         const previous = this.registry.deleteSource(source);
         if (!previous?.length) {
             return this;
@@ -237,6 +259,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     resetRoutes(routes: Routes): this {
         this.detachRoutes(this._routes.slice());
         this.rejectedRoutes = [];
+        this.routeLoaders.clear();
         this.registry.clearSources();
         this.attachRoutes(routes);
         this.registry.touch('reset', undefined, routes);
@@ -611,6 +634,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
         this._routes = [];
         this.regexRoutes = [];
         this.rejectedRoutes = [];
+        this.routeLoaders.clear();
         this.trieRouter.remove();
     }
 
