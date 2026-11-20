@@ -76,6 +76,35 @@ export class InboxTest {
         expect(state.approvalsFocused).toEqual(true);
     }
 
+    @Test('/inbox can approve or deny without leaving the inbox')
+    async decidesApproval() {
+        const state = createState();
+        const decisions: Array<[string, string]> = [];
+        const notices: string[] = [];
+        const opened: string[] = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: {
+                listApprovals: async () => [{ id: 'a1', sessionId: 'other', toolName: 'terminal' }],
+                listAllBackgroundTasks: async () => []
+            },
+            loadCodingTasks: async () => [],
+            notify: (message: string) => notices.push(message),
+            openSession: async (sessionId?: string) => { opened.push(sessionId || ''); },
+            select: async (title: string) => title === 'Approval action' ? 'deny' : 'approval:a1',
+            decideApproval: async (requestId: string, decision: 'approve' | 'deny') => {
+                decisions.push([requestId, decision]);
+                return true;
+            }
+        };
+        await runInboxCommandView(host);
+        expect(decisions).toEqual([['a1', 'deny']]);
+        expect(opened).toEqual([]);
+        expect(notices[0]).toContain('a1');
+        expect(state.approvalsFocused).toEqual(false);
+    }
+
     @Test('/inbox reports an empty queue instead of opening an empty menu')
     async empty() {
         const state = createState();

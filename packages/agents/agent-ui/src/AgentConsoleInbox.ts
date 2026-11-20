@@ -143,6 +143,8 @@ export interface AgentConsoleInboxHost {
     notify(message: string): void;
     openSession(sessionId?: string): Promise<void> | void;
     select?(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
+    /** Approve/deny a pending approval without leaving the inbox (cross-session). */
+    decideApproval?(requestId: string, decision: 'approve' | 'deny'): Promise<boolean>;
 }
 
 /**
@@ -194,6 +196,32 @@ export async function runInboxCommandView(host: AgentConsoleInboxHost): Promise<
     if (!picked) return;
     const item = items.find(entry => entry.id === picked);
     if (!item) return;
+    if (item.kind === 'approval') {
+        const requestId = String(item.approval?.id || item.id.slice('approval:'.length));
+        const action = host.select
+            ? await host.select(
+                formatAgentUiNotice(host.translator, 'inboxApprovalActionTitle'),
+                [
+                    { label: formatAgentUiNotice(host.translator, 'inboxApprovalOpen'), value: 'open' },
+                    { label: formatAgentUiNotice(host.translator, 'inboxApprovalApprove'), value: 'approve' },
+                    { label: formatAgentUiNotice(host.translator, 'inboxApprovalDeny'), value: 'deny' }
+                ],
+                0,
+                formatAgentUiNotice(host.translator, 'inboxApprovalActionHint')
+            )
+            : 'open';
+        if (action === 'approve' || action === 'deny') {
+            const applied = await host.decideApproval?.(requestId, action).catch(() => false);
+            host.notify(formatAgentUiNotice(host.translator, applied ? 'inboxApprovalApplied' : 'inboxApprovalFailed', {
+                decision: formatAgentUiNotice(host.translator, action === 'approve' ? 'approvalDecisionApprove' : 'approvalDecisionDeny'),
+                id: requestId.slice(0, 8)
+            }));
+            return;
+        }
+        if (!action) {
+            return;
+        }
+    }
     if (item.sessionId && item.sessionId !== host.state.sessionId) {
         await host.openSession(item.sessionId);
     }
@@ -216,6 +244,7 @@ export function inboxCommandHost(ctx: CommandHandlerContext): AgentConsoleInboxH
         loadCodingTasks: () => ctx.loadThreadCodingTasks(),
         notify: (message: string) => ctx.notify(message),
         openSession: (sessionId?: string) => ctx.openSession(sessionId),
-        select: (title, options, index, hint) => ctx.select(title, options, index, hint)
+        select: (title, options, index, hint) => ctx.select(title, options, index, hint),
+        decideApproval: (requestId: string, decision: 'approve' | 'deny') => ctx.applyApprovalDecision(decision, requestId)
     };
 }
