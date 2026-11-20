@@ -109,3 +109,54 @@ export class FileSnapshotListTest {
         expect(result.snapshots[0].files).toEqual(['src/a.ts']);
     }
 }
+
+@Suite('side question RPC')
+export class SideQuestionRpcTest {
+    @Test('session.side_question returns the model answer without touching the session')
+    async answersSideQuestion() {
+        const calls: Array<[string, string]> = [];
+        const runtime = {
+            askSideQuestion: async (sessionId: string, question: string) => {
+                calls.push([sessionId, question]);
+                return 'Because the test failed earlier.';
+            }
+        };
+        const server = new AppRpcServer(
+            runtime as any,
+            new RandomUuidGenerator(),
+            { has: async () => true, get: async () => ({ sessionId: 'chat-1', messages: [] }) } as any,
+            {} as any,
+            {} as any,
+            { authorize: async () => 'anonymous' } as any,
+            { track: () => undefined } as any,
+            {} as any
+        );
+        const result = await (server as any).dispatch('session.side_question', {
+            sessionId: 'chat-1',
+            question: 'why?'
+        }, {});
+        expect(result).toEqual({ answer: 'Because the test failed earlier.' });
+        expect(calls).toEqual([['chat-1', 'why?']]);
+    }
+
+    @Test('session.side_question requires a question')
+    async requiresQuestion() {
+        const server = new AppRpcServer(
+            { askSideQuestion: async () => '' } as any,
+            new RandomUuidGenerator(),
+            { has: async () => true } as any,
+            {} as any,
+            {} as any,
+            { authorize: async () => 'anonymous' } as any,
+            { track: () => undefined } as any,
+            {} as any
+        );
+        let thrown: any = null;
+        try {
+            await (server as any).dispatch('session.side_question', { sessionId: 'chat-1' }, {});
+        } catch (error) {
+            thrown = error;
+        }
+        expect(thrown).toBeTruthy();
+    }
+}

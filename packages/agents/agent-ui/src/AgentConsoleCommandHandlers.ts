@@ -28,6 +28,7 @@ import { handleApprovals, handleApproveDeny, handleCancel, handleClear, handleCo
 import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineCommands';
 import { handleProjects, handleSearch, handleSections, handleThreads, handleThreadplan } from './AgentConsoleSessionCommands';
 import { handleReview } from './AgentConsoleReviewCommands';
+import { handleSideQuestion } from './AgentConsoleSideQuestion';
 import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
 import { handleDialogCommand } from './AgentConsoleDialogCommands';
 import { runWorkCommandView, workCommandHost } from './AgentConsoleWork';
@@ -107,6 +108,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/vim': (ctx, args, meta) => ctx.runVimCommand(canonicalArgsOf(meta, args)).then(() => true),
     '/keymap': (ctx, args, meta) => ctx.runKeymapCommand(canonicalArgsOf(meta, args)).then(() => true),
     '/permissions': (ctx, args, meta) => guardDelegate(ctx, canonicalArgsOf(meta, args), meta, a => ctx.runPermissionsCommand(a).then(() => true)),
+    '/btw': (ctx, args) => handleSideQuestion(ctx, args),
     '/status': (ctx) => ctx.runStatusCommand().then(() => true),
     '/cd': async (ctx, args, meta) => { await ctx.runCdCommand(canonicalArgsOf(meta, args)); return true; },
     '/pwd': handlePwd,

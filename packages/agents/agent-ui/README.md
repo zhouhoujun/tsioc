@@ -95,7 +95,7 @@ mountAgentWebConsole(document.getElementById('app')!, {
 
 ## TUI commands (~70)
 
-Core: `/help` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` (settings center; `/settings menu` for the classic tabs) `/compact`
+Core: `/help` `/btw` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` (settings center; `/settings menu` for the classic tabs) `/compact`
 Session: `/resume` `/archive` `/fork` `/side` `/share` `/unshare` `/sections` `/threads`
 Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
 Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors/final answer
@@ -103,6 +103,7 @@ Queue: `/queue [list|clear|remove <n>|edit <n>]` while a turn is running
 Steer: `/steer [on|off]` makes Enter during a running turn interrupt it and start a new turn (persisted per workspace)
 Input: `/editor` `/stash` `/apps` `/skills` `/mcp` `/plugins` `/voice`
 Browser/PWA: while the page is hidden, approvals, pending questions and turn completion raise system notifications (permission is requested on the first click/keypress)
+Side questions: `/btw <question>` answers from the current context without adding to the transcript
 Mentions: `@path` attaches a file/dir hint; `@path#L20-L45` (or `#20-45`) attaches that line range
 Tabs: `ctrl+tab` / `ctrl+shift+tab` cycle tabs (`alt+]` / `alt+[` in browsers); `ctrl+shift+t` (`alt+shift+t`) reopens the last closed tab
 Review: `/review` `/diff` `/approve`

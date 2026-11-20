@@ -211,6 +211,9 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 - Web/PWA 系统通知：页面隐藏时，审批、待回答问题、turn 完成/失败通过
   Notification API 提醒（首次点击/按键时申请权限；页面可见时不打扰）。
   测试：`web-attention.spec.ts`。
+- `/btw <question>` 侧问：复用当前会话上下文调用模型，答案只在只读浮层显示，
+  不写入 transcript/历史；本地 runtime 直接调用，web/attach 走
+  `session.side_question` RPC。测试：`side-question.spec.ts` + gateway RPC 用例。
 - `@file#Lx-Ly` 行范围引用：支持 `#L20-L45` / `#20-45` / 单行 `#L20`；
   只把选中行（最多 400 行）注入 `[Mention Context]`，suggestion 查询忽略
   range 后缀；超出 EOF 时回退为路径提示。测试：`workspace-mentions-range.spec.ts`。

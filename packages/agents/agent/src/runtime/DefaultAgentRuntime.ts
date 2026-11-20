@@ -1255,6 +1255,28 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
+    override async askSideQuestion(sessionId: string, question: string): Promise<string> {
+        const text = String(question || '').trim();
+        if (!text) {
+            return '';
+        }
+        // Reuse the turn context builder (recent history, memory, goal) but
+        // strip tools and keep the exchange out of the persisted conversation.
+        const request = await this.buildModelRequest(sessionId, text, '', undefined);
+        request.tools = [];
+        request.messages = [
+            ...request.messages,
+            {
+                id: `side-question-${Date.now()}`,
+                role: 'user',
+                content: text,
+                createdAt: Date.now()
+            }
+        ];
+        const response = await this.completeModelRequest(request);
+        return String(response.message || '').trim();
+    }
+
     private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string, turnContext?: TurnExecutionContext): Promise<ModelRequest> {
         const state = await this.sessions.get(sessionId);
         let messages = this.getRecentMessages(state.messages.filter(message => !isImportedChildMessage(message)), currentUserMessageId);

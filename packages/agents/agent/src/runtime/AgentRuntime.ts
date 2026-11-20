@@ -93,6 +93,14 @@ export abstract class AgentRuntime {
 
     abstract getMessages(sessionId: string): Promise<AgentMessage[]>;
 
+    /**
+     * Answer a one-off side question against the session context without
+     * appending the question or answer to the conversation (`/btw`).
+     */
+    async askSideQuestion(_sessionId: string, _question: string): Promise<string> {
+        throw new Error('Side questions are not supported by this runtime.');
+    }
+
     /** Mark a headless session so interactive session indexes can hide it. */
     async markSessionAutomation(_sessionId: string): Promise<void> {
         // Optional for runtimes without persistent session metadata.

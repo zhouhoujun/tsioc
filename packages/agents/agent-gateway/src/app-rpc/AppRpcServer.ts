@@ -20,6 +20,7 @@ import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
+import { answerSideQuestion } from './side-question';
 import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
 import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
@@ -200,6 +201,7 @@ export class AppRpcServer {
             case 'session.tool_payload': return readSessionToolPayload(this.sessions, this as any, params, context);
             case 'session.search':
                 return this.searchSessions(params, context);
+            case 'session.side_question': return answerSideQuestion(this as any, params, context);
             case 'session.delete':
                 return this.deleteSession(requireSessionId(params), context);
             case 'session.export':
@@ -1146,9 +1148,7 @@ export class AppRpcServer {
         return this.runtime.redoFileChange(sessionId);
     }
 
-    private optionalProfile(value: any): string | undefined {
-        return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-    }
+    private optionalProfile(value: any): string | undefined { return typeof value === 'string' && value.trim() ? value.trim() : undefined; }
 
     private optionalAgent(value: any): import('@tsdi/agent').AgentTurnAgentConfig | undefined {
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -1285,9 +1285,7 @@ export class AppRpcServer {
         return this.cloudTasks;
     }
 
-    private cloudPrincipal(context: AppRpcRequestContext): string {
-        return String(context.principalId || 'anonymous');
-    }
+    private cloudPrincipal(context: AppRpcRequestContext): string { return String(context.principalId || 'anonymous'); }
 
     private async submitCloudTask(params: any, context: AppRpcRequestContext): Promise<any> {
         const prompt = typeof params?.prompt === 'string' ? params.prompt.trim() : '';

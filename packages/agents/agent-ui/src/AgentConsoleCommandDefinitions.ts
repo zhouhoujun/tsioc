@@ -5,6 +5,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/help', description: 'show command help, grouped by category', group: 'core' },
 
     { name: '/status', description: 'show session status', group: 'core' },
+    { name: '/btw', description: 'ask a side question about this conversation (not saved)', group: 'core', needsArgs: true, args: [{ name: 'question', variadic: true }] },
     { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', args: [{ name: 'profile', variadic: true }] },
     { name: '/provider', description: 'add a new AI provider with the guided wizard', group: 'core', aliases: ['/connect'] },
     { name: '/fast', description: 'switch to fast/strong model profile: /fast [profile]', group: 'core', args: [{ name: 'profile' }] },

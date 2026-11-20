@@ -27,6 +27,7 @@ const AGENT_APP_RPC_METHOD_IDS = [
     'nav.query',
     'session.messages',
     'session.search',
+    'session.side_question',
     'session.delete',
     'session.export',
     'session.plan_mode.set',
