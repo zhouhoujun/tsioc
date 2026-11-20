@@ -2,8 +2,9 @@ import { Inject, Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { REQUEST, Transport } from '@tsdi/common';
-import { provideService, useRouter, Subscribe, Payload } from '@tsdi/service';
-import { useRedisTransport } from '../src/server';
+import { provideService, useRouter, Subscribe, Payload, getRouter } from '@tsdi/service';
+import { useRedisTransport, RedisServer } from '../src/server';
+import { of } from 'rxjs';
 import Redis from 'ioredis';
 import expect = require('expect');
 
@@ -54,6 +55,25 @@ describe('Redis subscribe routing', () => {
         if (ctx) {
             await ctx.destroy();
         }
+    });
+
+    it('reconciles broker subscriptions after dynamic route registration', async () => {
+        const router = getRouter(ctx, Transport.Redis, true);
+        const server = (ctx.runners.getRef(RedisServer as any) as any).instance as RedisServer;
+
+        (router as any).registerRoutes('dynamic-redis', [{
+            path: 'dynamic/channel',
+            pattern: 'dynamic/channel',
+            handle: () => of('dynamic')
+        } as any]);
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect((server as any).directChannels.has('dynamic.channel')).toBe(true);
+
+        (router as any).removeRoutes('dynamic-redis');
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        expect((server as any).directChannels.has('dynamic.channel')).toBe(false);
     });
 
     it('routes messages for channels discovered from @Subscribe', async () => {

@@ -18,6 +18,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     private stopRouteWatch?: () => void;
     private topicSignature = '';
     private restarting?: Promise<void>;
+    private pendingReconcile = false;
 
     @InjectLog() logger!: Logger;
     private destroy$: Subject<void>;
@@ -116,7 +117,11 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     }
 
     private async reconcileTopics(): Promise<void> {
-        if (!this.kafka || this.restarting) {
+        if (!this.kafka || this.destroy$.isStopped) {
+            return;
+        }
+        if (this.restarting) {
+            this.pendingReconcile = true;
             return;
         }
         const topics = this.resolveTopics();
@@ -152,6 +157,12 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             await this.restarting;
         } finally {
             this.restarting = undefined;
+            if (this.pendingReconcile) {
+                this.pendingReconcile = false;
+                this.reconcileTopics().catch(err => {
+                    this.logger.error('Kafka topic reconciliation error:', err);
+                });
+            }
         }
     }
 

@@ -2,8 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST, Transport } from '@tsdi/common';
-import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
-import { useMqttTransport } from '../src/server';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload, getRouter } from '@tsdi/service';
+import { useMqttTransport, MqttServer } from '../src/server';
+import { of } from 'rxjs';
 import { withMqttTransport, MqttClient } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import * as mqtt from 'mqtt';
@@ -478,5 +479,45 @@ describe('MQTT auth E2E', () => {
             setTimeout(() => reject(new Error('Timeout')), 1500);
         });
         expect(result.statusCode).toBe(401);
+    });
+});
+
+
+describe('MQTT dynamic subscriptions', () => {
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            provideService(useRouter(),
+                useMqttTransport({ url: MQTT_URL, asDefault: true }))
+        ]
+    })
+    class MqttDynamicModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        await startMqttBroker();
+        ctx = await Application.run(MqttDynamicModule);
+    });
+    after(async () => {
+        if (ctx) await ctx.destroy();
+        await stopMqttBroker();
+    });
+
+    it('subscribes and unsubscribes topics after dynamic route changes', async () => {
+        const router = getRouter(ctx, Transport.MQTT, true);
+        const server = (ctx.runners.getRef(MqttServer as any) as any).instance as MqttServer;
+
+        (router as any).registerRoutes('dynamic-mqtt', [{
+            path: 'dynamic/topic',
+            pattern: 'dynamic/topic',
+            handle: () => of('dynamic')
+        }]);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect((server as any).subscribedTopics.has('dynamic/topic')).toBe(true);
+
+        (router as any).removeRoutes('dynamic-mqtt');
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect((server as any).subscribedTopics.has('dynamic/topic')).toBe(false);
     });
 });

@@ -2,8 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST, Transport } from '@tsdi/common';
-import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
-import { useAmqpTransport } from '../src/server';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload, getRouter } from '@tsdi/service';
+import { useAmqpTransport, AmqpServer, AmqpPatternFormatter } from '../src/server';
+import { of } from 'rxjs';
 import { withAmqpTransport, AmqpClient } from '../src/client';
 import { provideClient, withTimeout } from '@tsdi/client';
 import * as amqp from 'amqplib';
@@ -438,5 +439,44 @@ describe('AMQP auth E2E', () => {
         });
         expect(result.payload?.statusCode).toBe(401);
         expect(result.payload?.error).toContain('Unauthorized');
+    });
+});
+
+
+describe('AMQP dynamic subscriptions', () => {
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            provideService(useRouter(),
+                useAmqpTransport({ url: AMQP_URL, asDefault: true }))
+        ]
+    })
+    class AmqpDynamicModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(AmqpDynamicModule);
+    });
+    after(async () => {
+        if (ctx) await ctx.destroy();
+    });
+
+    it('binds and unbinds routing keys after dynamic route changes', async () => {
+        const router = getRouter(ctx, Transport.AMQP, true);
+        const server = (ctx.runners.getRef(AmqpServer as any) as any).instance as AmqpServer;
+        const expected = new AmqpPatternFormatter().format('dynamic.topic');
+
+        (router as any).registerRoutes('dynamic-amqp', [{
+            path: 'dynamic.topic',
+            pattern: 'dynamic.topic',
+            handle: () => of('dynamic')
+        }]);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect((server as any).boundRoutingKeys.has(expected)).toBe(true);
+
+        (router as any).removeRoutes('dynamic-amqp');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect((server as any).boundRoutingKeys.has(expected)).toBe(false);
     });
 });

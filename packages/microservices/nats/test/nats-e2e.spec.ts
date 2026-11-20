@@ -2,8 +2,9 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, POST, Transport } from '@tsdi/common';
-import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload } from '@tsdi/service';
-import { useNatsTransport } from '../src/server';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, Post, RouteMapping, RequestBody, Handle, Subscribe, Payload, getRouter } from '@tsdi/service';
+import { useNatsTransport, NatsServer, NatsPatternFormatter } from '../src/server';
+import { of } from 'rxjs';
 import { provideClient, withTimeout } from '@tsdi/client';
 import { withNatsTransport, NatsClient } from '../src/client';
 import { connect, StringCodec, NatsConnection } from 'nats';
@@ -345,5 +346,44 @@ describe('NATS auth E2E', () => {
         })), { timeout: 1500 });
         const response = JSON.parse(sc.decode(msg.data)) as AuthResultResponse;
         expect(response.statusCode).toBe(401);
+    });
+});
+
+
+describe('NATS dynamic subscriptions', () => {
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            provideService(useRouter(),
+                useNatsTransport({ url: NATS_URL, asDefault: true }))
+        ]
+    })
+    class NatsDynamicModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(NatsDynamicModule);
+    });
+    after(async () => {
+        if (ctx) await ctx.destroy();
+    });
+
+    it('subscribes and unsubscribes subjects after dynamic route changes', async () => {
+        const router = getRouter(ctx, Transport.NATS, true);
+        const server = (ctx.runners.getRef(NatsServer as any) as any).instance as NatsServer;
+        const expected = new NatsPatternFormatter().format('dynamic.subject');
+
+        (router as any).registerRoutes('dynamic-nats', [{
+            path: 'dynamic.subject',
+            pattern: 'dynamic.subject',
+            handle: () => of('dynamic')
+        }]);
+        await new Promise(resolve => setTimeout(resolve, 150));
+        expect((server as any).subjectSubscriptions.has(expected)).toBe(true);
+
+        (router as any).removeRoutes('dynamic-nats');
+        await new Promise(resolve => setTimeout(resolve, 150));
+        expect((server as any).subjectSubscriptions.has(expected)).toBe(false);
     });
 });

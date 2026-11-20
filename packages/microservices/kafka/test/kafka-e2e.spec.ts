@@ -2,11 +2,12 @@ import { Module } from '@tsdi/ioc';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { LoggerModule } from '@tsdi/logger';
 import { GET, Transport, TransferSide } from '@tsdi/common';
-import { AuthOptions, provideService, useAuth, useRouter, Controller, Get } from '@tsdi/service';
+import { AuthOptions, provideService, useAuth, useRouter, Controller, Get, getRouter } from '@tsdi/service';
 import { provideClient } from '@tsdi/client';
 import expect = require('expect');
 import { Kafka, Consumer } from 'kafkajs';
-import { useKafkaTransport, kafkaTransportFactory, KAFKA_SERV_OPTIONS, KafkaServOptions } from '../src/server';
+import { useKafkaTransport, kafkaTransportFactory, KAFKA_SERV_OPTIONS, KafkaServOptions, KafkaServer } from '../src/server';
+import { of } from 'rxjs';
 import { withKafkaTransport, KAFKA_CLIENT_OPTIONS } from '../src/client';
 import { MessageAuthInterceptor } from '@tsdi/service';
 
@@ -262,5 +263,54 @@ describe('Kafka auth E2E', () => {
             ? result.error
             : (result.body?.error ?? result.payload?.error ?? result.error?.error ?? '');
         expect(errorMessage).toContain('Unauthorized');
+    });
+});
+
+
+describe('Kafka dynamic subscriptions', () => {
+    @Module({
+        imports: [LoggerModule],
+        providers: [
+            provideService(useRouter(),
+                useKafkaTransport({ brokers: TEST_BROKERS, groupId: `dynamic-kafka-${Date.now()}`, asDefault: true }))
+        ]
+    })
+    class KafkaDynamicModule { }
+
+    let ctx: ApplicationContext;
+
+    before(async () => {
+        ctx = await Application.run(KafkaDynamicModule);
+    });
+    after(async () => {
+        if (ctx) await ctx.destroy();
+    });
+
+    it('resubscribes the consumer after dynamic topic changes', async () => {
+        const topic = `dynamic.topic.${Date.now()}`;
+        const admin = new Kafka({ brokers: TEST_BROKERS }).admin();
+        await admin.connect();
+        try {
+            await admin.createTopics({ topics: [{ topic }] });
+        } catch {
+            // topic may already exist from a previous attempt
+        } finally {
+            await admin.disconnect();
+        }
+
+        const router = getRouter(ctx, Transport.Kafka, true);
+        const server = (ctx.runners.getRef(KafkaServer as any) as any).instance as KafkaServer;
+
+        (router as any).registerRoutes('dynamic-kafka', [{
+            path: topic,
+            pattern: topic,
+            handle: () => of('dynamic')
+        }]);
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        expect((server as any).topicSignature).toContain(topic);
+
+        (router as any).removeRoutes('dynamic-kafka');
+        await new Promise(resolve => setTimeout(resolve, 4000));
+        expect((server as any).topicSignature).not.toContain(topic);
     });
 });
