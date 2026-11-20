@@ -1443,11 +1443,26 @@ export async function executeVisualNode(
             const delay = Math.max(0, Number(config.delay) || 0);
             const state = extras?.nodeState || {};
             const mode = String(config.newMessage || 'parallel');
+            const resetVersion = Number(state.triggerResetVersion) || 0;
+            if (resolveWorkflowValue('reset', context) === true) {
+                state.triggerResetVersion = resetVersion + 1;
+                state.triggerGeneration = (Number(state.triggerGeneration) || 0) + 1;
+                return {
+                    success: true,
+                    data: { nodeId: node.id, dropped: true, reset: true, triggered: false }
+                };
+            }
             const generation = (Number(state.triggerGeneration) || 0) + 1;
             state.triggerGeneration = generation;
             let superseded = false;
+            let reset = false;
             const stopped = !(await pause(delay, () => {
                 if (extras?.cancelled?.()) {
+                    return true;
+                }
+                if ((Number(state.triggerResetVersion) || 0) !== resetVersion) {
+                    reset = true;
+                    superseded = true;
                     return true;
                 }
                 if (mode === 'restart' && Number(state.triggerGeneration) !== generation) {
@@ -1460,7 +1475,7 @@ export async function executeVisualNode(
                 if (superseded) {
                     return {
                         success: true,
-                        data: { nodeId: node.id, dropped: true, superseded: true, triggered: false }
+                        data: { nodeId: node.id, dropped: true, superseded: true, reset, triggered: false }
                     };
                 }
                 return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id } };

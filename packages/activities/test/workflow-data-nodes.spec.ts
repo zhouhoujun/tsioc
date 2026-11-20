@@ -810,6 +810,34 @@ describe('Workflow data & trigger nodes', () => {
         expect(snapshot.nodeStates.task_2.result?.data?.result).toBe(2);
     });
 
+    it('cancels a pending trigger emission when msg.reset arrives', async () => {
+        let calls = 0;
+        const context = {
+            actions: {
+                record: () => {
+                    calls += 1;
+                    return calls;
+                }
+            }
+        };
+        const definition = chain([
+            { type: 'inject', config: { payload: {} } },
+            { type: 'trigger', config: { delay: 300, payload: { step: 1 } } },
+            { type: 'task', config: { action: 'record' } }
+        ]);
+        const first = service.execute(definition, context);
+        await new Promise(resolve => setTimeout(resolve, 80));
+        const reset = await service.execute(definition, { ...context, reset: true });
+        const firstResult = await first;
+        await new Promise(resolve => setTimeout(resolve, 320));
+
+        expect(calls).toBe(0);
+        expect(firstResult.data?.executionState?.nodeStates.trigger_1.result?.data?.reset).toBe(true);
+        expect(firstResult.data?.executionState?.nodeStates.task_2.status).toBe('skipped');
+        expect(reset.data?.executionState?.nodeStates.trigger_1.result?.data?.reset).toBe(true);
+        expect(reset.data?.executionState?.nodeStates.task_2.status).toBe('skipped');
+    });
+
     it('fails HTTP requests without a URL instead of skipping them', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: {} } },

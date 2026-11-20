@@ -50,7 +50,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trigger": {
                 "label": "Trigger",
-                "description": "Emit a payload after a delay"
+                "description": "Emit a payload after a delay; msg.reset cancels pending emissions"
             },
             "delay": {
                 "label": "Delay",
@@ -1713,7 +1713,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "trigger": {
                 "label": "触发",
-                "description": "延迟后输出数据"
+                "description": "延迟后输出数据；msg.reset 可取消等待中的发送"
             },
             "delay": {
                 "label": "延迟",
