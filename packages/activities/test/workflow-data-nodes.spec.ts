@@ -572,6 +572,53 @@ describe('Workflow data & trigger nodes', () => {
         expect(text.data?.executionState?.nodeStates.combine_1.result?.data?.value).toBe('hello world');
     });
 
+    it('matches every switch rule when check-all is enabled and supports else', async () => {
+        const definition: VisualWorkflowDefinition = {
+            id: 'switch-checkall',
+            name: 'Switch check all',
+            nodes: [
+                registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: { level: 7 } } }),
+                registry.createNode('switch', { x: 200, y: 0 }, { id: 'switch_1', config: {
+                    field: 'level',
+                    checkAll: true,
+                    rules: [
+                        { operator: 'gt', value: '5' },
+                        { operator: 'lte', value: '10' },
+                        { operator: 'gt', value: '100' },
+                        { operator: 'else' }
+                    ]
+                } }),
+                registry.createNode('task', { x: 400, y: -80 }, { id: 'task_a', config: { result: { a: true } } }),
+                registry.createNode('task', { x: 400, y: 0 }, { id: 'task_b', config: { result: { b: true } } }),
+                registry.createNode('task', { x: 400, y: 80 }, { id: 'task_default', config: { result: { d: true } } })
+            ],
+            connections: [
+                { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'switch_1', targetPort: 'in' },
+                { id: 'c2', sourceNodeId: 'switch_1', sourcePort: 'route-1', targetNodeId: 'task_a', targetPort: 'in' },
+                { id: 'c3', sourceNodeId: 'switch_1', sourcePort: 'route-2', targetNodeId: 'task_b', targetPort: 'in' },
+                { id: 'c4', sourceNodeId: 'switch_1', sourcePort: 'default', targetNodeId: 'task_default', targetPort: 'in' }
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const states = result.data?.executionState?.nodeStates || {};
+        expect(states.switch_1.result?.data?.routes).toEqual([1, 2]);
+        expect(states.task_a.status).toBe('success');
+        expect(states.task_b.status).toBe('success');
+        expect(states.task_default.status).toBe('skipped');
+
+        const fallback = await service.execute(chain([
+            { type: 'inject', config: { payload: { level: 7 } } },
+            { type: 'switch', config: {
+                field: 'level',
+                rules: [
+                    { operator: 'is-empty' },
+                    { operator: 'else' }
+                ]
+            } }
+        ]), {});
+        expect(fallback.data?.executionState?.nodeStates.switch_1.result?.data?.route).toBe(2);
+    });
+
     it('parses and stringifies YAML and filters RBE changes', async () => {
         const parsed = await service.execute(chain([
             { type: 'inject', config: { payload: { value: 'name: Ada\nitems:\n  - 1\n  - 2' } } },
@@ -767,6 +814,23 @@ describe('Workflow data & trigger nodes', () => {
         const state = result.data?.executionState?.nodeStates.change_0;
         expect(result.success).toBe(true);
         expect(state?.result?.data?.rules).toEqual(['variables.name', 'variables.tags']);
+
+        const moved = await service.execute(chain([
+            { type: 'change', config: { rules: [
+                { action: 'set', field: 'variables.name', value: 'Ada' },
+                { action: 'move', field: 'variables.name', to: 'variables.renamed' },
+                { action: 'set', field: 'variables.text', value: 'hello world' },
+                { action: 'replace', field: 'variables.text', search: 'world', replace: 'there' }
+            ] } }
+        ]), {});
+        const movedState = moved.data?.executionState?.nodeStates.change_0;
+        expect(movedState?.result?.data?.rules).toEqual([
+            'variables.name', 'variables.name', 'variables.text', 'variables.text'
+        ]);
+        const movedContext = movedState?.result?.data?.value;
+        expect(movedContext.variables.name).toBeUndefined();
+        expect(movedContext.variables.renamed).toBe('Ada');
+        expect(movedContext.variables.text).toBe('hello there');
     });
 
     it('runs generic link, HTML and XML nodes', async () => {

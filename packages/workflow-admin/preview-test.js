@@ -395,7 +395,7 @@ function startDesignerServer(port) {
         await page.fill('.workflow-credential-name-input', 'preview-token');
         await page.fill('.workflow-credential-value-input', 'preview-secret');
         await page.locator('.workflow-credential-save').click();
-        await page.waitForTimeout(350);
+        await page.waitForSelector('[data-credential-name="preview-token"]', { timeout: 5000 });
         const credentialSaved = await page.evaluate(() => ({
             rows: document.querySelectorAll('.workflow-credential-row').length,
             names: Array.from(document.querySelectorAll('.workflow-credential-row'))
@@ -403,7 +403,7 @@ function startDesignerServer(port) {
             leaked: (document.querySelector('.workflow-credentials')?.textContent || '').includes('preview-secret')
         }));
         await page.locator('[data-credential-name="preview-token"] .workflow-credential-remove').click();
-        await page.waitForTimeout(350);
+        await page.locator('[data-credential-name="preview-token"]').waitFor({ state: 'detached', timeout: 5000 });
         const credentialRowsAfterRemove = await page.locator('.workflow-credential-row').count();
         await page.locator('.workflow-credentials .workflow-publish-close').click();
         await page.waitForTimeout(150);

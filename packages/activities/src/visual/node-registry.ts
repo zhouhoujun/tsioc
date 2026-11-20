@@ -264,14 +264,21 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                             { label: 'greater or equal', value: 'gte' },
                             { label: 'less than', value: 'lt' },
                             { label: 'less or equal', value: 'lte' },
-                            { label: 'is truthy', value: 'truthy' }
+                            { label: 'is truthy', value: 'truthy' },
+                            { label: 'is falsy', value: 'falsy' },
+                            { label: 'is null', value: 'is-null' },
+                            { label: 'is not null', value: 'is-not-null' },
+                            { label: 'is empty', value: 'is-empty' },
+                            { label: 'is not empty', value: 'is-not-empty' },
+                            { label: 'else', value: 'else' }
                         ]
                     }),
-                    configField({ key: 'value', label: 'Compare to', type: 'text', typed: true, visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+                    configField({ key: 'value', label: 'Compare to', type: 'text', typed: true, visibleWhen: { key: 'operator', in: ['equals', 'not-equals', 'contains', 'regex', 'gt', 'gte', 'lt', 'lte'] } })
                 ]
-            })
+            }),
+            configField({ key: 'checkAll', label: 'Check all rules', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { rules: [] }
+        defaultConfig: { rules: [], checkAll: false }
     },
     {
         type: 'junction',
@@ -1354,11 +1361,16 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                         options: [
                             { label: 'Set', value: 'set' },
                             { label: 'Delete', value: 'delete' },
-                            { label: 'Append', value: 'append' }
+                            { label: 'Append', value: 'append' },
+                            { label: 'Move', value: 'move' },
+                            { label: 'Search and replace', value: 'replace' }
                         ]
                     }),
                     configField({ key: 'field', label: 'Field', type: 'text', typed: true, required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'variables.name', description: 'Context path to modify.' }),
-                    configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', notEquals: 'delete' }, description: 'New value or item to append.' })
+                    configField({ key: 'to', label: 'To field', type: 'text', typed: true, pattern: VALUE_PATH_PATTERN, placeholder: 'variables.renamed', visibleWhen: { key: 'action', equals: 'move' } }),
+                    configField({ key: 'search', label: 'Search for', type: 'text', visibleWhen: { key: 'action', equals: 'replace' } }),
+                    configField({ key: 'replace', label: 'Replace with', type: 'text', visibleWhen: { key: 'action', equals: 'replace' } }),
+                    configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', in: ['set', 'append'] }, description: 'New value or item to append.' })
                 ]
             })
         ],

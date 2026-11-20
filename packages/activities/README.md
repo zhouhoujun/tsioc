@@ -400,7 +400,7 @@ type VisualNodeType =
     | 'function'     // JavaScript transform with initialize/finalize
     | 'template'     // Mustache/plain text template
     | 'condition'    // Condition node
-    | 'switch'       // Four ordered rules plus a default output
+    | 'switch'       // Ordered rules, optional check-all fan-out and else
     | 'router'       // Rule-based routing with named ports
     | 'parallel'     // Parallel node
     | 'join'         // Wait for branches and merge their results
@@ -430,7 +430,7 @@ type VisualNodeType =
     | 'yaml'         // YAML parse/stringify
     | 'rbe'          // Report only value changes in an array
     | 'combine'      // Merge, concat or join several values
-    | 'change'       // Set/delete/append context fields
+    | 'change'       // Set/delete/append/move/replace context fields
     | 'statistics'   // Count/sum/avg/min/max
     | 'merge'        // Merge data
     | 'split'        // Split text/arrays

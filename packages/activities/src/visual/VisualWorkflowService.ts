@@ -1631,6 +1631,19 @@ export class VisualWorkflowService {
             }
         }
 
+        const routes = result.data?.routes;
+        if (Array.isArray(routes)) {
+            const ports = new Set((routes.length ? routes : [0]).map(value => {
+                const index = Number(value) || 0;
+                return index > 0 ? `route-${index}` : 'default';
+            }));
+            const matched = outgoing.filter(connection => ports.has(connection.sourcePort));
+            if (matched.length) {
+                return matched;
+            }
+            return outgoing.filter(connection => connection.sourcePort === 'default');
+        }
+
         const route = result.data?.route;
         if (typeof route === 'number') {
             const port = route > 0 ? `route-${route}` : 'default';

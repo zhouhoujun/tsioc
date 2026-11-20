@@ -519,7 +519,7 @@ describe('Workflow Designer UI', () => {
         const action = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="action"] select.workflow-select') as any;
         expect(action).toBeTruthy();
         expect(action.value).toBe('set');
-        expect(action.querySelectorAll('option').length).toBe(3);
+        expect(action.querySelectorAll('option').length).toBe(5);
         action.value = 'append';
         action.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
         await flush();

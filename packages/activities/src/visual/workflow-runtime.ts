@@ -324,6 +324,24 @@ function matchRouterRule(actual: any, operator: string, expected: any): boolean 
             return Number(actual) <= Number(expected);
         case 'truthy':
             return !!actual;
+        case 'falsy':
+            return !actual;
+        case 'is-null':
+            return actual === null || actual === undefined;
+        case 'is-not-null':
+            return actual !== null && actual !== undefined;
+        case 'is-empty':
+            return actual === null
+                || actual === undefined
+                || actual === ''
+                || (Array.isArray(actual) && actual.length === 0)
+                || (typeof actual === 'object' && !Array.isArray(actual) && Object.keys(actual).length === 0);
+        case 'is-not-empty':
+            return !(actual === null
+                || actual === undefined
+                || actual === ''
+                || (Array.isArray(actual) && actual.length === 0)
+                || (typeof actual === 'object' && !Array.isArray(actual) && Object.keys(actual).length === 0));
         default:
             return false;
     }
@@ -1552,12 +1570,39 @@ export async function executeVisualNode(
                     if (!rule?.field) {
                         continue;
                     }
+                    const action = String(rule.action || 'set');
+                    if (action === 'move') {
+                        const target = String(rule.to || '').trim();
+                        if (!target) {
+                            throw new Error('Change move needs a target field.');
+                        }
+                        const current = resolveWorkflowValue(rule.field, context);
+                        changeContextValue(context, rule.field, 'delete', undefined);
+                        changeContextValue(context, target, 'set', current);
+                        applied.push(rule.field);
+                        continue;
+                    }
+                    if (action === 'replace') {
+                        const search = String(rule.search ?? '');
+                        const current = resolveWorkflowValue(rule.field, context);
+                        if (!search) {
+                            applied.push(rule.field);
+                            continue;
+                        }
+                        const replacement = String(rule.replace ?? '');
+                        const next = Array.isArray(current)
+                            ? current.map(item => String(item).split(search).join(replacement))
+                            : String(current ?? '').split(search).join(replacement);
+                        changeContextValue(context, rule.field, 'set', next);
+                        applied.push(rule.field);
+                        continue;
+                    }
                     // Mutate the context in place so later rules keep operating
                     // on the whole message instead of the previous value.
                     changeContextValue(
                         context,
                         rule.field,
-                        String(rule.action || 'set'),
+                        action,
                         coerceJson(rule.value)
                     );
                     applied.push(rule.field);
@@ -1803,10 +1848,28 @@ export async function executeVisualNode(
         case 'router': {
             const actual = resolveWorkflowValue(config.field, context);
             const rules = Array.isArray(config.rules) ? config.rules : [];
+            const checkAll = config.checkAll === true;
+            const routes: number[] = [];
+            let matchedAny = false;
             for (let index = 0; index < rules.length && index < 4; index++) {
-                if (matchRouterRule(actual, String(rules[index]?.operator || 'equals'), rules[index]?.value)) {
+                const operator = String(rules[index]?.operator || 'equals');
+                const matched = operator === 'else'
+                    ? !matchedAny
+                    : matchRouterRule(actual, operator, rules[index]?.value);
+                if (!matched) {
+                    continue;
+                }
+                matchedAny = true;
+                if (!checkAll) {
                     return { success: true, data: { nodeId: node.id, route: index + 1, value: actual } };
                 }
+                routes.push(index + 1);
+            }
+            if (checkAll) {
+                return {
+                    success: true,
+                    data: { nodeId: node.id, routes, route: routes[0] || 0, value: actual }
+                };
             }
             return { success: true, data: { nodeId: node.id, route: 0, value: actual } };
         }

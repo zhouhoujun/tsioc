@@ -377,7 +377,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "Value path",
                 "value": "Compare to",
                 "rules": "Rules",
-                "operator": "Operator"
+                "operator": "Operator",
+                "checkAll": "Check all rules"
             },
             "parallel": {},
             "join": {
@@ -461,7 +462,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "action": "Action",
                 "field": "Field path",
                 "value": "Value",
-                "rules": "Rules"
+                "rules": "Rules",
+                "to": "To field",
+                "search": "Search for",
+                "replace": "Replace with"
             },
             "statistics": {
                 "field": "Array path",
@@ -904,7 +908,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "change": {
                 "field": "variables.name",
-                "value": "\"workflow\""
+                "value": "\"workflow\"",
+                "to": "variables.renamed"
             },
             "statistics": {
                 "field": "items",
@@ -1547,6 +1552,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
         },
         "option": {
             "truthy": "is truthy",
+            "falsy": "is falsy",
+            "is-null": "is null",
+            "is-not-null": "is not null",
+            "is-empty": "is empty",
+            "is-not-empty": "is not empty",
+            "else": "else",
+            "move": "Move",
+            "replace": "Search and replace",
             "equals": "equals",
             "not-equals": "not equals",
             "gt": "greater than",
@@ -2008,7 +2021,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "取值路径",
                 "value": "比较值",
                 "rules": "规则",
-                "operator": "运算符"
+                "operator": "运算符",
+                "checkAll": "检查全部规则"
             },
             "parallel": {},
             "join": {
@@ -2092,7 +2106,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "action": "操作",
                 "field": "字段路径",
                 "value": "值",
-                "rules": "规则"
+                "rules": "规则",
+                "to": "目标字段",
+                "search": "查找内容",
+                "replace": "替换为"
             },
             "statistics": {
                 "field": "数组路径",
@@ -2535,7 +2552,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "change": {
                 "field": "variables.name",
-                "value": "\"workflow\""
+                "value": "\"workflow\"",
+                "to": "variables.renamed"
             },
             "statistics": {
                 "field": "items",
@@ -3162,6 +3180,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
         },
         "option": {
             "truthy": "为真",
+            "falsy": "为假",
+            "is-null": "为空值",
+            "is-not-null": "非空值",
+            "is-empty": "为空",
+            "is-not-empty": "非空",
+            "else": "否则",
+            "move": "移动",
+            "replace": "查找并替换",
             "equals": "等于",
             "not-equals": "不等于",
             "gt": "大于",
