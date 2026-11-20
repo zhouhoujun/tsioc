@@ -564,7 +564,9 @@ function routeOptionsExpression(
 function optionsArgument(expression: ts.Expression): ts.Expression | undefined {
     if (ts.isObjectLiteralExpression(expression)
         || ts.isIdentifier(expression)
-        || ts.isPropertyAccessExpression(expression)) {
+        || ts.isPropertyAccessExpression(expression)
+        || ts.isCallExpression(expression)
+        || ts.isParenthesizedExpression(expression)) {
         return expression;
     }
     return undefined;

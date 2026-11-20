@@ -86,6 +86,23 @@ export class OptionsRuntimeController {
         expect(exported.OptionsRuntimeController.ƿroutes[0].options.guards.length).toBe(1);
     });
 
+    it('supports call-expression route options', () => {
+        const output = transpileAot('aot-controller-call-options.ts', `
+import { Controller, Get } from '@tsdi/service';
+
+function makeOptions() { return { timeout: 2000 }; }
+
+@Controller('/api')
+export class CallOptionsController {
+    @Get('/call', makeOptions())
+    read() { return 'call'; }
+}
+`, { module: ts.ModuleKind.CommonJS });
+        const exported = loadAotOutput(output);
+
+        expect(exported.CallOptionsController.ƿroutes[0].options.timeout).toBe(2000);
+    });
+
     it('falls back when a route method has another method decorator', () => {
         const output = transpileAot('aot-controller-decorator.ts', `
 import { Controller, Get } from '@tsdi/service';
