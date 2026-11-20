@@ -1,13 +1,14 @@
 import {
     Type, composeHandlers, Exception, getClassRef, HandlerFn, hasProps, Injector, Invocation,
-    isArray, isType, isFunction, isRegExp, isString, isNil, ModuleRef, OnDestroy, TokenOf, isToken, InjectUtil, DecorDefine
+    isArray, isType, isFunction, isRegExp, isString, isNil, ModuleRef, OnDestroy, TokenOf, isToken, InjectUtil
 } from '@tsdi/ioc';
 import { Pattern, PatternFormatter, BadRequestException, NotFoundException, RequestHandler, Transport, RequestContext, ReadableLike, Incoming, UrlIncoming, TopicIncoming, REQUEST, StatusMessageAdapter } from '@tsdi/common'
 import { defer, from, isObservable, lastValueFrom, mergeMap, Observable, of, throwError } from 'rxjs';
 import { AssetRoute, Route, ROUTES, Routes } from './route';
-import { MappingDef, RouteHanlder, RouteMappingMetadata, RoutePatterns, Router } from './router';
+import { RouteHanlder, RoutePatterns, Router } from './router';
 import { TrieOptions, TrieRoute, TrieRouter, Wlidcard } from './trie';
-import { RouteHandler, createRouteHandler } from './route.handler';
+import { RouteHandler } from './route.handler';
+import { createControllerRoutes } from './route.manifest';
 import { RouteRegistry, RouteSourceSnapshot, RouteTableChange } from './route.registry';
 import { CompiledRouteSnapshot, CompiledRouteTable, compareRoutes, RouteConflict } from './route.table';
 
@@ -430,33 +431,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
     }
 
     protected parseCtrl(invocation: Invocation, prefix: string, pathParams: any): Routes {
-        const sortRoutes = invocation.classRef
-            .getMethodDefines(m => m.metadata && m.metadata.method && isString(m.metadata.route))
-            .sort((ra, rb) => (ra.metadata.route || '').length - (rb.metadata.route || '').length) as DecorDefine<RouteMappingMetadata>[];
-
-        const anno = invocation.classRef.getAnnotation<MappingDef>();
-
-        return sortRoutes.map(m => {
-            const options = { ...m.metadata };
-            if (anno.interceptors) {
-                options.interceptors = [...anno.interceptors ?? [], ...options.interceptors ?? []];
-            }
-            if (anno.guards) {
-                options.guards = [...anno.guards, ...options.guards ?? []]
-            }
-            if (anno.filters) {
-                options.filters = [...anno.filters, ...options.filters ?? []]
-            }
-            return {
-                path: this.formatter.format(m.metadata.route as Pattern),
-                pattern: m.metadata.route,
-                prefix,
-                method: m.metadata.method,
-                pathParams: pathParams ? { ...pathParams } : undefined,
-                paths: m.metadata.paths,
-                handler: createRouteHandler(invocation, options, m.propertyKey)
-            };
-        })
+        return createControllerRoutes(invocation, prefix, pathParams, this.formatter);
     }
 
 
