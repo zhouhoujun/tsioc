@@ -71,6 +71,8 @@ interface PlanBuildContext {
     templatePlans: WeakMap<RNode, TemplatePlanElement>;
     /** Transparent `<template v-if|v-for>` anchors and their body nodes. */
     transparentTemplates: WeakMap<RNode, RNode[]>;
+    /** `<template v-switch>` wrappers (display: contents anchors). */
+    switchWrappers: WeakSet<RNode>;
 }
 
 function createPlanContext(bindings: WeakMap<TemplatePlanNode, PlanNodeBinding>): PlanBuildContext {
@@ -82,12 +84,17 @@ function createPlanContext(bindings: WeakMap<TemplatePlanNode, PlanNodeBinding>)
         structuralTemplates: new WeakSet(),
         projectionOutlets: new WeakMap(),
         templatePlans: new WeakMap(),
-        transparentTemplates: new WeakMap()
+        transparentTemplates: new WeakMap(),
+        switchWrappers: new WeakSet()
     };
 }
 
 function isProjectionOutletTag(tag: string): boolean {
     return tag === 'v-content' || tag === 'ng-content';
+}
+
+function isSwitchTemplate(node: TemplatePlanElement): boolean {
+    return node.rawAttrs.some(([name]) => /^\*?(?:v-)?switch$/i.test(name));
 }
 
 function attrValue(attrs: Array<[string, string]>, name: string): string | undefined {
@@ -328,9 +335,12 @@ function createNode(renderer: Renderer, node: TemplatePlanNode, ctx: PlanBuildCo
         return created;
     }
     const tag = String(node.tag).toLowerCase();
+    const switchTemplate = tag === 'template' && isSwitchTemplate(node);
     const element = isProjectionOutletTag(tag)
         ? renderer.createElement('v-content')
-        : renderer.createElement(node.tag);
+        : switchTemplate
+            ? renderer.createElement('v-container')
+            : renderer.createElement(node.tag);
     element[BINDINGS] = [];
     ctx.planByNode.set(element, node);
     if (isProjectionOutletTag(tag)) {
@@ -350,14 +360,17 @@ function createNode(renderer: Renderer, node: TemplatePlanNode, ctx: PlanBuildCo
     for (const childPlan of node.children) {
         const child = createNode(renderer, childPlan, ctx);
         children.push(child);
-        if (!transparent) {
+        // v-switch keeps a display:contents wrapper so case containers have an
+        // ancestor carrying the switch directive. v-if/v-for bodies stay
+        // detached and are only used as structural template content.
+        if (switchTemplate || !transparent) {
             element.appendChild(child);
         }
     }
     ctx.childrenByElement.set(element, children);
-    if (transparent) {
-        // `<template v-if>` only provides structural template content; the
-        // wrapper itself is never rendered.
+    if (switchTemplate) {
+        ctx.switchWrappers.add(element);
+    } else if (transparent) {
         ctx.transparentTemplates.set(element, children);
     }
     return element;
@@ -496,7 +509,7 @@ function prepareTemplates(
     if (localRefs?.length) {
         injector.registerLocalRefs(node, localRefs);
     }
-    if (ctx.structuralTemplates.has(node) || ctx.transparentTemplates.has(node)) {
+    if (ctx.structuralTemplates.has(node) || ctx.transparentTemplates.has(node) || ctx.switchWrappers.has(node)) {
         return;
     }
     const templatePlan = ctx.templatePlans.get(node);
@@ -550,7 +563,7 @@ function executeBindings(
         if (projected?.length) {
             executeChildBindings(projected, ctx, context, effect, injector);
         }
-    } else if (planChildren && !isStructuralContainer(node)) {
+    } else if (planChildren && (!isStructuralContainer(node) || ctx.switchWrappers.has(node))) {
         executeChildBindings(node.childNodes || [], ctx, context, effect, injector);
     }
     if (isStructuralContainer(node) && !node.parentNode) {

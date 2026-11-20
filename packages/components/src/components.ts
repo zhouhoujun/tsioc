@@ -10,7 +10,7 @@ import { DirectiveFactory } from './refs/directive';
 import { DirectiveFactoryImpl } from './impl/directive';
 import { ClassDirective } from './directives/class';
 import { StyleDirective } from './directives/style';
-import { CaseDirective, SwitchDirective } from './directives/switch-case.dir';
+import { CaseDirective, DefaultDirective, SwitchDirective } from './directives/switch-case.dir';
 import { TemplateOutletDirective } from './directives/template-outlet.dir';
 import { VShowDirective } from './directives/show.dir';
 import { VBindDirective, VOnDirective } from './directives/bind.dir';
@@ -63,6 +63,7 @@ export const REACTIVE_EFFECT_OPTIONS = token<ReactiveEffectOptions>('REACTIVE_EF
         StyleDirective,
         SwitchDirective,
         CaseDirective,
+        DefaultDirective,
         TemplateOutletDirective,
         VShowDirective,
         VBindDirective,

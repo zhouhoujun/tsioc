@@ -41,13 +41,13 @@ function planNode(node: TemplateIRNode): TemplatePlanNode | null {
         return null;
     }
     if (tag === 'template') {
-        // `<template v-if>` / `<template v-for>` lower to transparent plan
-        // anchors; switch/case blocks and other template usage stay on the
-        // runtime pipeline.
+        // Block lowering produces transparent `<template v-if|v-for>` anchors
+        // and `<template v-switch|v-case|v-default>` groups. Both are handled
+        // by the plan; plain template usage stays on the runtime pipeline.
         const names = (node.attrs as Array<[string, string, string?]>).map(([name]) => name.toLowerCase());
         const hasTransparent = names.some(name => /^\*?(?:v-)?(?:if|else-if|else|for)$/.test(name));
         const hasSwitch = names.some(name => /^\*?(?:v-)?(?:switch|case|default)$/.test(name));
-        if (!hasTransparent || hasSwitch) {
+        if (!hasTransparent && !hasSwitch) {
             return null;
         }
     }
