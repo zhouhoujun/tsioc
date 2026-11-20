@@ -561,6 +561,96 @@ interface AotControllerRoute {
     options?: ts.Expression;
 }
 
+const TRANSPORT_ROUTE_DECORATORS = new Set(['Handle', 'Subscribe']);
+const TRANSPORT_VALUE_NAMES = new Set(['TCP', 'HTTP', 'gRPC', 'UDP', 'WS', 'Redis', 'NATS', 'MQTT', 'Kafka', 'CoAP', 'AMQP', 'MCP']);
+
+interface AotTransportRoute {
+    kind: 'handle' | 'subscribe';
+    propertyKey: string;
+    pattern: ts.Expression;
+    transport?: ts.Expression;
+    options?: ts.Expression;
+}
+
+function isTransportExpression(expression: ts.Expression): boolean {
+    if (ts.isNumericLiteral(expression)) {
+        return true;
+    }
+    if (ts.isIdentifier(expression) && TRANSPORT_VALUE_NAMES.has(expression.text)) {
+        return true;
+    }
+    return ts.isPropertyAccessExpression(expression)
+        && ts.isIdentifier(expression.expression)
+        && expression.expression.text === 'Transport';
+}
+
+function transportDecoratorOptions(args: readonly ts.Expression[]): { transport?: ts.Expression; options?: ts.Expression } | undefined {
+    if (args.length > 3) {
+        return undefined;
+    }
+    if (args.length === 1) {
+        return {};
+    }
+    const second = args[1];
+    if (isTransportExpression(second)) {
+        return { transport: second, options: args[2] };
+    }
+    if (args.length === 2 && (ts.isObjectLiteralExpression(second) || ts.isIdentifier(second) || ts.isPropertyAccessExpression(second))) {
+        return { options: second };
+    }
+    return undefined;
+}
+
+/**
+ * Emit a static transport route manifest for method-level @Handle/@Subscribe.
+ * Transport-specific subscriptions are reconciled at runtime; this manifest
+ * only removes the ClassRef metadata scan for literal routes.
+ */
+function aotTransportRoutes(node: ts.ClassDeclaration): AotTransportRoute[] | undefined {
+    if (node.heritageClauses?.some(clause => clause.token === ts.SyntaxKind.ExtendsKeyword)) {
+        return undefined;
+    }
+    const routes: AotTransportRoute[] = [];
+    for (const member of node.members) {
+        if (!ts.isMethodDeclaration(member)) {
+            continue;
+        }
+        const decorators = decoratorsOf(member);
+        const routeDecorator = decorators.find(decorator => TRANSPORT_ROUTE_DECORATORS.has(decoratorName(decorator)));
+        if (!routeDecorator) {
+            continue;
+        }
+        if (decorators.length !== 1) {
+            return undefined;
+        }
+        const args = decoratorArgs(routeDecorator);
+        if (!args.length) {
+            return undefined;
+        }
+        const pattern = args[0];
+        if (ts.isStringLiteralLike(pattern) || ts.isObjectLiteralExpression(pattern) || ts.isIdentifier(pattern) || ts.isPropertyAccessExpression(pattern)) {
+            const parsed = transportDecoratorOptions(args);
+            if (!parsed) {
+                return undefined;
+            }
+            const propertyKey = memberKey(member);
+            if (!propertyKey) {
+                return undefined;
+            }
+            routes.push({
+                kind: decoratorName(routeDecorator) === 'Subscribe' ? 'subscribe' : 'handle',
+                propertyKey,
+                pattern,
+                transport: parsed.transport,
+                options: parsed.options
+            });
+        } else {
+            return undefined;
+        }
+    }
+    return routes.length ? routes : undefined;
+}
+
 function routeOptionsExpression(
     classOptions: ts.Expression | undefined,
     methodOptions: ts.Expression | undefined
@@ -2035,6 +2125,30 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                                 factory.createPropertyAssignment('options', route.options ?? factory.createObjectLiteralExpression([], false))
                             ], false)
                         ), false)
+                    )));
+                }
+                const transportRoutes = aotTransportRoutes(node);
+                if (transportRoutes) {
+                    injections.push(factory.createExpressionStatement(factory.createBinaryExpression(
+                        factory.createPropertyAccessExpression(factory.createIdentifier(node.name!.text), 'ƿtransportRoutes'),
+                        ts.SyntaxKind.EqualsToken,
+                        factory.createArrayLiteralExpression(transportRoutes.map(route => {
+                            const properties: ts.ObjectLiteralElementLike[] = [
+                                factory.createPropertyAssignment('kind', factory.createStringLiteral(route.kind)),
+                                factory.createPropertyAssignment('propertyKey', factory.createStringLiteral(route.propertyKey)),
+                                factory.createPropertyAssignment('pattern', route.pattern)
+                            ];
+                            if (route.transport) {
+                                properties.push(factory.createPropertyAssignment('transport', route.transport));
+                            }
+                            if (route.kind === 'subscribe') {
+                                properties.push(factory.createPropertyAssignment('subscribe', factory.createTrue()));
+                            }
+                            if (route.options) {
+                                properties.push(factory.createPropertyAssignment('options', route.options));
+                            }
+                            return factory.createObjectLiteralExpression(properties, false);
+                        }), false)
                     )));
                 }
                 if (aspectDecorator) {

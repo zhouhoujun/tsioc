@@ -13,6 +13,50 @@ import { getRouter } from './router/router.providers';
 
 export { Topic, Payload } from '@tsdi/core';
 
+interface TransportRouteManifestEntry {
+    kind: 'handle' | 'subscribe';
+    propertyKey: string | symbol;
+    pattern: Pattern;
+    transport?: Transport;
+    subscribe?: boolean;
+    options?: RouteOptions;
+}
+
+function transportManifest(type: Function, kind: 'handle' | 'subscribe'): TransportRouteManifestEntry[] | undefined {
+    const manifest = (type as any)?.ƿtransportRoutes;
+    if (!Array.isArray(manifest)) {
+        return undefined;
+    }
+    const entries = manifest.filter((entry: TransportRouteManifestEntry) => entry?.kind === kind);
+    return entries.length ? entries : undefined;
+}
+
+function transportManifestDefines(type: Function, kind: 'handle' | 'subscribe') {
+    const entries = transportManifest(type, kind);
+    if (!entries) {
+        return undefined;
+    }
+    return entries.map(entry => {
+        const metadata: any = {
+            ...(entry.options ?? {}),
+            route: entry.pattern
+        };
+        if (entry.transport !== undefined) {
+            metadata.transport = entry.transport;
+        }
+        if (kind === 'subscribe' || entry.subscribe) {
+            metadata.subscribe = true;
+        }
+        if (!metadata.resolvers) {
+            metadata.resolvers = [MODEL_RESOLVERS, typeResolveInterceptor, ...primitiveResolvers];
+        }
+        return {
+            propertyKey: entry.propertyKey,
+            metadata
+        };
+    });
+}
+
 function registerRouteSource(router: Router, source: string, routes: Route[]): () => void {
     const target = router as any;
     if (typeof target.registerRoutes === 'function' && typeof target.removeRoutes === 'function') {
@@ -73,7 +117,8 @@ export const Subscribe: Subscribe = createDecorator<SubscribeMetadata>('Subscrib
     design: {
         method: (typeRef, ctx) => {
 
-            const defines = typeRef.getDefines<SubscribeMetadata>(ctx.currDecor!);
+            const defines = transportManifestDefines(typeRef.type, 'subscribe')
+                ?? typeRef.getDefines<SubscribeMetadata>(ctx.currDecor!);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;
@@ -174,7 +219,8 @@ export const Handle: Handle = createDecorator<HandleMetadata<any>>('Handle', {
     design: {
         method: (typeRef, ctx) => {
 
-            const defines = typeRef.getDefines<HandleMetadata>(ctx.currDecor!);
+            const defines = transportManifestDefines(typeRef.type, 'handle')
+                ?? typeRef.getDefines<HandleMetadata>(ctx.currDecor!);
             if (!defines || !defines.length) return;
 
             const injector = ctx.injector;

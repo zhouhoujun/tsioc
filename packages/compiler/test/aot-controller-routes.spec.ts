@@ -125,6 +125,38 @@ export class MappedController {
         ]);
     });
 
+    it('emits transport route manifests for Handle and Subscribe', () => {
+        const output = transpileAot('aot-transport-routes.ts', `
+import { Handle, Subscribe } from '@tsdi/service';
+import { Transport } from '@tsdi/common';
+
+export class TransportController {
+    @Handle({ cmd: 'ping' }, Transport.TCP)
+    ping() { return 'pong'; }
+
+    @Subscribe('device/:id/event', Transport.TCP)
+    onEvent() { return 'event'; }
+}
+`, { module: ts.ModuleKind.CommonJS });
+        const exported = loadAotOutput(output);
+
+        expect(exported.TransportController.ƿtransportRoutes).toEqual([
+            {
+                kind: 'handle',
+                propertyKey: 'ping',
+                pattern: { cmd: 'ping' },
+                transport: 1
+            },
+            {
+                kind: 'subscribe',
+                propertyKey: 'onEvent',
+                pattern: 'device/:id/event',
+                transport: 1,
+                subscribe: true
+            }
+        ]);
+    });
+
     it('falls back when a route method has another method decorator', () => {
         const output = transpileAot('aot-controller-decorator.ts', `
 import { Controller, Get } from '@tsdi/service';
