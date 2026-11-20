@@ -1,4 +1,4 @@
-import { BINDINGS, COMPONENTDEF, CUSTOM_ELEMENTS, DIRECTIVES, LOCAL_REFS, NodeType, PROJECTION_NODES, RNode, RElement, RText, TEMPLATE_FACTORY } from '../renderer/Node';
+import { BINDINGS, COMPONENTDEF, CUSTOM_ELEMENTS, DIRECTIVES, LOCAL_REFS, NodeType, PROJECTION_NODES, RAttr, RNode, RElement, RText, TEMPLATE_FACTORY } from '../renderer/Node';
 import { Renderer } from '../renderer/Renderer';
 import { ReactiveEffect } from '../effect';
 import { NodeInjector } from '../refs/injector';
@@ -7,7 +7,8 @@ import { DirectiveDef, DirectiveType } from '../refs/directive';
 import { ComponentDef } from '../refs/component';
 import { createTemplateRef } from '../impl/template';
 import {
-    bindingAtrrbutes, bindingComponentFactory, bindingDirectiveFactory, bindingText, resolveRootStructuralContainer
+    binding, bindingAtrrbutes, bindingComponentFactory, bindingDirectiveFactory,
+    evaluateDelimiterExpression, matchDelimiter, resolveRootStructuralContainer
 } from '../impl/compiler-fns';
 import { isStructuralContainer } from '../impl/structural-container';
 import { registerProjectionOutlet } from '../impl/projection';
@@ -53,6 +54,10 @@ interface PlanNodeBinding {
     directives: DirectiveDef[];
     customElements: DirectiveDef[];
     projectionAttrs?: Array<{ name: string; value: string }>;
+    /** Precomputed RAttr objects reused by every embedded view. */
+    attrs?: RAttr[];
+    /** Precomputed interpolation matches for text nodes. */
+    text?: { value: string; matches: RegExpExecArray[] };
 }
 
 interface PlanBuildContext {
@@ -272,21 +277,35 @@ function collectPlanBindings(
     directives: DirectiveDef[],
     components: ComponentDef[],
     customElements: DirectiveDef[],
-    renderer: Renderer
+    renderer: Renderer,
+    delimiter: RegExp
 ): WeakMap<TemplatePlanNode, PlanNodeBinding> {
     const bindings = new WeakMap<TemplatePlanNode, PlanNodeBinding>();
     const visit = (plan: TemplatePlanNode): void => {
         if (plan.kind !== 'element') {
+            if (plan.kind === 'text') {
+                const matches = matchDelimiter(plan.value, delimiter);
+                if (matches?.length) {
+                    bindings.set(plan, {
+                        localRefs: [],
+                        directives: [],
+                        customElements: [],
+                        text: { value: plan.value, matches }
+                    });
+                }
+            }
             return;
         }
         const tag = String(plan.tag).toLowerCase();
         const localRefs = localRefsOf(plan);
+        const attrs = plan.rawAttrs.map(([name, value]) => ({ name, value }));
         if (isProjectionOutletTag(tag)) {
             bindings.set(plan, {
                 localRefs,
                 directives: [],
                 customElements: [],
-                projectionAttrs: plan.attrs.map(([name, value]) => ({ name, value }))
+                projectionAttrs: plan.attrs.map(([name, value]) => ({ name, value })),
+                attrs
             });
             plan.children.forEach(visit);
             return;
@@ -315,7 +334,7 @@ function collectPlanBindings(
                 }
             }
         }
-        bindings.set(plan, { localRefs, component, directives: matched, customElements: custom });
+        bindings.set(plan, { localRefs, component, directives: matched, customElements: custom, attrs });
         plan.children.forEach(visit);
     };
     planNodes.forEach(visit);
@@ -393,8 +412,23 @@ function bindPlanNode(
     ctx: PlanBuildContext
 ): void {
     node[BINDINGS] = [];
+    const info = ctx.bindings.get(plan) ?? { localRefs: [], directives: [], customElements: [] };
     if (node.nodeType === NodeType.Text || node.nodeType === NodeType.Comment) {
-        bindingText(node as RText, (node as RText).textContent, renderer, delimiter);
+        const text = info.text;
+        if (text?.matches.length) {
+            binding(node, (target: RNode, context: any, effect, injector) => {
+                if (injector.destroyed) {
+                    return;
+                }
+                const textNode = target as RText;
+                evaluateDelimiterExpression(text.value, context, effect, text.matches, updated => {
+                    textNode.textContent = updated;
+                }, injector, delimiter);
+                return () => {
+                    textNode.textContent = text.value;
+                };
+            });
+        }
         return;
     }
     const element = node as RElement;
@@ -403,8 +437,7 @@ function bindPlanNode(
         return;
     }
     const planElement = plan as TemplatePlanElement;
-    const attrs = planElement.rawAttrs.map(([name, value]) => ({ name, value }));
-    const info = ctx.bindings.get(plan) ?? { localRefs: [], directives: [], customElements: [] };
+    const attrs = info.attrs ?? planElement.rawAttrs.map(([name, value]) => ({ name, value }));
     bindingAtrrbutes(element, attrs, renderer, delimiter);
 
     if (ctx.templatePlans.has(element)) {
@@ -613,7 +646,7 @@ export function createTemplatePlanFactory<C>(
     components: ComponentDef[],
     customElements: DirectiveDef[]
 ): TemplateFactory<C> {
-    const bindings = collectPlanBindings(plan.nodes, directives, components, customElements, renderer);
+    const bindings = collectPlanBindings(plan.nodes, directives, components, customElements, renderer, delimiter);
     const rootNodes = (render: Renderer, injector: NodeInjector, context: C, effect: ReactiveEffect): RNode[] =>
         buildPlanNodes(plan.nodes, render, injector, context, effect, bindings, delimiter);
     return (host, injector) => createTemplateRef<C>(rootNodes, host, { injector });
