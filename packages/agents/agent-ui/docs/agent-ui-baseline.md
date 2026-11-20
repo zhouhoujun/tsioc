@@ -113,3 +113,26 @@ rm -f run-one.tmp.ts
 
 - 说明：并行收益受宿主机内存/负载影响很大。内存紧张时会自动退回更少分组，
   避免 5 个 ts-node 进程换页反而变慢。`AGENT_UI_TEST_GROUPS=1` 可复现旧行为。
+
+## 9. 2026-11-20 更新（P2/P3 收尾）
+
+测试基线（同一分支 `7.tui`，提交 `9d29d7a6a` 之后）：
+
+| 包 | 结果 |
+| --- | --- |
+| `@tsdi/agent` | 1082 passing |
+| `@tsdi/agent-gateway` | 396 passing |
+| `@tsdi/agent-ui` | **2265 passing**（4 组，108.6s：109 + 11 + 754 + 1391） |
+| tsc | agent / agent-ui / agent-gateway 通过 |
+| source-size / diff-check / production-db-integrity | 通过 |
+
+说明：
+
+- 本次按可用内存自动选择 4 组；5 组仍可通过 `AGENT_UI_TEST_GROUPS=5` 强制复跑。
+- `source-size` 的外部阻塞（activities workflow-designer）已不再阻塞，当前全量通过。
+- 投影缓存（按 transcript 复用 display 列表）微基准约 5%，已并入 P2；
+  1k tab 切换仍是后续预算项，未宣称达到 ≤70ms 目标。
+- P3 已完成：tab 键盘循环/恢复、`@file#Lx-Ly`、Web/PWA 通知、`/btw`、
+  项目级 durable allow（`p` / `/permissions allow`）。
+- P3 剩余：会话级 undo/redo（恢复 prompt）、ordered approval rules 与 shell 命令扫描器、
+  LSP 诊断/formatter。
