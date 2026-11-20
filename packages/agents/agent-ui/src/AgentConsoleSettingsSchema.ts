@@ -2,6 +2,7 @@ import { formatAgentUiLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import { activateAgentConsoleMcpTool, manageAgentConsolePlugins } from './AgentConsoleSettingsIntegrationActions';
 import { describeAgentConsoleWorkspaceTrust, trustAgentConsoleWorkspace } from './AgentConsoleSettingsWorkspaceTrust';
 import { showAgentConsoleHooksDetail, showAgentConsoleSkillsDetail } from './AgentConsoleSettingsDetailViews';
+import { openApprovalRulesPanel, readEffectiveApprovalRules } from './AgentConsoleApprovalRuleCommands';
 
 /**
  * Settings center schema.
@@ -340,6 +341,9 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
             }
         },
         host => String(Math.round((Number(host.options?.policy?.limits?.approvalTimeoutMs) || 30000) / 1000)) + 's', ['/permissions timeout']),
+    actionRow('approvalRules', 'permissions', 'agent.menu.settings.approvalRulesLabel', 'Approval rules: {count}', 'agent.menu.settings.approvalRulesDescription', 'ordered ask/allow/deny rules (last match wins)', 'workspace', 'immediate',
+        host => openApprovalRulesPanel(host as any),
+        host => String(readEffectiveApprovalRules(host.options).length), ['/permissions rules']),
     toggleRow('readOnlyShell', 'permissions', 'agent.menu.settings.readOnlyShellLabel', 'Skip approval for read-only commands: {state}', 'agent.menu.settings.readOnlyShellDescription', 'git status, ls and cat run without prompting; pipes, redirects and writes still ask', 'workspace',
         host => host.options?.policy?.approval?.readOnlyShell === true,
         async host => {

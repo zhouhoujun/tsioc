@@ -278,7 +278,8 @@ interface SessionCheckpoint {
 2. **Permissions v2**
    - Rule store（workspace 配置 + agent 级追加）；求值器复用/对齐 runtime 现有 gate。
    - `◐` `/permissions rules` 已支持列出/新增（字符串或 `ask|allow|deny <category> [resource]`）/删除/重置；
-     持久化 `approvalRequireApproval`，审批策略 live 生效。图形化规则表单与 per-session override 待补。
+     持久化 `approvalRequireApproval`，审批策略 live 生效。设置页 Permissions 段可图形化删除/重置；
+     新增规则仍走命令，per-session override 待补。
    - durable always-allow：审批弹窗 `A` = 本会话；新增 `s`/“保存为项目规则”选择，写入 workspace 并可在 rules 中撤销；明确提示范围。
    - “为什么允许/拒绝”解释行（匹配到的 rule + 作用域）：`◐` `inspect` 已展示有序规则最终匹配。
    - 验收：`deny` 永远不可被 always-allow 覆盖；规则求值有单测表；TUI/Web 一致；旧 securityLevel 自动映射。

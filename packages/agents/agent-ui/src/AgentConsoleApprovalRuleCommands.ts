@@ -21,6 +21,7 @@ export interface ApprovalRuleCommandHost {
     notify(message: string): void;
     rpcRequestContext?(): any;
     persistSettings?(patch: Record<string, any>): Promise<void> | void;
+    select?(title: string, options: Array<{ label: string; value: string; description?: string }>, selectedIndex?: number, hint?: string): Promise<string | undefined>;
 }
 
 /** Effective list mirrors runtime precedence: policy rules → legacy tools → defaults. */
@@ -105,8 +106,7 @@ function showRules(host: ApprovalRuleCommandHost): void {
     );
 }
 
-export async function runApprovalRulesCommand(host: ApprovalRuleCommandHost, args: string): Promise<void> {
-    const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+export async function runApprovalRulesCommand(host: ApprovalRuleCommandHost, args: string): Promise<void> {    const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
     const verb = String(tokens[0] || '').toLowerCase();
     if (!verb || verb === 'list' || verb === 'status') {
         showRules(host);
@@ -148,4 +148,64 @@ export async function runApprovalRulesCommand(host: ApprovalRuleCommandHost, arg
         return;
     }
     host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandUsage'));
+}
+
+/**
+ * Settings-center entry: pick a rule to remove, add via the command form, or
+ * reset to the safe defaults. Keeps the ordered list authoritative.
+ */
+export async function openApprovalRulesPanel(host: ApprovalRuleCommandHost): Promise<void> {
+    if (!host.select) {
+        showRules(host);
+        return;
+    }
+    const rules = readEffectiveApprovalRules(host.options);
+    const picked = await host.select(
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandTitle'),
+        [
+            ...rules.map((rule, index) => ({
+                label: `${index + 1}. ${describeApprovalRule(rule)}`,
+                value: `rule:${index}`
+            })),
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelAdd'), value: '__add__' },
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelReset'), value: '__reset__' }
+        ],
+        0,
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+    );
+    if (!picked) {
+        return;
+    }
+    if (picked === '__add__') {
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesPanelAdd'));
+        return;
+    }
+    if (picked === '__reset__') {
+        await saveRules(host, [...DEFAULT_APPROVAL_REQUIRED_RULES]);
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandReset'));
+        return;
+    }
+    const index = Number(picked.split(':')[1]);
+    if (!Number.isInteger(index) || index < 0 || index >= rules.length) {
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandIndexMissing', { index: picked }));
+        return;
+    }
+    const action = await host.select(
+        formatAgentUiNotice(host.translator, 'approvalRulesPanelActionTitle'),
+        [
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelRemove'), value: 'remove' },
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelCancel'), value: 'cancel' }
+        ],
+        0,
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+    );
+    if (action !== 'remove') {
+        return;
+    }
+    const [removed] = rules.splice(index, 1);
+    await saveRules(host, rules);
+    host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandRemoved', {
+        index: index + 1,
+        rule: describeApprovalRule(removed)
+    }));
 }

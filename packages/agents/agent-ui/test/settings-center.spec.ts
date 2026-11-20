@@ -197,6 +197,19 @@ export class AgentConsoleSettingsCenterTest {
         expect(state.settingsCenterRows.find((row: any) => row.id === 'highlights').value).toEqual('off');
     }
 
+    @Test('permissions section opens the approval rules panel')
+    async approvalRulesRow() {
+        const { component, state, persisted } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings permissions');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'approvalRules');
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(state.settingsCenterRows[index].value).toEqual('6');
+        state.settingsCenterIndex = index;
+        component.select = async () => '__reset__';
+        await handleSettingsCenterKey(component, 'return');
+        expect(persisted[persisted.length - 1].approvalRequireApproval).toContain('shell.exec');
+    }
+
     @Test('the workspace trust confirmation closes the page before the picker')
     async trustPickerClosesPage() {
         const { component, state } = await this.createConsoleWithPersist();

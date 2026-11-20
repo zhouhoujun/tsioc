@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import {
     describeApprovalRule,
+    openApprovalRulesPanel,
     parseApprovalRuleAdd,
     readEffectiveApprovalRules,
     runApprovalRulesCommand
@@ -96,5 +97,25 @@ export class ApprovalRuleCommandsTest {
         const { host } = createHost({ policy: { approval: { requireApproval: ['custom'] } } });
         await runApprovalRulesCommand(host as any, 'remove 1');
         expect(host.options.policy.approval.requireApproval).toContain('shell.exec');
+    }
+
+    @Test('settings panel removes a rule or resets to defaults')
+    async settingsPanel() {
+        const { host, persisted, notices } = createHost({ policy: { approval: { requireApproval: ['terminal', 'fs.write'] } } });
+        const picks = ['rule:0', 'remove'];
+        (host as any).select = async () => picks.shift();
+        await openApprovalRulesPanel(host as any);
+        expect(host.options.policy.approval.requireApproval).toEqual(['fs.write']);
+        expect(persisted[persisted.length - 1]).toEqual({ approvalRequireApproval: ['fs.write'] });
+        expect(notices[notices.length - 1]).toContain('Removed approval rule 1');
+
+        picks.push('__reset__');
+        await openApprovalRulesPanel(host as any);
+        expect(host.options.policy.approval.requireApproval).toContain('shell.exec');
+        expect(notices[notices.length - 1]).toContain('reset to defaults');
+
+        picks.push('__add__');
+        await openApprovalRulesPanel(host as any);
+        expect(notices[notices.length - 1]).toContain('/permissions rules add');
     }
 }
