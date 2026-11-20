@@ -145,7 +145,9 @@ export interface PrecompiledTypeDecoratorRecord {
 }
 
 /** Compact tuple emitted by the AOT transformer: `[decorator, metadata]`. */
-export type PrecompiledTypeDecoratorEntry = PrecompiledTypeDecoratorRecord | [Function, any];
+export type PrecompiledTypeDecoratorEntry =
+    | PrecompiledTypeDecoratorRecord
+    | [Function, any, number?, (string | symbol)?, number?];
 
 const PRECOMPILED_TYPE_DEFINES = Symbol('__AOT_TYPE_DEFINES');
 

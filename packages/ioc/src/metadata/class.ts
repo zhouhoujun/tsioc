@@ -229,12 +229,34 @@ export class ClassRef<T = any> {
             const record = records[i] as any;
             const decor = Array.isArray(record) ? record[0] : record.decor;
             const metadata = (Array.isArray(record) ? record[1] : record.metadata) ?? {};
+            const kindIndex = Array.isArray(record) ? record[2] : undefined;
+            const kind = (kindIndex === undefined
+                ? 'class'
+                : kindIndex >= 4
+                    ? (['property', 'method', 'parameter'][kindIndex - 4] ?? 'property')
+                    : (['class', 'property', 'method', 'parameter'][kindIndex] ?? 'class')) as DecoratorType;
+            const propertyKey = kind === 'class'
+                ? ctorName
+                : (Array.isArray(record) ? record[3] : record.propertyKey);
             this.storage({
                 decor,
-                decorType: 'class',
-                propertyKey: ctorName,
+                decorType: kind,
+                propertyKey,
+                parameterIndex: Array.isArray(record) ? record[4] : record.parameterIndex,
                 metadata
             } as DecorDefine);
+            if (decor?.decorator === '@Runner') {
+                const runnable = {
+                    ...metadata,
+                    decorType: kind === 'class' ? 'class' : 'method',
+                    propertyKey: kind === 'class' ? ctorName : propertyKey,
+                    order: metadata?.order ?? 0
+                } as RunableDefine;
+                const runnables = this.annotation.runnables;
+                if (!runnables.some(item => item.propertyKey === runnable.propertyKey && item.decorType === runnable.decorType)) {
+                    runnables.push(runnable);
+                }
+            }
         }
         const annotation = this.annotation;
         if (!annotation.methodMetadatas.get(ctorName)?.params) {

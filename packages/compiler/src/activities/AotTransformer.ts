@@ -17,12 +17,16 @@ const ASPECT_ADVICES = new Set(['Pointcut', 'Before', 'After', 'Around', 'AfterR
  * full design/runtime handler chain.
  */
 const PRECOMPILABLE_CLASS_DECORATORS = new Set([
-    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Module', 'Configuration', 'Component', 'Directive'
+    'Injectable', 'Singleton', 'Static', 'Abstract', 'Providers', 'Autorun', 'ProvidedIn', 'Pipe', 'NoReactive', 'Module', 'Configuration', 'Component', 'Directive', 'Runner'
 ]);
 
 /** Member decorators whose metadata can be materialized statically. */
 const PRECOMPILABLE_MEMBER_DECORATORS = new Set([
-    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive', 'Autorun', 'Bean'
+    'Attribute', 'Computed', 'ViewChild', 'ViewChildren', 'ContentChild', 'ContentChildren', 'NoReactive', 'Autorun', 'Bean',
+    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'Runner'
+]);
+const LIFECYCLE_DECORATORS = new Set([
+    'Startup', 'Start', 'Started', 'Shutdown', 'Dispose', 'EventHandler', 'ExceptionHandler', 'Runner'
 ]);
 
 
@@ -309,6 +313,26 @@ function precompiledDecoratorMetadata(decorator: ts.Decorator): ts.Expression | 
                         ...args[0].properties,
                         factory.createPropertyAssignment('static', factory.createTrue())
                     ]);
+            }
+            return undefined;
+        }
+        case 'Runner': {
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([], false);
+            }
+            if (args.length <= 2 && ts.isStringLiteralLike(args[0])) {
+                const properties: ts.ObjectLiteralElementLike[] = [
+                    factory.createPropertyAssignment('method', args[0])
+                ];
+                if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+                    properties.push(factory.createSpreadAssignment(args[1]));
+                } else if (args.length > 1) {
+                    return undefined;
+                }
+                return factory.createObjectLiteralExpression(properties, false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
             }
             return undefined;
         }
@@ -1178,6 +1202,48 @@ function memberMetadataExpression(decorator: ts.Decorator, member: ts.ClassEleme
         case 'Autorun':
         case 'Bean':
             return factory.createObjectLiteralExpression([], false);
+        case 'Startup':
+        case 'Start':
+        case 'Started':
+        case 'Shutdown':
+        case 'Dispose':
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            return undefined;
+        case 'Runner':
+            if (args.length === 0) {
+                return factory.createObjectLiteralExpression([], false);
+            }
+            if (args.length === 1 && ts.isStringLiteralLike(args[0])) {
+                return factory.createObjectLiteralExpression([
+                    factory.createPropertyAssignment('method', args[0])
+                ], false);
+            }
+            if (args.length === 1 && ts.isObjectLiteralExpression(args[0])) {
+                return args[0];
+            }
+            return undefined;
+        case 'EventHandler':
+        case 'ExceptionHandler': {
+            if (!args.length) {
+                return name === 'EventHandler'
+                    ? factory.createObjectLiteralExpression([], false)
+                    : undefined;
+            }
+            const properties: ts.ObjectLiteralElementLike[] = [];
+            if (args[1] && ts.isObjectLiteralExpression(args[1])) {
+                properties.push(...args[1].properties);
+            }
+            properties.push(factory.createPropertyAssignment(
+                'filter',
+                selectorValueExpression(args[0])
+            ));
+            return factory.createObjectLiteralExpression(properties, false);
+        }
         case 'ViewChild':
         case 'ViewChildren':
         case 'ContentChild':
@@ -1602,6 +1668,12 @@ function serviceMemberDecoratorsSupported(node: ts.ClassDeclaration): boolean {
                 }
                 continue;
             }
+            if (LIFECYCLE_DECORATORS.has(name)) {
+                if (!ts.isMethodDeclaration(member) || !memberMetadataExpression(decorator, member)) {
+                    return false;
+                }
+                continue;
+            }
             if (name === 'Autowired' || name === 'Inject') {
                 hasInjection = true;
                 continue;
@@ -1859,6 +1931,40 @@ function designMetadataCall(className: string, key: string, metadataKey: string,
  * - lower aspect decorators to `registerPrecompiledAspect` instead of running
  *   `@Aspect`/`@Before`/... decorator functions.
  */
+function lifecycleMethodRecords(node: ts.ClassDeclaration): ts.Expression[] {
+    const records: ts.Expression[] = [];
+    for (const member of node.members) {
+        if (!ts.isMethodDeclaration(member)) {
+            continue;
+        }
+        const key = memberKey(member);
+        if (!key) {
+            continue;
+        }
+        const isStatic = !!((member.modifiers as ts.NodeArray<ts.ModifierLike> | undefined)?.some(
+            modifier => modifier.kind === ts.SyntaxKind.StaticKeyword
+        ));
+        for (const decorator of decoratorsOf(member)) {
+            if (!LIFECYCLE_DECORATORS.has(decoratorName(decorator))) {
+                continue;
+            }
+            const metadata = memberMetadataExpression(decorator, member);
+            if (!metadata) {
+                continue;
+            }
+            records.push(ts.factory.createArrayLiteralExpression([
+                ts.isCallExpression(decorator.expression)
+                    ? decorator.expression.expression
+                    : decorator.expression,
+                metadata,
+                ts.factory.createNumericLiteral(isStatic ? 5 : 2),
+                ts.factory.createStringLiteral(key)
+            ], false));
+        }
+    }
+    return records;
+}
+
 export function createAotTransformer(options: AotPrecompileOptions = {}) {
     const designMetadata = options.designMetadata !== false;
     const delimiters = options.delimiters || ['{{', '}}'] as [string, string];
@@ -2030,6 +2136,7 @@ export function createAotTransformer(options: AotPrecompileOptions = {}) {
                                 precompiledDecoratorMetadata(decorator)!
                             ], false)
                         );
+                        compiledTypeRecords.push(...lifecycleMethodRecords(node));
                     }
                 } else if (!componentLike
                     && !aspectDecorator
