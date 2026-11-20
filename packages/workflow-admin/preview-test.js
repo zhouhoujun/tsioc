@@ -681,12 +681,20 @@ function startDesignerServer(port) {
         await page.evaluate(() => window.workflowDesigner.toolbarAction('open-library'));
         await page.waitForSelector('.workflow-library-panel');
         await page.locator('.workflow-library-panel .workflow-btn', { hasText: 'Save as copy' }).click();
-        await page.waitForTimeout(300);
+        // Wait for the copy to land in the library instead of sleeping; the
+        // save round-trip races the fixed delay on slower hosts.
+        await page.waitForFunction(
+            () => document.querySelectorAll('.workflow-library-row').length >= 2,
+            { timeout: 5000 }
+        );
         const originalRow = page.locator('.workflow-library-row').filter({
             has: page.locator('.workflow-library-row-name', { hasText: /^Approval workflow$/ })
         }).first();
         await originalRow.locator('.workflow-btn', { hasText: 'Open' }).click();
-        await page.waitForTimeout(300);
+        await page.waitForFunction(
+            () => document.querySelectorAll('.workflow-tabs .tab').length === 2,
+            { timeout: 5000 }
+        );
         const tabCount = await page.locator('.workflow-tabs .tab').count();
         const tabState = await page.evaluate(() => {
             const raw = localStorage.getItem('workflow-designer-open-tabs');

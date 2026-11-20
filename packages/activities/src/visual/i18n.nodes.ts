@@ -1386,13 +1386,13 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "value": "Value used by the selected operator."
             },
             "complete": {
-                "scope": "Only run for this node id or type. Leave empty to match anything."
+                "scope": "Only run for these comma-separated node ids or types. Leave empty to match anything."
             },
             "catch": {
-                "scope": "Only run for this node id or type. Leave empty to match anything."
+                "scope": "Only run for these comma-separated node ids or types. Leave empty to match anything."
             },
             "status": {
-                "scope": "Only run for this node id or type. Leave empty to match anything."
+                "scope": "Only run for these comma-separated node ids or types. Leave empty to match anything."
             },
             "websocket-request": {
                 "url": "WebSocket endpoint, e.g. wss://example.com/socket",
@@ -3033,13 +3033,13 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "value": "当前运算符使用的比较值。"
             },
             "complete": {
-                "scope": "仅在该节点 ID 或类型匹配时运行；留空表示任意节点。"
+                "scope": "仅在逗号分隔的节点 ID 或类型匹配时运行；留空表示任意节点。"
             },
             "catch": {
-                "scope": "仅在该节点 ID 或类型匹配时运行；留空表示任意节点。"
+                "scope": "仅在逗号分隔的节点 ID 或类型匹配时运行；留空表示任意节点。"
             },
             "status": {
-                "scope": "仅在该节点 ID 或类型匹配时运行；留空表示任意节点。"
+                "scope": "仅在逗号分隔的节点 ID 或类型匹配时运行；留空表示任意节点。"
             },
             "websocket-request": {
                 "url": "WebSocket 地址，例如 wss://example.com/socket。",

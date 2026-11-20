@@ -559,7 +559,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Only run when this node id or type succeeded. Leave empty for any completion.' })
+            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Only run when these comma-separated node ids or types succeeded. Leave empty for any completion.' })
         ],
         defaultConfig: {}
     },
@@ -574,7 +574,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Only run when this node id or type failed. Leave empty for any failure.' })
+            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Only run when these comma-separated node ids or types failed. Leave empty for any failure.' })
         ],
         defaultConfig: {}
     },

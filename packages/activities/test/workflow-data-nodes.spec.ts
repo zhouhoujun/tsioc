@@ -337,8 +337,8 @@ describe('Workflow data & trigger nodes', () => {
             nodes: [
                 registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: { ok: true } } }),
                 registry.createNode('task', { x: 200, y: 0 }, { id: 'task_1', config: { result: { ok: true } } }),
-                registry.createNode('complete', { x: 0, y: 160 }, { id: 'complete_1', config: { scope: 'task_1' } }),
-                registry.createNode('function', { x: 200, y: 160 }, { id: 'complete_fn', config: { code: 'context.state.complete = true; return {};' } }),
+                registry.createNode('complete', { x: 0, y: 160 }, { id: 'complete_1', config: { scope: 'other, task_1' } }),
+                registry.createNode('function', { x: 200, y: 160 }, { id: 'complete_fn', config: { code: 'context.state.complete = true; context.state.completedNodeId = context.completedNodeId; return {};' } }),
                 registry.createNode('status', { x: 0, y: 320 }, { id: 'status_1' }),
                 registry.createNode('function', { x: 200, y: 320 }, { id: 'status_fn', config: { code: 'context.state.status = context.workflowStatus; return {};' } })
             ],
@@ -351,6 +351,7 @@ describe('Workflow data & trigger nodes', () => {
         const successResult = await service.execute(success, { state: successState });
         expect(successResult.success).toBe(true);
         expect(successState.complete).toBe(true);
+        expect(successState.completedNodeId).toBe('task_1');
         expect(successState.status).toBe('completed');
 
         const failState: any = {};
@@ -360,8 +361,8 @@ describe('Workflow data & trigger nodes', () => {
             nodes: [
                 registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: {} } }),
                 registry.createNode('task', { x: 200, y: 0 }, { id: 'task_1', config: { fail: true } }),
-                registry.createNode('catch', { x: 0, y: 160 }, { id: 'catch_1', config: { scope: 'task_1' } }),
-                registry.createNode('function', { x: 200, y: 160 }, { id: 'catch_fn', config: { code: 'context.state.caught = true; return {};' } })
+                registry.createNode('catch', { x: 0, y: 160 }, { id: 'catch_1', config: { scope: 'other, task_1' } }),
+                registry.createNode('function', { x: 200, y: 160 }, { id: 'catch_fn', config: { code: 'context.state.caught = true; context.state.failedNodeId = context.failedNodeId; context.state.errorMessage = context.errorMessage; return {};' } })
             ],
             connections: [
                 { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'task_1', targetPort: 'in' },
@@ -371,6 +372,8 @@ describe('Workflow data & trigger nodes', () => {
         const failureResult = await service.execute(failure, { state: failState });
         expect(failureResult.success).toBe(false);
         expect(failState.caught).toBe(true);
+        expect(failState.failedNodeId).toBe('task_1');
+        expect(failState.errorMessage).toBeTruthy();
     });
 
     it('computes cron schedules for inject triggers', () => {

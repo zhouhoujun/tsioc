@@ -376,28 +376,38 @@ export class VisualWorkflowService {
                 if (type === 'catch' && result.success) {
                     continue;
                 }
-                const scope = String(node.config?.scope || '').trim();
-                if (scope) {
-                    const matched = [...(state.nodeStates?.values() || [])].some(record => {
-                        const recordType = plan.nodes.get(record.nodeId)?.type;
-                        if (record.nodeId !== scope && recordType !== scope) {
-                            return false;
-                        }
-                        return type === 'catch'
-                            ? record.status === 'failed'
-                            : type === 'complete'
-                                ? record.status === 'success'
-                                : record.status === 'success' || record.status === 'failed';
-                    });
-                    if (!matched) {
-                        continue;
-                    }
+                const scopes = String(node.config?.scope || '')
+                    .split(',')
+                    .map(item => item.trim())
+                    .filter(Boolean);
+                const matchesScope = (record: any): boolean => !scopes.length || scopes.some(scope =>
+                    record.nodeId === scope || plan.nodes.get(record.nodeId)?.type === scope
+                );
+                const matchesStatus = (record: any): boolean => type === 'catch'
+                    ? record.status === 'failed'
+                    : type === 'complete'
+                        ? record.status === 'success'
+                        : record.status === 'success' || record.status === 'failed';
+                const matchedRecords = [...(state.nodeStates?.values() || [])]
+                    .filter(record => matchesScope(record) && matchesStatus(record));
+                if (scopes.length && !matchedRecords.length) {
+                    continue;
                 }
+                const sourceRecord = matchedRecords[matchedRecords.length - 1];
                 const lifecycleContext = {
                     ...runtimeContext,
                     workflowStatus: result.success ? 'completed' : 'failed',
                     workflowError: result.error?.message,
-                    workflowResult: result
+                    workflowResult: result,
+                    ...(sourceRecord ? {
+                        failedNodeId: type === 'catch' ? sourceRecord.nodeId : undefined,
+                        errorMessage: type === 'catch' ? sourceRecord.error : undefined,
+                        error: type === 'catch' && sourceRecord.error ? new Error(sourceRecord.error) : undefined,
+                        completedNodeId: type === 'complete' ? sourceRecord.nodeId : undefined,
+                        completedResult: type === 'complete' ? sourceRecord.result : undefined,
+                        statusNodeId: sourceRecord.nodeId,
+                        statusResult: sourceRecord.result
+                    } : {})
                 };
                 const lifecycleResult = await this.executeFromNode(
                     node,
