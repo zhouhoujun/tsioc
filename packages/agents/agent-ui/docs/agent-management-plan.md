@@ -232,7 +232,7 @@ interface SessionCheckpoint {
 - 验证：JSDOM/单测 + 真实 Chrome（`/agents` 选择 plan 后徽标更新，刷新后保持 `agent plan`）。
 - `/work` 工作树首片：纯投影 `buildWorkRows`（delegation tree + background tasks + session 元数据），层级缩进/状态符号/任务行；Enter 打开所属会话；无树时显示当前会话；route `work` 已登记（dialog 目录自动收录）。真实 Chrome：`/work` 显示当前会话行与 `running` 状态。
 - `/inbox` 首片：从 `approval.list`（跨会话）、`pendingQuestionQueue`、失败后台任务、失败/阻塞 coding task、排队 prompt 派生 `InboxItem[]`；严重度排序；Enter 打开所属会话并对审批聚焦；空态 toast；route `inbox` 已登记。单测覆盖派生/跳转/空态；真实 Chrome 验证空态文案。
-- Web sidebar v0：左侧 `Agent center`（Agents 当前 profile、Sessions 最近列表、Work/Inbox 按钮）；桌面 ≥1080px 常驻并让 console 右移，窄屏为抽屉；«/» 折叠展开；tab 条与 agent meta 变化触发微任务刷新（无定时器）。真实 Chrome：console x 从 270（开）到 150（收），Inbox 按钮打开待办。
+- Web sidebar v0：左侧 `Agent center`（Agents 当前 profile、Sessions 最近列表、Work/Inbox/Teams 按钮）；桌面 ≥1080px 常驻并让 console 右移，窄屏为抽屉；«/» 折叠展开；tab 条与 agent meta 变化触发微任务刷新（无定时器）。真实 Chrome：console x 从 270（开）到 150（收），Inbox 按钮打开待办。
 - Web sidebar v1（检索 + 设置）：项目 finder（搜索标签/路径，路径折叠为目录名，显示会话数，选中后限定会话范围）+ 会话 finder（标题/id/workspace/project 即时过滤、Today/Yesterday/Previous 7 days/Older/Undated 分组、↑/↓/Enter/Esc、零匹配 `Search all messages`）；底部 Settings 打开 `/settings`，`+` 新建会话；⌘K/Ctrl+K 聚焦 finder；点击会话与 tab 一致地原地切换（保留查询/项目过滤，URL `?session=` 同步）。附带修复浏览器每次挂载由 `app.state` 新建空会话的问题。
 - 注意力徽标：meta 行 `! N`（当前会话 approvals + questions + queued，`v-show` 零值隐藏）；sidebar Work/Inbox 显示跨会话计数（`approval.list` + 失败/运行中后台任务 + 当前问答/排队），在挂载、tab 变化、窗口重新可见与命令执行后刷新（无轮询）。
 

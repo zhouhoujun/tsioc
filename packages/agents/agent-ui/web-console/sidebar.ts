@@ -182,8 +182,9 @@ export function createWebSidebar(host: AgentConsoleWebSidebarHost): AgentConsole
     };
     const workAction = action('/work', 'work', 'Work');
     const inboxAction = action('/inbox', 'inbox', 'Inbox');
+    const teamsAction = action('/msg list', 'teams', 'Teams');
     const settingsAction = action('/settings', 'settings', 'Settings', host.openSettingsPage);
-    actions.append(workAction.button, inboxAction.button, settingsAction.button);
+    actions.append(workAction.button, inboxAction.button, teamsAction.button, settingsAction.button);
     const renderCounts = (counts: { work: number; inbox: number }): void => {
         workAction.count.textContent = counts.work > 0 ? String(counts.work) : '';
         workAction.count.hidden = counts.work <= 0;

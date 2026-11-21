@@ -239,14 +239,18 @@ export class WebAgentSidebarFinderTest {
 
         const actions = Array.from(sidebar.element.querySelectorAll('.agent-web-sidebar-action')) as HTMLElement[];
         expect(actions.map(action => action.querySelector('.agent-web-sidebar-action-label')?.textContent))
-            .toEqual(['Work', 'Inbox', 'Settings']);
-        actions[2].dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+            .toEqual(['Work', 'Inbox', 'Teams', 'Settings']);
+        const settingsAction = actions.find(action => (action.textContent || '').includes('Settings')) as HTMLElement;
+        settingsAction.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
         expect(fixture.commands).toEqual(['/settings']);
+        const teamsAction = actions.find(action => (action.textContent || '').includes('Teams')) as HTMLElement;
+        teamsAction.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
+        expect(fixture.commands).toEqual(['/settings', '/msg list']);
 
         const add = sidebar.element.querySelector('.agent-web-sidebar-add') as HTMLElement;
         expect(add.getAttribute('aria-label')).toEqual('New session');
         add.dispatchEvent(new fixture.dom.window.MouseEvent('click', { bubbles: true }));
-        expect(fixture.commands).toEqual(['/settings', '/new']);
+        expect(fixture.commands).toEqual(['/settings', '/msg list', '/new']);
 
         sidebar.dispose();
     }

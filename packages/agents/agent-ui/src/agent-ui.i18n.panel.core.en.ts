@@ -26,6 +26,7 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         sessions: 'Sessions',
         work: 'Work',
         inbox: 'Inbox',
+        teams: 'Teams',
         switchAgent: 'switch',
         collapse: 'Collapse sidebar',
         expand: 'Open sidebar',

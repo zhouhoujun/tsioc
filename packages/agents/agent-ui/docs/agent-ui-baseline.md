@@ -188,7 +188,7 @@ rm -f run-one.tmp.ts
 - 跨会话消息（agent teams v0）：`/msg [--wake] <session> <text>`，目标可用完整 id 或唯一前缀；
   默认 **append-only**（以 user 角色写入目标会话，带 `metadata.kind=cross-session/fromSessionId`，
   下次 turn 可见），`--wake` 经 gateway 立即在目标会话启动 turn。gateway 新增
-  `/msg list` 打开跨会话消息只读快照（gateway `session.message.list` 仅扫描调用者拥有的最新
+  Web 侧栏新增 **Teams** 按钮直接打开 `/msg list`；`/msg list` 打开跨会话消息只读快照（gateway `session.message.list` 仅扫描调用者拥有的最新
   60 个会话、默认 50 条、最多 200 条），`session.message.send` 负责投递
   （所有权校验、文本 ≤20k），本地无 gateway 时仅 append。功能为
   **opt-in**：工作区设置 `crossSessionMessages`（默认 off，可在 `/settings → Agents` 切换），

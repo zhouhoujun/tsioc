@@ -26,6 +26,7 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         sessions: '会话',
         work: '工作',
         inbox: '待办',
+        teams: '协作',
         switchAgent: '切换',
         collapse: '收起侧栏',
         expand: '展开侧栏',
