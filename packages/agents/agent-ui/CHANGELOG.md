@@ -11,6 +11,7 @@
 - Added `/remotes` for read-only session aggregation across gateways configured in the workspace `settings.json` (`remotes`); tokens are request-only and never rendered.
 - Added `/export html` for a standalone, escaped transcript artifact (no scripts); gateways still return JSON and the HTML is rendered client-side from the exported messages.
 - Added `Ctrl+X Enter` to queue the composer draft at the front of the running turn's queue without interrupting it.
+- Added `/delete [sessionId] [confirm]` with a confirmation dialog; deleting the current session switches to the next one and never runs during an active turn.
 - Added `/permissions session [<level>]` (and a matching settings row) for a per-tab security level override; switching tabs re-applies each tab's override or the workspace default without persisting it.
 - Added `AGENT_UI_TEST_MEMORY_BUDGET_MB` so a test shard that exceeds its peak-RSS budget fails the run instead of silently swapping.
 - Added `/queue manage` interactive reorder/edit/remove panel and `/queue move <n> <m>`.

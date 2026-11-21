@@ -52,6 +52,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/new', description: 'start a new session: /new [<id>]', group: 'session', args: [{ name: 'id' }] },
     { name: '/resume', description: 'resume an existing or archived session', group: 'session' },
     { name: '/archive', description: 'archive the current session without deleting its transcript', group: 'session' },
+    { name: '/delete', description: 'delete a session permanently (confirmation required): /delete [sessionId] confirm', group: 'session', args: [{ name: 'sessionId' }, { name: 'confirm' }] },
     { name: '/fork', description: 'fork the current session [messageId]', group: 'session', args: [{ name: 'messageId' }] },
     { name: '/side', description: 'open a temporary side session fork', group: 'session', args: [{ name: 'messageId' }] },
     { name: '/share', description: 'create a shareable link for this session (gateway)', group: 'session' },

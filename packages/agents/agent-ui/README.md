@@ -109,7 +109,7 @@ mountAgentWebConsole(document.getElementById('app')!, {
 
 Core: `/help` `/btw` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` (settings center; `/settings menu` for the classic tabs) `/compact` `/highlights` (aliases `/whatsnew`)
 Agents: `/agents` / `/archetype` switches the session profile; `/agents default [name]` reads or sets the default profile for new sessions
-Session: `/resume` `/archive` `/fork` `/side` `/share` `/unshare` `/sections` `/threads`
+Session: `/resume` `/archive` `/delete` `/fork` `/side` `/share` `/unshare` `/sections` `/threads`
 Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
 Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors/final answer
 Queue: `/queue [list|manage|clear|remove <n>|edit <n>|move <n> <m>]` while a turn is running (`manage` opens an edit/move/remove panel)

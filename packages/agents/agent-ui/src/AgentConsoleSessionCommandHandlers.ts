@@ -126,6 +126,65 @@ export async function handleArchive(ctx: CommandHandlerContext, _args: string, _
     return true;
 }
 
+// ── /delete ──────────────────────────────────────────────────────────────────
+
+/**
+ * Permanently remove a session (transcript + rows). Destructive commands keep a
+ * confirmation dialog; `/delete <id> confirm` skips it for scripted cleanup.
+ */
+export async function handleDelete(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+    const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+    const confirmed = tokens.includes('confirm') || tokens.includes('--yes');
+    const requested = tokens.find(token => token !== 'confirm' && token !== '--yes');
+    const targetId = requested || ctx.state.sessionId;
+    if (!targetId || !ctx.sessionService) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'currentSessionDelete'));
+        return true;
+    }
+    if (targetId === ctx.state.sessionId && ctx.isTurnInProgress()) {
+        ctx.notifyBusyState();
+        return true;
+    }
+    if (!confirmed) {
+        if (!ctx.select) {
+            ctx.notify(formatAgentUiNotice(ctx.translator, 'deleteSessionHint'));
+            return true;
+        }
+        const target = ctx.state.sessions.find(item => item.id === targetId);
+        const picked = await ctx.select(
+            formatAgentUiNotice(ctx.translator, 'deleteSessionTitle'),
+            [
+                {
+                    label: formatAgentUiNotice(ctx.translator, 'deleteSessionYes'),
+                    value: 'delete',
+                    description: String(target?.title || targetId)
+                },
+                { label: formatAgentUiNotice(ctx.translator, 'deleteSessionNo'), value: 'cancel' }
+            ],
+            0,
+            formatAgentUiNotice(ctx.translator, 'deleteSessionHint')
+        );
+        if (picked !== 'delete') {
+            return true;
+        }
+    }
+    try {
+        await ctx.sessionService.deleteSession(targetId);
+    } catch (error) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'failedDeleteSession', {
+            error: error instanceof Error ? error.message : String(error)
+        }));
+        return true;
+    }
+    await ctx.refreshSessions();
+    ctx.notify(formatAgentUiNotice(ctx.translator, 'deletedSession', { sessionId: targetId }));
+    if (targetId === ctx.state.sessionId) {
+        const next = ctx.state.sessions.find(item => item.id !== targetId && !item.archived);
+        await ctx.openSession(next?.id);
+    }
+    return true;
+}
+
 // ── /fork + /side ────────────────────────────────────────────────────────────
 
 export async function handleForkSide(ctx: CommandHandlerContext, args: string, resolved: { command: string; matches: string[] }): Promise<boolean> {

@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2333 passing**（2 组） |
+| `@tsdi/agent-ui` | **2338 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -181,6 +181,9 @@ rm -f run-one.tmp.ts
   选择后展示会话标题/消息数/相对时间快照，不提供切换/创建/取消等写操作；
   `/remotes add|remove` 维护配置，`/remotes <name>` 直接查看；token 仅用于请求，
   不会出现在对话框或提示中（URL 内嵌凭据会被掩码）。
+- 会话删除：`/delete [sessionId] [confirm]` 永久删除会话（transcript + 行数据）；默认弹出
+  确认对话框，取消不执行；删除当前会话后自动切到下一个可用会话，运行中的当前 turn 会先拒绝。
+  失败（如数据库锁定）以错误提示返回，不伪装成功。
 - 分享/导出：`/export html [sessionId] [path]` 生成独立只读 HTML artifact
   （所有消息/工具文本转义、无脚本、`prefers-color-scheme` 适配、默认写入
   `.tsdi-agent/exports/`）。Web/attach 的 gateway 仍返回 json，HTML 在客户端由

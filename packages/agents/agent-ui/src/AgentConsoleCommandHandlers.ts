@@ -24,7 +24,7 @@ import { handlePair, handleRename, handleRestart, handleTitle } from './AgentCon
 import { mapTuiLayoutArg } from './AgentConsoleSettingsCommands';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
-import { handleArchive, handleForkSide, handleNew, handlePinUnpin, handleResume, handleSession, handleSessions, handleSnapshot, handleSnapshots } from './AgentConsoleSessionCommandHandlers';
+import { handleArchive, handleDelete, handleForkSide, handleNew, handlePinUnpin, handleResume, handleSession, handleSessions, handleSnapshot, handleSnapshots } from './AgentConsoleSessionCommandHandlers';
 import { handleApprovals, handleApproveDeny, handleCancel, handleClear, handleCopy, handleGitSnapshots, handleOutputs, handlePwd, handleQuitExit, handleToolruns, handleTools } from './AgentConsoleRuntimeCommandHandlers';
 import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineCommands';
 import { handleProjects, handleSearch, handleSections, handleThreads, handleThreadplan } from './AgentConsoleSessionCommands';
@@ -40,7 +40,6 @@ import { remoteCenterHost, runRemotesCommand } from './AgentConsoleRemoteCenterC
 import { runRewindCommandView, rewindCommandHost } from './AgentConsoleRewind';
 import { handleCompact, handleCompactions, handleDelegation, handleDiagnostics, handleHarness, handleQuality } from './AgentConsoleDiagnosticsCommands';
 // ── Command handler type ─────────────────────────────────────────────────────
-
 export type CommandHandler = (
     ctx: CommandHandlerContext,
     args: string,
@@ -185,6 +184,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/sessions': handleSessions,
     '/resume': handleResume,
     '/archive': handleArchive,
+    '/delete': handleDelete,
     '/fork': (ctx, args, meta) => handleForkSide(ctx, canonicalArgsOf(meta, args), meta),
     '/side': (ctx, args, meta) => handleForkSide(ctx, canonicalArgsOf(meta, args), meta),
     '/pin': handlePinUnpin,
