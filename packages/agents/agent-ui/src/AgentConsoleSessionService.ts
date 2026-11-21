@@ -16,7 +16,7 @@ import { AgentConsoleSessionGrouping } from './AgentConsoleSessionGrouping';
 import { collectExportToolCalls, createExportResult, normalizeExportFormat, normalizeExportResult } from './AgentConsoleSessionExport';
 import { formatAgentUiNotice } from './agent-ui.i18n';
 
-export type AgentSessionExportFormat = 'json' | 'jsonl';
+export type AgentSessionExportFormat = 'json' | 'jsonl' | 'html';
 
 export interface AgentSessionExportOptions {
     format?: AgentSessionExportFormat;

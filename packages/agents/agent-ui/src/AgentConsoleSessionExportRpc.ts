@@ -15,6 +15,21 @@ export abstract class AgentConsoleSessionExportRpc extends AgentConsoleSessionSe
         const format = normalizeExportFormat(options?.format);
         if (this.appRpc) {
             const result = await this.appRpc.request('session.export', { sessionId: resolvedSessionId, format }, context);
+            if (format === 'html') {
+                // Gateways only emit json/jsonl; render the HTML artifact
+                // locally from the returned messages so every host agrees.
+                const messages = Array.isArray(result?.messages) ? result.messages : [];
+                return createExportResult(
+                    resolvedSessionId,
+                    'html',
+                    Number(result?.exportedAt) || Date.now(),
+                    result?.session && typeof result.session === 'object'
+                        ? result.session
+                        : { id: resolvedSessionId, messageCount: messages.length },
+                    messages,
+                    collectExportToolCalls(messages)
+                );
+            }
             return normalizeExportResult(resolvedSessionId, format, result);
         }
         const state = this.sessionStore

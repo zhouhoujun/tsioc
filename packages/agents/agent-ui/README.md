@@ -71,6 +71,9 @@ Remote centers：`/remotes` 以只读方式汇总工作区 `settings.json` 中 `
 （`{ name, url, token? }`）配置的其它 gateway 会话；`/remotes add <name> <url> [token]`
 添加、`/remotes remove <name>` 删除、`/remotes <name>` 直接查看该 gateway 的会话快照。
 token 只用于请求，不会出现在对话框或提示中。
+
+导出：`/export [json|jsonl|html] [sessionId] [path]`；`html` 生成独立只读页面
+（全部内容转义、无脚本、跟随系统深浅色），默认写入 `.tsdi-agent/exports/`。
 - `HttpAgentConsoleAppRpc` — HTTP JSON-RPC 客户端
 - `AgentConsoleRemoteEventBridge` — SSE 事件桥
 - `AgentConsoleEventBridge` — 事件桥抽象

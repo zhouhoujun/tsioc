@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2328 passing**（2 组） |
+| `@tsdi/agent-ui` | **2332 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -177,6 +177,11 @@ rm -f run-one.tmp.ts
   选择后展示会话标题/消息数/相对时间快照，不提供切换/创建/取消等写操作；
   `/remotes add|remove` 维护配置，`/remotes <name>` 直接查看；token 仅用于请求，
   不会出现在对话框或提示中（URL 内嵌凭据会被掩码）。
+- 分享/导出：`/export html [sessionId] [path]` 生成独立只读 HTML artifact
+  （所有消息/工具文本转义、无脚本、`prefers-color-scheme` 适配、默认写入
+  `.tsdi-agent/exports/`）。Web/attach 的 gateway 仍返回 json，HTML 在客户端由
+  `result.messages` 本地渲染，因此 TUI 与 Web 输出一致；无本地 FileAdapter 时只显示
+  文件名与字节数的预览卡片。
 - AMS P0 补充：`/agents default [name]` 读取/设置新会话默认代理档案，持久化 `defaultArchetype`
   并在 TUI/Web/attach 启动时恢复到 `policy.defaultArchetype`。
 - AMS P1.2 部分完成：`/permissions rules` 查看有序审批规则，`add <tool|category>` /

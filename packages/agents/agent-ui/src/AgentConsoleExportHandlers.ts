@@ -73,7 +73,7 @@ export function parseExportArgs(
 ): { format: AgentSessionExportFormat; sessionId?: string; path?: string } {
     const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
     let format: AgentSessionExportFormat = 'json';
-    if (tokens[0] && /^(json|jsonl)$/i.test(tokens[0])) {
+    if (tokens[0] && /^(json|jsonl|html)$/i.test(tokens[0])) {
         format = tokens.shift()!.toLowerCase() as AgentSessionExportFormat;
     }
     if (!tokens.length) {
@@ -99,6 +99,7 @@ export function looksLikeExportPath(value: string): boolean {
         || token.startsWith('.')
         || token.endsWith('.json')
         || token.endsWith('.jsonl')
+        || token.endsWith('.html')
     );
 }
 
@@ -145,7 +146,10 @@ export function previewSessionExport(
             label: result.fileName,
             value: result.fileName,
             description: `${messages} · ${toolCalls}`,
-            detail: result.content
+            // Raw HTML would flood the preview card; name it and its size.
+            detail: String(result.format) === 'html'
+                ? `${result.fileName} · ${result.content.length} bytes`
+                : result.content
         }],
         0,
         formatAgentUiNotice(ctx.translator, 'exportPreviewHint')
