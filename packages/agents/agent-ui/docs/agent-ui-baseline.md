@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2332 passing**（2 组） |
+| `@tsdi/agent-ui` | **2333 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -162,7 +162,11 @@ rm -f run-one.tmp.ts
 - 已知限制：`/format` 等控制台直调工具仍不进入 turn 文件快照（先 `/snapshot` 可回退）。
 - P2 部分完成：`/queue move <n> <m>` 支持排队 prompt 重排；`/queue manage` 打开交互面板
   （编辑 / 上移 / 下移 / 删除，TUI 与 Web 共用同一 select overlay），边界有提示；
-  Alt+Enter 优先与拖动/批量操作仍待补。
+  拖动/批量操作仍待补（优先排队已由 `Ctrl+X Enter` 覆盖，见下）。
+- 队列优先级（opencode 对齐）：`Ctrl+X Enter` 把当前草稿插到待执行队列**最前面**，
+  不打断正在运行的 turn（与 Enter/Tab 的追加排队区分）；仅在 turn 运行中且草稿非空时生效，
+  空闲时该 chord 不消费按键。`decodeGlobalKey` 现在把 CR/LF 解码为 `enter`，
+  便于在 leader chord 中表达 Enter。
 - `/sessions` 对话框：使用共享 `DialogComponent`（`@tsdi/components/common/dialog`）渲染，
   按当前项目/workspace 作用域列出会话（标题 + 相对时间 + 当前/archived/pinned 徽标），
   输入即过滤（标题/id/workspace/project/summary），Enter 切换、Esc 关闭；`/sessions <query>`

@@ -498,7 +498,7 @@ export class AgentConsoleWhichKeyPanelComponent {
         'thread-child-first': 'Thread', 'thread-cycle-next': 'Thread', 'thread-cycle-prev': 'Thread', 'thread-parent': 'Thread',
         'message-page-up': 'Navigate', 'message-page-down': 'Navigate', 'message-half-page-up': 'Navigate', 'message-half-page-down': 'Navigate', 'message-line-up': 'Navigate', 'message-line-down': 'Navigate', 'message-first': 'Navigate', 'message-last': 'Navigate', 'message-last-user': 'Navigate', 'message-prev-user': 'Navigate', 'message-next-user': 'Navigate',
         'copy': 'Edit', 'copy-draft': 'Edit', 'open-editor': 'Edit', 'stash-draft': 'Edit',
-        'command-palette': 'UI', 'which-key-toggle': 'UI', 'which-key-layout-toggle': 'UI', 'which-key-pending-toggle': 'UI', 'status-health': 'UI', 'interrupt-turn': 'Control'
+        'command-palette': 'UI', 'which-key-toggle': 'UI', 'which-key-layout-toggle': 'UI', 'which-key-pending-toggle': 'UI', 'status-health': 'UI', 'interrupt-turn': 'Control', 'queue-priority': 'Control'
     };
 
     constructor(

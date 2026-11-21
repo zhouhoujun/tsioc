@@ -6,6 +6,7 @@ export const AGENT_UI_NOTICE_EN_PART1: NestedMessages = {
   nothingToCancel: 'No running turn to cancel.',
   queuedPrompt: 'Queued prompt ({count}).',
   sessionNotFound: 'Session {id} was not found; started a new session.',
+  queuedPromptPriority: 'Queued prompt at the front ({count}).',
   queuedCommand: 'Queued command ({count}).',
   busy: 'Wait for the current turn to finish.',
   nothingToRetry: 'Nothing to retry.',

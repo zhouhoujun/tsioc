@@ -6,6 +6,7 @@ export const AGENT_UI_NOTICE_ZH_PART1: NestedMessages = {
   nothingToCancel: '没有正在运行的轮次可取消。',
   queuedPrompt: '已排队提示（{count}）。',
   sessionNotFound: '未找到会话 {id}，已开始新会话。',
+  queuedPromptPriority: '已优先排队提示（{count}）。',
   queuedCommand: '已排队命令（{count}）。',
   busy: '请等待当前轮次结束。',
   nothingToRetry: '没有可重试的内容。',

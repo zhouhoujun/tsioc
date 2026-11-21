@@ -63,6 +63,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+alt+k': 'which-key-toggle',
     'ctrl+x h': 'status-health',
     'ctrl+x g': 'timeline-mode',
+    /** Keep this draft next in line without interrupting the running turn. */
+    'ctrl+x enter': 'queue-priority',
     /** opencode-style tab navigation; Ctrl+Shift+T reopens the last closed tab. */
     'ctrl+tab': 'tab-next',
     'ctrl+shift+tab': 'tab-prev',

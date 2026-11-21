@@ -75,6 +75,8 @@ export interface AgentConsoleGlobalKeyInputHost {
     cycleRecentModel(delta: 1 | -1): Promise<void>;
     cycleModelVariant(): Promise<void>;
     queueDraft(): boolean;
+    /** Ctrl+X Enter: put the draft at the front of the running turn's queue. */
+    queuePriorityDraft(): boolean;
     cycleSessionTab(delta: 1 | -1): boolean;
     reopenClosedSessionTab(): Promise<boolean>;
 }

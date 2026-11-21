@@ -177,6 +177,7 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         ariaNone: '无'
     },
     keymap: {
+        actionQueuePriority: '优先排队',
         overlayTitle: '按键映射',
         overlayTitleScope: '按键映射 {scope}',
         title: '按键映射（{total}）{layout}{custom}{page}',

@@ -6,17 +6,44 @@ export interface AgentConsoleQueuedPromptHost {
     [key: string]: any;
 }
 
-export function enqueuePrompt(host: AgentConsoleQueuedPromptHost, input: string): void {
+export function enqueuePrompt(
+    host: AgentConsoleQueuedPromptHost,
+    input: string,
+    options: { priority?: boolean } = {}
+): void {
     const sessionId = host.state.sessionId;
-    const queue = host.queuedPrompts.get(sessionId) || [];
+    const queue = (host.queuedPrompts.get(sessionId) || []).slice();
     const command = input.trim().startsWith('/');
-    queue.push({ input, attachments: command ? [] : host.state.pendingAttachments.slice(), command });
+    const entry = { input, attachments: command ? [] : host.state.pendingAttachments.slice(), command };
+    // Ctrl+X Enter: run this draft as the next follow-up (front of the queue)
+    // instead of after prompts queued earlier. Queue order is the only thing
+    // that changes; the running turn is never interrupted.
+    if (options.priority) {
+        queue.unshift(entry);
+    } else {
+        queue.push(entry);
+    }
     host.queuedPrompts.set(sessionId, queue);
     host.state.setInput('');
     host.state.clearPendingAttachments();
     host.state.setQueuedPromptCount(queue.length);
-    const noticeKey = command ? 'queuedCommand' : 'queuedPrompt';
+    const noticeKey = options.priority
+        ? 'queuedPromptPriority'
+        : command ? 'queuedCommand' : 'queuedPrompt';
     host.notify(formatAgentUiNotice(host.translator, noticeKey, { count: queue.length }));
+}
+
+/**
+ * Priority queue key path: only while a turn is running and the draft is not
+ * empty. Returns false otherwise so the same chord can fall through to other
+ * handlers when idle.
+ */
+export function queuePriorityDraft(host: AgentConsoleQueuedPromptHost): boolean {
+    if (!host.isTurnInProgress() || !host.state.input.trim()) {
+        return false;
+    }
+    enqueuePrompt(host, host.state.input, { priority: true });
+    return true;
 }
 
 export function queueDraft(host: AgentConsoleQueuedPromptHost): boolean {

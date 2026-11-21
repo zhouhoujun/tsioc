@@ -177,6 +177,7 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         ariaNone: 'none'
     },
     keymap: {
+        actionQueuePriority: 'Queue at front',
         overlayTitle: 'Keymap',
         overlayTitleScope: 'Keymap {scope}',
         title: 'Keymap ({total}){layout}{custom}{page}',

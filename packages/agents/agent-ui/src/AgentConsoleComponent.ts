@@ -4,7 +4,7 @@ import { AgentConsoleSessionArtifactsHost } from './AgentConsoleSessionArtifacts
 import { ToastService } from '@tsdi/components/common/toast';
 import { bindConsoleToasts, dismissConsoleToast, disposeConsoleToasts, ensureConsoleToasts, notifyConsole } from './AgentConsoleToasts';
 import { AgentConsoleNoticeExpiry } from './AgentConsoleNoticeExpiry';
-import { AgentConsoleQueuedPrompt, drainQueuedPrompts, enqueuePrompt, queueDraft } from './AgentConsoleQueuedPrompts';
+import { AgentConsoleQueuedPrompt, drainQueuedPrompts, enqueuePrompt, queueDraft, queuePriorityDraft } from './AgentConsoleQueuedPrompts';
 import { DefaultAgentConsoleTranscriptNavigationController } from './AgentConsoleTranscriptNavigation';
 import { AnimationClock, Component, ComponentRef, OnDestroy, RNode } from '@tsdi/components';
 import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat, FileAdapter } from '@tsdi/common';
@@ -476,7 +476,7 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
 
     protected enqueuePrompt(input: string): void { enqueuePrompt(this as any, input); }
 
-    protected queueDraft(): boolean { return queueDraft(this as any); }
+    protected queueDraft(): boolean { return queueDraft(this as any); } protected queuePriorityDraft(): boolean { return queuePriorityDraft(this as any); }
 
     protected async drainQueuedPrompts(sessionId: string): Promise<void> { return drainQueuedPrompts(this as any, sessionId); }
 

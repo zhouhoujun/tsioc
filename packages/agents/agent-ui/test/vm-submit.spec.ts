@@ -674,9 +674,35 @@ export class VmSubmitTest {
         expect(entries[0].command).toEqual(true);
     }
 
+    @Test('ctrl+x enter queues the draft at the front without interrupting the turn')
+    async ctrlXEnterQueuePriority() {
+        const runtime = new RuntimeStub();
+        const { state, component } = createConsoleParts(runtime, new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+
+        state.setInput('/compact trim');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        state.setInput('run this next');
+
+        const cancelled: any[] = [];
+        (runtime as any).cancelTurn = async (...args: any[]) => { cancelled.push(args); return true; };
+        // Ctrl+X is the leader; Enter is decoded as `enter` (not ctrl+m), so
+        // the chord resolves to queue-priority.
+        await (component as any).handleTerminalInput({ text: '', controlKey: '', partial: false }, '\u0018');
+        await (component as any).handleTerminalInput({ text: '', controlKey: 'return', partial: false }, '\r');
+
+        const entries = (component as any).queuedPrompts.get('console') || [];
+        expect(entries.map((entry: any) => entry.input)).toEqual(['run this next', '/compact trim']);
+        expect(state.input).toEqual('');
+        expect(state.queuedPromptCount).toEqual(2);
+        expect(state.notice).toContain('front');
+        // Priority only reorders; the running turn is never interrupted.
+        expect(cancelled).toEqual([]);
+    }
+
     @Test('queued slash command skips pending attachments and plain prompt keeps them')
-    async queuedSlashCommandSkipsAttachments() {
-        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+    async queuedSlashCommandSkipsAttachments() {        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
         await component.onInit();
         state.setStatus('running');
 

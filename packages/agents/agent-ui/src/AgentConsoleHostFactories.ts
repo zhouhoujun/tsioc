@@ -94,7 +94,7 @@ export function globalKeyInputHost(self: any): AgentConsoleGlobalKeyInputHost {
         toggleModelFavorite: () => self.toggleModelFavorite(),
         cycleRecentModel: (delta: 1 | -1) => self.cycleRecentModel(delta),
         cycleModelVariant: () => self.cycleModelVariant(),
-        queueDraft: () => self.queueDraft(),
+        queueDraft: () => self.queueDraft(), queuePriorityDraft: () => self.queuePriorityDraft(),
         cycleSessionTab: (delta: 1 | -1) => self.cycleSessionTab(delta), reopenClosedSessionTab: () => self.reopenClosedSessionTab()
     };
 }

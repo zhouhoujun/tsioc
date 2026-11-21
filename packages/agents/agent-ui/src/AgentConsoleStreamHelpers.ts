@@ -1,6 +1,9 @@
 export function decodeGlobalKey(raw: string): string {
     if (raw === '\u001b') return 'escape';
     if (raw === '\t') return 'tab';
+    // Enter/Ctrl+M share the CR byte; keymaps name it `enter` so leader chords
+    // such as `ctrl+x enter` can be expressed like any other key.
+    if (raw === '\r' || raw === '\n') return 'enter';
     // xterm modifyOtherKeys / kitty / CSI-u encodings for Ctrl(+Shift)+Tab.
     const tabCombo: Record<string, string> = {
         '\u001b[27;5;9~': 'ctrl+tab',
