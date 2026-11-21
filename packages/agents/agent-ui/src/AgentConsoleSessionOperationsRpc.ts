@@ -61,6 +61,46 @@ export abstract class AgentConsoleSessionOperationsRpc extends AgentConsoleSessi
         return { sessionId, messageCount: imported };
     }
 
+    /**
+     * Deliver a message to another session (agent teams). Append-only by
+     * default; `wake` starts a turn in the target (gateway only).
+     */
+    async sendSessionMessage(
+        sessionId: string,
+        text: string,
+        options: { wake?: boolean; fromSessionId?: string } = {},
+        context?: any
+    ): Promise<{ sessionId: string; woken: boolean }> {
+        const target = String(sessionId || '').trim();
+        const content = String(text || '').trim();
+        if (!target || !content) {
+            throw new Error(formatAgentUiNotice(undefined, 'messageDeliveryUnavailable'));
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.message.send', {
+                sessionId: target,
+                text: content,
+                ...(options.wake ? { wake: true } : {}),
+                ...(options.fromSessionId ? { fromSessionId: options.fromSessionId } : {})
+            }, context);
+            return { sessionId: String(result?.sessionId || target), woken: result?.woken === true };
+        }
+        if (!this.sessionStore) {
+            throw new Error(formatAgentUiNotice(undefined, 'messageDeliveryUnavailable'));
+        }
+        await this.sessionStore.appendRaw(target, {
+            id: `msg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+            role: 'user',
+            content,
+            createdAt: Date.now(),
+            metadata: {
+                kind: 'cross-session',
+                ...(options.fromSessionId ? { fromSessionId: options.fromSessionId } : {})
+            }
+        } as any);
+        return { sessionId: target, woken: false };
+    }
+
     async deleteSession(sessionId: string, context?: any): Promise<void> {
         if (!sessionId) {
             return;

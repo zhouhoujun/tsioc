@@ -75,6 +75,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/git-snapshots', description: 'git step snapshots: list / diff <ref> / revert <messageId> / unrevert', group: 'session', args: [{ name: 'operation', type: 'enum', values: ['list', 'diff', 'revert', 'restore', 'unrevert'] }, { name: 'arg', variadic: true }] },
     { name: '/export', description: 'export session transcript [json|jsonl|html] [sessionId] [path]', group: 'session', args: [{ name: 'arg', variadic: true }] },
     { name: '/import', description: 'import an exported transcript as a new session: /import <path>', group: 'session', needsArgs: true, args: [{ name: 'path', variadic: true }] },
+    { name: '/msg', description: 'send a message to another session (agent teams): /msg [--wake] <session> <text>', group: 'session', needsArgs: true, args: [{ name: 'flags' }, { name: 'sessionId' }, { name: 'text', variadic: true }] },
     { name: '/cd', description: 'change working directory: /cd <path>', group: 'session', needsArgs: true, args: [{ name: 'path', variadic: true }] },
     { name: '/pwd', description: 'print current working directory', group: 'session' },
     { name: '/init', description: 'generate AGENTS.md project context', group: 'session', args: [{ name: 'arg', type: 'enum', values: ['--force'] }] },

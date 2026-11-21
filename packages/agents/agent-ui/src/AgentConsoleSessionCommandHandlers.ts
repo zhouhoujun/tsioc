@@ -126,6 +126,66 @@ export async function handleArchive(ctx: CommandHandlerContext, _args: string, _
     return true;
 }
 
+// ── /msg ─────────────────────────────────────────────────────────────────────
+
+/** Resolve a full id or a unique id prefix from the visible session list. */
+export function resolveCrossSessionTarget(sessions: Array<{ id: string; archived?: boolean }>, token: string): string | undefined {
+    const needle = String(token || '').trim().toLowerCase();
+    if (!needle) {
+        return undefined;
+    }
+    const exact = sessions.find(item => String(item.id || '').toLowerCase() === needle);
+    if (exact) {
+        return exact.id;
+    }
+    const prefixed = sessions.filter(item => !item.archived && String(item.id || '').toLowerCase().startsWith(needle));
+    return prefixed.length === 1 ? prefixed[0].id : undefined;
+}
+
+/**
+ * `/msg [--wake] <session> <text>` — deliver a message to another agent's
+ * session. Default is append-only (it will see it on its next run);
+ * `--wake` asks the gateway to start a turn immediately.
+ */
+export async function handleMessage(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
+    const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+    const wake = tokens[0] === '--wake' || tokens[0] === '-w';
+    if (wake) {
+        tokens.shift();
+    }
+    const targetToken = tokens.shift();
+    const text = tokens.join(' ').trim();
+    if (!targetToken || !text) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'msgUsage'));
+        return true;
+    }
+    const target = resolveCrossSessionTarget(ctx.state.sessions, targetToken);
+    if (!target) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'msgSessionMissing', { sessionId: targetToken }));
+        return true;
+    }
+    if (!ctx.sessionService) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'messageDeliveryUnavailable'));
+        return true;
+    }
+    try {
+        const result = await ctx.sessionService.sendSessionMessage(target, text, {
+            wake,
+            fromSessionId: ctx.state.sessionId
+        });
+        ctx.notify(formatAgentUiNotice(
+            ctx.translator,
+            result.woken ? 'messageSentWake' : 'messageSent',
+            { sessionId: result.sessionId }
+        ));
+    } catch (error) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'failedSendMessage', {
+            error: error instanceof Error ? error.message : String(error)
+        }));
+    }
+    return true;
+}
+
 // ── /delete ──────────────────────────────────────────────────────────────────
 
 /**

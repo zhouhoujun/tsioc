@@ -24,7 +24,7 @@ import { handlePair, handleRename, handleRestart, handleTitle } from './AgentCon
 import { mapTuiLayoutArg } from './AgentConsoleSettingsCommands';
 export type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import { formatAgentUiDate, formatAgentUiDateTime, formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
-import { handleArchive, handleDelete, handleForkSide, handleNew, handlePinUnpin, handleResume, handleSession, handleSessions, handleSnapshot, handleSnapshots } from './AgentConsoleSessionCommandHandlers';
+import { handleArchive, handleDelete, handleForkSide, handleMessage, handleNew, handlePinUnpin, handleResume, handleSession, handleSessions, handleSnapshot, handleSnapshots } from './AgentConsoleSessionCommandHandlers';
 import { handleApprovals, handleApproveDeny, handleCancel, handleClear, handleCopy, handleGitSnapshots, handleOutputs, handlePwd, handleQuitExit, handleToolruns, handleTools } from './AgentConsoleRuntimeCommandHandlers';
 import { runMultilineCommand, runSendCommand } from './AgentConsoleMultilineCommands';
 import { handleProjects, handleSearch, handleSections, handleThreads, handleThreadplan } from './AgentConsoleSessionCommands';
@@ -49,7 +49,6 @@ function canonicalArgsOf(meta: { parsedArgs?: AgentConsoleParsedCommandArguments
     return meta.parsedArgs ? meta.parsedArgs.resolved.join(' ') : raw;
 }
 // ── Handler functions ────────────────────────────────────────────────────────
-
 async function handleModel(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     if (ctx.isTurnInProgress()) {
         ctx.notifyBusyState();
@@ -185,6 +184,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/resume': handleResume,
     '/archive': handleArchive,
     '/delete': handleDelete,
+    '/msg': handleMessage,
     '/fork': (ctx, args, meta) => handleForkSide(ctx, canonicalArgsOf(meta, args), meta),
     '/side': (ctx, args, meta) => handleForkSide(ctx, canonicalArgsOf(meta, args), meta),
     '/pin': handlePinUnpin,

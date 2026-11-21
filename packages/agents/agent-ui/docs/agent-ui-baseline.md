@@ -121,9 +121,9 @@ rm -f run-one.tmp.ts
 | 包 | 结果 |
 | --- | --- |
 | `@tsdi/agent` | 1102 passing |
-| `@tsdi/agent-gateway` | 404 passing |
+| `@tsdi/agent-gateway` | 407 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2341 passing**（2 组） |
+| `@tsdi/agent-ui` | **2345 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -181,6 +181,11 @@ rm -f run-one.tmp.ts
   选择后展示会话标题/消息数/相对时间快照，不提供切换/创建/取消等写操作；
   `/remotes add|remove` 维护配置，`/remotes <name>` 直接查看；token 仅用于请求，
   不会出现在对话框或提示中（URL 内嵌凭据会被掩码）。
+- 跨会话消息（agent teams v0）：`/msg [--wake] <session> <text>`，目标可用完整 id 或唯一前缀；
+  默认 **append-only**（以 user 角色写入目标会话，带 `metadata.kind=cross-session/fromSessionId`，
+  下次 turn 可见），`--wake` 经 gateway 立即在目标会话启动 turn。gateway 新增
+  `session.message.send`（所有权校验、文本 ≤20k），本地无 gateway 时仅 append；尚未增加独立
+  `session.message` 权限项。
 - 会话导入：`/import <path>` 读取 `/export json|jsonl` 文件并在新会话中重建 transcript；
   gateway `session.import` 重新生成 message id/sequence（不覆盖现有会话），限制 2000 条消息、
   单条 200KB，仅接受 user/assistant/system/tool；本地（无 gateway）走 `appendRaw` 同一路径。

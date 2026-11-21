@@ -23,6 +23,7 @@ const AGENT_APP_RPC_METHOD_IDS = [
     'session.fork',
     'session.list',
     'session.import',
+    'session.message.send',
     'session.list_projects',
     'session.list_threads',
     'nav.query',
