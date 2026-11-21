@@ -42,6 +42,28 @@ export class AgentConsoleMessageRendererDispatchTest {
         expect(template.blockClass).toContain('is-block-padded');
     }
 
+    @Test('cross-session messages name the sender instead of reading as the user prompt')
+    crossSessionSenderLabel() {
+        const items = renderAgentConsoleMessageItems([
+            {
+                id: 'u-cs',
+                role: 'user',
+                content: 'please review the diff',
+                createdAt: 1,
+                metadata: { kind: 'cross-session', fromSessionId: 'chat-alpha' }
+            }
+        ] as any, { selectedMessageId: '', messagesFocused: true });
+        const text = items[0].lines.map(line => `${line.role || ''}${line.prefix || ''}${line.content || ''}`).join('\n');
+        expect(text).toContain('↩ chat-alpha');
+        expect(text).toContain('please review the diff');
+
+        const plain = renderAgentConsoleMessageItems([
+            { id: 'u-plain', role: 'user', content: 'hello', createdAt: 2 }
+        ] as any, { selectedMessageId: '', messagesFocused: true });
+        const plainText = plain[0].lines.map(line => `${line.role || ''}${line.prefix || ''}${line.content || ''}`).join('\n');
+        expect(plainText).not.toContain('↩');
+    }
+
     @Test('dispatches message template kinds by role and metadata')
     renderTemplateKinds() {
         const messages = [

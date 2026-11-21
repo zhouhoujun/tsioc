@@ -108,11 +108,18 @@ export function renderAgentConsoleMessageItem(
     const selected = message?.id === context.selectedMessageId;
     const rowSelected = !!(selected && context.messagesFocused);
     const baseItemStyle = renderer.itemStyle(theme, rowSelected);
-    const baseRoleLabel = presentation.kind === 'assistant-final' && templateKind === 'assistant'
-        ? ''
-        : context.rendererRegistry
-            ? renderer.roleLabel
-            : resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
+    // Messages delivered by another agent (`/msg`) must not read as the user's
+    // own prompt: name the sender before the body in both renderer paths.
+    const crossSessionFrom = String(message?.metadata?.kind || '') === 'cross-session'
+        ? String(message?.metadata?.fromSessionId || '').trim()
+        : undefined;
+    const baseRoleLabel = crossSessionFrom !== undefined
+        ? (crossSessionFrom ? `↩ ${crossSessionFrom} · ` : '↩ · ')
+        : presentation.kind === 'assistant-final' && templateKind === 'assistant'
+            ? ''
+            : context.rendererRegistry
+                ? renderer.roleLabel
+                : resolveAgentConsoleMessageRoleLabel(message, renderer.roleLabel);
     const roleLabel = context.showUsername
         ? `${baseRoleLabel}${templateKind === 'user' ? String(context.username || 'you') : 'agent'}:`
         : baseRoleLabel;
