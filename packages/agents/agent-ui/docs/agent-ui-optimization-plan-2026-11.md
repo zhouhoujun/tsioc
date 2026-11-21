@@ -9,7 +9,7 @@
 ## 0. 结论摘要
 
 agent-ui 已经是**成熟的单会话工作台 + 多端渲染层**：状态驱动、对话/工具/计划/审批/评审/回退、
-TUI/Web/IDE/Desktop、schema 设置中心、AOT 模板预编译与站点化构建都已落地，验证体系（2232 用例 +
+TUI/Web/IDE/Desktop、schema 设置中心、AOT 模板预编译与站点化构建都已落地，验证体系（2352 用例 +
 DOM/TUI/PTY/bench）也强于多数同类项目。
 
 当前短板不在“功能数量”，而在四类：
@@ -18,11 +18,14 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
    组合/并行分片出现 `line is not defined`、`{{value}}` 字面量；测试只能按“原序连续切片”分组。
 2. **首屏体积与加载策略**：站点 initial JS 4223 KiB / gzip 1103 KiB，几乎没有特性级 `import()`，
    设置页、评审、诊断、语音、MCP/插件详情等低频界面都在入口。
-3. **交互与 opencode/Codex 的差距**：OS 通知仍缺；LSP 只读诊断面板与 formatter hook、
+3. **交互与 opencode/Codex 的差距**：OS 通知（TUI OSC 9 + Web）、LSP 诊断/formatter、
    ordered approval rules / shell 扫描器、`!` shell mode、`@file#Lx-Ly`、tab 键盘切换、`/btw`、
-   项目级 durable allow、会话级 `/undo`/`/redo`（恢复 prompt + 工作）已完成。
-4. **大规模性能**：1k 消息 tab 切换 p50 76–115ms（state 43–67ms + paint 25–56ms），scrollback
-   全量渲染，对话框开合仍需整屏重绘。
+   项目级 durable allow、会话级 `/undo`/`/redo`、`/delete`、`/import`、`/export html`、
+   per-session 权限、`/msg`、`/remotes`、`/work all` 已完成；剩余主要是远程 spawn/cancel 与
+   Web teams 专页。
+4. **大规模性能**：1k 消息 tab 切换 p50 78–84ms / p95 86–105ms（预算 120/200ms）；
+   对话框开合实测 open p50 71ms / p90 82ms、close p90 39ms（计划目标 40ms 仍未达成，
+   整屏 overlay 重绘是主成本，state 层 batch 实测无收益）。
 
 建议顺序：**P0 生命周期与可测性 → P1 首屏/包体 → P2 transcript 性能 → P3 交互对齐 → P4 门禁**。
 
@@ -30,13 +33,13 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 
 | 指标 | 现状 | 复跑 |
 | --- | --- | --- |
-| agent-ui 用例 | **2232 passing** | `cd packages/agents/agent-ui && npm run test` |
-| 测试墙钟 | 5 组并行 **120–144s**；单进程 **209s**（低负载） | `AGENT_UI_TEST_SHARDS=1` 对照 |
-| Web 站点构建 | initial 4223 KiB / gzip 1103 KiB；lazy 327 KiB / gzip 99 KiB（7 chunk） | `npm run build:web` |
-| 源码体量 | `AgentConsoleComponent.ts` 1499 行（cap 1500）；47 个组件/指令 selector | `node scripts/check-source-size.mjs` |
-| 命令面 | 103 个 `/` 命令；`ctrl+p` 命令面板；`ctrl+x` leader；F2 最近模型 | `AgentConsoleCommandDefinitions.ts` / `AgentConsoleKeymap.ts` |
-| 响应式使用 | ~569 个 getter，3 个 `@Computed`，9 个手写 WeakMap 缓存，10 处 `batchReactiveUpdates` | grep 统计 |
-| i18n | menu 键 en/zh 各 241，完全对齐 | `agent-ui.i18n.menu.*` |
+| agent-ui 用例 | **2352 passing** | `cd packages/agents/agent-ui && npm run test` |
+| 测试墙钟 | 低负载 5 组 **120–144s**；本机高负载下常合并为 2 组（2.0–2.6min） | `AGENT_UI_TEST_SHARDS=1` 对照 |
+| Web 站点构建 | initial **1830 KiB / gzip 474 KiB**（strict 700/150 通过） | `AGENT_UI_WEB_BUDGET_STRICT=1 npm run build:web` |
+| 源码体量 | `AgentConsoleComponent.ts` 1499 行（cap 1500） | `node scripts/check-source-size.mjs` |
+| 命令面 | 111 个 `/` 命令；`ctrl+p` 命令面板；`ctrl+x` leader；F2 最近模型 | `AgentConsoleCommandDefinitions.ts` / `AgentConsoleKeymap.ts` |
+| 响应式使用 | ~569 个 getter，3 个 `@Computed`，9 个手写 WeakMap 缓存 | grep 统计 |
+| i18n | menu/panel/notice 目录 en/zh 完全对齐（notice 869 键） | `i18n-locale-regression.spec.ts` |
 | A11y | 3 个 accessibility/aria 专项 spec | `test/*accessib*` |
 
 > 说明：本机负载波动大（并行跑 compiler/activities 测试时单进程可达 500s+），上述墙钟为低负载
@@ -120,26 +123,27 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | --- | --- | --- | --- | --- |
 | 命令面板 `ctrl+p` | ✅ | ✅（当前视图所有动作） | ◐（`/` 命令） | 保持；补“最近使用/动作搜索” |
 | leader key `ctrl+x` | ✅ | ✅ | ❌ | 对齐 |
-| session tabs | ✅ 鼠标点击 | ✅ Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+T 恢复关闭 | ◐ | **补键盘循环/恢复** |
-| Enter 运行中行为 | 默认排队；steer 需显式开启 | Enter steer；Ctrl+X Enter queue | queue/steer | 默认值需确认，补更清晰的状态提示 |
-| `!` shell mode | ❌ | ✅ | ✅（shell 工具） | **补** |
-| `@file#Lx-Ly` | ❌（仅 @file） | ✅ | ◐ | **补** |
+| session tabs | ✅ 鼠标 + Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+T | ✅ 同左 | ◐ | 对齐 |
+| Enter 运行中行为 | 默认排队；`Ctrl+X Enter` 插到队首；steer 需显式开启 | Enter steer；Ctrl+X Enter queue | queue/steer | 已补优先级；默认 steer 仍待确认 |
+| `!` shell mode | ✅ | ✅ | ✅（shell 工具） | 对齐 |
+| `@file#Lx-Ly` | ✅ | ✅ | ◐ | 对齐 |
 | 会话 undo/redo（恢复 prompt） | ✅ `/undo` `/redo`（turn-first，文件级回退） | ✅ Ctrl+X U / R | ◐（rollout） | 已完成 |
-| `/btw` 侧问 | ❌ | ✅ | ❌ | 低成本补 |
+| `/btw` 侧问 | ✅ | ✅ | ❌ | 对齐 |
 | `/highlights` 更新提示 | ✅ `/highlights`（升级后自动一次，可关闭） | ✅ | ◐ | 对齐 |
 | 模型切换 | ✅ `/model` + F2 最近 | ✅ Ctrl+X M / F2 | ✅ | 对齐 |
 | Agent profiles | ◐ archetype（命令切换） | ✅ `/agents`、Shift+Tab | ✅ profiles | AMS P0 |
 | 权限规则 | ✅ ordered rules（action/resource，last match）+ durable allow | ✅ ordered rules（action/resource/effect，last match）、durable allow、scanner | ✅ sandbox × approval policy + auto-review | 对齐（scanner opt-in） |
 | LSP 诊断 | ✅ `/check [paths]` 只读诊断面板（`/lsp` 别名） | ✅ | ◐ | 对齐 |
 | Formatter | ✅ `/format [paths] [--check]`（LSP `textDocument/formatting`） | ✅ | ◐ | 对齐 |
-| OS 通知 | ◐ 配置字段，无实现 | ✅ | ◐ | **补**（unfocused 时 approval/question/done） |
+| OS 通知 | ✅ TUI OSC 9 + Web Notification | ✅ | ◐ | 对齐（TUI 仍需终端支持 OSC 9） |
 | MCP/plugins/skills/hooks | ✅ | ✅ | ✅ | 对齐 |
-| 分享/导出 | ✅ `/share` `/export` | ✅ | ◐ | 对齐 |
+| 分享/导出 | ✅ `/share` `/export json|jsonl|html` `/import` | ✅ | ◐ | 对齐 |
 | Desktop/Mobile | ✅ Desktop + PWA/配对 | ✅ Desktop/Mobile | ◐ cloud | 对齐 |
-| Agent Center / Inbox | ◐ 命令+对话框 | ✅ Session Tree/最近 | ✅ agents command center | AMS P0 |
+| Agent Center / Inbox | ◐ `/work`、`/work all`（本地+远程只读）、`/inbox`、`/remotes` | ✅ Session Tree/最近 | ✅ agents command center | 远程写操作待补 |
+| Cross-session messaging | ◐ `/msg [--wake]`、`/msg list`（opt-in `crossSessionMessages`） | ✅（实验） | ✅（实验） | v0 已落地 |
 | Checkpoints/rewind | ✅ `/rewind` 文件级 + `/undo` 会话轮次（turn/文件历史已持久化） | ✅ undo/redo | ◐ rollout | 对齐 |
 | Worktree | ✅ `/worktree` | ✅ 每 session/subagent | ✅ | 对齐 |
-| Remote/attach | ✅ serve/attach/pairing | ✅ server URL | ✅ `--remote` | 对齐 |
+| Remote/attach | ✅ serve/attach/pairing + `/remotes` + `/work all` | ✅ server URL | ✅ `--remote` | 对齐（远程 spawn/cancel 待补） |
 
 ## 5. 优化方案（P0 → P4）
 
@@ -261,13 +265,14 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 
 ## 6. 预算与门禁（建议）
 
-| 指标 | 当前 | 目标 | 门禁 |
+| 指标 | 当前（2026-11-22） | 目标 | 门禁 |
 | --- | --- | --- | --- |
-| initial JS gzip | 1103 KiB | ≤700 → ≤500 KiB | build 报告 + 阈值 |
-| lazy chunk 单文件 | 327 KiB 总量 | ≤150 KiB/个 | build 报告 |
-| 1k tab 切换 p50/p95 | 76–115 / 91–150ms | ≤70 / ≤120ms | tab-switch spec |
-| 对话框开合 p90 | ~20–32ms（state-only） | ≤40ms | 新增 micro-spec |
-| agent-ui 测试墙钟 | 120–144s（5 组） | ≤120s | gate |
+| initial JS gzip | **474 KiB** | ≤500 KiB | `AGENT_UI_WEB_BUDGET_STRICT=1 build:web`（≤700 硬门禁） |
+| lazy chunk 单文件 | 通过 | ≤150 KiB/个 | build 报告 |
+| 1k tab 切换 p50/p95 | **78–84 / 86–105ms** | ≤70 / ≤120ms | `AGENT_UI_SWITCH_BUDGET=1` |
+| 对话框开合 p90 | **open 82ms / close 39ms** | ≤40ms | `AGENT_UI_DIALOG_BUDGET=1`（当前回归门禁 120ms） |
+| agent-ui 测试墙钟 | 120–156s（2–5 组，视内存） | ≤120s | `AGENT_UI_TEST_WALL_BUDGET=<s>` |
+| 分片峰值内存 | 单进程 ~1844 MiB | 主机预算内 | `AGENT_UI_TEST_MEMORY_BUDGET_MB=<MiB>` |
 | source-size | OK（Component 1499） | 只降不升 | `check-source-size.mjs` |
 
 ## 7. 非目标与取舍
@@ -291,3 +296,23 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 3. LSP 集成范围：内置只读诊断，还是复用编辑器/外部 server？
 4. 首屏目标是否接受 500 KiB gzip（移动端优先）？
 5. Agent Center/Inbox 是否作为下一阶段主线（与 P0–P2 并行）？
+
+## 10. 2026-11-22 进度快照
+
+本轮（`7.tui`，`4f7b61410`…`d6382919e` 等提交）已完成：
+
+- P0：视图销毁先 dispose 绑定、随机分片全绿（阶段 1）；owner-view token 仍为后续硬化项。
+- P1：浏览器构建不再包含 TypeORM；initial gzip **474 KiB**（strict 预算通过）。
+- P2：`/queue` 对齐（`Ctrl+X Enter` 队首、manage/clear）；1k 切换与对话框预算 spec 已落地；
+  dialog p90 40ms 目标未达，已记录成因（整屏 overlay 重绘，state batch 无收益）。
+- P3：TUI OSC 9 通知、fuzzy 菜单过滤、`/sessions` 时间分组、`/delete`、`/import`、
+  `/export html`、`/remotes`、`/work remote|all`、`/msg [--wake]|list`（opt-in）、
+  per-session 权限、权限规则图形化新增。
+- P4：`AGENT_UI_TEST_MEMORY_BUDGET_MB`、`AGENT_UI_DIALOG_BUDGET`、web 预算基线。
+
+仍待完成：
+
+1. 远程 gateway 的 spawn/cancel（需要能力协商与授权面）。
+2. Web teams 专页（跨会话消息的浏览器视图）。
+3. P2 dialog overlay 隔离（在现有“禁止脏节点追踪跳过面板”约束下需要新的安全方案）。
+4. P0 owner-view token（任意顺序/懒加载分片硬化）。
