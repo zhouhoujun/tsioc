@@ -18,6 +18,7 @@ export * from './AgentConsoleSessionContentPresenter';
 export * from './AgentConsoleTimelineLifecycle';
 export * from './AgentConsoleTextWidth';
 export * from './AgentConsoleSuggestions';
+export * from './AgentConsoleFuzzy';
 export * from './AgentConsoleCommandRegistry';
 export * from './AgentConsoleCommandExecution';
 export * from './AgentConsoleCommandOutputHistory';

@@ -921,6 +921,13 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
     font-size: 11.5px;
 }
 
+#agent-console agent-console-select-panel .select-empty {
+    display: block;
+    color: var(--agent-web-muted);
+    font-size: 12px;
+    font-style: italic;
+}
+
 /* Panels that hosts append after the footer still float above the composer
    instead of pushing the layout or rendering below the input area. */
 #agent-console .agent-console > agent-console-outputs-panel,

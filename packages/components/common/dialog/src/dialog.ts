@@ -16,6 +16,7 @@ import { getDisplayWidth } from '../../src/display-width';
         <div class="dialog-body" [style]="scrollStyle">
             <label class="dialog-line" data-cell-width="0" v-for="(line, index) in lines"
                 data-option-index="{{lineOptionIndexes && lineOptionIndexes[index] !== undefined ? lineOptionIndexes[index] : ''}}"
+                data-hover="{{lineActions && lineActions[index] ? '' : 'none'}}"
                 @click="activateLine(index)">{{line}}</label>
         </div>
         <label class="dialog-hint" v-show="hint">{{hint}}</label>

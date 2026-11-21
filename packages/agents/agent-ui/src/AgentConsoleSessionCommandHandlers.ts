@@ -1,6 +1,7 @@
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext';
 import type { SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
 import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel } from './agent-ui.i18n';
+import { rankAgentConsoleFuzzyOptions } from './AgentConsoleFuzzy';
 import { formatSessionAge } from './AgentConsoleFormatters';
 import { runSnapshotsCommand } from './AgentConsoleSnapshotCommands';
 
@@ -40,9 +41,19 @@ async function openSessionsDialog(ctx: CommandHandlerContext, query = ''): Promi
         ? ctx.state.sessions.filter(item => (item.projectKey || item.projectId || item.workspace) === scope)
         : ctx.state.sessions;
     const candidates = (inScope.length ? inScope : ctx.state.sessions).slice();
+    // Fuzzy pre-filter: `/sessions typo` still finds "TypeScript ...", while an
+    // exact/prefix title hit ranks first. The dialog's own live filter uses the
+    // same scorer through `setSelectMenuFilter`.
     const matched = search
-        ? candidates.filter(item => [item.title, item.id, item.workspace, item.projectLabel, item.summary]
-            .some(value => String(value || '').toLowerCase().includes(search)))
+        ? rankAgentConsoleFuzzyOptions(
+            candidates.map(item => ({
+                item,
+                label: String(item.title || item.id || ''),
+                value: String(item.id || ''),
+                description: [item.workspace, item.projectLabel, item.summary].filter(Boolean).join(' ')
+            })),
+            search
+        ).map(entry => entry.item)
         : candidates;
     if (!matched.length) {
         ctx.notify(formatAgentUiNotice(

@@ -217,6 +217,7 @@ export class AgentConsoleActivityPanelComponent {
             :hint="menuHintText"
             :meta="menuMetaText"
             :detailLines="menuDetailLines"
+            :emptyText="menuEmptyText"
             :fitContent="menuFitContent"
             :suggestion="menuIsSuggestion"
             :accessibilityLabel="accessibilityLabel"
@@ -227,7 +228,8 @@ export class AgentConsoleActivityPanelComponent {
 })
 export class AgentConsoleSelectPanelComponent {
     constructor(
-        private state: AgentConsoleSessionState
+        private state: AgentConsoleSessionState,
+        @Optional() private translator?: TranslatorService
     ) {
     }
 
@@ -261,6 +263,15 @@ export class AgentConsoleSelectPanelComponent {
     get menuIsSuggestion(): boolean { return !!this.menu && isAgentConsoleSuggestionMenu(this.menu); }
 
     get menuMetaText(): string { const menu = this.menu; if (!menu || isAgentConsoleSuggestionMenu(menu)) return ''; const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount); return window.count < menu.options.length ? `${window.start + 1}-${window.start + window.count}/${menu.options.length}` : ''; }
+
+    /** A live filter can legitimately match zero rows; say so instead of an empty card. */
+    get menuEmptyText(): string {
+        const menu = this.menu;
+        if (!menu || !menu.filter || menu.options.length || isAgentConsoleSuggestionMenu(menu)) {
+            return '';
+        }
+        return panelLabel(this.translator, 'select', 'emptyFilter', 'No matches for "{filter}"', { filter: menu.filter });
+    }
 
     async closeMenu(): Promise<void> { await this.state.cancelSelectMenu(); }
 
@@ -369,7 +380,8 @@ export class AgentConsoleSelectPanelComponent {
 })
 export class AgentConsoleCommandDialogPanelComponent {
     constructor(
-        private state: AgentConsoleSessionState
+        private state: AgentConsoleSessionState,
+        @Optional() private translator?: TranslatorService
     ) {
     }
 
@@ -408,6 +420,13 @@ export class AgentConsoleCommandDialogPanelComponent {
         const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount);
         if (window.count < menu.options.length) {
             push(`${window.start + 1}-${window.start + window.count}/${menu.options.length}`);
+        }
+        if (!menu.options.length) {
+            if (menu.filter) {
+                // An empty dialog body looks broken; say the filter missed.
+                push(panelLabel(this.translator, 'select', 'emptyFilter', 'No matches for "{filter}"', { filter: menu.filter }));
+            }
+            return { lines, actions, indexes };
         }
         menu.options.slice(window.start, window.start + window.count).forEach((option, offset) => {
             const index = window.start + offset;

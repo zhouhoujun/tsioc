@@ -16,7 +16,7 @@ import { ToastEntry } from '../toast';
     <list :items="rows" :emptyLabel="emptyLabel" :selectValueAction="selectRow"></list>
     <list :items="rows" :visibleItems="1" showScrollbar></list>
     <select-list :options="options" :selectedIndex="1" :visibleCount="2"
-        ariaLabel="Picker" :fitContent="true"></select-list>
+        ariaLabel="Picker" :fitContent="true" :emptyText="emptyLabel"></select-list>
     <toast-stack :items="toasts" :messageWidth="18"></toast-stack>`
 })
 class CommonWidgetsHostComponent {
@@ -131,6 +131,19 @@ export class CommonWidgetsDomTest {
         expect(root.textContent).toContain('Two');
         // visibleCount=2 around index 1 still shows the selected row only once.
         expect(root.querySelectorAll('.select-option')).toHaveLength(2);
+    }
+
+    @Test('renders the live-filter empty state when no rows match')
+    async selectEmptyState() {
+        const ref = await this.mount();
+        const host = ref.instance as CommonWidgetsHostComponent;
+        host.options = [];
+        await Promise.resolve();
+        await Promise.resolve();
+        const select = ref.hostView.query(SelectComponent) as ComponentRef<SelectComponent>;
+        const root = select.hostView.rootNodes[0] as HTMLElement;
+        expect(root.querySelector('.select-empty')?.textContent).toContain('Nothing here');
+        expect(root.querySelectorAll('.select-option')).toHaveLength(0);
     }
 
     @Test('pads toast rows to the requested card width')

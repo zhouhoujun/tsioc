@@ -2,6 +2,7 @@ import { batchReactiveUpdates } from '@tsdi/components';
 import { dismissBackgroundPanels } from './AgentConsoleDialogExclusivity';
 import type { AgentConsoleSelectMenu, AgentConsoleSelectOption, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { getAgentConsoleCommandDefinition } from './AgentConsoleCommandRegistry';
+import { rankAgentConsoleFuzzyOptions } from './AgentConsoleFuzzy';
 import { applyAgentConsoleSuggestion, getAgentConsoleArgumentRange, getAgentConsoleInputTokenRange, getAgentConsoleMentionCandidates, isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
 
 export function selectAsync(state: AgentConsoleSessionState, title: string, options: AgentConsoleSelectOption[], selectedIndex = 0, hint?: string, kind?: string): Promise<string | undefined> {
@@ -136,9 +137,7 @@ export function shouldSubmitConfirmedSelectMenuValue(state: AgentConsoleSessionS
         return mentionCandidates.includes(resolved);
     }
 
-function matchesSelectMenuFilter(option: AgentConsoleSelectOption, filter: string): boolean {
-        return `${option.label} ${option.value} ${option.description || ''}`.toLowerCase().includes(filter);
-    }
+
 
 /** Recompute the visible options for a blocking menu from its full list. */
 export function setSelectMenuFilter(state: AgentConsoleSessionState, filter: string): void {
@@ -148,7 +147,10 @@ export function setSelectMenuFilter(state: AgentConsoleSessionState, filter: str
         const value = String(filter || '').toLowerCase();
         menu.allOptions = source;
         menu.filter = value;
-        menu.options = value ? source.filter(option => matchesSelectMenuFilter(option, value)) : source.slice();
+        // Fuzzy search instead of substring matching: `drk` finds `dark`, and a
+        // title hit ranks above a description-only hit. Equal scores keep the
+        // original order so the highlight never jumps between equivalent rows.
+        menu.options = value ? rankAgentConsoleFuzzyOptions(source, value) : source.slice();
         menu.selectedIndex = 0;
         state.selectMenuTouched = true;
         state.syncDerivedInputFocus();

@@ -36,6 +36,7 @@ export interface SelectOption {
                 <label class="{{option.className}}" role="option" aria-selected="{{option.selected}}" v-for="option in visibleOptions" trackBy="index" @click="choose(option.index)">
                     <span class="select-option-label">{{option.label}}</span><span class="select-option-description" v-if="option.description">{{option.description}}</span>
                 </label>
+                <label class="select-empty" v-if="emptyText && !visibleOptions.length">{{emptyText}}</label>
                 <label class="select-detail" v-for="line in detailLines" v-if="detailLines && detailLines.length">{{line}}</label>
                 <label class="select-hint" v-if="hint">{{hint}}</label>
             </div>
@@ -50,6 +51,8 @@ export class SelectComponent {
     @Attribute() hint = '';
     @Attribute() meta = '';
     @Attribute() detailLines: string[] = [];
+    /** Empty-state copy shown when a live filter matched nothing. */
+    @Attribute() emptyText = '';
     @Attribute() ariaLabel = 'Selection menu';
     /** @deprecated Use `ariaLabel` (kept for existing hosts). */
     @Attribute()

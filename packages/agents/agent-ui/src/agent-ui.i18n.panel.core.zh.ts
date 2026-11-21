@@ -49,6 +49,7 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
     select: {
         dialogs: '对话框',
         help: '帮助',
+        emptyFilter: '没有匹配 "{filter}" 的选项',
         approve: '批准',
         deny: '拒绝',
         resume: '恢复会话',

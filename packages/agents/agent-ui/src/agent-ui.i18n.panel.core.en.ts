@@ -49,6 +49,7 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
     select: {
         dialogs: 'Dialogs',
         help: 'Help',
+        emptyFilter: 'No matches for "{filter}"',
         approve: 'Approve',
         deny: 'Deny',
         resume: 'Resume session',
