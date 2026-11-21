@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2320 passing**（2 组） |
+| `@tsdi/agent-ui` | **2321 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -199,6 +199,12 @@ rm -f run-one.tmp.ts
   测试墙钟提供 `AGENT_UI_TEST_WALL_BUDGET=<seconds>`（超时失败）；分片内存阈值提供
   `AGENT_UI_TEST_MEMORY_BUDGET_MB=<MiB>`：每个 worker/单进程在退出前采样峰值 RSS，
   超预算直接使该 shard 失败（本次单进程峰值 1844 MiB；预算 1 MiB 时退出码 1，用例仍全绿）。
+- P2 overlay 预算（2026-11-21）：`tab-switch-long-session.spec.ts` 新增对话框开合测量
+  （4×1000 消息，24 选项，实际绘制 12 行），并断言每帧 ≤1 次渲染。实测 open
+  p50 **71ms** / p90 **82ms**、close p90 **39ms**；`AGENT_UI_DIALOG_BUDGET=1` 以
+  ≤120ms 作回归门禁。**计划目标 p90 ≤40ms 仍未达成**：整屏录制/绘制（docked overlay +
+  shared chrome）是主成本，会话状态层 batch 实测无收益（已回退），下一步需要 renderer
+  级 overlay 隔离。
 - P3 opencode 对齐（本轮）：阻塞式菜单过滤从子串改为 **fuzzy + 排序**
   （`AgentConsoleFuzzy.ts`：exact > prefix > 词首 > 子串 > 子序列，label 命中优先于
   description；同分保持原顺序），`/theme` 输入 `drk` 可命中 `Dark theme`，
