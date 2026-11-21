@@ -412,6 +412,7 @@ export function resolveCliTuiConfig(options: AgentCliOptions, root?: string): Ag
     if (process.env.TSDI_AGENT_TUI_THEME) envLayer.theme = process.env.TSDI_AGENT_TUI_THEME;
     if (process.env.TSDI_AGENT_TUI_SCROLL_SPEED) envLayer.scrollSpeed = parseInt(process.env.TSDI_AGENT_TUI_SCROLL_SPEED, 10);
     if (process.env.TSDI_AGENT_TUI_ATTENTION_SOUND) envLayer.attentionSound = process.env.TSDI_AGENT_TUI_ATTENTION_SOUND === '1' || process.env.TSDI_AGENT_TUI_ATTENTION_SOUND === 'true';
+    if (process.env.TSDI_AGENT_TUI_NOTIFICATIONS) envLayer.attention = { notifications: process.env.TSDI_AGENT_TUI_NOTIFICATIONS === '1' || process.env.TSDI_AGENT_TUI_NOTIFICATIONS === 'true' };
     if (process.env.TSDI_AGENT_TUI_LEADER_TIMEOUT) envLayer.leaderTimeout = parseInt(process.env.TSDI_AGENT_TUI_LEADER_TIMEOUT, 10);
     if (envKeybinds) {
         envLayer.keybinds = envKeybinds;

@@ -7,7 +7,8 @@
 import { mergeAgentOptions, resolveAgentRenderPolicy, AgentHookCommandExecutor, AGENT_CONSOLE_APP_RPC, AgentRuntime } from '@tsdi/agent';
 import { WorktreeManager } from '@tsdi/agent-tools';
 import { FileAdapter } from '@tsdi/common';
-import { TuiConsoleModule, ConsoleTerminalSurfaceLifecycle } from '@tsdi/components/console';
+import { ReactiveEffect } from '@tsdi/components';
+import { TuiConsoleModule, ConsoleTerminalSurfaceLifecycle, ConsoleTerminalSurfaceLifecycleService } from '@tsdi/components/console';
 import {
     AgentConsoleComponent,
     AgentConsoleSessionState,
@@ -20,6 +21,7 @@ import {
     setHostConsoleNotice
 } from '@tsdi/agent-ui';
 import { runAgentTUI } from './run-agent-ui';
+import { installAgentConsoleTuiAttention } from './attention';
 
 /**
  * Launch target for a console TUI application.
@@ -211,6 +213,33 @@ export async function runAgentConsole(
         } catch {
             // A host without a restart hook simply keeps `/restart` unavailable.
         }
+    }
+
+    // TUI attention notifications share the browser contract: approvals,
+    // pending questions and turn completion fire only when configured, and the
+    // derived counts are read inside the shared ReactiveEffect.
+    try {
+        const tui = resolved.tui;
+        const notifications = tui?.attention?.notifications === true;
+        const sound = tui?.attentionSound === true;
+        const state = resolveBootstrappedConsole(ctx)?.sessionState
+            ?? (ctx?.get ? ctx.get(AgentConsoleSessionState) : undefined);
+        if (state && (notifications || sound) && ctx?.get) {
+            const effect = ctx.get(ReactiveEffect) as ReactiveEffect | undefined;
+            const terminal = ctx.get(ConsoleTerminalSurfaceLifecycleService) as ConsoleTerminalSurfaceLifecycleService | undefined;
+            if (effect) {
+                installAgentConsoleTuiAttention({
+                    state,
+                    effect,
+                    notifications,
+                    sound,
+                    notify: (title, body) => terminal?.notifyTerminal?.(title, body),
+                    bell: () => terminal?.ringTerminalBell?.()
+                });
+            }
+        }
+    } catch {
+        // Notifications are best-effort; a host without terminal support keeps starting.
     }
 
     try {

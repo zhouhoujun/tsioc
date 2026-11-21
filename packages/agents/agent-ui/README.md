@@ -62,6 +62,10 @@ npm run test:coverage
 - `AgentIdeBridge` — IDE 通信桥
 - `AgentTuiConfig` — tui.json 配置 schema
 - `AgentUiConfigReader` — 配置合并（CLI > env > tui.json > 默认）
+
+TUI 通知：`tui.json` 的 `attention.notifications`（或 `TSDI_AGENT_TUI_NOTIFICATIONS=1`）
+在审批、待回答问题、turn 完成时发送 OSC 9 桌面通知；`attentionSound` 同时响铃。
+通知由共享 `ReactiveEffect` 读取状态触发，不使用轮询或手写订阅。
 - `HttpAgentConsoleAppRpc` — HTTP JSON-RPC 客户端
 - `AgentConsoleRemoteEventBridge` — SSE 事件桥
 - `AgentConsoleEventBridge` — 事件桥抽象

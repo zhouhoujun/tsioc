@@ -395,6 +395,29 @@ export abstract class ConsoleTerminalSurfaceLifecycle {
     onTerminalViewportResume?(): void;
     /** A primary click landed outside the open overlay; dismiss non-blocking chrome. */
     onTerminalBackgroundClick?(): void;
+    /**
+     * Show a desktop notification through the terminal (OSC 9). Terminals that
+     * do not implement OSC 9 simply ignore the sequence; hosts never need to
+     * know which emulator is running.
+     */
+    notifyTerminal?(title: string, body: string): void;
+    /** Ring the terminal bell for hosts that enable attention sounds. */
+    ringTerminalBell?(): void;
+}
+
+/**
+ * Build an OSC 9 terminal notification. Control bytes are stripped so a model
+ * or tool name can never inject extra escape sequences into the terminal.
+ */
+export function formatConsoleTerminalNotification(title: string, body: string): string {
+    const clean = (value: unknown): string => String(value ?? '')
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const titleText = clean(title).slice(0, 80);
+    const bodyText = clean(body).slice(0, 240);
+    const text = bodyText ? `${titleText}: ${bodyText}` : titleText;
+    return `\u001b]9;${text || 'TSDI Agent'}\u0007`;
 }
 
 export type ConsoleTranscriptLayoutMode = 'scrollback' | 'viewport';
@@ -717,6 +740,34 @@ export class ConsoleTerminalSurfaceLifecycleService extends ConsoleTerminalSurfa
 
     dispatchKey?(event: { key: string; [name: string]: unknown }): boolean {
         return this.surface?.dispatchKey(event) ?? false;
+    }
+
+    /**
+     * Emit an OSC 9 desktop notification. Only real terminals get the sequence:
+     * piped stdout / CI logs would otherwise collect escape noise.
+     */
+    notifyTerminal(title: string, body: string): void {
+        const output = this.output;
+        if (!output?.isTTY || typeof output.write !== 'function') {
+            return;
+        }
+        try {
+            output.write(formatConsoleTerminalNotification(title, body));
+        } catch {
+            // A closed pty must never break the render/attention path.
+        }
+    }
+
+    ringTerminalBell(): void {
+        const output = this.output;
+        if (!output?.isTTY || typeof output.write !== 'function') {
+            return;
+        }
+        try {
+            output.write('\u0007');
+        } catch {
+            // Ignore closed terminals.
+        }
     }
 
     scrollViewport?(deltaRows: number): boolean {
