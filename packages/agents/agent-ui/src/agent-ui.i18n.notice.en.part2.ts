@@ -125,6 +125,7 @@ export const AGENT_UI_NOTICE_EN_PART2: NestedMessages = {
   crossSessionMessagesCount: '{count} messages · read-only snapshot',
   msgUsage: 'Usage: /msg [--wake] <session> <text>',
   msgSessionMissing: 'No session matches {sessionId}.',
+  msgSelfTarget: 'Cannot send a cross-session message to the current session.',
   messageSent: 'Message delivered to {sessionId}.',
   messageSentWake: 'Message delivered to {sessionId} and its turn started.',
   failedSendMessage: 'Failed to send message: {error}',

@@ -125,6 +125,7 @@ export const AGENT_UI_NOTICE_ZH_PART2: NestedMessages = {
   crossSessionMessagesCount: '{count} 条消息 · 只读快照',
   msgUsage: '用法：/msg [--wake] <会话> <文本>',
   msgSessionMissing: '没有匹配 {sessionId} 的会话。',
+  msgSelfTarget: '不能向当前会话发送跨会话消息。',
   messageSent: '消息已投递到 {sessionId}。',
   messageSentWake: '消息已投递到 {sessionId}，并已启动该会话的 turn。',
   failedSendMessage: '发送消息失败：{error}',

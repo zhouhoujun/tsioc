@@ -53,8 +53,8 @@ export class CrossSessionMessageCommandTest {
     @Test('sends append-only by default with the sender id')
     async sends() {
         const { ctx, sent, notices } = buildCtx();
-        await handleMessage(ctx, 's1 hello there', { command: '/msg', matches: [] });
-        expect(sent).toEqual([{ sessionId: 's1', text: 'hello there', wake: false, fromSessionId: 's1' }]);
+        await handleMessage(ctx, 'chat-alpha hello there', { command: '/msg', matches: [] });
+        expect(sent).toEqual([{ sessionId: 'chat-alpha', text: 'hello there', wake: false, fromSessionId: 's1' }]);
         expect(notices[notices.length - 1]).toContain('Message delivered');
     }
 
@@ -64,6 +64,14 @@ export class CrossSessionMessageCommandTest {
         await handleMessage(ctx, '--wake chat-alpha run the tests', { command: '/msg', matches: [] });
         expect(sent).toEqual([{ sessionId: 'chat-alpha', text: 'run the tests', wake: true, fromSessionId: 's1' }]);
         expect(notices[notices.length - 1]).toContain('turn started');
+    }
+
+    @Test('sending to the current session is rejected')
+    async rejectsSelf() {
+        const { ctx, sent, notices } = buildCtx();
+        await handleMessage(ctx, 's1 hello', { command: '/msg', matches: [] });
+        expect(sent).toEqual([]);
+        expect(notices[notices.length - 1]).toContain('current session');
     }
 
     @Test('/msg list opens a read-only snapshot of cross-session messages')
@@ -89,7 +97,7 @@ export class CrossSessionMessageCommandTest {
         expect(missing.notices[missing.notices.length - 1]).toContain('No session matches');
 
         const failed = buildCtx({ fail: true });
-        await handleMessage(failed.ctx, 's1 hi', { command: '/msg', matches: [] });
+        await handleMessage(failed.ctx, 'chat-alpha hi', { command: '/msg', matches: [] });
         expect(failed.notices[failed.notices.length - 1]).toContain('target locked');
     }
 

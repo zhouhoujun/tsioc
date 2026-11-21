@@ -17,6 +17,7 @@
 - `/work` now exposes a single `Remote centers (N)` entry when gateways are configured, opening the read-only `/remotes` picker.
 - `/msg list` opens a read-only cross-session message snapshot (`session.message.list`), bounded to owned sessions.
 - The web sidebar adds a Teams action that opens `/msg list` in the console (read-only).
+- `/msg` rejects sending a cross-session message to the current session.
 - `/work remote` merges configured gateways into one read-only `gateway → sessions` tree with session snapshots.
 - `/work all` merges local delegation rows with remote gateway rows in one tree (local first).
 - Added `/permissions session [<level>]` (and a matching settings row) for a per-tab security level override; switching tabs re-applies each tab's override or the workspace default without persisting it.

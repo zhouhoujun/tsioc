@@ -194,6 +194,10 @@ export async function handleMessage(ctx: CommandHandlerContext, args: string, _r
         ctx.notify(formatAgentUiNotice(ctx.translator, 'msgSessionMissing', { sessionId: targetToken }));
         return true;
     }
+    if (target === ctx.state.sessionId) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'msgSelfTarget'));
+        return true;
+    }
     if (!ctx.sessionService) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'messageDeliveryUnavailable'));
         return true;
