@@ -125,6 +125,7 @@ export const AGENT_UI_NOTICE_EN_PART2: NestedMessages = {
   messageSent: 'Message delivered to {sessionId}.',
   messageSentWake: 'Message delivered to {sessionId} and its turn started.',
   failedSendMessage: 'Failed to send message: {error}',
+  crossSessionMessagesDisabled: 'Cross-session messages are disabled. Enable them in /settings → Agents.',
   messageDeliveryUnavailable: 'Cross-session messaging requires a session service.',
   importUsage: 'Usage: /import <path-to-export.json>',
   importUnavailable: 'Import requires a host with file access (TUI/attach).',

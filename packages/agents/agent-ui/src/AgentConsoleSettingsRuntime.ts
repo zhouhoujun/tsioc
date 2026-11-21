@@ -182,6 +182,9 @@ export async function restoreSettings(self: any): Promise<void> {
         if (Array.isArray(persisted.remotes)) {
             self.state.remoteCenters = persisted.remotes;
         }
+        if (typeof persisted.crossSessionMessages === 'boolean') {
+            self.state.crossSessionMessages = persisted.crossSessionMessages;
+        }
         // restore task & plan filter state
         if (persisted.taskFilter) {
             self.state.selectedTaskFilter = persisted.taskFilter;

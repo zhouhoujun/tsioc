@@ -9,6 +9,7 @@ function buildCtx(options: { fail?: boolean } = {}) {
         translator: null,
         state: {
             sessionId: 's1',
+            crossSessionMessages: true,
             sessions: [
                 { id: 's1', title: 'Main' },
                 { id: 'chat-alpha', title: 'Alpha' },
@@ -66,5 +67,14 @@ export class CrossSessionMessageCommandTest {
         const failed = buildCtx({ fail: true });
         await handleMessage(failed.ctx, 's1 hi', { command: '/msg', matches: [] });
         expect(failed.notices[failed.notices.length - 1]).toContain('target locked');
+    }
+
+    @Test('messaging is opt-in: disabled by default with an actionable hint')
+    async disabledByDefault() {
+        const { ctx, sent, notices } = buildCtx();
+        ctx.state.crossSessionMessages = false;
+        await handleMessage(ctx, 's1 hello', { command: '/msg', matches: [] });
+        expect(sent).toEqual([]);
+        expect(notices[notices.length - 1]).toContain('/settings');
     }
 }

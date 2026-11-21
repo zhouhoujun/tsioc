@@ -47,6 +47,8 @@ export interface AgentConsoleSettingsData {
     openSessionIds?: string[];
     /** Read-only remote gateways shown by `/remotes`. */
     remotes?: AgentConsoleRemoteCenter[];
+    /** Opt-in agent-teams messaging (`/msg`). */
+    crossSessionMessages?: boolean;
 }
 
 export function applyPersistedPreferences(
@@ -222,7 +224,8 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined,
         lastSessionId: typeof parsed?.lastSessionId === 'string' && parsed.lastSessionId.trim() ? parsed.lastSessionId.trim() : undefined,
         openSessionIds: sanitizeOpenSessionIds(parsed?.openSessionIds),
-        remotes: Array.isArray(parsed?.remotes) ? sanitizeAgentConsoleRemoteCenters(parsed.remotes) : undefined
+        remotes: Array.isArray(parsed?.remotes) ? sanitizeAgentConsoleRemoteCenters(parsed.remotes) : undefined,
+        crossSessionMessages: typeof parsed?.crossSessionMessages === 'boolean' ? parsed.crossSessionMessages : undefined
     };
 }
 

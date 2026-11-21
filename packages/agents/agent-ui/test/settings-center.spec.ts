@@ -225,6 +225,19 @@ export class AgentConsoleSettingsCenterTest {
         expect(state.settingsCenterRows.find((row: any) => row.id === 'sessionSecurityLevel').value).toEqual('full');
     }
 
+    @Test('cross-session messaging is opt-in and persists from the agents section')
+    async crossSessionMessagesToggle() {
+        const { component, state, persisted } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings agents');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'crossSessionMessages');
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(state.settingsCenterRows[index].value).toEqual('off');
+        state.settingsCenterIndex = index;
+        await handleSettingsCenterKey(component, 'return');
+        expect(state.crossSessionMessages).toEqual(true);
+        expect(persisted[persisted.length - 1]).toEqual({ crossSessionMessages: true });
+    }
+
     @Test('the workspace trust confirmation closes the page before the picker')
     async trustPickerClosesPage() {
         const { component, state } = await this.createConsoleWithPersist();

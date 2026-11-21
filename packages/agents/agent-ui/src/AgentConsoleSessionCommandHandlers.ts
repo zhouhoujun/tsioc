@@ -159,6 +159,10 @@ export async function handleMessage(ctx: CommandHandlerContext, args: string, _r
         ctx.notify(formatAgentUiNotice(ctx.translator, 'msgUsage'));
         return true;
     }
+    if (ctx.state.crossSessionMessages !== true) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'crossSessionMessagesDisabled'));
+        return true;
+    }
     const target = resolveCrossSessionTarget(ctx.state.sessions, targetToken);
     if (!target) {
         ctx.notify(formatAgentUiNotice(ctx.translator, 'msgSessionMissing', { sessionId: targetToken }));

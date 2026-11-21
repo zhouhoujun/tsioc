@@ -69,7 +69,7 @@
 | Session 管理 | ✅ tabs/new/resume/fork/archive/delete/rename/export/import | ✅ archive/delete/export/import/fork、tabs、recent | ✅ projects/threads/remote | ✅ resume/fork/archive/delete/remote | **中**（我们已有，缺总览） |
 | Transcript verbosity | 视窗折叠长输出 | ✅ low/medium/high + 活动行 | ✅ | ✅ | **中** |
 | Queue/steer | 有队列 + 可选 steer | ✅ Enter steer / queue 快捷 | ✅ queue/steer | ✅ `codex queue` | **中**（缺管理面） |
-| Cross-session messaging / teams | ◐ `/msg [--wake]`（append-only / 唤醒，owner 校验；无独立权限项） | ✅（PR/实验） | ✅（实验） | 部分 | **低优先**（生态能力） |
+| Cross-session messaging / teams | ◐ `/msg [--wake]`（append-only / 唤醒，owner 校验；opt-in `crossSessionMessages`） | ✅（PR/实验） | ✅（实验） | 部分 | **低优先**（生态能力） |
 | Worktree 隔离 | `/worktree` 命令 | ✅ 每 session/subagent | ✅ 每 session/subagent/`/batch` | ✅ `--worktree` | **中** |
 | Remote 多端 | ✅ serve/attach/pairing | ✅ server URL | ✅ remote control/cloud | ✅ `--remote` ws/unix | **中**（聚合面缺） |
 
@@ -293,7 +293,7 @@ interface SessionCheckpoint {
 
 1. **Queue / steer 管理面**：`/queue move <n> <m>` 与 `/queue manage` 交互面板已支持重排/编辑/删除；
    `Ctrl+X Enter` 已提供“插到队首”的优先级（不打断 turn）；Mod+Enter steer 与 Web 拖动/批量操作仍待补。
-2. **Cross-session messaging / agent teams（opt-in）**：v0 已提供 `/msg [--wake]` 与 `session.message.send`（append-only 默认、owner 校验）；独立 `session.message` 权限项、共享任务列表与 TUI/Web 消息面板仍待补。
+2. **Cross-session messaging / agent teams（opt-in）**：v0 已提供 `/msg [--wake]` 与 `session.message.send`（append-only 默认、owner 校验），并由工作区 `crossSessionMessages`（默认 off）开关控制；共享任务列表与 TUI/Web 消息面板仍待补。
 3. **Remote 聚合**：Agent Center 读取多个 gateway（本地 + attach）；只读优先，再开放 spawn/cancel；URL/配对复用。
 4. **Verbosity & 活动摘要**：low/medium/high；一次 run 的工具/thought 合并为可折叠活动行（参考 opencode v2.3），默认 low。
 5. **Artifacts**：会话产出发布为可交互页面（Web），TUI 提供链接/打开。

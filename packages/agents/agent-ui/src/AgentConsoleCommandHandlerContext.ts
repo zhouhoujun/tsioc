@@ -52,6 +52,7 @@ export interface CommandHandlerContext {
         readonly pendingQuestionQueue: Array<Record<string, any>>;
         readonly queuedPromptCount: number;
         readonly remoteCenters?: import('./AgentConsoleRemoteCenterConfig').AgentConsoleRemoteCenter[];
+        readonly crossSessionMessages?: boolean;
 
         // setters
         setInput(value: string, cursor?: number): void;
@@ -269,6 +270,8 @@ export function buildCommandHandlerState(state: AgentConsoleSessionState): Comma
         get pairAction() { return state.pairAction; },
         get consoleOptions() { return state.consoleOptions; },
         get commandHints() { return state.commandHints; },
+        get remoteCenters() { return state.remoteCenters; },
+        get crossSessionMessages() { return state.crossSessionMessages; },
         setInput: (v, c) => state.setInput(v, c),
         setNotice: (m) => state.setNotice(m),
         setTitle: (t) => state.setTitle(t),

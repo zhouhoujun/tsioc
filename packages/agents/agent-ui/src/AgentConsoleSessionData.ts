@@ -108,6 +108,8 @@ export class AgentConsoleSessionData {
     sessionSecurityLevels: Record<string, import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel> = {};
     /** Read-only remote agent centers configured in workspace settings. */
     remoteCenters: AgentConsoleRemoteCenter[] = [];
+    /** Opt-in: allow /msg delivery between sessions (agent teams, default off). */
+    crossSessionMessages = false;
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
     titleFields: AgentConsoleTitleField[] = [...defaultAgentConsoleTitle];

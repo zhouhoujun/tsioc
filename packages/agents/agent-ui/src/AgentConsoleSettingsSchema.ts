@@ -378,6 +378,12 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
         host => host.runPersonalityCommand(''), host => String(host.options?.ui?.personality || '-'), ['/personality']),
     actionRow('memories', 'agents', 'agent.menu.settings.fieldMemories', 'Project memories: {state}', 'agent.menu.settings.fieldMemoriesDescription', 'inject project memory into turns', 'workspace', 'next-turn',
         host => host.runMemoriesCommand(''), host => onOff(host, host.options?.ui?.memoryInjection !== false), ['/memories']),
+    toggleRow('crossSessionMessages', 'agents', 'agent.menu.settings.crossSessionMessagesLabel', 'Cross-session messages: {state}', 'agent.menu.settings.crossSessionMessagesDescription', 'allow /msg between sessions (agent teams)', 'workspace',
+        host => host.state.crossSessionMessages === true,
+        async (host, next: boolean) => {
+            host.state.crossSessionMessages = next;
+            await host.persistSettings({ crossSessionMessages: next });
+        }, { defaultValue: false }),
     actionRow('delegation', 'agents', 'agent.menu.settings.fieldDelegation', 'Delegation mode', 'agent.menu.settings.fieldDelegationDescription', 'how sub-agents may be delegated', 'session', 'next-turn',
         host => host.runInternalCommand('/delegation'), () => '', ['/delegation']),
 

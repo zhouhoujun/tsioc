@@ -281,6 +281,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         fieldMemoriesDescription: '在 turn 中注入项目记忆',
         fieldDelegation: '委派模式',
         fieldDelegationDescription: '子智能体的委派方式',
+        crossSessionMessagesLabel: '跨会话消息：{state}',
+        crossSessionMessagesDescription: '允许会话之间通过 /msg 传递消息（agent teams）',
         fieldMcp: 'MCP 服务',
         fieldMcpDescription: '查看 MCP 服务与已启用工具',
         fieldPlugins: '插件',

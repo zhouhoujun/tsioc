@@ -281,6 +281,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         fieldMemoriesDescription: 'inject project memory into turns',
         fieldDelegation: 'Delegation mode',
         fieldDelegationDescription: 'how sub-agents may be delegated',
+        crossSessionMessagesLabel: 'Cross-session messages: {state}',
+        crossSessionMessagesDescription: 'allow /msg between sessions (agent teams)',
         fieldMcp: 'MCP servers',
         fieldMcpDescription: 'list MCP servers and active tools',
         fieldPlugins: 'Plugins',

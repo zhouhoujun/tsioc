@@ -125,6 +125,7 @@ export const AGENT_UI_NOTICE_ZH_PART2: NestedMessages = {
   messageSent: '消息已投递到 {sessionId}。',
   messageSentWake: '消息已投递到 {sessionId}，并已启动该会话的 turn。',
   failedSendMessage: '发送消息失败：{error}',
+  crossSessionMessagesDisabled: '跨会话消息已关闭。请在 /settings → Agents 中开启。',
   messageDeliveryUnavailable: '跨会话消息需要会话服务。',
   importUsage: '用法：/import <导出的 json 文件路径>',
   importUnavailable: '导入需要具备文件访问能力的主机（TUI/attach）。',
