@@ -291,6 +291,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         fieldHooksDescription: 'registered lifecycle hooks',
         dataSessions: 'Sessions',
         dataSessionsDescription: 'switch, archive or resume sessions',
+        dataRemotes: 'Remote centers: {count}',
+        dataRemotesDescription: 'read-only session lists from other gateways',
         dataExport: 'Export transcript',
         dataExportDescription: 'write the session transcript to a file',
         dataDiagnostics: 'Diagnostics',

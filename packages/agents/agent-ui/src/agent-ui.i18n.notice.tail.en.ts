@@ -94,4 +94,21 @@ export const AGENT_UI_NOTICE_TAIL_EN: NestedMessages = {
   inputHistoryLoadFailed: 'Failed to load input history: {error}',
   inputHistorySaveFailed: 'Failed to save input history: {error}',
 
+  remoteCenterTitle: 'Remote agent centers',
+  remoteCenterUsage: 'Usage: /remotes [list|<name>] · /remotes add <name> <url> [token] · /remotes remove <name>',
+  remoteCenterEmpty: 'No remote agent centers configured.',
+  remoteCenterAdded: 'Added remote center: {name}',
+  remoteCenterRemoved: 'Removed remote center: {name}',
+  remoteCenterMissing: 'No remote center named {name}.',
+  remoteCenterExists: 'A remote center named {name} already exists.',
+  remoteCenterInvalid: 'Invalid remote center: a name and an http(s) URL are required.',
+  remoteCenterReachable: '{name} · {count} sessions',
+  remoteCenterUnreachableLabel: '{name} · unreachable',
+  remoteCenterUnreachable: 'Remote center {name} is unreachable: {error}',
+  remoteCenterPickerHint: 'enter open · read-only · esc close',
+  remoteCenterSessionsTitle: '{name} · {count} sessions',
+  remoteCenterSessionCount: '{name} · {count} sessions (read-only)',
+  remoteCenterNoSessions: 'No sessions on this gateway.',
+  remoteCenterSnapshotHint: 'read-only snapshot · esc close',
+
 };

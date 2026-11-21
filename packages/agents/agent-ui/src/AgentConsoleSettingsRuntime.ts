@@ -179,6 +179,9 @@ export async function restoreSettings(self: any): Promise<void> {
             self.state.securityLevel = persisted.securityLevel;
             self.state.workspaceSecurityLevel = persisted.securityLevel;
         }
+        if (Array.isArray(persisted.remotes)) {
+            self.state.remoteCenters = persisted.remotes;
+        }
         // restore task & plan filter state
         if (persisted.taskFilter) {
             self.state.selectedTaskFilter = persisted.taskFilter;

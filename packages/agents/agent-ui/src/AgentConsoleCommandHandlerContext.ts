@@ -51,6 +51,7 @@ export interface CommandHandlerContext {
         readonly commandHints: string[];
         readonly pendingQuestionQueue: Array<Record<string, any>>;
         readonly queuedPromptCount: number;
+        readonly remoteCenters?: import('./AgentConsoleRemoteCenterConfig').AgentConsoleRemoteCenter[];
 
         // setters
         setInput(value: string, cursor?: number): void;

@@ -94,4 +94,21 @@ export const AGENT_UI_NOTICE_TAIL_ZH: NestedMessages = {
   inputHistoryLoadFailed: '加载输入历史失败：{error}',
   inputHistorySaveFailed: '保存输入历史失败：{error}',
 
+  remoteCenterTitle: '远程 Agent 中心',
+  remoteCenterUsage: '用法：/remotes [list|<名称>] · /remotes add <名称> <url> [token] · /remotes remove <名称>',
+  remoteCenterEmpty: '尚未配置远程 Agent 中心。',
+  remoteCenterAdded: '已添加远程中心：{name}',
+  remoteCenterRemoved: '已删除远程中心：{name}',
+  remoteCenterMissing: '没有名为 {name} 的远程中心。',
+  remoteCenterExists: '远程中心 {name} 已存在。',
+  remoteCenterInvalid: '远程中心无效：名称与 http(s) URL 必填。',
+  remoteCenterReachable: '{name} · {count} 个会话',
+  remoteCenterUnreachableLabel: '{name} · 无法连接',
+  remoteCenterUnreachable: '远程中心 {name} 无法连接：{error}',
+  remoteCenterPickerHint: 'enter 打开 · 只读 · esc 关闭',
+  remoteCenterSessionsTitle: '{name} · {count} 个会话',
+  remoteCenterSessionCount: '{name} · {count} 个会话（只读）',
+  remoteCenterNoSessions: '该 gateway 上没有会话。',
+  remoteCenterSnapshotHint: '只读快照 · esc 关闭',
+
 };

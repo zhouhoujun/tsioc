@@ -291,6 +291,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         fieldHooksDescription: '已注册的生命周期钩子',
         dataSessions: '会话',
         dataSessionsDescription: '切换、归档或恢复会话',
+        dataRemotes: '远程中心：{count}',
+        dataRemotesDescription: '以只读方式查看其它 gateway 的会话列表',
         dataExport: '导出记录',
         dataExportDescription: '把会话记录写入文件',
         dataDiagnostics: '诊断',

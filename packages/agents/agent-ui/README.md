@@ -66,6 +66,11 @@ npm run test:coverage
 TUI 通知：`tui.json` 的 `attention.notifications`（或 `TSDI_AGENT_TUI_NOTIFICATIONS=1`）
 在审批、待回答问题、turn 完成时发送 OSC 9 桌面通知；`attentionSound` 同时响铃。
 通知由共享 `ReactiveEffect` 读取状态触发，不使用轮询或手写订阅。
+
+Remote centers：`/remotes` 以只读方式汇总工作区 `settings.json` 中 `remotes`
+（`{ name, url, token? }`）配置的其它 gateway 会话；`/remotes add <name> <url> [token]`
+添加、`/remotes remove <name>` 删除、`/remotes <name>` 直接查看该 gateway 的会话快照。
+token 只用于请求，不会出现在对话框或提示中。
 - `HttpAgentConsoleAppRpc` — HTTP JSON-RPC 客户端
 - `AgentConsoleRemoteEventBridge` — SSE 事件桥
 - `AgentConsoleEventBridge` — 事件桥抽象

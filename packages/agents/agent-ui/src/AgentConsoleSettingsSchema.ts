@@ -404,6 +404,8 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
     // Data & tooling
     actionRow('sessions', 'data', 'agent.menu.settings.dataSessions', 'Sessions', 'agent.menu.settings.dataSessionsDescription', 'switch, archive or resume sessions', 'workspace', 'none',
         host => host.runInternalCommand('/sessions'), () => '', ['/sessions']),
+    actionRow('remoteCenters', 'data', 'agent.menu.settings.dataRemotes', 'Remote centers: {count}', 'agent.menu.settings.dataRemotesDescription', 'read-only session lists from other gateways', 'workspace', 'none',
+        host => host.runInternalCommand('/remotes'), host => String(host.state.remoteCenters?.length || 0), ['/remotes']),
     actionRow('export', 'data', 'agent.menu.settings.dataExport', 'Export transcript', 'agent.menu.settings.dataExportDescription', 'write the session transcript to a file', 'workspace', 'none',
         host => host.runInternalCommand('/export'), () => '', ['/export']),
     actionRow('diagnostics', 'data', 'agent.menu.settings.dataDiagnostics', 'Diagnostics', 'agent.menu.settings.dataDiagnosticsDescription', 'environment, models and health checks', 'workspace', 'none',

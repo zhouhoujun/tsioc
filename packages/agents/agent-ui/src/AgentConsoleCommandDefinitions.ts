@@ -64,6 +64,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/threads', description: 'browse session threads: /threads [<id>]', group: 'session' },
     { name: '/inbox', description: 'review approvals, questions and failed work across sessions', group: 'session' },
     { name: '/work', description: 'open the delegated work tree: sessions and background tasks', group: 'session' },
+    { name: '/remotes', description: 'list sessions on remote gateways (read-only): /remotes [list|<name>] · add <name> <url> [token] · remove <name>', group: 'session', args: [{ name: 'action', type: 'enum', values: ['list', 'add', 'remove'] }, { name: 'arg', variadic: true }] },
     { name: '/threadplan', description: 'thread plan todos', group: 'session', hidden: true },
     { name: '/threadreview', description: 'thread coding task review', group: 'session', hidden: true },
     { name: '/projects', description: 'browse sessions by project: /projects [<id>]', group: 'session' },

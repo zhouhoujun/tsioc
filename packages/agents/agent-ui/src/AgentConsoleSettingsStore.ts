@@ -3,6 +3,7 @@ import { defaultAgentProviderRegistry } from '@tsdi/agent';
 import type { ApprovalRule } from '@tsdi/agent';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
+import { AgentConsoleRemoteCenter, sanitizeAgentConsoleRemoteCenters } from './AgentConsoleRemoteCenterConfig';
 
 export interface AgentConsoleSettingsData {
     language?: string;
@@ -44,6 +45,8 @@ export interface AgentConsoleSettingsData {
     modelProfile?: string;
     lastSessionId?: string;
     openSessionIds?: string[];
+    /** Read-only remote gateways shown by `/remotes`. */
+    remotes?: AgentConsoleRemoteCenter[];
 }
 
 export function applyPersistedPreferences(
@@ -218,7 +221,8 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         touchMode: typeof parsed?.touchMode === 'boolean' ? parsed.touchMode : undefined,
         modelProfile: typeof parsed?.modelProfile === 'string' && parsed.modelProfile.trim() ? parsed.modelProfile.trim() : undefined,
         lastSessionId: typeof parsed?.lastSessionId === 'string' && parsed.lastSessionId.trim() ? parsed.lastSessionId.trim() : undefined,
-        openSessionIds: sanitizeOpenSessionIds(parsed?.openSessionIds)
+        openSessionIds: sanitizeOpenSessionIds(parsed?.openSessionIds),
+        remotes: Array.isArray(parsed?.remotes) ? sanitizeAgentConsoleRemoteCenters(parsed.remotes) : undefined
     };
 }
 

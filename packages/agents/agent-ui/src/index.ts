@@ -19,6 +19,8 @@ export * from './AgentConsoleTimelineLifecycle';
 export * from './AgentConsoleTextWidth';
 export * from './AgentConsoleSuggestions';
 export * from './AgentConsoleFuzzy';
+export * from './AgentConsoleRemoteCenterConfig';
+export * from './AgentConsoleRemoteCenterCommands';
 export * from './AgentConsoleCommandRegistry';
 export * from './AgentConsoleCommandExecution';
 export * from './AgentConsoleCommandOutputHistory';

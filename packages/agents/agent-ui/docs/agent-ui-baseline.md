@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2323 passing**（2 组） |
+| `@tsdi/agent-ui` | **2328 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -171,6 +171,12 @@ rm -f run-one.tmp.ts
 - `/sessions` 分组（opencode 风格）：按 Today / Yesterday / Previous 7 days / Older 插入
   不可选中的标题行（方向键/Enter 自动跳过），过滤后仍按组展示；时间戳为秒时先归一化，
   缺失时间落入 Older。
+- Remote Agent Center（只读 v0）：工作区 `settings.json` 的 `remotes`
+  （`{ name, url, token? }`，最多 10 个、名称去重、仅 http(s)）由共享设置存储在
+  TUI/Web/attach 间同步；`/remotes` 并发探测各 gateway 的 `session.list`（5s 超时），
+  选择后展示会话标题/消息数/相对时间快照，不提供切换/创建/取消等写操作；
+  `/remotes add|remove` 维护配置，`/remotes <name>` 直接查看；token 仅用于请求，
+  不会出现在对话框或提示中（URL 内嵌凭据会被掩码）。
 - AMS P0 补充：`/agents default [name]` 读取/设置新会话默认代理档案，持久化 `defaultArchetype`
   并在 TUI/Web/attach 启动时恢复到 `policy.defaultArchetype`。
 - AMS P1.2 部分完成：`/permissions rules` 查看有序审批规则，`add <tool|category>` /

@@ -17,7 +17,7 @@ import { AgentConsoleSessionState } from '../src';
 
 const GROUP_COUNTS: Record<string, number> = {
     core: 24,
-    session: 31,
+    session: 32,
     display: 10,
     input: 11,
     review: 11,
@@ -37,9 +37,9 @@ const NEEDS_ARGS_COMMANDS = [
 @Suite('Agent console command registry')
 export class AgentConsoleCommandRegistryTest {
 
-    @Test('defines all 107 commands with defined groups, /help first')
+    @Test('defines all 108 commands with defined groups, /help first')
     registryCompleteness() {
-        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(107);
+        expect(AGENT_CONSOLE_COMMAND_DEFINITIONS.length).toEqual(108);
         expect(AGENT_CONSOLE_COMMAND_DEFINITIONS[0].name).toEqual('/help');
         AGENT_CONSOLE_COMMAND_DEFINITIONS.forEach(def => {
             expect(def.name.startsWith('/')).toEqual(true);

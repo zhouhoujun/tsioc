@@ -8,6 +8,7 @@ import type { AgentConsoleTitleField } from './AgentConsoleTitle';
 import type { AgentConsoleWorkspaceMentionResolver, AgentConsoleMentionCatalogItem } from './AgentConsoleWorkspaceMentions';
 import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
 import type { AgentConsoleSettingsSectionId } from './AgentConsoleSettingsSchema';
+import type { AgentConsoleRemoteCenter } from './AgentConsoleRemoteCenterConfig';
 import {
     AgentConsoleActivity,
     AgentConsoleApprovalRequest,
@@ -105,6 +106,8 @@ export class AgentConsoleSessionData {
      * the target session's entry; `/permissions level` clears the current one.
      */
     sessionSecurityLevels: Record<string, import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel> = {};
+    /** Read-only remote agent centers configured in workspace settings. */
+    remoteCenters: AgentConsoleRemoteCenter[] = [];
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
     titleFields: AgentConsoleTitleField[] = [...defaultAgentConsoleTitle];

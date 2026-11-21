@@ -36,6 +36,7 @@ import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
 import { handleDialogCommand } from './AgentConsoleDialogCommands';
 import { runWorkCommandView, workCommandHost } from './AgentConsoleWork';
 import { runInboxCommandView, inboxCommandHost } from './AgentConsoleInbox';
+import { remoteCenterHost, runRemotesCommand } from './AgentConsoleRemoteCenterCommands';
 import { runRewindCommandView, rewindCommandHost } from './AgentConsoleRewind';
 import { handleCompact, handleCompactions, handleDelegation, handleDiagnostics, handleHarness, handleQuality } from './AgentConsoleDiagnosticsCommands';
 // ── Command handler type ─────────────────────────────────────────────────────
@@ -49,7 +50,6 @@ export type CommandHandler = (
 function canonicalArgsOf(meta: { parsedArgs?: AgentConsoleParsedCommandArguments }, raw: string): string {
     return meta.parsedArgs ? meta.parsedArgs.resolved.join(' ') : raw;
 }
-
 // ── Handler functions ────────────────────────────────────────────────────────
 
 async function handleModel(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
@@ -131,6 +131,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/jobs': (ctx, args, meta) => ctx.openScheduledJobsDashboard(canonicalArgsOf(meta, args)),
     '/tasks': (ctx, args, meta) => ctx.openCodingTaskInspector(canonicalArgsOf(meta, args)),
     '/inbox': (ctx) => runInboxCommandView(inboxCommandHost(ctx)).then(() => true),
+    '/remotes': (ctx, args) => runRemotesCommand(remoteCenterHost(ctx), args).then(() => true),
     '/work': (ctx, args) => runWorkCommandView(workCommandHost(ctx), args).then(() => true),
     '/threadplan': handleThreadplan,
     '/threadreview': (ctx, _args) => guardDelegateNoArgs(ctx, '', { command: '/threadreview', matches: [] }, () => ctx.openThreadCodingTaskReviewSelector()),
