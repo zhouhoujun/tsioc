@@ -31,6 +31,8 @@ export type { AgentOptions } from './options';
 export { defaultAgentOptions, DEFAULT_RENDER_POLICY, DEFAULT_APPROVAL_REQUIRED_RULES } from './options';
 export { DefaultApprovalStrategy } from './tools/ApprovalStrategy';
 export type { ApprovalRule, ApprovalRuleObject, ApprovalRuleExplanation } from './tools/ApprovalStrategy';
+export { APPROVAL_CATEGORY_DEFINITIONS } from './tools/approval-categories';
+export type { ApprovalCategory } from './tools/approval-categories';
 export type { AgentPolicyConfig } from './options';
 export { defaultAgentProviderRegistry } from './model/provider-registry';
 export { asModelFailure, describeModelFailure } from './model/ModelRequestError';
