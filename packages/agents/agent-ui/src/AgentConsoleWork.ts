@@ -205,6 +205,7 @@ function showTaskReport(host: AgentConsoleWorkHost, task: Record<string, any>): 
  */
 export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''): Promise<void> {
     const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+    const includeRemotes = tokens[0]?.toLowerCase() === 'all';
     if (tokens[0]?.toLowerCase() === 'remote') {
         await runRemoteWorkView(host);
         return;
@@ -268,23 +269,29 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
             : formatAgentUiNotice(host.translator, 'workSpawnFailed', { error: result?.error || '' }));
         return;
     }
-    if (!host.sessionService) {
+    if (!host.sessionService && !includeRemotes) {
         host.notify(formatAgentUiNotice(host.translator, 'workUnavailable'));
         return;
     }
     const sessionId = host.state.sessionId;
-    const [tree, tasks] = await Promise.all([
-        host.sessionService.getDelegationTree(sessionId).catch(() => null),
-        host.sessionService.listAllBackgroundTasks({ delegationRoot: sessionId, sessionId }).catch(() => [])
-    ]);
-    const rows = buildWorkRows({
-        currentSessionId: sessionId,
-        tree: tree as Record<string, any> | null,
-        tasks: (tasks || []) as any,
-        sessions: host.state.sessions as any
-    });
+    let tasks: any[] = [];
+    let rows: AgentConsoleWorkRow[] = [];
+    if (host.sessionService) {
+        const [tree, loadedTasks] = await Promise.all([
+            host.sessionService.getDelegationTree(sessionId).catch(() => null),
+            host.sessionService.listAllBackgroundTasks({ delegationRoot: sessionId, sessionId }).catch(() => [])
+        ]);
+        tasks = loadedTasks || [];
+        rows = buildWorkRows({
+            currentSessionId: sessionId,
+            tree: tree as Record<string, any> | null,
+            tasks: tasks as any,
+            sessions: host.state.sessions as any
+        });
+    }
     const remoteCount = Array.isArray(host.state.remoteCenters) ? host.state.remoteCenters.length : 0;
-    if (!rows.length && !remoteCount) {
+    const remoteView = includeRemotes && host.select ? await buildRemoteWorkView(host) : undefined;
+    if (!rows.length && !remoteCount && !remoteView) {
         host.notify(formatAgentUiNotice(host.translator, 'workEmpty'));
         return;
     }
@@ -294,7 +301,10 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
         description: row.status ? workStatusLabel(row.status, host.translator) : '',
         detail: row.detail
     }));
-    if (remoteCount) {
+    if (remoteView) {
+        // `/work all`: one tree with local delegation rows first, then gateways.
+        options.push(...remoteView.options);
+    } else if (remoteCount) {
         // Agent Center aggregation lite: one entry into the read-only remote
         // session lists instead of probing every gateway from this picker.
         options.push({
@@ -311,6 +321,13 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
     if (!picked) return;
     if (picked === 'remotes') {
         await host.openRemoteCenters?.();
+        return;
+    }
+    if (remoteView && (picked.startsWith('remote:') || picked.startsWith('remote-session:'))) {
+        const remoteEntry = remoteView.sessionsByValue.get(picked);
+        if (remoteEntry) {
+            showRemoteWorkSession(host, remoteEntry);
+        }
         return;
     }
     const row = rows.find(item => item.value === picked);
@@ -364,16 +381,16 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
     await host.openSession(row.sessionId);
 }
 
-/** `/work remote` — read-only tree across configured gateways. */
-async function runRemoteWorkView(host: AgentConsoleWorkHost): Promise<void> {
+interface RemoteWorkView {
+    options: AgentConsoleSelectOption[];
+    sessionsByValue: Map<string, { probe: AgentConsoleRemoteProbe; session: any }>;
+}
+
+/** Probe every configured gateway and flatten it into one read-only tree. */
+async function buildRemoteWorkView(host: AgentConsoleWorkHost): Promise<RemoteWorkView | undefined> {
     const remotes = Array.isArray(host.remoteCenters) ? host.remoteCenters : [];
-    if (!remotes.length) {
-        host.notify(formatAgentUiNotice(host.translator, 'remoteCenterEmpty'));
-        return;
-    }
-    if (!host.select || !host.probeRemoteCenter) {
-        host.notify(formatAgentUiNotice(host.translator, 'workUnavailable'));
-        return;
+    if (!remotes.length || !host.probeRemoteCenter) {
+        return undefined;
     }
     const probes = await Promise.all(remotes.map(remote => host.probeRemoteCenter!(remote).catch(error => ({
         remote,
@@ -411,19 +428,10 @@ async function runRemoteWorkView(host: AgentConsoleWorkHost): Promise<void> {
             });
         }
     }
-    const picked = await host.select(
-        formatAgentUiNotice(host.translator, 'workRemoteTitle'),
-        options,
-        0,
-        formatAgentUiNotice(host.translator, 'workHint')
-    );
-    if (!picked || picked.startsWith('remote:')) {
-        return;
-    }
-    const entry = sessionsByValue.get(picked);
-    if (!entry) {
-        return;
-    }
+    return { options, sessionsByValue };
+}
+
+function showRemoteWorkSession(host: AgentConsoleWorkHost, entry: { probe: AgentConsoleRemoteProbe; session: any }): void {
     const session = entry.session;
     const lines = [
         `URL: ${maskAgentConsoleRemoteUrl(entry.probe.remote.url)}`,
@@ -438,6 +446,37 @@ async function runRemoteWorkView(host: AgentConsoleWorkHost): Promise<void> {
         lines,
         Math.min(24, lines.length)
     );
+}
+
+/** `/work remote` — read-only tree across configured gateways. */
+async function runRemoteWorkView(host: AgentConsoleWorkHost): Promise<void> {
+    const remotes = Array.isArray(host.remoteCenters) ? host.remoteCenters : [];
+    if (!remotes.length) {
+        host.notify(formatAgentUiNotice(host.translator, 'remoteCenterEmpty'));
+        return;
+    }
+    if (!host.select) {
+        host.notify(formatAgentUiNotice(host.translator, 'workUnavailable'));
+        return;
+    }
+    const view = await buildRemoteWorkView(host);
+    if (!view) {
+        host.notify(formatAgentUiNotice(host.translator, 'workUnavailable'));
+        return;
+    }
+    const picked = await host.select(
+        formatAgentUiNotice(host.translator, 'workRemoteTitle'),
+        view.options,
+        0,
+        formatAgentUiNotice(host.translator, 'workHint')
+    );
+    if (!picked || picked.startsWith('remote:')) {
+        return;
+    }
+    const entry = view.sessionsByValue.get(picked);
+    if (entry) {
+        showRemoteWorkSession(host, entry);
+    }
 }
 
 /** Command-context adapter for `/work`. */

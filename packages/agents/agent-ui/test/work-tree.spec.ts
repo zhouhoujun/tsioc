@@ -141,6 +141,44 @@ export class WorkTreeTest {
         expect(text).toContain('read-only');
     }
 
+    @Test('/work all merges local delegation and remote gateways in one tree')
+    async allTree() {
+        const state = createState();
+        state.remoteCenters = [{ name: 'laptop', url: 'http://laptop:3200' }];
+        const overlays: Array<{ title: string; lines: string[] }> = [];
+        const opened: string[] = [];
+        let options: any[] = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: { getDelegationTree: async () => TREE, listAllBackgroundTasks: async () => TASKS },
+            notify: () => undefined,
+            openSession: async (sessionId?: string) => { opened.push(sessionId || ''); },
+            remoteCenters: [{ name: 'laptop', url: 'http://laptop:3200' }],
+            probeRemoteCenter: async (remote: any) => ({
+                remote, ok: true, sessions: [{ id: 'r1', title: 'Remote task', messageCount: 1, updatedAt: Date.now() }]
+            }),
+            select: async (_title: string, opts: any[]) => {
+                options = opts;
+                return 'remote-session:laptop:r1';
+            },
+            openTextOverlay: (title: string, lines: string[]) => { overlays.push({ title, lines }); }
+        };
+        await runWorkCommandView(host, 'all');
+        const values = options.map(option => option.value);
+        expect(values).toContain('session:root');
+        expect(values).toContain('remote-session:laptop:r1');
+        expect(values.indexOf('session:root')).toBeLessThan(values.indexOf('remote:laptop'));
+        expect(overlays.length).toEqual(1);
+
+        host.select = async (_title: string, opts: any[]) => {
+            options = opts;
+            return 'session:child-a';
+        };
+        await runWorkCommandView(host, 'all');
+        expect(opened).toEqual(['child-a']);
+    }
+
     @Test('task rows offer open, cancel and dismiss actions')
     async taskActions() {
         const state = createState();
