@@ -114,6 +114,54 @@ export class RemoteCentersTest {
         expect(notices[notices.length - 1]).toContain('No remote center');
     }
 
+    @Test('cancels a remote turn only after confirmation')
+    async cancelsRemoteTurn() {
+        const calls: Array<{ method: string; params: any }> = [];
+        const factory = () => ({
+            request: async (method: string, params: any) => {
+                calls.push({ method, params });
+                if (method === 'session.list') {
+                    return [{ id: 'chat-running', title: 'Running task' }];
+                }
+                if (method === 'run.cancel') {
+                    return { sessionId: params.sessionId, cancelled: true };
+                }
+                throw new Error(`unexpected ${method}`);
+            }
+        });
+        const { host, notices, picks } = createHost([{ name: 'laptop', url: 'http://laptop:3200' }]);
+        picks.push('cancel');
+        await runRemotesCommand(host, 'cancel laptop chat-r', factory);
+        expect(calls.filter(call => call.method === 'run.cancel')).toEqual([
+            { method: 'run.cancel', params: { sessionId: 'chat-running' } }
+        ]);
+        expect(notices[notices.length - 1]).toContain('Cancelled');
+
+        const keep = createHost([{ name: 'laptop', url: 'http://laptop:3200' }]);
+        keep.picks.push('keep');
+        await runRemotesCommand(keep.host, 'cancel laptop chat-running', factory);
+        expect(calls.filter(call => call.method === 'run.cancel').length).toEqual(1);
+    }
+
+    @Test('cancel reports missing sessions and unreachable gateways')
+    async cancelFailures() {
+        const factory = () => ({
+            request: async (method: string) => {
+                if (method === 'session.list') return [{ id: 'chat-a' }];
+                throw new Error('connect ECONNREFUSED');
+            }
+        });
+        const { host, notices } = createHost([{ name: 'laptop', url: 'http://laptop:3200' }]);
+        await runRemotesCommand(host, 'cancel laptop nope', factory);
+        expect(notices[notices.length - 1]).toContain('No session matches');
+
+        const offline = createHost([{ name: 'offline', url: 'http://offline:3200' }]);
+        await runRemotesCommand(offline.host, 'cancel offline chat-a', () => ({
+            request: async () => { throw new Error('connect ECONNREFUSED'); }
+        }));
+        expect(offline.notices[offline.notices.length - 1]).toContain('unreachable');
+    }
+
     @Test('a named center bypasses the picker and never prints its token')
     async namedCenter() {
         const { host, overlays } = createHost([{ name: 'desk', url: 'http://desk:3200', token: 'secret-token' }]);

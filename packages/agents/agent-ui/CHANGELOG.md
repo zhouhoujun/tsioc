@@ -20,6 +20,7 @@
 - `/msg` rejects sending a cross-session message to the current session.
 - `/work remote` merges configured gateways into one read-only `gateway → sessions` tree with session snapshots.
 - `/work all` merges local delegation rows with remote gateway rows in one tree (local first).
+- `/remotes cancel <name> <session>` cancels a remote running turn after confirmation (`run.cancel`).
 - Added `/permissions session [<level>]` (and a matching settings row) for a per-tab security level override; switching tabs re-applies each tab's override or the workspace default without persisting it.
 - Added `AGENT_UI_TEST_MEMORY_BUDGET_MB` so a test shard that exceeds its peak-RSS budget fails the run instead of silently swapping.
 - Added `/queue manage` interactive reorder/edit/remove panel and `/queue move <n> <m>`.

@@ -71,6 +71,20 @@ function configuredCenters(host: AgentConsoleRemoteCenterHost): AgentConsoleRemo
     return sanitizeAgentConsoleRemoteCenters(host.state.remoteCenters);
 }
 
+/** Full id or unique id prefix inside one remote session list. */
+export function resolveRemoteSessionTarget(sessions: any[], token: string): string | undefined {
+    const needle = String(token || '').trim().toLowerCase();
+    if (!needle) {
+        return undefined;
+    }
+    const exact = sessions.find(session => String(session?.id || '').toLowerCase() === needle);
+    if (exact) {
+        return String(exact.id);
+    }
+    const prefixed = sessions.filter(session => String(session?.id || '').toLowerCase().startsWith(needle));
+    return prefixed.length === 1 ? String(prefixed[0].id) : undefined;
+}
+
 async function saveCenters(host: AgentConsoleRemoteCenterHost, centers: AgentConsoleRemoteCenter[]): Promise<void> {
     const next = sanitizeAgentConsoleRemoteCenters(centers);
     host.state.remoteCenters = next;
@@ -212,6 +226,63 @@ export async function runRemotesCommand(
         }
         await saveCenters(host, next);
         host.notify(formatAgentUiNotice(host.translator, 'remoteCenterRemoved', { name }));
+        return;
+    }
+
+    if (verb === 'cancel') {
+        const name = String(tokens[1] || '').trim();
+        const token = String(tokens[2] || '').trim();
+        const center = centers.find(item => item.name.toLowerCase() === name.toLowerCase());
+        if (!center || !token) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteCancelUsage'));
+            return;
+        }
+        const probe = await probeAgentConsoleRemoteCenter(center, factory);
+        if (!probe.ok) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteCenterUnreachable', {
+                name: center.name,
+                error: probe.error || 'unreachable'
+            }));
+            return;
+        }
+        const target = resolveRemoteSessionTarget(probe.sessions, token);
+        if (!target) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteSessionMissing', {
+                session: token,
+                name: center.name
+            }));
+            return;
+        }
+        if (host.select) {
+            const picked = await host.select(
+                formatAgentUiNotice(host.translator, 'remoteCancelTitle'),
+                [
+                    {
+                        label: formatAgentUiNotice(host.translator, 'remoteCancelYes'),
+                        value: 'cancel',
+                        description: `${center.name} · ${target}`
+                    },
+                    { label: formatAgentUiNotice(host.translator, 'remoteCancelNo'), value: 'keep' }
+                ],
+                0,
+                formatAgentUiNotice(host.translator, 'remoteCancelHint')
+            );
+            if (picked !== 'cancel') {
+                return;
+            }
+        }
+        try {
+            const result = await factory(center).request('run.cancel', { sessionId: target });
+            host.notify(formatAgentUiNotice(
+                host.translator,
+                result?.cancelled === true ? 'remoteTurnCancelled' : 'remoteTurnNotCancelled',
+                { name: center.name, sessionId: target }
+            ));
+        } catch (error) {
+            host.notify(formatAgentUiNotice(host.translator, 'failedRemoteCancel', {
+                error: errorText(error)
+            }));
+        }
         return;
     }
 

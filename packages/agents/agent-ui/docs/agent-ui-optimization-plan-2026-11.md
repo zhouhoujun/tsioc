@@ -312,7 +312,7 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 
 仍待完成：
 
-1. 远程 gateway 的 spawn/cancel（需要能力协商与授权面）。
+1. 远程 gateway 的 spawn（cancel 已通过 `/remotes cancel` 落地；spawn 仍需能力协商与授权面）。
 2. Web teams 专页（跨会话消息的浏览器视图）。
 3. P2 dialog overlay 隔离（在现有“禁止脏节点追踪跳过面板”约束下需要新的安全方案）。
 4. P0 owner-view token（任意顺序/懒加载分片硬化）。
