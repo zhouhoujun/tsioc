@@ -66,7 +66,7 @@
 | Inbox / needs-input | ❌（approval/question 仅当前屏） | 部分（权限/flags） | ✅ agent view 标“需要你” | ✅ approvals 队列 | **高** |
 | Permissions 规则化 | 仅 level + 会话内 auto | ✅ ordered rules + durable allow + per-session mode | ✅ modes + 分层 settings | ✅ approval policy + sandbox + auto-review | **高** |
 | Checkpoints/rewind | 仅 coding task | ✅（undo/redo；opencode） | ✅ Esc Esc rewind | 部分（rollout fork/resume） | **中高** |
-| Session 管理 | ✅ tabs/new/resume/fork/archive/delete/rename/export | ✅ archive/delete/export/import/fork、tabs、recent | ✅ projects/threads/remote | ✅ resume/fork/archive/delete/remote | **中**（我们已有，缺总览） |
+| Session 管理 | ✅ tabs/new/resume/fork/archive/delete/rename/export/import | ✅ archive/delete/export/import/fork、tabs、recent | ✅ projects/threads/remote | ✅ resume/fork/archive/delete/remote | **中**（我们已有，缺总览） |
 | Transcript verbosity | 视窗折叠长输出 | ✅ low/medium/high + 活动行 | ✅ | ✅ | **中** |
 | Queue/steer | 有队列 + 可选 steer | ✅ Enter steer / queue 快捷 | ✅ queue/steer | ✅ `codex queue` | **中**（缺管理面） |
 | Cross-session messaging / teams | ❌ | ✅（PR/实验） | ✅（实验） | 部分 | **低优先**（生态能力） |

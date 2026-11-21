@@ -72,8 +72,10 @@ Remote centers：`/remotes` 以只读方式汇总工作区 `settings.json` 中 `
 添加、`/remotes remove <name>` 删除、`/remotes <name>` 直接查看该 gateway 的会话快照。
 token 只用于请求，不会出现在对话框或提示中。
 
-导出：`/export [json|jsonl|html] [sessionId] [path]`；`html` 生成独立只读页面
-（全部内容转义、无脚本、跟随系统深浅色），默认写入 `.tsdi-agent/exports/`。
+导出/导入：`/export [json|jsonl|html] [sessionId] [path]`，`html` 生成独立只读页面
+（全部内容转义、无脚本、跟随系统深浅色），默认写入 `.tsdi-agent/exports/`；
+`/import <path>` 读取导出文件（JSON 或 JSONL）并在**新会话**中重建 transcript，
+消息 id 由 gateway 重新生成（不会覆盖现有会话）。
 - `HttpAgentConsoleAppRpc` — HTTP JSON-RPC 客户端
 - `AgentConsoleRemoteEventBridge` — SSE 事件桥
 - `AgentConsoleEventBridge` — 事件桥抽象
@@ -109,7 +111,7 @@ mountAgentWebConsole(document.getElementById('app')!, {
 
 Core: `/help` `/btw` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` (settings center; `/settings menu` for the classic tabs) `/compact` `/highlights` (aliases `/whatsnew`)
 Agents: `/agents` / `/archetype` switches the session profile; `/agents default [name]` reads or sets the default profile for new sessions
-Session: `/resume` `/archive` `/delete` `/fork` `/side` `/share` `/unshare` `/sections` `/threads`
+Session: `/resume` `/archive` `/delete` `/fork` `/side` `/share` `/unshare` `/import` `/sections` `/threads`
 Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
 Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors/final answer
 Queue: `/queue [list|manage|clear|remove <n>|edit <n>|move <n> <m>]` while a turn is running (`manage` opens an edit/move/remove panel)

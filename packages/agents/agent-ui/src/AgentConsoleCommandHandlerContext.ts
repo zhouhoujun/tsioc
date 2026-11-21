@@ -132,6 +132,7 @@ export interface CommandHandlerContext {
     runUndoCommand(): Promise<void>;
     runRedoCommand(): Promise<void>;
     runExportCommand(args: string): Promise<boolean>;
+    runImportCommand(args: string): Promise<boolean>;
     runAttachCommand(args: string): Promise<boolean>;
     runSkillsCommand(args: string): Promise<boolean>;
     runMcpCommand(args: string): Promise<boolean>;

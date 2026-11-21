@@ -23,7 +23,10 @@ export interface ExportHandlerContext {
     };
     sessionService: {
         exportSession(sessionId: string, options: { format: AgentSessionExportFormat }): Promise<AgentSessionExportResult>;
+        importSession?(messages: Array<Record<string, any>>, options?: { title?: string; summary?: string }): Promise<{ sessionId: string; messageCount: number }>;
     };
+    refreshSessions?(): Promise<void>;
+    openSession?(sessionId?: string, options?: { background?: boolean }): Promise<void>;
     app: {
         get(token: any, notFoundValue?: any): any;
     };

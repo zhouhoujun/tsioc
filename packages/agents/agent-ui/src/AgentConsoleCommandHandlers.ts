@@ -45,7 +45,6 @@ export type CommandHandler = (
     args: string,
     resolved: { command: string; matches: string[]; parsedArgs?: AgentConsoleParsedCommandArguments }
 ) => Promise<boolean>;
-
 function canonicalArgsOf(meta: { parsedArgs?: AgentConsoleParsedCommandArguments }, raw: string): string {
     return meta.parsedArgs ? meta.parsedArgs.resolved.join(' ') : raw;
 }
@@ -120,6 +119,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/undo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/undo', matches: [] }, () => ctx.runUndoCommand().then(() => true)),
     '/redo': (ctx, args) => guardDelegateNoArgs(ctx, args, { command: '/redo', matches: [] }, () => ctx.runRedoCommand().then(() => true)),
     '/export': (ctx, args, meta) => ctx.runExportCommand(canonicalArgsOf(meta, args)),
+    '/import': (ctx, args, meta) => ctx.runImportCommand(canonicalArgsOf(meta, args)),
     '/attach': (ctx, args, meta) => ctx.runAttachCommand(canonicalArgsOf(meta, args)),
     '/tools': (ctx, args, meta) => handleTools(ctx, canonicalArgsOf(meta, args), meta),
     '/skills': (ctx, args, meta) => ctx.runSkillsCommand(canonicalArgsOf(meta, args)),

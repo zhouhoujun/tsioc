@@ -3,6 +3,64 @@ import { AgentConsoleSessionDiagnosticsRpc } from './AgentConsoleSessionDiagnost
 
 /** Session mutation, snapshot, background-task and voice RPC facade. */
 export abstract class AgentConsoleSessionOperationsRpc extends AgentConsoleSessionDiagnosticsRpc {
+    /**
+     * Import an exported transcript into a brand-new session. The gateway
+     * regenerates message ids/sequences; the local fallback appends through the
+     * same `appendRaw` primitive so both paths behave identically.
+     */
+    async importSession(
+        messages: Array<Record<string, any>>,
+        options: { title?: string; summary?: string } = {},
+        context?: any
+    ): Promise<{ sessionId: string; messageCount: number }> {
+        const payload = Array.isArray(messages) ? messages : [];
+        if (!payload.length) {
+            throw new Error(formatAgentUiNotice(undefined, 'importSessionEmpty'));
+        }
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.import', {
+                messages: payload,
+                ...(options.title ? { title: options.title } : {}),
+                ...(options.summary ? { summary: options.summary } : {})
+            }, context);
+            return {
+                sessionId: String(result?.sessionId || ''),
+                messageCount: Number(result?.messageCount) || 0
+            };
+        }
+        if (!this.sessionStore) {
+            throw new Error(formatAgentUiNotice(undefined, 'importSessionUnavailable'));
+        }
+        const sessionId = `chat${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+        let imported = 0;
+        for (const raw of payload) {
+            const role = String(raw?.role || '').toLowerCase();
+            if (!['user', 'assistant', 'system', 'tool'].includes(role)) {
+                continue;
+            }
+            const content = String(raw?.content || '');
+            if (!content && !Array.isArray(raw?.parts)) {
+                continue;
+            }
+            await this.sessionStore.appendRaw(sessionId, {
+                id: `import_${Date.now().toString(36)}_${imported}`,
+                role: role as any,
+                content,
+                createdAt: Number(raw?.createdAt) || Date.now(),
+                ...(Array.isArray(raw?.parts) ? { parts: raw.parts } : {}),
+                ...(raw?.metadata && typeof raw.metadata === 'object' ? { metadata: raw.metadata } : {})
+            } as any);
+            imported += 1;
+        }
+        if (options.title) {
+            await this.sessionStore.setTitle(sessionId, options.title);
+        }
+        if (options.summary) {
+            await this.sessionStore.setSummary(sessionId, options.summary);
+        }
+        return { sessionId, messageCount: imported };
+    }
+
     async deleteSession(sessionId: string, context?: any): Promise<void> {
         if (!sessionId) {
             return;

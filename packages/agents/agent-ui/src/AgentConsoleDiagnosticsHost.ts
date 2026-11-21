@@ -22,6 +22,7 @@ import {
     openHarnessAudit,
     openHarnessProfile
 } from './AgentConsoleDiagnosticsHandlers';
+import { runImportCommand as runImportCommandFn } from './AgentConsoleSessionImport';
 import {
     runExportCommand as runExportCommandFn,
     runAttachCommand as runAttachCommandFn
@@ -82,6 +83,10 @@ export abstract class AgentConsoleDiagnosticsHost extends AgentConsoleProjectHos
 
     protected async runExportCommand(args: string): Promise<boolean> {
         return runExportCommandFn(this.getExportHandlerContext(), args);
+    }
+
+    protected async runImportCommand(args: string): Promise<boolean> {
+        return runImportCommandFn(this.getExportHandlerContext(), args);
     }
 
     protected resolveFileAdapter(): FileAdapter | null {

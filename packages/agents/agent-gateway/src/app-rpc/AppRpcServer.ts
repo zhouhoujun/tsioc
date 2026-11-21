@@ -20,6 +20,7 @@ import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
+import { importSessionFromRpc } from './session-import';
 import { answerSideQuestion } from './side-question';
 import { redoSessionTurn, undoSessionTurn } from './turn-undo';
 import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
@@ -29,7 +30,6 @@ import { ApprovalRequestedChunkFields, buildApprovalRequestedChunk } from './app
 import { SessionAggregationDeps, getTodoPlan, getTodoPlans, listCodingTasks } from './session-aggregation';
 import { applyConsoleUiSettings, readConsoleStore, readConsoleUiSettings, writeConsoleStore } from './console-ui-settings';
 import { resolveAgentHooksTrustState } from '@tsdi/agent';
-
 @Injectable()
 export class AppRpcServer {
     protected static readonly REVIEW_ANNOTATIONS_CACHE_KEY = 'agent-ui.review.annotations-cache';
@@ -209,6 +209,7 @@ export class AppRpcServer {
                 return this.deleteSession(requireSessionId(params), context);
             case 'session.export':
                 return this.exportSession(params, context);
+            case 'session.import': return importSessionFromRpc({ params, context, sessions: this.sessions, uuid: this.uuid, authorize: (id: string) => this.ensureSessionAccess(id, context, { createIfMissing: true }), createOwner: (id: string, principalId: string) => this.owners.create(id, principalId), track: (id: string) => this.sessionHandler.track(id), setWorkspace: (id: string) => this.setSessionWorkspace(id) });
             case 'session.plan_mode.set':
                 return this.setSessionPlanMode(params, context);
             case 'session.plan_mode.get':
@@ -1050,7 +1051,6 @@ export class AppRpcServer {
             toolCalls
         };
     }
-
     private async setSessionPlanMode(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);

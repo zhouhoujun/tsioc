@@ -121,9 +121,9 @@ rm -f run-one.tmp.ts
 | 包 | 结果 |
 | --- | --- |
 | `@tsdi/agent` | 1102 passing |
-| `@tsdi/agent-gateway` | 402 passing |
+| `@tsdi/agent-gateway` | 404 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2338 passing**（2 组） |
+| `@tsdi/agent-ui` | **2341 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -181,6 +181,10 @@ rm -f run-one.tmp.ts
   选择后展示会话标题/消息数/相对时间快照，不提供切换/创建/取消等写操作；
   `/remotes add|remove` 维护配置，`/remotes <name>` 直接查看；token 仅用于请求，
   不会出现在对话框或提示中（URL 内嵌凭据会被掩码）。
+- 会话导入：`/import <path>` 读取 `/export json|jsonl` 文件并在新会话中重建 transcript；
+  gateway `session.import` 重新生成 message id/sequence（不覆盖现有会话），限制 2000 条消息、
+  单条 200KB，仅接受 user/assistant/system/tool；本地（无 gateway）走 `appendRaw` 同一路径。
+  文件不可读、无消息、无文件访问能力时分别给出可诊断提示。
 - 会话删除：`/delete [sessionId] [confirm]` 永久删除会话（transcript + 行数据）；默认弹出
   确认对话框，取消不执行；删除当前会话后自动切到下一个可用会话，运行中的当前 turn 会先拒绝。
   失败（如数据库锁定）以错误提示返回，不伪装成功。

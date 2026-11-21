@@ -46,6 +46,7 @@ export function buildCommandContext(self: any, abortSignal?: AbortSignal): Comma
             runUndoCommand: () => self.runUndoCommand(),
             runRedoCommand: () => self.runRedoCommand(),
             runExportCommand: (a) => self.runExportCommand(a),
+            runImportCommand: (a) => self.runImportCommand(a),
             runAttachCommand: (a) => self.runAttachCommand(a),
             runSkillsCommand: (a) => self.runSkillsCommand(a),
             runMcpCommand: (a) => self.runMcpCommand(a),
