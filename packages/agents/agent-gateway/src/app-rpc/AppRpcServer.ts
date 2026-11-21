@@ -22,6 +22,7 @@ import { buildExportFileName, collectExportToolCalls, resolveExportContentType, 
 import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
 import { importSessionFromRpc } from './session-import';
 import { sendSessionMessageFromRpc } from './session-message';
+import { listCrossSessionMessages } from './session-message-list';
 import { answerSideQuestion } from './side-question';
 import { redoSessionTurn, undoSessionTurn } from './turn-undo';
 import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
@@ -209,6 +210,7 @@ export class AppRpcServer {
                 return this.deleteSession(requireSessionId(params), context);
             case 'session.export':
                 return this.exportSession(params, context);
+            case 'session.message.list': return listCrossSessionMessages({ sessions: this.sessions, listOwned: (ids: string[], principalId?: string) => this.owners.listOwned(ids, principalId), principalId: context.principalId, limit: params?.limit });
             case 'session.message.send': return sendSessionMessageFromRpc({ params, context, runtime: this.runtime, sessions: this.sessions, uuid: this.uuid, authorize: (id: string) => this.ensureSessionAccess(id, context), track: (id: string) => this.sessionHandler.track(id), setWorkspace: (id: string) => this.setSessionWorkspace(id) });
             case 'session.import': return importSessionFromRpc({ params, context, sessions: this.sessions, uuid: this.uuid, authorize: (id: string) => this.ensureSessionAccess(id, context, { createIfMissing: true }), createOwner: (id: string, principalId: string) => this.owners.create(id, principalId), track: (id: string) => this.sessionHandler.track(id), setWorkspace: (id: string) => this.setSessionWorkspace(id) });
             case 'session.plan_mode.set':
@@ -1015,7 +1017,6 @@ export class AppRpcServer {
         await this.ensureSessionAccess(sessionId, context);
         return this.runtime.unrevertGitStepSnapshot(sessionId);
     }
-
     private async exportSession(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = requireSessionId(params);
         await this.ensureSessionAccess(sessionId, context);
@@ -3112,7 +3113,6 @@ export class AppRpcServer {
         const workspace = input?.action === 'list' ? this.resolveWorkspace() : undefined;
         return this.tools.invoke('coding_task', input, sessionId, context.principalId, workspace);
     }
-
     private async ensureSessionAccess(
         sessionId: string,
         context: AppRpcRequestContext,

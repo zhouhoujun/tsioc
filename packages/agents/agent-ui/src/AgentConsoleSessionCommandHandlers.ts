@@ -142,6 +142,28 @@ export function resolveCrossSessionTarget(sessions: Array<{ id: string; archived
     return prefixed.length === 1 ? prefixed[0].id : undefined;
 }
 
+async function openCrossSessionMessages(ctx: CommandHandlerContext): Promise<void> {
+    const result = await ctx.sessionService?.listCrossSessionMessages?.(80).catch(() => undefined);
+    const messages = result?.messages || [];
+    if (!messages.length) {
+        ctx.notify(formatAgentUiNotice(ctx.translator, 'crossSessionMessagesEmpty'));
+        return;
+    }
+    const lines: string[] = [];
+    for (const message of messages.slice(0, 40)) {
+        const from = message.fromSessionId || '?';
+        const content = String(message.content || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+        lines.push(`↩ ${from} → ${message.sessionId}${formatSessionAge(message.createdAt)}`);
+        lines.push(`   ${content}`);
+    }
+    lines.push(formatAgentUiNotice(ctx.translator, 'crossSessionMessagesCount', { count: messages.length }));
+    ctx.state.openTextOverlay(
+        formatAgentUiNotice(ctx.translator, 'crossSessionMessagesTitle'),
+        lines,
+        Math.min(24, lines.length)
+    );
+}
+
 /**
  * `/msg [--wake] <session> <text>` — deliver a message to another agent's
  * session. Default is append-only (it will see it on its next run);
@@ -149,6 +171,10 @@ export function resolveCrossSessionTarget(sessions: Array<{ id: string; archived
  */
 export async function handleMessage(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
     const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+    if (String(tokens[0] || '').toLowerCase() === 'list') {
+        await openCrossSessionMessages(ctx);
+        return true;
+    }
     const wake = tokens[0] === '--wake' || tokens[0] === '-w';
     if (wake) {
         tokens.shift();

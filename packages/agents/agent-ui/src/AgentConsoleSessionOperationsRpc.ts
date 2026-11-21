@@ -62,6 +62,49 @@ export abstract class AgentConsoleSessionOperationsRpc extends AgentConsoleSessi
     }
 
     /**
+     * Recent cross-session messages across this principal's sessions
+     * (read-only panel). The gateway bounds the scanned session count.
+     */
+    async listCrossSessionMessages(limit = 50, context?: any): Promise<{
+        messages: Array<{ messageId: string; sessionId: string; fromSessionId?: string; content: string; createdAt: number }>;
+        scannedSessions: number;
+    }> {
+        const cap = Math.max(1, Math.min(200, Number(limit) || 50));
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.message.list', { limit: cap }, context);
+            return {
+                messages: Array.isArray(result?.messages) ? result.messages : [],
+                scannedSessions: Number(result?.scannedSessions) || 0
+            };
+        }
+        if (!this.sessionStore) {
+            return { messages: [], scannedSessions: 0 };
+        }
+        const ids = (await this.sessionStore.listSessionIds()).slice(-60).reverse();
+        const messages: Array<{ messageId: string; sessionId: string; fromSessionId?: string; content: string; createdAt: number }> = [];
+        for (const sessionId of ids) {
+            const state = await this.sessionStore.get(sessionId);
+            for (const message of state.messages || []) {
+                const metadata = (message as any)?.metadata;
+                if (String(metadata?.kind || '') !== 'cross-session') {
+                    continue;
+                }
+                messages.push({
+                    messageId: String((message as any)?.id || ''),
+                    sessionId,
+                    ...(typeof metadata?.fromSessionId === 'string' && metadata.fromSessionId.trim()
+                        ? { fromSessionId: metadata.fromSessionId.trim() }
+                        : {}),
+                    content: String((message as any)?.content || ''),
+                    createdAt: Number((message as any)?.createdAt) || 0
+                });
+            }
+        }
+        messages.sort((left, right) => right.createdAt - left.createdAt);
+        return { messages: messages.slice(0, cap), scannedSessions: ids.length };
+    }
+
+    /**
      * Deliver a message to another session (agent teams). Append-only by
      * default; `wake` starts a turn in the target (gateway only).
      */

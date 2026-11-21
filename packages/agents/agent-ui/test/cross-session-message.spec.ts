@@ -5,11 +5,13 @@ import { handleMessage, resolveCrossSessionTarget } from '../src/AgentConsoleSes
 function buildCtx(options: { fail?: boolean } = {}) {
     const sent: Array<{ sessionId: string; text: string; wake?: boolean; fromSessionId?: string }> = [];
     const notices: string[] = [];
+    const overlays: Array<{ title: string; lines: string[] }> = [];
     const ctx: any = {
         translator: null,
         state: {
             sessionId: 's1',
             crossSessionMessages: true,
+            openTextOverlay: (title: string, lines: string[]) => { overlays.push({ title, lines }); },
             sessions: [
                 { id: 's1', title: 'Main' },
                 { id: 'chat-alpha', title: 'Alpha' },
@@ -21,11 +23,21 @@ function buildCtx(options: { fail?: boolean } = {}) {
                 if (options.fail) throw new Error('target locked');
                 sent.push({ sessionId, text, ...opts });
                 return { sessionId, woken: opts?.wake === true };
-            }
+            },
+            listCrossSessionMessages: async () => ({
+                messages: [{
+                    messageId: 'm1',
+                    sessionId: 's1',
+                    fromSessionId: 'chat-alpha',
+                    content: 'please review',
+                    createdAt: Date.now() - 60_000
+                }],
+                scannedSessions: 2
+            })
         },
         notify: (message: string) => notices.push(message)
     };
-    return { ctx, sent, notices };
+    return { ctx, sent, notices, overlays };
 }
 
 @Suite('cross-session messaging command')
@@ -52,6 +64,18 @@ export class CrossSessionMessageCommandTest {
         await handleMessage(ctx, '--wake chat-alpha run the tests', { command: '/msg', matches: [] });
         expect(sent).toEqual([{ sessionId: 'chat-alpha', text: 'run the tests', wake: true, fromSessionId: 's1' }]);
         expect(notices[notices.length - 1]).toContain('turn started');
+    }
+
+    @Test('/msg list opens a read-only snapshot of cross-session messages')
+    async listsMessages() {
+        const { ctx, overlays, notices } = buildCtx();
+        await handleMessage(ctx, 'list', { command: '/msg', matches: [] });
+        expect(overlays.length).toEqual(1);
+        expect(overlays[0].title).toContain('Cross-session messages');
+        const text = overlays[0].lines.join('\n');
+        expect(text).toContain('chat-alpha');
+        expect(text).toContain('please review');
+        expect(notices).toEqual([]);
     }
 
     @Test('usage, missing targets and delivery failures stay actionable')

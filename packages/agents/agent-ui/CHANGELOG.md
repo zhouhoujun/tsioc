@@ -15,6 +15,7 @@
 - Added `/import <path>` (JSON/JSONL exports) backed by `session.import`; imported messages get fresh ids and land in a new session.
 - Added `/msg [--wake] <session> <text>` (agent teams v0): append a cross-session message by default, or start a turn in the target with `--wake` (`session.message.send`). Delivered messages render as `↩ <sender> · ` so they never read as the user's own prompt. Messaging is opt-in via the workspace `crossSessionMessages` setting (`/settings → Agents`, default off).
 - `/work` now exposes a single `Remote centers (N)` entry when gateways are configured, opening the read-only `/remotes` picker.
+- `/msg list` opens a read-only cross-session message snapshot (`session.message.list`), bounded to owned sessions.
 - Added `/permissions session [<level>]` (and a matching settings row) for a per-tab security level override; switching tabs re-applies each tab's override or the workspace default without persisting it.
 - Added `AGENT_UI_TEST_MEMORY_BUDGET_MB` so a test shard that exceeds its peak-RSS budget fails the run instead of silently swapping.
 - Added `/queue manage` interactive reorder/edit/remove panel and `/queue move <n> <m>`.
