@@ -22,6 +22,7 @@ import type { StashCommandHost } from './AgentConsoleStashCommands';
 import type { GitSnapshotCommandHost } from './AgentConsoleGitSnapshotCommands';
 import type { ExtensionCommandHost } from './AgentConsoleExtensionCommands';
 import type { PolicyCommandHost } from './AgentConsolePolicyCommands';
+import { restoreSessionSecurityLevel } from './AgentConsolePolicyCommands';
 import type { PreferenceCommandHost } from './AgentConsolePreferenceCommands';
 
 
@@ -103,7 +104,7 @@ export function policyCommandHost(self: any): PolicyCommandHost {
         getSessionDelegationMode: (sessionId: string) => self.getSessionDelegationMode(sessionId),
         getSessionSandboxMode: (sessionId: string) => self.getSessionSandboxMode(sessionId),
         setSessionSandboxMode: (sessionId: string, mode: SandboxMode | null) => self.setSessionSandboxMode(sessionId, mode),
-        setYoloMode: (enabled: boolean) => self.setYoloMode(enabled, false),
+        setYoloMode: (enabled: boolean, persist?: boolean) => self.setYoloMode(enabled, false, persist),
         persistSettings: async (patch: Record<string, any>) => { await self.appRpc?.request('settings.ui.set', patch).catch(() => undefined); await self.persistSettings(patch); },
         approvalManager: self.resolvedApprovalManager,
         resolvedApprovalManager: self.resolvedApprovalManager,
@@ -170,7 +171,8 @@ export function sessionOpenHost(self: any): AgentConsoleSessionOpenHost {
             restoreInputHistory: () => self.restoreInputHistory(),
             restoreStreamingTurn: (sessionId: string) => restoreStreamingTurnView(self.turnStreamHost(), self.turnRuntime.stateFor(sessionId)),
             isSessionTurnRunning: (sessionId: string) => self.turnRuntime.isRunning(sessionId),
-            restoreSessionModes: (sessionId: string) => restoreSessionModesView({ appRpc: self.appRpc, runtime: self.runtime, state: self.state, rpcRequestContext: () => self.rpcRequestContext() }, sessionId)
+            restoreSessionModes: (sessionId: string) => restoreSessionModesView({ appRpc: self.appRpc, runtime: self.runtime, state: self.state, rpcRequestContext: () => self.rpcRequestContext() }, sessionId),
+            restoreSessionSecurityLevel: (sessionId: string) => restoreSessionSecurityLevel(policyCommandHost(self), sessionId)
         };
     }
 

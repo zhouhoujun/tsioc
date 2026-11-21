@@ -308,6 +308,8 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
     // Permissions
     actionRow('securityLevel', 'permissions', 'agent.menu.settings.fieldSecurityLevel', 'Security level: {level}', 'agent.menu.settings.fieldSecurityLevelDescription', 'read-only, ask, auto or full access', 'workspace', 'immediate',
         host => host.runPermissionsCommand('level'), host => String(host.state.securityLevel || (host.yoloMode ? 'auto' : 'ask')), ['/permissions level']),
+    actionRow('sessionSecurityLevel', 'permissions', 'agent.menu.settings.fieldSessionSecurityLevel', 'Session security level: {level}', 'agent.menu.settings.fieldSessionSecurityLevelDescription', 'override the workspace level for this tab only (/permissions session)', 'session', 'immediate',
+        host => host.runPermissionsCommand('session'), host => String(host.state.sessionSecurityLevels?.[host.state.sessionId] || ''), ['/permissions session']),
     actionRow('sandbox', 'permissions', 'agent.menu.settings.fieldSandbox', 'Sandbox: {mode}', 'agent.menu.settings.fieldSandboxDescription', 'OS-level isolation for executed commands', 'session', 'immediate',
         host => host.runPermissionsCommand('sandbox'), () => '', ['/permissions sandbox']),
     actionRow('approvals', 'permissions', 'agent.menu.settings.fieldApprovals', 'Pending approvals', 'agent.menu.settings.fieldApprovalsDescription', 'review and answer approval requests', 'session', 'none',

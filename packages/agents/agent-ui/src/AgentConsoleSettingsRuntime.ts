@@ -177,6 +177,7 @@ export async function restoreSettings(self: any): Promise<void> {
         }
         if (persisted.securityLevel) {
             self.state.securityLevel = persisted.securityLevel;
+            self.state.workspaceSecurityLevel = persisted.securityLevel;
         }
         // restore task & plan filter state
         if (persisted.taskFilter) {

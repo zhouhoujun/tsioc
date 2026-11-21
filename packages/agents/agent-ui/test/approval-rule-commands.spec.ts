@@ -114,8 +114,22 @@ export class ApprovalRuleCommandsTest {
         expect(host.options.policy.approval.requireApproval).toContain('shell.exec');
         expect(notices[notices.length - 1]).toContain('reset to defaults');
 
-        picks.push('__add__');
+        picks.push('__add__', 'deny', 'network');
         await openApprovalRulesPanel(host as any);
-        expect(notices[notices.length - 1]).toContain('/permissions rules add');
+        const added = host.options.policy.approval.requireApproval;
+        expect(added[added.length - 1]).toEqual({ category: 'network', action: 'deny' });
+        expect(notices[notices.length - 1]).toContain('deny network');
+        expect(persisted[persisted.length - 1]).toEqual({ approvalRequireApproval: added });
+    }
+
+    @Test('cancelling the add flow leaves the rules untouched')
+    async settingsPanelAddCancelled() {
+        const { host, persisted, notices } = createHost({ policy: { approval: { requireApproval: ['terminal'] } } });
+        const picks = ['__add__', undefined];
+        (host as any).select = async () => picks.shift();
+        await openApprovalRulesPanel(host as any);
+        expect(host.options.policy.approval.requireApproval).toEqual(['terminal']);
+        expect(persisted).toEqual([]);
+        expect(notices).toEqual([]);
     }
 }

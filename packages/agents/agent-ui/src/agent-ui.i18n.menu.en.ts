@@ -263,6 +263,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         fieldModelDescription: 'switch the active model profile',
         fieldSecurityLevel: 'Security level: {level}',
         fieldSecurityLevelDescription: 'read-only, ask, auto or full access',
+        fieldSessionSecurityLevel: 'Session security level: {level}',
+        fieldSessionSecurityLevelDescription: 'override the workspace level for this tab only (/permissions session)',
         fieldSandbox: 'Sandbox: {mode}',
         fieldSandboxDescription: 'OS-level isolation for executed commands',
         fieldApprovals: 'Pending approvals',

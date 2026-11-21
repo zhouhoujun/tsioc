@@ -198,8 +198,7 @@ export class AgentConsoleSettingsCenterTest {
     }
 
     @Test('permissions section opens the approval rules panel')
-    async approvalRulesRow() {
-        const { component, state, persisted } = await this.createConsoleWithPersist();
+    async approvalRulesRow() {        const { component, state, persisted } = await this.createConsoleWithPersist();
         await component.handleCommand('/settings permissions');
         const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'approvalRules');
         expect(index).toBeGreaterThanOrEqual(0);
@@ -208,6 +207,22 @@ export class AgentConsoleSettingsCenterTest {
         component.select = async () => '__reset__';
         await handleSettingsCenterKey(component, 'return');
         expect(persisted[persisted.length - 1].approvalRequireApproval).toContain('shell.exec');
+    }
+
+    @Test('session security level row applies a tab override without persisting it')
+    async sessionSecurityLevelRow() {
+        const { component, state, persisted } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings permissions');
+        const index = state.settingsCenterRows.findIndex((row: any) => row.id === 'sessionSecurityLevel');
+        expect(index).toBeGreaterThanOrEqual(0);
+        state.settingsCenterIndex = index;
+        component.select = async () => 'full';
+        await handleSettingsCenterKey(component, 'return');
+        expect(state.securityLevel).toEqual('full');
+        expect(state.sessionSecurityLevels[state.sessionId]).toEqual('full');
+        expect(persisted.some((patch: any) => patch?.securityLevel)).toEqual(false);
+        await component.handleCommand('/settings permissions');
+        expect(state.settingsCenterRows.find((row: any) => row.id === 'sessionSecurityLevel').value).toEqual('full');
     }
 
     @Test('the workspace trust confirmation closes the page before the picker')

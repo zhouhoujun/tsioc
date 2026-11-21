@@ -263,6 +263,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         fieldModelDescription: '切换当前模型配置',
         fieldSecurityLevel: '安全级别：{level}',
         fieldSecurityLevelDescription: '只读、询问、自动或完全访问',
+        fieldSessionSecurityLevel: '会话安全级别：{level}',
+        fieldSessionSecurityLevelDescription: '仅覆盖当前标签的安全级别（/permissions session）',
         fieldSandbox: '沙箱：{mode}',
         fieldSandboxDescription: '执行命令的操作系统级隔离',
         fieldApprovals: '待审批',

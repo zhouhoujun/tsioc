@@ -6,7 +6,9 @@ import { Suite, Test } from '@tsdi/unit';
 import {
     AGENT_CONSOLE_SECURITY_LEVELS,
     applySecurityLevel,
+    applySessionSecurityLevel,
     normalizeSecurityLevel,
+    restoreSessionSecurityLevel,
     runPermissionsCommand
 } from '../src/AgentConsolePolicyCommands';
 import { AgentConsoleSettingsStore } from '../src/AgentConsoleSettingsStore';
@@ -139,9 +141,66 @@ export class SecurityLevelTest {
         expect(calls.persisted).toEqual([{ securityLevel: 'read-only' }]);
     }
 
+    @Test('/permissions session applies a level to this tab without persisting')
+    async sessionOverride() {
+        const { host, calls, state } = createHost();
+        await runPermissionsCommand(host, 'session full');
+        expect(state.securityLevel).toEqual('full');
+        expect(state.sessionSecurityLevels).toEqual({ 'session-1': 'full' });
+        expect(calls.yolo).toEqual([true]);
+        expect(calls.sandbox).toEqual([['session-1', 'off']]);
+        expect(calls.persisted).toEqual([]);
+        expect(calls.notices[0]).toContain('Session security level');
+    }
+
+    @Test('switching tabs restores the override and falls back to the workspace default')
+    async sessionSwitchRestores() {
+        const { host, calls, state } = createHost({
+            state: {
+                workspaceSecurityLevel: 'ask',
+                sessionSecurityLevels: { 'session-1': 'full', 'session-2': 'read-only' }
+            }
+        });
+        await restoreSessionSecurityLevel(host, 'session-1');
+        expect(state.securityLevel).toEqual('full');
+        expect(calls.yolo).toEqual([true]);
+        expect(calls.sandbox).toEqual([['session-1', 'off']]);
+
+        state.sessionId = 'session-2';
+        await restoreSessionSecurityLevel(host, 'session-2');
+        expect(state.securityLevel).toEqual('read-only');
+        expect(calls.plan).toEqual(['on']);
+
+        state.sessionId = 'session-3';
+        await restoreSessionSecurityLevel(host, 'session-3');
+        expect(state.securityLevel).toEqual('ask');
+        expect(calls.yolo[calls.yolo.length - 1]).toEqual(false);
+        expect(calls.persisted).toEqual([]);
+    }
+
+    @Test('tab sync preserves a manually enabled plan mode')
+    async sessionSyncKeepsPlan() {
+        const { host, calls, state } = createHost({
+            state: { planMode: true, workspaceSecurityLevel: 'ask', securityLevel: '' }
+        });
+        await restoreSessionSecurityLevel(host, 'session-1');
+        expect(state.securityLevel).toEqual('ask');
+        // The tab's own plan mode must survive the level re-apply.
+        expect(calls.plan).toEqual([]);
+    }
+
+    @Test('a workspace level change clears the current tab override')
+    async workspaceChangeClearsOverride() {
+        const { host, state } = createHost({
+            state: { sessionSecurityLevels: { 'session-1': 'full' } }
+        });
+        await applySecurityLevel(host, 'auto');
+        expect(state.workspaceSecurityLevel).toEqual('auto');
+        expect(state.sessionSecurityLevels).toEqual({});
+    }
+
     @Test('settings store persists and validates the level')
-    async storeRoundTrip() {
-        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-level-'));
+    async storeRoundTrip() {        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-ui-level-'));
         try {
             const store = new AgentConsoleSettingsStore(new TestFileAdapter());
             await store.save(workspace, { securityLevel: 'full' });

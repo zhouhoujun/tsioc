@@ -98,6 +98,13 @@ export class AgentConsoleSessionData {
     planMode = false;
     activeArchetype = 'build';
     yoloMode = false; securityLevel: import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel | '' = ''; worktreeCommand?: (request: import('./AgentConsoleWorktreeCommands').AgentConsoleWorktreeRequest) => Promise<import('./AgentConsoleWorktreeCommands').AgentConsoleWorktreeResult>; textOverlayBack?: () => void; restartAction?: (sessionId: string) => void; pairAction?: () => Promise<{ url?: string; urls?: string[]; qr?: string; code?: string; expiresAt?: number } | null>;
+    /** Workspace default restored from settings.json (the `/permissions level` value). */
+    workspaceSecurityLevel: import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel | '' = '';
+    /**
+     * Session-scoped `/permissions session` overrides. Switching tabs re-applies
+     * the target session's entry; `/permissions level` clears the current one.
+     */
+    sessionSecurityLevels: Record<string, import('./AgentConsolePolicyCommands').AgentConsoleSecurityLevel> = {};
     workspace = '';
     statusline: AgentConsoleStatuslineField[] = [...defaultAgentConsoleStatusline];
     titleFields: AgentConsoleTitleField[] = [...defaultAgentConsoleTitle];

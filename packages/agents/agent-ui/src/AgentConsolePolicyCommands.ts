@@ -48,7 +48,7 @@ export interface PolicyCommandHost {
     getSessionSandboxMode(sessionId: string): Promise<any>;
     setSessionSandboxMode(sessionId: string, mode: SandboxMode | null): Promise<void>;
     runPlanCommand(args: string): Promise<any>;
-    setYoloMode?(enabled: boolean): Promise<void> | void;
+    setYoloMode?(enabled: boolean, persist?: boolean): Promise<void> | void;
     persistSettings?(patch: Record<string, any>): Promise<void> | void;
     /** Runtime approval manager that owns project-scoped allow rules. */
     approvalManager?: any;
@@ -62,30 +62,94 @@ export interface PolicyCommandHost {
  * tools, yolo auto-approves gated tools, and Full Access also drops the
  * session sandbox. `sandbox: false` skips the sandbox when no session exists
  * yet (startup restores the level before the session is opened).
+ *
+ * `preservePlan` is used when re-syncing a session after a tab switch: the
+ * target session's manual plan mode must survive unless the level itself is
+ * `read-only` (which requires plan mode).
  */
 export async function applySecurityLevel(
     host: PolicyCommandHost,
     level: AgentConsoleSecurityLevel,
-    options: { notify?: boolean; persist?: boolean; sandbox?: boolean } = {}
+    options: { notify?: boolean; persist?: boolean; sandbox?: boolean; session?: boolean; preservePlan?: boolean } = {}
 ): Promise<void> {
     host.state.securityLevel = level;
     if (level === 'read-only') {
         if (!host.state.planMode) {
             await host.runPlanCommand('on');
         }
-    } else if (host.state.planMode) {
+    } else if (host.state.planMode && options.preservePlan !== true) {
         await host.runPlanCommand('off');
     }
-    await host.setYoloMode?.(level === 'auto' || level === 'full');
+    await host.setYoloMode?.(level === 'auto' || level === 'full', options.persist !== false);
     if (options.sandbox !== false && host.state.sessionId) {
         await host.setSessionSandboxMode(host.state.sessionId, (level === 'full' ? 'off' : null) as SandboxMode | null);
     }
     if (options.persist !== false) {
+        // The persisted value is the workspace default; a global change also
+        // drops the current tab's one-off override so the UI stays truthful.
+        host.state.workspaceSecurityLevel = level;
+        const sessionId = String(host.state.sessionId || '');
+        if (sessionId && host.state.sessionSecurityLevels?.[sessionId]) {
+            const next = { ...host.state.sessionSecurityLevels };
+            delete next[sessionId];
+            host.state.sessionSecurityLevels = next;
+        }
         await host.persistSettings?.({ securityLevel: level });
     }
     if (options.notify !== false) {
-        host.notify(formatAgentUiNotice(host.translator, 'securityLevelSet', { level: securityLevelText(host.translator, level) }));
+        host.notify(formatAgentUiNotice(
+            host.translator,
+            options.session === true ? 'securityLevelSessionSet' : 'securityLevelSet',
+            { level: securityLevelText(host.translator, level) }
+        ));
     }
+}
+
+/**
+ * `/permissions session` — apply a level to the current tab only. The value is
+ * kept in `sessionSecurityLevels` so switching tabs re-applies it, and writing
+ * a workspace level later clears it.
+ */
+export async function applySessionSecurityLevel(
+    host: PolicyCommandHost,
+    level: AgentConsoleSecurityLevel,
+    options: { notify?: boolean } = {}
+): Promise<void> {
+    const sessionId = String(host.state.sessionId || '');
+    if (sessionId) {
+        host.state.sessionSecurityLevels = {
+            ...(host.state.sessionSecurityLevels || {}),
+            [sessionId]: level
+        };
+    }
+    await applySecurityLevel(host, level, {
+        persist: false,
+        session: true,
+        notify: options.notify !== false
+    });
+}
+
+/**
+ * Re-apply the level a tab owns when it becomes active. Sessions without an
+ * override fall back to the workspace default, so a previous tab's `full`
+ * override never leaks into them. Plan mode is preserved during the sync.
+ */
+export async function restoreSessionSecurityLevel(host: PolicyCommandHost, sessionId: string): Promise<void> {
+    const state = host.state;
+    const override = normalizeSecurityLevel(state.sessionSecurityLevels?.[sessionId]);
+    const workspace = normalizeSecurityLevel(state.workspaceSecurityLevel);
+    const target = override || workspace;
+    if (!target) {
+        return;
+    }
+    // Always re-apply on tab activation: sandbox/plan/yolo are per-session
+    // runtime state, so skipping when the level string matches would leak the
+    // previous tab's sandbox configuration into this one.
+    await applySecurityLevel(host, target, {
+        persist: false,
+        notify: false,
+        preservePlan: true
+    });
 }
 
 export async function runDelegationModeCommand(host: PolicyCommandHost, args: string): Promise<void> {
@@ -240,6 +304,38 @@ export async function runPermissionsCommand(host: PolicyCommandHost, args: strin
         return;
     }
     const area = tokens[0].toLowerCase();
+    if (area === 'session') {
+        const requested = normalizeSecurityLevel(tokens[1]);
+        if (!tokens[1]) {
+            if (!host.select) {
+                const override = normalizeSecurityLevel(host.state.sessionSecurityLevels?.[String(host.state.sessionId || '')]);
+                const workspace = normalizeSecurityLevel(host.state.workspaceSecurityLevel);
+                const effective = override || workspace || normalizeSecurityLevel(host.state.securityLevel) || (host.state.yoloMode ? 'auto' : 'ask');
+                host.notify(formatAgentUiNotice(host.translator, 'securityLevelSessionCurrent', {
+                    level: securityLevelText(host.translator, effective as AgentConsoleSecurityLevel),
+                    workspace: workspace ? securityLevelText(host.translator, workspace) : formatAgentUiNotice(host.translator, 'securityLevelWorkspaceDefault')
+                }));
+                return;
+            }
+            const current = normalizeSecurityLevel(host.state.securityLevel) || (host.state.yoloMode ? 'auto' : 'ask');
+            const selected = await host.select(
+                formatAgentUiNotice(host.translator, 'securityLevelSessionTitle'),
+                AGENT_CONSOLE_SECURITY_LEVELS.map(level => ({ label: securityLevelText(host.translator, level), value: level })),
+                Math.max(0, AGENT_CONSOLE_SECURITY_LEVELS.indexOf(current))
+            );
+            const picked = normalizeSecurityLevel(selected);
+            if (picked) {
+                await applySessionSecurityLevel(host, picked);
+            }
+            return;
+        }
+        if (!requested) {
+            host.notify(formatAgentUiNotice(host.translator, 'securityLevelUsage'));
+            return;
+        }
+        await applySessionSecurityLevel(host, requested);
+        return;
+    }
     if (area === 'level') {
         const requested = normalizeSecurityLevel(tokens[1]);
         if (!tokens[1]) {

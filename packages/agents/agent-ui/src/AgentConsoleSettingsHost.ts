@@ -211,14 +211,16 @@ export abstract class AgentConsoleSettingsHost extends AgentConsoleIntegrationHo
         return openSettingsGeneralTabView(settingsPanelHost(this));
     }
 
-    protected async setYoloMode(enabled: boolean, notify = true): Promise<void> {
+    protected async setYoloMode(enabled: boolean, notify = true, persist = true): Promise<void> {
         this.yoloMode = enabled; this.state.setYoloMode(enabled);
         if (this.state.securityLevel === 'ask' || this.state.securityLevel === 'auto') {
             this.state.securityLevel = enabled ? 'auto' : 'ask';
         }
         (this.resolvedApprovalManager as any)?.setAutoApprove?.(enabled);
         this.options.tools = { ...(this.options.tools || {}), autoApprove: enabled } as any;
-        await this.persistSettings({ yoloMode: enabled });
+        if (persist) {
+            await this.persistSettings({ yoloMode: enabled });
+        }
         if (notify) this.notify(enabled ? formatAgentUiNotice(this.translator, 'yoloModeEnabled') : formatAgentUiNotice(this.translator, 'yoloModeDisabled'));
     }
 

@@ -40,6 +40,8 @@ export interface AgentConsoleSessionOpenHost {
     restoreStreamingTurn?(sessionId: string): void;
     isSessionTurnRunning?(sessionId: string): boolean;
     restoreSessionModes(sessionId: string): Promise<void>;
+    /** Re-apply the tab's `/permissions session` override (or workspace default). */
+    restoreSessionSecurityLevel?(sessionId: string): Promise<void>;
 }
 
 /**
@@ -136,6 +138,12 @@ export async function openSession(
             host.state.setStatus(nextStatus);
         }
         host.restoreStreamingTurn?.(target.id);
+        // The cached frame is painted, but per-session modes still belong to
+        // this tab: plan/archetype and the `/permissions session` override are
+        // runtime state, not transcript rows. Restoring them before the
+        // deferred refresh keeps approvals/sandbox consistent with the tab.
+        await host.restoreSessionModes(target.id);
+        await host.restoreSessionSecurityLevel?.(target.id);
         const projectSessionIds = freshScope ? [target.id] : host.resolveProjectSessionIdsFor(target.id);
         if (options?.background) {
             scheduleOpenedSessionRefresh(host, target.id, requestId, options, cachedView, projectSessionIds, 120);
@@ -231,6 +239,7 @@ export async function openSession(
     // Reattach the live partial answer when returning to a still-running turn.
     host.restoreStreamingTurn?.(target.id);
     await host.restoreSessionModes(target.id);
+    await host.restoreSessionSecurityLevel?.(target.id);
 }
 
 /**
@@ -314,6 +323,7 @@ function scheduleOpenedSessionRefresh(
             applyOpenedSessionPage(host, page, options, cachedView);
             host.restoreStreamingTurn?.(sessionId);
             await host.restoreSessionModes(sessionId);
+            await host.restoreSessionSecurityLevel?.(sessionId);
         } catch {
             // best effort: the cached frame is already usable
         }

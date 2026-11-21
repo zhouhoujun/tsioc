@@ -1,4 +1,4 @@
-import { DEFAULT_APPROVAL_REQUIRED_RULES } from '@tsdi/agent';
+import { DEFAULT_APPROVAL_REQUIRED_RULES, APPROVAL_CATEGORY_DEFINITIONS } from '@tsdi/agent';
 import type { ApprovalRule } from '@tsdi/agent';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
@@ -151,6 +151,59 @@ export async function runApprovalRulesCommand(host: ApprovalRuleCommandHost, arg
 }
 
 /**
+ * Menu-driven rule creation: action → category. Resource-scoped rules stay on
+ * `/permissions rules add <action> <category> [resource]` because they need
+ * free text, but the common "ask/allow/deny a whole category" case is fully
+ * operable from the panel (opencode-style forms instead of memorizing syntax).
+ */
+async function addRuleFromPanel(host: ApprovalRuleCommandHost): Promise<void> {
+    if (!host.select) {
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandHint'));
+        return;
+    }
+    const action = await host.select(
+        formatAgentUiNotice(host.translator, 'approvalRulesAddActionTitle'),
+        [
+            { label: 'ask', value: 'ask', description: formatAgentUiNotice(host.translator, 'approvalRulesAddActionAsk') },
+            { label: 'allow', value: 'allow', description: formatAgentUiNotice(host.translator, 'approvalRulesAddActionAllow') },
+            { label: 'deny', value: 'deny', description: formatAgentUiNotice(host.translator, 'approvalRulesAddActionDeny') }
+        ],
+        0,
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+    );
+    if (!action || !ACTIONS.includes(action)) {
+        return;
+    }
+    const category = await host.select(
+        formatAgentUiNotice(host.translator, 'approvalRulesAddCategoryTitle'),
+        CATEGORIES.map(item => ({
+            label: item,
+            value: item,
+            description: formatAgentUiNotice(host.translator, 'approvalRulesAddCategoryNames', {
+                names: describeCategoryNames(item)
+            })
+        })),
+        0,
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+    );
+    if (!category || !CATEGORIES.includes(category)) {
+        return;
+    }
+    const rule: ApprovalRule = { category: category as any, action: action as 'ask' | 'allow' | 'deny' };
+    await saveRules(host, [...readEffectiveApprovalRules(host.options), rule]);
+    host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandAdded', { rule: describeApprovalRule(rule) }));
+}
+
+function describeCategoryNames(category: string): string {
+    const names = APPROVAL_CATEGORY_DEFINITIONS[category as keyof typeof APPROVAL_CATEGORY_DEFINITIONS]?.names || [];
+    if (!names.length) {
+        return category;
+    }
+    const shown = names.slice(0, 3).join(', ');
+    return names.length > 3 ? `${shown}…` : shown;
+}
+
+/**
  * Settings-center entry: pick a rule to remove, add via the command form, or
  * reset to the safe defaults. Keeps the ordered list authoritative.
  */
@@ -177,7 +230,7 @@ export async function openApprovalRulesPanel(host: ApprovalRuleCommandHost): Pro
         return;
     }
     if (picked === '__add__') {
-        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesPanelAdd'));
+        await addRuleFromPanel(host);
         return;
     }
     if (picked === '__reset__') {
