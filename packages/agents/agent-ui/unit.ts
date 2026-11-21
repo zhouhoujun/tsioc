@@ -22,11 +22,15 @@ import { planGroups, selectGroups } from './test/groups';
  * Controls:
  * - `AGENT_UI_TEST_GROUPS=<1..5>` forces a worker count;
  * - `AGENT_UI_TEST_SHARDS=1` runs the original single-process suite;
+ * - `AGENT_UI_TEST_MEMORY_BUDGET_MB=<MiB>` fails a suite/worker whose peak RSS
+ *   exceeds the budget;
  * - `-c` / `--coverage` always runs single-process (one coverage report).
  */
 
 const GROUP_ENV = 'AGENT_UI_TEST_GROUP';
 const COUNT_ENV = 'AGENT_UI_TEST_GROUPS';
+/** Opt-in peak-RSS budget for one test process, in MiB. */
+const MEMORY_ENV = 'AGENT_UI_TEST_MEMORY_BUDGET_MB';
 /** Rough peak RSS of one worker (renderer graph + JSDOM cases). */
 const WORKER_MEMORY_BYTES = 1.2 * 1024 ** 3;
 
@@ -65,6 +69,57 @@ function enforceWallBudget(startedAt: number, label: string): void {
         console.error(`[agent-ui] ${label} exceeded the ${budget}s wall-clock budget (${seconds.toFixed(1)}s).`);
         process.exit(1);
     }
+}
+
+interface MemorySample {
+    peakMb: number;
+    overBudget: boolean;
+    budgetMb: number;
+}
+
+/**
+ * Opt-in peak-RSS sampler (`AGENT_UI_TEST_MEMORY_BUDGET_MB=<MiB>`).
+ *
+ * Shards are memory-bound: five renderer graphs on a small host swap instead of
+ * running. Sampling inside each process catches a worker that only fits because
+ * the parent merged groups, without depending on `/proc` (portable to CI).
+ */
+function startMemorySampler(label: string): () => MemorySample {
+    const budgetMb = Number(process.env[MEMORY_ENV]);
+    if (!Number.isFinite(budgetMb) || budgetMb <= 0) {
+        return () => ({ peakMb: 0, overBudget: false, budgetMb: 0 });
+    }
+    let peak = process.memoryUsage().rss;
+    const timer = setInterval(() => {
+        peak = Math.max(peak, process.memoryUsage().rss);
+    }, 200);
+    timer.unref?.();
+    return () => {
+        clearInterval(timer);
+        peak = Math.max(peak, process.memoryUsage().rss);
+        const peakMb = peak / 1024 ** 2;
+        const overBudget = peakMb > budgetMb;
+        const line = `[agent-ui] ${label} peak RSS ${peakMb.toFixed(0)} MiB (budget ${budgetMb} MiB)`;
+        if (overBudget) {
+            console.error(`${line} — over budget`);
+        } else {
+            console.log(line);
+        }
+        return { peakMb, overBudget, budgetMb };
+    };
+}
+
+async function runWithMemoryBudget(label: string, run: () => Promise<void>): Promise<number> {
+    const stop = startMemorySampler(label);
+    try {
+        await run();
+    } finally {
+        const sample = stop();
+        if (sample.overBudget) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /**
@@ -137,17 +192,21 @@ async function main(): Promise<void> {
         if (!selected.length) {
             return;
         }
-        await runTest(selected.map(file => `./${file}`), { baseURL: __dirname });
+        const overBudget = await runWithMemoryBudget(`group ${group}`, async () => {
+            await runTest(selected.map(file => `./${file}`), { baseURL: __dirname });
+        });
         await flushStdio();
-        process.exit(0);
+        process.exit(overBudget ? 1 : 0);
     }
 
     if (wantsCoverage(args) || process.env.AGENT_UI_TEST_SHARDS === '1') {
         const started = Date.now();
-        await runTest('./test/**/*.ts', { baseURL: __dirname });
+        const overBudget = await runWithMemoryBudget('single-process suite', async () => {
+            await runTest('./test/**/*.ts', { baseURL: __dirname });
+        });
         enforceWallBudget(started, 'single-process suite');
         await flushStdio();
-        process.exit(0);
+        process.exit(overBudget ? 1 : 0);
     }
 
     const plannedGroups = planGroups(files);
@@ -159,10 +218,12 @@ async function main(): Promise<void> {
     if (names.length === 1 || planned !== files.length) {
         // A missing/renamed spec would lose coverage: run one pass instead.
         const started = Date.now();
-        await runTest('./test/**/*.ts', { baseURL: __dirname });
+        const overBudget = await runWithMemoryBudget('single-pass suite', async () => {
+            await runTest('./test/**/*.ts', { baseURL: __dirname });
+        });
         enforceWallBudget(started, 'single-pass suite');
         await flushStdio();
-        process.exit(0);
+        process.exit(overBudget ? 1 : 0);
     }
 
     const availableGb = (freemem() / 1024 ** 3).toFixed(1);

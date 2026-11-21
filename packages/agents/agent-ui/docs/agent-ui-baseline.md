@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2302 passing**（2 组） |
+| `@tsdi/agent-ui` | **2320 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -174,9 +174,13 @@ rm -f run-one.tmp.ts
   `add <ask|allow|deny> <category> [resource]` / `remove <n>` / `clear confirm`；规则写入
   `policy.approval.requireApproval` 并持久化 `approvalRequireApproval`，审批策略通过 live
   provider 立即生效（无需重建 manager）；空列表自动回退默认规则，避免重启后静默放开审批。
-  per-session override 与图形化规则表单仍待补。
+  per-session override 已落地：`/permissions session [<level>]`（设置页 Permissions 段同名列）
+  只对当前 tab 生效，不写 workspace `securityLevel`；切换 tab 时重新应用该 tab 的覆盖或 workspace
+  默认值，且保留 tab 自己的 plan mode。`/permissions level` 仍写 workspace 默认并清除当前 tab 覆盖。
+  覆盖保存在进程内 tab 状态（不跨重启）；需要跨重启时使用 `/permissions level` 写入 workspace 默认。
 - AMS P1.2 补充：设置页 Permissions 段新增 **Approval rules** 行，可图形化删除单条规则或重置默认；
-  新增规则仍走 `/permissions rules add ...`（需要文本输入，留待表单化）。
+  `Add rule` 现在走两步菜单（ask/allow/deny → sandbox/fs/network/mcp/skill），直接写入有序规则并持久化；
+  需要 `resource`（路径/命令/URL 模式）时仍用 `/permissions rules add <action> <category> [resource]`。
 - AMS P1.2 补充：`/permissions inspect <tool> [resource]` 已同时展示有序规则的最终匹配
   （action / 规则序号 / 规则描述），与 `DefaultApprovalStrategy` 的 last-match-wins 一致。
 - P4 文档收尾：README 命令表、CHANGELOG Unreleased、`docs/manual-test-checklist.md`
@@ -192,4 +196,17 @@ rm -f run-one.tmp.ts
   额外强制 initial gzip ≤700 KiB、最大 lazy chunk gzip ≤150 KiB（当前通过）。
   1k 切换 p50/p95 预算已落地为 opt-in：`AGENT_UI_SWITCH_BUDGET=1` 运行
   `tab-switch-long-session.spec.ts` 时强制 p50 ≤120ms、p95 ≤200ms（本次实测 83/95ms）；
-  测试墙钟提供 `AGENT_UI_TEST_WALL_BUDGET=<seconds>`（超时失败）；分片内存阈值仍未自动门禁。
+  测试墙钟提供 `AGENT_UI_TEST_WALL_BUDGET=<seconds>`（超时失败）；分片内存阈值提供
+  `AGENT_UI_TEST_MEMORY_BUDGET_MB=<MiB>`：每个 worker/单进程在退出前采样峰值 RSS，
+  超预算直接使该 shard 失败（本次单进程峰值 1844 MiB；预算 1 MiB 时退出码 1，用例仍全绿）。
+- P3 opencode 对齐（本轮）：阻塞式菜单过滤从子串改为 **fuzzy + 排序**
+  （`AgentConsoleFuzzy.ts`：exact > prefix > 词首 > 子串 > 子序列，label 命中优先于
+  description；同分保持原顺序），`/theme` 输入 `drk` 可命中 `Dark theme`，
+  `/sessions <query>` 复用同一评分；零匹配时选择菜单/会话对话框显示
+  `No matches for "<filter>"`（共享 `select-list` 新增 `emptyText`，en/zh 面板文案）。
+- P2 opencode 对齐（本轮）：TUI **桌面通知**落地。`ConsoleTerminalSurfaceLifecycle`
+  新增 `notifyTerminal`（OSC 9）/`ringTerminalBell`（BEL），`runAgentConsole` 用共享
+  `ReactiveEffect` 监听审批/待回答问题/turn 完成，按 `tui.json` 的
+  `attention.notifications` 与 `attentionSound` 触发；环境变量
+  `TSDI_AGENT_TUI_NOTIFICATIONS=1` 可开启。通知文本会剥离控制字节，避免工具名/模型输出
+  注入终端转义序列。

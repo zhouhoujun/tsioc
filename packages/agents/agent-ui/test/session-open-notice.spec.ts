@@ -134,4 +134,23 @@ export class SessionOpenNoticeTest {
         expect(resumed.notice).toEqual('');
         expect(resumed.openSessionIds).toContain('chat-existing');
     }
+
+    @Test('a cached tab switch still re-applies its modes and session security level')
+    async cachedSwitchRestoresPerSessionModes() {
+        const state = makeState();
+        state.configure({ sessionId: 'chat-b' });
+        state.workspaceSecurityLevel = 'ask';
+        state.sessionSecurityLevels = { 'chat-b': 'full' };
+        const host: any = buildHost(state, true);
+        const restored: string[] = [];
+        host.restoreSessionModes = async (id: string) => { restored.push(`modes:${id}`); };
+        host.restoreSessionSecurityLevel = async (id: string) => { restored.push(`security:${id}`); };
+
+        await openSession(host, 'chat-b', {
+            cached: { messages: [{ id: 'm1', role: 'user', content: 'hi' }] } as any,
+            background: true
+        });
+
+        expect(restored).toEqual(['modes:chat-b', 'security:chat-b']);
+    }
 }

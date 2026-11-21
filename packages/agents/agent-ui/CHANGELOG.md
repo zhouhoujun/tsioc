@@ -6,12 +6,17 @@
 - Added `/highlights` release-notes overlay with `highlightsSeenVersion` and a settings opt-out.
 - Added `/agents default [name]` and persisted `defaultArchetype` for new sessions.
 - Added `/permissions rules` editing and ordered-rule explanation in `/permissions inspect`.
+- The permissions settings panel now adds rules through a two-step action/category menu instead of requiring command syntax.
+- Added `/permissions session [<level>]` (and a matching settings row) for a per-tab security level override; switching tabs re-applies each tab's override or the workspace default without persisting it.
+- Added `AGENT_UI_TEST_MEMORY_BUDGET_MB` so a test shard that exceeds its peak-RSS budget fails the run instead of silently swapping.
 - Added `/queue manage` interactive reorder/edit/remove panel and `/queue move <n> <m>`.
 - Persisted turn undo/redo boundaries, redo payloads and file snapshots (`AgentTurnHistoryEntity`); `/undo` and `/redo` survive restarts.
 - Fixed web console startup in browsers (`/web`): boot only `AgentUiModule` plus gateway-only `AgentRuntime`/`AgentScheduler` stubs instead of `AgentModule` (which needs a TypeORM adapter).
 - Split browser embedding into `@tsdi/agent-ui/web-console` while preserving `@tsdi/agent-ui/web` compatibility.
 - Keep shell/TUI integration in `@tsdi/agent-ui/console` and remove platform component references from shared UI sources.
 - Consume renderer-neutral primitives and utilities from `@tsdi/components/common`.
+- Blocking menu filters now use fuzzy ranking (opencode-style): `drk` matches `Dark theme`, label hits outrank description hits, and zero matches render an explicit empty state instead of a blank card.
+- TUI attention notifications: approvals, pending questions and turn completion emit OSC 9 desktop notifications (`attention.notifications`, `TSDI_AGENT_TUI_NOTIFICATIONS=1`) and an optional terminal bell (`attentionSound`).
 
 All notable changes to this package will be documented in this file.
 
