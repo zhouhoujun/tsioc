@@ -1,6 +1,10 @@
 import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel, type AgentUiTranslator } from './agent-ui.i18n';
 import type { CommandHandlerContext } from './AgentConsoleCommandHandlers';
 import type { AgentConsoleSelectOption, AgentConsoleSessionState } from './AgentConsoleSessionState';
+import type { AgentConsoleRemoteCenter } from './AgentConsoleRemoteCenterConfig';
+import { maskAgentConsoleRemoteUrl } from './AgentConsoleRemoteCenterConfig';
+import { probeAgentConsoleRemoteCenter, type AgentConsoleRemoteProbe } from './AgentConsoleRemoteCenterCommands';
+import { formatSessionAge } from './AgentConsoleFormatters';
 
 export interface AgentConsoleWorkSession {
     id: string;
@@ -137,6 +141,9 @@ export interface AgentConsoleWorkHost {
     openTextOverlay?(title: string, lines: string[], visibleLines?: number): void;
     /** Open the `/remotes` picker from the Work screen. */
     openRemoteCenters?(): void | Promise<void>;
+    /** Configured gateways for `/work remote` (read-only aggregation). */
+    remoteCenters?: AgentConsoleRemoteCenter[];
+    probeRemoteCenter?(remote: AgentConsoleRemoteCenter): Promise<AgentConsoleRemoteProbe>;
 }
 
 function workStatusLabel(status: string, translator?: AgentUiTranslator | null): string {
@@ -198,6 +205,10 @@ function showTaskReport(host: AgentConsoleWorkHost, task: Record<string, any>): 
  */
 export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''): Promise<void> {
     const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+    if (tokens[0]?.toLowerCase() === 'remote') {
+        await runRemoteWorkView(host);
+        return;
+    }
     if (tokens[0]?.toLowerCase() === 'spawn') {
         const rest = tokens.slice(1);
         const profileIndex = rest.findIndex(token => token === '--profile' || token === '-p');
@@ -353,6 +364,82 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
     await host.openSession(row.sessionId);
 }
 
+/** `/work remote` — read-only tree across configured gateways. */
+async function runRemoteWorkView(host: AgentConsoleWorkHost): Promise<void> {
+    const remotes = Array.isArray(host.remoteCenters) ? host.remoteCenters : [];
+    if (!remotes.length) {
+        host.notify(formatAgentUiNotice(host.translator, 'remoteCenterEmpty'));
+        return;
+    }
+    if (!host.select || !host.probeRemoteCenter) {
+        host.notify(formatAgentUiNotice(host.translator, 'workUnavailable'));
+        return;
+    }
+    const probes = await Promise.all(remotes.map(remote => host.probeRemoteCenter!(remote).catch(error => ({
+        remote,
+        sessions: [],
+        ok: false,
+        error: error instanceof Error ? error.message : String(error)
+    }))));
+    const options: AgentConsoleSelectOption[] = [];
+    const sessionsByValue = new Map<string, { probe: AgentConsoleRemoteProbe; session: any }>();
+    for (const probe of probes) {
+        const url = maskAgentConsoleRemoteUrl(probe.remote.url);
+        options.push({
+            label: probe.ok
+                ? formatAgentUiNotice(host.translator, 'remoteCenterReachable', { name: probe.remote.name, count: probe.sessions.length })
+                : formatAgentUiNotice(host.translator, 'remoteCenterUnreachableLabel', { name: probe.remote.name }),
+            value: `remote:${probe.remote.name}`,
+            description: probe.ok ? url : `${url} · ${probe.error || 'unreachable'}`
+        });
+        if (!probe.ok) {
+            continue;
+        }
+        for (const session of probe.sessions.slice(0, 20)) {
+            const id = String(session?.id || '');
+            if (!id) {
+                continue;
+            }
+            const value = `remote-session:${probe.remote.name}:${id}`;
+            sessionsByValue.set(value, { probe, session });
+            const title = String(session?.title || session?.summary || id).trim();
+            const count = Number(session?.messageCount);
+            options.push({
+                label: `  ${title}${Number.isFinite(count) ? ` (${count})` : ''}${formatSessionAge(session?.updatedAt || session?.lastActiveAt)}`,
+                value,
+                description: url
+            });
+        }
+    }
+    const picked = await host.select(
+        formatAgentUiNotice(host.translator, 'workRemoteTitle'),
+        options,
+        0,
+        formatAgentUiNotice(host.translator, 'workHint')
+    );
+    if (!picked || picked.startsWith('remote:')) {
+        return;
+    }
+    const entry = sessionsByValue.get(picked);
+    if (!entry) {
+        return;
+    }
+    const session = entry.session;
+    const lines = [
+        `URL: ${maskAgentConsoleRemoteUrl(entry.probe.remote.url)}`,
+        `ID: ${String(session?.id || '')}`,
+        `Title: ${String(session?.title || session?.summary || '')}`,
+        `Messages: ${String(Number(session?.messageCount) || 0)}`,
+        `Updated${formatSessionAge(session?.updatedAt || session?.lastActiveAt)}`,
+        formatAgentUiNotice(host.translator, 'remoteCenterSnapshotHint')
+    ];
+    host.openTextOverlay?.(
+        formatAgentUiNotice(host.translator, 'workRemoteSessionTitle', { name: entry.probe.remote.name }),
+        lines,
+        Math.min(24, lines.length)
+    );
+}
+
 /** Command-context adapter for `/work`. */
 export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHost {
     return {
@@ -363,6 +450,8 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
         openSession: (sessionId?: string) => ctx.openSession(sessionId),
         select: (title, options, index, hint) => ctx.select(title, options, index, hint),
         openRemoteCenters: async () => { await ctx.executeCommand?.('/remotes'); },
+        remoteCenters: (ctx.state as any).remoteCenters || [],
+        probeRemoteCenter: (remote: AgentConsoleRemoteCenter) => probeAgentConsoleRemoteCenter(remote),
         cancelTask: async (taskId: string) => {
             const result = await ctx.sessionService?.cancelBackgroundTasks?.([taskId]);
             return !!(result && Array.isArray(result.cancelled) && result.cancelled.includes(taskId));

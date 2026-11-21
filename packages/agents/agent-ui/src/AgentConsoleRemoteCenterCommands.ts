@@ -35,7 +35,7 @@ export interface AgentConsoleRemoteCenterHost {
     select?(title: string, options: Array<{ label: string; value: string; description?: string }>, index?: number, hint?: string): Promise<string | undefined>;
 }
 
-interface RemoteProbe {
+export interface AgentConsoleRemoteProbe {
     remote: AgentConsoleRemoteCenter;
     sessions: any[];
     ok: boolean;
@@ -77,7 +77,7 @@ async function saveCenters(host: AgentConsoleRemoteCenterHost, centers: AgentCon
     await host.persistSettings?.({ remotes: next });
 }
 
-async function probeRemote(remote: AgentConsoleRemoteCenter, factory: AgentConsoleRemoteRpcFactory): Promise<RemoteProbe> {
+export async function probeAgentConsoleRemoteCenter(remote: AgentConsoleRemoteCenter, factory: AgentConsoleRemoteRpcFactory = defaultRpcFactory): Promise<AgentConsoleRemoteProbe> {
     try {
         const rpc = factory(remote);
         const result = await withTimeout(
@@ -90,7 +90,7 @@ async function probeRemote(remote: AgentConsoleRemoteCenter, factory: AgentConso
     }
 }
 
-function remoteSessionLines(host: AgentConsoleRemoteCenterHost, probe: RemoteProbe): string[] {
+function remoteSessionLines(host: AgentConsoleRemoteCenterHost, probe: AgentConsoleRemoteProbe): string[] {
     const title = probe.remote.name;
     const sessions = probe.sessions
         .slice()
@@ -114,7 +114,7 @@ function remoteSessionLines(host: AgentConsoleRemoteCenterHost, probe: RemotePro
     return lines;
 }
 
-function showCenter(host: AgentConsoleRemoteCenterHost, probe: RemoteProbe): void {
+function showCenter(host: AgentConsoleRemoteCenterHost, probe: AgentConsoleRemoteProbe): void {
     const lines = remoteSessionLines(host, probe);
     host.state.openTextOverlay(
         formatAgentUiNotice(host.translator, 'remoteCenterSessionsTitle', { name: probe.remote.name, count: probe.sessions.length }),
@@ -144,7 +144,7 @@ async function openCenterPicker(
         showLocalList(host, centers);
         return;
     }
-    const probes = await Promise.all(centers.map(center => probeRemote(center, factory)));
+    const probes = await Promise.all(centers.map(center => probeAgentConsoleRemoteCenter(center, factory)));
     const picked = await host.select(
         formatAgentUiNotice(host.translator, 'remoteCenterTitle'),
         probes.map(probe => ({
@@ -226,7 +226,7 @@ export async function runRemotesCommand(
 
     const named = centers.find(center => center.name.toLowerCase() === verb);
     if (named) {
-        const probe = await probeRemote(named, factory);
+        const probe = await probeAgentConsoleRemoteCenter(named, factory);
         if (!probe.ok) {
             host.notify(formatAgentUiNotice(host.translator, 'remoteCenterUnreachable', {
                 name: named.name,

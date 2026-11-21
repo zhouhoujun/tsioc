@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 410 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2350 passing**（2 组） |
+| `@tsdi/agent-ui` | **2351 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -181,7 +181,9 @@ rm -f run-one.tmp.ts
   选择后展示会话标题/消息数/相对时间快照，不提供切换/创建/取消等写操作；
   `/remotes add|remove` 维护配置，`/remotes <name>` 直接查看；token 仅用于请求，
   不会出现在对话框或提示中（URL 内嵌凭据会被掩码）。配置了远程中心时，`/work` 末尾追加
-  单条 **Remote centers (N)** 入口，直接打开 `/remotes`（不在 Work 中逐网关探测）。
+  单条 **Remote centers (N)** 入口，直接打开 `/remotes`（不在 Work 中逐网关探测）；
+  `/work remote` 显式并发探测各 gateway，把 `gateway → sessions` 合并成只读树，选择会话显示
+  id/标题/消息数/相对时间的快照（最多每 gateway 20 个会话）。
 - 跨会话消息（agent teams v0）：`/msg [--wake] <session> <text>`，目标可用完整 id 或唯一前缀；
   默认 **append-only**（以 user 角色写入目标会话，带 `metadata.kind=cross-session/fromSessionId`，
   下次 turn 可见），`--wake` 经 gateway 立即在目标会话启动 turn。gateway 新增

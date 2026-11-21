@@ -76,8 +76,7 @@ export class WorkTreeTest {
     }
 
     @Test('work surfaces remote centers as one read-only entry')
-    async remoteCentersEntry() {
-        const state = createState();
+    async remoteCentersEntry() {        const state = createState();
         state.remoteCenters = [{ name: 'laptop', url: 'http://laptop:3200' }];
         let options: any[] = [];
         let openedRemotes = 0;
@@ -107,6 +106,39 @@ export class WorkTreeTest {
         host.select = async (_title: string, opts: any[]) => { options = opts; return undefined; };
         await runWorkCommandView(host);
         expect(options.some(option => option.value === 'remotes')).toEqual(false);
+    }
+
+    @Test('/work remote merges gateways into one read-only tree')
+    async remoteTree() {
+        const state = createState();
+        state.remoteCenters = [{ name: 'laptop', url: 'http://laptop:3200' }];
+        const overlays: Array<{ title: string; lines: string[] }> = [];
+        let options: any[] = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: { getDelegationTree: async () => null, listAllBackgroundTasks: async () => [] },
+            notify: () => undefined,
+            openSession: async () => undefined,
+            remoteCenters: [{ name: 'laptop', url: 'http://laptop:3200' }],
+            probeRemoteCenter: async (remote: any) => ({
+                remote,
+                ok: true,
+                sessions: [{ id: 'r1', title: 'Remote task', messageCount: 3, updatedAt: Date.now() }]
+            }),
+            select: async (_title: string, opts: any[]) => {
+                options = opts;
+                return 'remote-session:laptop:r1';
+            },
+            openTextOverlay: (title: string, lines: string[]) => { overlays.push({ title, lines }); }
+        };
+        await runWorkCommandView(host, 'remote');
+        expect(options.map(option => option.value)).toEqual(['remote:laptop', 'remote-session:laptop:r1']);
+        expect(overlays.length).toEqual(1);
+        const text = overlays[0].lines.join('\n');
+        expect(text).toContain('Remote task');
+        expect(text).toContain('http://laptop:3200');
+        expect(text).toContain('read-only');
     }
 
     @Test('task rows offer open, cancel and dismiss actions')
