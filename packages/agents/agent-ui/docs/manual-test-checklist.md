@@ -1,7 +1,8 @@
 # Agent UI 手测清单（P4）
 
-日期：2026-11-20。覆盖本轮新增的 LSP、权限规则、队列、默认 profile、release highlights 与
-持久化 turn 撤销。PTY 与浏览器都必须验证；不能用单元测试代替用户可见行为。
+日期：2026-11-22。覆盖 LSP、权限规则、队列、默认 profile、release highlights、持久化 turn 撤销，
+以及本轮的 per-session 权限、规则图形化新增、TUI 通知、`/delete`、`/import`、`/export html`、
+`/remotes`、`/work all`、`/msg`（opt-in）与远程 cancel。PTY 与浏览器都必须验证；不能用单元测试代替用户可见行为。
 
 ## 1. 前置
 
@@ -71,11 +72,42 @@
 4. `/redo`：消息与文件改动恢复。
 5. 会话删除后再次启动：不应出现已删除会话的撤销历史。
 
+### 2.7 会话删除 / 导入 / HTML 导出
+
+1. `/delete`：弹确认框；选 Cancel 会话仍在；选 Delete 后当前会话切换到相邻会话。
+2. turn 运行中对当前会话 `/delete`：拒绝并提示 busy；`/delete <其它 id> confirm` 不切换当前 tab。
+3. `/export html`：默认写入 `.tsdi-agent/exports/*.html`；用浏览器打开，内容转义、无脚本、
+   跟随系统深浅色；Web/attach 下只显示文件名与字节数预览。
+4. `/import <该 html 同目录的 .json>`：创建**新会话**并打开；消息 id 已重新生成；
+   导入一个普通文本文件提示 "No messages found"。
+
+### 2.8 跨会话消息（agent teams v0）
+
+1. 默认 `/msg <session> hello`：被拒绝并提示在 `/settings → Agents` 开启。
+2. 打开 Cross-session messages 后：
+   - `/msg <其它会话> hello` 投递；切到目标会话看到 `↩ <来源> · hello`；
+   - `/msg --wake <其它会话> run tests` 启动目标 turn；
+   - `/msg <当前会话> x` 拒绝（不能发给自己）；
+   - `/msg list` 打开只读快照（来源/目标/内容/计数），无消息时显示空提示。
+3. 重启后开关与消息仍在。
+
+### 2.9 远程中心 / 混合 Work / 远程 cancel
+
+1. `/remotes add laptop http://127.0.0.1:3200 <token>`；`/remotes` 选中 laptop 看到会话快照，
+   快照与提示中不出现 token。
+2. `/work`：末尾出现 `Remote centers (1)`，选择后打开同一 `/remotes`。
+3. `/work remote`：只显示 gateway 与会话；`/work all`：本地 delegation 行在前、远程行在后；
+   选择远程会话显示只读详情。
+4. 在 laptop 上启动一个 turn，然后本机 `/remotes cancel laptop <session 前缀>`：
+   确认后目标 turn 停止；再次 cancel 提示没有运行中的 turn。
+5. 断网/关掉 gateway：`/remotes` 标记 unreachable，其它 gateway 仍可用。
+
 ## 3. 浏览器 / Web
 
 1. `tsdi-agent serve`（或 TUI `/web`）打开 console。
 2. 依次执行 `/check`、`/format --check`、`/highlights`、`/permissions rules`、`/queue manage`、
-   `/agents default`，确认与 TUI 行为一致。
+   `/agents default`、`/import`、`/remotes`、`/work all`，确认与 TUI 行为一致。
+3. 侧栏底部 **Teams** 按钮打开 `/msg list` 面板；开启跨会话消息后投递一条并在目标会话看到 `↩` 标记。
 3. 在浏览器修改权限规则/默认 profile 后刷新页面：
    - `settings.json` 保持修改；
    - 终端 attach 的同一 session 也生效。
