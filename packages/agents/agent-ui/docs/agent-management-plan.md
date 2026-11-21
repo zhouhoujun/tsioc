@@ -294,7 +294,8 @@ interface SessionCheckpoint {
 1. **Queue / steer 管理面**：`/queue move <n> <m>` 与 `/queue manage` 交互面板已支持重排/编辑/删除；
    `Ctrl+X Enter` 已提供“插到队首”的优先级（不打断 turn）；Mod+Enter steer 与 Web 拖动/批量操作仍待补。
 2. **Cross-session messaging / agent teams（opt-in）**：v0 已提供 `/msg [--wake]` 与 `session.message.send`（append-only 默认、owner 校验），并由工作区 `crossSessionMessages`（默认 off）开关控制；共享任务列表与 TUI/Web 消息面板仍待补。
-3. **Remote 聚合**：Agent Center 读取多个 gateway（本地 + attach）；只读优先，再开放 spawn/cancel；URL/配对复用。
+3. **Remote 聚合**：`/remotes` 已提供只读多 gateway 会话快照，`/work` 末尾追加 Remote centers 入口；
+   多 gateway 与本地会话的统一树形展示、spawn/cancel 仍待补。
 4. **Verbosity & 活动摘要**：low/medium/high；一次 run 的工具/thought 合并为可折叠活动行（参考 opencode v2.3），默认 low。
 5. **Artifacts**：会话产出发布为可交互页面（Web），TUI 提供链接/打开。
 

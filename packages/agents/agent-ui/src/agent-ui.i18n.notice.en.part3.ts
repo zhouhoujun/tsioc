@@ -118,6 +118,8 @@ export const AGENT_UI_NOTICE_EN_PART3: NestedMessages = {
   workTitle: 'Work',
   workHint: 'enter open · esc close',
   workEmpty: 'No delegated work yet.',
+  workRemoteCentersEntry: 'Remote centers ({count})',
+  workRemoteCentersDescription: 'read-only session lists from other gateways',
   workUnavailable: 'Work tree is unavailable in this host.',
   workQueued: 'queued',
   workBlocked: 'blocked',

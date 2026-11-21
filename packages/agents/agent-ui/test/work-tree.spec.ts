@@ -50,8 +50,7 @@ export class WorkTreeTest {
     }
 
     @Test('falls back to the current session when no delegation tree exists')
-    rowsWithoutTree() {
-        const rows = buildWorkRows({ currentSessionId: 'root', tasks: [TASKS[1]], sessions: createState().sessions });
+    rowsWithoutTree() {        const rows = buildWorkRows({ currentSessionId: 'root', tasks: [TASKS[1]], sessions: createState().sessions });
         expect(rows.map(row => row.value)).toEqual(['session:root', 'task:t2:root']);
     }
 
@@ -74,6 +73,40 @@ export class WorkTreeTest {
         host.select = async () => 'task:t1:child-a';
         await runWorkCommandView(host);
         expect(opened).toEqual(['child-a', 'child-a']);
+    }
+
+    @Test('work surfaces remote centers as one read-only entry')
+    async remoteCentersEntry() {
+        const state = createState();
+        state.remoteCenters = [{ name: 'laptop', url: 'http://laptop:3200' }];
+        let options: any[] = [];
+        let openedRemotes = 0;
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: {
+                getDelegationTree: async () => TREE,
+                listAllBackgroundTasks: async () => TASKS
+            },
+            notify: () => undefined,
+            openSession: async () => undefined,
+            select: async (_title: string, opts: any[]) => {
+                options = opts;
+                return 'remotes';
+            },
+            openRemoteCenters: async () => { openedRemotes += 1; }
+        };
+        await runWorkCommandView(host);
+        const entry = options.find(option => option.value === 'remotes');
+        expect(entry?.label).toContain('1');
+        expect(openedRemotes).toEqual(1);
+
+        // Without configured centers the row must not appear.
+        state.remoteCenters = [];
+        options = [];
+        host.select = async (_title: string, opts: any[]) => { options = opts; return undefined; };
+        await runWorkCommandView(host);
+        expect(options.some(option => option.value === 'remotes')).toEqual(false);
     }
 
     @Test('task rows offer open, cancel and dismiss actions')

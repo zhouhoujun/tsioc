@@ -118,6 +118,8 @@ export const AGENT_UI_NOTICE_ZH_PART3: NestedMessages = {
   workTitle: '工作',
   workHint: '回车 打开 · esc 关闭',
   workEmpty: '暂无委派任务。',
+  workRemoteCentersEntry: '远程中心（{count}）',
+  workRemoteCentersDescription: '以只读方式查看其它 gateway 的会话列表',
   workUnavailable: '当前宿主不支持工作树。',
   workQueued: '排队',
   workBlocked: '阻塞',

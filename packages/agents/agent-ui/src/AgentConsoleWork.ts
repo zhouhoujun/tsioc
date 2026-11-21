@@ -135,6 +135,8 @@ export interface AgentConsoleWorkHost {
     listWorktrees?(): Promise<Array<{ path: string; branch?: string }>>;
     /** Read-only worker report overlay. */
     openTextOverlay?(title: string, lines: string[], visibleLines?: number): void;
+    /** Open the `/remotes` picker from the Work screen. */
+    openRemoteCenters?(): void | Promise<void>;
 }
 
 function workStatusLabel(status: string, translator?: AgentUiTranslator | null): string {
@@ -270,7 +272,8 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
         tasks: (tasks || []) as any,
         sessions: host.state.sessions as any
     });
-    if (!rows.length) {
+    const remoteCount = Array.isArray(host.state.remoteCenters) ? host.state.remoteCenters.length : 0;
+    if (!rows.length && !remoteCount) {
         host.notify(formatAgentUiNotice(host.translator, 'workEmpty'));
         return;
     }
@@ -280,12 +283,25 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
         description: row.status ? workStatusLabel(row.status, host.translator) : '',
         detail: row.detail
     }));
+    if (remoteCount) {
+        // Agent Center aggregation lite: one entry into the read-only remote
+        // session lists instead of probing every gateway from this picker.
+        options.push({
+            label: formatAgentUiNotice(host.translator, 'workRemoteCentersEntry', { count: remoteCount }),
+            value: 'remotes',
+            description: formatAgentUiNotice(host.translator, 'workRemoteCentersDescription')
+        });
+    }
     const title = formatAgentUiNotice(host.translator, 'workTitle');
     const hint = formatAgentUiNotice(host.translator, 'workHint');
     const picked = host.select
         ? await host.select(title, options, 0, hint)
         : await host.state.selectAsync(title, options, 0, hint);
     if (!picked) return;
+    if (picked === 'remotes') {
+        await host.openRemoteCenters?.();
+        return;
+    }
     const row = rows.find(item => item.value === picked);
     if (!row) return;
     if (row.value.startsWith('task:')) {
@@ -346,6 +362,7 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
         notify: (message: string) => ctx.notify(message),
         openSession: (sessionId?: string) => ctx.openSession(sessionId),
         select: (title, options, index, hint) => ctx.select(title, options, index, hint),
+        openRemoteCenters: async () => { await ctx.executeCommand?.('/remotes'); },
         cancelTask: async (taskId: string) => {
             const result = await ctx.sessionService?.cancelBackgroundTasks?.([taskId]);
             return !!(result && Array.isArray(result.cancelled) && result.cancelled.includes(taskId));
