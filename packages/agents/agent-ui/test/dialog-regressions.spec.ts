@@ -107,6 +107,27 @@ export class SessionProjectDialogsTest {
         await settle();
     }
 
+    @Test('the sessions dialog groups rows under recency headers')
+    async sessionsGroups() {
+        this.state.openSelectMenu('Sessions', [
+            { label: 'Today task', value: 'a', group: 'Today' },
+            { label: 'Also today', value: 'b', group: 'Today' },
+            { label: 'Old task', value: 'c', group: 'Older' }
+        ], 0, 'up/down move   enter confirm   esc close', 'sessions');
+        await settle();
+        this.surface.render();
+        const text = this.surface.lastRenderedLines.join('\n');
+        expect(text).toContain('Today task');
+        expect(text).toContain('Old task');
+        // One header per group, never per row.
+        expect(text.split('─ Today ─').length - 1).toEqual(1);
+        expect(text.split('─ Older ─').length - 1).toEqual(1);
+        // Headers carry no option index: selecting still resolves the row.
+        await this.state.confirmSelectMenu('c');
+        await settle();
+        expect(this.state.selectMenu).toBeUndefined();
+    }
+
     @Test('/projects offers every project and no load-more row')
     async projectsDialog() {
         void this.instance.handleCommand('/projects');

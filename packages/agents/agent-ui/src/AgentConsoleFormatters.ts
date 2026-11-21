@@ -310,3 +310,32 @@ export function formatSessionHint(hint: string, filterText?: string): string {
     const filter = String(filterText || '').trim();
     return filter ? `${hint} · filter: ${filter}` : hint;
 }
+
+export type AgentConsoleSessionRecencyBucket = 'today' | 'yesterday' | 'previous7Days' | 'older';
+
+/**
+ * Recency bucket for the `/sessions` dialog headers (opencode-style grouping).
+ * Missing/epoch timestamps fall into `older` instead of inventing a date.
+ */
+export function resolveSessionRecencyBucket(updatedAt?: number, now = Date.now()): AgentConsoleSessionRecencyBucket {
+    let time = Number(updatedAt || 0);
+    if (!time || time <= 0) {
+        return 'older';
+    }
+    if (time < 1e12) {
+        time *= 1000;
+    }
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const today = startOfToday.getTime();
+    if (time >= today) {
+        return 'today';
+    }
+    if (time >= today - 86_400_000) {
+        return 'yesterday';
+    }
+    if (time >= today - 7 * 86_400_000) {
+        return 'previous7Days';
+    }
+    return 'older';
+}

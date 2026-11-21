@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 402 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2321 passing**（2 组） |
+| `@tsdi/agent-ui` | **2323 passing**（2 组） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -168,6 +168,9 @@ rm -f run-one.tmp.ts
   输入即过滤（标题/id/workspace/project/summary），Enter 切换、Esc 关闭；`/sessions <query>`
   预先过滤。输入框 slash/mention/参数子菜单与 pending question/确认仍保持 menu 弹层；
   `/theme`、`/provider` 等简单选择保持选择菜单，不升级为 dialog。
+- `/sessions` 分组（opencode 风格）：按 Today / Yesterday / Previous 7 days / Older 插入
+  不可选中的标题行（方向键/Enter 自动跳过），过滤后仍按组展示；时间戳为秒时先归一化，
+  缺失时间落入 Older。
 - AMS P0 补充：`/agents default [name]` 读取/设置新会话默认代理档案，持久化 `defaultArchetype`
   并在 TUI/Web/attach 启动时恢复到 `policy.defaultArchetype`。
 - AMS P1.2 部分完成：`/permissions rules` 查看有序审批规则，`add <tool|category>` /

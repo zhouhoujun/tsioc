@@ -3,7 +3,7 @@ import { Suite, Test } from '@tsdi/unit';
 import { InMemoryCommandExecutionControl } from '@tsdi/agent';
 import { AgentConsoleSessionState } from '../src/AgentConsoleSessionState';
 import { AgentConsoleSessionsPanelComponent } from '../src/AgentConsolePanels';
-import { formatSessionAge, formatSessionHint } from '../src/AgentConsoleFormatters';
+import { formatSessionAge, formatSessionHint, resolveSessionRecencyBucket } from '../src/AgentConsoleFormatters';
 import { COMMAND_HANDLERS } from '../src/AgentConsoleCommandHandlers';
 import { navigationFor } from './test-transcript-navigation';
 
@@ -44,6 +44,18 @@ export class SessionPickerTest {
     sessionHint() {
         expect(formatSessionHint('esc', undefined)).toEqual('esc');
         expect(formatSessionHint('esc', '  probe ')).toEqual('esc · filter: probe');
+    }
+
+    @Test('groups sessions by recency buckets')
+    recencyBuckets() {
+        const now = new Date(2026, 9, 27, 12, 0, 0).getTime();
+        expect(resolveSessionRecencyBucket(now - 60_000, now)).toEqual('today');
+        expect(resolveSessionRecencyBucket(now - 24 * HOUR, now)).toEqual('yesterday');
+        expect(resolveSessionRecencyBucket(now - 3 * 24 * HOUR, now)).toEqual('previous7Days');
+        expect(resolveSessionRecencyBucket(now - 30 * 24 * HOUR, now)).toEqual('older');
+        expect(resolveSessionRecencyBucket(0, now)).toEqual('older');
+        // Second-based timestamps are normalized, not treated as 1970.
+        expect(resolveSessionRecencyBucket(Math.floor((now - 60_000) / 1000), now)).toEqual('today');
     }
 
     @Test('nav filtering reuses its result until the filter or sessions change')
@@ -192,6 +204,8 @@ export class SessionPickerTest {
         expect(calls[0].options.map(option => option.value)).toEqual(['s1']);
         expect(calls[0].options[0].label).toContain('Probe title');
         expect(calls[0].options[0].label).toContain('[current]');
+        // Grouped by recency so a long project list reads like opencode.
+        expect(calls[0].options[0].group).toEqual('Today');
         expect(opened).toEqual(['s1']);
 
         await COMMAND_HANDLERS['/sessions'](ctx, 'other', { command: '/sessions', matches: ['/sessions'] });

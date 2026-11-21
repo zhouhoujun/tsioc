@@ -2,7 +2,7 @@ import type { CommandHandlerContext } from './AgentConsoleCommandHandlerContext'
 import type { SnapshotCommandHost } from './AgentConsoleSnapshotCommands';
 import { formatAgentUiNotice, formatAgentPanelLabel as panelLabel } from './agent-ui.i18n';
 import { rankAgentConsoleFuzzyOptions } from './AgentConsoleFuzzy';
-import { formatSessionAge } from './AgentConsoleFormatters';
+import { formatSessionAge, resolveSessionRecencyBucket } from './AgentConsoleFormatters';
 import { runSnapshotsCommand } from './AgentConsoleSnapshotCommands';
 
 export async function handleSession(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }): Promise<boolean> {
@@ -71,11 +71,18 @@ async function openSessionsDialog(ctx: CommandHandlerContext, query = ''): Promi
             const currentBadge = item.current ? ` [${panelLabel(ctx.translator, 'sessions', 'current', 'current')}]` : '';
             const archivedBadge = item.archived ? ` [${panelLabel(ctx.translator, 'sessions', 'archived', 'archived')}]` : '';
             const pinnedBadge = item.pinned ? ' 📌' : '';
+            const bucket = resolveSessionRecencyBucket(item.updatedAt);
+            const groupFallback = bucket === 'today'
+                ? 'Today'
+                : bucket === 'yesterday'
+                    ? 'Yesterday'
+                    : bucket === 'previous7Days' ? 'Previous 7 days' : 'Older';
             return {
                 label: `${title}${currentBadge}${archivedBadge} (${item.messageCount ?? '?'})${pinnedBadge}${formatSessionAge(item.updatedAt)}`,
                 value: item.id,
                 description: item.workspace || item.summary || '',
-                detail: item.summary
+                detail: item.summary,
+                group: panelLabel(ctx.translator, 'sidebar', bucket, groupFallback)
             };
         }),
         0,

@@ -428,8 +428,16 @@ export class AgentConsoleCommandDialogPanelComponent {
             }
             return { lines, actions, indexes };
         }
+        let previousGroup = '';
         menu.options.slice(window.start, window.start + window.count).forEach((option, offset) => {
             const index = window.start + offset;
+            const group = String(option.group || '');
+            if (group && group !== previousGroup) {
+                // Non-selectable recency header (opencode-style session groups).
+                // It carries no action/index, so arrows and Enter skip it.
+                push(`─ ${group} ─`);
+            }
+            previousGroup = group;
             const description = option.description ? `  ${option.description}` : '';
             push(
                 `${index === menu.selectedIndex ? '›' : ' '} ${index + 1}. ${option.label}${description}`,

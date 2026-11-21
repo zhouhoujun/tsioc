@@ -7,6 +7,7 @@
 - Added `/agents default [name]` and persisted `defaultArchetype` for new sessions.
 - Added `/permissions rules` editing and ordered-rule explanation in `/permissions inspect`.
 - The permissions settings panel now adds rules through a two-step action/category menu instead of requiring command syntax.
+- The `/sessions` dialog groups rows under Today / Yesterday / Previous 7 days / Older headers (headers are skipped by arrow navigation).
 - Added `/permissions session [<level>]` (and a matching settings row) for a per-tab security level override; switching tabs re-applies each tab's override or the workspace default without persisting it.
 - Added `AGENT_UI_TEST_MEMORY_BUDGET_MB` so a test shard that exceeds its peak-RSS budget fails the run instead of silently swapping.
 - Added `/queue manage` interactive reorder/edit/remove panel and `/queue move <n> <m>`.
