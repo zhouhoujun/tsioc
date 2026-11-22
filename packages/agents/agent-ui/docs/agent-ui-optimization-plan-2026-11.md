@@ -316,7 +316,8 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
    更细粒度权限与远端审批 UI 仍待补）。
 2. Web teams 专页（跨会话消息的浏览器视图）。
 3. P2 dialog overlay 隔离（在现有“禁止脏节点追踪跳过面板”约束下需要新的安全方案）。
-4. P0 owner-view token（任意顺序/懒加载分片硬化）。
+4. P0 owner-view token（随机顺序门禁已提供 `AGENT_UI_TEST_RANDOM_SEED`，seed 7/99 全绿；
+   owner-view token 仍未实现，等待投影/嵌套视图的失败复现）。
 
 ### dialog overlay 实验记录（2026-11-22，已回退）
 

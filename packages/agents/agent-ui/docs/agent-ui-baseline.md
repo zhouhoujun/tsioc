@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 410 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2358 passing**（2 组） |
+| `@tsdi/agent-ui` | **2359 passing**（2 组；含随机顺序） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
@@ -237,6 +237,10 @@ rm -f run-one.tmp.ts
   测试墙钟提供 `AGENT_UI_TEST_WALL_BUDGET=<seconds>`（超时失败）；分片内存阈值提供
   `AGENT_UI_TEST_MEMORY_BUDGET_MB=<MiB>`：每个 worker/单进程在退出前采样峰值 RSS，
   超预算直接使该 shard 失败（本次单进程峰值 1844 MiB；预算 1 MiB 时退出码 1，用例仍全绿）。
+- 测试隔离（2026-11-22）：修复 `defaultAgentOptions` 单例被注入后原地写入导致跨文件泄漏
+  （provider wizard/模型切换改写 `options.model`）。`AgentModule` 改为每应用 factory 克隆
+  （`cloneAgentOptions`），console bootstrap 与 web mount 也克隆可变子对象；新增
+  `AGENT_UI_TEST_RANDOM_SEED=<n>` 单进程随机顺序运行器（seed 7/99 均 **2359 passing**）。
 - P2 overlay 预算（2026-11-21）：`tab-switch-long-session.spec.ts` 新增对话框开合测量
   （4×1000 消息，24 选项，实际绘制 12 行），并断言每帧 ≤1 次渲染。实测 open
   p50 **71ms** / p90 **82ms**、close p90 **39ms**；`AGENT_UI_DIALOG_BUDGET=1` 以

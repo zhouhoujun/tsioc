@@ -24,6 +24,8 @@ import { planGroups, selectGroups } from './test/groups';
  * - `AGENT_UI_TEST_SHARDS=1` runs the original single-process suite;
  * - `AGENT_UI_TEST_MEMORY_BUDGET_MB=<MiB>` fails a suite/worker whose peak RSS
  *   exceeds the budget;
+ * - `AGENT_UI_TEST_RANDOM_SEED=<n>` runs every spec once in a deterministic
+ *   shuffled order (single process) to catch cross-file global-state leaks;
  * - `-c` / `--coverage` always runs single-process (one coverage report).
  */
 
@@ -195,6 +197,28 @@ async function main(): Promise<void> {
         const overBudget = await runWithMemoryBudget(`group ${group}`, async () => {
             await runTest(selected.map(file => `./${file}`), { baseURL: __dirname });
         });
+        await flushStdio();
+        process.exit(overBudget ? 1 : 0);
+    }
+
+    // Deterministic shuffled order: fast files can leak module globals that a
+    // fixed contiguous slice hides. Opt-in because it is single-process/slow.
+    const randomSeedText = String(process.env.AGENT_UI_TEST_RANDOM_SEED || '').trim();
+    const randomSeed = Number(randomSeedText);
+    if (randomSeedText && Number.isFinite(randomSeed)) {
+        const shuffled = files.slice();
+        let state = Math.floor(randomSeed);
+        const next = () => (state = (state * 1664525 + 1013904223) % 4294967296) / 4294967296;
+        for (let index = shuffled.length - 1; index > 0; index--) {
+            const swap = Math.floor(next() * (index + 1));
+            [shuffled[index], shuffled[swap]] = [shuffled[swap], shuffled[index]];
+        }
+        console.log(`[agent-ui] random order seed=${randomSeed} files=${shuffled.length}`);
+        const started = Date.now();
+        const overBudget = await runWithMemoryBudget('random-order suite', async () => {
+            await runTest(shuffled.map(file => `./${file}`), { baseURL: __dirname });
+        });
+        enforceWallBudget(started, 'random-order suite');
         await flushStdio();
         process.exit(overBudget ? 1 : 0);
     }

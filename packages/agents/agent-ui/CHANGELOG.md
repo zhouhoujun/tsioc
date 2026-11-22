@@ -22,6 +22,8 @@
 - `/work all` merges local delegation rows with remote gateway rows in one tree (local first).
 - `/remotes cancel <name> <session>` cancels a remote running turn after confirmation (`run.cancel`).
 - `/remotes allow-spawn <name> [off]` + `/remotes spawn <name> <session> <goal>` add explicit opt-in remote worker creation through `tools.invoke`/`spawn_agent`.
+- Fixed cross-test/host model leakage: `AgentModule` now injects a per-application clone of the default options, and console/web bootstrap clone mutable model/ui/policy sub-objects before model switches.
+- Added an opt-in deterministic random-order test runner (`AGENT_UI_TEST_RANDOM_SEED=<n>`).
 - Added `/permissions session [<level>]` (and a matching settings row) for a per-tab security level override; switching tabs re-applies each tab's override or the workspace default without persisting it.
 - Added `AGENT_UI_TEST_MEMORY_BUDGET_MB` so a test shard that exceeds its peak-RSS budget fails the run instead of silently swapping.
 - Added `/queue manage` interactive reorder/edit/remove panel and `/queue move <n> <m>`.
