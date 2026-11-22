@@ -1241,6 +1241,13 @@ export class TuiTerminalSurface {
     /** Screen row range occupied by the scrollable transcript (viewport mode). */
     protected viewportTranscriptRange?: { start: number; end: number };
     protected textSelection?: { anchorRow: number; anchorCol: number; focusRow: number; focusCol: number };
+    /**
+     * Source row/column under the initial mouse press. Selection must stay
+     * anchored to this transcript row: viewport auto-scroll replaces
+     * `viewportSourceRows`, so re-deriving the anchor from the fixed screen
+     * row made the start drift and capped how much text a drag could select.
+     */
+    protected selectionPressAnchor?: { row: number; col: number };
     protected mouseHandedOff = false;
     /** A native terminal selection may still exist after a handoff. */
     protected terminalSelectionMayExist = false;
@@ -1991,6 +1998,7 @@ export class TuiTerminalSurface {
             this.mousePress = undefined;
             this.mouseDragPoint = undefined;
             this.touchPressAt = undefined;
+            this.selectionPressAnchor = undefined;
             this.stopSelectionAutoScroll();
             if (this.suppressClickAfterMultiClick) {
                 this.suppressClickAfterMultiClick = false;
@@ -2047,6 +2055,7 @@ export class TuiTerminalSurface {
             this.mousePress = undefined;
             this.mouseDragPoint = undefined;
             this.touchPressAt = undefined;
+            this.selectionPressAnchor = undefined;
             return false;
         }
         if (this.hitViewportNotice(mouse.x, mouse.y)) {
@@ -2061,6 +2070,10 @@ export class TuiTerminalSurface {
         this.mousePress = { x: mouse.x, y: mouse.y };
         this.mouseDragPoint = { x: mouse.x, y: mouse.y };
         this.touchPressAt = Date.now();
+        const pressSourceRow = this.resolveVisibleSourceRow(mouse.y);
+        this.selectionPressAnchor = pressSourceRow === undefined
+            ? undefined
+            : { row: pressSourceRow, col: Math.max(0, Math.floor((mouse.x || 1) - 1)) };
         if (clickCount === 2 || clickCount === 3) {
             this.suppressClickAfterMultiClick = true;
             if (clickCount === 2) {
@@ -2328,7 +2341,7 @@ export class TuiTerminalSurface {
         } else {
             this.stopSelectionAutoScroll();
         }
-        const anchorRow = this.viewportSourceRows[anchorScreenRow];
+        const anchorRow = this.selectionPressAnchor?.row ?? this.viewportSourceRows[anchorScreenRow];
         const focusRow = this.viewportSourceRows[focusScreenRow];
         if (anchorRow === undefined || focusRow === undefined) {
             return;
@@ -2340,7 +2353,7 @@ export class TuiTerminalSurface {
         }
         this.textSelection = {
             anchorRow,
-            anchorCol: Math.max(0, Math.floor((press.x || 1) - 1)),
+            anchorCol: this.selectionPressAnchor?.col ?? Math.max(0, Math.floor((press.x || 1) - 1)),
             focusRow,
             focusCol: Math.max(0, Math.floor((mouse.x || 1) - 1))
         };

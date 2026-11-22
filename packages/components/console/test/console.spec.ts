@@ -2347,6 +2347,46 @@ export class ConsoleRendererTest {
         }
     }
 
+    @Test('auto-scrolling a drag keeps the selection anchored to the press row')
+    async edgeDragKeepsAnchor() {
+        const ctx = await Application.run(ConsoleViewportTestComponent, {
+            deps: [TuiTemplateModule, ComponentsModule]
+        });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.runners.getRef(ConsoleViewportTestComponent) as ComponentRef<ConsoleViewportTestComponent>;
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: ref.hostView.rootNodes[0] as ConsoleElement,
+                width: 40,
+                height: 8,
+                output: { write: () => undefined }
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+            expect(surface.scrollViewportToEdge('start')).toBe(true);
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+            surface.dispatchMouse({ button: 0, x: 1, y: 1, release: false });
+            surface.dispatchMouse({ button: 32, x: 20, y: 12, release: false });
+            const anchorBefore = (surface as any).textSelection?.anchorRow;
+            expect(anchorBefore).not.toBeUndefined();
+            // Keep dragging while the viewport auto-scrolls: every motion event
+            // used to re-derive the anchor from the fixed screen row.
+            for (let index = 0; index < 6; index++) {
+                await new Promise(resolve => setTimeout(resolve, 80));
+                surface.dispatchMouse({ button: 32, x: 20, y: 12, release: false });
+            }
+            expect((surface as any).textSelection?.anchorRow).toBe(anchorBefore);
+            const anchorLine = String((surface as any).lastFullLines[anchorBefore] || '').trim();
+            expect(anchorLine.length).toBeGreaterThan(0);
+            expect(surface.getTextSelectionText().split('\n')[0].trim()).toContain(anchorLine);
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
+
     @Test('tui drag selects text without turning it into a click, and keyboard input clears it')
     async dragSelectsTextWithoutClick() {
         const ctx = await Application.run(ConsoleLoopTestComponent, {
