@@ -292,11 +292,29 @@ export class HtmlRenderer implements Renderer {
     getAttributes(el: RNode): RAttr[] {
         const element = el as unknown as Element;
         if (!element.attributes) return [];
-        return Array.from(element.attributes).map(attr => ({
+        const attributes = Array.from(element.attributes).map(attr => ({
             name: attr.name,
             value: attr.value,
             namespace: attr.namespaceURI ?? undefined
         }));
+        // Framework attributes (`@event`, `:prop`, `*if`) are not valid DOM
+        // attribute names, so `setAttribute` stores them as element
+        // properties. Template IR rebuilds go through that path, and a
+        // `getAttributes` that only reads the DOM attribute list then hides
+        // them from binding generation (compiled templates lost their click
+        // handlers once the IR cache was warm). Read them back here so both
+        // storage paths look identical to the compiler.
+        const withProps = element as unknown as Record<string, unknown>;
+        for (const key of Object.keys(withProps)) {
+            if (!key.startsWith('@') && !key.startsWith(':') && !key.startsWith('v-') && !key.startsWith('*')) {
+                continue;
+            }
+            if (attributes.some(attr => attr.name === key)) {
+                continue;
+            }
+            attributes.push({ name: key, value: String(withProps[key]), namespace: undefined });
+        }
+        return attributes;
     }
 
     removeAttribute(el: RNode, name: string, namespace?: string | null): void {

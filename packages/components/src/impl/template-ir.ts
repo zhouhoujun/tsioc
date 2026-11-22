@@ -30,12 +30,14 @@ export function nodesToIR(nodes: RNode[], renderer: Renderer): TemplateIRNode[] 
         const attrs = (renderer.getAttributes(element) || []).map(attr =>
             [attr.name, attr.value, attr.namespace] as [string, string, string?]
         );
-        // HTML renderers keep framework attributes (`v-for`, `:prop`, `@event`,
-        // `*if`) as element properties instead of DOM attributes. Preserve them
-        // so IR reconstruction feeds the same binding data to the compiler.
+        // Renderers may expose framework attributes (`v-for`, `:prop`,
+        // `@event`, `*if`) as element properties. `getAttributes` normally
+        // reports them already; keep this guard for renderers that do not.
         for (const key of Object.keys(element as any)) {
             if (key.startsWith('@') || key.startsWith(':') || key.startsWith('v-') || key.startsWith('*')) {
-                attrs.push([key, String((element as any)[key])]);
+                if (!attrs.some(attr => attr[0] === key)) {
+                    attrs.push([key, String((element as any)[key])]);
+                }
             }
         }
         const children = nodesToIR(
