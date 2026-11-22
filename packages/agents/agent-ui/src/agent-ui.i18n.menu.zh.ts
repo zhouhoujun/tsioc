@@ -351,7 +351,7 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         highlightsDescription: '升级后展示本次更新内容',
         approvalRulesLabel: '审批规则：{count} 条',
         approvalRulesDescription: '有序 ask/allow/deny 规则（最后匹配优先）',
-        pagerSizeLabel: '消息翻页大小：{count}',
+        pagerSizeLabel: '消息翻页大小',
         pagerSizeDescription: '转录导航中 PageUp/PageDown 一次移动的行数',
         pagerSizeTitle: '设置 · 消息翻页大小',
         pagerSizeOption: '每次翻 {count} 条消息',

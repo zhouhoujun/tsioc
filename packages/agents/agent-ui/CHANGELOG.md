@@ -24,6 +24,7 @@
 - `/remotes allow-spawn <name> [off]` + `/remotes spawn <name> <session> <goal>` add explicit opt-in remote worker creation through `tools.invoke`/`spawn_agent`.
 - Fixed cross-test/host model leakage: `AgentModule` now injects a per-application clone of the default options, and console/web bootstrap clone mutable model/ui/policy sub-objects before model switches.
 - Fixed compiled templates losing `@event` / `:prop` / `*if` framework attributes once the verified template IR cache was warm: event handlers (for example a message row's click-to-expand) could disappear after another view compiled the same template.
+- Fixed `/settings` appearing frozen in the TUI: `AgentUiModule` now exports the settings center, routed-token, and message-template components. Mounting the module through `imports` (the CLI path) previously compiled `agent-console-settings-center-panel` as an empty element, so the overlay captured every key without painting anything.
 - Added an opt-in deterministic random-order test runner (`AGENT_UI_TEST_RANDOM_SEED=<n>`).
 - Added `/permissions session [<level>]` (and a matching settings row) for a per-tab security level override; switching tabs re-applies each tab's override or the workspace default without persisting it.
 - Added `AGENT_UI_TEST_MEMORY_BUDGET_MB` so a test shard that exceeds its peak-RSS budget fails the run instead of silently swapping.

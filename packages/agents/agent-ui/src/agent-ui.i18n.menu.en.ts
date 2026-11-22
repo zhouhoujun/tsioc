@@ -351,7 +351,7 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         highlightsDescription: 'show what changed after an upgrade',
         approvalRulesLabel: 'Approval rules: {count}',
         approvalRulesDescription: 'ordered ask/allow/deny rules (last match wins)',
-        pagerSizeLabel: 'Message page size: {count}',
+        pagerSizeLabel: 'Message page size',
         pagerSizeDescription: 'rows moved by page up/down in transcript navigation',
         pagerSizeTitle: 'Settings · Message page size',
         pagerSizeOption: 'jump {count} messages per page',
