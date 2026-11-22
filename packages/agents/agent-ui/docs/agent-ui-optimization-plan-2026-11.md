@@ -317,3 +317,11 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 2. Web teams 专页（跨会话消息的浏览器视图）。
 3. P2 dialog overlay 隔离（在现有“禁止脏节点追踪跳过面板”约束下需要新的安全方案）。
 4. P0 owner-view token（任意顺序/懒加载分片硬化）。
+
+### dialog overlay 实验记录（2026-11-22，已回退）
+
+尝试把同一帧内多个 dirty origin 合并（仅当它们解析到同一个 top-level panel 时），
+期望 select 面板内的 `select-core` / `select-rows` 更新复用第一次 origin，从而让
+transcript 面板命中缓存。实测 dialog 纹理未出现在 `lastRenderedLines`（可见 select 面板
+被当作未变而复用了隐藏缓存），属于典型的陈旧界面，已回退并保留“多 origin → 全量重绘”。
+结论：40ms 目标需要在 overlay 渲染层做更根本的隔离，而不是在现有 panel cache 上合并 origin。
