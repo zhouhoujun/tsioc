@@ -329,7 +329,7 @@ import { startProviderWizard, handleWizardEscape, cancelProviderWizard, resetPro
         <agent-console-working-panel v-show="panels.working && !panels.messageDetail"></agent-console-working-panel>
         <agent-console-tool-runs-panel v-show="panels.toolRuns && !panels.messageDetail"></agent-console-tool-runs-panel>
         <agent-console-pending-question-panel renderRegion="menu" v-show="panels.pendingQuestion"></agent-console-pending-question-panel>
-        <agent-console-settings-center-panel renderRegion="menu" v-show="panels.settingsCenter"></agent-console-settings-center-panel>
+        <agent-console-settings-center-panel renderRegion="dialog" v-show="panels.settingsCenter"></agent-console-settings-center-panel>
         <agent-console-select-panel renderRegion="menu" v-show="panels.suggestion"></agent-console-select-panel><agent-console-select-panel renderRegion="menu" v-show="panels.select"></agent-console-select-panel><agent-console-command-dialog-panel renderRegion="dialog" v-show="panels.commandDialog"></agent-console-command-dialog-panel>
         <agent-console-text-overlay-panel renderRegion="dialog" v-show="panels.textOverlay"></agent-console-text-overlay-panel>
         <toast-stack renderRegion="toast" :items="state.toasts" :messageWidth="toastMessageWidth" @closeAction="dismissToast"></toast-stack>

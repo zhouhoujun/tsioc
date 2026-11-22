@@ -187,6 +187,12 @@ export abstract class AgentConsoleSettingsHost extends AgentConsoleIntegrationHo
         if (raw.toLowerCase() === 'menu') {
             return runSettingsCommandView(settingsPanelHost(this));
         }
+        // Browser hosts mount the card page; the terminal keeps the
+        // composer-anchored center (single overlay surface per platform).
+        if (this.state.consoleOptions?.settingsSurface === 'page') {
+            openAgentConsoleSettingsPage(this as any, raw);
+            return true;
+        }
         openAgentConsoleSettings(this as any, raw);
         return true;
     }

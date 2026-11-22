@@ -292,8 +292,10 @@ export class AgentConsoleSessionData {
     settingsCenterHint = '';
     settingsCenterPickAction?: (id: string) => void | Promise<void>;
     settingsCenterSectionPickAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
-    /** Web settings page: same schema, full-page shell instead of the overlay. */
+    /** Web settings page: same schema as the overlay, rendered as a popup card. */
     settingsPageOpen = false;
+    /** Host hook: lazily mount the browser settings popup before it opens. */
+    settingsPageMountAction?: () => void | Promise<void>;
     settingsPagePickAction?: (id: string) => void | Promise<void>;
     settingsPageResetAction?: (id: string) => void | Promise<void>;
     settingsPageSectionAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;

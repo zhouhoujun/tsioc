@@ -39,18 +39,23 @@ export interface AgentWebSettingsPageHandle {
 }
 
 /**
- * Mount the full-page settings shell into its own container. The console host
- * calls this lazily the first time the sidebar gear (or a host shortcut) opens
- * settings; closing the page only hides it, so reopening is instant.
+ * Mount the settings popup into its own container. The console host calls this
+ * lazily the first time the sidebar gear (or a host shortcut) opens settings;
+ * closing the page only hides it, so reopening is instant.
+ *
+ * `mount` is the console root (`.agent-console`): the page is a separate
+ * application but must live inside the themed console subtree, otherwise the
+ * popup shell and the `is-hidden` visibility class would not apply.
  */
 export async function mountAgentWebSettingsPage(options: {
     document: Document;
     state: AgentConsoleSessionState;
+    mount?: HTMLElement | null;
 }): Promise<AgentWebSettingsPageHandle> {
     const doc = options.document;
     const container = doc.createElement('div');
     container.className = 'agent-web-settings-mount';
-    doc.body.appendChild(container);
+    (options.mount ?? doc.body).appendChild(container);
     const ctx = await Application.run(AgentWebSettingsRootComponent, {
         deps: [AgentWebSettingsPageModule],
         providers: [

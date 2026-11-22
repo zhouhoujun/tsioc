@@ -380,6 +380,12 @@ export interface AgentConsoleOptions {
     selectCloseHint?: string;
     /** Rows visible in the settings center before it scrolls. */
     settingsCenterVisibleRows?: number;
+    /**
+     * Which shell `/settings` opens. `overlay` (default) is the
+     * composer-anchored terminal center; browsers that mount the card page set
+     * `page` so the command opens the themed settings popup instead.
+     */
+    settingsSurface?: 'overlay' | 'page';
     suggestionsHint?: string;
     brandWidth?: number;
     messageStatusLabels?: AgentConsoleMessageStatusLabels;
@@ -449,6 +455,7 @@ export const defaultAgentConsoleOptions: Required<AgentConsoleOptions> = {
     selectHint: AGENT_CONSOLE_OVERLAY_HINTS.select,
     selectCloseHint: 'up/down move   enter close   q close',
     settingsCenterVisibleRows: 12,
+    settingsSurface: 'overlay',
     suggestionsHint: AGENT_CONSOLE_SUGGESTIONS_HINT,
     brandWidth: DEFAULT_TERMINAL_COLUMNS,
     messageStatusLabels: ZH_MESSAGE_STATUS_LABELS,

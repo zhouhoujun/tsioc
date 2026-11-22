@@ -324,4 +324,17 @@ export class AgentConsoleSettingsCenterTest {
         }
         await pending.catch(() => undefined);
     }
+
+    @Test('the browser settings surface opens the card popup instead of the overlay')
+    async pageSurface() {
+        const { component, state } = await this.createConsoleWithPersist();
+        let mounts = 0;
+        state.settingsPageMountAction = () => { mounts += 1; };
+        state.setConsoleOptions({ settingsSurface: 'page' });
+        await component.handleCommand('/settings thinking');
+        expect(state.settingsPageOpen).toEqual(true);
+        expect(state.settingsCenterOpen).toEqual(false);
+        expect(mounts).toEqual(1);
+        expect(state.settingsCenterRows.some((row: any) => row.id === 'thinking')).toEqual(true);
+    }
 }

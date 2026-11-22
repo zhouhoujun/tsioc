@@ -51,6 +51,10 @@ export abstract class AgentConsoleFocusLayers extends AgentConsoleFocusTranscrip
 
     async dismiss(transcriptNavigation: AgentConsoleTranscriptNavigationController): Promise<boolean> {
         const state = this.state;
+        if (state.settingsPageOpen) {
+            await state.settingsPageCloseAction?.();
+            return true;
+        }
         if (state.commandOutputsOpen) { state.closeCommandOutputs(); return true; }
         if (state.textOverlay) { state.closeTextOverlay(true); return true; }
         if (state.selectMenu) { await state.cancelSelectMenu(); return true; }
@@ -81,6 +85,10 @@ export abstract class AgentConsoleFocusLayers extends AgentConsoleFocusTranscrip
 
     async handleEscape(transcriptNavigation: AgentConsoleTranscriptNavigationController): Promise<boolean> {
         const state = this.state;
+        if (state.settingsPageOpen) {
+            await state.settingsPageCloseAction?.();
+            return true;
+        }
         if (state.pendingQuestion) {
             await state.dismissPendingQuestion();
             return true;
@@ -329,7 +337,8 @@ export abstract class AgentConsoleFocusLayers extends AgentConsoleFocusTranscrip
         const state = this.state;
         return !!state.pendingQuestion || this.hasBlockingSelectMenu() || state.sessionsFocused || state.tasksFocused
             || state.jobsFocused || state.toolsFocused || state.approvalsFocused || state.reviewOpen || state.messagesFocused
-            || state.timelineEventInspectorOpen || this.hasMessageDetailFocus() || !!state.textOverlay || state.commandOutputsOpen;
+            || state.timelineEventInspectorOpen || this.hasMessageDetailFocus() || !!state.textOverlay || state.commandOutputsOpen
+            || state.settingsPageOpen;
     }
     shouldRenderTerminalCursor(): boolean { return this.state.inputFocused || this.isAnyFocusActive() || this.state.inputLocked || this.state.modalPromptActive; }
     resolveTerminalCursorMode(): 'prompt' | 'bottom' { return this.hasBlockingSelectMenu() || this.state.pendingQuestion || this.state.approvalsFocused || this.state.modalPromptActive || (!this.isAnyFocusActive() && !this.state.inputLocked) ? 'prompt' : 'bottom'; }

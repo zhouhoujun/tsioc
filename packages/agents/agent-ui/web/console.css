@@ -2301,6 +2301,31 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     overflow-y: auto;
 }
 
+/* The browser keeps the settings popup above the composer but gives it the
+   same card skin as the other dialogs instead of an inline flow row. */
+#agent-console .agent-console > [renderregion="dialog"] agent-console-settings-center-panel {
+    width: 100%;
+    pointer-events: auto;
+}
+
+#agent-console .agent-console > [renderregion="dialog"] agent-console-settings-center-panel > .settings-center-panel {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: min(72vh, 660px);
+    margin: 0 auto;
+    padding: 12px 16px 14px;
+    border: 1px solid var(--agent-web-border, var(--console-border, #30363d)) !important;
+    border-radius: 12px !important;
+    background: var(--agent-web-panel, var(--console-dialog-bg)) !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+#agent-console .agent-console > [renderregion="dialog"] agent-console-settings-center-panel .dialog-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+}
+
 #agent-console .settings-title {
     font-weight: 600;
     color: var(--console-text);
@@ -2391,30 +2416,35 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
     color: var(--console-error);
 }
 
-/* Browser full settings page (same schema rows as the TUI center) */
+/* Browser settings popup (same schema rows as the TUI center). The dialog
+   floats over the transcript and keeps the composer visible; the card owns
+   the internal scroll so long sections never stretch the page. */
 #agent-console .settings-page {
     position: fixed;
     inset: 0;
     z-index: 80;
     display: flex;
+    align-items: center;
     justify-content: center;
-    padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--console-input-bg, #1b2128) 92%, transparent);
+    padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    background: rgba(4, 8, 12, 0.55);
+    backdrop-filter: blur(3px);
     color: var(--console-text, #c9d1d9);
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 #agent-console .settings-page-shell {
-    width: min(1040px, 100%);
-    height: fit-content;
+    width: min(860px, 100%);
+    max-height: min(82vh, 720px);
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 18px 20px 22px;
+    padding: 18px 20px;
     background: var(--console-dialog-bg, #161b22);
-    border: 1px solid var(--console-meta, #6e7681);
-    border-radius: 10px;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--agent-web-border, var(--console-border, #30363d));
+    border-radius: 14px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
 }
 
 #agent-console .settings-page-head {
@@ -2460,8 +2490,11 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
 
 #agent-console .settings-page-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 10px;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 2px;
 }
 
 #agent-console .settings-page .ui-card {
@@ -2521,13 +2554,13 @@ html[data-agent-theme="high-contrast"] #agent-console .markdown-code-token[data-
 
 @media (max-width: 640px) {
     #agent-console .settings-page {
-        padding: 0;
+        padding: max(12px, env(safe-area-inset-top)) 8px max(12px, env(safe-area-inset-bottom));
     }
 
     #agent-console .settings-page-shell {
-        border-radius: 0;
-        min-height: 100%;
-        padding: 14px 12px 20px;
+        max-height: 92vh;
+        border-radius: 12px;
+        padding: 14px 12px 16px;
     }
 
     #agent-console .settings-page-grid {

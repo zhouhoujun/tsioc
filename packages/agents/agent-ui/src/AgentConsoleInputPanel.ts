@@ -428,8 +428,9 @@ export class AgentConsoleInputPanelComponent {
                 return;
             }
         }
-        // Overlay dialogs (text overlay, pending question, approvals) own
-        // Escape in the browser too; the focus stack dismisses the top layer.
+        // Overlay dialogs (text overlay, pending question, approvals, settings
+        // popup) own Escape in the browser too; the focus stack dismisses the
+        // top layer.
         if (this.isEscapeKey(event) && this.state?.focusLayers?.isAnyFocusActive?.()) {
             event.preventDefault?.();
             await this.state.focusLayers.handleEscape({ setFocused() { /* no-op */ } } as any);
@@ -438,7 +439,7 @@ export class AgentConsoleInputPanelComponent {
         // A modal dialog is not a text field: printable keys must not leak into
         // the draft behind it (pending questions keep the composer editable for
         // custom answers, handled above).
-        if ((this.state?.textOverlay || this.state?.approvalsFocused)
+        if ((this.state?.textOverlay || this.state?.approvalsFocused || this.state?.settingsPageOpen)
             && !event.ctrlKey && !event.metaKey && !event.altKey
             && key.length === 1) {
             event.preventDefault?.();

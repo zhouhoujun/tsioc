@@ -1522,6 +1522,11 @@ export class AgentConsoleOperationalPanelsRendererTest {
         expect(text).toContain('workspace');
         expect(text).toContain('[General]');
         expect(text).toContain('Permissions');
+        // `/settings` is a popup: the panel opts into the shared dialog shell
+        // (frame + ✕ close) instead of dumping rows into the transcript.
+        const shell = panel.hostView.rootNodes[0] as any;
+        expect(String(shell.getAttribute('class'))).toContain('dialog-panel');
+        expect(String(shell.getAttribute('class'))).toContain('dialog-w-96');
         // Clickable rows/sections keep mouse hover feedback in the TUI.
         const hoverTargets: any[] = [];
         const collect = (node: any) => {

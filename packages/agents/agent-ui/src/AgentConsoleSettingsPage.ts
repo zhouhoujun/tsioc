@@ -28,11 +28,11 @@ interface AgentConsoleSettingsPageSection {
 }
 
 /**
- * Web settings page: the same schema rows as the terminal settings center,
- * rendered as a full page with the shared `components/common` widgets.
+ * Web settings popup: the same schema rows as the terminal settings center,
+ * rendered as a modal card with the shared `components/common` widgets.
  *
  * The console host mounts it only when `settingsPageOpen` is set (browser
- * sidebar / gear). It never opens in the terminal, so the TUI keeps its
+ * sidebar / `/settings`). It never opens in the terminal, so the TUI keeps its
  * composer-anchored overlay contract.
  */
 @Component({
@@ -47,7 +47,7 @@ interface AgentConsoleSettingsPageSection {
         SwitchModule
     ],
     template: `
-    <div class="console-panel settings-page" role="dialog" aria-label="{{title}}" data-settings-page="true"
+    <div class="console-panel settings-page" role="dialog" aria-modal="true" aria-label="{{title}}" data-settings-page="true"
         v-show="open" @keydown="onKeydown($event)">
         <div class="settings-page-shell">
             <header class="settings-page-head">

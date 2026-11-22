@@ -42,6 +42,8 @@ export interface AgentConsoleSettingsCenterState {
     settingsCenterPickAction?: (id: string) => void | Promise<void>;
     settingsCenterSectionPickAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
     settingsPageOpen: boolean;
+    /** Host hook: mount the browser settings popup app before it opens. */
+    settingsPageMountAction?: () => void | Promise<void>;
     settingsPagePickAction?: (id: string) => void | Promise<void>;
     settingsPageResetAction?: (id: string) => void | Promise<void>;
     settingsPageSectionAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
@@ -119,7 +121,7 @@ export function buildAgentConsoleSettingsRows(host: AgentConsoleSettingsCenterHo
     state.settingsCenterHint = settingsCenterLabel(
         host.translator,
         'agent.menu.settings.centerHint',
-        'up/down move   left/right section   enter apply   ctrl+r reset   type to search   esc close'
+        'up/down move  left/right section  enter apply  ctrl+r reset  type to search  esc close'
     );
     return rows;
 }
@@ -143,9 +145,9 @@ export function openAgentConsoleSettings(host: AgentConsoleSettingsCenterHost, q
 }
 
 /**
- * Web settings page: same schema rows as the overlay, rendered as a full page
- * instead of a composer-anchored dialog. The page stays open while toggles
- * apply so several settings can be changed in one visit.
+ * Web settings page: same schema rows as the overlay, rendered as a popup
+ * card instead of a composer-anchored dialog. The page stays open while
+ * toggles apply so several settings can be changed in one visit.
  */
 export function openAgentConsoleSettingsPage(host: AgentConsoleSettingsCenterHost, query?: string, section?: AgentConsoleSettingsSectionId): void {
     const state = host.state;
@@ -164,6 +166,8 @@ export function openAgentConsoleSettingsPage(host: AgentConsoleSettingsCenterHos
     dismissBackgroundPanels(state as any);
     buildAgentConsoleSettingsRows(host);
     state.syncDerivedInputFocus();
+    // The browser mounts the popup app lazily the first time it opens.
+    void state.settingsPageMountAction?.();
 }
 
 export function closeAgentConsoleSettingsPage(host: AgentConsoleSettingsCenterHost): void {

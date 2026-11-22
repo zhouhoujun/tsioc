@@ -256,7 +256,7 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         pageClose: 'Close settings',
         pageHint: 'Changes save immediately',
         pageEmptyHint: 'Try another query or pick another section.',
-        centerHint: 'up/down move   left/right section   enter apply   ctrl+r reset   type to search   esc close',
+        centerHint: 'up/down move  left/right section  enter apply  ctrl+r reset  type to search  esc close',
         emptyResults: 'No matching settings',
         resetUnavailable: 'This setting has no default to restore.',
         fieldModel: 'Model: {name}',

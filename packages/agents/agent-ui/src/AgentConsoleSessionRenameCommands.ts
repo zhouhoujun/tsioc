@@ -64,13 +64,26 @@ export async function handlePair(ctx: CommandHandlerContext, _args: string, _res
     const minutes = pairing?.expiresAt ? Math.max(1, Math.round((pairing.expiresAt - Date.now()) / 60000)) : 5;
     const notice = formatAgentUiNotice(ctx.translator, 'pairReady', { urls: urls.join('\n'), minutes });
     const qr = String(pairing?.qr || '').trim();
+    const links = Array.from(new Set(urls));
+    if (!qr) {
+        // Browser hosts return links only (no terminal QR). A command result is
+        // timeline output, not a dialog: append it at the end of the
+        // transcript so it stays copyable and scrolls with the conversation.
+        ctx.state.appendMessage?.({
+            id: `pair-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            role: 'system',
+            content: notice,
+            createdAt: Date.now(),
+            metadata: { uiKind: 'pairing' }
+        });
+        return true;
+    }
     const title = formatAgentPanelLabel(ctx.translator, 'overlay', 'pairTitle', 'pairing');
     // Keep the QR scannable on a 24-row terminal: the primary link plus the
     // full QR, with the expiry in the title, fits inside one modal viewport.
     const compact = `${title} \u00b7 ${minutes} min`;
     // QR first so a very short terminal clips link/hint rows, never the code.
-    const links = Array.from(new Set(urls));
-    const lines = qr ? [...qr.split('\n'), ...links] : notice.split('\n');
-    ctx.state.openTextOverlay(qr ? compact : title, lines, lines.length);
+    const lines = [...qr.split('\n'), ...links];
+    ctx.state.openTextOverlay(compact, lines, lines.length);
     return true;
 }

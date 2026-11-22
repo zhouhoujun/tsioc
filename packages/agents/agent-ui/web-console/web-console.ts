@@ -237,6 +237,9 @@ export async function mountAgentWebConsole(
                             ...(defaultAgentOptions.ui?.console || {}),
                             ...(config.consoleOptions || {}),
                             workspace: config.workspace,
+                            // `/settings` opens the card popup in the browser;
+                            // the terminal keeps its composer-anchored center.
+                            settingsSurface: config.consoleOptions?.settingsSurface ?? 'page',
                             // Match the terminal host's compact footer; the
                             // statusline stays opt-in on both platforms.
                             workingPresentation: 'compact',
@@ -287,6 +290,16 @@ export async function mountAgentWebConsole(
 
     const rootRef = ctx.runners.getRef(AgentConsoleComponent) as ComponentRef<AgentConsoleComponent> | undefined;
     const root = rootRef?.hostView?.rootNodes?.[0] as unknown as HTMLElement | undefined;
+    // `/settings` opens the card page on the browser and mounts it lazily on
+    // the themed console root, so the popup shares the active theme.
+    let settingsPage: Awaited<ReturnType<typeof mountAgentWebSettingsPage>> | null = null;
+    const ensureSettingsPage = async (): Promise<void> => {
+        if (settingsPage) {
+            return;
+        }
+        settingsPage = await mountAgentWebSettingsPage({ document: doc, state: rawState, mount: root });
+    };
+    state.settingsPageMountAction = () => { void ensureSettingsPage(); };
     if (root) {
         // Mount = replace: a prior mount (or pre-existing page content) must not
         // linger as ghost DOM under the next console, or DOM metrics/bindings
@@ -429,7 +442,6 @@ export async function mountAgentWebConsole(
 
     focusWebConsoleComposer(doc, root);
 
-    let settingsPage: Awaited<ReturnType<typeof mountAgentWebSettingsPage>> | null = null;
     const sidebar = createWebSidebar({
         document: doc,
         mount,
@@ -463,16 +475,10 @@ export async function mountAgentWebConsole(
             return instance?.refreshSessions?.(state.sessionId);
         },
         openSettingsPage: () => {
+            // `openSettingsPage` flips the page state and invokes
+            // `settingsPageMountAction`, which mounts the popup app lazily.
             const instance = rootRef?.instance as unknown as { openSettingsPage?: () => Promise<boolean> } | undefined;
-            void (async () => {
-                if (!settingsPage) {
-                    // The page app proxies the raw state with its own effect; a
-                    // proxy from the console effect would bind page DOM to the
-                    // wrong dependency collector.
-                    settingsPage = await mountAgentWebSettingsPage({ document: doc, state: rawState });
-                }
-                await instance?.openSettingsPage?.();
-            })();
+            void instance?.openSettingsPage?.();
         },
         loadCounts: () => loadAgentConsoleAttentionCounts({
             request: (method, params) => rpc.request(method, params),

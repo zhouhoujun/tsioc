@@ -49,7 +49,7 @@ export class AgentConsoleSettingsCenterModuleImportTest {
         const renderer = this.ctx.get(TuiRenderer);
         const layout = renderer.renderToTuiLayout(ref.hostView.rootNodes, { width: 100 });
         const text = layout.lines.join('\n');
-        expect(layout.regions.some(region => region.id === 'menu')).toEqual(true);
+        expect(layout.regions.some(region => region.id === 'dialog')).toEqual(true);
         expect(text).toContain('Settings · General');
         expect(text).toContain('Theme');
     }

@@ -69,7 +69,7 @@ export class AgentConsoleWebSettingsPageTest {
         element.dispatchEvent(new this.dom.window.MouseEvent('click', { bubbles: true }));
     }
 
-    @Test('opens as a page with schema cards, switches and action buttons')
+    @Test('opens as a popup with schema cards, switches and action buttons')
     async rendersPage() {
         await this.instance.openSettingsPage();
         await settle();
@@ -153,5 +153,49 @@ export class AgentConsoleWebSettingsPageTest {
         reopened.dispatchEvent(new this.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         await settle();
         expect(this.state.settingsPageOpen).toEqual(false);
+    }
+
+    @Test('the popup mounts inside the themed console root and toggles is-hidden')
+    async mountsInsideConsoleRoot() {
+        const fs = require('fs');
+        const path = require('path');
+        const styles = this.dom.window.document.createElement('style');
+        styles.textContent = fs.readFileSync(path.join(__dirname, '../web/console.css'), 'utf8');
+        this.dom.window.document.head.appendChild(styles);
+        const host = this.dom.window.document.createElement('div');
+        host.id = 'agent-console';
+        host.className = 'agent-console';
+        host.setAttribute('data-theme', 'dark');
+        this.dom.window.document.body.appendChild(host);
+        const extra = await mountAgentWebSettingsPage({
+            document: this.dom.window.document,
+            state: this.ctx.get(AgentConsoleSessionState),
+            mount: host
+        });
+        try {
+            expect(host.contains(extra.element)).toEqual(true);
+            const page = extra.element.querySelector('[data-settings-page]') as HTMLElement;
+            // The console skin hides the popup through `.is-hidden`; matching
+            // that contract needs the page inside the themed subtree.
+            expect(page.hasAttribute('hidden')).toEqual(true);
+            expect(page.classList.contains('is-hidden')).toEqual(true);
+            expect(this.dom.window.getComputedStyle(page).display).toEqual('none');
+            await this.instance.openSettingsPage();
+            await settle();
+            expect(page.hasAttribute('hidden')).toEqual(false);
+            expect(page.classList.contains('is-hidden')).toEqual(false);
+            // The shell is a viewport popup, not an in-flow page block.
+            expect(this.dom.window.getComputedStyle(page).position).toEqual('fixed');
+            const shell = page.querySelector('.settings-page-shell') as HTMLElement;
+            expect(!!shell).toEqual(true);
+            expect(this.dom.window.getComputedStyle(shell).display).toEqual('flex');
+            this.click(extra.element.querySelector('.settings-page-close') as Element);
+            await settle();
+            expect(page.hasAttribute('hidden')).toEqual(true);
+        } finally {
+            await extra.dispose();
+            host.remove();
+            styles.remove();
+        }
     }
 }

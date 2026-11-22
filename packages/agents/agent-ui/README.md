@@ -149,15 +149,19 @@ hoisting it into a shared chunk produces `Class extends value undefined` at
 load. Lazy feature chunks stay tracked in the optimization plan until those
 cycles are broken.
 
-## Browser settings page
+## Browser settings popup
 
-`tsdi-agent serve` (or `/web`) hosts the same console in the browser. The sidebar gear opens a
-full-page settings screen instead of the terminal overlay: section buttons, a live search field,
-and one card per setting with a switch (toggles) or an action button (picker/command rows). It reads
-and writes the same schema as the TUI center (`AgentConsoleSettingsSchema`), so `/settings` and the
-page never drift; toggles apply and persist immediately, `Esc`/`✕` close the page. The page is a
-separate application over the shared session state, so the terminal component tree and its
-composer/menu overlays are unchanged.
+`tsdi-agent serve` (or `/web`) hosts the same console in the browser. `/settings` and the sidebar
+gear open a modal popup: section buttons, a live search field, and one card per setting with a switch
+(toggles) or an action button (picker/command rows). The card is mounted inside the themed console
+root (a separate application over the shared session state), so it picks up the active theme and
+never disturbs the terminal component tree or the composer/menu overlays. It reads and writes the
+same schema as the TUI center (`AgentConsoleSettingsSchema`), so `/settings` and the popup never
+drift; toggles apply and persist immediately, `Esc`/`✕` close it.
+
+`/web` (alias `/pair`) is command output, not a dialog: the browser appends the one-time links to the
+end of the transcript (copyable, scrolls with history). The terminal keeps the QR overlay because a
+scannable code must fit in one visible screen.
 
 ## Transcript behavior
 
@@ -165,7 +169,7 @@ composer/menu overlays are unchanged.
 - `/display activity [low|medium|high]` sets activity verbosity. `medium` (default) folds finished tool/command/event runs into one expandable Activity row; `high` shows every step; `low` also folds settled reasoning.
 - `/worktree enter [name]` switches the workspace to a managed worktree (picker when no name is given). `/worktree remove [name]` and `/worktree merge [name]` open a picker when no name is given; removal asks for confirmation (`--yes` skips it).
 - `/activity` chooses the latest row of a category; the picker shows per-category counts.
-- `/settings` opens the schema-driven settings center: sections (General, Model, Permissions, Agents,
+- `/settings` opens the schema-driven settings popup: sections (General, Model, Permissions, Agents,
   Integrations, Keybinds, Data & tooling), `up/down` move, `left/right` switch section, `enter` applies,
   `ctrl+r` restores a toggle default, typing filters every setting and `/settings <query>` deep-links.
   Rows show scope (workspace/global/session) and effect (immediate/next turn). `/settings menu` keeps the

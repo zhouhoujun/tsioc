@@ -16,25 +16,26 @@ import type { AgentConsoleSettingsRow } from './AgentConsoleSettingsCenter';
     selector: 'agent-console-settings-center-panel',
     imports: [BadgeModule],
     template: `
-    <div class="console-panel settings-center-panel" role="dialog" aria-label="{{title}}">
+    <div class="console-panel dialog-panel dialog-w-96 settings-center-panel" role="dialog" aria-label="{{title}}">
         <label class="dialog-close" data-cell-width="2" data-hover="fade" @click="close">✕</label>
-        <label class="settings-title">{{title}}</label>
+        <label class="dialog-title settings-title">{{title}}</label>
         <label class="settings-meta">{{windowMeta}}</label>
-        <div class="settings-sections">
+        <label class="settings-sections">
             <span class="settings-section" v-for="entry in sectionEntries" data-hover="fade" aria-selected="{{entry.active}}" @click="pickSection(entry.id)">{{entry.active ? '[' + entry.label + ']' : entry.label}}<span class="settings-section-sep" v-if="!entry.last"> · </span></span>
-        </div>
+        </label>
         <label class="settings-query" v-if="query">{{query}}</label>
         <div class="settings-rows">
             <label class="settings-row" v-for="row in visibleRows" data-hover="fade" aria-selected="{{row.selected}}" @click="pick(row.id)">
                 <span class="settings-label">{{row.label}}</span>
                 <span class="settings-value" v-if="row.value">: {{row.value}}</span>
+                <span class="settings-scope-sep" v-if="row.value"> · </span>
                 <ui-badge class="settings-scope" :label="row.scope" tone="muted" variant="outline"></ui-badge>
                 <span class="settings-effect" v-if="row.effect"> · {{row.effect}}</span>
             </label>
         </div>
         <label class="settings-empty" v-if="!rows.length">{{emptyLabel}}</label>
         <label class="settings-detail" v-if="selectedDescription">{{selectedDescription}}</label>
-        <label class="settings-hint">{{hint}}</label>
+        <label class="dialog-hint settings-hint">{{hint}}</label>
     </div>
     `
 })

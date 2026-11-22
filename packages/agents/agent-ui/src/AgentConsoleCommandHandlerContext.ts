@@ -9,7 +9,7 @@ import type {
     AgentConsoleSessionState
 } from './AgentConsoleSessionState';
 import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
-import type { NavFilter, NavSelection } from '@tsdi/agent';
+import type { AgentMessage, NavFilter, NavSelection } from '@tsdi/agent';
 import type { AgentUiTranslator } from './agent-ui.i18n';
 export interface CommandHandlerContext {
     translator?: AgentUiTranslator | null;
@@ -57,6 +57,12 @@ export interface CommandHandlerContext {
         // setters
         setInput(value: string, cursor?: number): void;
         setNotice(message: string): void;
+        /**
+         * Append a local (non-model) row to the end of the timeline. Command
+         * results that have no dialog affordance (browser `/web`) print here
+         * so the transcript, not a popup, owns the output.
+         */
+        appendMessage?(message: AgentMessage): void;
         setTitle(title: string): void;
         setSessionsFocused(focused: boolean): void;
         setToolsFocused(focused: boolean): void;
@@ -286,6 +292,7 @@ export function buildCommandHandlerState(state: AgentConsoleSessionState): Comma
         closeReview: () => state.closeReview(),
         closeGitSnapshotDetail: () => state.closeGitSnapshotDetail(),
         openTextOverlay: (k, l, v, b) => state.openTextOverlay(k, l, v, b),
+        appendMessage: (m) => state.appendMessage(m),
         toggleCommandOutputs: () => state.toggleCommandOutputs(),
         setPendingApprovals: (p) => state.setPendingApprovals(p),
         getReviewAnnotationSummary: () => state.getReviewAnnotationSummary(),

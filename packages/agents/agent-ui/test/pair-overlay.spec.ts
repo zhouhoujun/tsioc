@@ -46,4 +46,27 @@ export class PairingOverlayTest {
         expect(captured.lines.join('\n')).toContain('QR-BLOCK');
         expect(captured.visibleLines).toEqual(captured.lines.length);
     }
+
+    @Test('/pair prints the browser links into the timeline when the host has no QR')
+    async pairAppendsToTimeline() {
+        const appended: any[] = [];
+        const ctx: any = {
+            translator: null,
+            notify: () => { throw new Error('browser /pair must print to the transcript'); },
+            state: {
+                pairAction: async () => ({
+                    urls: ['http://127.0.0.1:3100/?pair=abc', 'http://192.168.1.5:3100/?pair=abc'],
+                    expiresAt: Date.now() + 5 * 60_000
+                }),
+                appendMessage: (message: any) => appended.push(message),
+                openTextOverlay: () => { throw new Error('browser /pair must not open a dialog'); }
+            }
+        };
+        expect(await handlePair(ctx, '', { command: '/pair', matches: [] })).toEqual(true);
+        expect(appended.length).toEqual(1);
+        expect(appended[0].role).toEqual('system');
+        expect(appended[0].content).toContain('192.168.1.5');
+        expect(appended[0].content).toContain('One-time link');
+        expect(appended[0].metadata?.uiKind).toEqual('pairing');
+    }
 }
