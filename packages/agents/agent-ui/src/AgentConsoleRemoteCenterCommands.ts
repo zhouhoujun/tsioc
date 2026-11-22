@@ -286,6 +286,98 @@ export async function runRemotesCommand(
         return;
     }
 
+    if (verb === 'allow-spawn' || verb === 'allow') {
+        const name = String(tokens[1] || '').trim();
+        const center = centers.find(item => item.name.toLowerCase() === name.toLowerCase());
+        if (!center) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteCenterMissing', { name }));
+            return;
+        }
+        const enabled = String(tokens[2] || '').toLowerCase() !== 'off' && tokens[2] !== '0';
+        const next = centers.map(item => item.name === center.name
+            ? { ...item, ...(enabled ? { allowSpawn: true } : { allowSpawn: false }) }
+            : item);
+        await saveCenters(host, next);
+        host.notify(formatAgentUiNotice(host.translator, 'remoteSpawnToggle', {
+            name: center.name,
+            state: formatAgentUiNotice(host.translator, enabled ? 'remoteSpawnToggleOn' : 'remoteSpawnToggleOff')
+        }));
+        return;
+    }
+
+    if (verb === 'spawn') {
+        const name = String(tokens[1] || '').trim();
+        const sessionToken = String(tokens[2] || '').trim();
+        const goal = tokens.slice(3).join(' ').trim();
+        const center = centers.find(item => item.name.toLowerCase() === name.toLowerCase());
+        if (!center) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteCenterMissing', { name }));
+            return;
+        }
+        if (center.allowSpawn !== true) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteSpawnDisabled', { name: center.name }));
+            return;
+        }
+        if (!sessionToken || !goal) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteSpawnUsage'));
+            return;
+        }
+        const probe = await probeAgentConsoleRemoteCenter(center, factory);
+        if (!probe.ok) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteCenterUnreachable', {
+                name: center.name,
+                error: probe.error || 'unreachable'
+            }));
+            return;
+        }
+        const target = resolveRemoteSessionTarget(probe.sessions, sessionToken);
+        if (!target) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteSessionMissing', {
+                session: sessionToken,
+                name: center.name
+            }));
+            return;
+        }
+        if (host.select) {
+            const picked = await host.select(
+                formatAgentUiNotice(host.translator, 'remoteSpawnTitle', { name: center.name }),
+                [
+                    {
+                        label: formatAgentUiNotice(host.translator, 'remoteSpawnYes'),
+                        value: 'spawn',
+                        description: `${target} · ${goal.slice(0, 80)}`
+                    },
+                    { label: formatAgentUiNotice(host.translator, 'remoteSpawnNo'), value: 'cancel' }
+                ],
+                0,
+                formatAgentUiNotice(host.translator, 'remoteSpawnHint')
+            );
+            if (picked !== 'spawn') {
+                return;
+            }
+        }
+        try {
+            const result = await factory(center).request('tools.invoke', {
+                sessionId: target,
+                name: 'spawn_agent',
+                input: { goal, background: true }
+            });
+            const output = result?.output;
+            const parsed = typeof output === 'string' && output.trim().startsWith('{')
+                ? (() => { try { return JSON.parse(output); } catch { return undefined; } })()
+                : output;
+            host.notify(formatAgentUiNotice(host.translator, 'remoteSpawned', {
+                name: center.name,
+                task: parsed?.taskId || parsed?.sessionId || ''
+            }));
+        } catch (error) {
+            host.notify(formatAgentUiNotice(host.translator, 'remoteSpawnFailed', {
+                error: errorText(error)
+            }));
+        }
+        return;
+    }
+
     if (verb === 'list' || !verb) {
         if (!centers.length) {
             showLocalList(host, centers);

@@ -101,6 +101,9 @@
 4. 在 laptop 上启动一个 turn，然后本机 `/remotes cancel laptop <session 前缀>`：
    确认后目标 turn 停止；再次 cancel 提示没有运行中的 turn。
 5. 断网/关掉 gateway：`/remotes` 标记 unreachable，其它 gateway 仍可用。
+6. `/remotes spawn laptop <session> <goal>` 默认拒绝并提示 `allow-spawn`；执行
+   `/remotes allow-spawn laptop` 后再次 spawn，确认框通过后远端出现 worker；
+   远端 workspace 未信任时应原样返回 trust 错误。
 
 ## 3. 浏览器 / Web
 

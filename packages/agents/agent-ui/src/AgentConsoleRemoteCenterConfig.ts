@@ -10,6 +10,8 @@ export interface AgentConsoleRemoteCenter {
     url: string;
     /** Bearer token minted by `tsdi-agent serve`; never rendered in the UI. */
     token?: string;
+    /** Explicit opt-in: allow `/remotes spawn` to create workers on this gateway. */
+    allowSpawn?: boolean;
 }
 
 /** Hard cap keeps a stale settings file from turning the picker into a probe storm. */
@@ -34,7 +36,8 @@ export function sanitizeAgentConsoleRemoteCenters(value: unknown): AgentConsoleR
         const token = typeof (item as any).token === 'string' && (item as any).token.trim()
             ? (item as any).token.trim()
             : undefined;
-        centers.push({ name, url, ...(token ? { token } : {}) });
+        const allowSpawn = (item as any).allowSpawn === true ? true : undefined;
+        centers.push({ name, url, ...(token ? { token } : {}), ...(allowSpawn ? { allowSpawn } : {}) });
         if (centers.length >= MAX_REMOTE_CENTERS) {
             break;
         }

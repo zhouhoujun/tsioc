@@ -162,6 +162,67 @@ export class RemoteCentersTest {
         expect(offline.notices[offline.notices.length - 1]).toContain('unreachable');
     }
 
+    @Test('remote spawn is opt-in and persists the allow flag')
+    async spawnOptIn() {
+        const { host, notices, persisted } = createHost([{ name: 'laptop', url: 'http://laptop:3200' }]);
+        await runRemotesCommand(host, 'allow-spawn laptop');
+        expect(host.state.remoteCenters[0].allowSpawn).toEqual(true);
+        expect(persisted[persisted.length - 1].remotes[0].allowSpawn).toEqual(true);
+        expect(notices[notices.length - 1]).toContain('enabled');
+
+        await runRemotesCommand(host, 'allow-spawn laptop off');
+        expect(host.state.remoteCenters[0].allowSpawn).toBeUndefined();
+        expect(persisted[persisted.length - 1].remotes[0].allowSpawn).toBeUndefined();
+
+        const notAllowed = createHost([{ name: 'desk', url: 'http://desk:3200' }]);
+        await runRemotesCommand(notAllowed.host, 'spawn desk chat-a do work', () => ({ request: async () => ({}) }));
+        expect(notAllowed.notices[notAllowed.notices.length - 1]).toContain('allow-spawn');
+    }
+
+    @Test('spawns a remote worker only after confirmation')
+    async spawnsRemoteWorker() {
+        const calls: Array<{ method: string; params: any }> = [];
+        const factory = () => ({
+            request: async (method: string, params: any) => {
+                calls.push({ method, params });
+                if (method === 'session.list') return [{ id: 'chat-parent', title: 'Parent' }];
+                if (method === 'tools.invoke') return { output: JSON.stringify({ taskId: 'task-9' }) };
+                throw new Error(method);
+            }
+        });
+        const { host, notices, picks } = createHost([{ name: 'laptop', url: 'http://laptop:3200', allowSpawn: true }]);
+        picks.push('spawn');
+        await runRemotesCommand(host, 'spawn laptop chat-p write the docs', factory);
+        expect(calls.filter(call => call.method === 'tools.invoke')).toEqual([{
+            method: 'tools.invoke',
+            params: {
+                sessionId: 'chat-parent',
+                name: 'spawn_agent',
+                input: { goal: 'write the docs', background: true }
+            }
+        }]);
+        expect(notices[notices.length - 1]).toContain('task-9');
+
+        const keep = createHost([{ name: 'laptop', url: 'http://laptop:3200', allowSpawn: true }]);
+        keep.picks.push('cancel');
+        await runRemotesCommand(keep.host, 'spawn laptop chat-parent nope', factory);
+        expect(calls.filter(call => call.method === 'tools.invoke').length).toEqual(1);
+    }
+
+    @Test('remote spawn failures surface the gateway error')
+    async spawnFailure() {
+        const factory = () => ({
+            request: async (method: string) => {
+                if (method === 'session.list') return [{ id: 'chat-parent' }];
+                throw new Error('Workspace is not trusted');
+            }
+        });
+        const { host, picks, notices } = createHost([{ name: 'laptop', url: 'http://laptop:3200', allowSpawn: true }]);
+        picks.push('spawn');
+        await runRemotesCommand(host, 'spawn laptop chat-parent go', factory);
+        expect(notices[notices.length - 1]).toContain('not trusted');
+    }
+
     @Test('a named center bypasses the picker and never prints its token')
     async namedCenter() {
         const { host, overlays } = createHost([{ name: 'desk', url: 'http://desk:3200', token: 'secret-token' }]);

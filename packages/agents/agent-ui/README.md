@@ -70,7 +70,8 @@ TUI 通知：`tui.json` 的 `attention.notifications`（或 `TSDI_AGENT_TUI_NOTI
 Remote centers：`/remotes` 以只读方式汇总工作区 `settings.json` 中 `remotes`
 （`{ name, url, token? }`）配置的其它 gateway 会话；`/remotes add <name> <url> [token]`
 添加、`/remotes remove <name>` 删除、`/remotes <name>` 直接查看该 gateway 的会话快照。
-token 只用于请求，不会出现在对话框或提示中。
+token 只用于请求，不会出现在对话框或提示中。`/remotes allow-spawn <name>` 显式开启后，
+`/remotes spawn <name> <session> <goal>` 可在远端创建 worker（需远端 workspace trust 与确认）。
 
 导出/导入：`/export [json|jsonl|html] [sessionId] [path]`，`html` 生成独立只读页面
 （全部内容转义、无脚本、跟随系统深浅色），默认写入 `.tsdi-agent/exports/`；
