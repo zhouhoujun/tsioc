@@ -227,6 +227,9 @@ export async function mountAgentWebConsole(
                 provide: AGENT_OPTIONS,
                 useValue: {
                     ...defaultAgentOptions,
+                    // Per-mount model copy: profile/reasoning writes must not
+                    // reach the shared default singleton.
+                    model: { ...(defaultAgentOptions.model || {}) },
                     ui: {
                         ...defaultAgentOptions.ui,
                         title: 'TSDI Agent Web Console',

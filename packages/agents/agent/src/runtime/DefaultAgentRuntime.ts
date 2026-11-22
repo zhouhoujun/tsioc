@@ -260,7 +260,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await new Promise<void>(resolve => setTimeout(resolve, ms));
     }
 
-    updateModelOptions(model?: AgentOptions['model']): void { if (!model) return; this.options.model = model; this.modelAdapter.updateOptions?.(model); }
+    updateModelOptions(model?: AgentOptions['model']): void { if (!model) return; if (this.options === defaultAgentOptions) { this.options = { ...defaultAgentOptions, model: { ...model } }; } else { this.options.model = model; } this.modelAdapter.updateOptions?.(model); }
     async runTurn(
         sessionId: string,
         input: string,

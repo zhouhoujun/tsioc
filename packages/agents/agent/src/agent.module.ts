@@ -72,6 +72,7 @@ import { AgentHookCommandExecutor, NoopAgentHookCommandExecutor } from './hooks/
 import { TypeOrmGoalStore } from './goal/TypeOrmGoalStore';
 import { GoalStore } from './goal/GoalStore';
 import { createAgentProviders } from './provider';
+import { cloneAgentOptions } from './options-clone';
 import { COMMAND_EXECUTION_CONTROL, InMemoryCommandExecutionControl } from './ui/CommandExecutionControl';
 import { SessionToolActivationStore } from './tools/SessionToolActivationStore';
 import { AgentClock, SystemAgentClock, AGENT_CLOCK } from './runtime/Clock';
@@ -83,7 +84,7 @@ import { AgentClock, SystemAgentClock, AGENT_CLOCK } from './runtime/Clock';
     bootstrap: [AgentRuntime],
     providers: [
         { provide: ModuleLoader, useClass: DefaultModuleLoader, asDefault: true },
-        { provide: AGENT_OPTIONS, useValue: defaultAgentOptions, asDefault: true },
+        { provide: AGENT_OPTIONS, useFactory: () => cloneAgentOptions(defaultAgentOptions), asDefault: true },
         { provide: COMMAND_EXECUTION_CONTROL, useClass: InMemoryCommandExecutionControl, asDefault: true },
         { provide: AGENT_CLOCK, useClass: SystemAgentClock, asDefault: true },
         {

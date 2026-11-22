@@ -1,5 +1,6 @@
 import { FileAdapter } from '@tsdi/common';
-import { defaultAgentProviderRegistry } from '@tsdi/agent';
+import { unwrapReactive } from '@tsdi/components';
+import { defaultAgentOptions, defaultAgentProviderRegistry } from '@tsdi/agent';
 import type { ApprovalRule } from '@tsdi/agent';
 import { Injectable, Optional } from '@tsdi/ioc';
 import { AgentConsolePathProvider, resolveAgentConsoleDirectory, resolveAgentConsoleStoreFile } from './AgentConsolePathProvider';
@@ -49,6 +50,38 @@ export interface AgentConsoleSettingsData {
     remotes?: AgentConsoleRemoteCenter[];
     /** Opt-in agent-teams messaging (`/msg`). */
     crossSessionMessages?: boolean;
+}
+
+/**
+ * DI's `AGENT_OPTIONS` fallback is the shared `defaultAgentOptions` singleton.
+ * A console that writes model/provider state (wizard, profile activation,
+ * reasoning effort) must not mutate it, or one host/test leaks models into
+ * every later console. Clone the mutable sub-objects once at bootstrap.
+ */
+export function cloneAgentConsoleOptions<T = any>(options: T): T {
+    // `host.options` comes from the reactive instance proxy, so identity with
+    // the raw default fails; unwrap before comparing (a spread host still
+    // shares `model`, which is the object we must protect).
+    const raw: any = unwrapReactive(options as any);
+    if (raw !== defaultAgentOptions && raw?.model !== defaultAgentOptions.model) {
+        return options;
+    }
+    const defaults: any = defaultAgentOptions;
+    return {
+        ...defaults,
+        model: {
+            ...(defaults.model || {}),
+            ...(defaults.model?.profiles ? { profiles: { ...defaults.model.profiles } } : {})
+        },
+        ui: {
+            ...(defaults.ui || {}),
+            console: { ...(defaults.ui?.console || {}) }
+        },
+        policy: {
+            ...(defaults.policy || {}),
+            ...(defaults.policy?.limits ? { limits: { ...defaults.policy.limits } } : {})
+        }
+    } as T;
 }
 
 export function applyPersistedPreferences(

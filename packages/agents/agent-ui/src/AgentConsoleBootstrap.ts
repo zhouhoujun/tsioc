@@ -5,7 +5,7 @@ import { closeAgentConsoleSessionTab } from './AgentConsoleSessionTabClose';
 import { applySecurityLevel } from './AgentConsolePolicyCommands';
 import { policyCommandHost } from './AgentConsoleHostFactories';
 import { promptModelUnavailable } from './AgentConsoleModelAvailability';
-import { applyPersistedModelProfile } from './AgentConsoleSettingsStore';
+import { applyPersistedModelProfile, cloneAgentConsoleOptions } from './AgentConsoleSettingsStore';
 import { revealAgentConsoleMessage } from './AgentConsoleTranscriptLayout';
 import { AgentConsoleMessagesPanelComponent } from './AgentConsolePanels';
 
@@ -15,6 +15,7 @@ export interface AgentConsoleBootstrapHost {
 }
 
 export async function bootstrapConsole(host: AgentConsoleBootstrapHost): Promise<void> {
+        host.options = cloneAgentConsoleOptions(host.options);
         host.state.toolPayloadLoader = async (toolCallId: string) => { if (!host.appRpc) { return ''; } try { const res: any = await host.appRpc.request('session.tool_payload', { sessionId: host.state.sessionId, toolCallId }); return String(res?.text || ''); } catch { return ''; } };
         host.state.submitAction = host.submitActionHandler; host.state.escapeAction = () => host.handleWizardEscape();
         host.state.questionAction = host.appRpc
