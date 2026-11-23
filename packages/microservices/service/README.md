@@ -107,17 +107,27 @@ Broker servers use `ConsumerRuntime` for per-message lifecycle:
 ```ts
 const runtime = new ConsumerRuntime({
   concurrency: 4,                                   // <=0 or omitted = unlimited
-  retry: { maxAttempts: 3, delayMs: 100, maxDelayMs: 2000 }
+  retry: { maxAttempts: 3, delayMs: 100, maxDelayMs: 2000 },
+  idempotency: { ttlMs: 5 * 60_000 }                // opt-in dedupe by message.id
 });
 
 await runtime.handle({
+  id: 'topic:0:42',                                 // stable delivery identity
   payload,
   ack: () => commit(),                              // success settlement
   fail: (err, attempts) => republishToDlq(err)      // retry budget exhausted
 }, async message => {
   await handle(message.payload);
 });
+
+runtime.close();                                    // reject new deliveries
+await runtime.drain(5_000);                         // wait for running/queued work
 ```
 
-`runtime.stats()` reports `completed`, `failed`, `retried`, `inFlight` and
-`peakInFlight`; broker servers log a drained summary on shutdown.
+`runtime.stats()` reports `completed`, `failed`, `retried`, `duplicates`,
+`inFlight` and `peakInFlight`; broker servers log a drained summary on shutdown.
+
+Idempotency is opt-in: without a store, duplicates run again (at-least-once).
+The default `MemoryIdempotencyStore` is bounded and process-local; pass a shared
+`idempotency.store` when replicas can see the same redelivery. A failed handler
+releases its reservation so the next delivery can retry.
