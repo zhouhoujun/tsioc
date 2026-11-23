@@ -818,6 +818,9 @@ listeners as part of the same deployment entry.
 
 `mqtt-in` and `mqtt-out` speak MQTT 3.1.1 over `mqtt://` (1883) or `mqtts://`
 (8883, TLS) with optional username/password (`{{credential:name}}` works).
+The shared `mqtt` config node also carries the clean-session flag, keepalive,
+and a last-will topic/payload/QoS/retain registered in CONNECT; both inbound
+subscriptions and outbound publishes use the same broker identity.
 
 Broker settings live in an **`mqtt` config node** so they are configured once:
 

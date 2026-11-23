@@ -87,6 +87,10 @@ export interface MqttConnectOptions {
     username?: string;
     password?: string;
     keepalive?: number;
+    /** Clean session flag (default true). */
+    clean?: boolean;
+    /** Last-will message registered on CONNECT. */
+    will?: { topic: string; payload: string; qos?: number; retain?: boolean };
     /** Milliseconds to wait for the broker before failing (default 10000). */
     connectTimeout?: number;
     /** Reject self-signed certificates (mqtts only). */
@@ -133,7 +137,15 @@ export function connectPacket(options: MqttConnectOptions): Buffer {
     const keepalive = Math.max(0, Math.min(65535, Math.floor(options.keepalive ?? 60)));
     const username = options.username ?? '';
     const password = options.password ?? '';
-    let flags = 0x02; // clean session
+    const will = options.will?.topic ? options.will : undefined;
+    let flags = options.clean === false ? 0 : 0x02;
+    if (will) {
+        flags |= 0x04;
+        flags |= (Math.max(0, Math.min(1, Number(will.qos) || 0)) << 3);
+        if (will.retain === true) {
+            flags |= 0x20;
+        }
+    }
     if (username) {
         flags |= 0x80;
     }
@@ -146,6 +158,10 @@ export function connectPacket(options: MqttConnectOptions): Buffer {
         Buffer.from([(keepalive >> 8) & 0xff, keepalive & 0xff])
     ]);
     const payload: Buffer[] = [encodeString(clientId)];
+    if (will) {
+        payload.push(encodeString(will.topic));
+        payload.push(encodeString(will.payload));
+    }
     if (username) {
         payload.push(encodeString(username));
     }
@@ -605,6 +621,8 @@ export class WorkflowMqttTransport implements OnDestroy {
         username?: string;
         password?: string;
         keepalive?: number;
+        clean?: boolean;
+        will?: { topic: string; payload: string; qos?: number; retain?: boolean };
         tls?: MqttTlsOptions;
     }): Promise<void> {
         await this.registry.publish({
@@ -613,6 +631,8 @@ export class WorkflowMqttTransport implements OnDestroy {
             username: message.username,
             password: message.password,
             keepalive: message.keepalive,
+            clean: message.clean,
+            will: message.will,
             tls: message.tls
         }, {
             topic: message.topic,
@@ -634,6 +654,8 @@ export function mqttPoolKey(options: MqttConnectOptions): string {
         options.username || '',
         options.password || '',
         options.clientId || '',
+        options.clean === false ? 'clean:0' : '',
+        options.will ? JSON.stringify(options.will) : '',
         options.tls ? JSON.stringify(options.tls) : ''
     ].join('|');
 }

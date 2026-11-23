@@ -134,6 +134,32 @@ describe('Workflow data & trigger nodes', () => {
         expect(missing.error?.message).toContain('Environment variable');
     });
 
+    it('injects additional message properties', async () => {
+        let seen: any;
+        const result = await service.execute(chain([
+            { type: 'inject', config: {
+                payload: { base: 1 },
+                properties: [
+                    { key: 'flag', value: 'true' },
+                    { key: 'name', value: 'Ada' }
+                ]
+            } },
+            { type: 'task', config: { action: 'capture' } }
+        ]), {
+            actions: {
+                capture: (ctx: any) => {
+                    seen = ctx;
+                    return { ok: true };
+                }
+            }
+        });
+        expect(result.success).toBe(true);
+        expect(seen.base).toBe(1);
+        expect(seen.flag).toBe(true);
+        expect(seen.name).toBe('Ada');
+        expect(seen.msg.flag).toBe(true);
+    });
+
     it('supports workflows whose entry is an inject trigger', () => {
         const definition = chain([
             { type: 'inject', config: { payload: {} } },

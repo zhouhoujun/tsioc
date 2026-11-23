@@ -356,7 +356,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "event": "Event name",
                 "timeout": "Wait timeout",
                 "payloadValue": "Payload value",
-                "cron": "Cron expression"
+                "cron": "Cron expression",
+                "properties": "Properties",
+                "key": "Property",
+                "value": "Value"
             },
             "task": {
                 "action": "Action name",
@@ -817,7 +820,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "username": "Username",
                 "password": "Password",
                 "tls": "TLS config",
-                "keepalive": "Keepalive"
+                "keepalive": "Keepalive",
+                "clean": "Clean session",
+                "willTopic": "Will topic",
+                "willPayload": "Will payload",
+                "willQos": "Will QoS",
+                "willRetain": "Will retain"
             },
             "websocket": {
                 "host": "Host",
@@ -866,7 +874,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "repeatCount": "1",
                 "event": "order.created",
                 "timeout": "30",
-                "cron": "0 9 * * 1-5"
+                "cron": "0 9 * * 1-5",
+                "key": "customField"
             },
             "task": {
                 "action": "actions.fetch",
@@ -2032,7 +2041,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "event": "事件名称",
                 "timeout": "等待超时",
                 "payloadValue": "数据值",
-                "cron": "Cron 表达式"
+                "cron": "Cron 表达式",
+                "properties": "附加属性",
+                "key": "属性",
+                "value": "值"
             },
             "task": {
                 "action": "动作名称",
@@ -2493,7 +2505,12 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "username": "用户名",
                 "password": "密码",
                 "tls": "TLS 配置",
-                "keepalive": "心跳间隔"
+                "keepalive": "心跳间隔",
+                "clean": "清理会话",
+                "willTopic": "遗嘱主题",
+                "willPayload": "遗嘱内容",
+                "willQos": "遗嘱 QoS",
+                "willRetain": "遗嘱保留"
             },
             "websocket": {
                 "host": "主机",
@@ -2542,7 +2559,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "repeatCount": "1",
                 "event": "order.created",
                 "timeout": "30",
-                "cron": "0 9 * * 1-5"
+                "cron": "0 9 * * 1-5",
+                "key": "customField"
             },
             "task": {
                 "action": "actions.fetch",

@@ -147,6 +147,21 @@ describe('Workflow MQTT transport', () => {
         expect(connect[0]).toBe(0x10);
         expect(connect.includes(Buffer.from('MQTT'))).toBe(true);
 
+        const willConnect = connectPacket({
+            url: 'mqtt://x',
+            clientId: 'c1',
+            clean: false,
+            will: { topic: 'will/topic', payload: 'bye', qos: 1, retain: true }
+        });
+        const willStart = 1 + decodeVarint(willConnect, 1).bytes;
+        const flags = willConnect[willStart + 7];
+        expect(flags & 0x02).toBe(0); // clean session disabled
+        expect(flags & 0x04).toBe(0x04);
+        expect(flags & 0x18).toBe(0x08); // will QoS 1
+        expect(flags & 0x20).toBe(0x20); // will retain
+        expect(willConnect.includes(Buffer.from('will/topic'))).toBe(true);
+        expect(willConnect.includes(Buffer.from('bye'))).toBe(true);
+
         const publish = publishPacket({ topic: 'a/b', payload: 'hello', qos: 1 }, 7);
         const decoded = decodePublish(publish);
         expect(decoded.topic).toBe('a/b');
@@ -303,7 +318,15 @@ describe('Workflow MQTT transport', () => {
             nodes: [
                 registry.createNode('mqtt', { x: 0, y: 0 }, {
                     id: 'mqtt_1',
-                    config: { url: 'mqtt://broker:1883', keepalive: 30 }
+                    config: {
+                        url: 'mqtt://broker:1883',
+                        keepalive: 30,
+                        clean: false,
+                        willTopic: 'will/topic',
+                        willPayload: 'bye',
+                        willQos: '1',
+                        willRetain: true
+                    }
                 }),
                 registry.createNode('mqtt-out', { x: 200, y: 0 }, {
                     id: 'mqtt_out',
@@ -315,6 +338,8 @@ describe('Workflow MQTT transport', () => {
         const result = await service.execute(definition, { payload: { value: 1 } });
         expect(result.success).toBe(true);
         expect(published[0].keepalive).toBe(30);
+        expect(published[0].clean).toBe(false);
+        expect(published[0].will).toEqual({ topic: 'will/topic', payload: 'bye', qos: 1, retain: true });
     });
 
     it('passes a resolved TLS config node to the MQTT transport', async () => {

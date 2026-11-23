@@ -138,9 +138,20 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'payload', label: 'Payload fields', type: 'json', defaultValue: {}, group: 'Payload', visibleWhen: { key: 'payloadType', equals: 'json' } }),
             configField({ key: 'payloadValue', label: 'Payload value', type: 'text', group: 'Payload', visibleWhen: { key: 'payloadType', in: ['string', 'number', 'boolean', 'env'] } }),
-            configField({ key: 'topic', label: 'Topic', type: 'text', maxLength: 200, placeholder: 'orders.created', group: 'Payload' })
+            configField({ key: 'topic', label: 'Topic', type: 'text', maxLength: 200, placeholder: 'orders.created', group: 'Payload' }),
+            configField({
+                key: 'properties',
+                label: 'Properties',
+                type: 'list',
+                addLabel: '+ Add property',
+                group: 'Payload',
+                itemFields: [
+                    configField({ key: 'key', label: 'Property', type: 'text', placeholder: 'customField' }),
+                    configField({ key: 'value', label: 'Value', type: 'text', typed: true })
+                ]
+            })
         ],
-        defaultConfig: { trigger: 'manual', payloadType: 'json', payload: {}, onceDelay: 0, interval: 1, intervalUnit: 's', repeatCount: 1 }
+        defaultConfig: { trigger: 'manual', payloadType: 'json', payload: {}, onceDelay: 0, interval: 1, intervalUnit: 's', repeatCount: 1, properties: [] }
     },
     {
         type: 'task',
@@ -842,9 +853,17 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 reference: { kind: 'config-node', resource: 'tls', create: true, edit: true },
                 description: 'Client certificates for mqtts:// connections.'
             }),
-            configField({ key: 'keepalive', label: 'Keepalive', type: 'number', defaultValue: 60, min: 0, step: 10, unit: 's' })
+            configField({ key: 'keepalive', label: 'Keepalive', type: 'number', defaultValue: 60, min: 0, step: 10, unit: 's' }),
+            configField({ key: 'clean', label: 'Clean session', type: 'boolean', defaultValue: true }),
+            configField({ key: 'willTopic', label: 'Will topic', type: 'text' }),
+            configField({ key: 'willPayload', label: 'Will payload', type: 'text' }),
+            configField({ key: 'willQos', label: 'Will QoS', type: 'select', defaultValue: '0', options: [
+                { label: '0', value: '0' },
+                { label: '1', value: '1' }
+            ] }),
+            configField({ key: 'willRetain', label: 'Will retain', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { url: 'mqtt://localhost:1883', keepalive: 60 }
+        defaultConfig: { url: 'mqtt://localhost:1883', keepalive: 60, clean: true, willQos: '0', willRetain: false }
     },
     {
         type: 'mqtt-in',

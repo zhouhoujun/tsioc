@@ -82,6 +82,8 @@ export interface WorkflowMqttSettings {
     username?: string;
     password?: string;
     keepalive?: number;
+    clean?: boolean;
+    will?: { topic: string; payload: string; qos?: number; retain?: boolean };
     tls?: { ca?: string; cert?: string; key?: string; servername?: string; rejectUnauthorized?: boolean };
 }
 
@@ -111,6 +113,7 @@ export async function resolveMqttConfig(
     const url = String(await resolveCredentialValue(pick('url'), context) ?? '').trim();
     const topic = String(await resolveCredentialValue(pick('topic'), context) ?? '').trim();
     const tlsId = String(pick('tls') || '').trim();
+    const willTopic = String(await resolveCredentialValue(pick('willTopic'), context) ?? '').trim();
     return {
         url,
         topic,
@@ -119,6 +122,17 @@ export async function resolveMqttConfig(
         username: String(await resolveCredentialValue(pick('username'), context) ?? '') || undefined,
         password: String(await resolveCredentialValue(pick('password'), context) ?? '') || undefined,
         keepalive: Number.isFinite(Number(pick('keepalive'))) ? Number(pick('keepalive')) : undefined,
+        clean: pick('clean') === undefined || pick('clean') === null || pick('clean') === ''
+            ? undefined
+            : pick('clean') !== false && pick('clean') !== 'false',
+        will: willTopic
+            ? {
+                topic: willTopic,
+                payload: String(await resolveCredentialValue(pick('willPayload'), context) ?? ''),
+                qos: Number(pick('willQos')) === 1 ? 1 : 0,
+                retain: pick('willRetain') === true || pick('willRetain') === 'true'
+            }
+            : undefined,
         tls: tlsId ? await resolveTlsOptions({ tls: tlsId }, context) : undefined
     };
 }
@@ -1146,14 +1160,26 @@ export async function executeVisualNode(
             const topic = config.topic === undefined || config.topic === null
                 ? ''
                 : String(config.topic);
-            const base = topic ? { topic } : {};
-            if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-                return {
-                    success: true,
-                    data: { ...base, ...payload, payload, nodeId: node.id }
-                };
+            const extra: Record<string, any> = {};
+            for (const rule of Array.isArray(config.properties) ? config.properties : []) {
+                const key = String(rule?.key || '').trim();
+                if (!key) {
+                    continue;
+                }
+                const resolved = resolveCompareValue(rule.value, context);
+                extra[key] = typeof resolved === 'string' ? coerceJson(resolved) : resolved;
             }
-            return { success: true, data: { nodeId: node.id, ...base, payload } };
+            const finalPayload = extra.payload !== undefined ? extra.payload : payload;
+            const base = topic ? { topic } : {};
+            const data: Record<string, any> = { nodeId: node.id, ...base, ...extra };
+            if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+                Object.assign(data, payload);
+            }
+            data.payload = finalPayload;
+            if (topic || Object.keys(extra).length) {
+                data.msg = { ...(topic ? { topic } : {}), ...extra, payload: finalPayload };
+            }
+            return { success: true, data };
         }
         case 'http-in': {
             const request = (context as any).request;
@@ -1522,6 +1548,8 @@ export async function executeVisualNode(
                 username: settings.username,
                 password: settings.password,
                 keepalive: settings.keepalive,
+                clean: settings.clean,
+                will: settings.will,
                 tls: settings.tls
             });
             return {
