@@ -32,6 +32,7 @@ import { WorkflowDeploymentStatus } from '../workflow-store';
                         :label="item.running ? runningLabel : stoppedLabel"
                         :tone="item.running ? 'success' : 'muted'"
                         :dot="item.running"></ui-badge>
+                    <span class="workflow-deployment-ports" v-if="item.ports && item.ports.length">{{portsLabel}} {{item.ports.join(', ')}}</span>
                     <span class="workflow-deployment-runs">{{item.runs}}</span>
                     <ui-button className="workflow-btn" size="xs"
                         :label="item.running ? stopLabel : startLabel"
@@ -78,6 +79,7 @@ export class WorkflowDeploymentsPanelComponent {
     get stopLabel(): string { return this.t('deploymentStop', 'Stop'); }
     get runningLabel(): string { return this.t('running', 'Running'); }
     get stoppedLabel(): string { return this.t('stopped', 'Stopped'); }
+    get portsLabel(): string { return this.t('ports', 'Ports'); }
     get closeLabel(): string { return this.t('close', 'Close'); }
 
     private t(key: string, fallback: string): string {

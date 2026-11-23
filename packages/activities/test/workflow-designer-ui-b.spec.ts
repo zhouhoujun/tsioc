@@ -744,7 +744,8 @@ describe('Workflow Designer UI', () => {
             workflowId: 'flow-a',
             running: true,
             startedAt: Date.now(),
-            runs: 3
+            runs: 3,
+            ports: [3001]
         }];
         let stoppedAll = false;
         (store as any).listDeployments = async () => deployments;
@@ -760,6 +761,7 @@ describe('Workflow Designer UI', () => {
         await waitFor(() => !!root.querySelector('.workflow-deployment-row[data-workflow-id="flow-a"]'));
         expect(root.querySelector('.workflow-deployments')?.textContent).toContain('flow-a');
         expect(root.querySelector('.workflow-deployment-row')?.textContent).toContain('运行中');
+        expect(root.querySelector('.workflow-deployment-row .workflow-deployment-ports')?.textContent).toContain('3001');
 
         (root.querySelectorAll('.workflow-deployments-actions .workflow-btn')[1] as any).click();
         await waitFor(() => stoppedAll && String(root.querySelector('.workflow-deployment-row')?.textContent || '').includes('已停止'));

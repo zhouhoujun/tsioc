@@ -50,6 +50,8 @@ export interface WorkflowDeploymentStatus {
     running: boolean;
     startedAt: number;
     runs: number;
+    /** Bound inbound listener ports (ephemeral ports are resolved). */
+    ports?: number[];
 }
 
 export interface WorkflowNodeMetrics {

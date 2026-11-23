@@ -808,10 +808,11 @@ POST /api/deployments/stop    # stop all or the given workflowIds
 ```
 
 Deployment status includes `ports`, the bound listener ports (ephemeral `0`
-ports are resolved). Starting/stopping a deployment now also starts/releases
-the inbound listeners, so deployed webhooks, sockets and file watchers accept
-traffic without a separate runner process. Saving or publishing a running
-workflow restarts its listeners as part of the same deployment entry.
+ports are resolved) and the Deployments dialog lists them per workflow.
+Starting/stopping a deployment now also starts/releases the inbound listeners,
+so deployed webhooks, sockets and file watchers accept traffic without a
+separate runner process. Saving or publishing a running workflow restarts its
+listeners as part of the same deployment entry.
 
 ### MQTT nodes
 
