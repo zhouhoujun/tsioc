@@ -11,6 +11,7 @@ import { TurnObservabilityController } from './TurnObservabilityController';
 import { collectStreamingResponse as collectStreamingResponseView } from './TurnStreamCollector';
 import { TurnToolBatchController } from './TurnToolBatchController';
 import { SessionPostTurnController } from './SessionPostTurnController';
+import { hadPriorClarification, isClarificationAssistantMessage, rewriteClarificationFollowUp } from './ClarificationFollowUp';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -1319,7 +1320,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string, turnContext?: TurnExecutionContext): Promise<ModelRequest> {
         const state = await this.sessions.get(sessionId);
         let messages = this.getRecentMessages(state.messages.filter(message => !isImportedChildMessage(message)), currentUserMessageId);
-        const rewrittenMessages = this.rewriteClarificationFollowUp(messages, currentUserMessageId);
+        const rewrittenMessages = rewriteClarificationFollowUp(messages, currentUserMessageId);
         if (turnContext?.diagnostics && rewrittenMessages !== messages) {
             turnContext.diagnostics.followUpContextRewritten = true;
         }
@@ -1831,104 +1832,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         if (!diagnostics) {
             return;
         }
-        diagnostics.finalAssistantWasClarification = this.isClarificationAssistantMessage(message.content);
+        diagnostics.finalAssistantWasClarification = isClarificationAssistantMessage(message.content);
         diagnostics.repeatedClarificationDetected = diagnostics.finalAssistantWasClarification
-            && await this.hadPriorClarification(sessionId, currentUserMessageId);
-    }
-
-    private async hadPriorClarification(sessionId: string, currentUserMessageId: string): Promise<boolean> {
-        const messages = (await this.sessions.get(sessionId)).messages;
-        const currentIndex = messages.findIndex(message => message.id === currentUserMessageId);
-        if (currentIndex < 1) {
-            return false;
-        }
-        const previousAssistantIndex = this.findPreviousMessageIndex(messages, currentIndex - 1, 'assistant');
-        if (previousAssistantIndex < 0) {
-            return false;
-        }
-        return this.isClarificationAssistantMessage(messages[previousAssistantIndex]?.content);
-    }
-
-    private rewriteClarificationFollowUp(messages: AgentMessage[], currentUserMessageId: string): AgentMessage[] {
-        const currentIndex = messages.findIndex(message => message.id === currentUserMessageId);
-        if (currentIndex < 1) {
-            return messages;
-        }
-        const currentUserMessage = messages[currentIndex];
-        if (currentUserMessage.role !== 'user' || !this.isShortClarificationAnswer(currentUserMessage.content)) {
-            return messages;
-        }
-        if (String(currentUserMessage.content || '').includes('[Follow-up Context]')) {
-            return messages;
-        }
-        const previousAssistantIndex = this.findPreviousMessageIndex(messages, currentIndex - 1, 'assistant');
-        if (previousAssistantIndex < 0) {
-            return messages;
-        }
-        const previousAssistant = messages[previousAssistantIndex];
-        if (!this.isClarificationAssistantMessage(previousAssistant.content)) {
-            return messages;
-        }
-        const previousUserIndex = this.findPreviousMessageIndex(messages, previousAssistantIndex - 1, 'user');
-        if (previousUserIndex < 0) {
-            return messages;
-        }
-        const previousUser = messages[previousUserIndex];
-        const rewritten = this.buildClarificationFollowUpContent(
-            previousUser.content,
-            previousAssistant.content,
-            currentUserMessage.content
-        );
-        return messages.map((message, index) => index === currentIndex
-            ? { ...message, content: rewritten }
-            : message);
-    }
-
-    private findPreviousMessageIndex(messages: AgentMessage[], startIndex: number, role: AgentMessage['role']): number {
-        for (let index = startIndex; index >= 0; index--) {
-            const message = messages[index];
-            if (message?.role !== role) {
-                continue;
-            }
-            if (message?.metadata?.streaming || message?.metadata?.slashCommand) {
-                continue;
-            }
-            return index;
-        }
-        return -1;
-    }
-
-    private isShortClarificationAnswer(content: string): boolean {
-        const text = String(content || '').trim();
-        if (!text || text.startsWith('/') || text.includes('\n') || text.includes('@')) {
-            return false;
-        }
-        if (text.length > 80) {
-            return false;
-        }
-        return !(/[.?!。？！]/.test(text) && text.length > 32);
-    }
-
-    private isClarificationAssistantMessage(content: string): boolean {
-        const text = String(content || '').trim();
-        if (!text) {
-            return false;
-        }
-        if (text.includes('?') || text.includes('？')) {
-            return true;
-        }
-        return /(please tell me|tell me|please provide|provide|which one|what is|what are|where is|where are|who is|who are|when is|when are|how many|i still need|i need|missing|clarify|confirmation|confirm|请告诉我|告诉我|请发我|请提供|请补充|还需要|需要你|缺少|确认一下|补充一下)/i.test(text);
-    }
-
-    private buildClarificationFollowUpContent(previousUser: string, previousAssistant: string, currentAnswer: string): string {
-        return [
-            '[Follow-up Context]',
-            `Previous user request: ${String(previousUser || '').trim()}`,
-            `Assistant clarification: ${String(previousAssistant || '').trim()}`,
-            `User follow-up answer: ${String(currentAnswer || '').trim()}`,
-            '',
-            'Continue the original task directly using the follow-up answer above.'
-        ].join('\n');
+            && hadPriorClarification((await this.sessions.get(sessionId)).messages, currentUserMessageId);
     }
 
     protected sessionToolFilters = new Map<string, Set<string>>();
