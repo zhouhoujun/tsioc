@@ -561,6 +561,15 @@ export class WorkflowHttpController {
             }
             return { status: 401, message: 'Unauthorized', headers: {} };
         }
+        if (authType === 'apikey') {
+            const header = String(config.apiKeyHeader || 'x-api-key').trim().toLowerCase();
+            const provided = String(headers[header] ?? headers[header.replace(/-/g, '_')] ?? '');
+            const expected = String(await this.credentialsOf(config.apiKey) ?? '');
+            if (expected && provided === expected) {
+                return undefined;
+            }
+            return { status: 401, message: 'Unauthorized', headers: {} };
+        }
         return undefined;
     }
 

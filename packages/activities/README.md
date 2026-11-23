@@ -927,8 +927,9 @@ the endpoint credentials (absolute node URLs still win).
   "upload": true }
 ```
 
-- `authType: basic|bearer` validates the `Authorization` header against the
-  credential store; failures return 401 (basic also sends `WWW-Authenticate`)
+- `authType: basic|bearer|apikey` validates the `Authorization` header, or the
+  configured `apiKeyHeader` (default `x-api-key`), against the credential store;
+  failures return 401 (basic also sends `WWW-Authenticate`)
 - `cors` answers `OPTIONS` preflight with 204 and allow-origin/methods/headers
   before auth runs, and decorates normal responses
 - `responseHeaders` are applied first; an `http-response` node merges over them

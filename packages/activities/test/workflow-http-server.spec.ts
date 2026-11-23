@@ -584,6 +584,58 @@ describe('Workflow HTTP microservice', () => {
         await request(`${base}/api/workflows/child-http`, { method: 'DELETE' });
     });
 
+    it('accepts http-in webhooks authenticated by an API key header', async () => {
+        const definition = {
+            id: 'hook-apikey',
+            name: 'API key hook',
+            nodes: [
+                {
+                    id: 'in_1', name: 'Hook', type: 'http-in',
+                    position: { x: 0, y: 0 },
+                    config: {
+                        method: 'POST',
+                        path: '/keyed',
+                        authType: 'apikey',
+                        apiKeyHeader: 'x-api-key',
+                        apiKey: '{{credential:hook-key}}'
+                    }
+                },
+                {
+                    id: 'out_1', name: 'Respond', type: 'http-response',
+                    position: { x: 200, y: 0 },
+                    config: { statusCode: 200, body: 'payload' }
+                }
+            ],
+            connections: [
+                { id: 'c1', sourceNodeId: 'in_1', sourcePort: 'out', targetNodeId: 'out_1', targetPort: 'in' }
+            ]
+        };
+        await request(`${base}/api/workflows/hook-apikey`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(definition)
+        });
+        await request(`${base}/api/credentials/hook-key`, {
+            method: 'PUT',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ value: 'secret-key' })
+        });
+
+        const missing = await fetch(`${base}/api/workflows/hook-apikey/hook/keyed`, { method: 'POST' });
+        expect(missing.status).toBe(401);
+        const wrong = await fetch(`${base}/api/workflows/hook-apikey/hook/keyed`, {
+            method: 'POST', headers: { 'x-api-key': 'wrong' }
+        });
+        expect(wrong.status).toBe(401);
+        const allowed = await fetch(`${base}/api/workflows/hook-apikey/hook/keyed`, {
+            method: 'POST', headers: { 'x-api-key': 'secret-key' }
+        });
+        expect(allowed.status).toBe(200);
+
+        await request(`${base}/api/workflows/hook-apikey`, { method: 'DELETE' });
+        await request(`${base}/api/credentials/hook-key`, { method: 'DELETE' });
+    });
+
     it('secures, decorates and accepts uploads on http-in webhooks', async () => {
         const definition = {
             id: 'hook-guard',

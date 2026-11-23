@@ -707,13 +707,16 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 options: [
                     { label: 'None', value: 'none' },
                     { label: 'Basic', value: 'basic' },
-                    { label: 'Bearer token', value: 'bearer' }
+                    { label: 'Bearer token', value: 'bearer' },
+                    { label: 'API key', value: 'apikey' }
                 ],
                 group: 'Security'
             }),
             configField({ key: 'username', label: 'Username', type: 'text', group: 'Security', visibleWhen: { key: 'authType', equals: 'basic' } }),
             configField({ key: 'password', label: 'Password', type: 'password', group: 'Security', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({ key: 'token', label: 'Bearer token', type: 'password', group: 'Security', visibleWhen: { key: 'authType', equals: 'bearer' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'apiKeyHeader', label: 'API key header', type: 'text', defaultValue: 'x-api-key', group: 'Security', visibleWhen: { key: 'authType', equals: 'apikey' } }),
+            configField({ key: 'apiKey', label: 'API key', type: 'password', group: 'Security', visibleWhen: { key: 'authType', equals: 'apikey' }, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({ key: 'cors', label: 'Enable CORS', type: 'boolean', defaultValue: false, group: 'Security', description: 'Answer preflight requests and allow browser callers.' }),
             configField({ key: 'corsOrigin', label: 'Allowed origin', type: 'text', defaultValue: '*', group: 'Security', visibleWhen: { key: 'cors', equals: true } }),
             configField({ key: 'corsHeaders', label: 'Allowed headers', type: 'text', defaultValue: 'content-type, authorization', group: 'Security', visibleWhen: { key: 'cors', equals: true } }),
