@@ -178,6 +178,43 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
         host.notify(formatAgentUiNotice(host.translator, 'queueMoved', { from: from + 1, to: to + 1 }));
         return true;
     }
+    const batch = /^remove\s+([\d,\s-]+)$/i.exec(parsed);
+    if (batch && /[,-]/.test(batch[1])) {
+        const indices = new Set<number>();
+        for (const part of batch[1].split(',').map(item => item.trim()).filter(Boolean)) {
+            const range = /^(\d+)(?:-(\d+))?$/.exec(part);
+            if (!range) {
+                host.notify(formatAgentUiNotice(host.translator, 'queueBatchInvalid', { value: part }));
+                return true;
+            }
+            const start = Number(range[1]);
+            const end = Number(range[2] || range[1]);
+            if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) {
+                host.notify(formatAgentUiNotice(host.translator, 'queueBatchInvalid', { value: part }));
+                return true;
+            }
+            for (let index = start; index <= end; index++) {
+                indices.add(index - 1);
+            }
+        }
+        for (const index of indices) {
+            if (index >= queue.length) {
+                host.notify(formatAgentUiNotice(host.translator, 'queueEntryMissing', { index: String(index + 1) }));
+                return true;
+            }
+        }
+        for (const index of [...indices].sort((left, right) => right - left)) {
+            queue.splice(index, 1);
+        }
+        if (queue.length) {
+            host.queuedPrompts.set(host.state.sessionId, queue);
+        } else {
+            host.queuedPrompts.delete(host.state.sessionId);
+        }
+        host.state.setQueuedPromptCount(queue.length);
+        host.notify(formatAgentUiNotice(host.translator, 'queueRemovedMany', { count: indices.size, queueLength: queue.length }));
+        return true;
+    }
     const manage = /^(remove|edit)\s+(\d+)$/i.exec(parsed);
     if (manage) {
         const index = Number(manage[2]) - 1;

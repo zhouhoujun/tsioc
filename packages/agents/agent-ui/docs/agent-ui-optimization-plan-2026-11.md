@@ -247,6 +247,7 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 - `/work spawn ... --profile`（不写值）打开 primary profile 选择器，跳过 subagent；
 - `/inbox` 将 `waiting-input` / `blocked` 的后台 worker 也列为待办（显示问题/错误原因），
   并支持在 Inbox 内直接取消后台任务；
+- `/queue remove` 支持批量索引与区间（`1,3` / `1-3`），用于清理长队列；
 - `/permissions rules` 图形面板支持规则上移/下移、修改动作（string 规则可转为对象规则）、
   删除与重置，顺序即 last-match 执行顺序；`/permissions rules session` 提供 per-session 覆盖
   （TUI 走 manager，Web/attach 走 `session.approval_rules.set/get`，工作区 deny 永远优先；

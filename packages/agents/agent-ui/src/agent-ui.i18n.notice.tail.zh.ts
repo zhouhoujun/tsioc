@@ -67,6 +67,8 @@ export const AGENT_UI_NOTICE_TAIL_ZH: NestedMessages = {
   inboxTaskCancelled: '已取消后台任务 {id}。',
   inboxTaskCancelFailed: '无法取消后台任务 {id}。',
   approvalRulesSessionPanelClear: '清空本会话规则',
+  queueRemovedMany: '已移除 {count} 条排队提示，剩余 {queueLength} 条。',
+  queueBatchInvalid: '无效的队列选择：{value}',
   sessionSwitchBusy: '请等待当前轮次结束后再切换会话。',
   gitSnapshotRevertMessageConfirm: '将工作区恢复到消息 {ref} 的快照？',
   gitSnapshotRestoreConfirm: '恢复最近一次 git 回退前捕获的工作区？',

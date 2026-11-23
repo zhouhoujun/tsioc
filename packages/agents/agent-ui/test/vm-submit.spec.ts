@@ -856,6 +856,32 @@ export class VmSubmitTest {
         expect(state.queuedPromptCount).toEqual(0);
     }
 
+    @Test('queue command removes a batch of prompts and ranges')
+    async queueBatchRemove() {
+        const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
+        await component.onInit();
+        state.setStatus('running');
+        for (const prompt of ['first', 'second', 'third', 'fourth']) {
+            state.setInput(prompt);
+            await (component as any).handleTerminalInput({ text: '', controlKey: 'tab', partial: false }, '\t');
+        }
+        expect(state.queuedPromptCount).toEqual(4);
+
+        await (component as any).handleCommand('/queue remove 1,3');
+        expect(state.queuedPromptCount).toEqual(2);
+        expect(state.notice).toContain('Removed 2 queued prompts; 2 remain.');
+        await (component as any).handleCommand('/queue');
+        const listed = state.commandOutputs.filter(entry => entry.command === '/queue list').pop();
+        expect(listed?.text).toContain('second');
+        expect(listed?.text).toContain('fourth');
+
+        await (component as any).handleCommand('/queue remove 1-2');
+        expect(state.queuedPromptCount).toEqual(0);
+
+        await (component as any).handleCommand('/queue remove 3-1');
+        expect(state.notice).toContain('Invalid queue selection: 3-1');
+    }
+
     @Test('queue manage panel moves, edits and guards the edges')
     async queueManagePanel() {
         const { state, component } = createConsoleParts(new RuntimeStub(), new SchedulerStub());
