@@ -1283,7 +1283,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'text',
                 options: [
                     { label: 'Text', value: 'text' },
-                    { label: 'Parsed JSON', value: 'json' }
+                    { label: 'Parsed JSON', value: 'json' },
+                    { label: 'Parsed YAML', value: 'yaml' }
                 ],
                 group: 'Output',})
         ],

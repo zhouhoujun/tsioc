@@ -632,7 +632,7 @@ Features:
 - undo/redo, pointer pan, Ctrl+wheel zoom-at-cursor, fit-to-view, auto layout,
   duplicate (`Ctrl+D`), JSON import/export,
 - Node-RED-style base components: inject (manual / interval / cron / event), debug,
-  trigger (first + optional second message), function, template, JSON, CSV, XML, HTML, YAML, RBE, combine,
+  trigger (first + optional second message), function, template (mustache sections + text/JSON/YAML output), JSON, CSV, XML, HTML, YAML, RBE, combine,
   change, statistics, merge, split/map/filter/sort/range/batch/scale,
   event-emit/event-wait, command, condition/switch/router, parallel/join,
   loop (sub-workflow repeat), delay, log, HTTP request, complete/catch/status,

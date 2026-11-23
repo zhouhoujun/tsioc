@@ -83,6 +83,21 @@ describe('Workflow data & trigger nodes', () => {
         expect(batchResult.data?.executionState?.nodeStates.batch_1.result?.data.items).toEqual([[1, 2], [3, 4], [5]]);
     });
 
+    it('renders mustache sections and parses YAML template output', async () => {
+        const loop = await service.execute(chain([
+            { type: 'inject', config: { payload: { items: [{ name: 'A' }, { name: 'B' }] } } },
+            { type: 'template', config: { template: '<ul>{{#items}}<li>{{name}}</li>{{/items}}</ul>', target: 'message' } }
+        ]), {});
+        expect(loop.data?.executionState?.nodeStates.template_1.result?.data?.message)
+            .toBe('<ul><li>A</li><li>B</li></ul>');
+
+        const yaml = await service.execute(chain([
+            { type: 'inject', config: { payload: { name: 'Ada' } } },
+            { type: 'template', config: { template: 'name: {{name}}', output: 'yaml', target: 'message' } }
+        ]), {});
+        expect(yaml.data?.executionState?.nodeStates.template_1.result?.data?.message).toEqual({ name: 'Ada' });
+    });
+
     it('splits strings and emits trigger payloads', async () => {
         const splitResult = await service.execute(chain([
             { type: 'inject', config: { payload: { text: 'a,b,c' } } },

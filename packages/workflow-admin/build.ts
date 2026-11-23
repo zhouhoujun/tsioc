@@ -56,8 +56,9 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // literals instead of JSON strings: repeated plan keys add raw bytes but are
 // highly compressible, and parsing them at startup is skipped. The gzip
 // budget below stays the transfer gate. Raised to 1150 KB for the standalone
-// Plugins / Sessions / Audit pages; the gzip budget remains the transfer gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_150_000);
+// Plugins / Sessions / Audit pages and 1160 KB for mustache sections/YAML
+// template output; the gzip budget remains the transfer gate.
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_160_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
