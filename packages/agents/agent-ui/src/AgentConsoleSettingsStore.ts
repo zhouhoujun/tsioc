@@ -29,8 +29,6 @@ export interface AgentConsoleSettingsData {
     approvalRequireApproval?: ApprovalRule[];
     /** Project-scoped tool allow list (durable "always allow"). */
     approvalAllowRules?: string[];
-    /** Opt-in: skip prompts for read-only shell commands. */
-    approvalShellScanner?: boolean;
     messageSelectionPageSize?: 4 | 6 | 10;
     activityVerbosity?: 'low' | 'medium' | 'high';
     timelineMode?: boolean;
@@ -231,7 +229,6 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined,
         approvalRequireApproval: sanitizeApprovalRequireApproval(parsed?.approvalRequireApproval),
         approvalAllowRules: sanitizeApprovalAllowRules(parsed?.approvalAllowRules),
-        approvalShellScanner: typeof parsed?.approvalShellScanner === 'boolean' ? parsed.approvalShellScanner : undefined,
         messageSelectionPageSize: [4, 6, 10].includes(Number(parsed?.messageSelectionPageSize))
             ? Number(parsed.messageSelectionPageSize) as 4 | 6 | 10
             : undefined,
@@ -366,7 +363,6 @@ export class AgentConsoleSettingsStore {
             ...(data.highlightsSeenVersion ? { highlightsSeenVersion: data.highlightsSeenVersion } : {}),
             ...(data.defaultArchetype ? { defaultArchetype: data.defaultArchetype } : {}),
             ...(data.approvalRequireApproval?.length ? { approvalRequireApproval: data.approvalRequireApproval } : {}),
-            ...(typeof data.approvalShellScanner === 'boolean' ? { approvalShellScanner: data.approvalShellScanner } : {}),
             ...(data.messageSelectionPageSize ? { messageSelectionPageSize: data.messageSelectionPageSize } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),

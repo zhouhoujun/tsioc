@@ -123,16 +123,16 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1102 passing |
 | `@tsdi/agent-gateway` | 410 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2359 passing**（2 组；含随机顺序） |
+| `@tsdi/agent-ui` | **2369 passing**（5 组，152s：109 + 11 + 762 + 668 + 819） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
 说明：
 
-- 本次高负载（load average ~10）下仍选择 5 组；低负载时 4 组约 108s。
-- ordered approval rules 拆分后 `ToolApprovalManager.ts` 从 626 行降到 551 行，新文件
-  `tools/ApprovalStrategy.ts`（<600）承载规则求值。
-  组数由可用内存自动决定，也可通过 `AGENT_UI_TEST_GROUPS=<1..5>` 强制。
+- 组数由可用内存自动决定，也可通过 `AGENT_UI_TEST_GROUPS=<1..5>` 强制；
+  本次 5 组耗时 152s（负载较高时此前记录 299s）。
+- ordered approval rules 拆分后 `ToolApprovalManager.ts` 从 626 行降到 542 行（基线 543），
+  新文件 `tools/ApprovalStrategy.ts`（<600）承载规则求值。
 - `source-size` 的外部阻塞（activities workflow-designer）已不再阻塞，当前全量通过。
 - 投影缓存（按 transcript 复用 display 列表）微基准约 5%，已并入 P2；
   1k tab 切换仍是后续预算项，未宣称达到 ≤70ms 目标。
@@ -142,7 +142,9 @@ rm -f run-one.tmp.ts
 - P3 已完成：ordered approval rules（action/resource，last match wins）。
 - P3 已完成：shell 命令扫描器（opt-in `policy.approval.readOnlyShell`；`git status` / `ls` /
   `cat` 等只读命令跳过审批，管道/重定向/命令替换/未知命令/写标志仍 `ask`；显式对象规则优先；
-  设置页 Permissions 段可开关，TUI 与 `settings.ui.set`（Web/attach）共用同一持久化字段）。
+  设置页 Permissions 段可开关，TUI 与 `settings.ui.set`（Web/attach）共用同一持久化字段；
+  `/permissions scanner on|off` 提供命令入口）。scanner 只保留 `shell-command-scanner.ts`
+  一套实现，移除了重复的 `approvalShellScanner`/`ShellCommandScanner` 死代码。
   字符串类别规则（如 `shell.exec`）仍可被扫描器放宽；需要强制询问某条命令时使用
   `{ category: 'sandbox', resource: '...', action: 'ask' }` 对象规则。
 - P3 已完成：LSP 只读诊断面板 `/check <file...>`（别名 `/lsp`）：复用 `tools.invoke` 调用

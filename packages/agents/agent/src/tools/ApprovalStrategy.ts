@@ -1,6 +1,5 @@
 import type { ApprovalStrategy } from './ToolApprovalManager';
 import { ApprovalCategory, classifyApprovalCategory } from './approval-categories';
-import { isShellCommandTool, scanShellCommand } from './ShellCommandScanner';
 import { approvalCommand, inspectShellCommand } from './shell-command-scanner';
 
 /**
@@ -43,7 +42,6 @@ const RESOURCE_KEYS = ['path', 'filePath', 'target', 'command', 'cmd', 'url', 'c
 
 export class DefaultApprovalStrategy implements ApprovalStrategy {
     private rules: ApprovalRule[];
-    private shellScanner = false;
     readonly autoReview: boolean;
     /** Live opt-in flag: read on every decision so a settings toggle applies at once. */
     private readOnlyShell?: () => boolean;
@@ -70,14 +68,6 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
 
     autoDenies(toolName: string, input: any): boolean {
         return this.decide(toolName, input) === 'deny';
-    }
-
-    setShellScanner(enabled: boolean): void {
-        this.shellScanner = enabled === true;
-    }
-
-    isShellScannerEnabled(): boolean {
-        return this.shellScanner;
     }
 
     /** Explain the last matching ordered rule without applying the shell scanner. */

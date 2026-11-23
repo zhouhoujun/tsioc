@@ -14,9 +14,6 @@ export interface ApprovalStrategy {
     autoDenies?(toolName: string, input: any): boolean;
     /** Whether an injected ApprovalReviewer may resolve requests without a human (A2). */
     autoReview?: boolean;
-    /** Opt-in: skip prompts for read-only shell commands. */
-    setShellScanner?(enabled: boolean): void;
-    isShellScannerEnabled?(): boolean;
 }
 
 export const AgentApprovalStrategy = token<ApprovalStrategy>('AgentApprovalStrategy');
@@ -236,10 +233,6 @@ export class ToolApprovalManager extends ApprovalManager {
     isAutoApproveEnabled(): boolean { return this.options?.autoApprove === true; }
 
     requiresApproval(toolName: string, input: any): boolean { return this.strategy?.requires(toolName, input) ?? false; }
-
-    setShellScanner(enabled: boolean): void { this.strategy?.setShellScanner?.(enabled); }
-
-    isShellScannerEnabled(): boolean { return this.strategy?.isShellScannerEnabled?.() === true; }
 
     setAllowRules(rules: string[]): void {
         const seen = new Set<string>();

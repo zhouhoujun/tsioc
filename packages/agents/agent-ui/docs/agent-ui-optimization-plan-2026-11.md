@@ -228,6 +228,8 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 
 已完成（本轮及最近提交）：
 - durable 项目级 allow（`p` / `/permissions allow`，启动恢复、Web/attach 同步）；
+- opt-in shell scanner（`readOnlyShell` 设置行 + `/permissions scanner on|off`）：
+  只读命令跳过审批，管道/重定向/命令替换/未知命令保守询问；
 - ordered approval rules：`action: ask|allow|deny`、`resource`（path/command/url，含 `*`）、
   legacy `mode`，**last match wins**，auto-deny 优先于项目 allow；`DefaultApprovalStrategy`
   已拆到 `tools/ApprovalStrategy.ts`；

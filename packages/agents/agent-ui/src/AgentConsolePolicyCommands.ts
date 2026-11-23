@@ -303,6 +303,28 @@ export async function runPermissionsCommand(host: PolicyCommandHost, args: strin
         host.notify(formatAgentUiNotice(host.translator, 'approvalAlwaysAllowedProject', { tool: action }));
         return;
     }
+    if (tokens[0].toLowerCase() === 'scanner') {
+        const requested = String(tokens[1] || '').toLowerCase();
+        const enable = ['on', 'true', 'enable', 'enabled'].includes(requested);
+        const disable = ['off', 'false', 'disable', 'disabled'].includes(requested);
+        const current = host.options?.policy?.approval?.readOnlyShell === true;
+        if (!enable && !disable) {
+            host.notify(formatAgentUiNotice(host.translator, 'approvalScannerState', { state: current ? 'on' : 'off' }));
+            return;
+        }
+        if (host.options) {
+            host.options.policy = {
+                ...(host.options.policy || {}),
+                approval: { ...(host.options.policy?.approval || {}), readOnlyShell: enable }
+            };
+        }
+        if (host.appRpc) {
+            await host.appRpc.request('settings.ui.set', { readOnlyShell: enable }, host.rpcRequestContext()).catch(() => undefined);
+        }
+        await host.persistSettings?.({ readOnlyShell: enable });
+        host.notify(formatAgentUiNotice(host.translator, enable ? 'approvalScannerEnabled' : 'approvalScannerDisabled'));
+        return;
+    }
     const area = tokens[0].toLowerCase();
     if (area === 'session') {
         const requested = normalizeSecurityLevel(tokens[1]);

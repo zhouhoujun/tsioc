@@ -114,13 +114,6 @@ export async function restoreSettings(self: any): Promise<void> {
                 // Optional runtime surface; the next project approval will retry.
             }
         }
-        if (typeof persisted.approvalShellScanner === 'boolean') {
-            try {
-                (self.resolvedApprovalManager as any)?.setShellScanner?.(persisted.approvalShellScanner);
-            } catch {
-                // Optional runtime surface; only affects prompt frequency.
-            }
-        }
         if (persisted.messageSelectionPageSize) {
             self.state.consoleOptions = {
                 ...self.state.consoleOptions,
