@@ -1,4 +1,5 @@
 import { DynamicFormField } from './dynamic-form.types';
+import { typedCodec } from './dynamic-form.fields';
 
 /**
  * State/editing host implemented by {@link DynamicFormComponent}. Functions take
@@ -236,7 +237,11 @@ export function listIndex(host: DynamicFormEditorHost, field: DynamicFormField, 
 
 export function listItemValue(host: DynamicFormEditorHost, item: any, child: DynamicFormField): any {
     const value = item?.[child.key];
-    return host.fieldDisplayValue(child, value === undefined ? child.defaultValue : value);
+    const raw = value === undefined ? child.defaultValue : value;
+    if (child.typed === true) {
+        return typedCodec(child).decode(raw).text;
+    }
+    return host.fieldDisplayValue(child, raw);
 }
 
 export function listItemChecked(item: any, child: DynamicFormField): boolean {
@@ -300,19 +305,14 @@ export function changeListItem(
         ? !!event?.target?.checked
         : event?.target?.value;
     if (child.typed === true && typeof raw === 'string' && raw !== '') {
-        const type = listItemTypedType(host, items[index], child);
-        if (type !== 'literal' && !/^(msg|flow|global|env)\./.test(raw)) {
-            raw = `${type}.${raw}`;
-        }
+        raw = typedCodec(child).encode(listItemTypedType(host, items[index], child), raw);
     }
     items[index] = { ...(items[index] || {}), [child.key]: host.coerceValue(child, raw) };
     updateList(host, field, items);
 }
 
 export function listItemTypedType(host: DynamicFormEditorHost, item: any, child: DynamicFormField): string {
-    const value = String(listItemValue(host, item, child) ?? '');
-    const match = /^(msg|flow|global|env)\./.exec(value);
-    return match ? match[1] : 'literal';
+    return typedCodec(child).decode(item?.[child.key]).source;
 }
 
 export function changeListItemTypedType(
@@ -323,10 +323,10 @@ export function changeListItemTypedType(
     event: any
 ): void {
     const item = listItems(host, field)[index] || {};
-    const current = String(listItemValue(host, item, child) ?? '');
-    const text = current.replace(/^(msg|flow|global|env)\./, '');
+    const codec = typedCodec(child);
+    const decoded = codec.decode(item[child.key]);
     const next = String(event?.target?.value || 'literal');
-    changeListItemOption(host, field, index, child, next === 'literal' ? text : `${next}.${text}`);
+    changeListItemOption(host, field, index, child, codec.encode(next, decoded.text));
 }
 
 export function changeListItemOption(

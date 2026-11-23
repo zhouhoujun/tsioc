@@ -443,10 +443,7 @@ export class DynamicFormComponent implements OnDestroy {
     changeText(field: DynamicFormField, event: any): void {
         let raw = event?.target?.value;
         if (field.typed === true && typeof raw === 'string' && raw !== '') {
-            const type = this.typedType(field);
-            if (type !== 'literal' && !/^(msg|flow|global|env)\./.test(raw)) {
-                raw = `${type}.${raw}`;
-            }
+            raw = fields.typedCodec(field).encode(this.typedType(field), raw);
         }
         this.updateValue(field, raw);
     }
@@ -649,6 +646,7 @@ export class DynamicFormComponent implements OnDestroy {
 
     /** Localised source options; the host may override them per schema. */
     get typedSourceOptions(): DynamicFormTypedSource[] { return fields.typedSources(this._schema); }
+    typedSourceOptionsFor(field: DynamicFormField): DynamicFormTypedSource[] { return fields.typedSourcesFor(this._schema, field); }
 
     typedType(field: DynamicFormField): string { return fields.typedType(this, field); }
     typedText(field: DynamicFormField): string { return fields.typedText(this, field); }

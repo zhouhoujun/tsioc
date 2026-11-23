@@ -22,6 +22,7 @@ import { localize, WorkflowLocale, WorkflowNodeRegistry } from './node-registry'
 import { WorkflowDesigner } from './workflow-designer';
 import { Translator } from '@tsdi/i18n';
 import { resolveWorkflowText, translateWorkflow } from './i18n';
+import { decodeWorkflowTypedValue } from './workflow-typed-value';
 import {
     configNodeOptions,
     isConfigNode,
@@ -697,10 +698,13 @@ export function buildWorkflowInspectorModel(
             ),
             type: field.type,
             typed: field.typed === true,
+            typedValue: field.typedValue === true,
             value,
-            displayValue: field.type === 'json'
-                ? (typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2))
-                : value === undefined || value === null ? '' : String(value),
+            displayValue: field.typed === true
+                ? decodeWorkflowTypedValue(value).text
+                : field.type === 'json'
+                    ? (typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2))
+                    : value === undefined || value === null ? '' : String(value),
             checked: value === true,
             options: reference
                 ? reference.options

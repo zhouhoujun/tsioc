@@ -1,6 +1,11 @@
 import { parseYaml, stringifyYaml } from './workflow-yaml';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 import {
+    isWorkflowValueRef,
+    readWorkflowProperty as resolveFrom,
+    resolveWorkflowTypedValue
+} from './workflow-typed-value';
+import {
     IVisualWorkflowNode,
     NodeConnection,
     VisualWorkflowDefinition
@@ -431,7 +436,8 @@ export async function resolveCredentialValue(
 /**
  * Resolve a dotted path (`input.approved`, `$.input.approved`) against the
  * workflow context. Literals (quoted strings, numbers, booleans, null) are
- * returned as-is so node configs remain JSON friendly.
+ * returned as-is so node configs remain JSON friendly. Typed value references
+ * (objects) resolve through {@link resolveWorkflowTypedValue}.
  */
 export function resolveWorkflowValue(source: any, context: ActivityContext): any {
     if (typeof source === 'function') {
@@ -440,9 +446,8 @@ export function resolveWorkflowValue(source: any, context: ActivityContext): any
     if (source === undefined || source === null) {
         return source;
     }
-    if (typeof source === 'object' && !Array.isArray(source)
-        && typeof (source as any).type === 'string') {
-        return resolveValueRef(source as any, context);
+    if (isWorkflowValueRef(source)) {
+        return resolveWorkflowTypedValue(source, context);
     }
     if (typeof source !== 'string') {
         return source;
@@ -474,24 +479,6 @@ export function resolveWorkflowValue(source: any, context: ActivityContext): any
         value = value[key];
     }
     return value;
-}
-
-/** Resolve a typed value descriptor against msg/flow/global/env. */
-function resolveValueRef(ref: { type: string; path?: string; value?: any }, context: ActivityContext): any {
-    switch (ref.type) {
-        case 'literal':
-            return ref.value;
-        case 'msg':
-            return resolveFrom((context as any).msg || { payload: (context as any).payload }, ref.path);
-        case 'flow':
-            return resolveFrom((context as any).flow || {}, ref.path);
-        case 'global':
-            return resolveFrom((context as any).global || {}, ref.path);
-        case 'env':
-            return resolveFrom((context as any).env || {}, ref.path);
-        default:
-            return ref;
-    }
 }
 
 function matchRouterRule(actual: any, operator: string, expected: any): boolean {
@@ -546,19 +533,13 @@ function matchRouterRule(actual: any, operator: string, expected: any): boolean 
 }
 
 /**
- * Resolve a typed compare value. The inspector stores non-literal sources as
- * `msg.` / `flow.` / `global.` / `env.` prefixes (or a ValueRef object); plain
- * strings stay literal so existing rules keep comparing text.
+ * Resolve a typed compare value. Typed value fields store references and
+ * literal classes explicitly; older documents keep the `msg.` / `flow.` /
+ * `global.` / `env.` prefix form and plain strings stay literal so existing
+ * rules keep comparing text.
  */
 function resolveCompareValue(value: any, context: ActivityContext): any {
-    if (value && typeof value === 'object' && !Array.isArray(value)
-        && typeof (value as any).type === 'string') {
-        return resolveWorkflowValue(value, context);
-    }
-    if (typeof value === 'string' && /^(msg|flow|global|env)\./.test(value.trim())) {
-        return resolveWorkflowValue(value, context);
-    }
-    return value;
+    return resolveWorkflowTypedValue(value, context);
 }
 
 function compareValues(actual: any, operator: string, expected: any): boolean {
@@ -615,24 +596,6 @@ function coerceJson(value: any): any {
     } catch {
         return value;
     }
-}
-
-function resolveFrom(value: any, path: string | undefined): any {
-    if (!path) {
-        return value;
-    }
-    const parts = String(path)
-        .replace(/^\$\.?/, '')
-        .split('.')
-        .filter(Boolean);
-    let current = value;
-    for (const part of parts) {
-        if (current === undefined || current === null) {
-            return undefined;
-        }
-        current = current[part];
-    }
-    return current;
 }
 
 function arrayFrom(context: ActivityContext, field: string | undefined): any[] {

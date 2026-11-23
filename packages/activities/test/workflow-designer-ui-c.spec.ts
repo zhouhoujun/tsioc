@@ -322,7 +322,27 @@ describe('Workflow Designer UI', () => {
         await flush();
 
         const rules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
-        expect(rules?.[0]?.value).toBe('msg.payload.status');
+        // Typed value fields store the source explicitly instead of prefixing
+        // text, so the value can never be mistaken for a literal.
+        expect(rules?.[0]?.value).toEqual({ type: 'msg', path: 'payload.status' });
+        expect(input.value).toBe('payload.status');
+
+        // Switching the source back to literal stores plain text again.
+        typeSelect.value = 'literal';
+        typeSelect.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        const literalRules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
+        expect(literalRules?.[0]?.value).toBe('payload.status');
+
+        // Literal classes are explicit so a number is never stored as text.
+        typeSelect.value = 'num';
+        typeSelect.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        input.value = '5';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        const numericRules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
+        expect(numericRules?.[0]?.value).toEqual({ type: 'literal', valueType: 'num', value: '5' });
     });
 
     it('shows execution state on nodes and edges after running', async () => {

@@ -204,7 +204,10 @@ function validatorFor(rule: DynamicFormRule): ValidatorFn | undefined {
 
 /** Translate the JSON rule list into `@tsdi/components/forms` validators. */
 /** Values prefixed with msg./flow./global./env. are references, not literals. */
-export function isTypedReference(value: any): boolean {
+export function isTypedReference(value: any, field?: DynamicFormField): boolean {
+    if (field?.typedCodec?.isReference) {
+        return field.typedCodec.isReference(value);
+    }
     return typeof value === 'string' && /^(msg|flow|global|env)\./.test(value);
 }
 
@@ -218,7 +221,7 @@ export function buildDynamicValidators(field: DynamicFormField): BuiltDynamicVal
         }
         if (field.typed === true) {
             const literalValidator = validator;
-            validators.push(control => isTypedReference(control.value) ? null : literalValidator(control));
+            validators.push(control => isTypedReference(control.value, field) ? null : literalValidator(control));
         } else {
             validators.push(validator);
         }

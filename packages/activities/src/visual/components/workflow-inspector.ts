@@ -4,10 +4,12 @@ import {
     DynamicFormComponent,
     DynamicFormField,
     DynamicFormSchema,
+    DynamicFormTypedSource,
 } from '@tsdi/components/common/dynamic-form';
 import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
+import { WORKFLOW_TYPED_CODEC } from '../workflow-typed-value';
 import { WorkflowInspectorFieldView, WorkflowInspectorModel } from '../types';
 
 const EMPTY_INSPECTOR: WorkflowInspectorModel = {
@@ -244,6 +246,24 @@ export class WorkflowInspectorComponent implements OnDestroy {
         return schema;
     }
 
+    /**
+     * Sources offered by typed value fields. `msg`/`flow`/`global`/`env` are
+     * runtime identifiers; literal classes are translated.
+     */
+    protected get typedValueSources(): DynamicFormTypedSource[] {
+        return [
+            { value: 'literal', label: this.t('typedLiteral', 'Literal') },
+            { value: 'num', label: this.t('typedNumber', 'Number') },
+            { value: 'bool', label: this.t('typedBoolean', 'Boolean') },
+            { value: 'json', label: this.t('typedJson', 'JSON') },
+            { value: 're', label: this.t('typedRegex', 'Regex') },
+            { value: 'msg', label: 'msg' },
+            { value: 'flow', label: 'flow' },
+            { value: 'global', label: 'global' },
+            { value: 'env', label: 'env' }
+        ];
+    }
+
     private buildFormSchema(): DynamicFormSchema {
         const fields: DynamicFormField[] = [];
         if (!this._model.hasSelection) {
@@ -310,10 +330,16 @@ export class WorkflowInspectorComponent implements OnDestroy {
     }
 
     protected toDynamicField(field: WorkflowInspectorFieldView): DynamicFormField {
+        const typed = field.typed === true;
         return {
             key: field.key,
             type: this.dynamicType(field),
-            typed: field.typed === true,
+            typed,
+            // Value fields store references and literal classes explicitly so
+            // text that looks like a reference is never misread; path fields
+            // keep the `msg.`-prefixed string form.
+            typedCodec: typed && field.typedValue === true ? WORKFLOW_TYPED_CODEC : undefined,
+            typedSources: typed && field.typedValue === true ? this.typedValueSources : undefined,
             label: field.label,
             placeholder: field.placeholder,
             description: field.description,
@@ -375,7 +401,11 @@ export class WorkflowInspectorComponent implements OnDestroy {
                     ? field.value
                     : field.type === 'json'
                         ? field.value
-                        : field.displayValue;
+                        : field.typed
+                            // Typed fields seed the control with the stored form
+                            // so the source selector keeps its type.
+                            ? field.value
+                            : field.displayValue;
         });
         return value;
     }

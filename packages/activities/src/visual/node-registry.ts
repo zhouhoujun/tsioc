@@ -147,7 +147,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 group: 'Payload',
                 itemFields: [
                     configField({ key: 'key', label: 'Property', type: 'text', placeholder: 'customField' }),
-                    configField({ key: 'value', label: 'Value', type: 'text', typed: true })
+                    configField({ key: 'value', label: 'Value', type: 'text', typed: true, typedValue: true })
                 ]
             })
         ],
@@ -234,7 +234,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'less or equal', value: 'lte' }
                 ]
             }),
-            configField({ key: 'value', label: 'Compare with', type: 'text', typed: true, placeholder: 'true', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+            configField({ key: 'value', label: 'Compare with', type: 'text', typed: true, typedValue: true, placeholder: 'true', visibleWhen: { key: 'operator', notEquals: 'truthy' } })
         ],
         defaultConfig: { operator: 'truthy' }
     },
@@ -290,7 +290,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                             { label: 'else', value: 'else' }
                         ]
                     }),
-                    configField({ key: 'value', label: 'Compare to', type: 'text', typed: true, visibleWhen: { key: 'operator', in: ['equals', 'not-equals', 'contains', 'regex', 'gt', 'gte', 'lt', 'lte'] } })
+                    configField({ key: 'value', label: 'Compare to', type: 'text', typed: true, typedValue: true, visibleWhen: { key: 'operator', in: ['equals', 'not-equals', 'contains', 'regex', 'gt', 'gte', 'lt', 'lte'] } })
                 ]
             }),
             configField({ key: 'checkAll', label: 'Check all rules', type: 'boolean', defaultValue: false })
@@ -557,7 +557,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                             { label: 'is truthy', value: 'truthy' }
                         ]
                     }),
-                    configField({ key: 'value', label: 'Compare to', type: 'text', typed: true, visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+                    configField({ key: 'value', label: 'Compare to', type: 'text', typed: true, typedValue: true, visibleWhen: { key: 'operator', notEquals: 'truthy' } })
                 ]
             })
         ],
@@ -1860,7 +1860,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'less or equal', value: 'lte' }
                 ]
             }),
-            configField({ key: 'value', label: 'Compare with', type: 'text', typed: true, visibleWhen: { key: 'operator', notEquals: 'truthy' } })
+            configField({ key: 'value', label: 'Compare with', type: 'text', typed: true, typedValue: true, visibleWhen: { key: 'operator', notEquals: 'truthy' } })
         ],
         defaultConfig: { operator: 'truthy' }
     },

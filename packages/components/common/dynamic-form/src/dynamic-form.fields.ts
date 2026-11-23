@@ -1,6 +1,12 @@
 import { FormGroup } from '@tsdi/components/forms';
-import { DynamicFormField, DynamicFormSchema, DynamicFormTypedSource } from './dynamic-form.types';
-import { dynamicFormMessage } from './dynamic-form.validation';
+import {
+    DynamicFormField,
+    DynamicFormSchema,
+    DynamicFormTypedCodec,
+    DynamicFormTypedDecoded,
+    DynamicFormTypedSource
+} from './dynamic-form.types';
+import { dynamicFormMessage, isTypedReference } from './dynamic-form.validation';
 
 /** State exposed by {@link DynamicFormComponent} to the pure field helpers. */
 export interface DynamicFormFieldHost {
@@ -32,9 +38,39 @@ export const DEFAULT_TYPED_SOURCES: DynamicFormTypedSource[] = [
 /** Leading source of a stored typed value (`msg.payload` -> `msg`). */
 const TYPED_SOURCE_PATTERN = /^(msg|flow|global|env)\./;
 
+/** Default storage: `msg.`-style prefixes, literal values stay plain text. */
+export const DEFAULT_TYPED_CODEC: DynamicFormTypedCodec = {
+    decode(value: any): DynamicFormTypedDecoded {
+        const text = value === undefined || value === null ? '' : String(value);
+        const match = TYPED_SOURCE_PATTERN.exec(text);
+        return match
+            ? { source: match[1], text: text.slice(match[0].length) }
+            : { source: 'literal', text };
+    },
+    encode(source: string, text: string): any {
+        return source === 'literal' ? text : `${source}.${text}`;
+    },
+    isReference(value: any): boolean {
+        return isTypedReference(value);
+    }
+};
+
+/** Codec used by a typed field; hosts may replace the default per field. */
+export function typedCodec(field: DynamicFormField): DynamicFormTypedCodec {
+    return field.typedCodec || DEFAULT_TYPED_CODEC;
+}
+
 export function typedSources(schema?: DynamicFormSchema): DynamicFormTypedSource[] {
     const configured = schema?.typedSources;
     return configured && configured.length ? configured : DEFAULT_TYPED_SOURCES;
+}
+
+/** Sources offered by one typed field; a field list wins over the schema list. */
+export function typedSourcesFor(schema: DynamicFormSchema | undefined, field: DynamicFormField): DynamicFormTypedSource[] {
+    if (field.typedSources && field.typedSources.length) {
+        return field.typedSources;
+    }
+    return typedSources(schema);
 }
 
 export function hasOwn(value: any, key: string): boolean {
@@ -210,35 +246,36 @@ export function isTypedInput(field: DynamicFormField): boolean {
  * be picked before typing anything.
  */
 export function typedType(host: DynamicFormFieldHost, field: DynamicFormField): string {
-    const value = String(fieldValue(host, field) ?? '');
-    const match = TYPED_SOURCE_PATTERN.exec(value);
-    if (match) {
-        return match[1];
+    const raw = fieldValue(host, field);
+    const decoded = typedCodec(field).decode(raw);
+    if (decoded.source !== 'literal') {
+        return decoded.source;
     }
-    return value ? 'literal' : ((host as DynamicFormTypedHost).typedSelections?.[field.key] || 'literal');
+    const empty = raw === undefined || raw === null || raw === '';
+    return empty ? ((host as DynamicFormTypedHost).typedSelections?.[field.key] || 'literal') : 'literal';
 }
 
 /** Typed values show the payload text only; the selector owns the source. */
 export function typedText(host: DynamicFormFieldHost, field: DynamicFormField): string {
-    return String(fieldValue(host, field) ?? '').replace(TYPED_SOURCE_PATTERN, '');
+    return typedCodec(field).decode(fieldValue(host, field)).text;
 }
 
 /** Text input value; typed fields hide the source the selector shows. */
 export function textValue(host: DynamicFormFieldHost, field: DynamicFormField): any {
-    const value = fieldValue(host, field);
-    return field.typed === true ? String(value ?? '').replace(TYPED_SOURCE_PATTERN, '') : value;
+    return field.typed === true ? typedText(host, field) : fieldValue(host, field);
 }
 
 export function changeTypedType(host: DynamicFormTypedHost, field: DynamicFormField, event: any): void {
+    const codec = typedCodec(field);
+    const decoded = codec.decode(fieldValue(host, field));
     const next = String(event?.target?.value || 'literal');
-    const text = typedText(host, field);
-    if (!text) {
+    if (!decoded.text) {
         // Nothing to prefix yet: remember the choice for the first input
         // instead of storing a dangling `msg.`.
         host.typedSelections = { ...(host.typedSelections || {}), [field.key]: next };
         return;
     }
-    host.updateValue(field, next === 'literal' ? text : `${next}.${text}`);
+    host.updateValue(field, codec.encode(next, decoded.text));
 }
 
 export function isTextareaInput(field: DynamicFormField): boolean {

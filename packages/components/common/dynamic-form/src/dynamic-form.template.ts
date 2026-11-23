@@ -27,7 +27,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         <select [class]="classes.typedType" data-value-type="true"
                             [disabled]="field.disabled || field.readonly"
                             @change="changeTypedType(field, $event)">
-                            <option v-for="source in typedSourceOptions" [value]="source.value"
+                            <option v-for="source in typedSourceOptionsFor(field)" [value]="source.value"
                                 [selected]="typedType(field) === source.value">{{source.label}}</option>
                         </select>
                     </div>
@@ -120,7 +120,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                             <select [class]="classes.typedType" data-value-type="true"
                                                 [disabled]="child.disabled || child.readonly"
                                                 @change="changeListItemTypedType(field, listIndex(field, item), child, $event)">
-                                                <option v-for="source in typedSourceOptions" [value]="source.value"
+                                                <option v-for="source in typedSourceOptionsFor(child)" [value]="source.value"
                                                     [selected]="listItemTypedType(item, child) === source.value">{{source.label}}</option>
                                             </select>
                                         </div>

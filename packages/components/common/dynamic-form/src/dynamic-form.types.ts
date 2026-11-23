@@ -59,8 +59,28 @@ export interface DynamicFormFieldAction {
  * locale; the value is what gets prefixed onto the stored string.
  */
 export interface DynamicFormTypedSource {
-    value: 'literal' | 'msg' | 'flow' | 'global' | 'env';
+    /** Selector value; hosts may add sources (`num`, `json`, `jsonata`, ...). */
+    value: string;
     label: string;
+}
+
+/** Stored typed value split into the selector source and editable text. */
+export interface DynamicFormTypedDecoded {
+    source: string;
+    text: string;
+}
+
+/**
+ * Pluggable storage format for typed fields. The default codec prefixes the
+ * source onto a string (`msg.payload`); hosts with richer needs (explicit
+ * literal types, object references) supply their own so the stored shape stays
+ * unambiguous while the control keeps showing plain text.
+ */
+export interface DynamicFormTypedCodec {
+    decode(value: any): DynamicFormTypedDecoded;
+    encode(source: string, text: string): any;
+    /** A value that points at host context instead of carrying a literal. */
+    isReference?(value: any): boolean;
 }
 
 export type DynamicFormRuleType =
@@ -103,6 +123,10 @@ export interface DynamicFormField {
     type: DynamicFormFieldType;
     /** Show a literal/msg/flow/global/env reference selector for this field. */
     typed?: boolean;
+    /** Storage codec for {@link typed}; defaults to `msg.`-style prefixes. */
+    typedCodec?: DynamicFormTypedCodec;
+    /** Sources for this field; falls back to the schema list. */
+    typedSources?: DynamicFormTypedSource[];
     label?: string;
     placeholder?: string;
     description?: string;

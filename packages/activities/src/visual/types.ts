@@ -577,10 +577,11 @@ export interface WorkflowMessage {
 
 /**
  * Typed value reference used by node fields. Plain strings keep the legacy
- * literal/context-path behavior.
+ * literal/context-path behavior; references and explicit literal classes are
+ * stored as objects so they can never be confused with text.
  */
 export type WorkflowValueRef =
-    | { type: 'literal'; value: any }
+    | { type: 'literal'; value: any; valueType?: 'str' | 'num' | 'bool' | 'json' | 're' }
     | { type: 'msg'; path: string }
     | { type: 'flow'; path: string }
     | { type: 'global'; path: string }
@@ -669,6 +670,13 @@ export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'la
     group?: string;
     /** Only render the field when the referenced config value matches. */
     visibleWhen?: WorkflowConfigFieldCondition;
+    /**
+     * Typed field carries a **value** (not a context path). Values are stored
+     * as typed objects (`{type:'msg',path}` / `{type:'literal',valueType}`) so
+     * the source can never be mistaken for text; path fields keep the legacy
+     * `msg.`-prefixed strings.
+     */
+    typedValue?: boolean;
     /** Render as a reference picker bound to another node/record id. */
     reference?: WorkflowReferenceSpec;
 }
@@ -960,6 +968,8 @@ export interface WorkflowInspectorFieldView {
     type: WorkflowConfigFieldType;
     /** Field accepts literal/msg/flow/global/env references. */
     typed?: boolean;
+    /** Typed field carries a value (typed object storage) instead of a path. */
+    typedValue?: boolean;
     value: any;
     displayValue: string;
     checked: boolean;

@@ -3,6 +3,7 @@ import { validateDynamicFormValues } from '@tsdi/components/common/dynamic-form'
 import { WorkflowConfigField, WorkflowConfigFieldCondition, VisualWorkflowDefinition } from './types';
 import type { WorkflowNodeRegistry } from './node-registry';
 import { referenceIds } from './workflow-config-nodes';
+import { validateWorkflowTypedValue, WORKFLOW_TYPED_CODEC } from './workflow-typed-value';
 
 export interface WorkflowConfigIssue {
     nodeId: string;
@@ -35,7 +36,9 @@ function toFormField(field: WorkflowConfigField): DynamicFormField {
     // `boolean` is the node-level alias for the shared checkbox control.
     return {
         ...field,
-        type: (field.type === 'boolean' ? 'checkbox' : field.type) as DynamicFormField['type']
+        type: (field.type === 'boolean' ? 'checkbox' : field.type) as DynamicFormField['type'],
+        typedCodec: field.typed === true && field.typedValue === true ? WORKFLOW_TYPED_CODEC : undefined,
+        itemFields: field.itemFields?.map(toFormField)
     } as DynamicFormField;
 }
 
@@ -107,14 +110,46 @@ export function validateWorkflowConfigs(
                 }
             });
         }
+        // Typed value fields store literal classes explicitly; report text that
+        // cannot be read as its declared class before the workflow runs.
+        for (const field of fields) {
+            const message = validateWorkflowTypedValue(values[field.key]);
+            if (message) {
+                issues.push({
+                    nodeId: node.id,
+                    nodeName: node.name || node.id,
+                    fieldKey: field.key,
+                    label: field.label || field.key,
+                    message
+                });
+            }
+            if (!field.itemFields?.length) {
+                continue;
+            }
+            const items = Array.isArray(values[field.key]) ? values[field.key] : [];
+            items.forEach((item: any, index: number) => {
+                for (const child of field.itemFields!) {
+                    const childMessage = validateWorkflowTypedValue(item?.[child.key]);
+                    if (!childMessage) {
+                        continue;
+                    }
+                    issues.push({
+                        nodeId: node.id,
+                        nodeName: node.name || node.id,
+                        fieldKey: `${field.key}[${index}].${child.key}`,
+                        label: `${field.label || field.key} ${index + 1} · ${child.label || child.key}`,
+                        message: childMessage
+                    });
+                }
+            });
+        }
         // Reference fields store plain ids. Report ids that no longer resolve
         // so a stale broker/TLS pick is visible while editing, not at run time.
         for (const field of nodeDefinition.fields) {
             const spec = field.reference;
             if (!spec) {
                 continue;
-            }
-            const ids = referenceIds(config[field.key]);
+            }            const ids = referenceIds(config[field.key]);
             if (!ids.length) {
                 continue;
             }

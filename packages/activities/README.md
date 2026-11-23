@@ -1113,6 +1113,25 @@ paths) expose the same selector per row; compare values prefixed with
 `msg.`/`flow.`/`global.`/`env.` are resolved at execution time for condition,
 switch/router and filter.
 
+**Typed values vs paths.** Fields that carry a *value* (`typedValue`) — inject
+property values, condition/switch/router/filter compare values — offer
+`literal`/`number`/`boolean`/`JSON`/`regex` plus `msg`/`flow`/`global`/`env`
+and store an explicit object:
+
+```json
+{ "type": "msg", "path": "payload.total" }
+{ "type": "literal", "valueType": "num", "value": "5" }
+```
+
+Only the plain `literal` source stays a string, so documents written before
+typed values existed keep their exact form; references and literal classes are
+never mistaken for text (a literal `"true"` no longer silently becomes the
+boolean `true` once it is stored as `boolean`). Path fields keep the shorter
+`msg.payload` string form because their selector only chooses the scope.
+`workflow-typed-value.ts` owns decode/encode/resolution for both the inspector
+and the runtime, and the shared dynamic form accepts the codec per field, so
+DOM and TUI editors store the same shape.
+
 ### Workflow plugins
 
 `WorkflowPluginRegistry` installs custom nodes, services and lifecycle hooks:

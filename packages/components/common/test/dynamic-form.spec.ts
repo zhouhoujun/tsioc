@@ -267,6 +267,104 @@ export class DynamicFormTest {
         expect(form.isTypedInput(form.schema.fields[1])).toBe(false);
     }
 
+    @Test('edits typed fields through a host codec so references keep their shape')
+    async typedCodecValues() {
+        const codec = {
+            decode(value: any) {
+                if (value && typeof value === 'object' && typeof value.type === 'string') {
+                    return { source: value.type, text: value.path || '' };
+                }
+                return { source: 'literal', text: value === undefined || value === null ? '' : String(value) };
+            },
+            encode(source: string, text: string) {
+                return source === 'literal' ? text : { type: source, path: text };
+            },
+            isReference(value: any) {
+                return !!value && typeof value === 'object';
+            }
+        };
+        const form = createForm({
+            fields: [
+                {
+                    key: 'to',
+                    type: 'text',
+                    label: 'To',
+                    typed: true,
+                    typedCodec: codec,
+                    typedSources: [{ value: 'literal', label: 'Literal' }, { value: 'msg', label: 'msg' }]
+                },
+                {
+                    key: 'rules',
+                    type: 'list',
+                    label: 'Rules',
+                    itemFields: [
+                        { key: 'value', type: 'text', label: 'Value', typed: true, typedCodec: codec }
+                    ]
+                }
+            ]
+        }, {
+            to: { type: 'msg', path: 'payload' },
+            rules: [{ value: { type: 'msg', path: 'topic' } }]
+        });
+        await flush();
+
+        const field = form.schema.fields[0];
+        expect(form.typedType(field)).toBe('msg');
+        expect(form.typedText(field)).toBe('payload');
+
+        form.changeTypedType(field, { target: { value: 'literal' } });
+        await flush();
+        expect(form.form!.get('to')!.value).toBe('payload');
+        form.changeTypedType(field, { target: { value: 'msg' } });
+        await flush();
+        expect(form.form!.get('to')!.value).toEqual({ type: 'msg', path: 'payload' });
+
+        // Editing keeps the reference object instead of collapsing to text.
+        form.changeText(field, { target: { value: 'payload.value' } });
+        await flush();
+        expect(form.form!.get('to')!.value).toEqual({ type: 'msg', path: 'payload.value' });
+
+        // List items use the same codec for display and writes.
+        const list = form.schema.fields[1];
+        const item = form.listItems(list)[0];
+        expect(form.listItemTypedType(item, list.itemFields![0])).toBe('msg');
+        expect(form.listItemValue(item, list.itemFields![0])).toBe('topic');
+        form.changeListItem(list, 0, list.itemFields![0], { target: { value: 'name' } });
+        await flush();
+        expect(form.getValue().rules[0].value).toEqual({ type: 'msg', path: 'name' });
+        form.changeListItemTypedType(list, 0, list.itemFields![0], { target: { value: 'literal' } });
+        await flush();
+        expect(form.getValue().rules[0].value).toBe('name');
+    }
+
+    @Test('skips literal-only rules for codec references')
+    async typedCodecReferencesSkipLiteralRules() {
+        const codec = {
+            decode: (value: any) => ({ source: 'msg', text: String(value?.path || '') }),
+            encode: (source: string, text: string) => ({ type: source, path: text }),
+            isReference: (value: any) => !!value && typeof value === 'object'
+        };
+        const field: any = {
+            key: 'value',
+            type: 'text',
+            label: 'Value',
+            typed: true,
+            typedCodec: codec,
+            required: true,
+            pattern: '^[a-z]+$'
+        };
+        const reference = buildDynamicValidators(field)
+            .validators
+            .map(validator => validator({ value: { type: 'msg', path: 'Payload.1' } } as any))
+            .filter(Boolean);
+        expect(reference).toEqual([]);
+        const literal = buildDynamicValidators(field)
+            .validators
+            .map(validator => validator({ value: 'NOPE' } as any))
+            .filter(Boolean);
+        expect(literal.length).toBeGreaterThan(0);
+    }
+
     @Test('reports schema-declared field actions to the host')
     async reportsFieldActions() {
         const form = createForm({
