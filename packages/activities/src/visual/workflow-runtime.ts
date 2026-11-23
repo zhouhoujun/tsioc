@@ -3,7 +3,8 @@ import { Activity, ActivityContext, ActivityResult } from '../activities/Activit
 import {
     isWorkflowValueRef,
     readWorkflowProperty as resolveFrom,
-    resolveWorkflowTypedValue
+    resolveWorkflowTypedValue,
+    resolveWorkflowTypedValueAsync
 } from './workflow-typed-value';
 import {
     IVisualWorkflowNode,
@@ -542,6 +543,11 @@ function resolveCompareValue(value: any, context: ActivityContext): any {
     return resolveWorkflowTypedValue(value, context);
 }
 
+/** Async compare values: expression sources need the evaluator. */
+async function resolveCompareValueAsync(value: any, context: ActivityContext): Promise<any> {
+    return resolveWorkflowTypedValueAsync(value, context);
+}
+
 function compareValues(actual: any, operator: string, expected: any): boolean {
     switch (operator) {
         case 'equals':
@@ -582,6 +588,33 @@ export function evaluateCondition(node: IVisualWorkflowNode | undefined, context
     if (config.field !== undefined) {
         const actual = resolveWorkflowValue(config.field, context);
         return compareValues(actual, String(config.operator || 'truthy'), resolveCompareValue(config.value, context));
+    }
+    return true;
+}
+
+/**
+ * Async twin of {@link evaluateCondition}: compares against a value that may be
+ * an expression (JSONata). The sync form stays for hosts that only use plain
+ * values and for backwards compatibility.
+ */
+export async function evaluateConditionAsync(
+    node: IVisualWorkflowNode | undefined,
+    context: ActivityContext
+): Promise<boolean> {
+    const config = node?.config || {};
+    if (config.condition !== undefined) {
+        if (typeof config.condition === 'function') {
+            return Boolean(config.condition(context));
+        }
+        if (typeof config.condition === 'boolean') {
+            return config.condition;
+        }
+        return Boolean(resolveWorkflowValue(config.condition, context));
+    }
+    if (config.field !== undefined) {
+        const actual = resolveWorkflowValue(config.field, context);
+        const expected = await resolveCompareValueAsync(config.value, context);
+        return compareValues(actual, String(config.operator || 'truthy'), expected);
     }
     return true;
 }
@@ -1203,7 +1236,7 @@ export async function executeVisualNode(
         case 'condition':
             return {
                 success: true,
-                data: { nodeId: node.id, condition: evaluateCondition(node, context) }
+                data: { nodeId: node.id, condition: await evaluateConditionAsync(node, context) }
             };
         case 'delay': {
             const mode = String(config.mode || 'fixed');
@@ -1399,12 +1432,19 @@ export async function executeVisualNode(
                 ? ''
                 : String(config.topic);
             const extra: Record<string, any> = {};
+            // Properties can reference the payload being injected, so resolve
+            // them against a context that already carries it.
+            const propertyContext: any = {
+                ...context,
+                payload,
+                msg: { ...((context as any).msg || {}), payload, ...(topic ? { topic } : {}) }
+            };
             for (const rule of Array.isArray(config.properties) ? config.properties : []) {
                 const key = String(rule?.key || '').trim();
                 if (!key) {
                     continue;
                 }
-                const resolved = resolveCompareValue(rule.value, context);
+                const resolved = await resolveCompareValueAsync(rule.value, propertyContext);
                 extra[key] = typeof resolved === 'string' ? coerceJson(resolved) : resolved;
             }
             const finalPayload = extra.payload !== undefined ? extra.payload : payload;
@@ -2223,9 +2263,10 @@ export async function executeVisualNode(
         }
         case 'filter': {
             const items = arrayFrom(context, config.field);
+            const expected = await resolveCompareValueAsync(config.value, context);
             const filtered = items.filter(item => {
                 const actual = resolveFrom(item, config.path);
-                return compareValues(actual, String(config.operator || 'truthy'), resolveCompareValue(config.value, context));
+                return compareValues(actual, String(config.operator || 'truthy'), expected);
             });
             return { success: true, data: { nodeId: node.id, items: filtered, count: filtered.length } };
         }
@@ -2367,7 +2408,7 @@ export async function executeVisualNode(
                 const operator = String(rules[index]?.operator || 'equals');
                 const matched = operator === 'else'
                     ? !matchedAny
-                    : matchRouterRule(actual, operator, resolveCompareValue(rules[index]?.value, context));
+                    : matchRouterRule(actual, operator, await resolveCompareValueAsync(rules[index]?.value, context));
                 if (!matched) {
                     continue;
                 }

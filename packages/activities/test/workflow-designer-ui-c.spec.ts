@@ -368,6 +368,16 @@ describe('Workflow Designer UI', () => {
         await flush();
         const numericRules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
         expect(numericRules?.[0]?.value).toEqual({ type: 'literal', valueType: 'num', value: '5' });
+
+        // Expressions keep their own stored shape and are edited as text.
+        typeSelect.value = 'expression';
+        typeSelect.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        input.value = 'payload.total * 2';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        const expressionRules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
+        expect(expressionRules?.[0]?.value).toEqual({ type: 'expression', value: 'payload.total * 2' });
     });
 
     it('shows execution state on nodes and edges after running', async () => {

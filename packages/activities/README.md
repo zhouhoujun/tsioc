@@ -1155,6 +1155,19 @@ typed values existed keep their exact form; references and literal classes are
 never mistaken for text (a literal `"true"` no longer silently becomes the
 boolean `true` once it is stored as `boolean`). Path fields keep the shorter
 `msg.payload` string form because their selector only chooses the scope.
+
+**Expressions.** The `expression` source stores `{ "type": "expression",
+"value": "payload.total * 2" }` and is evaluated with JSONata against the
+message (payload fields are in scope at the root, plus `msg`, `flow`, `global`
+and `env`). Condition/switch/router/filter compare values and inject properties
+accept it. `jsonata` is an **optional dependency loaded on demand**
+(`await import`): the designer build emits it as a separate ~82 KB lazy chunk,
+so the initial bundle only carries the wiring, and hosts that do not install it
+get a clear "install jsonata or register a host evaluator" error instead of a
+silent failure. `setWorkflowExpressionEvaluator()` swaps in a different
+evaluator (sandboxing, shared cache, another language) and syntax errors fail
+the node with the JSONata position/message. Compiled expressions are cached per
+session with a bounded size.
 `workflow-typed-value.ts` owns decode/encode/resolution for both the inspector
 and the runtime, and the shared dynamic form accepts the codec per field, so
 DOM and TUI editors store the same shape.

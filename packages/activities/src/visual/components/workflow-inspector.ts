@@ -260,6 +260,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
             { value: 'bool', label: this.t('typedBoolean', 'Boolean') },
             { value: 'json', label: this.t('typedJson', 'JSON') },
             { value: 're', label: this.t('typedRegex', 'Regex') },
+            { value: 'expression', label: this.t('typedExpression', 'Expression') },
             { value: 'msg', label: 'msg' },
             { value: 'flow', label: 'flow' },
             { value: 'global', label: 'global' },

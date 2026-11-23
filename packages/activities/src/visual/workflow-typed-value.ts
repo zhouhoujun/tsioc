@@ -1,6 +1,7 @@
 import type { DynamicFormTypedCodec } from '@tsdi/components/common/dynamic-form';
 import type { ActivityContext } from '../activities/Activity';
 import type { WorkflowValueRef } from './types';
+import { evaluateWorkflowExpression } from './workflow-expression';
 
 /**
  * Literal classes a typed-value field may carry. `str` folds into the plain
@@ -16,6 +17,7 @@ export type WorkflowTypedSource =
     | 'bool'
     | 'json'
     | 're'
+    | 'expression'
     | 'msg'
     | 'flow'
     | 'global'
@@ -37,7 +39,9 @@ export function isWorkflowValueRef(value: any): value is WorkflowValueRef {
         return false;
     }
     const type = String((value as any).type || '');
-    return type === 'literal' || (REFERENCE_TYPES as readonly string[]).includes(type);
+    return type === 'literal'
+        || type === 'expression'
+        || (REFERENCE_TYPES as readonly string[]).includes(type);
 }
 
 /**
@@ -111,6 +115,10 @@ export function resolveWorkflowTypedValue(value: any, context: ActivityContext):
         switch (value.type) {
             case 'literal':
                 return coerceWorkflowLiteral((value as any).valueType, (value as any).value);
+            case 'expression':
+                throw new Error(
+                    'Expression values must be resolved with resolveWorkflowTypedValueAsync'
+                );
             case 'msg':
                 return readWorkflowProperty((context as any).msg || { payload: (context as any).payload }, value.path);
             case 'flow':
@@ -137,6 +145,20 @@ export function resolveWorkflowTypedValue(value: any, context: ActivityContext):
     return value;
 }
 
+/**
+ * Async twin of {@link resolveWorkflowTypedValue}: expressions need an
+ * evaluator, everything else resolves synchronously.
+ */
+export async function resolveWorkflowTypedValueAsync(
+    value: any,
+    context: ActivityContext
+): Promise<any> {
+    if (isWorkflowValueRef(value) && value.type === 'expression') {
+        return evaluateWorkflowExpression(value.value, context);
+    }
+    return resolveWorkflowTypedValue(value, context);
+}
+
 /** Stored value split into the selector source plus editable text. */
 export function decodeWorkflowTypedValue(value: any): { source: WorkflowTypedSource; text: string } {
     if (isWorkflowValueRef(value)) {
@@ -150,6 +172,9 @@ export function decodeWorkflowTypedValue(value: any): { source: WorkflowTypedSou
                     ? ''
                     : String((value as any).value)
             };
+        }
+        if (value.type === 'expression') {
+            return { source: 'expression', text: String((value as any).value ?? '') };
         }
         return { source: value.type as WorkflowTypedSource, text: value.path ? String(value.path) : '' };
     }
@@ -209,6 +234,9 @@ export function validateWorkflowTypedValue(value: any): string | undefined {
  * source is stored explicitly so it can never be mistaken for text.
  */
 export function encodeWorkflowTypedValue(source: string, text: string): WorkflowValueRef | string {
+    if (source === 'expression') {
+        return { type: 'expression', value: text };
+    }
     if ((REFERENCE_TYPES as readonly string[]).includes(source)) {
         return { type: source as WorkflowValueRef['type'], path: text } as WorkflowValueRef;
     }

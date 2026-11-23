@@ -39,6 +39,7 @@
     "homepage": "https://github.com/zhouhoujun/tsioc/blob/master/packages/activities#readme",
     "dependencies": {},
     "optionalDependencies": {
+        "jsonata": "^2.2.2",
         "mqtt": "^4.3.8",
         "ioredis": "^5.4.1",
         "nats": "^2.28.2",

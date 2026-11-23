@@ -582,6 +582,7 @@ export interface WorkflowMessage {
  */
 export type WorkflowValueRef =
     | { type: 'literal'; value: any; valueType?: 'str' | 'num' | 'bool' | 'json' | 're' }
+    | { type: 'expression'; value: string }
     | { type: 'msg'; path: string }
     | { type: 'flow'; path: string }
     | { type: 'global'; path: string }
