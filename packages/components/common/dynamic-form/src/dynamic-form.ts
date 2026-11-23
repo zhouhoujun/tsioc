@@ -97,6 +97,13 @@ export class DynamicFormComponent implements OnDestroy {
     @Attribute() blurAction?: (field: DynamicFormField) => void;
     /** Host callback for `field.actions` buttons. */
     @Attribute() actionAction?: (field: DynamicFormField, actionId: string) => void;
+    /** Host hook for list-row actions; receives the row index and child field. */
+    @Attribute() listItemActionAction?: (
+        field: DynamicFormField,
+        child: DynamicFormField,
+        index: number,
+        actionId: string
+    ) => void;
     @Attribute() submitAction?: (result: DynamicFormResult) => void;
     @Attribute() resetAction?: (value: Record<string, any>) => void;
     @Attribute() validityAction?: (valid: boolean, errors: Record<string, any> | null) => void;
@@ -475,10 +482,17 @@ export class DynamicFormComponent implements OnDestroy {
 
     /** Report a schema-declared field action (`field.actions`) to the host. */
     runFieldAction(field: DynamicFormField, action: DynamicFormFieldAction): void {
-        if (!action || field.disabled || field.readonly) {
-            return;
-        }
-        this.actionAction?.(field, String(action.id));
+        editor.runFieldAction(this, field, action);
+    }
+
+    /** Field action on a list row; the host resolves the child field by key. */
+    runListItemAction(
+        field: DynamicFormField,
+        index: number,
+        child: DynamicFormField,
+        action: DynamicFormFieldAction
+    ): void {
+        editor.runListItemAction(this, field, child, index, action);
     }
 
     // -----------------------------------------------------------------
@@ -551,36 +565,7 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     getValue(): Record<string, any> {
-        const value: Record<string, any> = {};
-        this.schemaFields().forEach(field => {
-            const control = this.form?.get(field.key);
-            const raw = control ? control.value : this.initialValue(field);
-            switch (field.type) {
-                case 'number':
-                case 'range':
-                    value[field.key] = raw === '' || raw === undefined || raw === null ? '' : Number(raw);
-                    break;
-                case 'checkbox':
-                case 'switch':
-                    value[field.key] = raw === true;
-                    break;
-                case 'json':
-                    if (typeof raw === 'string' && raw.trim() !== '') {
-                        try {
-                            value[field.key] = JSON.parse(raw);
-                        } catch {
-                            value[field.key] = raw;
-                        }
-                    } else {
-                        value[field.key] = raw;
-                    }
-                    break;
-                default:
-                    value[field.key] = raw;
-                    break;
-            }
-        });
-        return value;
+        return fields.formModelValue(this, this.schemaFields());
     }
 
     setValue(value: Record<string, any>): void {

@@ -46,6 +46,11 @@ import { configNodesSignature } from '../workflow-config-nodes';
 import { WorkflowCanvasPointerPayload } from './workflow-canvas';
 import { WorkflowConfigDialogComponent } from './workflow-config-dialog.component';
 import { WorkflowConfigNodesComponent } from './workflow-config-nodes.component';
+import { WorkflowExpressionPanelComponent } from './workflow-expression-panel';
+import { workflowShortcutRows } from '../workflow-shortcut-rows';
+import { decodeWorkflowTypedValue } from '../workflow-typed-value';
+import { patchConfigPath, readConfigPath } from '../workflow-config-path';
+import { preloadWorkflowExpressions, validateWorkflowExpression } from '../workflow-expression';
 import { revealWorkflowNode } from '../workflow-canvas-focus';
 import { WorkflowGroupSettingsComponent } from './workflow-group-settings.component';
 import { WorkflowInspectorComponent } from './workflow-inspector';
@@ -172,6 +177,8 @@ function sameModelKey(previous: any[], next: any[]): boolean {
         <workflow-config-dialog #configDialog :designer="designer" :registry="registry"
             :locale="locale" :positionAction="nextConfigPosition"
             :notifyAction="notifyDesignerChange"></workflow-config-dialog>
+        <workflow-expression-panel #expressionPanel :designer="designer" :locale="locale"
+            :notifyAction="notifyChange"></workflow-expression-panel>
         <div class="workflow-node-menu-backdrop" v-if="showNodeMenu" @mousedown="closeNodeMenu"
             @contextmenu="closeNodeMenu"></div>
         <div class="workflow-node-menu" v-if="showNodeMenu" [style]="nodeMenuStyle">
@@ -228,6 +235,8 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     @Attribute() showRunLogs = true;
     /** Handles shell actions (save/open-library) in the host. */
     @Attribute() hostAction?: (action: string) => void;
+    @ViewChild('expressionPanel') expressionPanel?: WorkflowExpressionPanelComponent;
+
     /** Open a referenced workflow document by id (host tab host). */
     @Attribute() openWorkflowAction?: (id: string) => void;
     /** Notify the host that the designer is dirty / an edit happened. */
@@ -669,6 +678,10 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     // ---------------------------------------------------------------------
 
     readonly inspectorAction = (key: string, actionId: string, nodeId?: string): void => {
+        if (actionId === 'expression') {
+            (this.selfRef || this).expressionPanel?.open(key, nodeId);
+            return;
+        }
         this.configDialog?.handleAction(key, actionId, nodeId);
     };
 
@@ -855,26 +868,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     get shortcutRows(): Array<{ action: string; keys: string }> {
-        return [
-            { action: this.t('save', 'Save'), keys: 'Ctrl+S' },
-            { action: this.t('library', 'Workflows'), keys: 'Ctrl+O' },
-            { action: this.t('run', 'Run'), keys: 'Ctrl+Enter' },
-            { action: this.t('findNode', 'Find node'), keys: 'Ctrl+F' },
-            { action: this.t('undo', 'Undo'), keys: 'Ctrl+Z' },
-            { action: this.t('redo', 'Redo'), keys: 'Ctrl+Y' },
-            { action: this.t('duplicate', 'Duplicate'), keys: 'Ctrl+D' },
-            { action: this.t('copy', 'Copy'), keys: 'Ctrl+C' },
-            { action: this.t('cut', 'Cut'), keys: 'Ctrl+X' },
-            { action: this.t('paste', 'Paste'), keys: 'Ctrl+V' },
-            { action: this.t('toggleNode', 'Enable/disable node'), keys: 'Ctrl+E' },
-            { action: this.t('boxSelect', 'Box select'), keys: 'Shift+drag' },
-            { action: this.t('quickAdd', 'Quick add node'), keys: 'Ctrl+K' },
-            { action: this.t('groupSelection', 'Group selection'), keys: 'Ctrl+G' },
-            { action: this.t('ungroup', 'Ungroup'), keys: 'Ctrl+Shift+G' },
-            { action: this.t('delete', 'Delete'), keys: 'Delete' },
-            { action: this.t('zoomPan', 'Zoom / pan'), keys: 'Ctrl+Wheel / Wheel' },
-            { action: this.t('shortcuts', 'Keyboard shortcuts'), keys: '?' }
-        ];
+        return workflowShortcutRows((key, fallback) => this.t(key, fallback));
     }
 
     toggleShortcuts(): void {

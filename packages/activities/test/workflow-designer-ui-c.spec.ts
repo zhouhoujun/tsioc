@@ -302,6 +302,49 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-field-error')).toBeFalsy();
     });
 
+    it('edits typed values as JSONata expressions in the expanded editor', async () => {
+        const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
+        ref.instance.designer.updateNodeConfig(node.id, {
+            field: 'value',
+            rules: [{ operator: 'equals', value: 'keep' }]
+        });
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const action = root.querySelector(
+            '.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-action="expression"]'
+        ) as any;
+        expect(action).toBeTruthy();
+        action.click();
+        await flush();
+
+        expect(root.querySelector('.workflow-expression-panel')).toBeTruthy();
+        const input = root.querySelector('.workflow-expression-text') as any;
+        expect(input.value).toBe('keep');
+
+        // Broken syntax is reported by the lazy JSONata validator.
+        input.value = 'payload.total +';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        (root.querySelector('.workflow-expression-validate') as any).click();
+        await waitFor(() => !!root.querySelector('.workflow-expression-error'));
+        expect(root.querySelector('.workflow-expression-error')?.textContent || '')
+            .toMatch(/position|unexpected|token/i);
+
+        // Fixing it clears the error and Apply stores an expression reference.
+        input.value = 'payload.total * 2';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        (root.querySelector('.workflow-expression-validate') as any).click();
+        await waitFor(() => !!root.querySelector('.workflow-expression-ok'));
+        (root.querySelector('.workflow-expression-apply') as any).click();
+        await flush();
+
+        expect(root.querySelector('.workflow-expression-panel')).toBeFalsy();
+        const rules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
+        expect(rules?.[0]?.value).toEqual({ type: 'expression', value: 'payload.total * 2' });
+    });
+
     it('paints the node status line after a run', async () => {
         const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
         // A configured rule that cannot match keeps the run valid and reports

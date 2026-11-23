@@ -439,6 +439,26 @@ export const WORKFLOW_DESIGNER_THEME_CSS = `/* Themes */
     color: var(--wf-theme-text);
 }
 
+.workflow-designer[data-theme="dark"] .workflow-expression-text,
+.workflow-designer[data-theme="solarized"] .workflow-expression-text,
+.workflow-designer[data-theme="high-contrast"] .workflow-expression-text {
+    background: var(--wf-theme-input);
+    border-color: var(--wf-theme-border);
+    color: var(--wf-theme-text);
+}
+
+.workflow-designer[data-theme="dark"] .workflow-expression-error,
+.workflow-designer[data-theme="solarized"] .workflow-expression-error,
+.workflow-designer[data-theme="high-contrast"] .workflow-expression-error {
+    color: #f87171;
+}
+
+.workflow-designer[data-theme="dark"] .workflow-expression-ok,
+.workflow-designer[data-theme="solarized"] .workflow-expression-ok,
+.workflow-designer[data-theme="high-contrast"] .workflow-expression-ok {
+    color: #34d399;
+}
+
 .workflow-designer[data-theme="dark"] .workflow-select,
 .workflow-designer[data-theme="solarized"] .workflow-select,
 .workflow-designer[data-theme="high-contrast"] .workflow-select {

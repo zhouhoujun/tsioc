@@ -115,7 +115,16 @@ export const DYNAMIC_FORM_TEMPLATE = `
                             <div [class]="classes.listFields">
                                 <div v-for="child in field.itemFields" v-if="isListItemVisible(child, item)">
                                     <div [class]="classes.listField" data-field-key="{{child.key}}">
-                                        <label [class]="classes.label">{{fieldLabel(child)}}<span [class]="classes.required" v-if="isRequired(child)">*</span></label>
+                                        <div [class]="classes.labelRow">
+                                            <label [class]="classes.label">{{fieldLabel(child)}}<span [class]="classes.required" v-if="isRequired(child)">*</span></label>
+                                            <span class="df-field-actions" v-if="child.actions && child.actions.length">
+                                                <button [class]="classes.fieldAction" v-for="action in child.actions" type="button"
+                                                    data-field-action="{{action.id}}"
+                                                    title="{{action.title || action.label}}" aria-label="{{action.title || action.label}}"
+                                                    [disabled]="child.disabled || child.readonly"
+                                                    @click="runListItemAction(field, listIndex(field, item), child, action)">{{action.label}}</button>
+                                            </span>
+                                        </div>
                                         <div [class]="classes.typedRow" v-if="isTypedInput(child)">
                                             <select [class]="classes.typedType" data-value-type="true"
                                                 [disabled]="child.disabled || child.readonly"

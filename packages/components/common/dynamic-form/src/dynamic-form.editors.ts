@@ -1,4 +1,4 @@
-import { DynamicFormField } from './dynamic-form.types';
+import { DynamicFormField, DynamicFormFieldAction } from './dynamic-form.types';
 import { typedCodec } from './dynamic-form.fields';
 
 /**
@@ -16,6 +16,48 @@ export interface DynamicFormEditorHost {
     setEditorValue(field: DynamicFormField, value: any): void;
     isJsonRawField(field: DynamicFormField): boolean;
     setJsonRawField(field: DynamicFormField, raw: boolean): void;
+}
+
+/**
+ * Field actions report to the host; list rows are addressed separately so the
+ * host can resolve the row (for example `rules[0].value`).
+ */
+export interface DynamicFormActionHost extends DynamicFormEditorHost {
+    actionAction?: (field: DynamicFormField, actionId: string) => void;
+    listItemActionAction?: (
+        field: DynamicFormField,
+        child: DynamicFormField,
+        index: number,
+        actionId: string
+    ) => void;
+}
+
+export function runFieldAction(
+    host: DynamicFormActionHost,
+    field: DynamicFormField,
+    action: DynamicFormFieldAction
+): void {
+    if (!action || field.disabled || field.readonly) {
+        return;
+    }
+    host.actionAction?.(field, String(action.id));
+}
+
+export function runListItemAction(
+    host: DynamicFormActionHost,
+    field: DynamicFormField,
+    child: DynamicFormField,
+    index: number,
+    action: DynamicFormFieldAction
+): void {
+    if (!action || child.disabled || child.readonly) {
+        return;
+    }
+    if (host.listItemActionAction) {
+        host.listItemActionAction(field, child, index, String(action.id));
+        return;
+    }
+    host.actionAction?.(child, String(action.id));
 }
 
 export function isJsonRaw(host: DynamicFormEditorHost, field: DynamicFormField): boolean {

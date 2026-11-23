@@ -11,6 +11,7 @@ export * from './workflow-audit-panel';
 export * from './workflow-metrics-panel';
 export * from './workflow-rename-panel';
 export * from './workflow-publish-panel';
+export * from './workflow-expression-panel';
 export * from './workflow-settings-panel';
 export * from './workflow-deployments-panel';
 export * from './workflow-version-panel';

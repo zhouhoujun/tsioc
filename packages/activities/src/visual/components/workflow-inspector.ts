@@ -119,7 +119,7 @@ function schemaKey(model: WorkflowInspectorModel): string {
             <dynamic-form #nodeForm classPrefix="workflow" :schema="formSchema" :value="formValue"
                 :contextKey="model.nodeId" :messages="formMessages" :emptyLabel="noPropertiesLabel"
                 :resetFieldLabel="resetFieldLabel" :changeAction="formChange" :blurAction="formBlur"
-                :actionAction="formAction">
+                :actionAction="formAction" :listItemActionAction="formListAction">
             </dynamic-form>
             <div class="workflow-no-fields" v-if="!model.fields.length">{{noPropertiesLabel}}</div>
             <div class="workflow-result" v-if="model.resultText">
@@ -374,7 +374,11 @@ export class WorkflowInspectorComponent implements OnDestroy {
             fieldClass: field.fieldClass,
             language: field.language,
             suggestions: this.codeSuggestions,
-            actions: field.actions,
+            actions: field.typedValue === true
+                // Value fields can be authored as a JSONata expression in the
+                // expanded editor even when the stored source is a literal.
+                ? [{ id: 'expression', label: 'ƒ', title: this.t('editExpression', 'Edit as expression') }]
+                : field.actions,
             hidden: field.visible === false
         };
     }
@@ -403,7 +407,9 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 ? field.checked
                 : field.type === 'select'
                     ? field.value
-                    : field.type === 'json'
+                    : field.type === 'json' || field.type === 'list'
+                        // Lists must keep their array shape; `displayValue` is a
+                        // string projection used for read-only display.
                         ? field.value
                         : field.typed
                             // Typed fields seed the control with the stored form
@@ -452,6 +458,17 @@ export class WorkflowInspectorComponent implements OnDestroy {
         // name, then immediately toggle the node).
         this.flushPendingChange();
         this.changeAction?.(change.key, change.value, type, this._model.nodeId);
+    };
+
+    /** List-row action: the field path names the row (`rules[0].value`). */
+    readonly formListAction = (
+        field: DynamicFormField,
+        child: DynamicFormField,
+        index: number,
+        actionId: string
+    ): void => {
+        this.flushPendingChange();
+        this.actionAction?.(`${field.key}[${index}].${child.key}`, actionId, this._model.nodeId);
     };
 
     readonly formAction = (field: DynamicFormField, actionId: string): void => {

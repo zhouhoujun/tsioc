@@ -126,6 +126,44 @@ export function initialValue(host: DynamicFormFieldHost, field: DynamicFormField
     return fieldDisplayValue(field, value);
 }
 
+/**
+ * Typed form model: controls are the source of truth, JSON text is parsed and
+ * checkbox/number values are normalized. Fields without a control fall back to
+ * their initial value so partially built forms still submit a full object.
+ */
+export function formModelValue(host: DynamicFormFieldHost, fields: DynamicFormField[]): Record<string, any> {
+    const value: Record<string, any> = {};
+    fields.forEach(field => {
+        const control = host.form?.get(field.key);
+        const raw = control ? control.value : initialValue(host, field);
+        switch (field.type) {
+            case 'number':
+            case 'range':
+                value[field.key] = raw === '' || raw === undefined || raw === null ? '' : Number(raw);
+                break;
+            case 'checkbox':
+            case 'switch':
+                value[field.key] = raw === true;
+                break;
+            case 'json':
+                if (typeof raw === 'string' && raw.trim() !== '') {
+                    try {
+                        value[field.key] = JSON.parse(raw);
+                    } catch {
+                        value[field.key] = raw;
+                    }
+                } else {
+                    value[field.key] = raw;
+                }
+                break;
+            default:
+                value[field.key] = raw;
+                break;
+        }
+    });
+    return value;
+}
+
 /** Default value used by the per-field and whole-form reset actions. */
 export function resetValue(field: DynamicFormField): any {
     if (field.type === 'json') {
