@@ -1,8 +1,10 @@
 import { ChildProcess, spawn } from 'child_process';
 import { Socket } from 'net';
 
-export const MQTT_TEST_HOST = '127.0.0.1';
-export const MQTT_TEST_PORT = 18883;
+export const MQTT_TEST_HOST = process.env.MQTT_TEST_HOST ?? '127.0.0.1';
+export const MQTT_TEST_PORT = Number(process.env.MQTT_TEST_PORT ?? 18883);
+/** Use an already-running broker (e.g. a container) instead of spawning mosquitto. */
+const USE_EXTERNAL_BROKER = process.env.MQTT_TEST_EXTERNAL === '1';
 export const MQTT_TEST_URL = `mqtt://${MQTT_TEST_HOST}:${MQTT_TEST_PORT}`;
 
 let brokerProcess: ChildProcess | undefined;
@@ -58,7 +60,12 @@ export async function stopMqttBroker(): Promise<void> {
 }
 
 async function launchBroker(): Promise<void> {
-    const child = spawn('/usr/sbin/mosquitto', ['-p', String(MQTT_TEST_PORT)], {
+    if (USE_EXTERNAL_BROKER) {
+        await waitForPort();
+        return;
+    }
+    const binary = process.env.MOSQUITTO_BIN || '/usr/sbin/mosquitto';
+    const child = spawn(binary, ['-p', String(MQTT_TEST_PORT)], {
         stdio: 'ignore'
     });
     if (typeof child.unref === 'function') {

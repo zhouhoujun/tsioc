@@ -105,6 +105,36 @@ describe('KafkaServer at-least-once delivery', () => {
         expect(commits).toEqual([]);
     });
 
+    it('commits a redelivered offset without running the handler again', async () => {
+        const handler = new FakeHandler('ok');
+        const { server, commits } = createConsumerServer(handler, {
+            delivery: 'at-least-once',
+            idempotency: {}
+        });
+
+        await (server as any).consumeMessage(payload('10'));
+        await (server as any).consumeMessage(payload('10'));
+
+        expect(handler.calls).toBe(1);
+        expect(commits).toHaveLength(2);
+        expect((server as any).runtime.stats().duplicates).toBe(1);
+    });
+
+    it('releases the idempotency reservation when handling fails', async () => {
+        const handler = new FakeHandler('fail-once');
+        const { server } = createConsumerServer(handler, {
+            delivery: 'at-least-once',
+            idempotency: {}
+        });
+
+        await expect((server as any).consumeMessage(payload('20'))).rejects.toThrow('first attempt failed');
+        await (server as any).consumeMessage(payload('20'));
+
+        expect(handler.calls).toBe(2);
+        expect(handler.completed).toBe(1);
+        expect((server as any).runtime.stats().duplicates).toBe(0);
+    });
+
     it('retries the handler before committing', async () => {
         const handler = new FakeHandler('fail-once');
         const { server, commits } = createConsumerServer(handler, {

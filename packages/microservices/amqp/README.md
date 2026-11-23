@@ -43,6 +43,24 @@ Server options are typed in `src/server/options.ts`; client options are in
 `src/client/options.ts` when the transport exposes a typed client. The package
 entry point re-exports: `./server`, `./client`, `./amqp.module`.
 
+### Delivery guarantees
+
+Failed deliveries are retried through a TTL retry queue (`retry.maxAttempts`,
+`retry.delayMs`) and then published to `deadLetterExchange` / `deadLetterQueue`.
+
+For dedupe across redeliveries, set a stable id on publish and enable
+idempotency:
+
+```ts
+useAmqpTransport({
+    // publishers must set `messageId` (or the `x-tsdi-id` header)
+    idempotency: { ttlMs: 5 * 60_000 }
+});
+```
+
+Duplicates are acknowledged without running the handler. Only messages that
+carry an id are deduplicated; the rest keep at-least-once semantics.
+
 ## Tests
 
 ```bash

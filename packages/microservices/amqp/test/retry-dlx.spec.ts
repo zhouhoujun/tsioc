@@ -170,4 +170,82 @@ describe('AmqpServer delivery semantics', () => {
             inFlight: 0
         });
     });
+
+    it('cancels the consumer and drains in-flight handlers before closing', async () => {
+        const handler = new FakeHandler('delayed');
+        const server = new AmqpServer(handler as any, {} as any);
+        const events: string[] = [];
+        const channel = {
+            cancel: async (tag: string) => { events.push(`cancel:${tag}`); },
+            close: async () => { events.push('channel-close'); },
+            ack() { return undefined; },
+            nack() { return undefined; },
+            publish() { return true; },
+            assertQueue: async () => ({ queue: 'orders' })
+        };
+        const connection = { close: async () => { events.push('connection-close'); } };
+        (server as any).channel = channel;
+        (server as any).connection = connection;
+        (server as any).consumerTag = 'consumer-1';
+        (server as any).logger = { info: () => undefined, error: () => undefined };
+
+        const pending = (server as any).handleMessage(message(), 'tsdi', 'orders.created');
+        await (server as any).onShutdown();
+
+        expect(handler.completed).toBe(1);
+        expect(events).toEqual(['cancel:consumer-1', 'channel-close', 'connection-close']);
+        await pending;
+    });
+
+    it('acks a duplicate message without running the handler again', async () => {
+        const handler = new FakeHandler('ok');
+        const server = new AmqpServer(handler as any, { idempotency: {} } as any);
+        const channel = new FakeChannel();
+        (server as any).channel = channel;
+        (server as any).queueName = 'orders';
+        (server as any).logger = { info: () => undefined, error: () => undefined };
+
+        const msg = message();
+        msg.properties.messageId = 'm-1';
+
+        await (server as any).handleMessage(msg, 'tsdi', 'orders.created');
+        await (server as any).handleMessage(msg, 'tsdi', 'orders.created');
+
+        expect(handler.calls).toBe(1);
+        expect(channel.acked).toEqual([msg]);
+        expect((server as any).runtime.stats().duplicates).toBe(1);
+    });
+
+    it('uses the x-tsdi-id header when messageId is absent', async () => {
+        const handler = new FakeHandler('ok');
+        const server = new AmqpServer(handler as any, { idempotency: {} } as any);
+        const channel = new FakeChannel();
+        (server as any).channel = channel;
+        (server as any).queueName = 'orders';
+        (server as any).logger = { info: () => undefined, error: () => undefined };
+
+        const first = message({ 'x-tsdi-id': 'header-1' });
+        const second = message({ 'x-tsdi-id': 'header-1' });
+
+        await (server as any).handleMessage(first, 'tsdi', 'orders.created');
+        await (server as any).handleMessage(second, 'tsdi', 'orders.created');
+
+        expect(handler.calls).toBe(1);
+        expect(channel.acked).toEqual([second]);
+    });
+
+    it('keeps at-least-once semantics when the publisher sets no id', async () => {
+        const handler = new FakeHandler('ok');
+        const server = new AmqpServer(handler as any, { idempotency: {} } as any);
+        const channel = new FakeChannel();
+        (server as any).channel = channel;
+        (server as any).queueName = 'orders';
+        (server as any).logger = { info: () => undefined, error: () => undefined };
+
+        await (server as any).handleMessage(message(), 'tsdi', 'orders.created');
+        await (server as any).handleMessage(message(), 'tsdi', 'orders.created');
+
+        expect(handler.calls).toBe(2);
+        expect(channel.acked).toEqual([]);
+    });
 });

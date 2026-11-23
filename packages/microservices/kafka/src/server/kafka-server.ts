@@ -88,6 +88,20 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         this.stopRouteWatch = undefined;
         this.destroy$.next();
         this.destroy$.complete();
+        const runtime = this.runtime;
+        if (runtime) {
+            // Stop accepting deliveries, let queued/in-flight handlers settle,
+            // then close the connection.
+            runtime.close();
+            try {
+                await this.consumer?.stop();
+            } catch {
+                // ignore stop failures during shutdown
+            }
+            if (!(await runtime.drain(5_000))) {
+                this.logger.error('Kafka consumer drain timed out after 5000ms');
+            }
+        }
         const stats = this.runtime?.stats();
         if (stats && (stats.completed || stats.failed || stats.retried)) {
             this.logger.info(
@@ -214,7 +228,12 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     private runtime?: ConsumerRuntime;
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime({ retry: this.options?.retry, metrics: this.consumerMetrics ?? undefined, labels: { transport: 'kafka', group: this.options?.groupId } });
+        return this.runtime ??= new ConsumerRuntime({
+            retry: this.options?.retry,
+            idempotency: this.options?.idempotency,
+            metrics: this.consumerMetrics ?? undefined,
+            labels: { transport: 'kafka', group: this.options?.groupId }
+        });
     }
 
     /**
@@ -224,6 +243,7 @@ export class KafkaServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
      */
     private async consumeMessage(payload: EachMessagePayload): Promise<void> {
         await this.consumerRuntime.handle({
+            id: `${payload.topic}:${payload.partition}:${payload.message.offset}`,
             labels: { topic: payload.topic },
             payload,
             ack: () => this.isAtLeastOnce() ? this.commitOffset(payload) : undefined,

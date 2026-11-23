@@ -1,6 +1,6 @@
 import { token, Provider } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
-import { ServiceOptions } from '@tsdi/service';
+import { ConsumerIdempotencyOptions, ServiceOptions } from '@tsdi/service';
 
 export interface KafkaRetryOptions {
     /**
@@ -46,6 +46,12 @@ export interface KafkaServOptions extends ServiceOptions {
      * Requires `delivery: 'at-least-once'`.
      */
     deadLetterTopic?: string;
+    /**
+     * deduplicate redeliveries by `topic:partition:offset`. Useful when the
+     * handler committed a side effect but the offset commit failed. Only
+     * meaningful with `delivery: 'at-least-once'`.
+     */
+    idempotency?: ConsumerIdempotencyOptions;
 }
 
 export const KAFKA_SERV_OPTIONS = token<KafkaServOptions>('KAFKA_SERV_OPTIONS');

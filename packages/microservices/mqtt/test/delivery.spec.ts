@@ -77,6 +77,35 @@ describe('MqttServer delivery semantics', () => {
         expect(handler.completed).toBe(1);
     });
 
+    it('drains in-flight handlers during shutdown before resolving', async () => {
+        const handler = new FakeHandler('delayed');
+        const server = new MqttServer(handler as any, {} as any);
+        const events: string[] = [];
+        const client = {
+            publish() { return undefined; },
+            once(_event: string, cb: () => void) { cb(); return this; },
+            removeAllListeners() { return this; },
+            end(_force?: boolean, _opts?: any, cb?: () => void) {
+                events.push('end');
+                if (typeof _opts === 'function') {
+                    (_opts as any)();
+                } else if (typeof cb === 'function') {
+                    cb();
+                }
+                return this;
+            }
+        };
+        (server as any).client = client;
+        (server as any).logger = { info: () => undefined, error: () => undefined };
+
+        const pending = (server as any).handleMessage('orders', Buffer.from('{}'));
+        await (server as any).onShutdown();
+
+        expect(handler.completed).toBe(1);
+        expect(events).toContain('end');
+        await pending;
+    });
+
     it('publishes exhausted deliveries to the dead-letter topic', async () => {
         const handler = new FakeHandler('fail');
         const server = new MqttServer(handler as any, { retry: { maxAttempts: 1 }, deadLetterTopic: 'orders.dlq' } as any);

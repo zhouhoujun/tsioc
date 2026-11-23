@@ -43,6 +43,26 @@ Server options are typed in `src/server/options.ts`; client options are in
 `src/client/options.ts` when the transport exposes a typed client. The package
 entry point re-exports: `./server`, `./client`, `./kafka.module`.
 
+### Delivery guarantees
+
+`delivery: 'at-least-once'` disables kafkajs auto-commit and commits the offset
+only after the handler succeeds (or the message is dead-lettered).
+
+Because a crash can happen after a side effect but before the commit, enable
+idempotency to skip redelivered offsets:
+
+```ts
+useKafkaTransport({
+    delivery: 'at-least-once',
+    idempotency: { ttlMs: 5 * 60_000, maxEntries: 10_000 }
+});
+```
+
+The default in-memory store is process-local; provide a shared
+`ConsumerIdempotencyStore` (`idempotency.store`) when multiple replicas may see
+the same redelivery. Reservations are released when handling fails so the next
+redelivery can retry.
+
 ## Tests
 
 ```bash

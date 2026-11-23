@@ -29,7 +29,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
             if (this.channel) return this.channel;
 
             const url = this.options.url || 'amqp://localhost:5672';
-            this.connection = await amqp.connect(url);
+            this.connection = await amqp.connect(withFrameMax(url, this.options?.frameMax));
             this.channel = await this.connection.createChannel();
 
             this.connection.on(Events.CLOSE, () => {
@@ -96,6 +96,18 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
     }
 
     protected createConnection(opts: AmqpClientOptions): Promise<amqp.Connection> {
-        return amqp.connect(opts.url || 'amqp://localhost:5672');
+        return amqp.connect(withFrameMax(opts.url || 'amqp://localhost:5672', opts.frameMax));
+    }
+}
+
+function withFrameMax(url: string, frameMax?: number): string {
+    try {
+        const parsed = new URL(url);
+        if (!parsed.searchParams.has('frameMax')) {
+            parsed.searchParams.set('frameMax', String(frameMax ?? 16_384));
+        }
+        return parsed.toString();
+    } catch {
+        return url;
     }
 }

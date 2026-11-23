@@ -1,6 +1,6 @@
 import { token, Provider } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
-import { ServiceOptions } from '@tsdi/service';
+import { ConsumerIdempotencyOptions, ServiceOptions } from '@tsdi/service';
 
 export interface AmqpRetryOptions {
     /**
@@ -19,6 +19,11 @@ export interface AmqpServOptions extends ServiceOptions {
     transport: Transport.AMQP;
     providers?: Provider[];
     url?: string;
+    /**
+     * AMQP frame size. Newer RabbitMQ versions require >= 8192.
+     * Default 16384.
+     */
+    frameMax?: number;
     exchange?: string;
     exchangeType?: 'direct' | 'topic' | 'fanout' | 'headers';
     routingKey?: string;
@@ -41,6 +46,11 @@ export interface AmqpServOptions extends ServiceOptions {
      * queue is durable). used when `deadLetterExchange` is not set.
      */
     deadLetterQueue?: string;
+    /**
+     * deduplicate redeliveries by `properties.messageId` (or the
+     * `x-tsdi-id` header). Publishers must set one of them for dedupe to work.
+     */
+    idempotency?: ConsumerIdempotencyOptions;
 }
 
 export const AMQP_SERV_OPTIONS = token<AmqpServOptions>('AMQP_SERV_OPTIONS');

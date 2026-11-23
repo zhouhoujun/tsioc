@@ -102,7 +102,10 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.stopRouteWatch?.();
         this.stopRouteWatch = undefined;
         this.subscribedTopics.clear();
-        if (!this.client) return;
+        if (!this.client) {
+            await this.drainRuntime();
+            return;
+        }
 
         this.destroy$.next();
         this.destroy$.complete();
@@ -133,12 +136,8 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
             client.once(Events.CLOSE, finish);
 
-            try {
-                client.end(true, {}, finish);
-            } catch {
-                client.end(true);
-                finish();
-            }
+            // Arm the fallback before end(): a synchronous close callback must
+            // still be able to clear it (otherwise the timer fires later).
             timeout = setTimeout(() => {
                 try {
                     client.end(true);
@@ -149,9 +148,26 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             if (typeof (timeout as any).unref === 'function') {
                 (timeout as any).unref();
             }
+            try {
+                client.end(true, {}, finish);
+            } catch {
+                client.end(true);
+                finish();
+            }
         });
         this.client = null;
+        await this.drainRuntime();
+    }
 
+    private async drainRuntime(): Promise<void> {
+        const runtime = this.runtime;
+        if (!runtime) {
+            return;
+        }
+        runtime.close();
+        if (!(await runtime.drain(5_000))) {
+            this.logger.error('MQTT consumer drain timed out after 5000ms');
+        }
     }
 
     private reconcileSubscribedTopics(): void {

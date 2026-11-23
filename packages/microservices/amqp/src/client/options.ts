@@ -7,6 +7,11 @@ export interface AmqpClientOptions extends ClientOptions {
     side: TransferSide.client;
     microservice?: boolean;
     url?: string;
+    /**
+     * AMQP frame size. Newer RabbitMQ versions require >= 8192.
+     * Default 16384.
+     */
+    frameMax?: number;
     exchange?: string;
     exchangeType?: 'direct' | 'topic' | 'fanout' | 'headers';
     routingKey?: string;

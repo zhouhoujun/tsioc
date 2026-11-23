@@ -27,13 +27,18 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private starting?: Promise<void>;
     private queueName?: string;
     private retryQueue?: string;
+    private consumerTag?: string;
     private stopRouteWatch?: () => void;
     private boundRoutingKeys = new Set<string>();
     private runtime?: ConsumerRuntime;
     @InjectLog() logger!: Logger;
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime({ metrics: this.consumerMetrics ?? undefined, labels: { transport: 'amqp', group: this.options?.queue } });
+        return this.runtime ??= new ConsumerRuntime({
+            idempotency: this.options?.idempotency,
+            metrics: this.consumerMetrics ?? undefined,
+            labels: { transport: 'amqp', group: this.options?.queue }
+        });
     }
 
     private destroy$: Subject<void>;
@@ -69,7 +74,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         try {
             const url = this.options.url || 'amqp://127.0.0.1:5672';
-            this.connection = await amqp.connect(url);
+            this.connection = await amqp.connect(withFrameMax(url, this.options?.frameMax));
             this.channel = await this.connection.createChannel();
 
             const exchange = this.options.exchange || 'tsdi';
@@ -102,7 +107,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
             this.logger.info(getTypeName(this), `connected to AMQP broker, consuming from exchange: ${exchange}, routingKeys: ${routingKeys.join(',')}`);
 
-            await this.channel.consume(q.queue, (msg) => {
+            const consumed = await this.channel.consume(q.queue, (msg) => {
                 if (!msg) {
                     return;
                 }
@@ -113,6 +118,7 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                     this.logger.error('AMQP request handling error:', err);
                 });
             }, { noAck: false });
+            this.consumerTag = consumed?.consumerTag;
 
             (this.connection as amqp.Connection).on(Events.CLOSE, () => {
                 this.logger.info('AMQP connection closed');
@@ -138,6 +144,28 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         this.destroy$.next();
         this.destroy$.complete();
 
+        const channel = this.channel;
+        const connection = this.connection;
+        const runtime = this.runtime;
+        const consumerTag = this.consumerTag;
+        this.consumerTag = undefined;
+
+        // Stop new deliveries first, then let in-flight handlers settle while
+        // the channel still exists (the transfer hooks ack through it).
+        if (channel && consumerTag) {
+            try {
+                await channel.cancel(consumerTag);
+            } catch {
+                // ignore cancel failures during shutdown
+            }
+        }
+        if (runtime) {
+            runtime.close();
+            if (!(await runtime.drain(5_000))) {
+                this.logger.error('AMQP consumer drain timed out after 5000ms');
+            }
+        }
+
         const stats = this.runtime?.stats();
         if (stats && (stats.completed || stats.failed || stats.retried)) {
             this.logger.info(
@@ -145,8 +173,6 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             );
         }
 
-        const channel = this.channel;
-        const connection = this.connection;
         this.channel = null;
         this.connection = null;
         this.queueName = undefined;
@@ -289,12 +315,22 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         // transfer hooks; the runtime adds unified accounting and the optional
         // concurrency limit without settling the message twice.
         await this.consumerRuntime.handle({
+            id: this.messageId(msg),
             labels: { topic: msg.fields.routingKey },
             payload: msg,
+            // Success acks run in the transfer hooks; only duplicates need an
+            // explicit ack here.
+            skip: () => { this.channel?.ack(msg); },
             // Rethrow so the consume callback logs/observes the failure; the
             // AMQP transfer hooks already nacked or dead-lettered the message.
             fail: (err) => { throw err; }
         }, message => this.handleRequest(message.payload));
+    }
+
+    private messageId(msg: amqp.ConsumeMessage): string | undefined {
+        const properties = msg.properties as { messageId?: string; headers?: Record<string, any> } | undefined;
+        const id = properties?.messageId ?? properties?.headers?.['x-tsdi-id'];
+        return id == null || id === '' ? undefined : String(id);
     }
 
     private async handleRequest(msg: amqp.ConsumeMessage): Promise<void> {
@@ -308,5 +344,17 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                     takeUntil(race(this.destroy$).pipe(take(1)))
                 )
         );
+    }
+}
+
+function withFrameMax(url: string, frameMax?: number): string {
+    try {
+        const parsed = new URL(url);
+        if (!parsed.searchParams.has('frameMax')) {
+            parsed.searchParams.set('frameMax', String(frameMax ?? 16_384));
+        }
+        return parsed.toString();
+    } catch {
+        return url;
     }
 }
