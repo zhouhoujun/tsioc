@@ -1075,7 +1075,9 @@ values skip URL/format validation; literal values keep the normal validation.
 HTTP request URL/body plus the value-path fields of condition, switch, router,
 log/debug, JSON/CSV/HTML/XML/YAML, RBE, statistics, split, map/filter/sort and
 batch opt in by default. List fields (switch/router rule values and change rule
-paths) expose the same selector per row.
+paths) expose the same selector per row; compare values prefixed with
+`msg.`/`flow.`/`global.`/`env.` are resolved at execution time for condition,
+switch/router and filter.
 
 ### Workflow plugins
 
