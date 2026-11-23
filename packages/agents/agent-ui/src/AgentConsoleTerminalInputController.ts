@@ -3,15 +3,9 @@ import { handleComposerEditingAction } from './AgentConsoleComposerEditing';
 import { shouldSubmitTextInputChunk } from '@tsdi/components/common';
 import type { AgentConsoleSelectOption } from './AgentConsoleSessionState';
 import { AGENT_CONSOLE_OVERLAY_HINTS, AGENT_CONSOLE_OVERLAY_TITLES } from './AgentConsoleOverlayPresenter';
-import { formatAgentUiLabel, formatAgentUiSessionClosingMessage, formatAgentUiNotice } from './agent-ui.i18n';
-import { fuzzyMatchAgentConsoleCommand } from './AgentConsoleKeymap';
+import { formatAgentUiSessionClosingMessage, formatAgentUiNotice } from './agent-ui.i18n';
 import { resolveTranscriptLayout } from './AgentConsoleTranscriptLayout';
-import {
-    formatAgentConsoleCommandArgumentForm,
-    formatAgentConsoleCommandArgumentTemplate,
-    getAgentConsoleCommandDefinition,
-    resolveAgentConsoleCommandDescription
-} from './AgentConsoleCommandRegistry';
+import { openCommandPaletteView as openCommandPaletteViewImpl } from './AgentConsoleCommandPalette';
 
 /** Ctrl+] detaches from an active SSH shell session. */
 const SSH_SHELL_DETACH_SEQUENCE = '\x1d';
@@ -29,6 +23,8 @@ export interface AgentConsoleTerminalInputHost {
         vimMode: boolean;
         inputMode: string;
         commandHints: string[];
+        injectedCommandHints?: string[];
+        recentCommands?: string[];
         selectMenu?: { title?: string; kind?: string } | null;
         messageDetailVisibleLines: number;
         markdownContentWidth: number;
@@ -102,33 +98,7 @@ function releaseTranscriptFocusForTextInput(host: AgentConsoleTerminalInputHost,
 
 /** Open the command palette with an optional pre-filter query. */
 export function openCommandPaletteView(host: AgentConsoleTerminalInputHost, query = ''): void {
-    host.commandPaletteQuery = query;
-    const translate = (key: string, params?: Record<string, any>, fallback?: string) => formatAgentUiLabel(host.translator, key, fallback ?? key, params);
-    const paletteTitle = translate('agent.menu.panel.overlay.paletteTitle', undefined, 'Command palette');
-    const commands = host.state.commandHints
-        .filter(command => fuzzyMatchAgentConsoleCommand(command, query))
-        .map(command => {
-            const definition = getAgentConsoleCommandDefinition(command);
-            const form = formatAgentConsoleCommandArgumentForm(definition, translate);
-            return {
-                label: command,
-                value: command,
-                description: [
-                    resolveAgentConsoleCommandDescription(
-                        command,
-                        undefined,
-                        (key, fallback) => formatAgentUiLabel(host.translator, key, fallback)
-                    ) || translate('agent.menu.panel.overlay.paletteCommandFallback', undefined, 'command'),
-                    formatAgentConsoleCommandArgumentTemplate(definition)
-                ].filter(Boolean).join(' '),
-                detail: form.length ? form.join('\n') : undefined
-            };
-        });
-    host.state.openSelectMenu(query ? `${paletteTitle}: ${query}` : paletteTitle, commands, 0, translate('agent.menu.panel.overlay.paletteHint', undefined, 'type to filter   enter execute'), 'palette');
-    host.state.selectMenuAction = async value => {
-        host.commandPaletteQuery = '';
-        if (value) await host.handleCommand(value);
-    };
+    openCommandPaletteViewImpl(host as any, query);
 }
 
 /** Route raw terminal input typed while the command palette overlay is open. */

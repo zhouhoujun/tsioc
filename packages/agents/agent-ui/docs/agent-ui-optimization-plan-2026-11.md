@@ -121,7 +121,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 
 | 能力 | 我们 | opencode 2.3 | Codex 2026 | 判断 |
 | --- | --- | --- | --- | --- |
-| 命令面板 `ctrl+p` | ✅ | ✅（当前视图所有动作） | ◐（`/` 命令） | 保持；补“最近使用/动作搜索” |
+| 命令面板 `ctrl+p` | ✅ 全量命令目录 + 最近使用 + 模糊搜索 | ✅（当前视图所有动作） | ◐（`/` 命令） | 对齐（非命令动作仍走各自入口） |
 | leader key `ctrl+x` | ✅ | ✅ | ❌ | 对齐 |
 | session tabs | ✅ 鼠标 + Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+T | ✅ 同左 | ◐ | 对齐 |
 | Enter 运行中行为 | 默认排队；`Ctrl+X Enter` 插到队首；steer 需显式开启 | Enter steer；Ctrl+X Enter queue | queue/steer | 已补优先级；默认 steer 仍待确认 |
@@ -241,6 +241,7 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 - LSP formatter hook `/format <file...> [--check]`（`/fmt` 别名）：新增 `lsp_format`
   工具，默认写回、`--check` 预览，写入走 `fs` 审批类别与 workspace trust；
 - `/highlights` 发布说明浮层（`/whatsnew` 别名）：升级后按版本自动展示一次，设置页可关闭；
+- `ctrl+p` 命令面板改为全量非隐藏命令目录（不再局限于精选 `/` 菜单），空查询时把最近执行命令置顶；
 - turn undo/redo 持久化：`AgentTurnHistoryEntity` 保存 turn 边界、redo 消息与文件快照栈，
   `TurnHistoryController` 懒加载/串行写回，重启后 `/undo`、`/redo` 与文件级撤销仍可用；
 - `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。

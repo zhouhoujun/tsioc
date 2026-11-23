@@ -45,6 +45,15 @@ import { defaultAgentConsoleTitle } from './AgentConsoleTitle';
 
 /** Reactive data fields shared by the console session facade. */
 export class AgentConsoleSessionData {
+    /** Record a successfully executed command at the front of the palette list. */
+    recordRecentCommand(command: string): void {
+        const name = String(command || '').trim();
+        if (!name.startsWith('/')) {
+            return;
+        }
+        this.recentCommands = [name, ...this.recentCommands.filter(item => item !== name)].slice(0, 10);
+    }
+
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;
     messageDetailVisibleLines = defaultAgentConsoleOptions.messageDetailVisibleLines;
     markdownContentWidth = 0;
@@ -244,6 +253,8 @@ export class AgentConsoleSessionData {
     activeTurnEventScope = '';
     lastError = '';
     notice = '';
+    /** Recently executed slash commands, newest first (session-local). */
+    recentCommands: string[] = [];
     /** Transient toast queue painted by the shared toast strip. */
     toasts: ToastEntry[] = [];
     pendingAttachments: AgentConsolePendingAttachment[] = [];

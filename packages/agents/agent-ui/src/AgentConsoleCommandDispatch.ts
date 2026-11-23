@@ -83,6 +83,9 @@ async function dispatchAgentConsoleCommandInternal(host: AgentConsoleCommandDisp
                 return true;
             }
             host.state.commandExecutionController.complete(requestId, 'succeeded');
+            if (handled) {
+                host.state.recordRecentCommand(canonical);
+            }
             host.pendingCommandRequestId = previousRequestId;
             return handled;
         } catch (error) {
