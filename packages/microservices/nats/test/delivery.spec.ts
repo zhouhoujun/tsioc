@@ -77,6 +77,28 @@ describe('NatsServer delivery semantics', () => {
         expect(handler.completed).toBe(1);
     });
 
+    it('drains in-flight handlers during shutdown before closing the connection', async () => {
+        const handler = new FakeHandler('delayed');
+        const server = new NatsServer(handler as any, {} as any);
+        const events: string[] = [];
+        const connection = {
+            published: [],
+            publish() { return undefined; },
+            drain: async () => { events.push('drain'); },
+            close: async () => { events.push('close'); }
+        };
+        (server as any).nc = connection;
+        (server as any).logger = { info: () => undefined, error: () => undefined };
+
+        const pending = (server as any).handleMessage('orders', new Uint8Array(), null, {});
+        await (server as any).onShutdown();
+
+        // Without the runtime drain, shutdown would resolve before the 20ms handler finished.
+        expect(handler.completed).toBe(1);
+        expect(events).toEqual(['drain', 'close']);
+        await pending;
+    });
+
     it('publishes exhausted deliveries to the dead-letter subject', async () => {
         const handler = new FakeHandler('fail');
         const server = new NatsServer(handler as any, { retry: { maxAttempts: 1 }, deadLetterSubject: 'orders.dlq' } as any);

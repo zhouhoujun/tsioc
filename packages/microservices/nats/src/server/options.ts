@@ -1,6 +1,6 @@
 import { token, Provider } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
-import { ServiceOptions, ConsumerRetryOptions } from '@tsdi/service';
+import { ConsumerIdempotencyOptions, ServiceOptions, ConsumerRetryOptions } from '@tsdi/service';
 
 export interface NatsServOptions extends ServiceOptions {
     transport: Transport.NATS;
@@ -22,6 +22,27 @@ export interface NatsServOptions extends ServiceOptions {
      * maximum concurrent handlers. default unlimited.
      */
     concurrency?: number;
+    /**
+     * delivery mode. `core` (default) is at-most-once; `jetstream` uses a
+     * durable JetStream consumer with explicit ack/nak and redelivery.
+     *
+     * Request/response still uses core NATS reply inboxes in jetstream mode.
+     */
+    delivery?: 'core' | 'jetstream';
+    /** JetStream stream name, created when missing. Default `TSDI`. */
+    stream?: string;
+    /** subjects captured by the stream. Default derived from subscriptions. */
+    streamSubjects?: string[];
+    /** durable consumer name. Default `queue` or `tsdi`. */
+    durable?: string;
+    /** consumer filter subject. Default the first configured subject. */
+    jetstreamSubject?: string;
+    /** ack wait in milliseconds. Default 30000. */
+    ackWaitMs?: number;
+    /** maximum deliveries before DLQ/term. Default 5. */
+    maxDeliver?: number;
+    /** deduplicate redeliveries by stream sequence. */
+    idempotency?: ConsumerIdempotencyOptions;
 }
 
 export const NATS_SERV_OPTIONS = token<NatsServOptions>('NATS_SERV_OPTIONS');

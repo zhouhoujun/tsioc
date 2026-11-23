@@ -1,7 +1,7 @@
 import { getTypeName, Inject, Injectable } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
-import { connect, StringCodec, NatsConnection, Subscription } from 'nats';
+import { connect, StringCodec, NatsConnection, Subscription, JetStreamSubscription, JsMsg } from 'nats';
 import {
     createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
@@ -25,11 +25,17 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private destroy$: Subject<void>;
     private runtime?: ConsumerRuntime;
+    private jsSub?: JetStreamSubscription;
+    private jsLoop?: Promise<void>;
+    private jsFilter?: string;
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime({ metrics: this.consumerMetrics ?? undefined, labels: { transport: 'nats' },
+        return this.runtime ??= new ConsumerRuntime({
+            metrics: this.consumerMetrics ?? undefined,
+            labels: { transport: 'nats' },
             retry: this.options?.retry,
-            concurrency: this.options?.concurrency
+            concurrency: this.options?.concurrency,
+            idempotency: this.options?.idempotency
         });
     }
 
@@ -69,12 +75,19 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             this.logger.info(getTypeName(this), 'connected to NATS:', this.options.url || 'nats://127.0.0.1:4222');
 
             const subjects = mergeSubscribePatterns(this.options.subjects, getSubscribePatterns(this.options, this.injector), ['>']);
+            this.jsFilter = this.options.delivery === 'jetstream'
+                ? (this.options.jetstreamSubject ?? subjects[0])
+                : undefined;
             for (const subject of subjects) {
                 this.subscribeSubject(subject);
             }
             this.stopRouteWatch = watchSubscribePatterns(this.options, this.injector, () => {
                 this.reconcileSubjects();
             });
+
+            if (this.options.delivery === 'jetstream') {
+                await this.startJetStream(this.jsFilter ?? '>');
+            }
 
             this.nc.closed().then(() => {
                 this.logger.info('NATS connection closed');
@@ -114,6 +127,35 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
         });
         this.subscriptions = [];
 
+        try {
+            this.jsSub?.unsubscribe();
+        } catch {
+            // ignore unsubscribe errors during shutdown
+        }
+        this.jsSub = undefined;
+
+        const runtime = this.runtime;
+        if (runtime) {
+            runtime.close();
+            if (!(await runtime.drain(5_000))) {
+                this.logger.error('NATS consumer drain timed out after 5000ms');
+            }
+        }
+
+        if (this.jsLoop) {
+            const loop = this.jsLoop;
+            this.jsLoop = undefined;
+            await Promise.race([
+                loop.catch(() => undefined),
+                new Promise<void>(resolve => {
+                    const timer = setTimeout(resolve, 5000);
+                    if (typeof (timer as any).unref === 'function') {
+                        (timer as any).unref();
+                    }
+                })
+            ]);
+        }
+
         if (!this.nc) return;
 
         const connection = this.nc;
@@ -132,6 +174,11 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private subscribeSubject(subject: string): void {
         if (!this.nc || this.subjectSubscriptions.has(subject)) {
+            return;
+        }
+        // In JetStream mode the event subject is consumed by the durable
+        // consumer; a core subscription would run the handler twice.
+        if (this.jsFilter && subject === this.jsFilter) {
             return;
         }
         const sub = this.nc.subscribe(subject, { queue: this.options.queue || 'microservices' });
@@ -192,6 +239,84 @@ export class NatsServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                     return;
                 }
                 throw err;
+            }
+        }, message => this.handleRequest(message.payload.subject, message.payload.data, message.payload.sc, message.payload.msg));
+    }
+
+    private async startJetStream(filter: string): Promise<void> {
+        const connection = this.nc;
+        if (!connection) {
+            return;
+        }
+        const stream = this.options.stream ?? 'TSDI';
+        const durable = this.options.durable ?? this.options.queue ?? 'tsdi';
+        const maxDeliver = Math.max(1, this.options.maxDeliver ?? 5);
+        const ackWaitMs = Math.max(1000, this.options.ackWaitMs ?? 30_000);
+        const streamSubjects = this.options.streamSubjects?.length
+            ? this.options.streamSubjects
+            : [filter];
+
+        const jsm = await connection.jetstreamManager();
+        try {
+            await jsm.streams.info(stream);
+        } catch {
+            await jsm.streams.add({ name: stream, subjects: streamSubjects });
+            this.logger.info(`NATS JetStream stream '${stream}' created for ${streamSubjects.join(',')}`);
+        }
+
+        const js = connection.jetstream();
+        // A durable push consumer needs a stable deliver subject; deriving it
+        // from stream+durable keeps reconnects bound to the same consumer.
+        const deliverSubject = `tsdi.js.${stream}.${durable}`;
+        const sub = await js.subscribe(filter, {
+            stream,
+            config: {
+                durable_name: durable,
+                deliver_subject: deliverSubject,
+                filter_subject: filter,
+                ack_wait: ackWaitMs * 1_000_000,
+                max_deliver: maxDeliver
+            },
+            mack: true,
+            queue: this.options.queue || undefined
+        });
+        this.jsSub = sub;
+        this.logger.info(`NATS JetStream consumer '${durable}' subscribed to '${filter}' on '${stream}'`);
+
+        this.jsLoop = (async () => {
+            for await (const msg of sub) {
+                await this.handleJetStreamMessage(msg);
+            }
+        })().catch(err => {
+            if (!this.destroy$.isStopped) {
+                this.logger.error('NATS JetStream subscription error:', err);
+            }
+        });
+    }
+
+    private async handleJetStreamMessage(msg: JsMsg): Promise<void> {
+        const info = msg.info;
+        const id = info ? `${info.stream}:${info.streamSequence}` : undefined;
+        const sc = StringCodec();
+        const maxDeliver = Math.max(1, this.options.maxDeliver ?? 5);
+        await this.consumerRuntime.handle({
+            id,
+            labels: { topic: msg.subject },
+            payload: { subject: msg.subject, data: msg.data, sc, msg },
+            ack: () => { msg.ack(); },
+            skip: () => { msg.ack(); },
+            fail: () => {
+                if (this.options.deadLetterSubject && this.nc) {
+                    this.nc.publish(this.options.deadLetterSubject, msg.data);
+                    msg.ack();
+                    return;
+                }
+                if ((info?.redeliveryCount ?? 0) + 1 >= maxDeliver) {
+                    // Exhausted: stop redelivery instead of looping forever.
+                    msg.term();
+                } else {
+                    msg.nak();
+                }
             }
         }, message => this.handleRequest(message.payload.subject, message.payload.data, message.payload.sc, message.payload.msg));
     }

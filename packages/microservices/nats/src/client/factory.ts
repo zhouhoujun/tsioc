@@ -124,7 +124,19 @@ function createNatsClientBackend(_config: NatsClientOptions) {
         const messageHeaders = toNatsHeaders(request);
 
         if (request.observe === 'events') {
-            nc.publish(subject, typeof payload === 'string' ? sc.encode(payload) : payload, { headers: messageHeaders });
+            const encoded = typeof payload === 'string' ? sc.encode(payload) : payload;
+            if (_config.delivery === 'jetstream') {
+                // JetStream events must be published with js.publish so the
+                // durable consumer can ack/redeliver them.
+                nc.jetstream().publish(subject, encoded, { headers: messageHeaders })
+                    .then(() => {
+                        observer.next({ type: 0 } as ResponseEventPacket);
+                        observer.complete();
+                    })
+                    .catch(err => observer.error(err));
+                return;
+            }
+            nc.publish(subject, encoded, { headers: messageHeaders });
             observer.next({ type: 0 } as ResponseEventPacket);
             observer.complete();
             return;
