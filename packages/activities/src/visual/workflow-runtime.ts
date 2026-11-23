@@ -1760,7 +1760,7 @@ export async function executeVisualNode(
                 url,
                 topic,
                 payload,
-                qos: settings.qos,
+                qos: Number(settings.qos) || 0,
                 retain: config.retain === true,
                 clientId: settings.clientId,
                 username: settings.username,

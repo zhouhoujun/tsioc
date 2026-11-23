@@ -45,6 +45,7 @@ interface FakeBroker {
     unsubscribes: number;
     publishes: Array<{ topic: string; payload: string }>;
     subscriptions: string[];
+    subscriptionQos: number[];
     send(topic: string, payload: string): void;
     close(): Promise<void>;
 }
@@ -53,6 +54,7 @@ interface FakeBroker {
 async function startBroker(): Promise<FakeBroker> {
     const publishes: Array<{ topic: string; payload: string }> = [];
     const subscriptions: string[] = [];
+    const subscriptionQos: number[] = [];
     const sockets = new Set<net.Socket>();
     const counters = { connections: 0, unsubscribes: 0 };
     const server = net.createServer(socket => {
@@ -85,6 +87,7 @@ async function startBroker(): Promise<FakeBroker> {
                     const packetId = packet.readUInt16BE(start);
                     const topicLength = packet.readUInt16BE(start + 2);
                     subscriptions.push(packet.slice(start + 4, start + 4 + topicLength).toString('utf8'));
+                    subscriptionQos.push(packet[start + 4 + topicLength]);
                     socket.write(frame(0x90, Buffer.from([
                         (packetId >> 8) & 0xff, packetId & 0xff, 0x01
                     ])));
@@ -93,11 +96,20 @@ async function startBroker(): Promise<FakeBroker> {
                 } else if (type === 3) { // PUBLISH
                     const message = decodePublish(packet);
                     publishes.push({ topic: message.topic, payload: message.payload });
-                    if (message.qos > 0 && message.packetId) {
+                    if (message.qos === 2 && message.packetId) {
+                        socket.write(frame(0x50, Buffer.from([
+                            (message.packetId >> 8) & 0xff, message.packetId & 0xff
+                        ])));
+                    } else if (message.qos === 1 && message.packetId) {
                         socket.write(frame(0x40, Buffer.from([
                             (message.packetId >> 8) & 0xff, message.packetId & 0xff
                         ])));
                     }
+                } else if (type === 6) { // PUBREL
+                    const packetId = packet.readUInt16BE(start);
+                    socket.write(frame(0x70, Buffer.from([
+                        (packetId >> 8) & 0xff, packetId & 0xff
+                    ])));
                 }
             }
         });
@@ -115,6 +127,7 @@ async function startBroker(): Promise<FakeBroker> {
         },
         publishes,
         subscriptions,
+        subscriptionQos,
         send(topic: string, payload: string) {
             const body = Buffer.concat([Buffer.from(topic, 'utf8').length ? Buffer.from([
                 (Buffer.byteLength(topic) >> 8) & 0xff, Buffer.byteLength(topic) & 0xff
@@ -185,6 +198,8 @@ describe('Workflow MQTT transport', () => {
                 payload: message.payload
             }));
             expect(broker.subscriptions).toEqual(['sensors/+/temp']);
+            await client.subscribe('qos/two', 2, () => undefined);
+            expect(broker.subscriptionQos).toContain(2);
 
             broker.send('sensors/kitchen/temp', '21.5');
             await withTimeout(new Promise<void>(resolve => {
@@ -195,6 +210,9 @@ describe('Workflow MQTT transport', () => {
 
             await client.publish({ topic: 'out/topic', payload: '{"ok":true}', qos: 1 });
             expect(broker.publishes).toContainEqual({ topic: 'out/topic', payload: '{"ok":true}' });
+
+            await client.publish({ topic: 'out/qos2', payload: 'two', qos: 2 });
+            expect(broker.publishes).toContainEqual({ topic: 'out/qos2', payload: 'two' });
         } finally {
             client.close();
             await broker.close();

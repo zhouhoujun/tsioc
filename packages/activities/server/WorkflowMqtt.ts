@@ -104,7 +104,7 @@ export interface MqttConnectOptions {
 export interface MqttPublishOptions {
     topic: string;
     payload: string | Buffer;
-    qos?: 0 | 1;
+    qos?: 0 | 1 | 2;
     retain?: boolean;
 }
 
@@ -174,7 +174,7 @@ export function connectPacket(options: MqttConnectOptions): Buffer {
 }
 
 export function publishPacket(options: MqttPublishOptions, packetId = 0): Buffer {
-    const qos = Math.max(0, Math.min(1, Number(options.qos) || 0));
+    const qos = Math.max(0, Math.min(2, Number(options.qos) || 0));
     const header = 0x30 | (qos << 1) | (options.retain ? 1 : 0);
     const parts: Buffer[] = [encodeString(options.topic)];
     if (qos > 0) {
@@ -195,6 +195,18 @@ export function subscribePacket(packetId: number, topic: string, qos = 0): Buffe
 
 export function pubackPacket(packetId: number): Buffer {
     return packet(0x40, Buffer.from([(packetId >> 8) & 0xff, packetId & 0xff]));
+}
+
+export function pubrecPacket(packetId: number): Buffer {
+    return packet(0x50, Buffer.from([(packetId >> 8) & 0xff, packetId & 0xff]));
+}
+
+export function pubrelPacket(packetId: number): Buffer {
+    return packet(0x62, Buffer.from([(packetId >> 8) & 0xff, packetId & 0xff]));
+}
+
+export function pubcompPacket(packetId: number): Buffer {
+    return packet(0x70, Buffer.from([(packetId >> 8) & 0xff, packetId & 0xff]));
 }
 
 export function decodePublish(buffer: Buffer): MqttMessage & { packetId?: number } {
@@ -224,6 +236,8 @@ export function decodePublish(buffer: Buffer): MqttMessage & { packetId?: number
 interface PendingAck {
     resolve: (packet: Buffer) => void;
     reject: (error: Error) => void;
+    /** Optional accepted packet types (CONNACK=2, PUBACK=4, PUBREC=5, PUBCOMP=7, SUBACK=9). */
+    types?: number[];
 }
 
 /** One MQTT connection with subscribe/publish helpers. */
@@ -233,7 +247,8 @@ export class WorkflowMqttClient {
     private connecting?: Promise<void>;
     private nextPacketId = 1;
     private readonly pending = new Map<number, PendingAck>();
-    private readonly subscriptions: Array<{ filter: string; handler: (message: MqttMessage) => void }> = [];
+    private readonly inboundQos2 = new Set<number>();
+    private readonly subscriptions: Array<{ filter: string; qos: 0 | 1 | 2; handler: (message: MqttMessage) => void }> = [];
     private keepaliveTimer?: any;
     private closed = false;
 
@@ -325,14 +340,15 @@ export class WorkflowMqttClient {
         });
     }
 
-    async subscribe(topic: string, _qos: 0 | 1, handler: (message: MqttMessage) => void): Promise<void> {
+    async subscribe(topic: string, qos: 0 | 1 | 2, handler: (message: MqttMessage) => void): Promise<void> {
         await this.connect();
+        const requested = Math.max(0, Math.min(2, Number(qos) || 0)) as 0 | 1 | 2;
         if (!this.subscriptions.some(entry => entry.filter === topic)) {
-            this.subscriptions.push({ filter: topic, handler });
-            await this.sendSubscribe(topic);
+            this.subscriptions.push({ filter: topic, qos: requested, handler });
+            await this.sendSubscribe(topic, requested);
         } else {
             // Extra handlers for the same filter still receive messages.
-            this.subscriptions.push({ filter: topic, handler });
+            this.subscriptions.push({ filter: topic, qos: requested, handler });
         }
     }
 
@@ -361,13 +377,22 @@ export class WorkflowMqttClient {
 
     async publish(options: MqttPublishOptions): Promise<void> {
         await this.connect();
-        const qos = Math.max(0, Math.min(1, Number(options.qos) || 0));
+        const qos = Math.max(0, Math.min(2, Number(options.qos) || 0));
         if (qos === 0) {
             this.socket!.write(publishPacket(options));
             return;
         }
         const packetId = this.packetId();
-        const ack = this.awaitAck(packetId);
+        if (qos === 2) {
+            const received = this.awaitAck(packetId, [5]);
+            this.socket!.write(publishPacket({ ...options, qos: 2 }, packetId));
+            await received;
+            const completed = this.awaitAck(packetId, [7]);
+            this.socket!.write(pubrelPacket(packetId));
+            await completed;
+            return;
+        }
+        const ack = this.awaitAck(packetId, [4]);
         this.socket!.write(publishPacket(options, packetId));
         await ack;
     }
@@ -393,9 +418,9 @@ export class WorkflowMqttClient {
         return this.nextPacketId;
     }
 
-    private awaitAck(packetId: number): Promise<Buffer> {
+    private awaitAck(packetId: number, types?: number[]): Promise<Buffer> {
         return new Promise<Buffer>((resolve, reject) => {
-            this.pending.set(packetId, { resolve, reject });
+            this.pending.set(packetId, { resolve, reject, types });
             const timer = setTimeout(() => {
                 if (this.pending.delete(packetId)) {
                     reject(new Error(`MQTT acknowledgement timed out (packet ${packetId})`));
@@ -409,17 +434,17 @@ export class WorkflowMqttClient {
     private async resubscribeAll(): Promise<void> {
         for (const entry of this.subscriptions) {
             try {
-                await this.sendSubscribe(entry.filter);
+                await this.sendSubscribe(entry.filter, entry.qos);
             } catch {
                 // A failed resubscribe keeps the filter for the next reconnect.
             }
         }
     }
 
-    private async sendSubscribe(filter: string): Promise<void> {
+    private async sendSubscribe(filter: string, qos: 0 | 1 | 2 = 1): Promise<void> {
         const packetId = this.packetId();
         const ack = this.awaitAck(packetId);
-        this.socket?.write(subscribePacket(packetId, filter, 1));
+        this.socket?.write(subscribePacket(packetId, filter, qos));
         await ack;
     }
 
@@ -461,8 +486,15 @@ export class WorkflowMqttClient {
             }
             case 3: { // PUBLISH
                 const message = decodePublish(buffer);
-                if (message.qos > 0 && message.packetId) {
+                if (message.qos === 1 && message.packetId) {
                     this.socket?.write(pubackPacket(message.packetId));
+                } else if (message.qos === 2 && message.packetId) {
+                    this.socket?.write(pubrecPacket(message.packetId));
+                    if (this.inboundQos2.has(message.packetId)) {
+                        // Duplicate before PUBREL: acknowledge but deliver once.
+                        return;
+                    }
+                    this.inboundQos2.add(message.packetId);
                 }
                 this.subscriptions
                     .filter(entry => mqttTopicMatches(entry.filter, message.topic))
@@ -476,15 +508,25 @@ export class WorkflowMqttClient {
                 return;
             }
             case 4: { // PUBACK
+                this.resolvePending(buffer.readUInt16BE(start), 4, buffer);
+                return;
+            }
+            case 5: { // PUBREC
+                this.resolvePending(buffer.readUInt16BE(start), 5, buffer);
+                return;
+            }
+            case 6: { // PUBREL -> inbound QoS 2 complete
                 const packetId = buffer.readUInt16BE(start);
-                this.pending.get(packetId)?.resolve(buffer);
-                this.pending.delete(packetId);
+                this.inboundQos2.delete(packetId);
+                this.socket?.write(pubcompPacket(packetId));
+                return;
+            }
+            case 7: { // PUBCOMP
+                this.resolvePending(buffer.readUInt16BE(start), 7, buffer);
                 return;
             }
             case 9: { // SUBACK
-                const packetId = buffer.readUInt16BE(start);
-                this.pending.get(packetId)?.resolve(buffer);
-                this.pending.delete(packetId);
+                this.resolvePending(buffer.readUInt16BE(start), 9, buffer);
                 return;
             }
             case 13: // PINGRESP
@@ -492,6 +534,18 @@ export class WorkflowMqttClient {
             default:
                 return;
         }
+    }
+
+    private resolvePending(packetId: number, type: number, buffer: Buffer): void {
+        const pending = this.pending.get(packetId);
+        if (!pending) {
+            return;
+        }
+        if (pending.types && !pending.types.includes(type)) {
+            return;
+        }
+        this.pending.delete(packetId);
+        pending.resolve(buffer);
     }
 
     private startKeepalive(): void {
@@ -523,6 +577,7 @@ export class WorkflowMqttClient {
         this.stopKeepalive();
         this.socket = undefined;
         this.buffer = Buffer.alloc(0);
+        this.inboundQos2.clear();
     }
 
     private failPending(error: Error): void {
@@ -560,7 +615,7 @@ export class WorkflowMqttRegistry {
     async subscribe(
         options: MqttConnectOptions,
         topic: string,
-        qos: 0 | 1,
+        qos: 0 | 1 | 2,
         handler: (message: MqttMessage) => void
     ): Promise<() => Promise<void>> {
         const client = this.pool.client(options);
@@ -650,7 +705,7 @@ export class WorkflowMqttTransport implements OnDestroy {
         }, {
             topic: message.topic,
             payload: message.payload,
-            qos: Number(message.qos) === 1 ? 1 : 0,
+            qos: Math.max(0, Math.min(2, Number(message.qos) || 0)) as 0 | 1 | 2,
             retain: message.retain === true
         });
     }

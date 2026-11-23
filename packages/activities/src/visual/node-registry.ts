@@ -932,7 +932,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'topic', label: 'Topic', type: 'text', required: true, defaultValue: '#', placeholder: 'sensors/+/temp', description: 'Subscription filter; + and # wildcards are supported.' }),
             configField({ key: 'qos', label: 'QoS', type: 'select', defaultValue: '0', options: [
                 { label: '0', value: '0' },
-                { label: '1', value: '1' }
+                { label: '1', value: '1' },
+                { label: '2', value: '2' }
             ] }),
             configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', group: 'Broker override', description: 'Inline override used when no shared broker is selected.' }),
             configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto', group: 'Broker override' }),
@@ -1176,7 +1177,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
             configField({ key: 'qos', label: 'QoS', type: 'select', defaultValue: '0', options: [
                 { label: '0', value: '0' },
-                { label: '1', value: '1' }
+                { label: '1', value: '1' },
+                { label: '2', value: '2' }
             ] }),
             configField({ key: 'retain', label: 'Retain', type: 'boolean', defaultValue: false }),
             configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', group: 'Broker override', description: 'Inline override used when no shared broker is selected.' }),

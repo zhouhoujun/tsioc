@@ -265,7 +265,7 @@ export class WorkflowInboundRunner {
                 try {
                     // One broker subscription per topic; listeners sharing the
                     // same config reuse the connection and fan out here.
-                    const off = await mqttRegistry.subscribe(settings, settings.topic, settings.qos === 1 ? 1 : 0, message => {
+                    const off = await mqttRegistry.subscribe(settings, settings.topic, Math.max(0, Math.min(2, Number(settings.qos) || 0)) as 0 | 1 | 2, message => {
                         void dispatch(
                             node.id,
                             'mqtt',
