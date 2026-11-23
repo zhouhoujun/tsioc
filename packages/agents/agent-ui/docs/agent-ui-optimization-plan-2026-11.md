@@ -246,7 +246,7 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 - `shift+tab` 循环当前会话的可选 agent profile（跳过 subagent），与 `/archetype next` 同一路径；
 - `/work spawn ... --profile`（不写值）打开 primary profile 选择器，跳过 subagent；
 - `/inbox` 将 `waiting-input` / `blocked` 的后台 worker 也列为待办（显示问题/错误原因），
-  并支持在 Inbox 内直接取消后台任务；
+  并支持在 Inbox 内直接取消或重试失败/阻塞的后台任务；
 - `/queue remove` 支持批量索引与区间（`1,3` / `1-3`），用于清理长队列；
 - `/artifacts`：汇总本会话文件改动与 worker report artifacts（TUI 浮层；Web/attach 走
   `session.file_snapshot.list` + background tasks）；

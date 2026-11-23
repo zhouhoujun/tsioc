@@ -68,7 +68,7 @@ export class AgentUiLocaleRegressionTest {
     noticeParity() {
         const enKeys = Object.keys(AGENT_UI_NOTICE_EN);
         const zhKeys = Object.keys(AGENT_UI_NOTICE_ZH);
-        expect(enKeys.length).toEqual(918);
+        expect(enKeys.length).toEqual(921);
         expect(zhKeys).toEqual(enKeys);
     }
 

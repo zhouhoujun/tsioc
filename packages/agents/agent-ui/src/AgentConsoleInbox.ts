@@ -162,6 +162,8 @@ export interface AgentConsoleInboxHost {
     decideApproval?(requestId: string, decision: 'approve' | 'deny'): Promise<boolean>;
     /** Cancel a background task from its inbox row. */
     cancelTask?(taskId: string): Promise<boolean>;
+    /** Retry a failed/blocked background task with its original goal/profile. */
+    retryTask?(task: Record<string, any>): Promise<{ taskId?: string; error?: string }>;
 }
 
 /**
@@ -241,10 +243,14 @@ export async function runInboxCommandView(host: AgentConsoleInboxHost): Promise<
     }
     if (item.kind === 'task' && host.select && host.cancelTask) {
         const taskId = String(item.task?.id || '');
+        const status = String(item.task?.status || '').toLowerCase();
         const action = await host.select(
             formatAgentUiNotice(host.translator, 'inboxTaskActionTitle'),
             [
                 { label: formatAgentUiNotice(host.translator, 'inboxTaskOpen'), value: 'open' },
+                ...(status === 'failed' || status === 'blocked'
+                    ? [{ label: formatAgentUiNotice(host.translator, 'inboxTaskRetry'), value: 'retry' }]
+                    : []),
                 { label: formatAgentUiNotice(host.translator, 'inboxTaskCancel'), value: 'cancel' }
             ],
             0,
@@ -258,6 +264,15 @@ export async function runInboxCommandView(host: AgentConsoleInboxHost): Promise<
             host.notify(formatAgentUiNotice(host.translator, cancelled ? 'inboxTaskCancelled' : 'inboxTaskCancelFailed', {
                 id: taskId.slice(0, 8)
             }));
+            return;
+        }
+        if (action === 'retry') {
+            const result: { taskId?: string; error?: string } = taskId && host.retryTask
+                ? await host.retryTask(item.task || {}).catch(() => ({ error: 'failed' }))
+                : { error: 'missing task' };
+            host.notify(result?.taskId
+                ? formatAgentUiNotice(host.translator, 'inboxTaskRetried', { id: result.taskId.slice(0, 8) })
+                : formatAgentUiNotice(host.translator, 'inboxTaskRetryFailed', { error: result?.error || 'unknown' }));
             return;
         }
     }
@@ -288,6 +303,27 @@ export function inboxCommandHost(ctx: CommandHandlerContext): AgentConsoleInboxH
         cancelTask: async (taskId: string) => {
             const result = await ctx.sessionService?.cancelBackgroundTasks?.([taskId]);
             return !!(result && Array.isArray(result.cancelled) && result.cancelled.includes(taskId));
+        },
+        retryTask: async (task: Record<string, any>) => {
+            const goal = String(task?.goal || '').trim();
+            if (!goal) {
+                return { error: 'missing goal' };
+            }
+            try {
+                await ctx.activateTool?.('spawn_agent');
+                const output = await ctx.invokeTool?.('spawn_agent', {
+                    goal,
+                    background: true,
+                    ...(task?.profile ? { archetype: String(task.profile) } : {}),
+                    ...(task?.workspace ? { workspace: String(task.workspace) } : {})
+                });
+                const parsed = typeof output === 'string' && output.trim().startsWith('{')
+                    ? (() => { try { return JSON.parse(output); } catch { return undefined; } })()
+                    : output;
+                return { taskId: parsed?.taskId ? String(parsed.taskId) : undefined, error: parsed?.error ? String(parsed.error) : undefined };
+            } catch (error) {
+                return { error: error instanceof Error ? error.message : String(error) };
+            }
         }
     };
 }

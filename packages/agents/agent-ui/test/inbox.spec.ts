@@ -142,6 +142,30 @@ export class InboxTest {
         expect(notices[0]).toContain('Cancelled background task task-1');
     }
 
+    @Test('/inbox retries a failed worker with its original goal')
+    async retriesTask() {
+        const state = createState();
+        const retried: Array<Record<string, any>> = [];
+        const notices: string[] = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: {
+                listApprovals: async () => [],
+                listAllBackgroundTasks: async () => [{ id: 'task-1', sessionId: 'child', status: 'failed', goal: 'build' }]
+            },
+            loadCodingTasks: async () => [],
+            notify: (message: string) => notices.push(message),
+            openSession: async () => undefined,
+            select: async (title: string) => title === 'Background task' ? 'retry' : 'task:task-1',
+            cancelTask: async () => false,
+            retryTask: async (task: Record<string, any>) => { retried.push(task); return { taskId: 'task-2' }; }
+        };
+        await runInboxCommandView(host);
+        expect(retried).toEqual([{ id: 'task-1', sessionId: 'child', status: 'failed', goal: 'build' }]);
+        expect(notices[0]).toContain('Retried background task task-2');
+    }
+
     @Test('/inbox reports an empty queue instead of opening an empty menu')
     async empty() {
         const state = createState();
