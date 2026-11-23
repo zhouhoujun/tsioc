@@ -13,6 +13,7 @@ import { TurnToolBatchController } from './TurnToolBatchController';
 import { SessionPostTurnController } from './SessionPostTurnController';
 import { hadPriorClarification, isClarificationAssistantMessage } from './ClarificationFollowUp';
 import { TurnRequestController } from './TurnRequestController';
+import { TurnTerminationController } from './TurnTerminationController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -180,7 +181,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -1603,55 +1604,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         );
     }
 
-    private async completeTerminationMessage(
-        sessionId: string,
-        query: string,
-        currentUserMessageId: string,
-        turnContext: TurnExecutionContext,
-        termination: string
-    ): Promise<AgentMessage> {
-        await this.sessions.append(sessionId, this.buildTerminationWrapUpMessage(termination));
-        try {
-            const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const finalResponse = await this.completeModelRequest(
-                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
-            );
-            await this.recordTokenUsage(sessionId, finalResponse);
-            await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
-            const text = String(finalResponse.message ?? '').trim();
-            if (text) {
-                return this.createMessage('assistant', text, undefined, undefined, finalResponse.metadata);
-            }
-        } catch {
-            // wrap-up failure must not mask the raw termination summary
-        }
-        return this.createMessage('assistant', termination);
+    private async completeTerminationMessage(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext, termination: string): Promise<AgentMessage> {
+        return this.turnTermination.complete(sessionId, query, currentUserMessageId, turnContext, termination);
     }
 
-    private async *completeStreamingTerminationMessage(
-        sessionId: string,
-        query: string,
-        currentUserMessageId: string,
-        turnContext: TurnExecutionContext,
-        termination: string
-    ): AsyncGenerator<StreamChunk, AgentMessage, void> {
-        await this.sessions.append(sessionId, this.buildTerminationWrapUpMessage(termination));
-        try {
-            const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const finalResponse = yield* this.collectStreamingResponse(
-                sessionId,
-                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
-            );
-            await this.recordTokenUsage(sessionId, finalResponse);
-            const text = String(finalResponse.message ?? '').trim();
-            if (text) {
-                return this.createMessage('assistant', text, undefined, undefined, finalResponse.metadata);
-            }
-        } catch {
-            // wrap-up failure must not mask the raw termination summary
-        }
-        yield { type: 'text', content: `\n\n${termination}\n\n` };
-        return this.createMessage('assistant', termination);
+    private async *completeStreamingTerminationMessage(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext, termination: string): AsyncGenerator<StreamChunk, AgentMessage, void> {
+        return yield* this.turnTermination.completeStreaming(sessionId, query, currentUserMessageId, turnContext, termination);
     }
 
     private async recordCompactionHistory(sessionId: string, report: ContextPreparationReport): Promise<void> { return this.observability.recordCompactionHistory(sessionId, report); }
@@ -2152,6 +2110,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private buildPlanContinuation(sessionId: string, turnContext: TurnExecutionContext): string | undefined {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
+    }
+
+    private get turnTermination(): TurnTerminationController {
+        return this.turnTerminationController ??= new TurnTerminationController({
+            sessions: this.sessions,
+            buildWrapUp: termination => this.buildTerminationWrapUpMessage(termination),
+            buildModelRequest: (sessionId, query, currentId, context) => this.buildModelRequest(sessionId, query, currentId, context),
+            prepareRequest: (sessionId, request, context) => this.prepareModelRequest(sessionId, request, context.profile, computeTurnFalsifyRate(context.evidenceLedger), context.agent?.reasoning),
+            completeModel: request => this.completeModelRequest(request),
+            collectStreaming: (sessionId, request) => this.collectStreamingResponse(sessionId, request),
+            recordUsage: (sessionId, response) => this.recordTokenUsage(sessionId, response),
+            publishCompleted: async (sessionId, response) => { await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response)); },
+            createMessage: (role, content, metadata) => this.createMessage(role, content, undefined, undefined, metadata)
+        });
     }
 
     private get turnRequest(): TurnRequestController {
