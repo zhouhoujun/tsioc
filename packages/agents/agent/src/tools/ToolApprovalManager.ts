@@ -3,17 +3,21 @@ import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent } from '../runtime/AgentEvents';
 import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
 import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
+import type { ApprovalRule } from './ApprovalStrategy';
 export { ApprovalRule, ApprovalRuleObject, DefaultApprovalStrategy } from './ApprovalStrategy';
 
 export interface ApprovalStrategy {
-    requires(toolName: string, input: any): boolean;
+    requires(toolName: string, input: any, sessionId?: string): boolean;
     reason(toolName: string, input: any): string;
     /** Structured form of `reason` for localized rendering. */
     reasonDetail?(toolName: string, input: any): { code: string; params?: Record<string, any> };
     /** Whether a matched approval rule denies without entering the pending surface (granular `mode: 'auto-deny'`). */
-    autoDenies?(toolName: string, input: any): boolean;
+    autoDenies?(toolName: string, input: any, sessionId?: string): boolean;
     /** Whether an injected ApprovalReviewer may resolve requests without a human (A2). */
     autoReview?: boolean;
+    /** Per-session rule overrides; evaluated after the workspace rules. */
+    setSessionRules?(sessionId: string, rules: ApprovalRule[]): void;
+    getSessionRules?(sessionId: string): ApprovalRule[];
 }
 
 export const AgentApprovalStrategy = token<ApprovalStrategy>('AgentApprovalStrategy');
@@ -213,9 +217,7 @@ export class ToolApprovalManager extends ApprovalManager {
         }
     }
 
-    setAutoApprove(enabled: boolean): void {
-        if (this.options) this.options.autoApprove = enabled;
-    }
+    setAutoApprove(enabled: boolean): void { if (this.options) this.options.autoApprove = enabled; }
 
     /** Update the timeout used for *new* approval requests (existing ones keep theirs). */
     setDefaultTimeout(timeoutMs: number): void {
@@ -232,29 +234,26 @@ export class ToolApprovalManager extends ApprovalManager {
 
     isAutoApproveEnabled(): boolean { return this.options?.autoApprove === true; }
 
-    requiresApproval(toolName: string, input: any): boolean { return this.strategy?.requires(toolName, input) ?? false; }
+    requiresApproval(toolName: string, input: any, sessionId?: string): boolean { return this.strategy?.requires(toolName, input, sessionId) ?? false; }
 
-    setAllowRules(rules: string[]): void {
-        const seen = new Set<string>();
-        this.allowRules = (Array.isArray(rules) ? rules : []).map(rule => String(rule || '').trim()).filter(rule => rule && !seen.has(rule) && !!seen.add(rule)).slice(-50);
-    }
+    setSessionRules(sessionId: string, rules: ApprovalRule[]): void { this.strategy?.setSessionRules?.(sessionId, rules); }
+
+    getSessionRules(sessionId: string): ApprovalRule[] { return this.strategy?.getSessionRules?.(sessionId) ?? []; }
+
+    setAllowRules(rules: string[]): void { const seen = new Set<string>(); this.allowRules = (Array.isArray(rules) ? rules : []).map(rule => String(rule || '').trim()).filter(rule => rule && !seen.has(rule) && !!seen.add(rule)).slice(-50); }
 
     getAllowRules(): string[] { return [...this.allowRules]; }
 
     /** Exact tool name or a trailing-`*` prefix. */
-    private isAllowedByProjectRule(toolName: string): boolean {
-        return this.allowRules.some(pattern => pattern.endsWith('*')
-            ? toolName.startsWith(pattern.slice(0, -1))
-            : toolName === pattern);
-    }
+    private isAllowedByProjectRule(toolName: string): boolean { return this.allowRules.some(pattern => pattern.endsWith('*') ? toolName.startsWith(pattern.slice(0, -1)) : toolName === pattern); }
 
     async checkApproval(toolName: string, input: any, sessionId: string, force = false): Promise<ApprovalResult> {
-        if (!force && !this.requiresApproval(toolName, input)) {
+        if (!force && !this.requiresApproval(toolName, input, sessionId)) {
             return { decision: ApprovalDecision.NOT_REQUIRED };
         }
         // `auto-deny` rules keep precedence over project allow rules.
         const autoDenyRule = this.options?.autoDeny === true
-            || this.strategy?.autoDenies?.(toolName, input) === true;
+            || this.strategy?.autoDenies?.(toolName, input, sessionId) === true;
         if (!force && !autoDenyRule && this.isAllowedByProjectRule(toolName)) {
             return { decision: ApprovalDecision.NOT_REQUIRED };
         }
@@ -267,7 +266,7 @@ export class ToolApprovalManager extends ApprovalManager {
 
         const request = this.createRequest(toolName, input, sessionId);
         const autoDeny = this.options?.autoDeny === true
-            || this.strategy?.autoDenies?.(toolName, input) === true;
+            || this.strategy?.autoDenies?.(toolName, input, sessionId) === true;
         if (autoDeny) {
             // No human is asked: announce only the outcome. Publishing
             // `requested` here made hosts render an approval prompt/status
@@ -409,12 +408,9 @@ export class ToolApprovalManager extends ApprovalManager {
     }
 
     getPending(): ApprovalRequestView[] {
-        // Defensive sweep so clients never observe requests that expired while
-        // the event loop was busy; then present oldest requests first (FIFO).
+        // Defensive sweep; present oldest requests first (FIFO).
         this.sweepExpired();
-        return Array.from(this.pending.values())
-            .map(({ request }) => this.toRequestView(request))
-            .sort((a, b) => a.createdAt - b.createdAt);
+        return Array.from(this.pending.values()).map(({ request }) => this.toRequestView(request)).sort((a, b) => a.createdAt - b.createdAt);
     }
 
     /**

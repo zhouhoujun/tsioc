@@ -25,6 +25,7 @@ import { sendSessionMessageFromRpc } from './session-message';
 import { listCrossSessionMessages } from './session-message-list';
 import { answerSideQuestion } from './side-question';
 import { redoSessionTurn, undoSessionTurn } from './turn-undo';
+import { getSessionApprovalRules, setSessionApprovalRules } from './session-approval-rules';
 import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
 import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
@@ -206,6 +207,8 @@ export class AppRpcServer {
             case 'session.side_question': return answerSideQuestion(this as any, params, context);
             case 'session.undo_turn': return undoSessionTurn(this as any, params, context);
             case 'session.redo_turn': return redoSessionTurn(this as any, params, context);
+            case 'session.approval_rules.set': return setSessionApprovalRules(this as any, params, context);
+            case 'session.approval_rules.get': return getSessionApprovalRules(this as any, params, context);
             case 'session.delete':
                 return this.deleteSession(requireSessionId(params), context);
             case 'session.export':
@@ -639,9 +642,7 @@ export class AppRpcServer {
         return { workspace, entries: merged };
     }
 
-    private createCommandOutputRecordId(workspace: string, principalId: string, sessionId: string): string {
-        return `agent-ui:console-command-output:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}:${encodeURIComponent(sessionId)}`;
-    }
+    private createCommandOutputRecordId(workspace: string, principalId: string, sessionId: string): string { return `agent-ui:console-command-output:${encodeURIComponent(principalId)}:${encodeURIComponent(workspace)}:${encodeURIComponent(sessionId)}`; }
 
     private createCommandOutputStore(params: any, context: AppRpcRequestContext, sessionId: string): MemoryCommandOutputStore {
         const workspace = this.resolveHistoryRequestWorkspace(params);
@@ -649,9 +650,7 @@ export class AppRpcServer {
         return new MemoryCommandOutputStore(this.memory, this.createCommandOutputRecordId(workspace, principalId, sessionId), undefined, this.options.policy);
     }
 
-    private redactCommandOutputEntry(entry: AgentConsoleCommandOutputHistoryEntry): AgentConsoleCommandOutputHistoryEntry {
-        return redactCommandOutputEntry(entry);
-    }
+    private redactCommandOutputEntry(entry: AgentConsoleCommandOutputHistoryEntry): AgentConsoleCommandOutputHistoryEntry { return redactCommandOutputEntry(entry); }
 
     private async listCommandOutput(params: any, context: AppRpcRequestContext): Promise<any> {
         const sessionId = requireSessionId(params);

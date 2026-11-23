@@ -643,6 +643,22 @@ export class BuiltinToolsTest {
         expect(denyThenAllow.autoDenies('terminal', {})).toEqual(false);
     }
 
+    @Test('session rules override ask but never a workspace deny')
+    sessionRules() {
+        const strategy = new DefaultApprovalStrategy(['shell.exec']);
+        strategy.setSessionRules('s1', [{ category: 'sandbox', action: 'allow' }]);
+        expect(strategy.requires('terminal', {}, 's1')).toEqual(false);
+        expect(strategy.requires('terminal', {}, 's2')).toEqual(true);
+        expect(strategy.getSessionRules('s1')).toEqual([{ category: 'sandbox', action: 'allow' }]);
+
+        const deny = new DefaultApprovalStrategy([{ category: 'sandbox', action: 'deny' }]);
+        deny.setSessionRules('s1', [{ category: 'sandbox', action: 'allow' }]);
+        expect(deny.requires('terminal', {}, 's1')).toEqual(true);
+        expect(deny.autoDenies('terminal', {}, 's1')).toEqual(true);
+        deny.setSessionRules('s1', []);
+        expect(deny.getSessionRules('s1')).toEqual([]);
+    }
+
     @Test('a later string rule still asks after an earlier allow')
     orderedStringRuleAsks() {
         const strategy = new DefaultApprovalStrategy([

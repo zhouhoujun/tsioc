@@ -33,6 +33,8 @@ const AGENT_APP_RPC_METHOD_IDS = [
     'session.side_question',
     'session.undo_turn',
     'session.redo_turn',
+    'session.approval_rules.set',
+    'session.approval_rules.get',
     'session.delete',
     'session.export',
     'session.plan_mode.set',

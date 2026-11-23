@@ -15,8 +15,10 @@ const ACTIONS = ['ask', 'allow', 'deny'];
 
 export interface ApprovalRuleCommandHost {
     translator?: AgentUiTranslator | null;
-    state: { openTextOverlay(kind: string, lines: string[], visibleLines?: number): void };
+    state: { sessionId: string; openTextOverlay(kind: string, lines: string[], visibleLines?: number): void };
     options: any;
+    approvalManager?: any;
+    resolvedApprovalManager?: any;
     appRpc?: { request(method: string, params?: any, context?: any): Promise<any> } | null;
     notify(message: string): void;
     rpcRequestContext?(): any;
@@ -106,7 +108,12 @@ function showRules(host: ApprovalRuleCommandHost): void {
     );
 }
 
-export async function runApprovalRulesCommand(host: ApprovalRuleCommandHost, args: string): Promise<void> {    const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+export async function runApprovalRulesCommand(host: ApprovalRuleCommandHost, args: string): Promise<void> {
+    const tokens = String(args || '').trim().split(/\s+/).filter(Boolean);
+    if (String(tokens[0] || '').toLowerCase() === 'session') {
+        await runSessionApprovalRulesCommand(host, tokens.slice(1));
+        return;
+    }
     const verb = String(tokens[0] || '').toLowerCase();
     if (!verb || verb === 'list' || verb === 'status') {
         showRules(host);
@@ -145,6 +152,86 @@ export async function runApprovalRulesCommand(host: ApprovalRuleCommandHost, arg
         }
         await saveRules(host, [...DEFAULT_APPROVAL_REQUIRED_RULES]);
         host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandReset'));
+        return;
+    }
+    host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandUsage'));
+}
+
+function sessionRulesManager(host: ApprovalRuleCommandHost): any {
+    return host.resolvedApprovalManager ?? host.approvalManager;
+}
+
+async function readSessionRules(host: ApprovalRuleCommandHost): Promise<ApprovalRule[]> {
+    if (host.appRpc) {
+        const result = await host.appRpc.request(
+            'session.approval_rules.get',
+            { sessionId: host.state.sessionId },
+            host.rpcRequestContext?.()
+        ).catch(() => null);
+        return Array.isArray(result?.rules) ? result.rules : [];
+    }
+    return sessionRulesManager(host)?.getSessionRules?.(host.state.sessionId) ?? [];
+}
+
+async function saveSessionRules(host: ApprovalRuleCommandHost, rules: ApprovalRule[]): Promise<void> {
+    if (host.appRpc) {
+        await host.appRpc.request(
+            'session.approval_rules.set',
+            { sessionId: host.state.sessionId, rules },
+            host.rpcRequestContext?.()
+        ).catch(() => undefined);
+        return;
+    }
+    sessionRulesManager(host)?.setSessionRules?.(host.state.sessionId, rules);
+}
+
+function showSessionRules(host: ApprovalRuleCommandHost, rules: ApprovalRule[]): void {
+    const lines = rules.length
+        ? rules.map((rule, index) => `${index + 1}. ${describeApprovalRule(rule)}`)
+        : [formatAgentUiNotice(host.translator, 'approvalRulesCommandEmpty')];
+    lines.push(formatAgentUiNotice(host.translator, 'approvalRulesSessionHint'));
+    host.state.openTextOverlay(
+        formatAgentUiNotice(host.translator, 'approvalRulesSessionTitle'),
+        lines,
+        Math.min(24, Math.max(2, lines.length))
+    );
+}
+
+/** `/permissions rules session [add|remove|clear]` — scoped to the active tab. */
+async function runSessionApprovalRulesCommand(host: ApprovalRuleCommandHost, tokens: string[]): Promise<void> {
+    const verb = String(tokens[0] || '').toLowerCase();
+    const rules = await readSessionRules(host);
+    if (!verb || verb === 'list' || verb === 'status') {
+        showSessionRules(host, rules);
+        return;
+    }
+    if (verb === 'add') {
+        const parsed = parseApprovalRuleAdd(tokens.slice(1));
+        if ('error' in parsed) {
+            host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandInvalid', { reason: parsed.error }));
+            return;
+        }
+        await saveSessionRules(host, [...rules, parsed.rule]);
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandAdded', { rule: describeApprovalRule(parsed.rule) }));
+        return;
+    }
+    if (verb === 'remove' || verb === 'delete') {
+        const index = Math.floor(Number(tokens[1]) || 0) - 1;
+        if (index < 0 || index >= rules.length) {
+            host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandIndexMissing', { index: tokens[1] || '' }));
+            return;
+        }
+        const [removed] = rules.splice(index, 1);
+        await saveSessionRules(host, rules);
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandRemoved', {
+            index: index + 1,
+            rule: describeApprovalRule(removed)
+        }));
+        return;
+    }
+    if (verb === 'clear' || verb === 'reset') {
+        await saveSessionRules(host, []);
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesSessionCleared'));
         return;
     }
     host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandUsage'));

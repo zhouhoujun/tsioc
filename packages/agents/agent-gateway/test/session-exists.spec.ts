@@ -216,3 +216,51 @@ export class TurnUndoRpcTest {
         expect(thrown).toBeTruthy();
     }
 }
+
+@Suite('session approval rules RPC')
+export class SessionApprovalRulesRpcTest {
+    private build(manager: any) {
+        return new AppRpcServer(
+            { approvalManager: manager } as any,
+            new RandomUuidGenerator(),
+            { has: async () => true, get: async () => ({ sessionId: 'chat-1', messages: [] }) } as any,
+            {} as any,
+            {} as any,
+            { authorize: async () => 'anonymous' } as any,
+            { track: () => undefined } as any,
+            {} as any
+        );
+    }
+
+    @Test('sets and reads per-session approval rules')
+    async setAndGet() {
+        const rules = new Map<string, any[]>();
+        const manager = {
+            setSessionRules: (sessionId: string, next: any[]) => { rules.set(sessionId, next); },
+            getSessionRules: (sessionId: string) => rules.get(sessionId) || []
+        };
+        const server = this.build(manager);
+        const applied = await (server as any).dispatch('session.approval_rules.set', {
+            sessionId: 'chat-1',
+            rules: [{ category: 'sandbox', action: 'allow' }]
+        }, {});
+        expect(applied).toEqual({
+            sessionId: 'chat-1',
+            rules: [{ category: 'sandbox', action: 'allow' }]
+        });
+        expect(await (server as any).dispatch('session.approval_rules.get', { sessionId: 'chat-1' }, {}))
+            .toEqual({ sessionId: 'chat-1', rules: [{ category: 'sandbox', action: 'allow' }] });
+    }
+
+    @Test('requires a session id')
+    async requiresSession() {
+        const server = this.build({ setSessionRules: () => undefined, getSessionRules: () => [] });
+        let thrown: any = null;
+        try {
+            await (server as any).dispatch('session.approval_rules.get', {}, {});
+        } catch (error) {
+            thrown = error;
+        }
+        expect(thrown).toBeTruthy();
+    }
+}

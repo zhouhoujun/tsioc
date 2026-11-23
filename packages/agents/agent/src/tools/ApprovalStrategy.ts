@@ -42,6 +42,7 @@ const RESOURCE_KEYS = ['path', 'filePath', 'target', 'command', 'cmd', 'url', 'c
 
 export class DefaultApprovalStrategy implements ApprovalStrategy {
     private rules: ApprovalRule[];
+    private sessionRules = new Map<string, ApprovalRule[]>();
     readonly autoReview: boolean;
     /** Live opt-in flag: read on every decision so a settings toggle applies at once. */
     private readOnlyShell?: () => boolean;
@@ -55,8 +56,8 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         this.liveRules = liveRules;
     }
 
-    requires(toolName: string, input: any): boolean {
-        const decision = this.decide(toolName, input);
+    requires(toolName: string, input: any, sessionId?: string): boolean {
+        const decision = this.decide(toolName, input, sessionId);
         return decision === 'ask' || decision === 'deny';
     }
 
@@ -66,8 +67,21 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         return `Tool "${toolName}" requires approval.`;
     }
 
-    autoDenies(toolName: string, input: any): boolean {
-        return this.decide(toolName, input) === 'deny';
+    autoDenies(toolName: string, input: any, sessionId?: string): boolean {
+        return this.decide(toolName, input, sessionId) === 'deny';
+    }
+
+    setSessionRules(sessionId: string, rules: ApprovalRule[]): void {
+        const normalized = (Array.isArray(rules) ? rules : []).filter(Boolean);
+        if (normalized.length) {
+            this.sessionRules.set(sessionId, normalized);
+        } else {
+            this.sessionRules.delete(sessionId);
+        }
+    }
+
+    getSessionRules(sessionId: string): ApprovalRule[] {
+        return [...(this.sessionRules.get(sessionId) || [])];
     }
 
     /** Explain the last matching ordered rule without applying the shell scanner. */
@@ -75,7 +89,7 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         return this.explainRules(toolName, input);
     }
 
-    private explainRules(toolName: string, input: any): ApprovalRuleExplanation {
+    private explainRules(toolName: string, input: any, rulesOverride?: ApprovalRule[]): ApprovalRuleExplanation {
         const toolCategory = classifyApprovalCategory(toolName);
         let decision: 'ask' | 'allow' | 'deny' | undefined;
         // Object rules are explicit user intent; the scanner must not override
@@ -83,7 +97,7 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         let explicit = false;
         let matched: ApprovalRule | undefined;
         let matchedIndex: number | undefined;
-        const rules = this.liveRules?.() ?? this.rules;
+        const rules = rulesOverride ?? this.liveRules?.() ?? this.rules;
         for (let index = 0; index < rules.length; index++) {
             const rule = rules[index];
             if (typeof rule === 'string') {
@@ -113,9 +127,15 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         return { decision, explicit, ...(matched !== undefined ? { rule: matched, index: matchedIndex } : {}) };
     }
 
-    private decide(toolName: string, input: any): 'ask' | 'allow' | 'deny' | undefined {
+    private decide(toolName: string, input: any, sessionId?: string): 'ask' | 'allow' | 'deny' | undefined {
         const toolCategory = classifyApprovalCategory(toolName);
-        const explained = this.explainRules(toolName, input);
+        const base = this.explainRules(toolName, input);
+        // Workspace deny is a hard floor: a per-session allow must not bypass it.
+        if (base.decision === 'deny') {
+            return 'deny';
+        }
+        const session = sessionId ? this.sessionRules.get(sessionId) : undefined;
+        const explained = session?.length ? this.explainRules(toolName, input, session) : base;
         if (explained.decision === 'ask' && !explained.explicit && toolCategory === 'sandbox' && this.readOnlyShell?.()) {
             if (inspectShellCommand(approvalCommand(input)).readOnly) {
                 return 'allow';
