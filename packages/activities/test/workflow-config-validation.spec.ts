@@ -94,7 +94,7 @@ describe('Workflow config validation hooks', () => {
                             key: 'value',
                             label: 'Value',
                             type: 'text',
-                            validate: (value, { values }) =>
+                            validate: (value: any, { values }: any) =>
                                 values.key && !String(value ?? '').trim()
                                     ? `Value for ${values.key} is required.`
                                     : undefined

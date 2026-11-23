@@ -553,7 +553,19 @@ export class WorkflowDesigner {
         }
         this.commit(current => ({
             ...current,
-            nodes: current.nodes.map(item => item.id === nodeId ? { ...item, ...patch, id: item.id } : item),
+            nodes: current.nodes.map(item => {
+                if (item.id !== nodeId) {
+                    return item;
+                }
+                const merged = { ...item, ...patch, id: item.id };
+                // Config-driven ports follow the configuration; ids stay
+                // stable so surviving wires keep their endpoints.
+                const definition = this.registry.get(merged.type);
+                if (definition?.outputsFor) {
+                    merged.outputs = this.registry.outputsOf(merged, definition);
+                }
+                return merged;
+            }),
             metadata: { ...(current.metadata || {}), updatedAt: new Date().toISOString() }
         }));
         this.setMessage('workflow.message.nodeUpdated');
@@ -1704,8 +1716,32 @@ export class WorkflowDesigner {
         const graph = validateVisualWorkflow(this.definition);
         const configIssues = validateWorkflowConfigs(this.definition, this.registry)
             .map(issue => `${issue.nodeName} · ${issue.label}: ${issue.message}`);
-        const errors = [...graph.errors, ...configIssues];
+        const errors = [...graph.errors, ...this.danglingPortErrors(), ...configIssues];
         return { valid: errors.length === 0, errors };
+    }
+
+    /**
+     * Config-driven outputs can shrink when a rule is removed. Keep the wire
+     * (never delete user wiring silently) but report it so publishing names the
+     * exact port that needs reconnecting.
+     */
+    protected danglingPortErrors(): string[] {
+        const errors: string[] = [];
+        for (const connection of this.definition.connections || []) {
+            const source = this.definition.nodes.find(node => node.id === connection.sourceNodeId);
+            const definition = source ? this.registry.get(source.type) : undefined;
+            if (!source || !definition?.outputsFor) {
+                continue;
+            }
+            if ((source.outputs || []).some(port => port.id === connection.sourcePort)) {
+                continue;
+            }
+            errors.push(
+                `${source.name || source.id} · output "${connection.sourcePort}" no longer exists;`
+                + ' reconnect the wire or restore the matching rule.'
+            );
+        }
+        return errors;
     }
 
     markSaved(): void {
@@ -1852,13 +1888,18 @@ export class WorkflowDesigner {
         const nodes = (definition.nodes || []).map(node => {
             const registered = this.registry.get(node.type);
             const fallback = registered?.defaultConfig;
+            const config = { ...(fallback || {}), ...(node.config || {}) };
             return {
                 ...node,
                 position: node.position || { x: 0, y: 0 },
                 dimension: node.dimension || { width: 184, height: 64 },
                 inputs: node.inputs?.length ? node.inputs : (registered?.inputs || []).map(port => ({ ...port })),
-                outputs: node.outputs?.length ? node.outputs : (registered?.outputs || []).map(port => ({ ...port })),
-                config: { ...(fallback || {}), ...(node.config || {}) },
+                // Config-driven ports are recomputed on load so documents saved
+                // with the older fixed route list render the rules they have.
+                outputs: registered?.outputsFor
+                    ? registered.outputsFor(config)
+                    : node.outputs?.length ? node.outputs : (registered?.outputs || []).map(port => ({ ...port })),
+                config,
                 style: {
                     backgroundColor: registered?.color,
                     textColor: registered?.textColor || '#ffffff',

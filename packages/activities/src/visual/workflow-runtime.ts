@@ -2319,7 +2319,7 @@ export async function executeVisualNode(
             const checkAll = config.checkAll === true;
             const routes: number[] = [];
             let matchedAny = false;
-            for (let index = 0; index < rules.length && index < 8; index++) {
+            for (let index = 0; index < rules.length; index++) {
                 const operator = String(rules[index]?.operator || 'equals');
                 const matched = operator === 'else'
                     ? !matchedAny

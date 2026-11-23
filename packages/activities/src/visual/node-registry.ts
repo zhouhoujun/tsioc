@@ -63,6 +63,58 @@ const VALUE_PATH_PATTERN = '^\\$?\\.?[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za
 const DEFAULT_NODE_WIDTH = 184;
 const DEFAULT_NODE_HEIGHT = 64;
 
+/** Operator glyph used in generated output-port labels. */
+const ROUTE_OPERATOR_LABELS: Record<string, string> = {
+    'equals': '=',
+    'not-equals': '≠',
+    'contains': '∋',
+    'regex': '~',
+    'gt': '>',
+    'gte': '≥',
+    'lt': '<',
+    'lte': '≤',
+    'truthy': 'truthy',
+    'falsy': 'falsy',
+    'is-null': 'is null',
+    'is-not-null': 'is not null',
+    'is-empty': 'is empty',
+    'is-not-empty': 'is not empty',
+    'else': 'else'
+};
+
+/**
+ * One output port per rule plus the fallback and error ports. Port ids stay
+ * `route-N` so existing wires keep pointing at the same rule; labels summarize
+ * the rule so the canvas tooltip explains where a wire goes.
+ */
+function routingPorts(config: Record<string, any>): NodePort[] {
+    const rules = Array.isArray(config?.rules) ? config.rules : [];
+    const ports = rules.map((rule: any, index: number) => {
+        const operator = String(rule?.operator || 'equals');
+        const value = rule?.value;
+        const text = value === undefined || value === null || value === ''
+            ? ''
+            : typeof value === 'string'
+                ? value
+                : typeof value === 'object' && typeof (value as any).type === 'string'
+                    ? String((value as any).path ?? (value as any).value ?? '')
+                    : String(value);
+        const summary = operator === 'else'
+            ? 'else'
+            : `${ROUTE_OPERATOR_LABELS[operator] || operator}${text ? ` ${text}` : ''}`;
+        const label = `${index + 1} · ${summary}`;
+        return port(
+            `route-${index + 1}`,
+            `route-${index + 1}`,
+            'output',
+            label.length > 48 ? `${label.slice(0, 45)}…` : label
+        );
+    });
+    ports.push(port('default', 'default', 'output', 'Default (no rule matched)'));
+    ports.push(port('error', 'error', 'output', 'Error'));
+    return ports;
+}
+
 export function isWorkflowLocale(value: string | undefined): value is WorkflowLocale {
     return value === 'en' || value === 'zh-CN';
 }
@@ -287,24 +339,15 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
     {
         type: 'switch',
         label: 'Switch',
-        description: 'Route to one of eight outputs using ordered rules',
+        description: 'Route to one output per rule using ordered rules',
         category: 'flow',
         icon: '⇉',
         color: '#f97316',
         textColor: '#ffffff',
         inputs: [port('in', 'in', 'input', 'Input')],
-        outputs: [
-            port('route-1', 'route-1', 'output', '1'),
-            port('route-2', 'route-2', 'output', '2'),
-            port('route-3', 'route-3', 'output', '3'),
-            port('route-4', 'route-4', 'output', '4'),
-            port('route-5', 'route-5', 'output', '5'),
-            port('route-6', 'route-6', 'output', '6'),
-            port('route-7', 'route-7', 'output', '7'),
-            port('route-8', 'route-8', 'output', '8'),
-            port('default', 'default', 'output', 'Default'),
-            port('error', 'error', 'output', 'Error')
-        ],
+        // Ports are derived from `rules`; this fallback covers an empty rule
+        // list before the first edit.
+        outputs: routingPorts({ rules: [] }),
         fields: [
             configField({ key: 'field', label: 'Value path', type: 'text', typed: true, required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'result.status', description: 'Context value compared against each rule.' }),
             configField({
@@ -342,6 +385,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'checkAll', label: 'Check all rules', type: 'boolean', defaultValue: false })
         ],
         defaultConfig: { rules: [], checkAll: false },
+        outputsFor: routingPorts,
         validateConfig: validateRoutingRules
     },
     {
@@ -563,24 +607,15 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
     {
         type: 'router',
         label: 'Router',
-        description: 'Route to one of eight outputs using ordered rules',
+        description: 'Route to one output per rule using ordered rules',
         category: 'flow',
         icon: '⇶',
         color: '#d97706',
         textColor: '#ffffff',
         inputs: [port('in', 'in', 'input', 'Input')],
-        outputs: [
-            port('route-1', 'route-1', 'output', '1'),
-            port('route-2', 'route-2', 'output', '2'),
-            port('route-3', 'route-3', 'output', '3'),
-            port('route-4', 'route-4', 'output', '4'),
-            port('route-5', 'route-5', 'output', '5'),
-            port('route-6', 'route-6', 'output', '6'),
-            port('route-7', 'route-7', 'output', '7'),
-            port('route-8', 'route-8', 'output', '8'),
-            port('default', 'default', 'output', 'Default'),
-            port('error', 'error', 'output', 'Error')
-        ],
+        // Ports are derived from `rules`; this fallback covers an empty rule
+        // list before the first edit.
+        outputs: routingPorts({ rules: [] }),
         fields: [
             configField({ key: 'field', label: 'Value path', type: 'text', typed: true, required: true, pattern: VALUE_PATH_PATTERN, placeholder: 'result.status', description: 'Context value compared against each rule.' }),
             configField({
@@ -609,6 +644,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             })
         ],
         defaultConfig: { rules: [] },
+        outputsFor: routingPorts,
         validateConfig: validateRoutingRules
     },
     {
@@ -2211,6 +2247,7 @@ export class WorkflowNodeRegistry {
             throw new Error(`Unknown workflow node type: ${type}`);
         }
         const id = options.id || this.nextId(type);
+        const config = { ...(definition.defaultConfig || {}), ...(options.config || {}) };
         return {
             id,
             name: options.name || definition.label,
@@ -2225,8 +2262,8 @@ export class WorkflowNodeRegistry {
             },
             description: definition.description,
             inputs: definition.inputs.map(item => ({ ...item })),
-            outputs: definition.outputs.map(item => ({ ...item })),
-            config: { ...(definition.defaultConfig || {}), ...(options.config || {}) },
+            outputs: this.outputsOf({ type, config }, definition),
+            config,
             style: {
                 backgroundColor: definition.color,
                 textColor: definition.textColor || '#ffffff',
@@ -2238,6 +2275,20 @@ export class WorkflowNodeRegistry {
             pluginId: definition.pluginId,
             requiresServer: definition.requiresServer === true
         };
+    }
+
+    /**
+     * Effective output ports for a node: `outputsFor(config)` when the
+     * definition derives ports from configuration, otherwise the static list.
+     */
+    outputsOf(
+        node: { type: string; config?: Record<string, any> },
+        definition: WorkflowNodeDefinition | undefined = this.get(node.type)
+    ): NodePort[] {
+        if (definition?.outputsFor) {
+            return definition.outputsFor(node.config || {});
+        }
+        return (definition?.outputs || []).map(port => ({ ...port }));
     }
 
     /**

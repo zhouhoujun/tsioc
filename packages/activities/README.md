@@ -1147,6 +1147,22 @@ two hooks cover the rest, mirroring Node-RED's `validate(value, opt)`:
 Both surface through `validateWorkflowConfigs`, which the designer uses on
 save/publish, and are reported next to the field they belong to.
 
+**Config-driven output ports.** A definition may declare
+`outputsFor(config)`, and the node then owns one output per configured item
+instead of a fixed list:
+
+- `switch` and `router` derive `route-1..N` from `rules`, followed by `default`
+  (no rule matched) and `error`. Port labels summarize the rule (`2 · > 5`,
+  `3 · else`) so the canvas tooltip names the wire.
+- Ports are recomputed when the node is created, when its config changes in the
+  inspector, and when a document loads, so documents saved with the old fixed
+  eight-route list render the rules they actually have.
+- Surviving port ids stay stable, so existing wires keep their endpoints. When
+  a rule is removed, the wire is **kept** and `designer.validate()` reports the
+  exact missing output instead of silently deleting user wiring.
+- The runtime routes `route-N` for any rule count; there is no longer an
+  eight-rule ceiling.
+
 ### Workflow plugins
 
 `WorkflowPluginRegistry` installs custom nodes, services and lifecycle hooks:

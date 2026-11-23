@@ -746,6 +746,13 @@ export interface WorkflowNodeDefinition {
      */
     outputs: NodePort[];
     /**
+     * Derive output ports from the node configuration (one port per rule,
+     * branch, ...). Port ids must stay stable for surviving ports so wired
+     * connections keep their endpoints; called on create, config edits and
+     * document load.
+     */
+    outputsFor?: (config: Record<string, any>) => NodePort[];
+    /**
      * 配置字段
      * Config fields.
      */

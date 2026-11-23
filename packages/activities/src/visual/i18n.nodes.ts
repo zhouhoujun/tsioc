@@ -34,7 +34,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "switch": {
                 "label": "Switch",
-                "description": "Route to one of eight outputs using ordered rules"
+                "description": "Route to one output per rule using ordered rules"
             },
             "parallel": {
                 "label": "Parallel",
@@ -230,7 +230,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "router": {
                 "label": "Router",
-                "description": "Route to one of eight outputs using ordered rules"
+                "description": "Route to one output per rule using ordered rules"
             },
             "complete": {
                 "label": "Complete",
@@ -1824,7 +1824,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "switch": {
                 "label": "多路分支",
-                "description": "按顺序匹配规则并选择最多八个输出之一"
+                "description": "按顺序匹配规则，每条规则对应一个输出"
             },
             "parallel": {
                 "label": "并行",
@@ -2020,7 +2020,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "router": {
                 "label": "规则路由",
-                "description": "按顺序匹配规则并选择最多八个输出之一"
+                "description": "按顺序匹配规则，每条规则对应一个输出"
             },
             "complete": {
                 "label": "完成事件",
