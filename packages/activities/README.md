@@ -1060,9 +1060,19 @@ Fields marked `secret` (passwords, tokens, API keys, TLS keys/certificates)
 also produce an **advisory warning** when they hold a raw value: the secret
 works, but it travels with the document and every saved version. The publish
 dialog shows the count and `designer.validate()` returns it under `warnings`
-(errors still block, warnings never do), so switching to `{{credential:name}}`
-is a visible, non-blocking suggestion rather than a migration the editor
-performs behind the user's back.
+(errors still block, warnings never do).
+
+**Writes move secrets out of the document.** Like Node-RED, workflow files do
+not keep credentials. Every `designer.saveTo(...)` / `publishTo(...)` first runs
+`migrateInlineSecrets(...)`: each raw `secret` value is written to the host
+store under `<workflowId>.<nodeId>.<field>` (sanitized to `[A-Za-z0-9_.-]`) and
+replaced with `{{credential:<name>}}`. The editor adopts the migrated copy so
+the fields show the reference and the snapshot matches what was stored. The
+migration is lossless and idempotent: references/empty values are skipped, a
+store failure keeps the raw value and reports it in `result.failed` (the
+advisory warning stays), and hosts without `setCredential` keep the document
+untouched. Programmatic API writes are not rewritten server-side: the caller
+sends exactly what it means to store.
 
 Configuration, deployment and plugin changes are recorded in an audit trail:
 

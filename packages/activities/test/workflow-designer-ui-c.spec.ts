@@ -654,6 +654,15 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.validate().errors.join(' '))
             .toContain('Credential not found: gone');
 
+        // Saving moves raw secrets out of the document into the store.
+        ref.instance.designer.updateNodeConfig(node.id, {
+            password: 'hunter2'
+        });
+        await ref.instance.designer.saveTo(store, {});
+        expect(saved.some(([name, value]) => name.endsWith('.password') && value === 'hunter2')).toBe(true);
+        expect(ref.instance.designer.definition.nodes.find(item => item.id === node.id)?.config?.password)
+            .toContain('{{credential:');
+
         (root.querySelector('.workflow-credentials .workflow-publish-close') as any).click();
         await flush();
         expect(root.querySelector('.workflow-credentials')).toBeFalsy();

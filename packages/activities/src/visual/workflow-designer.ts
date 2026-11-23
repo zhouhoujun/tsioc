@@ -20,6 +20,7 @@ import { WorkflowNodeRegistry, WorkflowLocale } from './node-registry';
 import { hasCycle, validateVisualWorkflow } from './workflow-runtime';
 import { workflowNodeFrame } from './workflow-geometry';
 import { validateWorkflowConfigs } from './workflow-config-validation';
+import { migrateInlineSecrets, SecretMigrationResult } from './workflow-secrets';
 import { compileVisualWorkflow, CompiledWorkflow, layoutVisualWorkflow } from './workflow-compiler';
 import { VisualWorkflowService } from './VisualWorkflowService';
 import {
@@ -1576,6 +1577,34 @@ export class WorkflowDesigner {
         return JSON.stringify(this.definition, null, 2);
     }
 
+    /** Result of the last secret migration performed while writing. */
+    lastSecretMigration?: SecretMigrationResult;
+
+    /**
+     * Move raw secret values into the host credential store before writing.
+     *
+     * Node-RED never stores credentials in the flow file; a document may still
+     * carry inline values, so every write first replaces them with
+     * `{{credential:name}}`. Hosts without `setCredential` keep the document
+     * as-is (the inline-secret warning stays visible instead).
+     */
+    protected async migrateSecrets(
+        definition: VisualWorkflowDefinition,
+        store: WorkflowDefinitionStore | undefined
+    ): Promise<{ definition: VisualWorkflowDefinition; changed: boolean }> {
+        const setCredential = store?.setCredential;
+        if (typeof setCredential !== 'function') {
+            return { definition, changed: false };
+        }
+        const result = await migrateInlineSecrets(
+            definition,
+            this.registry,
+            (name, value) => setCredential.call(store, name, value)
+        );
+        this.lastSecretMigration = result;
+        return { definition: result.definition, changed: result.definition !== definition };
+    }
+
     async saveTo(
         store: WorkflowDefinitionStore,
         options: WorkflowStoreSaveOptions = {}
@@ -1588,6 +1617,17 @@ export class WorkflowDesigner {
                 ...definition,
                 id: `workflow_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
             };
+        }
+        // Secrets leave the document before it is written (Node-RED parity).
+        // Only adopt the migrated copy when the user did not edit during the
+        // await, otherwise the newer edits would be clobbered.
+        const original = this.definition;
+        const migration = await this.migrateSecrets(definition, store);
+        definition = migration.definition;
+        if (migration.changed && !options.as && !options.name && this.definition === original) {
+            // The editor now shows the references and the saved snapshot
+            // matches what the store received.
+            this.definition = definition;
         }
         const savedSnapshot = JSON.stringify(definition);
         // Nothing changed since the last successful save (for example `Ctrl+S`
@@ -1658,6 +1698,13 @@ export class WorkflowDesigner {
         if (typeof store.publish !== 'function') {
             this.setError('workflow.error.publishUnsupported');
             return undefined;
+        }
+        // Move inline secrets first so validation and the released version both
+        // see credential references.
+        const original = this.definition;
+        const migration = await this.migrateSecrets(original, store);
+        if (migration.changed && this.definition === original) {
+            this.definition = migration.definition;
         }
         const validation = this.validate();
         if (!validation.valid) {
