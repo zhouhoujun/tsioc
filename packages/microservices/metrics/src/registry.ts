@@ -15,6 +15,44 @@ interface HistogramData {
 }
 
 /**
+ * Default millisecond bucket boundaries. Second-based histograms derive their
+ * boundaries from these (`/1000`) so both views stay consistent.
+ */
+const DEFAULT_MS_BUCKETS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+
+function normalizeBuckets(buckets: number[]): number[] {
+    return [...new Set(buckets.filter(value => Number.isFinite(value) && value > 0))]
+        .sort((a, b) => a - b);
+}
+
+function deriveSecondsBuckets(msBuckets: number[]): number[] {
+    return normalizeBuckets(msBuckets.map(value => value / 1000));
+}
+
+/**
+ * Format a label set into a stable map key.
+ *
+ * Keys use code-unit ordering instead of `localeCompare` (which is an order of
+ * magnitude slower) and concat instead of `map().join()`; the resulting string
+ * is only used as an internal map key, so the exact ordering is irrelevant as
+ * long as it is deterministic for equal label sets.
+ */
+function formatLabelsKey(labels: Record<string, string>): string {
+    const keys = Object.keys(labels);
+    if (keys.length === 0) {
+        return '';
+    }
+    if (keys.length > 1) {
+        keys.sort();
+    }
+    let key = `${keys[0]}="${labels[keys[0]]}"`;
+    for (let i = 1; i < keys.length; i++) {
+        key += `,${keys[i]}="${labels[keys[i]]}"`;
+    }
+    return key;
+}
+
+/**
  * In-memory metrics registry.
  *
  * 内存指标注册中心，存储和管理所有指标。
@@ -27,7 +65,9 @@ export class MetricsRegistry extends MetricsCollector {
     private descriptions: Map<string, string> = new Map();
     private prefix: string = '';
     private defaultLabels: Record<string, string> = {};
-    private buckets: number[] = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+    private hasDefaultLabels = false;
+    private buckets: number[] = DEFAULT_MS_BUCKETS.slice();
+    private secondsBuckets: number[] = deriveSecondsBuckets(DEFAULT_MS_BUCKETS);
     private maxSeriesPerMetric = 1000;
     private droppedSeries = 0;
 
@@ -37,19 +77,31 @@ export class MetricsRegistry extends MetricsCollector {
             this.prefix = options.prefix;
         }
         if (options?.defaultLabels) {
-            this.defaultLabels = options.defaultLabels;
+            this.setDefaultLabels(options.defaultLabels);
         }
         if (options?.latencyBuckets?.length) {
             this.setBuckets(options.latencyBuckets);
+        }
+        if (options?.latencyBucketsSeconds?.length) {
+            this.setSecondsBuckets(options.latencyBucketsSeconds);
         }
         if (options?.maxSeriesPerMetric != null) {
             this.maxSeriesPerMetric = Math.max(1, options.maxSeriesPerMetric);
         }
     }
 
+    /**
+     * Set millisecond bucket boundaries. Second-based histograms re-derive
+     * their boundaries from these unless `setSecondsBuckets` is called.
+     */
     setBuckets(buckets: number[]): void {
-        this.buckets = [...new Set(buckets.filter(value => Number.isFinite(value) && value > 0))]
-            .sort((a, b) => a - b);
+        this.buckets = normalizeBuckets(buckets);
+        this.secondsBuckets = deriveSecondsBuckets(this.buckets);
+    }
+
+    /** Set second-based bucket boundaries explicitly (overrides derivation). */
+    setSecondsBuckets(buckets: number[]): void {
+        this.secondsBuckets = normalizeBuckets(buckets);
     }
 
     setMaxSeriesPerMetric(max: number): void {
@@ -65,7 +117,8 @@ export class MetricsRegistry extends MetricsCollector {
     }
 
     setDefaultLabels(labels: Record<string, string>): void {
-        this.defaultLabels = labels;
+        this.defaultLabels = labels ?? {};
+        this.hasDefaultLabels = Object.keys(this.defaultLabels).length > 0;
     }
 
     private getFullName(name: string): string {
@@ -73,11 +126,19 @@ export class MetricsRegistry extends MetricsCollector {
     }
 
     private getLabelsKey(labels?: Record<string, string>): string {
-        const allLabels = { ...this.defaultLabels, ...labels };
-        return Object.entries(allLabels)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([k, v]) => `${k}="${v}"`)
-            .join(',');
+        if (!this.hasDefaultLabels) {
+            return labels ? formatLabelsKey(labels) : '';
+        }
+        // Merge only when defaults exist; merging allocates a fresh object.
+        return formatLabelsKey(labels ? { ...this.defaultLabels, ...labels } : this.defaultLabels);
+    }
+
+    /**
+     * Bucket set for a metric. Second-based names use second boundaries so
+     * `recordDuration`'s `*_seconds` view stays meaningful.
+     */
+    private bucketsFor(fullName: string): number[] {
+        return fullName.endsWith('_seconds') ? this.secondsBuckets : this.buckets;
     }
 
     register(options: MetricOptions): void {
@@ -122,7 +183,7 @@ export class MetricsRegistry extends MetricsCollector {
         const fullName = this.getFullName(name);
         if (!this.histograms.has(fullName)) {
             this.histograms.set(fullName, {
-                buckets: this.buckets.slice(),
+                buckets: this.bucketsFor(fullName).slice(),
                 values: new Map()
             });
         }

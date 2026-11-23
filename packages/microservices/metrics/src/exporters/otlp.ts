@@ -98,7 +98,7 @@ export class OtlpHttpMetricsExporter implements MetricsExporter {
                 output.push(metric.type === 'counter'
                     ? {
                         name: metric.name,
-                        unit: '1',
+                        unit: metricUnit(metric.name),
                         description: metric.description,
                         sum: {
                             aggregationTemporality: 2,
@@ -108,7 +108,7 @@ export class OtlpHttpMetricsExporter implements MetricsExporter {
                     }
                     : {
                         name: metric.name,
-                        unit: '1',
+                        unit: metricUnit(metric.name),
                         description: metric.description,
                         gauge: { dataPoints: [dataPoint] }
                     });
@@ -173,7 +173,7 @@ export class OtlpHttpMetricsExporter implements MetricsExporter {
 
             return {
                 name: group.name,
-                unit: 'ms',
+                unit: metricUnit(group.name),
                 histogram: {
                     aggregationTemporality: 2,
                     dataPoints: [{
@@ -189,6 +189,23 @@ export class OtlpHttpMetricsExporter implements MetricsExporter {
             };
         });
     }
+}
+
+/**
+ * OTLP unit for a metric name. Duration metrics follow the Prometheus naming
+ * convention (`_seconds` / `_ms`); everything else is unit-less.
+ */
+function metricUnit(name: string): string {
+    if (name.endsWith('_seconds')) {
+        return 's';
+    }
+    if (name.endsWith('_bytes')) {
+        return 'By';
+    }
+    if (name.endsWith('_ms')) {
+        return 'ms';
+    }
+    return '1';
 }
 
 function toAttributes(labels?: Record<string, string>): Array<{ key: string; value: { stringValue: string } }> {

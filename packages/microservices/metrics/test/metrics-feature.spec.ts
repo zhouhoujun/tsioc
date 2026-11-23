@@ -78,6 +78,16 @@ describe('useMetrics feature', () => {
         expect(requestMetric.value).toBeGreaterThanOrEqual(1);
         expect(requestMetric.labels.app).toBe('test');
 
+        // The seconds histogram uses second boundaries (not the millisecond set)
+        // and its sum is the millisecond sum / 1000.
+        const secondsBucket = metrics.body.metrics.find((metric: any) =>
+            metric.name === 'myapp_http_request_duration_seconds_bucket' && metric.labels?.le === '0.005');
+        expect(secondsBucket).toBeTruthy();
+        const secondsSum = metrics.body.metrics.find((metric: any) => metric.name === 'myapp_http_request_duration_seconds_sum');
+        const millisecondsSum = metrics.body.metrics.find((metric: any) => metric.name === 'myapp_http_request_duration_ms_sum');
+        expect(secondsSum).toBeTruthy();
+        expect(Math.abs(secondsSum.value - millisecondsSum.value / 1000)).toBeLessThan(1e-6);
+
         const prometheus = await get(port, '/metrics');
         expect(prometheus.status).toBe(200);
         expect(String(prometheus.headers['content-type'])).toContain('text/plain');

@@ -110,6 +110,11 @@ export interface MetricsModuleOptions {
      */
     latencyBuckets?: number[];
     /**
+     * latency histogram buckets in seconds. Defaults to `latencyBuckets / 1000`
+     * so `*_seconds` metrics keep usable boundaries.
+     */
+    latencyBucketsSeconds?: number[];
+    /**
      * metrics endpoint path.
      */
     endpoint?: string;

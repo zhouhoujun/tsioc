@@ -54,6 +54,9 @@ export function useMetrics(options: MetricsModuleOptions = {}): ServiceFeatureFn
                     if (options.latencyBuckets?.length) {
                         registry.setBuckets(options.latencyBuckets);
                     }
+                    if (options.latencyBucketsSeconds?.length) {
+                        registry.setSecondsBuckets(options.latencyBucketsSeconds);
+                    }
                     if (options.maxSeriesPerMetric != null) {
                         registry.setMaxSeriesPerMetric(options.maxSeriesPerMetric);
                     }

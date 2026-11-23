@@ -77,6 +77,51 @@ describe('MetricsRegistry', () => {
         expect(reg.getMetrics().length).toBe(0);
     });
 
+    it('uses second buckets for *_seconds histograms', () => {
+        const reg = new MetricsRegistry();
+        reg.timing('http_request_duration_seconds', 1.5);
+        reg.timing('http_request_duration_ms', 1.5);
+        const metrics = reg.getMetrics();
+        const le = (name: string, bound: string) =>
+            metrics.find(m => m.name === `${name}_bucket` && m.labels?.le === bound)?.value;
+
+        // 1.5s falls into the seconds `le=2.5` bucket, not `le=1`.
+        expect(le('http_request_duration_seconds', '1')).toBe(0);
+        expect(le('http_request_duration_seconds', '2.5')).toBe(1);
+        // Millisecond histograms keep millisecond boundaries.
+        expect(le('http_request_duration_ms', '5')).toBe(1);
+        expect(le('http_request_duration_ms', '2.5')).toBeUndefined();
+    });
+
+    it('derives second buckets from custom millisecond buckets and honours overrides', () => {
+        const reg = new MetricsRegistry();
+        reg.setBuckets([10, 100]);
+        reg.timing('job_seconds', 0.05);
+        let metrics = reg.getMetrics();
+        expect(metrics.find(m => m.name === 'job_seconds_bucket' && m.labels?.le === '0.01')?.value).toBe(0);
+        expect(metrics.find(m => m.name === 'job_seconds_bucket' && m.labels?.le === '0.1')?.value).toBe(1);
+
+        reg.setSecondsBuckets([1, 5]);
+        reg.timing('other_seconds', 2);
+        metrics = reg.getMetrics();
+        expect(metrics.find(m => m.name === 'other_seconds_bucket' && m.labels?.le === '1')?.value).toBe(0);
+        expect(metrics.find(m => m.name === 'other_seconds_bucket' && m.labels?.le === '5')?.value).toBe(1);
+    });
+
+    it('emits cumulative bucket counts for multiple observations', () => {
+        const reg = new MetricsRegistry();
+        reg.setBuckets([10, 100]);
+        reg.histogram('cum_histogram', 5);
+        reg.histogram('cum_histogram', 50);
+        reg.histogram('cum_histogram', 150);
+        const metrics = reg.getMetrics();
+        const le = (bound: string) =>
+            metrics.find(m => m.name === 'cum_histogram_bucket' && m.labels?.le === bound)?.value;
+        expect(le('10')).toBe(1);
+        expect(le('100')).toBe(2);
+        expect(le('+Inf')).toBe(3);
+    });
+
     it('supports custom latency buckets', () => {
         const registry = new MetricsRegistry();
         registry.setBuckets([10, 100]);

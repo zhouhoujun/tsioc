@@ -42,6 +42,23 @@ describe('OtlpHttpMetricsExporter', () => {
         expect(histogram.histogram.dataPoints[0].bucketCounts).toEqual([1, 2, 1]);
     });
 
+    it('infers OTLP units from metric names', () => {
+        const exporter = new OtlpHttpMetricsExporter({ url: 'http://collector:4318/v1/metrics' });
+        const payload = exporter.toPayload([
+            { name: 'http_request_duration_seconds_bucket', type: 'histogram', value: 2, labels: { le: '1' } },
+            { name: 'http_request_duration_seconds_bucket', type: 'histogram', value: 3, labels: { le: '+Inf' } },
+            { name: 'http_request_duration_seconds_sum', type: 'histogram', value: 4.5, labels: {} },
+            { name: 'http_request_duration_seconds_count', type: 'histogram', value: 3, labels: {} },
+            { name: 'process_heap_bytes', type: 'gauge', value: 1024 }
+        ]);
+
+        const otlpMetrics = payload.resourceMetrics[0].scopeMetrics[0].metrics;
+        const seconds = otlpMetrics.find((metric: any) => metric.name === 'http_request_duration_seconds');
+        expect(seconds.unit).toBe('s');
+        expect(seconds.histogram.dataPoints[0].explicitBounds).toEqual([1]);
+        expect(otlpMetrics.find((metric: any) => metric.name === 'process_heap_bytes').unit).toBe('By');
+    });
+
     it('posts the payload to the OTLP endpoint', async () => {
         let captured: any;
         const exporter = new OtlpHttpMetricsExporter({
