@@ -260,6 +260,8 @@ export class AgentConsoleSessionData {
     notice = '';
     /** Recently executed slash commands, newest first (session-local). */
     recentCommands: string[] = [];
+    /** Per-session approval overrides restored from workspace settings. */
+    sessionApprovalRules: Record<string, import('@tsdi/agent').ApprovalRule[]> = {};
     /** Transient toast queue painted by the shared toast strip. */
     toasts: ToastEntry[] = [];
     pendingAttachments: AgentConsolePendingAttachment[] = [];

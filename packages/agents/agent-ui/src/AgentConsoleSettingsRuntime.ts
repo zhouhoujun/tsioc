@@ -117,6 +117,17 @@ export async function restoreSettings(self: any): Promise<void> {
         if (Array.isArray(persisted.recentCommands)) {
             self.state.recentCommands = [...persisted.recentCommands];
         }
+        if (persisted.sessionApprovalRules) {
+            self.state.sessionApprovalRules = { ...persisted.sessionApprovalRules };
+            const manager: any = self.resolvedApprovalManager;
+            for (const [sessionId, rules] of Object.entries(persisted.sessionApprovalRules)) {
+                try {
+                    manager?.setSessionRules?.(sessionId, rules as any);
+                } catch {
+                    // Optional runtime surface; the session keeps workspace rules.
+                }
+            }
+        }
         if (persisted.messageSelectionPageSize) {
             self.state.consoleOptions = {
                 ...self.state.consoleOptions,

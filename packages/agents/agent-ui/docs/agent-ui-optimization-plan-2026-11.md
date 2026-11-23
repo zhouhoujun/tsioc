@@ -248,7 +248,8 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 - `/inbox` 将 `waiting-input` / `blocked` 的后台 worker 也列为待办（显示问题/错误原因）；
 - `/permissions rules` 图形面板支持规则上移/下移、修改动作（string 规则可转为对象规则）、
   删除与重置，顺序即 last-match 执行顺序；`/permissions rules session` 提供 per-session 覆盖
-  （TUI 走 manager，Web/attach 走 `session.approval_rules.set/get`，工作区 deny 永远优先）；
+  （TUI 走 manager，Web/attach 走 `session.approval_rules.set/get`，工作区 deny 永远优先；
+  覆盖按 session 写入 `sessionApprovalRules`，重启后恢复）；
 - turn undo/redo 持久化：`AgentTurnHistoryEntity` 保存 turn 边界、redo 消息与文件快照栈，
   `TurnHistoryController` 懒加载/串行写回，重启后 `/undo`、`/redo` 与文件级撤销仍可用；
 - `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。

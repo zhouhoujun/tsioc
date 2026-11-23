@@ -180,7 +180,7 @@ function consoleStoreFile(workspace: string, name: string): string | null {
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean; defaultArchetype?: string; approvalRequireApproval?: ApprovalRule[] } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean; defaultArchetype?: string; approvalRequireApproval?: ApprovalRule[]; sessionApprovalRules?: Record<string, ApprovalRule[]> } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -198,6 +198,9 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
                 ? sanitizeApprovalAllowRules(parsed.approvalAllowRules)
                 : undefined,
             readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined,
+            sessionApprovalRules: parsed?.sessionApprovalRules && typeof parsed.sessionApprovalRules === 'object' && !Array.isArray(parsed.sessionApprovalRules)
+                ? parsed.sessionApprovalRules as Record<string, ApprovalRule[]>
+                : undefined,
             defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined,
             approvalRequireApproval: Array.isArray(parsed?.approvalRequireApproval)
                 ? sanitizeApprovalRequireApproval(parsed.approvalRequireApproval)

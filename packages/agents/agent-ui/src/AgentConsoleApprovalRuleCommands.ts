@@ -15,10 +15,15 @@ const ACTIONS = ['ask', 'allow', 'deny'];
 
 export interface ApprovalRuleCommandHost {
     translator?: AgentUiTranslator | null;
-    state: { sessionId: string; openTextOverlay(kind: string, lines: string[], visibleLines?: number): void };
+    state: {
+        sessionId: string;
+        sessionApprovalRules?: Record<string, ApprovalRule[]>;
+        openTextOverlay(kind: string, lines: string[], visibleLines?: number): void;
+    };
     options: any;
     approvalManager?: any;
     resolvedApprovalManager?: any;
+    persistSettings?(patch: Record<string, any>): Promise<void> | void;
     appRpc?: { request(method: string, params?: any, context?: any): Promise<any> } | null;
     notify(message: string): void;
     rpcRequestContext?(): any;
@@ -170,7 +175,9 @@ async function readSessionRules(host: ApprovalRuleCommandHost): Promise<Approval
         ).catch(() => null);
         return Array.isArray(result?.rules) ? result.rules : [];
     }
-    return sessionRulesManager(host)?.getSessionRules?.(host.state.sessionId) ?? [];
+    return sessionRulesManager(host)?.getSessionRules?.(host.state.sessionId)
+        ?? host.state.sessionApprovalRules?.[host.state.sessionId]
+        ?? [];
 }
 
 async function saveSessionRules(host: ApprovalRuleCommandHost, rules: ApprovalRule[]): Promise<void> {
@@ -180,9 +187,17 @@ async function saveSessionRules(host: ApprovalRuleCommandHost, rules: ApprovalRu
             { sessionId: host.state.sessionId, rules },
             host.rpcRequestContext?.()
         ).catch(() => undefined);
-        return;
+    } else {
+        sessionRulesManager(host)?.setSessionRules?.(host.state.sessionId, rules);
     }
-    sessionRulesManager(host)?.setSessionRules?.(host.state.sessionId, rules);
+    const map = { ...(host.state.sessionApprovalRules || {}) };
+    if (rules.length) {
+        map[host.state.sessionId] = rules;
+    } else {
+        delete map[host.state.sessionId];
+    }
+    host.state.sessionApprovalRules = map;
+    await host.persistSettings?.({ sessionApprovalRules: map });
 }
 
 function showSessionRules(host: ApprovalRuleCommandHost, rules: ApprovalRule[]): void {

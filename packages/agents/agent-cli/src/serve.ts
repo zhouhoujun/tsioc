@@ -112,10 +112,14 @@ export async function runAgentServe(options: AgentServeOptions = {}): Promise<an
         ]
     });
 
+    const approvalManager = app.get(AgentRuntime)?.approvalManager as any;
     if (Array.isArray(persistedConsole.approvalAllowRules) && persistedConsole.approvalAllowRules.length) {
         // `serve` owns the turn process; restore durable project allow rules
         // before the first browser/attach turn runs.
-        (app.get(AgentRuntime)?.approvalManager as any)?.setAllowRules?.(persistedConsole.approvalAllowRules);
+        approvalManager?.setAllowRules?.(persistedConsole.approvalAllowRules);
+    }
+    for (const [sessionId, rules] of Object.entries(persistedConsole.sessionApprovalRules || {})) {
+        approvalManager?.setSessionRules?.(sessionId, rules as any);
     }
     const gateway = app.get(GatewayServer) as GatewayServer;
     const address = gateway.address();

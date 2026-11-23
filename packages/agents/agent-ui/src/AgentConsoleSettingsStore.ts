@@ -31,6 +31,8 @@ export interface AgentConsoleSettingsData {
     approvalAllowRules?: string[];
     /** Palette recents, newest first (workspace-scoped). */
     recentCommands?: string[];
+    /** Per-session approval overrides keyed by session id (bounded). */
+    sessionApprovalRules?: Record<string, ApprovalRule[]>;
     messageSelectionPageSize?: 4 | 6 | 10;
     activityVerbosity?: 'low' | 'medium' | 'high';
     timelineMode?: boolean;
@@ -232,6 +234,7 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         approvalRequireApproval: sanitizeApprovalRequireApproval(parsed?.approvalRequireApproval),
         approvalAllowRules: sanitizeApprovalAllowRules(parsed?.approvalAllowRules),
         recentCommands: sanitizeRecentCommands(parsed?.recentCommands),
+        sessionApprovalRules: sanitizeSessionApprovalRules(parsed?.sessionApprovalRules),
         messageSelectionPageSize: [4, 6, 10].includes(Number(parsed?.messageSelectionPageSize))
             ? Number(parsed.messageSelectionPageSize) as 4 | 6 | 10
             : undefined,
@@ -317,6 +320,19 @@ export function sanitizeApprovalAllowRules(value: unknown): string[] | undefined
     return rules.length ? rules.slice(-50) : undefined;
 }
 
+/** Per-session overrides: valid rules only, bounded to the 20 most recent sessions. */
+export function sanitizeSessionApprovalRules(value: unknown): Record<string, ApprovalRule[]> | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return undefined;
+    }
+    const entries = Object.entries(value as Record<string, unknown>)
+        .filter(([sessionId]) => !!String(sessionId || '').trim())
+        .map(([sessionId, rules]) => [sessionId, sanitizeApprovalRequireApproval(rules) || []] as const)
+        .filter(([, rules]) => rules.length > 0)
+        .slice(-20);
+    return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
 /** Palette recents: slash commands only, trimmed, deduped, newest first, max 10. */
 export function sanitizeRecentCommands(value: unknown): string[] | undefined {
     if (!Array.isArray(value)) {
@@ -379,6 +395,7 @@ export class AgentConsoleSettingsStore {
             ...(data.defaultArchetype ? { defaultArchetype: data.defaultArchetype } : {}),
             ...(data.approvalRequireApproval?.length ? { approvalRequireApproval: data.approvalRequireApproval } : {}),
             ...(data.recentCommands?.length ? { recentCommands: data.recentCommands } : {}),
+            ...(data.sessionApprovalRules && Object.keys(data.sessionApprovalRules).length ? { sessionApprovalRules: data.sessionApprovalRules } : {}),
             ...(data.messageSelectionPageSize ? { messageSelectionPageSize: data.messageSelectionPageSize } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),
