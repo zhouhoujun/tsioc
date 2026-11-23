@@ -2,6 +2,7 @@ import { ActivityContext, ActivityResult } from '../../activities/Activity';
 import { IVisualWorkflowNode } from '../../visual/types';
 import { WorkflowPlugin } from '../types';
 import { decodePayload, encodePayload, errorResult, pluginField, pluginPort } from './shared';
+import { resolveUdpConfig } from '../../visual/workflow-runtime';
 
 export function createUdpPlugin(): WorkflowPlugin {
     return {
@@ -23,18 +24,29 @@ export function createUdpPlugin(): WorkflowPlugin {
                 pluginPort('error', 'error', 'output', 'Error')
             ],
             fields: [
-                pluginField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1' }),
-                pluginField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 9000, min: 1, max: 65535, step: 1 }),
+                pluginField({
+                    key: 'udp',
+                    label: 'Endpoint',
+                    type: 'select',
+                    reference: { kind: 'config-node', resource: 'udp-endpoint', create: true, edit: true }
+                }),
+                pluginField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1', visibleWhen: { key: 'udp', equals: '' } }),
+                pluginField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 9000, min: 1, max: 65535, step: 1, visibleWhen: { key: 'udp', equals: '' } }),
+                pluginField({ key: 'broadcast', label: 'Broadcast', type: 'boolean', defaultValue: false, visibleWhen: { key: 'udp', equals: '' } }),
                 pluginField({ key: 'payload', label: 'Payload', type: 'textarea', rows: 4, placeholder: 'datagram to send' }),
                 pluginField({ key: 'waitForReply', label: 'Wait for reply', type: 'boolean', defaultValue: true }),
                 pluginField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 30000, min: 0, step: 1000, unit: 'ms', group: 'Reliability' })
             ],
-            defaultConfig: { host: '127.0.0.1', port: 9000, waitForReply: true, timeout: 30000 },
+            defaultConfig: { udp: '', host: '127.0.0.1', port: 9000, broadcast: false, waitForReply: true, timeout: 30000 },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
                 const config = node.config || {};
                 try {
                     const dgram: any = await import('node:dgram');
+                    const settings = await resolveUdpConfig(config, context);
                     const socket = dgram.createSocket('udp4');
+                    if (settings.broadcast) {
+                        socket.setBroadcast(true);
+                    }
                     await new Promise<void>((resolve, reject) => {
                         socket.bind(() => resolve());
                         socket.once('error', (error: Error) => reject(error));
@@ -63,8 +75,8 @@ export function createUdpPlugin(): WorkflowPlugin {
                     await new Promise<void>((resolve, reject) => {
                         socket.send(
                             encodePayload(config.payload),
-                            Number(config.port) || 0,
-                            String(config.host || '127.0.0.1'),
+                            settings.port,
+                            settings.host,
                             (error?: Error) => error ? reject(error) : resolve()
                         );
                     });

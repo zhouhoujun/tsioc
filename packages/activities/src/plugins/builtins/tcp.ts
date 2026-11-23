@@ -2,6 +2,7 @@ import { ActivityContext, ActivityResult } from '../../activities/Activity';
 import { IVisualWorkflowNode } from '../../visual/types';
 import { WorkflowPlugin } from '../types';
 import { decodePayload, encodePayload, errorResult, pluginField, pluginPort } from './shared';
+import { resolveTcpConfig } from '../../visual/workflow-runtime';
 
 export function createTcpPlugin(): WorkflowPlugin {
     return {
@@ -23,19 +24,38 @@ export function createTcpPlugin(): WorkflowPlugin {
                 pluginPort('error', 'error', 'output', 'Error')
             ],
             fields: [
-                pluginField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1' }),
-                pluginField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 9000, min: 1, max: 65535, step: 1 }),
+                pluginField({
+                    key: 'tcp',
+                    label: 'Endpoint',
+                    type: 'select',
+                    reference: { kind: 'config-node', resource: 'tcp-endpoint', create: true, edit: true }
+                }),
+                pluginField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1', visibleWhen: { key: 'tcp', equals: '' } }),
+                pluginField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 9000, min: 1, max: 65535, step: 1, visibleWhen: { key: 'tcp', equals: '' } }),
                 pluginField({ key: 'payload', label: 'Payload', type: 'textarea', rows: 4, placeholder: 'message to send' }),
                 pluginField({ key: 'waitForReply', label: 'Wait for reply', type: 'boolean', defaultValue: true }),
                 pluginField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 30000, min: 0, step: 1000, unit: 'ms', group: 'Reliability' })
             ],
-            defaultConfig: { host: '127.0.0.1', port: 9000, waitForReply: true, timeout: 30000 },
+            defaultConfig: { tcp: '', host: '127.0.0.1', port: 9000, waitForReply: true, timeout: 30000 },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
                 const config = node.config || {};
                 try {
                     const net: any = await import('node:net');
+                    const tls: any = await import('node:tls');
                     const timeout = Math.max(0, Number(config.timeout) || 0);
-                    const socket = net.connect({ host: String(config.host || '127.0.0.1'), port: Number(config.port) || 0 });
+                    const settings = await resolveTcpConfig(config, context);
+                    const tlsSettings = settings.tls;
+                    const socket = tlsSettings && (tlsSettings.cert || tlsSettings.key)
+                        ? tls.connect({
+                            host: settings.host,
+                            port: settings.port,
+                            servername: tlsSettings.servername || settings.host,
+                            rejectUnauthorized: tlsSettings.rejectUnauthorized !== false,
+                            ca: tlsSettings.ca,
+                            cert: tlsSettings.cert,
+                            key: tlsSettings.key
+                        })
+                        : net.connect({ host: settings.host, port: settings.port });
                     await new Promise<void>((resolve, reject) => {
                         socket.once('connect', () => resolve());
                         socket.once('error', (error: Error) => reject(error));

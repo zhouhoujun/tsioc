@@ -140,7 +140,13 @@ describe('workflow plugins', () => {
         const tcpPort = (tcpServer.address() as net.AddressInfo).port;
         try {
             const tcp = createTcpPlugin().nodes!.find(node => node.type === 'tcp-request')!;
-            const tcpResult = await tcp.execute!({ id: 'tcp_1', type: 'tcp-request', config: { host: '127.0.0.1', port: tcpPort, payload: 'hi', waitForReply: true, timeout: 2000 } } as any, {});
+            const tcpResult = await tcp.execute!({
+                id: 'tcp_1',
+                type: 'tcp-request',
+                config: { tcp: 'tcp_1', payload: 'hi', waitForReply: true, timeout: 2000 }
+            } as any, {
+                configNodes: { tcp_1: { host: '127.0.0.1', port: tcpPort } }
+            } as any);
             expect(tcpResult.success).toBe(true);
             expect(tcpResult.data?.reply).toBe('echo:hi');
         } finally {
@@ -155,7 +161,13 @@ describe('workflow plugins', () => {
         const udpPort = (udpServer.address() as any).port;
         try {
             const udp = createUdpPlugin().nodes!.find(node => node.type === 'udp-request')!;
-            const udpResult = await udp.execute!({ id: 'udp_1', type: 'udp-request', config: { host: '127.0.0.1', port: udpPort, payload: 'hi', waitForReply: true, timeout: 2000 } } as any, {});
+            const udpResult = await udp.execute!({
+                id: 'udp_1',
+                type: 'udp-request',
+                config: { udp: 'udp_1', payload: 'hi', waitForReply: true, timeout: 2000 }
+            } as any, {
+                configNodes: { udp_1: { host: '127.0.0.1', port: udpPort } }
+            } as any);
             expect(udpResult.success).toBe(true);
             expect(udpResult.data?.reply).toBe('echo:hi');
         } finally {

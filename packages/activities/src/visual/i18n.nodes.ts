@@ -689,6 +689,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "Timeout"
             },
             "tcp-request": {
+                "tcp": "Endpoint",
                 "host": "Host",
                 "port": "Port",
                 "payload": "Payload",
@@ -696,9 +697,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "Timeout"
             },
             "udp-request": {
+                "udp": "Endpoint",
                 "host": "Host",
                 "port": "Port",
                 "payload": "Payload",
+                "broadcast": "Broadcast",
                 "waitForReply": "Wait for reply",
                 "timeout": "Timeout"
             },
@@ -2402,6 +2405,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超时"
             },
             "tcp-request": {
+                "tcp": "端点",
                 "host": "主机",
                 "port": "端口",
                 "payload": "数据",
@@ -2409,9 +2413,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超时"
             },
             "udp-request": {
+                "udp": "端点",
                 "host": "主机",
                 "port": "端口",
                 "payload": "数据",
+                "broadcast": "广播",
                 "waitForReply": "等待回复",
                 "timeout": "超时"
             },
