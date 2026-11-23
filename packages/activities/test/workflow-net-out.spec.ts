@@ -126,7 +126,8 @@ describe('Workflow outbound transports', () => {
                 url: `ws://127.0.0.1:${port}`,
                 payload: 'payload',
                 timeout: 3000,
-                headers: { 'x-flow': 'approved' }
+                headers: { 'x-flow': 'approved' },
+                subprotocol: 'chat'
             }), { payload: { ok: true } });
             expect(result.success).toBe(true);
             await withTimeout(new Promise<void>(resolve => {
@@ -135,6 +136,7 @@ describe('Workflow outbound transports', () => {
             }));
             expect(received[0]).toBe('{"ok":true}');
             expect(headers[0]?.['x-flow']).toBe('approved');
+            expect(String(headers[0]?.['sec-websocket-protocol'] || '')).toContain('chat');
         } finally {
             await new Promise<void>(resolve => server.close(() => resolve()));
         }
@@ -265,6 +267,7 @@ describe('Workflow outbound transports', () => {
                     id: 'ws_1',
                     config: {
                         url: 'ws://shared:9000/socket',
+                        subprotocol: 'chat',
                         headers: { 'x-endpoint': 'yes' }
                     }
                 }),
@@ -280,6 +283,7 @@ describe('Workflow outbound transports', () => {
         expect(sockets[0]).toMatchObject({
             url: 'ws://shared:9000/socket',
             payload: 'hello',
+            subprotocol: 'chat',
             headers: { 'x-endpoint': 'yes' }
         });
     });

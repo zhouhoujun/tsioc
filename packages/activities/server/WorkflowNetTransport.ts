@@ -116,7 +116,11 @@ export class WorkflowNetTransport implements OnDestroy {
             if (message.tls && Object.keys(message.tls).length) {
                 options.tls = message.tls;
             }
-            const socket = new WebSocket(String(message.url), options);
+            const socket = new WebSocket(
+                String(message.url),
+                message.subprotocol ? [message.subprotocol] : undefined,
+                options
+            );
             const timeoutMs = Math.max(0, Number(message.timeoutMs) || 0);
             const timer = timeoutMs
                 ? setTimeout(() => {

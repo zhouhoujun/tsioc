@@ -875,8 +875,9 @@ through host transports:
   a `websocket` listener config node, broadcasts to every client connected to
   that shared listener. Broadcasting reports the client count and fails with a
   clear error when the listener is not running. Client mode accepts custom
-  handshake `headers`, or a shared `websocket-client` endpoint (URL, headers,
-  TLS) used by both `websocket-out` and the `websocket-request` plugin.
+  handshake `headers` and `subprotocol`, or a shared `websocket-client`
+  endpoint (URL, headers, subprotocol, TLS) used by both `websocket-out` and
+  the `websocket-request` plugin.
 - `udp-out` can enable socket broadcast for datagrams sent to broadcast
   addresses.
 
@@ -898,7 +899,7 @@ values, and hands the result to the transport. A missing id fails the node with
 `TLS config not found: <id>`.
 
 `websocket` is a config node too: it describes one WebSocket listener
-(`host`, `port`, `path` and an optional `tls` reference). `websocket-in` nodes
+(`host`, `port`, `path`, optional subprotocol and TLS). `websocket-in` nodes
 that reference it subscribe to the shared server; `websocket-out` nodes that
 reference it broadcast to the connected clients instead of opening a new
 client connection.

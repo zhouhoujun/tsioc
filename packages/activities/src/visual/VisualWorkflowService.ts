@@ -164,6 +164,7 @@ export interface WorkflowWebSocketSendRequest {
     payload: string;
     timeoutMs?: number;
     headers?: Record<string, string>;
+    subprotocol?: string;
     tls?: WorkflowTlsOptions;
 }
 

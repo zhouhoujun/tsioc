@@ -855,6 +855,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [],
         fields: [
             configField({ key: 'url', label: 'URL', type: 'url', required: true, placeholder: 'ws://host:port/path' }),
+            configField({ key: 'subprotocol', label: 'Subprotocol', type: 'text' }),
             configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3 }),
             configField({
                 key: 'tls',
@@ -1026,6 +1027,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 reference: { kind: 'config-node', resource: 'websocket-client', create: true, edit: true }
             }),
             configField({ key: 'url', label: 'URL', type: 'url', placeholder: 'ws://host:port/path', description: 'ws:// or wss:// endpoint.', visibleWhen: { key: 'wsClient', equals: '' } }),
+            configField({ key: 'subprotocol', label: 'Subprotocol', type: 'text', visibleWhen: { key: 'wsClient', equals: '' } }),
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 5000, min: 0, step: 1000, unit: 'ms' }),
             configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3, visibleWhen: { key: 'wsClient', equals: '' } }),
@@ -1145,6 +1147,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0' }),
             configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
             configField({ key: 'path', label: 'Path', type: 'text', pattern: '^$|^\/[^\s]*$' }),
+            configField({ key: 'subprotocol', label: 'Subprotocol', type: 'text' }),
             configField({
                 key: 'tls',
                 label: 'TLS config',

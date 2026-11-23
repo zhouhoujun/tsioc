@@ -46,7 +46,10 @@ export function createWebSocketPlugin(): WorkflowPlugin {
                     if (!settings.url) {
                         throw new Error('WebSocket request needs a URL or a shared client endpoint.');
                     }
-                    const socket = new WebSocket(settings.url, {
+                    const socket = new WebSocket(
+                        settings.url,
+                        settings.subprotocol ? [settings.subprotocol] : undefined,
+                        {
                         headers: settings.headers,
                         ...(settings.tls ? {
                             ca: settings.tls.ca,

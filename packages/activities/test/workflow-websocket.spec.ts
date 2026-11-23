@@ -27,9 +27,9 @@ async function freePort(): Promise<number> {
     return address.port;
 }
 
-function open(url: string): Promise<WebSocket> {
+function open(url: string, protocols?: string[]): Promise<WebSocket> {
     return withTimeout(new Promise<WebSocket>((resolve, reject) => {
-        const socket = new WebSocket(url);
+        const socket = new WebSocket(url, protocols);
         socket.once('open', () => resolve(socket));
         socket.once('error', reject);
     }));
@@ -64,14 +64,14 @@ describe('shared WebSocket listeners', () => {
         const first: string[] = [];
         const second: string[] = [];
         const firstHandle = await registry.listen(
-            { host: '127.0.0.1', port: 0, path: '/shared' },
+            { host: '127.0.0.1', port: 0, path: '/shared', subprotocol: 'chat' },
             message => {
                 first.push(message.data);
                 message.reply?.('ack');
             }
         );
         const secondHandle = await registry.listen(
-            { host: '127.0.0.1', port: 0, path: '/shared' },
+            { host: '127.0.0.1', port: 0, path: '/shared', subprotocol: 'chat' },
             message => {
                 second.push(message.data);
             }
@@ -79,7 +79,8 @@ describe('shared WebSocket listeners', () => {
         expect(secondHandle.port).toEqual(firstHandle.port);
         expect(registry.listenerCount).toEqual(1);
 
-        const client = await open(`ws://127.0.0.1:${firstHandle.port}/shared`);
+        const client = await open(`ws://127.0.0.1:${firstHandle.port}/shared`, ['chat']);
+        expect(client.protocol).toBe('chat');
         try {
             const reply = nextMessage(client);
             client.send('hello');

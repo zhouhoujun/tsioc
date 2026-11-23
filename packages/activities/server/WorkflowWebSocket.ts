@@ -8,6 +8,7 @@ export interface WorkflowWebSocketListenerOptions {
     host: string;
     port: number;
     path?: string;
+    subprotocol?: string;
     tls?: WorkflowTlsOptions;
 }
 
@@ -43,6 +44,7 @@ function normalizeListener(options: WorkflowWebSocketListenerOptions): WorkflowW
         host: String(options?.host || '').trim() || '0.0.0.0',
         port: Math.max(0, Math.min(65535, Number(options?.port) || 0)),
         path: path || undefined,
+        subprotocol: String(options?.subprotocol || '').trim() || undefined,
         tls: options?.tls && Object.keys(options.tls).length ? options.tls : undefined
     };
 }
@@ -54,6 +56,7 @@ export function webSocketListenerKey(options: WorkflowWebSocketListenerOptions):
         normalized.host,
         normalized.port,
         normalized.path || '',
+        normalized.subprotocol || '',
         normalized.tls ? JSON.stringify(normalized.tls) : ''
     ].join('|');
 }
@@ -183,7 +186,13 @@ export class WorkflowWebSocketRegistry {
         });
         const address = httpServer.address();
         const port = typeof address === 'object' && address ? address.port : options.port;
-        const webSocketServer = new WebSocketServer({ server: httpServer, path: options.path });
+        const webSocketServer = new WebSocketServer({
+            server: httpServer,
+            path: options.path,
+            handleProtocols: options.subprotocol
+                ? (protocols: Set<string>) => protocols.has(options.subprotocol!) ? options.subprotocol! : false
+                : undefined
+        });
         const shared: SharedListener = {
             key,
             options,

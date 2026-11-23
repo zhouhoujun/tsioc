@@ -152,6 +152,7 @@ export interface WorkflowWebSocketListenerSettings {
     host: string;
     port: number;
     path?: string;
+    subprotocol?: string;
     tls?: {
         ca?: string;
         cert?: string;
@@ -189,11 +190,13 @@ export async function resolveWebSocketListenerConfig(
     const host = String(await resolveCredentialValue(pick('host'), context) ?? '').trim() || '0.0.0.0';
     const port = Math.max(0, Math.min(65535, Number(pick('port')) || 0));
     const pathValue = String(await resolveCredentialValue(pick('path'), context) ?? '').trim();
+    const subprotocol = String(pick('subprotocol') || '').trim();
     const tlsId = String(pick('tls') || '').trim();
     return {
         host,
         port,
         path: pathValue || undefined,
+        subprotocol: subprotocol || undefined,
         tls: tlsId ? await resolveTlsOptions({ tls: tlsId }, context) : undefined,
         listenerId: listenerId || undefined
     };
@@ -322,6 +325,7 @@ export async function resolveUdpConfig(
 export interface WorkflowWebSocketClientSettings {
     url: string;
     headers?: Record<string, string>;
+    subprotocol?: string;
     tls?: { ca?: string; cert?: string; key?: string; servername?: string; rejectUnauthorized?: boolean };
     clientId?: string;
 }
@@ -342,6 +346,7 @@ export async function resolveWebSocketClientConfig(
         return {
             url: String(await resolveCredentialValue(config?.url, context) ?? '').trim(),
             headers: headers && typeof headers === 'object' && !Array.isArray(headers) ? headers : undefined,
+            subprotocol: String(config?.subprotocol || '').trim() || undefined,
             tls: config?.tls ? await resolveTlsOptions(config, context) : undefined
         };
     }
@@ -349,6 +354,7 @@ export async function resolveWebSocketClientConfig(
     return {
         url: String(await resolveCredentialValue(shared.url, context) ?? '').trim(),
         headers: headers && typeof headers === 'object' && !Array.isArray(headers) ? headers : undefined,
+        subprotocol: String(shared.subprotocol || '').trim() || undefined,
         tls: shared.tls ? await resolveTlsOptions({ tls: shared.tls }, context) : undefined,
         clientId
     };
@@ -1530,6 +1536,7 @@ export async function executeVisualNode(
                         payload: body,
                         timeoutMs,
                         headers: settings.headers,
+                        subprotocol: settings.subprotocol,
                         tls: settings.tls
                     });
                     return { success: true, data: { nodeId: node.id, transport, url, bytes: body.length } };

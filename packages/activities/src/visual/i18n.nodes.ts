@@ -860,6 +860,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "url": "URL",
                 "payload": "Payload path",
                 "timeout": "Timeout",
+                "subprotocol": "Subprotocol",
                 "headers": "Headers",
                 "tls": "TLS config"
             },
@@ -907,6 +908,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "websocket-client": {
                 "url": "URL",
+                "subprotocol": "Subprotocol",
                 "headers": "Headers",
                 "tls": "TLS config"
             },
@@ -914,6 +916,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "Host",
                 "port": "Port",
                 "path": "Path",
+                "subprotocol": "Subprotocol",
                 "tls": "TLS config"
             },
             "file-in": {
@@ -2634,6 +2637,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "url": "URL",
                 "payload": "载荷路径",
                 "timeout": "超时",
+                "subprotocol": "子协议",
                 "headers": "请求头",
                 "tls": "TLS 配置"
             },
@@ -2681,6 +2685,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "websocket-client": {
                 "url": "URL",
+                "subprotocol": "子协议",
                 "headers": "请求头",
                 "tls": "TLS 配置"
             },
@@ -2688,6 +2693,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "主机",
                 "port": "端口",
                 "path": "路径",
+                "subprotocol": "子协议",
                 "tls": "TLS 配置"
             },
             "file-in": {
