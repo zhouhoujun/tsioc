@@ -608,7 +608,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 69 registered node types by label, description or type,
+- searchable palette: filter 70 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -900,6 +900,11 @@ client connection.
 `udp-in` / `udp-out` reference them through the Endpoint picker. A referenced
 endpoint owns those fields; clear the reference to use the inline overrides.
 TCP listeners use the referenced TLS certificate/key when present.
+
+`http` is a shared request endpoint: base URL, default headers and
+basic/bearer auth. An `http-request` that references it resolves relative URL
+paths against the base URL, merges node headers over endpoint headers and uses
+the endpoint credentials (absolute node URLs still win).
 
 ### HTTP in security and uploads
 

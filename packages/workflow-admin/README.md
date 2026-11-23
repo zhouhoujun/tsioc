@@ -11,7 +11,7 @@ the server-side Activity library or protocol plugins.
 
 ## Features
 
-- drag/click palette with 69 registered node types and component search,
+- drag/click palette with 70 registered node types and component search,
 - SVG-native canvas with pointer pan, `Ctrl` + wheel zoom-at-cursor, fit view,
   auto layout, grid snapping, click-to-connect and forgiving node-body drops,
 - node inspector rendered by the JSON-configured shared `dynamic-form`

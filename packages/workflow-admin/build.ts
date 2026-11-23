@@ -56,9 +56,10 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // literals instead of JSON strings: repeated plan keys add raw bytes but are
 // highly compressible, and parsing them at startup is skipped. The gzip
 // budget below stays the transfer gate. Raised to 1150 KB for the standalone
-// Plugins / Sessions / Audit pages and 1160 KB for mustache sections/YAML
-// template output; the gzip budget remains the transfer gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_160_000);
+// Plugins / Sessions / Audit pages, 1160 KB for mustache sections/YAML
+// template output, and 1175 KB for shared protocol endpoints; the gzip budget
+// remains the transfer gate.
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_175_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
@@ -71,8 +72,8 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_160_000);
 // 264 KB for the toast strip; keeps ~2 KB of headroom.
 // Raised to 272 KB (2026-11) with the AOT plan payload (object literals,
 // ~5.5 KB gzip) and the Node-RED parity panels. Raised to 278 KB for the
-// standalone admin pages; keeps ~6 KB of headroom.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 278_000);
+// standalone admin pages and shared protocol endpoints; keeps ~4 KB of headroom.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 283_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

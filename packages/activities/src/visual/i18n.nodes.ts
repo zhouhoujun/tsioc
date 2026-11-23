@@ -312,6 +312,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "TLS config",
                 "description": "Reusable TLS options for outbound nodes"
             },
+            "http": {
+                "label": "HTTP endpoint",
+                "description": "Shared base URL, headers and authentication for HTTP requests"
+            },
             "tcp": {
                 "label": "TCP endpoint",
                 "description": "Shared TCP endpoint for TCP nodes"
@@ -436,6 +440,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "level": "Level"
             },
             "http-request": {
+                "http": "Endpoint",
                 "url": "Request URL",
                 "method": "Method",
                 "headers": "Headers (JSON)",
@@ -848,6 +853,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "birthQos": "Birth QoS",
                 "birthRetain": "Birth retain"
             },
+            "http": {
+                "baseUrl": "Base URL",
+                "headers": "Headers",
+                "authType": "Authentication",
+                "username": "Username",
+                "password": "Password",
+                "token": "Bearer token"
+            },
             "tcp": {
                 "host": "Host",
                 "port": "Port",
@@ -1117,6 +1130,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "http-response": {
                 "headers": "{ \"x-flow\": \"done\" }",
                 "body": "payload"
+            },
+            "http": {
+                "baseUrl": "https://api.example.com"
             },
             "tcp-in": {
                 "host": "0.0.0.0",
@@ -2028,6 +2044,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "TLS 配置",
                 "description": "供出站节点复用的 TLS 选项"
             },
+            "http": {
+                "label": "HTTP 端点",
+                "description": "供 HTTP 请求节点共用的基础地址、请求头与认证"
+            },
             "tcp": {
                 "label": "TCP 端点",
                 "description": "供 TCP 节点共用的连接端点"
@@ -2152,6 +2172,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "level": "级别"
             },
             "http-request": {
+                "http": "端点",
                 "url": "请求地址",
                 "method": "方法",
                 "headers": "请求头（JSON）",
@@ -2564,6 +2585,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "birthQos": "上线 QoS",
                 "birthRetain": "上线保留"
             },
+            "http": {
+                "baseUrl": "基础地址",
+                "headers": "请求头",
+                "authType": "认证方式",
+                "username": "用户名",
+                "password": "密码",
+                "token": "Bearer Token"
+            },
             "tcp": {
                 "host": "主机",
                 "port": "端口",
@@ -2817,6 +2846,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "http-response": {
                 "headers": "{ \"x-flow\": \"done\" }",
                 "body": "payload"
+            },
+            "http": {
+                "baseUrl": "https://api.example.com"
             },
             "tcp-in": {
                 "host": "0.0.0.0",

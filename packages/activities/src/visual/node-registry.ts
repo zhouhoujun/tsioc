@@ -1022,6 +1022,38 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { rejectUnauthorized: true }
     },
     {
+        type: 'http',
+        label: 'HTTP endpoint',
+        description: 'Shared base URL, headers and authentication for HTTP requests',
+        category: 'advanced',
+        configNode: true,
+        resource: 'http-endpoint',
+        icon: '⇄',
+        color: '#6366f1',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [],
+        fields: [
+            configField({ key: 'baseUrl', label: 'Base URL', type: 'url', required: true, placeholder: 'https://api.example.com' }),
+            configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3 }),
+            configField({
+                key: 'authType',
+                label: 'Authentication',
+                type: 'select',
+                defaultValue: 'none',
+                options: [
+                    { label: 'None', value: 'none' },
+                    { label: 'Basic', value: 'basic' },
+                    { label: 'Bearer token', value: 'bearer' }
+                ]
+            }),
+            configField({ key: 'username', label: 'Username', type: 'text', visibleWhen: { key: 'authType', equals: 'basic' } }),
+            configField({ key: 'password', label: 'Password', type: 'password', visibleWhen: { key: 'authType', equals: 'basic' } }),
+            configField({ key: 'token', label: 'Bearer token', type: 'password', visibleWhen: { key: 'authType', equals: 'bearer' } })
+        ],
+        defaultConfig: { baseUrl: '', headers: {}, authType: 'none' }
+    },
+    {
         type: 'tcp',
         label: 'TCP endpoint',
         description: 'Shared TCP endpoint for TCP nodes',
@@ -1277,7 +1309,13 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'url', label: 'URL', type: 'url', required: true, typed: true, placeholder: 'https://api.example.com', group: 'Request', description: 'Absolute endpoint or a path resolved by the host.',}),
+            configField({
+                key: 'http',
+                label: 'Endpoint',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'http-endpoint', create: true, edit: true }
+            }),
+            configField({ key: 'url', label: 'URL', type: 'url', required: true, typed: true, placeholder: 'https://api.example.com', group: 'Request', description: 'Absolute endpoint or a path resolved by the selected HTTP endpoint.',}),
             configField({
                 key: 'authType',
                 label: 'Authentication',
@@ -1288,7 +1326,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Basic', value: 'basic' },
                     { label: 'Bearer token', value: 'bearer' }
                 ],
-                group: 'Authentication'
+                group: 'Authentication',
+                visibleWhen: { key: 'http', equals: '' }
             }),
             configField({ key: 'username', label: 'Username', type: 'text', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' } }),
             configField({ key: 'password', label: 'Password', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
@@ -1318,7 +1357,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'retryDelay', label: 'Retry delay', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',}),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',})
         ],
-        defaultConfig: { method: 'GET', followRedirects: true }
+        defaultConfig: { http: '', method: 'GET', followRedirects: true }
     },
     {
         type: 'assign',

@@ -516,6 +516,49 @@ describe('Workflow data & trigger nodes', () => {
         ]);
     });
 
+    it('uses a shared HTTP endpoint base URL, headers and auth', async () => {
+        const original = (globalThis as any).fetch;
+        let captured: any;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            captured = { url, init };
+            return new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } });
+        };
+        service.setCredentialResolver(name => name === 'api-token' ? 'secret-token' : undefined);
+        try {
+            const definition: VisualWorkflowDefinition = {
+                id: 'http-endpoint-flow',
+                name: 'HTTP endpoint',
+                nodes: [
+                    registry.createNode('http', { x: 0, y: 0 }, {
+                        id: 'http_1',
+                        config: {
+                            baseUrl: 'https://api.example.com/v1',
+                            headers: { 'x-endpoint': 'yes' },
+                            authType: 'bearer',
+                            token: '{{credential:api-token}}'
+                        }
+                    }),
+                    registry.createNode('http-request', { x: 200, y: 0 }, {
+                        id: 'http_request',
+                        config: { http: 'http_1', url: 'items', headers: { 'x-node': 'yes' } }
+                    })
+                ],
+                connections: []
+            };
+            const result = await service.execute(definition, {});
+            expect(result.success).toBe(true);
+            expect(captured.url).toBe('https://api.example.com/v1/items');
+            expect(captured.init.headers['x-endpoint']).toBe('yes');
+            expect(captured.init.headers['x-node']).toBe('yes');
+            expect(captured.init.headers.Authorization).toBe('Bearer secret-token');
+
+            await service.execute(definition, {});
+            expect(captured.url).toBe('https://api.example.com/v1/items');
+        } finally {
+            (globalThis as any).fetch = original;
+        }
+    });
+
     it('extracts HTML by tag and sends Basic auth headers', async () => {
         const html = await service.execute(chain([
             { type: 'inject', config: { payload: { value: '<h1>A</h1><h1>B</h1>' } } },

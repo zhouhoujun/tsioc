@@ -199,6 +199,51 @@ export async function resolveWebSocketListenerConfig(
     };
 }
 
+/** Resolved shared HTTP endpoint used by `http-request`. */
+export interface WorkflowHttpEndpointSettings {
+    baseUrl?: string;
+    headers: Record<string, any>;
+    authType: string;
+    username?: string;
+    password?: string;
+    token?: string;
+    endpointId?: string;
+}
+
+/**
+ * Resolve a shared `http` endpoint config node. Only a selected endpoint is
+ * used here; node-level URL/headers/auth stay on the node and are merged by
+ * the HTTP request executor.
+ */
+export async function resolveHttpConfig(
+    config: Record<string, any>,
+    context: ActivityContext
+): Promise<WorkflowHttpEndpointSettings> {
+    const endpointId = String(config?.http || '').trim();
+    const nodes = (context as any)?.configNodes || {};
+    const shared = endpointId ? nodes[endpointId] : undefined;
+    if (endpointId && !shared) {
+        throw new Error(`HTTP endpoint not found: ${endpointId}. Add an HTTP endpoint config node or clear the reference.`);
+    }
+    if (!shared) {
+        return { headers: {}, authType: 'none' };
+    }
+    const read = async (value: any) => {
+        const resolved = await resolveCredentialValue(value, context);
+        return resolved === undefined || resolved === null || resolved === '' ? undefined : String(resolved);
+    };
+    const headers = coerceJson(shared.headers);
+    return {
+        baseUrl: String(shared.baseUrl || '').trim() || undefined,
+        headers: headers && typeof headers === 'object' && !Array.isArray(headers) ? headers : {},
+        authType: String(shared.authType || 'none'),
+        username: await read(shared.username),
+        password: await read(shared.password),
+        token: await read(shared.token),
+        endpointId
+    };
+}
+
 /** Resolved TCP endpoint used by `tcp-in` / `tcp-out`. */
 export interface WorkflowTcpSettings {
     host: string;
@@ -921,10 +966,29 @@ async function waitForWorkflowEvent(context: ActivityContext, event: string, tim
 
 async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> {
     const config = node.config || {};
+    let endpoint: WorkflowHttpEndpointSettings;
+    try {
+        endpoint = await resolveHttpConfig(config, context);
+    } catch (error) {
+        return { success: false, error: error as Error, data: { nodeId: node.id } };
+    }
     const resolvedUrl = resolveWorkflowValue(config.url, context);
     const rawUrl = typeof config.url === 'string' ? config.url.trim() : '';
     // Literal endpoints must not be mistaken for dotted context paths.
-    const url = resolvedUrl || (/^[a-z][a-z0-9+.-]*:/i.test(rawUrl) ? rawUrl : resolvedUrl);
+    let url = resolvedUrl || (/^[a-z][a-z0-9+.-]*:/i.test(rawUrl) ? rawUrl : resolvedUrl);
+    if (endpoint.baseUrl) {
+        if (rawUrl && /^[a-z][a-z0-9+.-]*:/i.test(rawUrl)) {
+            url = rawUrl;
+        } else if (rawUrl) {
+            try {
+                url = new URL(rawUrl, endpoint.baseUrl.endsWith('/') ? endpoint.baseUrl : `${endpoint.baseUrl}/`).toString();
+            } catch {
+                url = `${endpoint.baseUrl.replace(/\/$/, '')}/${rawUrl.replace(/^\//, '')}`;
+            }
+        } else {
+            url = endpoint.baseUrl;
+        }
+    }
     if (!url) {
         return {
             success: false,
@@ -941,18 +1005,28 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
         };
     }
     try {
-        const headers: Record<string, any> = coerceJson(config.headers) || {};
-        const authType = String(config.authType || 'none');
+        const nodeHeaders = coerceJson(config.headers);
+        const headers: Record<string, any> = {
+            ...(endpoint.headers || {}),
+            ...(nodeHeaders && typeof nodeHeaders === 'object' && !Array.isArray(nodeHeaders) ? nodeHeaders : {})
+        };
+        const authType = endpoint.endpointId ? endpoint.authType : String(config.authType || 'none');
         if (authType === 'basic') {
-            const username = String(await resolveCredentialValue(config.username, context) ?? '');
-            const password = String(await resolveCredentialValue(config.password, context) ?? '');
+            const username = endpoint.endpointId
+                ? String(endpoint.username ?? '')
+                : String(await resolveCredentialValue(config.username, context) ?? '');
+            const password = endpoint.endpointId
+                ? String(endpoint.password ?? '')
+                : String(await resolveCredentialValue(config.password, context) ?? '');
             const raw = `${username}:${password}`;
             const encoded = typeof btoa === 'function'
                 ? btoa(raw)
                 : (globalThis as any).Buffer?.from(raw).toString('base64') || '';
             headers.Authorization = `Basic ${encoded}`;
         } else if (authType === 'bearer') {
-            const token = String(await resolveCredentialValue(config.token, context) ?? '');
+            const token = endpoint.endpointId
+                ? String(endpoint.token ?? '')
+                : String(await resolveCredentialValue(config.token, context) ?? '');
             headers.Authorization = `Bearer ${token}`;
         }
         const response = await fetchImpl(String(url), {
