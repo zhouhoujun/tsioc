@@ -1300,6 +1300,22 @@ export async function executeVisualNode(
                 const file = await read({ path, encoding });
                 const text = String(file?.data ?? '');
                 const payload = String(config.parse || 'auto') === 'text' ? text : parsePayloadText(text);
+                let removed = false;
+                if (config.deleteAfterRead === true) {
+                    const remove = (context as any).fileDelete;
+                    if (typeof remove !== 'function') {
+                        return {
+                            success: false,
+                            error: new Error(
+                                'File in delete-after-read requires a workflow host with file access. '
+                                + 'Run the workflow with `tsdi-agent serve` or inject a file remover.'
+                            ),
+                            data: { nodeId: node.id, path }
+                        };
+                    }
+                    const result = await remove({ path });
+                    removed = result?.removed === true;
+                }
                 return {
                     success: true,
                     data: {
@@ -1308,6 +1324,7 @@ export async function executeVisualNode(
                         path: file?.path || path,
                         size: file?.size ?? text.length,
                         encoding,
+                        removed,
                         msg: { payload, topic: 'file', meta: { path: file?.path || path } }
                     }
                 };

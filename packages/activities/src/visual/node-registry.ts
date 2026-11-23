@@ -1521,9 +1521,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'parse', label: 'Parse', type: 'select', defaultValue: 'auto', options: [
                 { label: 'Auto (JSON when valid)', value: 'auto' },
                 { label: 'Keep text', value: 'text' }
-            ] })
+            ] }),
+            configField({ key: 'deleteAfterRead', label: 'Delete file after read', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { path: '', encoding: 'utf8', parse: 'auto' }
+        defaultConfig: { path: '', encoding: 'utf8', parse: 'auto', deleteAfterRead: false }
     },
     {
         type: 'file-out',

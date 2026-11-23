@@ -42,7 +42,8 @@ describe('Workflow file nodes', () => {
         transport = new WorkflowFileTransport(root);
         service.setFileAccess({
             read: request => transport.read(request),
-            write: request => transport.write(request)
+            write: request => transport.write(request),
+            remove: request => transport.remove(request)
         });
     });
 
@@ -123,6 +124,17 @@ describe('Workflow file nodes', () => {
         }, {});
         expect(result.success).toBe(false);
         expect(String(result.error?.message || '')).toContain('requires a workflow host with file access');
+    });
+
+    it('deletes a file after reading when requested', async () => {
+        const file = path.join(root, 'once.json');
+        fs.writeFileSync(file, JSON.stringify({ ok: true }));
+        const result = await service.execute(flow([
+            { type: 'file-in', id: 'read', config: { path: 'once.json', deleteAfterRead: true } }
+        ]), {});
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.read.result?.data?.removed).toBe(true);
+        expect(fs.existsSync(file)).toBe(false);
     });
 
     it('starts a run when a watched file changes', async () => {

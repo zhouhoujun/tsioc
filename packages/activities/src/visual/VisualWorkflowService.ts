@@ -132,6 +132,15 @@ export interface WorkflowFileWriteResult {
     bytes: number;
 }
 
+export interface WorkflowFileDeleteRequest {
+    path: string;
+}
+
+export interface WorkflowFileDeleteResult {
+    path: string;
+    removed: boolean;
+}
+
 export interface WorkflowTcpSendRequest {
     host: string;
     port: number;
@@ -223,6 +232,7 @@ export class VisualWorkflowService {
     private contextStore?: WorkflowContextStore;
     private fileReader?: (request: WorkflowFileReadRequest) => Promise<WorkflowFileReadResult> | WorkflowFileReadResult;
     private fileWriter?: (request: WorkflowFileWriteRequest) => Promise<WorkflowFileWriteResult> | WorkflowFileWriteResult;
+    private fileRemover?: (request: WorkflowFileDeleteRequest) => Promise<WorkflowFileDeleteResult> | WorkflowFileDeleteResult;
     private tcpSender?: (message: WorkflowTcpSendRequest) => Promise<void> | void;
     private udpSender?: (message: WorkflowUdpSendRequest) => Promise<void> | void;
     private webSocketSender?: (message: WorkflowWebSocketSendRequest) => Promise<void> | void;
@@ -561,9 +571,11 @@ export class VisualWorkflowService {
     setFileAccess(access?: {
         read?: (request: WorkflowFileReadRequest) => Promise<WorkflowFileReadResult> | WorkflowFileReadResult;
         write?: (request: WorkflowFileWriteRequest) => Promise<WorkflowFileWriteResult> | WorkflowFileWriteResult;
+        remove?: (request: WorkflowFileDeleteRequest) => Promise<WorkflowFileDeleteResult> | WorkflowFileDeleteResult;
     }): void {
         this.fileReader = access?.read;
         this.fileWriter = access?.write;
+        this.fileRemover = access?.remove;
     }
 
     /** Persist `flow`/`global` context between runs (optional host store). */
@@ -768,6 +780,9 @@ export class VisualWorkflowService {
                 : undefined,
             fileWrite: this.fileWriter
                 ? (request: WorkflowFileWriteRequest) => this.fileWriter!(request)
+                : undefined,
+            fileDelete: this.fileRemover
+                ? (request: WorkflowFileDeleteRequest) => this.fileRemover!(request)
                 : undefined,
             configNodes: configNodeMap(definition, type => this.registry.get(type)?.configNode === true)
         };

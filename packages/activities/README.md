@@ -915,14 +915,16 @@ client connection.
 
 ```text
 file-out  { path: "data/out.json", payload: "payload", append: false, mkdir: true }
-file-in   { path: "data/out.json", encoding: "utf8", parse: "auto" }
+file-in   { path: "data/out.json", encoding: "utf8", parse: "auto", deleteAfterRead: false }
 watch     { path: "data", recursive: false, debounce: 200, event: "all" }
 tail      { path: "logs/app.log", split: true, sendWholeFile: false }
 ```
 
 - every path is resolved against the workspace root; escaping it fails with
   `outside the allowed workspace root` and a suggested relative path
-- `file-in` parses valid JSON when `parse: "auto"`, otherwise keeps the text
+- `file-in` parses valid JSON when `parse: "auto"`, otherwise keeps the text;
+  `deleteAfterRead` removes the file through the host remover after a successful
+  read and reports `removed` in the node result
 - `watch` starts one run per debounced change with
   `context.inbound = { transport: "watch", path, event }`; the watcher is closed
   when the run handle stops

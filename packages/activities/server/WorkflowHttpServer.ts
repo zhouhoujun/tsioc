@@ -225,6 +225,7 @@ export class WorkflowHttpController {
         this.execution.setWebSocketBroadcaster(message => this.webSocketTransport.broadcast(message));
         this.execution.setContextStore(this.contextStore);
         this.execution.setFileAccess({
+            remove: request => this.fileTransport.remove(request),
             read: request => this.fileTransport.read(request),
             write: request => this.fileTransport.write(request)
         });

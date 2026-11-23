@@ -2,6 +2,8 @@ import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { Injectable } from '@tsdi/ioc';
 import {
+    WorkflowFileDeleteRequest,
+    WorkflowFileDeleteResult,
     WorkflowFileReadRequest,
     WorkflowFileReadResult,
     WorkflowFileWriteRequest,
@@ -61,6 +63,19 @@ export class WorkflowFileTransport {
         }
     }
 
+    async remove(request: WorkflowFileDeleteRequest): Promise<WorkflowFileDeleteResult> {
+        const target = this.resolve(request.path);
+        try {
+            await fs.unlink(target);
+            return { path: target, removed: true };
+        } catch (error) {
+            if ((error as { code?: string })?.code === 'ENOENT') {
+                return { path: target, removed: false };
+            }
+            throw this.describe(error, target, 'delete');
+        }
+    }
+
     private resolve(filePath: string): string {
         const requested = String(filePath || '').trim();
         if (!requested) {
@@ -78,7 +93,7 @@ export class WorkflowFileTransport {
         return target;
     }
 
-    private describe(error: unknown, target: string, action: 'read' | 'write'): Error {
+    private describe(error: unknown, target: string, action: 'read' | 'write' | 'delete'): Error {
         const code = (error as { code?: string })?.code;
         const hint = code === 'ENOENT'
             ? `File not found: ${target}.`

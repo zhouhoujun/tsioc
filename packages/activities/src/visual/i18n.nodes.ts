@@ -828,7 +828,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "file-in": {
                 "path": "Path",
                 "encoding": "Encoding",
-                "parse": "Parse"
+                "parse": "Parse",
+                "deleteAfterRead": "Delete file after read"
             },
             "file-out": {
                 "path": "Path",
@@ -2501,7 +2502,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "file-in": {
                 "path": "路径",
                 "encoding": "编码",
-                "parse": "解析"
+                "parse": "解析",
+                "deleteAfterRead": "读取后删除文件"
             },
             "file-out": {
                 "path": "路径",
