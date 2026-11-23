@@ -7,6 +7,7 @@ import { SessionTurnLeaseManager } from './SessionTurnLeaseManager';
 import { promoteInboxSteers } from './SessionInboxPromotion';
 import { TurnHistoryStore } from './TurnHistoryStore';
 import { TurnHistoryController } from './TurnHistoryController';
+import { TurnObservabilityController } from './TurnObservabilityController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -174,7 +175,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -384,8 +385,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
             await this.refreshSessionSummary(input.sessionId).catch(() => undefined);
             await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
-            await this.publishTurnDiagnosticsEvent(input.sessionId, turnContext.diagnostics);
-            await this.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
+            await this.observability.publishTurnDiagnostics(this, input.sessionId, turnContext.diagnostics);
+            await this.observability.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
             await this.runTurnHooks('afterTurn', input.sessionId, {
                 sessionId: input.sessionId,
                 principalId: input.principalId,
@@ -509,8 +510,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
                 await this.refreshSessionSummary(sessionId).catch(() => undefined);
                 await this.maybeDistillExperience(sessionId, userMessage, result.message);
-                await this.publishTurnDiagnosticsEvent(sessionId, turnContext.diagnostics);
-                await this.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
+                await this.observability.publishTurnDiagnostics(this, sessionId, turnContext.diagnostics);
+                await this.observability.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
                 await this.runTurnHooks('afterTurn', sessionId, {
                     sessionId,
                     principalId,
@@ -895,6 +896,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.app.publishEvent(new AgentCompensationEvent(this, sessionId, reason, compensated, toolCallIds)).catch(() => {});
         }
         return { compensated, toolCallIds };
+    }
+
+    private get observability(): TurnObservabilityController {
+        return this.turnObservability ??= new TurnObservabilityController({
+            app: this.app, uuid: this.uuid, telemetry: this.telemetry,
+            turnDiagnosticsStore: this.turnDiagnosticsStore, compactionHistoryStore: this.compactionHistoryStore
+        });
     }
 
     private get turnHistory(): TurnHistoryController {
@@ -1422,89 +1430,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         } catch {
             // context observability must not break turn execution
         }
-        await this.recordCompactionHistory(sessionId, report);
-    }
-
-    private async recordCompactionHistory(sessionId: string, report: ContextPreparationReport): Promise<void> {
-        if (!this.compactionHistoryStore) {
-            return;
-        }
-        const modified = report.strategy !== 'unchanged' || report.toolMessagesCompacted > 0;
-        if (!modified) {
-            return;
-        }
-        this.telemetry?.startSpan('agent.compaction', { level: report.level, strategy: report.strategy }).end('ok');
-        const record: CompactionHistoryRecord = {
-            id: this.uuid.generate(),
-            sessionId,
-            strategy: report.strategy,
-            compactionTriggered: report.compactionTriggered,
-            level: report.level,
-            summaryInserted: report.summaryInserted,
-            beforeMessageCount: report.beforeMessageCount,
-            afterMessageCount: report.afterMessageCount,
-            beforeTokens: report.beforeTokens,
-            afterTokens: report.afterTokens,
-            compactedMessageCount: report.compactedMessageCount,
-            preservedAnchorCount: report.preservedAnchorCount,
-            recentMessageCount: report.recentMessageCount,
-            prunedMessageCount: report.prunedMessageCount,
-            toolMessagesCompacted: report.toolMessagesCompacted,
-            compressionRatio: report.compressionRatio,
-            cumulativeTokenSavings: report.cumulativeTokenSavings,
-            replayed: report.replayed,
-            replayKind: report.replayKind,
-            createdAt: Date.now()
-        };
-        try {
-            await this.compactionHistoryStore.append(record);
-        } catch {
-            // compaction history persistence must not break turn execution
-        }
-    }
-
-    private async recordTurnDiagnostics(sessionId: string, diagnostics?: AgentTurnDiagnostics, evidenceLedger?: EvidenceLedger, recovery?: TurnRecoveryState, workspace?: string): Promise<void> {
-        if (!this.turnDiagnosticsStore || !diagnostics) {
-            return;
-        }
-        const falsifiedSignatures = [...new Set(recovery?.attemptHistory.flatMap(attempt => attempt.signatures) ?? [])];
-        const repairRecipes = recovery?.repairRecipes ?? [];
-        const metadata: Record<string, any> = {
-            loopRecoveryCount: diagnostics.loopRecoveryCount ?? 0,
-            falsificationCount: diagnostics.falsificationCount ?? 0,
-            repairRoundsUsed: diagnostics.repairRoundsUsed ?? 0,
-            repeatedAttemptCount: diagnostics.repeatedAttemptCount ?? 0,
-            replayCount: diagnostics.replayCount ?? 0,
-            replayKind: diagnostics.replayKind,
-            repairResolved: falsifiedSignatures.length > 0 && !recovery?.terminated,
-            falsifiedSignatures
-        };
-        if (repairRecipes.length > 0) {
-            metadata.repairRecipes = repairRecipes;
-        }
-        const record: TurnDiagnosticsRecord = {
-            id: this.uuid.generate(),
-            sessionId,
-            workspaceId: workspace,
-            createdAt: Date.now(),
-            emptyResponseRetryCount: diagnostics.emptyResponseRetryCount,
-            followUpRecoveryCount: diagnostics.followUpRecoveryCount,
-            followUpContextRewritten: diagnostics.followUpContextRewritten,
-            finalAssistantWasClarification: diagnostics.finalAssistantWasClarification,
-            repeatedClarificationDetected: diagnostics.repeatedClarificationDetected,
-            compactionCount: diagnostics.compactionCount,
-            totalTokenSavings: diagnostics.totalTokenSavings,
-            compressionRatio: diagnostics.compressionRatio,
-            compactionLevel: diagnostics.compactionLevel,
-            promptCache: diagnostics.promptCache,
-            evidence: evidenceLedger?.snapshot(),
-            metadata
-        };
-        try {
-            await this.turnDiagnosticsStore.append(record);
-        } catch {
-            // turn diagnostics persistence must not break turn execution
-        }
+        await this.observability.recordCompactionHistory(sessionId, report);
     }
 
     private createTurnDiagnostics(): AgentTurnDiagnostics { return { emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0, compressionRatio: undefined, compactionLevel: undefined }; }
@@ -1830,16 +1756,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.createMessage('assistant', termination);
     }
 
-    private async publishTurnDiagnosticsEvent(sessionId: string, diagnostics?: AgentTurnDiagnostics): Promise<void> {
-        if (!diagnostics) {
-            return;
-        }
-        try {
-            await this.app.publishEvent(new AgentTurnDiagnosticsEvent(this, sessionId, { ...diagnostics }));
-        } catch {
-            // diagnostics observability must not break turn execution
-        }
-    }
+    private async recordCompactionHistory(sessionId: string, report: ContextPreparationReport): Promise<void> { return this.observability.recordCompactionHistory(sessionId, report); }
 
     private async recordTokenUsage(sessionId: string, response: ModelResponse): Promise<void> {
         this.tokenBudgetTracker.recordUsage(sessionId, await this.resolveSessionThreadId(sessionId), response.metadata?.usage);
