@@ -206,6 +206,9 @@ export async function resolveWebSocketListenerConfig(
 export interface WorkflowHttpEndpointSettings {
     baseUrl?: string;
     headers: Record<string, any>;
+    query: Record<string, any>;
+    followRedirects: boolean;
+    ignoreErrors: boolean;
     authType: string;
     username?: string;
     password?: string;
@@ -229,16 +232,20 @@ export async function resolveHttpConfig(
         throw new Error(`HTTP endpoint not found: ${endpointId}. Add an HTTP endpoint config node or clear the reference.`);
     }
     if (!shared) {
-        return { headers: {}, authType: 'none' };
+        return { headers: {}, query: {}, followRedirects: true, ignoreErrors: false, authType: 'none' };
     }
     const read = async (value: any) => {
         const resolved = await resolveCredentialValue(value, context);
         return resolved === undefined || resolved === null || resolved === '' ? undefined : String(resolved);
     };
     const headers = coerceJson(shared.headers);
+    const query = coerceJson(shared.query);
     return {
         baseUrl: String(shared.baseUrl || '').trim() || undefined,
         headers: headers && typeof headers === 'object' && !Array.isArray(headers) ? headers : {},
+        query: query && typeof query === 'object' && !Array.isArray(query) ? query : {},
+        followRedirects: shared.followRedirects !== false,
+        ignoreErrors: shared.ignoreErrors === true,
         authType: String(shared.authType || 'none'),
         username: await read(shared.username),
         password: await read(shared.password),
@@ -1031,6 +1038,19 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
             url = endpoint.baseUrl;
         }
     }
+    if (url && endpoint.query && Object.keys(endpoint.query).length) {
+        try {
+            const parsed = new URL(String(url));
+            Object.entries(endpoint.query).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    parsed.searchParams.set(key, String(value));
+                }
+            });
+            url = parsed.toString();
+        } catch {
+            // Relative/unparseable URLs keep their original form.
+        }
+    }
     if (!url) {
         return {
             success: false,
@@ -1075,7 +1095,7 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
             method: String(config.method || 'GET').toUpperCase(),
             headers: Object.keys(headers).length ? headers : undefined,
             body: config.body === undefined || config.body === '' ? undefined : String(config.body),
-            redirect: config.followRedirects === false ? 'manual' : 'follow'
+            redirect: (endpoint.endpointId ? endpoint.followRedirects : config.followRedirects !== false) ? 'follow' : 'manual'
         });
         const text = await response.text();
         const responseHeaders: Record<string, string> = {};
@@ -1102,7 +1122,7 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
                 body = text;
             }
         }
-        const ignored = config.ignoreErrors === true;
+        const ignored = endpoint.endpointId ? endpoint.ignoreErrors : config.ignoreErrors === true;
         return {
             success: response.ok || ignored,
             error: response.ok || ignored ? undefined : new Error(`HTTP ${response.status}`),

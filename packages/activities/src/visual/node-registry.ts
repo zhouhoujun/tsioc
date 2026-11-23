@@ -1074,6 +1074,9 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         fields: [
             configField({ key: 'baseUrl', label: 'Base URL', type: 'url', required: true, placeholder: 'https://api.example.com' }),
             configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3 }),
+            configField({ key: 'query', label: 'Query parameters', type: 'json', rows: 3 }),
+            configField({ key: 'followRedirects', label: 'Follow redirects', type: 'boolean', defaultValue: true }),
+            configField({ key: 'ignoreErrors', label: 'Ignore HTTP errors', type: 'boolean', defaultValue: false }),
             configField({
                 key: 'authType',
                 label: 'Authentication',
@@ -1089,7 +1092,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'password', label: 'Password', type: 'password', visibleWhen: { key: 'authType', equals: 'basic' } }),
             configField({ key: 'token', label: 'Bearer token', type: 'password', visibleWhen: { key: 'authType', equals: 'bearer' } })
         ],
-        defaultConfig: { baseUrl: '', headers: {}, authType: 'none' }
+        defaultConfig: { baseUrl: '', headers: {}, query: {}, followRedirects: true, ignoreErrors: false, authType: 'none' }
     },
     {
         type: 'tcp',
@@ -1392,8 +1395,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'UTF-8 text', value: 'text' }
                 ],
                 group: 'Request',}),
-            configField({ key: 'followRedirects', label: 'Follow redirects', type: 'boolean', defaultValue: true, group: 'Request' }),
-            configField({ key: 'ignoreErrors', label: 'Ignore HTTP errors', type: 'boolean', defaultValue: false, group: 'Reliability' }),
+            configField({ key: 'followRedirects', label: 'Follow redirects', type: 'boolean', defaultValue: true, group: 'Request', visibleWhen: { key: 'http', equals: '' } }),
+            configField({ key: 'ignoreErrors', label: 'Ignore HTTP errors', type: 'boolean', defaultValue: false, group: 'Reliability', visibleWhen: { key: 'http', equals: '' } }),
             configField({ key: 'retry', label: 'Retries', type: 'number', defaultValue: 0, min: 0, max: 20, step: 1, group: 'Reliability',}),
             configField({ key: 'retryDelay', label: 'Retry delay', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',}),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',})

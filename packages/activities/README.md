@@ -910,10 +910,11 @@ client connection.
 endpoint owns those fields; clear the reference to use the inline overrides.
 TCP listeners use the referenced TLS certificate/key when present.
 
-`http` is a shared request endpoint: base URL, default headers and
-basic/bearer auth. An `http-request` that references it resolves relative URL
-paths against the base URL, merges node headers over endpoint headers and uses
-the endpoint credentials (absolute node URLs still win).
+`http` is a shared request endpoint: base URL, default headers, query
+parameters, redirect/error policy and basic/bearer auth. An `http-request` that
+references it resolves relative URL paths against the base URL, merges node
+headers over endpoint headers, appends the endpoint query and uses the endpoint
+credentials/policy (absolute node URLs still win).
 
 ### HTTP in security and uploads
 

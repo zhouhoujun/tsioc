@@ -893,6 +893,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "http": {
                 "baseUrl": "Base URL",
                 "headers": "Headers",
+                "query": "Query parameters",
+                "followRedirects": "Follow redirects",
+                "ignoreErrors": "Ignore HTTP errors",
                 "authType": "Authentication",
                 "username": "Username",
                 "password": "Password",
@@ -2674,6 +2677,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "http": {
                 "baseUrl": "基础地址",
                 "headers": "请求头",
+                "query": "查询参数",
+                "followRedirects": "跟随重定向",
+                "ignoreErrors": "忽略 HTTP 错误",
                 "authType": "认证方式",
                 "username": "用户名",
                 "password": "密码",

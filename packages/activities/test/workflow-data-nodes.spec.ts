@@ -556,6 +556,9 @@ describe('Workflow data & trigger nodes', () => {
                         config: {
                             baseUrl: 'https://api.example.com/v1',
                             headers: { 'x-endpoint': 'yes' },
+                            query: { tenant: 'eu' },
+                            followRedirects: false,
+                            ignoreErrors: true,
                             authType: 'bearer',
                             token: '{{credential:api-token}}'
                         }
@@ -569,13 +572,15 @@ describe('Workflow data & trigger nodes', () => {
             };
             const result = await service.execute(definition, {});
             expect(result.success).toBe(true);
-            expect(captured.url).toBe('https://api.example.com/v1/items');
+            expect(captured.url).toBe('https://api.example.com/v1/items?tenant=eu');
             expect(captured.init.headers['x-endpoint']).toBe('yes');
             expect(captured.init.headers['x-node']).toBe('yes');
             expect(captured.init.headers.Authorization).toBe('Bearer secret-token');
+            expect(captured.init.redirect).toBe('manual');
 
-            await service.execute(definition, {});
-            expect(captured.url).toBe('https://api.example.com/v1/items');
+            (globalThis as any).fetch = async () => new Response('bad', { status: 500 });
+            const ignored = await service.execute(definition, {});
+            expect(ignored.success).toBe(true);
         } finally {
             (globalThis as any).fetch = original;
         }
