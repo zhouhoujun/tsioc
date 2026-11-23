@@ -108,7 +108,12 @@ function createRedisClientBackend(config: RedisClientOptions) {
             : JSON.stringify(serializeRequest(request, 'payload', requestId, input));
 
         if (request.observe === 'events') {
-            client.publish(channel, payload)
+            // Stream mode publishes events with XADD; request/response below
+            // still uses pub/sub reply channels.
+            const published = config.delivery === 'stream'
+                ? client.xadd(config.streamKey ?? 'tsdi:stream', '*', 'channel', channel, 'message', payload)
+                : client.publish(channel, payload);
+            published
                 .then(() => {
                     observer.next({ type: 0 } as ResponseEventPacket);
                     observer.complete();
