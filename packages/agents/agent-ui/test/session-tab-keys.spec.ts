@@ -102,6 +102,7 @@ export class SessionTabKeyboardTest {
         expect(keymap.resolve('ctrl+tab')).toEqual('tab-next');
         expect(keymap.resolve('ctrl+shift+tab')).toEqual('tab-prev');
         expect(keymap.resolve('ctrl+shift+t')).toEqual('tab-reopen');
+        expect(keymap.resolve('ctrl+x w')).toEqual('tab-close');
         expect(keymap.resolve('alt+]')).toEqual('tab-next');
         expect(keymap.resolve('alt+[')).toEqual('tab-prev');
         expect(keymap.resolve('alt+shift+t')).toEqual('tab-reopen');

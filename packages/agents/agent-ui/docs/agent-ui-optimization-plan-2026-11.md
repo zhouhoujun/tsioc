@@ -123,7 +123,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | --- | --- | --- | --- | --- |
 | 命令面板 `ctrl+p` | ✅ 全量命令目录 + 最近使用 + 模糊搜索 | ✅（当前视图所有动作） | ◐（`/` 命令） | 对齐（非命令动作仍走各自入口） |
 | leader key `ctrl+x` | ✅ | ✅ | ❌ | 对齐 |
-| session tabs | ✅ 鼠标 + Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+T | ✅ 同左 | ◐ | 对齐 |
+| session tabs | ✅ 鼠标 + Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+Shift+T / Ctrl+X W | ✅ 同左 | ◐ | 对齐 |
 | Enter 运行中行为 | 默认排队；`Ctrl+X Enter` 插到队首；steer 需显式开启 | Enter steer；Ctrl+X Enter queue | queue/steer | 已补优先级；默认 steer 仍待确认 |
 | `!` shell mode | ✅ | ✅ | ✅（shell 工具） | 对齐 |
 | `@file#Lx-Ly` | ✅ | ✅ | ◐ | 对齐 |

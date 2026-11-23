@@ -19,6 +19,10 @@ export async function executeGlobalKeyActionView(
     if (action === 'tab-reopen') {
         return host.reopenClosedSessionTab();
     }
+    if (action === 'tab-close') {
+        await host.state.sessionTabsAction?.close?.(String(host.state.sessionId || ''));
+        return true;
+    }
     if (action === 'interrupt-turn') {
         await host.interruptTurn();
         return true;
@@ -164,7 +168,7 @@ export async function executeGlobalKeyActionView(
         host.state.setInput('', 0);
         return true;
     }
-    const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'message-prev-user' | 'message-next-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode' | 'queue-follow-up' | 'queue-priority' | 'clear-scrollback' | 'clear-input' | 'tab-next' | 'tab-prev' | 'tab-reopen'>, string> = {
+    const commands: Record<Exclude<AgentConsoleGlobalAction, 'command-palette' | 'theme' | 'interrupt-turn' | 'toggle-thinking' | 'open-editor' | 'thread-child-first' | 'thread-cycle-next' | 'thread-cycle-prev' | 'thread-parent' | 'message-page-up' | 'message-page-down' | 'message-half-page-up' | 'message-half-page-down' | 'message-line-up' | 'message-line-down' | 'message-first' | 'message-last' | 'message-last-user' | 'message-prev-user' | 'message-next-user' | 'model-favorite-toggle' | 'model-cycle-recent' | 'model-cycle-recent-back' | 'model-variant-cycle' | 'which-key-toggle' | 'which-key-layout-toggle' | 'which-key-pending-toggle' | 'status-health' | 'timeline-mode' | 'queue-follow-up' | 'queue-priority' | 'clear-scrollback' | 'clear-input' | 'tab-next' | 'tab-prev' | 'tab-reopen' | 'tab-close'>, string> = {
         'new-session': '/new',
         compact: '/compact',
         export: '/export',

@@ -71,6 +71,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+tab': 'tab-next',
     'ctrl+shift+tab': 'tab-prev',
     'ctrl+shift+t': 'tab-reopen',
+    /** opencode-style close for the active session tab. */
+    'ctrl+x w': 'tab-close',
     // Browsers reserve Ctrl+Tab / Ctrl+Shift+T; these aliases keep the same
     // actions reachable from the web console.
     'alt+]': 'tab-next',

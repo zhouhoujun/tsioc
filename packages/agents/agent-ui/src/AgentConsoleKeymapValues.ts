@@ -64,7 +64,8 @@ export type AgentConsoleGlobalAction =
     | 'stash-draft'
     | 'tab-next'
     | 'tab-prev'
-    | 'tab-reopen';
+    | 'tab-reopen'
+    | 'tab-close';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
@@ -73,5 +74,5 @@ export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'message-page-up', 'message-page-down', 'message-half-page-up', 'message-half-page-down', 'message-line-up', 'message-line-down', 'message-first', 'message-last', 'message-last-user', 'message-prev-user', 'message-next-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
     'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode', 'command-outputs', 'queue-follow-up', 'queue-priority', 'clear-scrollback', 'clear-input', 'stash-draft',
-    'tab-next', 'tab-prev', 'tab-reopen'
+    'tab-next', 'tab-prev', 'tab-reopen', 'tab-close'
 ];

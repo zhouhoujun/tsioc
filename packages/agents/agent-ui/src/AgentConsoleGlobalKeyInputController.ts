@@ -23,7 +23,7 @@ export interface AgentConsoleGlobalKeyInputHost {
         commandOutputsFilterMode: boolean;
         commandOutputsFilter: string;
         setCommandOutputsFilter(filter: string): void;
-        setInput(value: string, cursor?: number): void;
+        setInput(value: string, cursor?: number): void; readonly sessionId?: string; sessionTabsAction?: { close?(sessionId: string): void | Promise<void> } | null;
         selectMenu?: { title?: string; kind?: string } | null;
         whichKeyVisible: boolean;
         setWhichKeyVisible(visible: boolean): void;
