@@ -516,6 +516,28 @@ describe('Workflow data & trigger nodes', () => {
         ]);
     });
 
+    it('can treat non-2xx HTTP responses as success', async () => {
+        const original = (globalThis as any).fetch;
+        (globalThis as any).fetch = async () => new Response('nope', { status: 500 });
+        try {
+            const ignored = await service.execute(chain([
+                { type: 'http-request', config: { url: 'https://example.com/fail', ignoreErrors: true } }
+            ]), {});
+            const ignoredState: any = Object.entries(ignored.data?.executionState?.nodeStates || {})
+                .find(([id]) => id.startsWith('http-request'))?.[1];
+            expect(ignored.success).toBe(true);
+            expect(ignoredState?.result?.data?.statusCode).toBe(500);
+            expect(ignoredState?.result?.data?.body).toBe('nope');
+
+            const failed = await service.execute(chain([
+                { type: 'http-request', config: { url: 'https://example.com/fail' } }
+            ]), {});
+            expect(failed.success).toBe(false);
+        } finally {
+            (globalThis as any).fetch = original;
+        }
+    });
+
     it('uses a shared HTTP endpoint base URL, headers and auth', async () => {
         const original = (globalThis as any).fetch;
         let captured: any;

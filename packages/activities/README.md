@@ -637,6 +637,9 @@ Features:
   event-emit/event-wait, command, condition/switch/router, parallel/join,
   loop (sub-workflow repeat), delay, log, HTTP request, complete/catch/status,
   link/junction/sequence, try/catch, sub workflow, comment,
+- `http-request` returns `statusCode`, response headers and the final URL;
+  `Ignore HTTP errors` lets 4xx/5xx responses continue with their body instead
+  of failing the node,
 - sub workflow / loop nodes resolve a stored workflow id through the host
   resolver (`service.setDefinitionResolver`; the HTTP server uses the definition
   store) or fall back to a context path / inline definition JSON; right-clicking

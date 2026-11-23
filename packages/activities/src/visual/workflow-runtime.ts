@@ -1096,9 +1096,10 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
                 body = text;
             }
         }
+        const ignored = config.ignoreErrors === true;
         return {
-            success: response.ok,
-            error: response.ok ? undefined : new Error(`HTTP ${response.status}`),
+            success: response.ok || ignored,
+            error: response.ok || ignored ? undefined : new Error(`HTTP ${response.status}`),
             data: {
                 nodeId: node.id,
                 status: response.status,
