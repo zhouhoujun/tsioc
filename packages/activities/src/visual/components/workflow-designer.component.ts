@@ -1602,10 +1602,19 @@ export class WorkflowDesignerComponent implements OnDestroy {
     };
 
     get publishHint(): string {
-        return this.t(
+        const base = this.t(
             'publishHint',
             'Run and webhook entry points will execute this version. Later draft edits stay unpublished.'
         );
+        const count = this.designer.validate().warnings.length;
+        if (!count) {
+            return base;
+        }
+        const warning = this.t(
+            'publishSecretsWarning',
+            '{count} inline secret(s) stay in the document; switch them to a credential reference.'
+        ).replace('{count}', String(count));
+        return `${base} ${warning}`;
     }
     get publishMeta(): string {
         const definition = this.designer.definition;

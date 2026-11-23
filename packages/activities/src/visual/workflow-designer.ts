@@ -1671,7 +1671,14 @@ export class WorkflowDesigner {
         this.savedSummary = undefined;
         this.dirty = false;
         this.setError('');
-        this.setMessage('workflow.message.published', { version: result.release.version });
+        // Inline secrets are worth surfacing once, at publish time, without
+        // blocking the release.
+        this.setMessage(
+            validation.warnings.length
+                ? 'workflow.message.publishedWithWarnings'
+                : 'workflow.message.published',
+            { version: result.release.version, count: validation.warnings.length }
+        );
         return result.release;
     }
 
@@ -1729,14 +1736,25 @@ export class WorkflowDesigner {
         return this.toJSON();
     }
 
-    validate(): { valid: boolean; errors: string[] } {
+    /**
+     * Graph, port and config validation. Errors block run/publish; warnings
+     * (inline secrets that could move to the credential store) are advisory and
+     * reported separately so they never stop a workflow.
+     */
+    validate(): { valid: boolean; errors: string[]; warnings: string[] } {
         const graph = validateVisualWorkflow(this.definition);
         const configIssues = validateWorkflowConfigs(this.definition, this.registry, {
             credentials: this.credentialNames
-        })
-            .map(issue => `${issue.nodeName} · ${issue.label}: ${issue.message}`);
-        const errors = [...graph.errors, ...this.danglingPortErrors(), ...configIssues];
-        return { valid: errors.length === 0, errors };
+        });
+        const describe = (issue: typeof configIssues[number]) =>
+            `${issue.nodeName} · ${issue.label}: ${issue.message}`;
+        const errors = [
+            ...graph.errors,
+            ...this.danglingPortErrors(),
+            ...configIssues.filter(issue => issue.severity !== 'warning').map(describe)
+        ];
+        const warnings = configIssues.filter(issue => issue.severity === 'warning').map(describe);
+        return { valid: errors.length === 0, errors, warnings };
     }
 
     /**

@@ -1052,6 +1052,14 @@ malformed references (`{{credential: }}`) and names the store does not have
 first execution. When the host has no credential store the names stay
 `undefined` and name checks are skipped, so offline editors keep working.
 
+Fields marked `secret` (passwords, tokens, API keys, TLS keys/certificates)
+also produce an **advisory warning** when they hold a raw value: the secret
+works, but it travels with the document and every saved version. The publish
+dialog shows the count and `designer.validate()` returns it under `warnings`
+(errors still block, warnings never do), so switching to `{{credential:name}}`
+is a visible, non-blocking suggestion rather than a migration the editor
+performs behind the user's back.
+
 Configuration, deployment and plugin changes are recorded in an audit trail:
 
 ```text

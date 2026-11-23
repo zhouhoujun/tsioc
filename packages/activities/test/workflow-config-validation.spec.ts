@@ -202,3 +202,73 @@ describe('Workflow credential references', () => {
         expect(designer.validate().valid).toBe(true);
     });
 });
+
+describe('Workflow inline secret warnings', () => {
+    let injector: Injector;
+    let registry: WorkflowNodeRegistry;
+
+    beforeEach(() => {
+        injector = createInjector();
+        InjectUtil.use(injector, WorkflowModule);
+        registry = injector.get(WorkflowNodeRegistry);
+    });
+
+    function definition(config: Record<string, any>): VisualWorkflowDefinition {
+        return {
+            id: 'secret-warning',
+            name: 'Secret warning',
+            nodes: [registry.createNode('mqtt-out', { x: 0, y: 0 }, { id: 'mqtt_out', config })],
+            connections: []
+        };
+    }
+
+    it('warns when a secret field stores a raw value', () => {
+        const issues = validateWorkflowConfigs(
+            definition({ topic: 'sensors/temp', password: 'hunter2' }),
+            registry
+        );
+        const warning = issues.find(item => item.fieldKey === 'password')!;
+        expect(warning).toBeTruthy();
+        expect(warning.severity).toBe('warning');
+        expect(warning.message).toContain('credential store');
+    });
+
+    it('stays quiet for credential references and for ordinary fields', () => {
+        expect(validateWorkflowConfigs(
+            definition({ topic: 'sensors/temp', password: '{{credential:mqtt-pass}}' }),
+            registry
+        )).toEqual([]);
+        expect(validateWorkflowConfigs(
+            definition({ topic: 'sensors/temp', password: '' }),
+            registry
+        )).toEqual([]);
+    });
+
+    it('reports warnings without failing validation and records them on publish', async () => {
+        const designer = new WorkflowDesigner({
+            definition: definition({ topic: 'sensors/temp', password: 'hunter2' }),
+            registry
+        });
+        const validation = designer.validate();
+        expect(validation.valid).toBe(true);
+        expect(validation.errors).toEqual([]);
+        expect(validation.warnings.length).toBe(1);
+        expect(validation.warnings[0]).toContain('credential store');
+
+        const releases: any[] = [];
+        const store: any = {
+            publish: async (definition: VisualWorkflowDefinition, options: any) => {
+                releases.push({ definition, options });
+                return {
+                    release: { version: 3, workflowId: definition.id },
+                    definition
+                };
+            }
+        };
+        const release = await designer.publishTo(store, { publishedBy: 'tester' });
+        expect(release?.version).toBe(3);
+        expect(releases.length).toBe(1);
+        expect(designer.message).toBe('workflow.message.publishedWithWarnings');
+        expect(designer.messageParams.count).toBe(1);
+    });
+});

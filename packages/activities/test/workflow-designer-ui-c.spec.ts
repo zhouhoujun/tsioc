@@ -649,6 +649,25 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-credentials')).toBeFalsy();
     });
 
+    it('warns about inline secrets before publishing', async () => {
+        const node = ref.instance.designer.addNode('mqtt-out', { x: 20, y: 20 })!;
+        ref.instance.designer.updateNodeConfig(node.id, {
+            topic: 'sensors/temp',
+            password: 'hunter2'
+        });
+        await flush();
+        (root.querySelector('.workflow-global-bar [data-menu-id="publish"]') as any).click();
+        await waitFor(() => !!root.querySelector('.workflow-publish'));
+        const hint = root.querySelector('.workflow-publish-hint')?.textContent || '';
+        expect(hint).toContain('内联密钥');
+
+        // Warnings never block the dialog; publishing still works.
+        expect(root.querySelector('.workflow-publish-confirm')).toBeTruthy();
+        (root.querySelector('.workflow-publish-close') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-publish')).toBeFalsy();
+    });
+
     it('finds nodes by name, id or type and centres the match', async () => {
         const canvas = root.querySelector('.workflow-canvas') as any;
         // JSDOM has no layout, so give the canvas a viewport for centring.

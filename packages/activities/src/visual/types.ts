@@ -693,6 +693,12 @@ export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'la
      * `msg.`-prefixed strings.
      */
     typedValue?: boolean;
+    /**
+     * Field carries a secret (password, token, private key). Publish reports an
+     * inline value so the secret can move to `{{credential:name}}` instead of
+     * living in the workflow document.
+     */
+    secret?: boolean;
     /** Render as a reference picker bound to another node/record id. */
     reference?: WorkflowReferenceSpec;
 }

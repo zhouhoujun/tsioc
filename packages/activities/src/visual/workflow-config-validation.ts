@@ -11,6 +11,11 @@ export interface WorkflowConfigIssue {
     fieldKey: string;
     label: string;
     message: string;
+    /**
+     * Errors block running/publishing; warnings are advisory (an inline secret
+     * that could move to the credential store). Defaults to `error`.
+     */
+    severity?: 'error' | 'warning';
 }
 
 export interface WorkflowConfigValidationOptions {
@@ -92,6 +97,22 @@ function toFormField(field: WorkflowConfigField): DynamicFormField {
         typedCodec: field.typed === true && field.typedValue === true ? WORKFLOW_TYPED_CODEC : undefined,
         itemFields: field.itemFields?.map(toFormField)
     } as DynamicFormField;
+}
+
+/**
+ * Secrets typed into a field live in the workflow document (and every version
+ * of it). Publish reports that as an advisory warning so users can switch to a
+ * credential reference; it never blocks the operation.
+ */
+function inlineSecretWarning(field: { secret?: boolean }, value: any): string | undefined {
+    if (field.secret !== true || credentialReference(value)) {
+        return undefined;
+    }
+    const text = typeof value === 'string' ? value.trim() : '';
+    if (!text) {
+        return undefined;
+    }
+    return 'Secret is stored in the workflow document; use {{credential:name}} to keep it in the host credential store.';
 }
 
 /**
@@ -240,6 +261,25 @@ export function validateWorkflowConfigs(
                         message: childMessage
                     });
                 }
+            });
+        }
+        // Inline secrets are advisory: the value works, but it travels with the
+        // document. Warnings never block running or publishing.
+        for (const field of nodeDefinition.fields) {
+            if (!visibleKeys.has(field.key)) {
+                continue;
+            }
+            const message = inlineSecretWarning(field, values[field.key]);
+            if (!message) {
+                continue;
+            }
+            issues.push({
+                nodeId: node.id,
+                nodeName: node.name || node.id,
+                fieldKey: field.key,
+                label: field.label || field.key,
+                message,
+                severity: 'warning'
             });
         }
         // Typed value fields store literal classes explicitly; report text that

@@ -797,10 +797,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 group: 'Security'
             }),
             configField({ key: 'username', label: 'Username', type: 'text', group: 'Security', visibleWhen: { key: 'authType', equals: 'basic' } }),
-            configField({ key: 'password', label: 'Password', type: 'password', group: 'Security', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
-            configField({ key: 'token', label: 'Bearer token', type: 'password', group: 'Security', visibleWhen: { key: 'authType', equals: 'bearer' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'password', label: 'Password', type: 'password', secret: true, group: 'Security', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'token', label: 'Bearer token', type: 'password', secret: true, group: 'Security', visibleWhen: { key: 'authType', equals: 'bearer' }, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({ key: 'apiKeyHeader', label: 'API key header', type: 'text', defaultValue: 'x-api-key', group: 'Security', visibleWhen: { key: 'authType', equals: 'apikey' } }),
-            configField({ key: 'apiKey', label: 'API key', type: 'password', group: 'Security', visibleWhen: { key: 'authType', equals: 'apikey' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'apiKey', label: 'API key', type: 'password', secret: true, group: 'Security', visibleWhen: { key: 'authType', equals: 'apikey' }, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({ key: 'cors', label: 'Enable CORS', type: 'boolean', defaultValue: false, group: 'Security', description: 'Answer preflight requests and allow browser callers.' }),
             configField({ key: 'corsOrigin', label: 'Allowed origin', type: 'text', defaultValue: '*', group: 'Security', visibleWhen: { key: 'cors', equals: true } }),
             configField({ key: 'corsHeaders', label: 'Allowed headers', type: 'text', defaultValue: 'content-type, authorization', group: 'Security', visibleWhen: { key: 'cors', equals: true } }),
@@ -969,7 +969,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'url', label: 'Broker URL', type: 'text', required: true, defaultValue: 'mqtt://localhost:1883', placeholder: 'mqtt://broker:1883', description: 'mqtt:// or mqtts:// (TLS) broker URL.' }),
             configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto' }),
             configField({ key: 'username', label: 'Username', type: 'text' }),
-            configField({ key: 'password', label: 'Password', type: 'password', description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'password', label: 'Password', type: 'password', secret: true, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({
                 key: 'tls',
                 label: 'TLS config',
@@ -1028,7 +1028,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'url', label: 'Broker URL', type: 'text', defaultValue: '', placeholder: 'mqtt://broker:1883', group: 'Broker override', description: 'Inline override used when no shared broker is selected.' }),
             configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto', group: 'Broker override' }),
             configField({ key: 'username', label: 'Username', type: 'text', group: 'Broker override' }),
-            configField({ key: 'password', label: 'Password', type: 'password', group: 'Broker override', description: 'Use {{credential:name}} to read a stored credential.' })
+            configField({ key: 'password', label: 'Password', type: 'password', secret: true, group: 'Broker override', description: 'Use {{credential:name}} to read a stored credential.' })
         ],
         defaultConfig: { url: '', topic: '#', qos: '0' }
     },
@@ -1135,9 +1135,9 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [],
         fields: [
-            configField({ key: 'ca', label: 'CA certificate', type: 'textarea', rows: 4, description: 'PEM chain; use {{credential:name}} to read a stored secret.' }),
-            configField({ key: 'cert', label: 'Client certificate', type: 'textarea', rows: 4, description: 'PEM certificate; use {{credential:name}} to read a stored secret.' }),
-            configField({ key: 'key', label: 'Client key', type: 'password', description: 'PEM private key; use {{credential:name}} to read a stored secret.' }),
+            configField({ key: 'ca', label: 'CA certificate', type: 'textarea', secret: true, rows: 4, description: 'PEM chain; use {{credential:name}} to read a stored secret.' }),
+            configField({ key: 'cert', label: 'Client certificate', type: 'textarea', secret: true, rows: 4, description: 'PEM certificate; use {{credential:name}} to read a stored secret.' }),
+            configField({ key: 'key', label: 'Client key', type: 'password', secret: true, description: 'PEM private key; use {{credential:name}} to read a stored secret.' }),
             configField({ key: 'servername', label: 'Server name', type: 'text', placeholder: 'broker.example.com' }),
             configField({ key: 'rejectUnauthorized', label: 'Verify certificate', type: 'boolean', defaultValue: true })
         ],
@@ -1174,10 +1174,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 ]
             }),
             configField({ key: 'username', label: 'Username', type: 'text', visibleWhen: { key: 'authType', equals: 'basic' } }),
-            configField({ key: 'password', label: 'Password', type: 'password', visibleWhen: { key: 'authType', equals: 'basic' } }),
-            configField({ key: 'token', label: 'Bearer token', type: 'password', visibleWhen: { key: 'authType', equals: 'bearer' } }),
+            configField({ key: 'password', label: 'Password', type: 'password', secret: true, visibleWhen: { key: 'authType', equals: 'basic' } }),
+            configField({ key: 'token', label: 'Bearer token', type: 'password', secret: true, visibleWhen: { key: 'authType', equals: 'bearer' } }),
             configField({ key: 'apiKeyHeader', label: 'API key header', type: 'text', defaultValue: 'x-api-key', visibleWhen: { key: 'authType', equals: 'apikey' } }),
-            configField({ key: 'apiKey', label: 'API key', type: 'password', visibleWhen: { key: 'authType', equals: 'apikey' } })
+            configField({ key: 'apiKey', label: 'API key', type: 'password', secret: true, visibleWhen: { key: 'authType', equals: 'apikey' } })
         ],
         defaultConfig: { baseUrl: '', headers: {}, query: {}, followRedirects: true, ignoreErrors: false, authType: 'none' }
     },
@@ -1290,7 +1290,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'clientId', label: 'Client id', type: 'text', placeholder: 'auto', group: 'Broker override' }),
             configField({ key: 'username', label: 'Username', type: 'text', group: 'Broker override' }),
-            configField({ key: 'password', label: 'Password', type: 'password', group: 'Broker override', description: 'Use {{credential:name}} to read a stored credential.' })
+            configField({ key: 'password', label: 'Password', type: 'password', secret: true, group: 'Broker override', description: 'Use {{credential:name}} to read a stored credential.' })
         ],
         defaultConfig: { url: '', topic: '', payload: 'payload', qos: '0', retain: false }
     },
@@ -1461,10 +1461,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 visibleWhen: { key: 'http', equals: '' }
             }),
             configField({ key: 'username', label: 'Username', type: 'text', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' } }),
-            configField({ key: 'password', label: 'Password', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
-            configField({ key: 'token', label: 'Bearer token', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'bearer' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'password', label: 'Password', type: 'password', secret: true, group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'token', label: 'Bearer token', type: 'password', secret: true, group: 'Authentication', visibleWhen: { key: 'authType', equals: 'bearer' }, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({ key: 'apiKeyHeader', label: 'API key header', type: 'text', defaultValue: 'x-api-key', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'apikey' } }),
-            configField({ key: 'apiKey', label: 'API key', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'apikey' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'apiKey', label: 'API key', type: 'password', secret: true, group: 'Authentication', visibleWhen: { key: 'authType', equals: 'apikey' }, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({
                 key: 'method',
                 label: 'Method',
