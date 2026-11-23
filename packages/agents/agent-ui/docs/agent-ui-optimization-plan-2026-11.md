@@ -243,6 +243,8 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
 - `/highlights` 发布说明浮层（`/whatsnew` 别名）：升级后按版本自动展示一次，设置页可关闭；
 - `ctrl+p` 命令面板改为全量非隐藏命令目录（不再局限于精选 `/` 菜单），空查询时把最近执行命令置顶；
 - `shift+tab` 循环当前会话的可选 agent profile（跳过 subagent），与 `/archetype next` 同一路径；
+- `/permissions rules` 图形面板支持规则上移/下移、修改动作（string 规则可转为对象规则）、
+  删除与重置，顺序即 last-match 执行顺序；
 - turn undo/redo 持久化：`AgentTurnHistoryEntity` 保存 turn 边界、redo 消息与文件快照栈，
   `TurnHistoryController` 懒加载/串行写回，重启后 `/undo`、`/redo` 与文件级撤销仍可用；
 - `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。

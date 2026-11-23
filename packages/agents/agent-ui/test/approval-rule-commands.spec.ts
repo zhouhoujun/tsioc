@@ -122,6 +122,47 @@ export class ApprovalRuleCommandsTest {
         expect(persisted[persisted.length - 1]).toEqual({ approvalRequireApproval: added });
     }
 
+    @Test('settings panel reorders rules for last-match execution')
+    async settingsPanelReorder() {
+        const { host, persisted, notices } = createHost({ policy: { approval: { requireApproval: ['a', 'b', 'c'] } } });
+        const picks = ['rule:0', 'down'];
+        (host as any).select = async () => picks.shift();
+        await openApprovalRulesPanel(host as any);
+        expect(host.options.policy.approval.requireApproval).toEqual(['b', 'a', 'c']);
+        expect(persisted[persisted.length - 1]).toEqual({ approvalRequireApproval: ['b', 'a', 'c'] });
+        expect(notices[notices.length - 1]).toContain('Moved approval rule to position 2');
+
+        picks.push('rule:2', 'up');
+        await openApprovalRulesPanel(host as any);
+        expect(host.options.policy.approval.requireApproval).toEqual(['b', 'c', 'a']);
+    }
+
+    @Test('settings panel edits an object rule action')
+    async settingsPanelEditObject() {
+        const { host, persisted, notices } = createHost({
+            policy: { approval: { requireApproval: [{ category: 'sandbox', action: 'ask' }] } }
+        });
+        const picks = ['rule:0', 'edit', 'deny'];
+        (host as any).select = async () => picks.shift();
+        await openApprovalRulesPanel(host as any);
+        expect(host.options.policy.approval.requireApproval).toEqual([{ category: 'sandbox', action: 'deny' }]);
+        expect(persisted[persisted.length - 1]).toEqual({
+            approvalRequireApproval: [{ category: 'sandbox', action: 'deny' }]
+        });
+        expect(notices[notices.length - 1]).toContain('Updated approval rule 1');
+    }
+
+    @Test('settings panel converts a classifiable string rule when editing')
+    async settingsPanelEditString() {
+        const { host } = createHost({ policy: { approval: { requireApproval: ['terminal'] } } });
+        const picks = ['rule:0', 'edit', 'deny'];
+        (host as any).select = async () => picks.shift();
+        await openApprovalRulesPanel(host as any);
+        expect(host.options.policy.approval.requireApproval).toEqual([
+            { category: 'sandbox', names: ['terminal'], action: 'deny' }
+        ]);
+    }
+
     @Test('cancelling the add flow leaves the rules untouched')
     async settingsPanelAddCancelled() {
         const { host, persisted, notices } = createHost({ policy: { approval: { requireApproval: ['terminal'] } } });

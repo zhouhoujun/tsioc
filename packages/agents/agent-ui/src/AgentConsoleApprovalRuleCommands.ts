@@ -1,4 +1,4 @@
-import { DEFAULT_APPROVAL_REQUIRED_RULES, APPROVAL_CATEGORY_DEFINITIONS } from '@tsdi/agent';
+import { DEFAULT_APPROVAL_REQUIRED_RULES, APPROVAL_CATEGORY_DEFINITIONS, classifyApprovalCategory } from '@tsdi/agent';
 import type { ApprovalRule } from '@tsdi/agent';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 
@@ -243,15 +243,53 @@ export async function openApprovalRulesPanel(host: ApprovalRuleCommandHost): Pro
         host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandIndexMissing', { index: picked }));
         return;
     }
+    const rule = rules[index];
+    const editable = typeof rule !== 'string' || !!classifyApprovalCategory(rule);
+    const options = [
+        ...(index > 0 ? [{ label: formatAgentUiNotice(host.translator, 'approvalRulesPanelMoveUp'), value: 'up' }] : []),
+        ...(index < rules.length - 1 ? [{ label: formatAgentUiNotice(host.translator, 'approvalRulesPanelMoveDown'), value: 'down' }] : []),
+        ...(editable ? [{ label: formatAgentUiNotice(host.translator, 'approvalRulesPanelEditAction'), value: 'edit' }] : []),
+        { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelRemove'), value: 'remove' },
+        { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelCancel'), value: 'cancel' }
+    ];
     const action = await host.select(
         formatAgentUiNotice(host.translator, 'approvalRulesPanelActionTitle'),
-        [
-            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelRemove'), value: 'remove' },
-            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelCancel'), value: 'cancel' }
-        ],
+        options,
         0,
         formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
     );
+    if (action === 'up' || action === 'down') {
+        const nextIndex = action === 'up' ? index - 1 : index + 1;
+        rules.splice(index, 1);
+        rules.splice(nextIndex, 0, rule);
+        await saveRules(host, rules);
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandMoved', {
+            index: nextIndex + 1,
+            rule: describeApprovalRule(rule)
+        }));
+        return;
+    }
+    if (action === 'edit') {
+        const nextAction = await host.select(
+            formatAgentUiNotice(host.translator, 'approvalRulesPanelEditActionTitle'),
+            ACTIONS.map(item => ({ label: item, value: item })),
+            Math.max(0, ACTIONS.indexOf((rule as any).action || 'ask')),
+            formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+        );
+        if (!nextAction || !ACTIONS.includes(nextAction)) {
+            return;
+        }
+        const updated = typeof rule === 'string'
+            ? { category: classifyApprovalCategory(rule) as any, names: [rule], action: nextAction as 'ask' | 'allow' | 'deny' }
+            : { ...rule, action: nextAction as 'ask' | 'allow' | 'deny' };
+        rules[index] = updated;
+        await saveRules(host, rules);
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandUpdated', {
+            index: index + 1,
+            rule: describeApprovalRule(updated)
+        }));
+        return;
+    }
     if (action !== 'remove') {
         return;
     }
