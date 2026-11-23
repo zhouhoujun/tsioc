@@ -608,6 +608,29 @@ describe('Workflow data & trigger nodes', () => {
         expect(text.data?.executionState?.nodeStates.combine_1.result?.data?.value).toBe('hello world');
     });
 
+    it('resolves typed compare values for condition, switch and filter', async () => {
+        const context = { flow: { threshold: 7 } };
+        const condition = await service.execute(chain([
+            { type: 'inject', config: { payload: { level: 7 } } },
+            { type: 'condition', config: { field: 'level', operator: 'equals', value: 'flow.threshold' } }
+        ]), context);
+        expect(condition.data?.executionState?.nodeStates.condition_1.result?.data?.condition).toBe(true);
+
+        const switched = await service.execute(chain([
+            { type: 'inject', config: { payload: { level: 7 } } },
+            { type: 'switch', config: { field: 'level', rules: [
+                { operator: 'equals', value: 'flow.threshold' }
+            ] } }
+        ]), context);
+        expect(switched.data?.executionState?.nodeStates.switch_1.result?.data?.route).toBe(1);
+
+        const filtered = await service.execute(chain([
+            { type: 'inject', config: { payload: { items: [{ v: 1 }, { v: 2 }] } } },
+            { type: 'filter', config: { field: 'items', path: 'v', operator: 'equals', value: 'flow.threshold' } }
+        ]), { flow: { threshold: 2 } });
+        expect(filtered.data?.executionState?.nodeStates.filter_1.result?.data?.items).toEqual([{ v: 2 }]);
+    });
+
     it('routes switch rules past the fourth output', async () => {
         const definition: VisualWorkflowDefinition = {
             id: 'switch-eight',

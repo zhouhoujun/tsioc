@@ -349,6 +349,22 @@ function matchRouterRule(actual: any, operator: string, expected: any): boolean 
     }
 }
 
+/**
+ * Resolve a typed compare value. The inspector stores non-literal sources as
+ * `msg.` / `flow.` / `global.` / `env.` prefixes (or a ValueRef object); plain
+ * strings stay literal so existing rules keep comparing text.
+ */
+function resolveCompareValue(value: any, context: ActivityContext): any {
+    if (value && typeof value === 'object' && !Array.isArray(value)
+        && typeof (value as any).type === 'string') {
+        return resolveWorkflowValue(value, context);
+    }
+    if (typeof value === 'string' && /^(msg|flow|global|env)\./.test(value.trim())) {
+        return resolveWorkflowValue(value, context);
+    }
+    return value;
+}
+
 function compareValues(actual: any, operator: string, expected: any): boolean {
     switch (operator) {
         case 'equals':
@@ -388,7 +404,7 @@ export function evaluateCondition(node: IVisualWorkflowNode | undefined, context
     }
     if (config.field !== undefined) {
         const actual = resolveWorkflowValue(config.field, context);
-        return compareValues(actual, String(config.operator || 'truthy'), config.value);
+        return compareValues(actual, String(config.operator || 'truthy'), resolveCompareValue(config.value, context));
     }
     return true;
 }
@@ -1836,7 +1852,7 @@ export async function executeVisualNode(
             const items = arrayFrom(context, config.field);
             const filtered = items.filter(item => {
                 const actual = resolveFrom(item, config.path);
-                return compareValues(actual, String(config.operator || 'truthy'), config.value);
+                return compareValues(actual, String(config.operator || 'truthy'), resolveCompareValue(config.value, context));
             });
             return { success: true, data: { nodeId: node.id, items: filtered, count: filtered.length } };
         }
@@ -1978,7 +1994,7 @@ export async function executeVisualNode(
                 const operator = String(rules[index]?.operator || 'equals');
                 const matched = operator === 'else'
                     ? !matchedAny
-                    : matchRouterRule(actual, operator, rules[index]?.value);
+                    : matchRouterRule(actual, operator, resolveCompareValue(rules[index]?.value, context));
                 if (!matched) {
                     continue;
                 }

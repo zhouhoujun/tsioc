@@ -14,6 +14,9 @@ export interface ApprovalStrategy {
     autoDenies?(toolName: string, input: any): boolean;
     /** Whether an injected ApprovalReviewer may resolve requests without a human (A2). */
     autoReview?: boolean;
+    /** Opt-in: skip prompts for read-only shell commands. */
+    setShellScanner?(enabled: boolean): void;
+    isShellScannerEnabled?(): boolean;
 }
 
 export const AgentApprovalStrategy = token<ApprovalStrategy>('AgentApprovalStrategy');
@@ -195,9 +198,7 @@ export class ToolApprovalManager extends ApprovalManager {
         super();
     }
 
-    isConfigured(): boolean {
-        return !!this.strategy;
-    }
+    isConfigured(): boolean { return !!this.strategy; }
 
     /**
      * Apply the runtime's resolved policy to this (shared) instance.
@@ -232,22 +233,20 @@ export class ToolApprovalManager extends ApprovalManager {
         };
     }
 
-    isAutoApproveEnabled(): boolean {
-        return this.options?.autoApprove === true;
-    }
+    isAutoApproveEnabled(): boolean { return this.options?.autoApprove === true; }
 
-    requiresApproval(toolName: string, input: any): boolean {
-        return this.strategy?.requires(toolName, input) ?? false;
-    }
+    requiresApproval(toolName: string, input: any): boolean { return this.strategy?.requires(toolName, input) ?? false; }
+
+    setShellScanner(enabled: boolean): void { this.strategy?.setShellScanner?.(enabled); }
+
+    isShellScannerEnabled(): boolean { return this.strategy?.isShellScannerEnabled?.() === true; }
 
     setAllowRules(rules: string[]): void {
         const seen = new Set<string>();
         this.allowRules = (Array.isArray(rules) ? rules : []).map(rule => String(rule || '').trim()).filter(rule => rule && !seen.has(rule) && !!seen.add(rule)).slice(-50);
     }
 
-    getAllowRules(): string[] {
-        return [...this.allowRules];
-    }
+    getAllowRules(): string[] { return [...this.allowRules]; }
 
     /** Exact tool name or a trailing-`*` prefix. */
     private isAllowedByProjectRule(toolName: string): boolean {
