@@ -152,6 +152,7 @@ export class AgentConsoleKeymapContextTest {
         const keymap = new AgentConsoleKeymap();
         expect(keymap.resolve('ctrl+x s', 'composer')).toEqual('status');
         expect(keymap.resolve('ctrl+g', 'composer')).toEqual('open-editor');
+        expect(keymap.resolve('ctrl+x e', 'global')).toEqual('open-editor');
         keymap.set('ctrl+g', 'sessions', 'composer');
         expect(keymap.resolve('ctrl+g', 'composer')).toEqual('sessions');
         expect(keymap.resolve('ctrl+g', 'global')).toEqual('open-editor');

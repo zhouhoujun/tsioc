@@ -58,6 +58,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     escape: 'interrupt-turn',
     'ctrl+p': 'command-palette',
     'ctrl+g': 'open-editor',
+    /** opencode-style leader alias for the external editor. */
+    'ctrl+x e': 'open-editor',
     'ctrl+f': 'model-favorite-toggle',
     f2: 'model-cycle-recent',
     'shift+f2': 'model-cycle-recent-back',

@@ -130,7 +130,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | 会话 undo/redo（恢复 prompt） | ✅ `/undo` `/redo`（turn-first，文件级回退） | ✅ Ctrl+X U / R | ◐（rollout） | 已完成 |
 | `/btw` 侧问 | ✅ | ✅ | ❌ | 对齐 |
 | `/highlights` 更新提示 | ✅ `/highlights`（升级后自动一次，可关闭） | ✅ | ◐ | 对齐 |
-| 模型切换 | ✅ `/model` + F2 最近 | ✅ Ctrl+X M / F2 | ✅ | 对齐 |
+| 模型切换 | ✅ `/model`（`/models` 别名）+ F2 最近 | ✅ Ctrl+X M / F2 | ✅ | 对齐 |
 | Agent profiles | ✅ `/agents` 选择 + `shift+tab` 循环（跳过 subagent） | ✅ `/agents`、Shift+Tab | ✅ profiles | 对齐 |
 | 权限规则 | ✅ ordered rules（action/resource，last match）+ durable allow | ✅ ordered rules（action/resource/effect，last match）、durable allow、scanner | ✅ sandbox × approval policy + auto-review | 对齐（scanner opt-in） |
 | LSP 诊断 | ✅ `/check [paths]` 只读诊断面板（`/lsp` 别名） | ✅ | ◐ | 对齐 |

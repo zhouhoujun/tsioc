@@ -7,7 +7,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
 
     { name: '/status', description: 'show session status', group: 'core' },
     { name: '/btw', description: 'ask a side question about this conversation (not saved)', group: 'core', needsArgs: true, args: [{ name: 'question', variadic: true }] },
-    { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', args: [{ name: 'profile', variadic: true }] },
+    { name: '/model', description: 'switch model or queue next-turn profile', group: 'core', aliases: ['/models'], args: [{ name: 'profile', variadic: true }] },
     { name: '/provider', description: 'add a new AI provider with the guided wizard', group: 'core', aliases: ['/connect'] },
     { name: '/fast', description: 'switch to fast/strong model profile: /fast [profile]', group: 'core', args: [{ name: 'profile' }] },
     { name: '/tools', description: 'inspect the currently enabled tools: /tools [<name>]', group: 'core', args: [{ name: 'name' }] },
@@ -81,7 +81,7 @@ export const AGENT_CONSOLE_COMMAND_DEFINITIONS: AgentConsoleCommandDefinition[] 
     { name: '/init', description: 'generate AGENTS.md project context', group: 'session', args: [{ name: 'arg', type: 'enum', values: ['--force'] }] },
     { name: '/ssh', description: 'SSH hosts: list / connect / disconnect / forward', group: 'session', args: [{ name: 'action', type: 'enum', values: ['list', 'ls', 'connect', 'disconnect', 'shell', 'forward', 'help', '?'] }, { name: 'arg', variadic: true }] },
 
-    { name: '/theme', description: 'preview or apply a saved UI theme', group: 'display', args: [{ name: 'name' }] },
+    { name: '/theme', description: 'preview or apply a saved UI theme', group: 'display', aliases: ['/themes'], args: [{ name: 'name' }] },
     { name: '/thinking', description: 'toggle reasoning/thinking message visibility (Ctrl+X T)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide'] }] },
     { name: '/timeline', description: 'toggle compact chronological timeline view (Ctrl+X G)', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['off', 'compact', 'steps', 'verbose'] }] },
     { name: '/display', description: 'display settings: timestamps /display [on|off], critical marks /display critical, activity verbosity /display activity [low|medium|high]', group: 'display', args: [{ name: 'mode', type: 'enum', values: ['on', 'off', 'show', 'hide', 'critical', 'activity'] }, { name: 'value', variadic: true }] },
