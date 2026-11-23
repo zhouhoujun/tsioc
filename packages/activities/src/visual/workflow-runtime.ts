@@ -318,6 +318,42 @@ export async function resolveUdpConfig(
     };
 }
 
+/** Resolved WebSocket client endpoint. */
+export interface WorkflowWebSocketClientSettings {
+    url: string;
+    headers?: Record<string, string>;
+    tls?: { ca?: string; cert?: string; key?: string; servername?: string; rejectUnauthorized?: boolean };
+    clientId?: string;
+}
+
+/** Resolve a shared `websocket-client` endpoint (inline values when no ref). */
+export async function resolveWebSocketClientConfig(
+    config: Record<string, any>,
+    context: ActivityContext
+): Promise<WorkflowWebSocketClientSettings> {
+    const clientId = String(config?.wsClient || config?.client || '').trim();
+    const nodes = (context as any)?.configNodes || {};
+    const shared = clientId ? nodes[clientId] : undefined;
+    if (clientId && !shared) {
+        throw new Error(`WebSocket client endpoint not found: ${clientId}. Add a websocket-client config node or clear the reference.`);
+    }
+    if (!shared) {
+        const headers = coerceJson(config?.headers);
+        return {
+            url: String(await resolveCredentialValue(config?.url, context) ?? '').trim(),
+            headers: headers && typeof headers === 'object' && !Array.isArray(headers) ? headers : undefined,
+            tls: config?.tls ? await resolveTlsOptions(config, context) : undefined
+        };
+    }
+    const headers = coerceJson(shared.headers);
+    return {
+        url: String(await resolveCredentialValue(shared.url, context) ?? '').trim(),
+        headers: headers && typeof headers === 'object' && !Array.isArray(headers) ? headers : undefined,
+        tls: shared.tls ? await resolveTlsOptions({ tls: shared.tls }, context) : undefined,
+        clientId
+    };
+}
+
 /**
  * Resolve the TLS options referenced by a node's `tls` field. The referenced
  * `tls` config node lives in the workflow definition and is exposed to the
@@ -1470,24 +1506,28 @@ export async function executeVisualNode(
                             }
                         };
                     }
-                    const url = String(await resolveCredentialValue(config.url, context) ?? '').trim();
+                    let settings;
+                    try {
+                        settings = await resolveWebSocketClientConfig(config, context);
+                    } catch (error) {
+                        return { success: false, error: error as Error, data: { nodeId: node.id } };
+                    }
+                    const url = settings.url;
                     if (!url) {
                         return {
                             success: false,
                             error: new Error(
-                                'WebSocket out needs a ws:// or wss:// URL, or a shared WebSocket listener config.'
+                                'WebSocket out needs a ws:// or wss:// URL, or a shared WebSocket client/listener config.'
                             ),
                             data: { nodeId: node.id }
                         };
                     }
-                    const tls = await resolveTlsOptions(config, context);
-                    const headers = coerceJson(config.headers);
                     await sender({
                         url,
                         payload: body,
                         timeoutMs,
-                        headers: headers && typeof headers === 'object' && !Array.isArray(headers) ? headers : undefined,
-                        tls
+                        headers: settings.headers,
+                        tls: settings.tls
                     });
                     return { success: true, data: { nodeId: node.id, transport, url, bytes: body.length } };
                 }

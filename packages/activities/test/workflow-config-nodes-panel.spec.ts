@@ -35,22 +35,20 @@ describe('Workflow configuration-node index', () => {
         });
 
         const groups = panel().groups;
-        expect(groups.map(group => group.resource)).toEqual(['mqtt-broker', 'tls', 'http-endpoint', 'tcp-endpoint', 'udp-endpoint', 'websocket-listener']);
-        expect(groups[0].type).toBe('mqtt');
-        expect(groups[0].items.map(item => item.name)).toEqual(['prod']);
-        expect(groups[0].items[0].summary).toBe('mqtt://prod:1883');
-        expect(groups[0].items[0].usedBy.length).toBe(1);
+        expect(groups.map(group => group.resource)).toEqual(['websocket-client', 'mqtt-broker', 'tls', 'http-endpoint', 'tcp-endpoint', 'udp-endpoint', 'websocket-listener']);
+        expect(groups[0].type).toBe('websocket-client');
+        expect(groups[1].type).toBe('mqtt');
+        expect(groups[1].items.map(item => item.name)).toEqual(['prod']);
+        expect(groups[1].items[0].summary).toBe('mqtt://prod:1883');
+        expect(groups[1].items[0].usedBy.length).toBe(1);
         // Empty groups still offer their create button.
-        expect(groups[1].items).toEqual([]);
-        expect(groups[1].type).toBe('tls');
-        expect(groups[2].items).toEqual([]);
-        expect(groups[2].type).toBe('http');
-        expect(groups[3].items).toEqual([]);
-        expect(groups[3].type).toBe('tcp');
-        expect(groups[4].items).toEqual([]);
-        expect(groups[4].type).toBe('udp');
-        expect(groups[5].items).toEqual([]);
-        expect(groups[5].type).toBe('websocket');
+        expect(groups[0].items).toEqual([]);
+        expect(groups[2].type).toBe('tls');
+        expect(groups[3].type).toBe('http');
+        expect(groups[4].type).toBe('tcp');
+        expect(groups[5].type).toBe('udp');
+        expect(groups[6].type).toBe('websocket');
+        [0, 2, 3, 4, 5, 6].forEach(index => expect(groups[index].items).toEqual([]));
     });
 
     it('labels usage and distinguishes used from unused records', () => {
@@ -61,7 +59,7 @@ describe('Workflow configuration-node index', () => {
         });
 
         const component = panel();
-        const items = component.groups[0].items;
+        const items = component.groups.find(group => group.type === 'mqtt')!.items;
         const usedItem = items.find(item => item.id === used.id)!;
         const unusedItem = items.find(item => item.id === unused.id)!;
 

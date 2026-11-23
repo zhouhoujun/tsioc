@@ -185,7 +185,15 @@ describe('workflow plugins', () => {
         });
         try {
             const websocket = createWebSocketPlugin().nodes!.find(node => node.type === 'websocket-request')!;
-            const wsResult = await websocket.execute!({ id: 'ws_1', type: 'websocket-request', config: { url: `ws://127.0.0.1:${wsPort}`, message: 'hi', waitForReply: true, timeout: 2000 } } as any, {});
+            const wsResult = await websocket.execute!({
+                id: 'ws_1',
+                type: 'websocket-request',
+                config: { client: 'ws_client', message: 'hi', waitForReply: true, timeout: 2000 }
+            } as any, {
+                configNodes: {
+                    ws_client: { url: `ws://127.0.0.1:${wsPort}`, headers: { 'x-flow': 'yes' } }
+                }
+            } as any);
             expect(wsResult.success).toBe(true);
             expect(wsResult.data?.reply).toBe('echo:hi');
         } finally {

@@ -340,6 +340,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "WebSocket listener",
                 "description": "Shared WebSocket server for WebSocket in/out nodes"
             },
+            "websocket-client": {
+                "label": "WebSocket client",
+                "description": "Shared WebSocket client URL, headers and TLS"
+            },
             "mqtt": {
                 "label": "MQTT broker",
                 "description": "Shared MQTT broker connection for MQTT nodes"
@@ -713,6 +717,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "scope": "Scope"
             },
             "websocket-request": {
+                "client": "Client endpoint",
                 "url": "URL",
                 "headers": "Headers",
                 "message": "Message fields",
@@ -850,6 +855,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "websocket-out": {
                 "websocket": "Listener",
+                "wsClient": "Client endpoint",
                 "url": "URL",
                 "payload": "Payload path",
                 "timeout": "Timeout",
@@ -897,6 +903,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "Host",
                 "port": "Port",
                 "broadcast": "Broadcast"
+            },
+            "websocket-client": {
+                "url": "URL",
+                "headers": "Headers",
+                "tls": "TLS config"
             },
             "websocket": {
                 "host": "Host",
@@ -1217,6 +1228,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "tail": {
                 "path": "logs/app.log"
+            },
+            "websocket-client": {
+                "url": "ws://host:port/path"
             },
             "global-config": {
                 "values": "{ \"region\": \"eu\", \"retries\": 3 }"
@@ -2099,6 +2113,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "WebSocket 监听器",
                 "description": "供 WebSocket 输入/输出节点共用的 WebSocket 服务"
             },
+            "websocket-client": {
+                "label": "WebSocket 客户端",
+                "description": "供 WebSocket 客户端节点共用的地址、请求头与 TLS"
+            },
             "mqtt": {
                 "label": "MQTT Broker",
                 "description": "供 MQTT 节点共用的 Broker 连接"
@@ -2609,6 +2627,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "websocket-out": {
                 "websocket": "监听器",
+                "wsClient": "客户端端点",
                 "url": "URL",
                 "payload": "载荷路径",
                 "timeout": "超时",
@@ -2656,6 +2675,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "host": "主机",
                 "port": "端口",
                 "broadcast": "广播"
+            },
+            "websocket-client": {
+                "url": "URL",
+                "headers": "请求头",
+                "tls": "TLS 配置"
             },
             "websocket": {
                 "host": "主机",
@@ -2960,6 +2984,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "tail": {
                 "path": "logs/app.log"
+            },
+            "websocket-client": {
+                "url": "ws://host:port/path"
             },
             "global-config": {
                 "values": "{ \"region\": \"eu\", \"retries\": 3 }"

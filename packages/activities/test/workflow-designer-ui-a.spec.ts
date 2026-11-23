@@ -84,7 +84,7 @@ describe('Workflow Designer UI', () => {
 
     it('renders palette, canvas, edges, inspector and status bar', () => {
         expect(root.matches('.workflow-designer')).toBe(true);
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(70);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(71);
         expect(root.querySelectorAll('.workflow-node').length).toBe(6);
         expect(root.querySelectorAll('.workflow-edge').length).toBe(6);
         expect(root.querySelector('.workflow-inspector')).toBeTruthy();

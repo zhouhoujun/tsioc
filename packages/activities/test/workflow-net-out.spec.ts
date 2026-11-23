@@ -252,6 +252,38 @@ describe('Workflow outbound transports', () => {
         expect(sockets[0].headers).toEqual({ 'x-flow': 'yes' });
     });
 
+    it('resolves a shared WebSocket client endpoint', async () => {
+        const sockets: any[] = [];
+        service.setWebSocketSender(message => {
+            sockets.push(message);
+        });
+        const definition: VisualWorkflowDefinition = {
+            id: 'ws-client-shared',
+            name: 'WS client shared',
+            nodes: [
+                registry.createNode('websocket-client', { x: 0, y: 0 }, {
+                    id: 'ws_1',
+                    config: {
+                        url: 'ws://shared:9000/socket',
+                        headers: { 'x-endpoint': 'yes' }
+                    }
+                }),
+                registry.createNode('websocket-out', { x: 200, y: 0 }, {
+                    id: 'ws_out',
+                    config: { wsClient: 'ws_1', payload: 'payload' }
+                })
+            ],
+            connections: []
+        };
+        const result = await service.execute(definition, { payload: 'hello' });
+        expect(result.success).toBe(true);
+        expect(sockets[0]).toMatchObject({
+            url: 'ws://shared:9000/socket',
+            payload: 'hello',
+            headers: { 'x-endpoint': 'yes' }
+        });
+    });
+
     it('resolves a TLS config node and its credential references', async () => {
         const sent: any[] = [];
         service.setTcpSender(message => {

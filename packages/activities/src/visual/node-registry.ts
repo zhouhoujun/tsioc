@@ -842,6 +842,30 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         defaultConfig: { values: {}, scope: 'env' }
     },
     {
+        type: 'websocket-client',
+        label: 'WebSocket client',
+        description: 'Shared WebSocket client URL, headers and TLS',
+        category: 'advanced',
+        configNode: true,
+        resource: 'websocket-client',
+        icon: '⌁',
+        color: '#0ea5e9',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [],
+        fields: [
+            configField({ key: 'url', label: 'URL', type: 'url', required: true, placeholder: 'ws://host:port/path' }),
+            configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3 }),
+            configField({
+                key: 'tls',
+                label: 'TLS config',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'tls', create: true, edit: true }
+            })
+        ],
+        defaultConfig: { url: '', headers: {} }
+    },
+    {
         type: 'mqtt',
         label: 'MQTT broker',
         description: 'Shared MQTT broker connection for MQTT nodes',
@@ -992,13 +1016,19 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 type: 'select',
                 reference: { kind: 'config-node', resource: 'websocket-listener', create: true, edit: true }
             }),
-            configField({ key: 'url', label: 'URL', type: 'url', placeholder: 'ws://host:port/path', description: 'ws:// or wss:// endpoint.' }),
+            configField({
+                key: 'wsClient',
+                label: 'Client endpoint',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'websocket-client', create: true, edit: true }
+            }),
+            configField({ key: 'url', label: 'URL', type: 'url', placeholder: 'ws://host:port/path', description: 'ws:// or wss:// endpoint.', visibleWhen: { key: 'wsClient', equals: '' } }),
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 5000, min: 0, step: 1000, unit: 'ms' }),
-            configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3 }),
-            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; leave empty for plain WebSocket.' })
+            configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3, visibleWhen: { key: 'wsClient', equals: '' } }),
+            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; leave empty for plain WebSocket.', visibleWhen: { key: 'wsClient', equals: '' } })
         ],
-        defaultConfig: { websocket: '', url: '', payload: 'payload', timeout: 5000, headers: {} }
+        defaultConfig: { websocket: '', wsClient: '', url: '', payload: 'payload', timeout: 5000, headers: {} }
     },
     {
         type: 'tls',

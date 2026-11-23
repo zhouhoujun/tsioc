@@ -2,6 +2,7 @@ import { ActivityContext, ActivityResult } from '../../activities/Activity';
 import { IVisualWorkflowNode } from '../../visual/types';
 import { WorkflowPlugin } from '../types';
 import { decodePayload, encodePayload, errorResult, pluginField, pluginPort } from './shared';
+import { resolveWebSocketClientConfig } from '../../visual/workflow-runtime';
 
 export function createWebSocketPlugin(): WorkflowPlugin {
     return {
@@ -23,20 +24,37 @@ export function createWebSocketPlugin(): WorkflowPlugin {
                 pluginPort('error', 'error', 'output', 'Error')
             ],
             fields: [
-                pluginField({ key: 'url', label: 'URL', type: 'url', required: true, placeholder: 'wss://example.com/socket' }),
-                pluginField({ key: 'headers', label: 'Headers', type: 'keyvalue', valueType: 'text', placeholder: 'Authorization' }),
+                pluginField({
+                    key: 'client',
+                    label: 'Client endpoint',
+                    type: 'select',
+                    reference: { kind: 'config-node', resource: 'websocket-client', create: true, edit: true }
+                }),
+                pluginField({ key: 'url', label: 'URL', type: 'url', required: true, placeholder: 'wss://example.com/socket', visibleWhen: { key: 'client', equals: '' } }),
+                pluginField({ key: 'headers', label: 'Headers', type: 'keyvalue', valueType: 'text', placeholder: 'Authorization', visibleWhen: { key: 'client', equals: '' } }),
                 pluginField({ key: 'message', label: 'Message fields', type: 'json', defaultValue: {} }),
                 pluginField({ key: 'waitForReply', label: 'Wait for reply', type: 'boolean', defaultValue: true }),
                 pluginField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 30000, min: 0, step: 1000, unit: 'ms', group: 'Reliability' })
             ],
-            defaultConfig: { message: {}, waitForReply: true, timeout: 30000 },
+            defaultConfig: { client: '', message: {}, waitForReply: true, timeout: 30000 },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
                 const config = node.config || {};
                 try {
                     const module: any = await import('ws');
                     const WebSocket = module.WebSocket || module.default || module;
-                    const socket = new WebSocket(String(config.url || ''), {
-                        headers: config.headers && typeof config.headers === 'object' ? config.headers : undefined
+                    const settings = await resolveWebSocketClientConfig({ ...config, wsClient: config.client }, context);
+                    if (!settings.url) {
+                        throw new Error('WebSocket request needs a URL or a shared client endpoint.');
+                    }
+                    const socket = new WebSocket(settings.url, {
+                        headers: settings.headers,
+                        ...(settings.tls ? {
+                            ca: settings.tls.ca,
+                            cert: settings.tls.cert,
+                            key: settings.tls.key,
+                            servername: settings.tls.servername,
+                            rejectUnauthorized: settings.tls.rejectUnauthorized !== false
+                        } : {})
                     });
                     await new Promise<void>((resolve, reject) => {
                         socket.once('open', () => resolve());

@@ -608,7 +608,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 70 registered node types by label, description or type,
+- searchable palette: filter 71 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -868,7 +868,8 @@ through host transports:
   a `websocket` listener config node, broadcasts to every client connected to
   that shared listener. Broadcasting reports the client count and fails with a
   clear error when the listener is not running. Client mode accepts custom
-  handshake `headers`.
+  handshake `headers`, or a shared `websocket-client` endpoint (URL, headers,
+  TLS) used by both `websocket-out` and the `websocket-request` plugin.
 - `udp-out` can enable socket broadcast for datagrams sent to broadcast
   addresses.
 
