@@ -1685,12 +1685,14 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                             { label: 'Message property', value: 'msg' },
                             { label: 'Flow context', value: 'flow' },
                             { label: 'Global context', value: 'global' },
-                            { label: 'Environment', value: 'env' }
+                            { label: 'Environment', value: 'env' },
+                            { label: 'Expression', value: 'expression' }
                         ],
                         visibleWhen: { key: 'action', in: ['set', 'append'] }
                     }),
                     configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', in: ['set', 'append'] }, description: 'New value or item to append.' }),
-                    configField({ key: 'valuePath', label: 'Value path', type: 'text', visibleWhen: { key: 'action', in: ['set', 'append'] } })
+                    configField({ key: 'valuePath', label: 'Value path', type: 'text', visibleWhen: { key: 'action', in: ['set', 'append'] } }),
+                    configField({ key: 'valueExpression', label: 'Expression', type: 'text', placeholder: 'payload.total * 2', visibleWhen: { key: 'valueFrom', equals: 'expression' }, description: 'JSONata expression evaluated against the message, flow, global and env context.' })
                 ]
             })
         ],
@@ -1976,6 +1978,27 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Items')],
         fields: [
             configField({ key: 'field', label: 'Array field', type: 'text', typed: true, placeholder: 'items' }),
+            configField({
+                key: 'keys',
+                label: 'Sort keys',
+                type: 'list',
+                addLabel: '+ Add key',
+                description: 'Optional multi-key ordering; when set it takes precedence over the single sort path.',
+                itemFields: [
+                    configField({ key: 'path', label: 'Sort path', type: 'text', placeholder: 'createdAt' }),
+                    configField({
+                        key: 'order',
+                        label: 'Order',
+                        type: 'select',
+                        defaultValue: 'asc',
+                        options: [
+                            { label: 'Ascending', value: 'asc' },
+                            { label: 'Descending', value: 'desc' }
+                        ]
+                    }),
+                    configField({ key: 'numeric', label: 'Numeric compare', type: 'boolean', defaultValue: false })
+                ]
+            }),
             configField({ key: 'path', label: 'Sort path', type: 'text', typed: true, placeholder: 'value', description: 'Property of each item used for ordering.',}),
             configField({
                 key: 'order',

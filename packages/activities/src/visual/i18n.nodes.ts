@@ -510,7 +510,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "search": "Search for",
                 "replace": "Replace with",
                 "valueFrom": "Value from",
-                "valuePath": "Value path"
+                "valuePath": "Value path",
+                "valueExpression": "Expression"
             },
             "statistics": {
                 "field": "Array path",
@@ -554,6 +555,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "sort": {
                 "field": "Array path",
+                "keys": "Sort keys",
                 "path": "Item path",
                 "order": "Order",
                 "numeric": "Numeric compare"
@@ -1384,7 +1386,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "context path to modify, for example variables.name",
                 "value": "new value; JSON is supported",
                 "rules": "rules run in order, one change per row",
-                "action": "Set replaces, Delete removes, Append adds to a list or string"
+                "action": "Set replaces, Delete removes, Append adds to a list or string",
+                "valueExpression": "JSONata expression evaluated against the message, flow, global and env context"
             },
             "statistics": {
                 "field": "context path to the array to aggregate",
@@ -1428,6 +1431,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "sort": {
                 "path": "item property used for sorting",
                 "field": "array path to sort",
+                "keys": "multi-key ordering; later keys break ties",
                 "order": "ascending or descending",
                 "numeric": "Compare values as numbers instead of text."
             },
@@ -2317,7 +2321,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "search": "查找内容",
                 "replace": "替换为",
                 "valueFrom": "取值来源",
-                "valuePath": "取值路径"
+                "valuePath": "取值路径",
+                "valueExpression": "表达式"
             },
             "statistics": {
                 "field": "数组路径",
@@ -2361,6 +2366,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "sort": {
                 "field": "数组路径",
+                "keys": "排序键",
                 "path": "元素路径",
                 "order": "顺序",
                 "numeric": "数值比较"
@@ -3174,7 +3180,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "要修改的上下文路径。",
                 "value": "新值，支持 JSON。",
                 "rules": "按顺序执行，每行修改一个字段。",
-                "action": "Set 替换，Delete 删除，Append 追加到列表或字符串。"
+                "action": "Set 替换，Delete 删除，Append 追加到列表或字符串。",
+                "valueExpression": "针对消息、flow、global 与 env 上下文求值的 JSONata 表达式。"
             },
             "statistics": {
                 "field": "要聚合的数组的上下文路径。",
@@ -3218,6 +3225,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "sort": {
                 "path": "用于排序的元素属性。",
                 "field": "要排序的数组路径。",
+                "keys": "多键排序；前面的键相同时才比较后面的键。",
                 "order": "升序或降序。",
                 "numeric": "按数值而不是文本比较。"
             },

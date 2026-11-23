@@ -1,4 +1,5 @@
 import { parseYaml, stringifyYaml } from './workflow-yaml';
+import { evaluateWorkflowExpression } from './workflow-expression';
 import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 import {
     isWorkflowValueRef,
@@ -2123,7 +2124,9 @@ export async function executeVisualNode(
                     const valueFrom = String(rule.valueFrom || 'literal');
                     const valuePath = String(rule.valuePath || '').trim();
                     let ruleValue: any;
-                    if (valueFrom === 'msg') {
+                    if (valueFrom === 'expression') {
+                        ruleValue = await evaluateWorkflowExpression(String(rule.valueExpression ?? ''), context);
+                    } else if (valueFrom === 'msg') {
                         ruleValue = resolveFrom((context as any).msg || { payload: (context as any).payload }, valuePath);
                     } else if (valueFrom === 'flow') {
                         ruleValue = resolveFrom((context as any).flow || {}, valuePath);
@@ -2270,19 +2273,49 @@ export async function executeVisualNode(
         }
         case 'sort': {
             const items = arrayFrom(context, config.field).slice();
-            const direction = String(config.order || 'asc') === 'desc' ? -1 : 1;
-            const numeric = config.numeric === true;
-            items.sort((a, b) => {
-                const av = resolveFrom(a, config.path);
-                const bv = resolveFrom(b, config.path);
-                if (numeric) {
-                    return (Number(av) - Number(bv)) * direction;
+            const keys = (Array.isArray(config.keys) ? config.keys : [])
+                .filter((key: any) => String(key?.path ?? '').trim());
+            const compareValues = (a: any, b: any): number => {
+                if (typeof a === 'number' && typeof b === 'number') {
+                    return a - b;
                 }
-                if (typeof av === 'number' && typeof bv === 'number') {
-                    return (av - bv) * direction;
+                return String(a ?? '').localeCompare(String(b ?? ''));
+            };
+            const compareKey = (a: any, b: any, key: any): number => {
+                const av = resolveFrom(a, key.path);
+                const bv = resolveFrom(b, key.path);
+                const direction = String(key.order || 'asc') === 'desc' ? -1 : 1;
+                if (key.numeric === true) {
+                    const an = Number(av);
+                    const bn = Number(bv);
+                    return (Number.isFinite(an) && Number.isFinite(bn) ? an - bn : compareValues(av, bv)) * direction;
                 }
-                return String(av ?? '').localeCompare(String(bv ?? '')) * direction;
-            });
+                return compareValues(av, bv) * direction;
+            };
+            if (keys.length) {
+                // Multi-key ordering: later keys only break ties.
+                items.sort((a, b) => {
+                    for (const key of keys) {
+                        const result = compareKey(a, b, key);
+                        if (result !== 0) {
+                            return result;
+                        }
+                    }
+                    return 0;
+                });
+            } else {
+                const direction = String(config.order || 'asc') === 'desc' ? -1 : 1;
+                items.sort((a, b) => {
+                    const av = resolveFrom(a, config.path);
+                    const bv = resolveFrom(b, config.path);
+                    if (config.numeric === true) {
+                        const an = Number(av);
+                        const bn = Number(bv);
+                        return (Number.isFinite(an) && Number.isFinite(bn) ? an - bn : compareValues(av, bv)) * direction;
+                    }
+                    return compareValues(av, bv) * direction;
+                });
+            }
             return { success: true, data: { nodeId: node.id, items, count: items.length } };
         }
         case 'range': {

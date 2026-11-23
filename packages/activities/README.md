@@ -642,8 +642,11 @@ Features:
   duplicate (`Ctrl+D`), JSON import/export,
 - Node-RED-style base components: inject (manual / interval / cron / event), debug,
   trigger (first + optional second message), function, template (mustache sections + text/JSON/YAML output), JSON, CSV, XML, HTML, YAML, RBE, combine,
-  change, statistics, merge, split/map/filter/sort/range/batch/scale,
-  event-emit/event-wait, command, condition/switch/router, parallel/join,
+  change (set/append/move/replace, values from literals, context, env or a
+  JSONata expression), statistics, merge,
+  split/map/filter/sort/range/batch/scale — `sort` supports multi-key ordering
+  (`keys: [{ path, order, numeric }]`, later keys break ties) — event-emit/event-wait,
+  command, condition/switch/router, parallel/join,
   loop (sub-workflow repeat), delay, log, HTTP request, complete/catch/status,
   link/junction/sequence, try/catch, sub workflow, comment,
 - `http-request` returns `statusCode`, response headers and the final URL;

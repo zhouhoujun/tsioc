@@ -1212,6 +1212,76 @@ describe('Workflow data & trigger nodes', () => {
         expect(result.data?.executionState?.nodeStates.html_1.result?.data?.value).toEqual(['https://a', 'https://b']);
     });
 
+    it('sorts arrays by multiple keys with per-key direction', async () => {
+        const result = await service.execute(chain([
+            {
+                type: 'inject',
+                config: {
+                    payload: {
+                        items: [
+                            { status: 'b', name: 'B1', score: 2 },
+                            { status: 'a', name: 'A2', score: 10 },
+                            { status: 'a', name: 'A1', score: 9 },
+                            { status: 'b', name: 'B0', score: 1 }
+                        ]
+                    }
+                }
+            },
+            {
+                type: 'sort',
+                config: {
+                    field: 'items',
+                    keys: [
+                        { path: 'status', order: 'asc' },
+                        { path: 'score', order: 'desc', numeric: true }
+                    ]
+                }
+            }
+        ]), {});
+        const items = result.data?.executionState?.nodeStates.sort_1.result?.data?.items;
+        expect(items.map((item: any) => item.name)).toEqual(['A2', 'A1', 'B1', 'B0']);
+
+        // Multi-key ordering wins over the legacy single path/order fields.
+        const fallback = await service.execute(chain([
+            {
+                type: 'inject',
+                config: { payload: { items: [{ v: 2 }, { v: 1 }] } }
+            },
+            {
+                type: 'sort',
+                config: {
+                    field: 'items',
+                    path: 'v',
+                    order: 'desc',
+                    keys: [{ path: 'v', order: 'asc', numeric: true }]
+                }
+            }
+        ]), {});
+        expect(fallback.data?.executionState?.nodeStates.sort_1.result?.data?.items).toEqual([{ v: 1 }, { v: 2 }]);
+    });
+
+    it('sets a change value from an expression', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { total: 21 } } },
+            {
+                type: 'change',
+                config: {
+                    rules: [{
+                        action: 'set',
+                        field: 'doubled',
+                        valueFrom: 'expression',
+                        valueExpression: 'payload.total * 2'
+                    }]
+                }
+            }
+        ]), {});
+        const state = result.data?.executionState?.nodeStates.change_1;
+        expect(result.success).toBe(true);
+        expect(state?.result?.data?.rules).toEqual(['doubled']);
+        expect(state?.result?.data?.value?.doubled).toBe(42);
+        expect(state?.result?.data?.value?.payload?.total).toBe(21);
+    });
+
     it('applies multiple change rules in order', async () => {
         const result = await service.execute(chain([
             { type: 'change', config: { rules: [
