@@ -29,6 +29,8 @@ export interface AgentConsoleSettingsData {
     approvalRequireApproval?: ApprovalRule[];
     /** Project-scoped tool allow list (durable "always allow"). */
     approvalAllowRules?: string[];
+    /** Palette recents, newest first (workspace-scoped). */
+    recentCommands?: string[];
     messageSelectionPageSize?: 4 | 6 | 10;
     activityVerbosity?: 'low' | 'medium' | 'high';
     timelineMode?: boolean;
@@ -229,6 +231,7 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
         defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined,
         approvalRequireApproval: sanitizeApprovalRequireApproval(parsed?.approvalRequireApproval),
         approvalAllowRules: sanitizeApprovalAllowRules(parsed?.approvalAllowRules),
+        recentCommands: sanitizeRecentCommands(parsed?.recentCommands),
         messageSelectionPageSize: [4, 6, 10].includes(Number(parsed?.messageSelectionPageSize))
             ? Number(parsed.messageSelectionPageSize) as 4 | 6 | 10
             : undefined,
@@ -314,6 +317,18 @@ export function sanitizeApprovalAllowRules(value: unknown): string[] | undefined
     return rules.length ? rules.slice(-50) : undefined;
 }
 
+/** Palette recents: slash commands only, trimmed, deduped, newest first, max 10. */
+export function sanitizeRecentCommands(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) {
+        return undefined;
+    }
+    const seen = new Set<string>();
+    const commands = value
+        .map(item => typeof item === 'string' ? item.trim() : '')
+        .filter(item => item.startsWith('/') && !seen.has(item) && !!seen.add(item));
+    return commands.length ? commands.slice(0, 10) : undefined;
+}
+
 /** Open tabs are bounded and deduplicated; the most recently opened ids win. */
 export function sanitizeOpenSessionIds(value: unknown): string[] | undefined {
     if (!Array.isArray(value)) {
@@ -363,6 +378,7 @@ export class AgentConsoleSettingsStore {
             ...(data.highlightsSeenVersion ? { highlightsSeenVersion: data.highlightsSeenVersion } : {}),
             ...(data.defaultArchetype ? { defaultArchetype: data.defaultArchetype } : {}),
             ...(data.approvalRequireApproval?.length ? { approvalRequireApproval: data.approvalRequireApproval } : {}),
+            ...(data.recentCommands?.length ? { recentCommands: data.recentCommands } : {}),
             ...(data.messageSelectionPageSize ? { messageSelectionPageSize: data.messageSelectionPageSize } : {}),
             ...(data.activityVerbosity ? { activityVerbosity: data.activityVerbosity } : {}),
             ...(mode ? { timelineViewMode: mode } : {}),

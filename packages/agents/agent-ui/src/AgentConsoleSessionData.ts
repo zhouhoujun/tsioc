@@ -46,12 +46,17 @@ import { defaultAgentConsoleTitle } from './AgentConsoleTitle';
 /** Reactive data fields shared by the console session facade. */
 export class AgentConsoleSessionData {
     /** Record a successfully executed command at the front of the palette list. */
-    recordRecentCommand(command: string): void {
+    recordRecentCommand(command: string): boolean {
         const name = String(command || '').trim();
         if (!name.startsWith('/')) {
-            return;
+            return false;
         }
-        this.recentCommands = [name, ...this.recentCommands.filter(item => item !== name)].slice(0, 10);
+        const next = [name, ...this.recentCommands.filter(item => item !== name)].slice(0, 10);
+        if (next.length === this.recentCommands.length && next.every((item, index) => item === this.recentCommands[index])) {
+            return false;
+        }
+        this.recentCommands = next;
+        return true;
     }
 
     consoleOptions: Required<AgentConsoleOptions> = defaultAgentConsoleOptions;

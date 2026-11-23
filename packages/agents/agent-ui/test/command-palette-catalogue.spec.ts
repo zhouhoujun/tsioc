@@ -46,4 +46,14 @@ export class CommandPaletteCatalogueTest {
         await (component as any).handleCommand('/highlights');
         expect(state.recentCommands[0]).toEqual('/highlights');
     }
+
+    @Test('recent command recording reports whether the order changed')
+    recordChange() {
+        const { state } = build();
+        expect(state.recordRecentCommand('/a')).toEqual(true);
+        expect(state.recordRecentCommand('/b')).toEqual(true);
+        expect(state.recentCommands).toEqual(['/b', '/a']);
+        expect(state.recordRecentCommand('/b')).toEqual(false);
+        expect(state.recordRecentCommand('plain text')).toEqual(false);
+    }
 }

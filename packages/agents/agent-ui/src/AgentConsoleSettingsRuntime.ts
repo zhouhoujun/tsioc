@@ -114,6 +114,9 @@ export async function restoreSettings(self: any): Promise<void> {
                 // Optional runtime surface; the next project approval will retry.
             }
         }
+        if (Array.isArray(persisted.recentCommands)) {
+            self.state.recentCommands = [...persisted.recentCommands];
+        }
         if (persisted.messageSelectionPageSize) {
             self.state.consoleOptions = {
                 ...self.state.consoleOptions,

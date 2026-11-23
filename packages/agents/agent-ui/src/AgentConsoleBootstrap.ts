@@ -166,7 +166,7 @@ export function disposeConsole(host: AgentConsoleBootstrapHost): void {
         host.state.activateSelectedToolAction = undefined;
         host.state.resolveApprovalAction = undefined; host.state.approvalAlwaysAllowAction = undefined; host.state.modelUnavailableAction = undefined; host.state.scrollTranscriptAction = undefined; host.state.revealMessageAction = undefined; host.state.sessionTabsAction = undefined;
         host.state.globalKeyInputAction = undefined;
-        void host.persistInputHistory(); void host.persistSettings({ lastSessionId: host.state.sessionId, openSessionIds: host.state.openSessionIds });
+        void host.persistInputHistory(); void host.persistSettings({ lastSessionId: host.state.sessionId, openSessionIds: host.state.openSessionIds, recentCommands: host.state.recentCommands });
         const shell = host.sshShell;
         host.sshShell = null;
         host.state.sshShell = null;
