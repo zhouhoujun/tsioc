@@ -34,16 +34,50 @@ interface CompiledRoute<THandler> {
     segments: string[];
     specificity: number;
     order: number;
+    /** Position in the priority-sorted list; used to keep candidate order stable. */
+    rank: number;
+    /** Cached upper-case method allowlist (rebuilt when `route.methods` changes). */
+    methods?: Set<string>;
+    methodsSource?: string[];
+}
+
+interface TrieNode<THandler> {
+    statics: Map<string, TrieNode<THandler>>;
+    param?: TrieNode<THandler>;
+    wildcards: CompiledRoute<THandler>[];
+    routes: CompiledRoute<THandler>[];
+}
+
+function createNode<THandler>(): TrieNode<THandler> {
+    return { statics: new Map(), wildcards: [], routes: [] };
 }
 
 function normalizePath(pathname: string): string {
-    const value = String(pathname || '/');
-    const withoutQuery = value.split('?')[0] || '/';
-    return withoutQuery.length > 1 ? withoutQuery.replace(/\/+$/, '') || '/' : '/';
+    let value = String(pathname || '/');
+    const query = value.indexOf('?');
+    if (query >= 0) {
+        value = value.slice(0, query);
+    }
+    if (!value) {
+        return '/';
+    }
+    if (value.length > 1 && value.charCodeAt(value.length - 1) === 47) {
+        let end = value.length;
+        while (end > 1 && value.charCodeAt(end - 1) === 47) {
+            end--;
+        }
+        value = value.slice(0, end);
+    }
+    return value;
 }
 
 function splitPath(pathname: string): string[] {
-    return normalizePath(pathname).split('/').filter(Boolean);
+    const value = normalizePath(pathname);
+    if (value === '/') {
+        return [];
+    }
+    const parts = (value.charCodeAt(0) === 47 ? value.slice(1) : value).split('/');
+    return parts.indexOf('') === -1 ? parts : parts.filter(Boolean);
 }
 
 function segmentScore(segment: string): number {
@@ -56,9 +90,14 @@ function segmentScore(segment: string): number {
  * Compiled route table with specificity matching (static > `:param` > `*`).
  * Ties keep declaration order, so registering a general catch-all after the
  * specific routes behaves intuitively.
+ *
+ * Routes are compiled into a segment trie once per `add` batch; matching only
+ * walks the branches reachable from the request path instead of scanning every
+ * registered route.
  */
 export class GatewayRouter<THandler = unknown> {
     private readonly compiled: CompiledRoute<THandler>[] = [];
+    private root: TrieNode<THandler> = createNode();
     private sorted = true;
 
     get size(): number {
@@ -71,14 +110,25 @@ export class GatewayRouter<THandler = unknown> {
         }
         const segments = splitPath(route.path);
         const specificity = segments.reduce((total, segment) => total + segmentScore(segment), 0) * 10 + segments.length;
-        this.compiled.push({ route, segments, specificity, order: this.compiled.length });
+        this.compiled.push({
+            route,
+            segments,
+            specificity,
+            order: this.compiled.length,
+            rank: this.compiled.length
+        });
         this.sorted = false;
         return this;
     }
 
     /** Registered route definitions in declaration order. */
     getRoutes(): GatewayRouteDefinition<THandler>[] {
-        return this.compiled.map(entry => entry.route);
+        // `compiled` is sorted by priority during `match`; restore the original
+        // declaration order for diagnostics/OpenAPI.
+        return this.compiled
+            .slice()
+            .sort((left, right) => left.order - right.order)
+            .map(entry => entry.route);
     }
 
     addMany(routes: GatewayRouteDefinition<THandler>[]): this {
@@ -94,19 +144,17 @@ export class GatewayRouter<THandler = unknown> {
         request: { host?: string; accept?: (route: GatewayRouteDefinition<THandler>) => boolean } = {}
     ): GatewayRouteMatch<THandler> | null {
         if (!this.sorted) {
-            this.compiled.sort((left, right) => {
-                // An explicit priority replaces the computed specificity (the
-                // microservice table passes its own score for parity).
-                const leftScore = left.route.priority ?? left.specificity;
-                const rightScore = right.route.priority ?? right.specificity;
-                return (rightScore - leftScore) || (left.order - right.order);
-            });
-            this.sorted = true;
+            this.rebuild();
         }
         const requestMethod = String(method || 'GET').toUpperCase();
         const parts = splitPath(pathname);
-        for (const entry of this.compiled) {
-            if (!this.acceptsMethod(entry.route, requestMethod)) {
+        const candidates: CompiledRoute<THandler>[] = [];
+        this.collect(this.root, parts, 0, candidates);
+        if (candidates.length > 1) {
+            candidates.sort((left, right) => left.rank - right.rank);
+        }
+        for (const entry of candidates) {
+            if (!this.acceptsMethod(entry, requestMethod)) {
                 continue;
             }
             if (entry.route.hosts?.length && request.host !== undefined && !entry.route.hosts.includes(request.host)) {
@@ -123,29 +171,107 @@ export class GatewayRouter<THandler = unknown> {
         return null;
     }
 
-    private acceptsMethod(route: GatewayRouteDefinition<THandler>, method: string): boolean {
-        const methods = (route.methods || []).map(item => String(item).toUpperCase());
-        if (methods.length) {
+    /**
+     * Sort by priority once, then build the segment trie. `rank` records the
+     * global order so candidates collected from different branches can be
+     * merged deterministically.
+     */
+    private rebuild(): void {
+        this.compiled.sort((left, right) => {
+            // An explicit priority replaces the computed specificity (the
+            // microservice table passes its own score for parity).
+            const leftScore = left.route.priority ?? left.specificity;
+            const rightScore = right.route.priority ?? right.specificity;
+            return (rightScore - leftScore) || (left.order - right.order);
+        });
+        this.root = createNode();
+        for (let rank = 0; rank < this.compiled.length; rank++) {
+            const entry = this.compiled[rank];
+            entry.rank = rank;
+            this.insert(entry);
+        }
+        this.sorted = true;
+    }
+
+    private insert(entry: CompiledRoute<THandler>): void {
+        let node = this.root;
+        for (const segment of entry.segments) {
+            if (segment === '*' || segment.startsWith('*')) {
+                node.wildcards.push(entry);
+                return;
+            }
+            if (segment.startsWith(':')) {
+                node.param ??= createNode();
+                node = node.param;
+                continue;
+            }
+            let child = node.statics.get(segment);
+            if (!child) {
+                child = createNode();
+                node.statics.set(segment, child);
+            }
+            node = child;
+        }
+        node.routes.push(entry);
+    }
+
+    /**
+     * Walk the request path through the trie. Terminals at every reached depth
+     * are candidates: prefix routes may consume less than the request path,
+     * exact routes are filtered by `matchSegments`.
+     */
+    private collect(
+        node: TrieNode<THandler>,
+        parts: string[],
+        index: number,
+        out: CompiledRoute<THandler>[]
+    ): void {
+        for (const route of node.routes) {
+            out.push(route);
+        }
+        for (const route of node.wildcards) {
+            out.push(route);
+        }
+        if (index >= parts.length) {
+            return;
+        }
+        const child = node.statics.get(parts[index]);
+        if (child) {
+            this.collect(child, parts, index + 1, out);
+        }
+        if (node.param) {
+            this.collect(node.param, parts, index + 1, out);
+        }
+    }
+
+    private acceptsMethod(entry: CompiledRoute<THandler>, method: string): boolean {
+        const source = entry.route.methods;
+        if (!source?.length) {
             // A method allowlist wins over the catch-all marker.
-            return methods.includes(method);
+            if (entry.route.method === '*') {
+                return true;
+            }
+            return String(entry.route.method).toUpperCase() === method;
         }
-        if (route.method === '*') {
-            return true;
+        if (entry.methodsSource !== source) {
+            entry.methodsSource = source;
+            entry.methods = new Set(source.map(item => String(item).toUpperCase()));
         }
-        return String(route.method).toUpperCase() === method;
+        return entry.methods!.has(method);
     }
 
     private matchSegments(pattern: string[], path: string[], prefix = false): Record<string, string> | null {
-        const params: Record<string, string> = {};
+        // Allocate params lazily so literal-only mismatches stay allocation-free.
+        let params: Record<string, string> | null = null;
         let index = 0;
         for (; index < pattern.length; index++) {
             const expected = pattern[index];
             if (expected === '*') {
-                params['*'] = path.slice(index).join('/');
+                (params ??= {})['*'] = path.slice(index).join('/');
                 return params;
             }
             if (expected.startsWith('*')) {
-                params[expected.slice(1) || '*'] = path.slice(index).join('/');
+                (params ??= {})[expected.slice(1) || '*'] = path.slice(index).join('/');
                 return params;
             }
             const actual = path[index];
@@ -153,7 +279,7 @@ export class GatewayRouter<THandler = unknown> {
                 return null;
             }
             if (expected.startsWith(':')) {
-                params[expected.slice(1)] = actual;
+                (params ??= {})[expected.slice(1)] = actual;
                 continue;
             }
             if (expected !== actual) {
@@ -161,13 +287,13 @@ export class GatewayRouter<THandler = unknown> {
             }
         }
         if (index === path.length) {
-            return params;
+            return params ?? {};
         }
         if (!prefix) {
             return null;
         }
         // Prefix mode: the route matched its segments; the rest stays addressable.
-        params['*'] = path.slice(index).join('/');
+        (params ??= {})['*'] = path.slice(index).join('/');
         return params;
     }
 }

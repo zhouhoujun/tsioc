@@ -1,5 +1,6 @@
 import expect = require('expect');
 import * as zlib from 'zlib';
+import * as crypto from 'node:crypto';
 import { Transport } from '@tsdi/common';
 import { GatewayObservability } from '../src/gateway.observability';
 import { GatewayResponse } from '../src/gateway.response';
@@ -55,7 +56,7 @@ describe('GatewayResponse', () => {
         transport: Transport.HTTP
     } as any;
 
-    it('applies response rewrites, masks fields and route headers', () => {
+    it('applies response rewrites, masks fields and route headers', async () => {
         const adapter = createAdapter();
         const { response } = create();
         const target = {
@@ -68,7 +69,7 @@ describe('GatewayResponse', () => {
             }
         };
 
-        const returned = response.send(target, createRequest(), {
+        const returned = await response.send(target, createRequest(), {
             status: 200,
             statusText: 'OK',
             payload: { id: 1, phone: '123456' },
@@ -83,29 +84,61 @@ describe('GatewayResponse', () => {
         expect(adapter.payload).toEqual({ id: 1, phone: '***', rewritten: true });
     });
 
-    it('generates etags and returns 304 for matching if-none-match', () => {
+    it('generates etags and returns 304 for matching if-none-match', async () => {
         const { response } = create();
         const target = { ...route, responseCache: { etag: true } };
 
         const first = createAdapter();
-        response.send(target, createRequest(), {
+        await response.send(target, createRequest(), {
             status: 200, statusText: 'OK', payload: { id: 1 }
         }, Date.now(), first, undefined);
         const etag = first.headers['etag'];
         expect(etag).toMatch(/^W\/"[0-9a-f]{40}"$/);
 
         const second = createAdapter();
-        response.send(target, createRequest({ headers: { 'if-none-match': etag } }), {
+        await response.send(target, createRequest({ headers: { 'if-none-match': etag } }), {
             status: 200, statusText: 'OK', payload: { id: 1 }
         }, Date.now(), second, undefined);
         expect(second.status).toBe(304);
         expect(second.payload).toBe(null);
     });
 
-    it('sets cache-control and vary for cached responses', () => {
+    it('serializes an etagged payload once and reuses it for the response', async () => {
         const adapter = createAdapter();
         const { response } = create();
-        response.send({
+        const payload = { id: 1, nested: { ok: true } };
+
+        await response.send({ ...route, responseCache: { etag: true } }, createRequest(), {
+            status: 200, statusText: 'OK', payload
+        }, Date.now(), adapter, undefined);
+
+        expect(typeof adapter.payload).toBe('string');
+        expect(JSON.parse(adapter.payload)).toEqual(payload);
+        expect(String(adapter.headers['content-type'])).toContain('application/json');
+    });
+
+    it('computes the etag from the masked representation', async () => {
+        const adapter = createAdapter();
+        const { response } = create();
+        const payload = { id: 1, phone: '123' };
+
+        await response.send({
+            ...route,
+            responseCache: { etag: true },
+            maskFields: [{ field: 'phone', mask: '***' }]
+        }, createRequest(), {
+            status: 200, statusText: 'OK', payload
+        }, Date.now(), adapter, undefined);
+
+        const expected = `W/\"${crypto.createHash('sha1').update(JSON.stringify({ id: 1, phone: '***' })).digest('hex')}\"`;
+        expect(adapter.headers['etag']).toBe(expected);
+        expect(JSON.parse(adapter.payload)).toEqual({ id: 1, phone: '***' });
+    });
+
+    it('sets cache-control and vary for cached responses', async () => {
+        const adapter = createAdapter();
+        const { response } = create();
+        await response.send({
             ...route,
             responseCache: { cacheControl: 60, vary: ['accept-language'] }
         }, createRequest(), {
@@ -116,13 +149,13 @@ describe('GatewayResponse', () => {
         expect(adapter.headers['vary']).toBe('accept-language');
     });
 
-    it('compresses large payloads only for accepted encodings', () => {
+    it('compresses large payloads only for accepted encodings', async () => {
         const payload = { text: 'x'.repeat(1024) };
         const target = { ...route, compression: { enabled: true } };
 
         const gzipAdapter = createAdapter();
         const { response } = create({}, new GatewayRuntime());
-        response.send(target, createRequest({ headers: { 'accept-encoding': 'gzip' } }), {
+        await response.send(target, createRequest({ headers: { 'accept-encoding': 'gzip' } }), {
             status: 200, statusText: 'OK', payload
         }, Date.now(), gzipAdapter, undefined);
         expect(gzipAdapter.headers['content-encoding']).toBe('gzip');
@@ -130,24 +163,57 @@ describe('GatewayResponse', () => {
         expect(gzipAdapter.headers['vary']).toBe('accept-encoding');
 
         const plainAdapter = createAdapter();
-        response.send(target, createRequest(), {
+        await response.send(target, createRequest(), {
             status: 200, statusText: 'OK', payload
         }, Date.now(), plainAdapter, undefined);
         expect(plainAdapter.headers['content-encoding']).toBe(undefined);
         expect(plainAdapter.payload).toEqual(payload);
 
         const smallAdapter = createAdapter();
-        response.send({ ...route, compression: { enabled: true, minSize: 2048 } }, createRequest({ headers: { 'accept-encoding': 'br' } }), {
+        await response.send({ ...route, compression: { enabled: true, minSize: 2048 } }, createRequest({ headers: { 'accept-encoding': 'br' } }), {
             status: 200, statusText: 'OK', payload: { small: true }
         }, Date.now(), smallAdapter, undefined);
         expect(smallAdapter.headers['content-encoding']).toBe(undefined);
     });
 
-    it('keeps streaming responses untouched', () => {
+    it('skips compression above maxSize', async () => {
+        const adapter = createAdapter();
+        const { response } = create();
+        const payload = { text: 'x'.repeat(4096) };
+        await response.send({ ...route, compression: { enabled: true, maxSize: 512 } }, createRequest({ headers: { 'accept-encoding': 'gzip' } }), {
+            status: 200, statusText: 'OK', payload
+        }, Date.now(), adapter, undefined);
+
+        expect(adapter.headers['content-encoding']).toBe(undefined);
+        expect(adapter.payload).toEqual(payload);
+    });
+
+    it('does not block the event loop while compressing', async () => {
+        const { response } = create();
+        const adapter = createAdapter();
+        const payload = { text: 'x'.repeat(2 * 1024 * 1024) };
+        let immediateRan = false;
+
+        const pending = response.send(
+            { ...route, compression: { enabled: true } },
+            createRequest({ headers: { 'accept-encoding': 'gzip' } }),
+            { status: 200, statusText: 'OK', payload },
+            Date.now(),
+            adapter,
+            undefined
+        );
+        setImmediate(() => { immediateRan = true; });
+        await pending;
+
+        expect(adapter.headers['content-encoding']).toBe('gzip');
+        expect(immediateRan).toBe(true);
+    });
+
+    it('keeps streaming responses untouched', async () => {
         const adapter = createAdapter();
         const { response } = create({});
         const streamPayload = { pipe() { return this; } };
-        response.send({ ...route, responseCache: { etag: true }, compression: { enabled: true } }, createRequest({ headers: { 'accept-encoding': 'gzip' } }), {
+        await response.send({ ...route, responseCache: { etag: true }, compression: { enabled: true } }, createRequest({ headers: { 'accept-encoding': 'gzip' } }), {
             status: 200,
             statusText: 'OK',
             payload: streamPayload,
@@ -207,7 +273,7 @@ describe('GatewayResponse', () => {
     it('records route outcomes when sending responses', async () => {
         const adapter = createAdapter();
         const { response, runtime } = create();
-        response.send(route, createRequest(), {
+        await response.send(route, createRequest(), {
             status: 200, statusText: 'OK', payload: { ok: true }
         }, Date.now() - 3, adapter, undefined);
 

@@ -42,6 +42,73 @@ export class GatewayKitRouterTest {
         expect(router.match('POST', '/a/c')?.route.handler).toEqual('post');
         expect(router.match('DELETE', '/a/c')).toEqual(null);
     }
+
+    @Test('indexes thousands of sibling routes and still finds the right one')
+    largeTable() {
+        const router = new GatewayRouter<string>();
+        const total = 20000;
+        for (let i = 0; i < total; i++) {
+            router.add({ method: 'GET', path: `/api/service-${i}/items/:id`, handler: `service-${i}` });
+        }
+
+        expect(router.match('GET', '/api/service-0/items/7')?.route.handler).toEqual('service-0');
+        expect(router.match('GET', `/api/service-${total - 1}/items/7`)).toEqual({
+            route: expect.objectContaining({ handler: `service-${total - 1}` }),
+            params: { id: '7' }
+        });
+        expect(router.match('GET', '/api/unknown/items/7')).toEqual(null);
+        expect(router.match('POST', '/api/service-1/items/7')).toEqual(null);
+        expect(router.size).toEqual(total);
+    }
+
+    @Test('keeps explicit priority above specificity when merging trie branches')
+    priorityAcrossBranches() {
+        const router = new GatewayRouter<string>();
+        router.add({ method: 'GET', path: '/api/users', handler: 'static' });
+        router.add({ method: 'GET', path: '/api/:id', handler: 'param', priority: 100000 });
+
+        expect(router.match('GET', '/api/users')?.route.handler).toEqual('param');
+        expect(router.match('GET', '/api/orders')?.route.handler).toEqual('param');
+
+        const ordered = new GatewayRouter<string>();
+        ordered.add({ method: 'GET', path: '/api/users', handler: 'static' });
+        ordered.add({ method: 'GET', path: '/api/:id', handler: 'param' });
+        expect(ordered.match('GET', '/api/users')?.route.handler).toEqual('static');
+    }
+
+    @Test('matches root, wildcard and param routes registered after deep routes')
+    rootAndWildcard() {
+        const router = new GatewayRouter<string>();
+        for (let i = 0; i < 100; i++) {
+            router.add({ method: 'GET', path: `/a/${i}/b`, handler: `deep-${i}` });
+        }
+        router.add({ method: 'GET', path: '/:tenant/:id', handler: 'param' });
+        router.add({ method: 'GET', path: '/', handler: 'root', matchMode: 'prefix' });
+        router.add({ method: 'GET', path: '/*', handler: 'wildcard' });
+
+        expect(router.match('GET', '/a/42/b')?.route.handler).toEqual('deep-42');
+        expect(router.match('GET', '/x/y')).toEqual({
+            route: expect.objectContaining({ handler: 'param' }),
+            params: { tenant: 'x', id: 'y' }
+        });
+        // A root wildcard is more specific than a zero-segment root route.
+        expect(router.match('GET', '/one/two/three')?.route.handler).toEqual('wildcard');
+
+        const rootOnly = new GatewayRouter<string>();
+        rootOnly.add({ method: 'GET', path: '/', handler: 'root', matchMode: 'prefix' });
+        expect(rootOnly.match('GET', '/one/two/three')?.route.handler).toEqual('root');
+        expect(rootOnly.match('GET', '/')?.route.handler).toEqual('root');
+    }
+
+    @Test('returns routes in declaration order even after matching')
+    declarationOrder() {
+        const router = new GatewayRouter<string>();
+        router.add({ method: 'GET', path: '/api/:id', handler: 'param' });
+        router.add({ method: 'GET', path: '/api/users', handler: 'static' });
+        router.match('GET', '/api/users');
+
+        expect(router.getRoutes().map(route => route.handler)).toEqual(['param', 'static']);
+    }
 }
 
 @Suite('gateway kit rate limiter')

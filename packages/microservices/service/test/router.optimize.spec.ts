@@ -300,6 +300,33 @@ describe('optimized router', () => {
         expect((router as any).matchCache.size).toBeLessThanOrEqual(3);
     });
 
+    it('evicts a batch instead of clearing the whole cache at capacity', async () => {
+        const router = new OptimizedRouter(
+            createInjector(),
+            formatter,
+            '',
+            Transport.HTTP,
+            { maxCacheSize: 8 },
+            undefined,
+            false
+        );
+        router.use('/items/:id', (input: any) => of(input.url));
+        const context = () => createRequestContext(createInjector());
+
+        for (let i = 0; i < 8; i++) {
+            await router.getRoute({ url: `/items/${i}`, method: 'GET' } as any, context());
+        }
+        expect((router as any).cache.size).toEqual(8);
+        expect((router as any).params.size).toEqual(8);
+
+        await router.getRoute({ url: '/items/8', method: 'GET' } as any, context());
+
+        // Batch eviction keeps most entries; a full clear would leave one.
+        expect((router as any).cache.size).toBeGreaterThan(2);
+        expect((router as any).cache.has('/items/8')).toBe(true);
+        expect((router as any).params.size).toBeGreaterThan(2);
+    });
+
     it('removes dynamic routes and their patterns on unuse', async () => {
         const router = createRouter();
         const context = createRequestContext(createInjector());

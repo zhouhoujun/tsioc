@@ -1,12 +1,16 @@
 import * as crypto from 'crypto';
 import * as zlib from 'zlib';
-import { Transport } from '@tsdi/common';
+import { promisify } from 'node:util';
+import { ContentType, Transport } from '@tsdi/common';
 import { HttpRequestMessage } from '@tsdi/http-microservice';
 import { GatewayObservability } from './gateway.observability';
 import { GatewayOptions, ResolvedGatewayRoute } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayForwardResult } from './gateway.types';
 import { getHeaderValue } from './gateway.http';
+
+const gzipAsync = promisify(zlib.gzip);
+const brotliAsync = promisify(zlib.brotliCompress);
 
 /**
  * Gateway response pipeline: rewriting, response caching/etag, compression,
@@ -22,7 +26,7 @@ export class GatewayResponse {
         private readonly observability: GatewayObservability
     ) { }
 
-    send(
+    async send(
         route: ResolvedGatewayRoute,
         request: HttpRequestMessage,
         result: GatewayForwardResult,
@@ -30,17 +34,17 @@ export class GatewayResponse {
         adapter: any,
         response: any,
         error?: any
-    ): any {
+    ): Promise<any> {
         const streaming = result.meta?.streaming === true;
-        const rewritten = streaming
-            ? result
-            : this.applyResponseCaching(route, request, this.rewriteResponse(route, request, result));
+        const rewritten = streaming ? result : this.rewriteResponse(route, request, result);
         const maskedPayload = streaming
             ? rewritten.payload
             : this.runtime.maskPayload(rewritten.payload, route.maskFields);
-        const compressed = streaming
-            ? { ...rewritten, payload: maskedPayload }
-            : this.applyCompression(route, request, { ...rewritten, payload: maskedPayload });
+        const masked = { ...rewritten, payload: maskedPayload };
+        // Cache validators must describe the (already masked) representation,
+        // and the serialized body is reused for the response write.
+        const cached = streaming ? masked : this.applyResponseCaching(route, request, masked);
+        const compressed = streaming ? cached : await this.applyCompression(route, request, cached);
         const payload = compressed.payload;
 
         if (compressed.headers) {
@@ -199,26 +203,51 @@ export class GatewayResponse {
         if (options.vary?.length) {
             headers['vary'] = options.vary.join(', ');
         }
-        if (options.etag) {
-            const etag = headers['etag'] ?? this.generateEtag(result.payload);
-            headers['etag'] = etag;
-            const ifNoneMatch = getHeaderValue(request, 'if-none-match');
-            if (ifNoneMatch && ifNoneMatch === etag) {
-                return {
-                    status: 304,
-                    statusText: 'Not Modified',
-                    payload: null,
-                    headers
-                };
-            }
+        if (!options.etag) {
+            return {
+                ...result,
+                headers
+            };
+        }
+
+        // Serialize once: the ETag is computed from these bytes and the same
+        // string is written by the adapter (which otherwise stringifies again).
+        let serialized: string | undefined;
+        if (result.payload != null && typeof result.payload !== 'string' && !Buffer.isBuffer(result.payload)) {
+            serialized = JSON.stringify(result.payload);
+        }
+        const etag = headers['etag'] ?? this.generateEtag(result.payload, serialized);
+        headers['etag'] = etag;
+        const ifNoneMatch = getHeaderValue(request, 'if-none-match');
+        if (ifNoneMatch && ifNoneMatch === etag) {
+            return {
+                status: 304,
+                statusText: 'Not Modified',
+                payload: null,
+                headers
+            };
+        }
+        if (serialized === undefined) {
+            return {
+                ...result,
+                headers
+            };
+        }
+        if (!headers['content-type'] && !headers['Content-Type']) {
+            headers['content-type'] = ContentType.APPL_JSON_UTF8;
         }
         return {
             ...result,
+            payload: serialized,
             headers
         };
     }
 
-    private applyCompression(route: ResolvedGatewayRoute, request: HttpRequestMessage, result: GatewayForwardResult): GatewayForwardResult {
+    private async applyCompression(
+        route: ResolvedGatewayRoute,
+        request: HttpRequestMessage,
+        result: GatewayForwardResult
+    ): Promise<GatewayForwardResult> {
         const options = route.compression;
         if (!options?.enabled || result.payload == null || result.status === 304) {
             return result;
@@ -237,9 +266,14 @@ export class GatewayResponse {
         if (body.length < (options.minSize ?? 256)) {
             return result;
         }
+        // Compressing very large bodies costs CPU/memory even off-thread; send
+        // them uncompressed when the route sets an upper bound.
+        if (options.maxSize != null && body.length > options.maxSize) {
+            return result;
+        }
         const compressed = encoding === 'br'
-            ? zlib.brotliCompressSync(body)
-            : zlib.gzipSync(body);
+            ? await brotliAsync(body)
+            : await gzipAsync(body);
         return {
             ...result,
             payload: compressed,
@@ -252,12 +286,13 @@ export class GatewayResponse {
         };
     }
 
-    private generateEtag(payload: any): string {
-        const body = typeof payload === 'string'
-            ? payload
-            : Buffer.isBuffer(payload)
+    private generateEtag(payload: any, serialized?: string): string {
+        const body = serialized
+            ?? (typeof payload === 'string'
                 ? payload
-                : JSON.stringify(payload ?? null);
+                : Buffer.isBuffer(payload)
+                    ? payload
+                    : JSON.stringify(payload ?? null));
         const hash = crypto.createHash('sha1').update(body).digest('hex');
         return `W/"${hash}"`;
     }

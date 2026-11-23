@@ -614,7 +614,7 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
             let paths = this.params.get(url);
             if (!paths) {
                 if (this.params.size >= this.maxCacheSize) {
-                    this.params.clear();
+                    this.evictOldest(this.params);
                 }
                 paths = new Map();
                 this.params.set(url, paths);
@@ -625,9 +625,25 @@ export class OptimizedRouter extends Router<RouteHanlder> implements OnDestroy {
 
     private setCache<K, V>(cache: Map<K, V>, key: K, value: V): void {
         if (cache.size >= this.maxCacheSize) {
-            cache.clear();
+            this.evictOldest(cache);
         }
         cache.set(key, value);
+    }
+
+    /**
+     * Evict the oldest ~1/8 of a bounded cache instead of clearing it. A full
+     * clear turns every cached route into a miss on the next burst; evicting a
+     * batch keeps the recently used portion warm.
+     */
+    private evictOldest<K, V>(cache: Map<K, V>): void {
+        const evict = Math.max(1, Math.floor(this.maxCacheSize / 8));
+        let removed = 0;
+        for (const oldest of cache.keys()) {
+            if (removed++ >= evict) {
+                break;
+            }
+            cache.delete(oldest);
+        }
     }
 
 

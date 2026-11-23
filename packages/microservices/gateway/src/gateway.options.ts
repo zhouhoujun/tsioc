@@ -470,6 +470,11 @@ export interface GatewayCompressionOptions {
      * minimum payload size in bytes before compression.
      */
     minSize?: number;
+    /**
+     * maximum payload size in bytes to compress. Larger payloads are sent
+     * uncompressed to bound CPU/memory. Omitted means no upper bound.
+     */
+    maxSize?: number;
 }
 
 export interface GatewayAccessLogOptions {

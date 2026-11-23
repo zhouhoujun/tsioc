@@ -85,7 +85,7 @@ export class GatewayUpstream {
             const cached = await this.runtime.getCachedEntry(cacheKey);
             if (cached) {
                 const age = Math.max(0, Math.floor((Date.now() - cached.storedAt) / 1000));
-                return this.sendResponse(route, request, context, {
+                return await this.sendResponse(route, request, context, {
                     ...cached.value,
                     headers: {
                         ...(cached.value.headers ?? {}),
@@ -134,7 +134,7 @@ export class GatewayUpstream {
                 throw error;
             }
             adapter?.setHeader?.('x-gateway-error-type', 'circuit_open');
-            return this.sendResponse(route, request, context, fallback, startedAt, adapter, response);
+            return await this.sendResponse(route, request, context, fallback, startedAt, adapter, response);
         }
 
         try {
@@ -175,14 +175,14 @@ export class GatewayUpstream {
                     expose: true
                 })
                 : undefined;
-            return this.sendResponse(route, request, context, result, startedAt, adapter, response, upstreamError);
+            return await this.sendResponse(route, request, context, result, startedAt, adapter, response, upstreamError);
         } catch (error: any) {
             await this.runtime.recordFailure(routeKey, route.circuitBreaker);
             const errorType = this.observability.tagError(error, adapter);
             const fallback = this.responsePipeline.resolveFallbackPayload(route, request, error);
             if (fallback) {
                 await this.webhook.dispatch(route, request, fallback);
-                return this.sendResponse(route, request, context, fallback, startedAt, adapter, response);
+                return await this.sendResponse(route, request, context, fallback, startedAt, adapter, response);
             }
             this.observability.recordError(route, request, startedAt, error, traceHeaders, {
                 cacheStatus: cacheKey ? 'MISS' : 'SKIP',
