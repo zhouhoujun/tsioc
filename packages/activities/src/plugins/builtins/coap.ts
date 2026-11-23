@@ -52,6 +52,24 @@ class CoapService {
     async dispose(): Promise<void> { /* no persistent connections */ }
 }
 
+function coapEndpoint(config: Record<string, any>, context: ActivityContext): { host: string; port: number } {
+    const id = String(config.coap || '').trim();
+    if (id) {
+        const shared = (context as any)?.configNodes?.[id];
+        if (!shared) {
+            throw new Error(`CoAP endpoint not found: ${id}. Add a CoAP endpoint config node or clear the reference.`);
+        }
+        return {
+            host: String(shared.host || '127.0.0.1'),
+            port: Math.max(1, Number(shared.port) || 5683)
+        };
+    }
+    return {
+        host: String(config.host || '127.0.0.1'),
+        port: Math.max(1, Number(config.port) || 5683)
+    };
+}
+
 function createCoapService() {
     return { coap: new CoapService() };
 }
@@ -64,6 +82,23 @@ export function createCoapPlugin(): WorkflowPlugin {
         version: '1.0.0',
         services: createCoapService,
         nodes: [{
+            type: 'coap',
+            label: 'CoAP endpoint',
+            description: 'Shared CoAP host and port for CoAP nodes',
+            category: 'advanced',
+            configNode: true,
+            resource: 'coap-endpoint',
+            icon: '⇄',
+            color: '#0f766e',
+            textColor: '#ffffff',
+            inputs: [],
+            outputs: [],
+            fields: [
+                pluginField({ key: 'host', label: 'Host', type: 'text', defaultValue: '127.0.0.1', required: true }),
+                pluginField({ key: 'port', label: 'Port', type: 'number', defaultValue: 5683, min: 1, max: 65535, step: 1 })
+            ],
+            defaultConfig: { host: '127.0.0.1', port: 5683 }
+        }, {
             type: 'coap-request',
             label: 'CoAP request',
             description: 'Send a CoAP request and return the response payload',
@@ -74,8 +109,14 @@ export function createCoapPlugin(): WorkflowPlugin {
             inputs: [pluginPort('in', 'in', 'input', 'Input')],
             outputs: [pluginPort('out', 'out', 'output', 'Response'), pluginPort('error', 'error', 'output', 'Error')],
             fields: [
-                pluginField({ key: 'host', label: 'Host', type: 'text', defaultValue: '127.0.0.1', required: true }),
-                pluginField({ key: 'port', label: 'Port', type: 'number', defaultValue: 5683, min: 1, max: 65535, step: 1 }),
+                pluginField({
+                    key: 'coap',
+                    label: 'Endpoint',
+                    type: 'select',
+                    reference: { kind: 'config-node', resource: 'coap-endpoint', create: true, edit: true }
+                }),
+                pluginField({ key: 'host', label: 'Host', type: 'text', defaultValue: '127.0.0.1', required: true, visibleWhen: { key: 'coap', equals: '' } }),
+                pluginField({ key: 'port', label: 'Port', type: 'number', defaultValue: 5683, min: 1, max: 65535, step: 1, visibleWhen: { key: 'coap', equals: '' } }),
                 pluginField({
                     key: 'method',
                     label: 'Method',
@@ -87,12 +128,13 @@ export function createCoapPlugin(): WorkflowPlugin {
                 pluginField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {} }),
                 pluginField({ key: 'timeout', label: 'Timeout (ms)', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability',})
             ],
-            defaultConfig: { host: '127.0.0.1', port: 5683, method: 'GET', path: '/', payload: {}, timeout: 30000 },
+            defaultConfig: { coap: '', host: '127.0.0.1', port: 5683, method: 'GET', path: '/', payload: {}, timeout: 30000 },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
                 const config = node.config || {};
                 try {
                     const services = (context as any).services || {};
-                    const result = await services.coap.request(config);
+                    const endpoint = coapEndpoint(config, context);
+                    const result = await services.coap.request({ ...config, ...endpoint });
                     return { success: true, data: { nodeId: node.id, ...result } };
                 } catch (error) {
                     return errorResult(node.id, error);

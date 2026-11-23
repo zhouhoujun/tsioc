@@ -156,6 +156,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "MQTT wait",
                 "description": "Wait for the next message on an MQTT topic"
             },
+            "redis": {
+                "label": "Redis endpoint",
+                "description": "Shared Redis connection for Redis nodes"
+            },
             "redis-command": {
                 "label": "Redis command",
                 "description": "Run a Redis command and return its result"
@@ -164,6 +168,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "Redis publish",
                 "description": "Publish a message to a Redis channel"
             },
+            "nats": {
+                "label": "NATS endpoint",
+                "description": "Shared NATS servers for NATS nodes"
+            },
             "nats-publish": {
                 "label": "NATS publish",
                 "description": "Publish a message to a NATS subject"
@@ -171,6 +179,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "nats-request": {
                 "label": "NATS request",
                 "description": "Send a NATS request and wait for a reply"
+            },
+            "coap": {
+                "label": "CoAP endpoint",
+                "description": "Shared CoAP host and port for CoAP nodes"
             },
             "coap-request": {
                 "label": "CoAP request",
@@ -576,29 +588,44 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "qos": "QoS",
                 "timeout": "Timeout (ms)"
             },
+            "redis": {
+                "url": "Redis URL"
+            },
             "redis-command": {
+                "redis": "Endpoint",
                 "url": "Redis URL",
                 "command": "Command",
                 "args": "Arguments"
             },
             "redis-publish": {
+                "redis": "Endpoint",
                 "url": "Redis URL",
                 "channel": "Channel",
                 "message": "Message"
             },
+            "nats": {
+                "servers": "NATS servers"
+            },
             "nats-publish": {
+                "nats": "Endpoint",
                 "servers": "NATS servers",
                 "subject": "Subject",
                 "payload": "Payload",
                 "timeout": "Timeout (ms)"
             },
             "nats-request": {
+                "nats": "Endpoint",
                 "servers": "NATS servers",
                 "subject": "Subject",
                 "payload": "Payload",
                 "timeout": "Timeout (ms)"
             },
+            "coap": {
+                "host": "Host",
+                "port": "Port"
+            },
             "coap-request": {
+                "coap": "Endpoint",
                 "host": "Host",
                 "port": "Port",
                 "method": "Method",
@@ -1888,6 +1915,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "MQTT 等待",
                 "description": "等待 MQTT 主题的下一条消息"
             },
+            "redis": {
+                "label": "Redis 端点",
+                "description": "供 Redis 节点共用的连接"
+            },
             "redis-command": {
                 "label": "Redis 命令",
                 "description": "执行 Redis 命令并返回结果"
@@ -1896,6 +1927,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "Redis 发布",
                 "description": "向 Redis 频道发布消息"
             },
+            "nats": {
+                "label": "NATS 端点",
+                "description": "供 NATS 节点共用的服务器"
+            },
             "nats-publish": {
                 "label": "NATS 发布",
                 "description": "向 NATS 主题发布消息"
@@ -1903,6 +1938,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "nats-request": {
                 "label": "NATS 请求",
                 "description": "发送 NATS 请求并等待回复"
+            },
+            "coap": {
+                "label": "CoAP 端点",
+                "description": "供 CoAP 节点共用的主机与端口"
             },
             "coap-request": {
                 "label": "CoAP 请求",
@@ -2308,29 +2347,44 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "qos": "QoS",
                 "timeout": "超时（毫秒）"
             },
+            "redis": {
+                "url": "Redis 地址"
+            },
             "redis-command": {
+                "redis": "端点",
                 "url": "Redis 地址",
                 "command": "命令",
                 "args": "参数"
             },
             "redis-publish": {
+                "redis": "端点",
                 "url": "Redis 地址",
                 "channel": "频道",
                 "message": "消息"
             },
+            "nats": {
+                "servers": "NATS 服务地址"
+            },
             "nats-publish": {
+                "nats": "端点",
                 "servers": "NATS 服务地址",
                 "subject": "主题",
                 "payload": "消息内容",
                 "timeout": "超时（毫秒）"
             },
             "nats-request": {
+                "nats": "端点",
                 "servers": "NATS 服务地址",
                 "subject": "主题",
                 "payload": "消息内容",
                 "timeout": "超时（毫秒）"
             },
+            "coap": {
+                "host": "主机",
+                "port": "端口"
+            },
             "coap-request": {
+                "coap": "端点",
                 "host": "主机",
                 "port": "端口",
                 "method": "方法",

@@ -1145,7 +1145,9 @@ node manifests are returned to the designer, which adds them to its palette;
 plugin executors run on the server (browser nodes report a clear error when a
 plugin is not available locally). Installed `tcp-request` / `udp-request`
 plugins can reference the shared `tcp` / `udp` endpoint config nodes instead of
-duplicating host/port (TCP also uses the endpoint's TLS options).
+duplicating host/port (TCP also uses the endpoint's TLS options). Redis, NATS
+and CoAP nodes likewise share `redis` / `nats` / `coap` endpoint config nodes
+(URL or host/port) through their Endpoint pickers.
 
 Plugin services are exposed to every node as `context.services` and are disposed
 on uninstall. Plugin nodes are marked `requiresServer` by default; set

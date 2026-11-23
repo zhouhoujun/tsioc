@@ -40,13 +40,31 @@ class NatsService {
     }
 }
 
+function natsServers(config: Record<string, any>, context: ActivityContext): string {
+    const id = String(config.nats || '').trim();
+    if (id) {
+        const shared = (context as any)?.configNodes?.[id];
+        if (!shared) {
+            throw new Error(`NATS endpoint not found: ${id}. Add a NATS endpoint config node or clear the reference.`);
+        }
+        return String(shared.servers || 'nats://localhost:4222');
+    }
+    return String(config.servers || 'nats://localhost:4222');
+}
+
 function createNatsService() {
     return { nats: new NatsService() };
 }
 
 function commonFields() {
     return [
-        pluginField({ key: 'servers', label: 'NATS servers', type: 'text', defaultValue: 'nats://localhost:4222', required: true }),
+        pluginField({
+            key: 'nats',
+            label: 'Endpoint',
+            type: 'select',
+            reference: { kind: 'config-node', resource: 'nats-endpoint', create: true, edit: true }
+        }),
+        pluginField({ key: 'servers', label: 'NATS servers', type: 'text', defaultValue: 'nats://localhost:4222', required: true, visibleWhen: { key: 'nats', equals: '' } }),
         pluginField({ key: 'subject', label: 'Subject', type: 'text', required: true }),
         pluginField({ key: 'payload', label: 'Payload', type: 'json', defaultValue: {} }),
         pluginField({ key: 'timeout', label: 'Timeout (ms)', type: 'number', defaultValue: 30000, min: 0, step: 1000, group: 'Reliability',})
@@ -61,6 +79,22 @@ export function createNatsPlugin(): WorkflowPlugin {
         version: '1.0.0',
         services: createNatsService,
         nodes: [{
+            type: 'nats',
+            label: 'NATS endpoint',
+            description: 'Shared NATS servers for NATS nodes',
+            category: 'advanced',
+            configNode: true,
+            resource: 'nats-endpoint',
+            icon: '↗',
+            color: '#0ea5e9',
+            textColor: '#ffffff',
+            inputs: [],
+            outputs: [],
+            fields: [
+                pluginField({ key: 'servers', label: 'NATS servers', type: 'text', defaultValue: 'nats://localhost:4222', required: true })
+            ],
+            defaultConfig: { servers: 'nats://localhost:4222' }
+        }, {
             type: 'nats-publish',
             label: 'NATS publish',
             description: 'Publish a message to a NATS subject',
@@ -71,13 +105,13 @@ export function createNatsPlugin(): WorkflowPlugin {
             inputs: [pluginPort('in', 'in', 'input', 'Input')],
             outputs: [pluginPort('out', 'out', 'output', 'Output'), pluginPort('error', 'error', 'output', 'Error')],
             fields: commonFields(),
-            defaultConfig: { servers: 'nats://localhost:4222', payload: {} },
+            defaultConfig: { nats: '', servers: 'nats://localhost:4222', payload: {} },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
                 const config = node.config || {};
                 try {
                     const services = (context as any).services || {};
                     const result = await services.nats.publish(
-                        String(config.servers || 'nats://localhost:4222'),
+                        natsServers(config, context),
                         String(config.subject || ''),
                         config.payload
                     );
@@ -97,13 +131,13 @@ export function createNatsPlugin(): WorkflowPlugin {
             inputs: [pluginPort('in', 'in', 'input', 'Input')],
             outputs: [pluginPort('out', 'out', 'output', 'Reply'), pluginPort('error', 'error', 'output', 'Timeout')],
             fields: commonFields(),
-            defaultConfig: { servers: 'nats://localhost:4222', payload: {}, timeout: 30000 },
+            defaultConfig: { nats: '', servers: 'nats://localhost:4222', payload: {}, timeout: 30000 },
             execute: async (node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> => {
                 const config = node.config || {};
                 try {
                     const services = (context as any).services || {};
                     const result = await services.nats.request(
-                        String(config.servers || 'nats://localhost:4222'),
+                        natsServers(config, context),
                         String(config.subject || ''),
                         config.payload,
                         Number(config.timeout) || 30000

@@ -12,6 +12,9 @@ import { createExecPlugin } from '../src/plugins/builtins/exec';
 import { createTcpPlugin } from '../src/plugins/builtins/tcp';
 import { createUdpPlugin } from '../src/plugins/builtins/udp';
 import { createWebSocketPlugin } from '../src/plugins/builtins/websocket';
+import { createRedisPlugin } from '../src/plugins/builtins/redis';
+import { createNatsPlugin } from '../src/plugins/builtins/nats';
+import { createCoapPlugin } from '../src/plugins/builtins/coap';
 import * as net from 'node:net';
 import * as dgram from 'node:dgram';
 import { WebSocketServer } from 'ws';
@@ -188,6 +191,69 @@ describe('workflow plugins', () => {
         } finally {
             await new Promise<void>(resolve => wsServer.close(() => resolve()));
         }
+    });
+
+    it('resolves shared Redis, NATS and CoAP endpoints', async () => {
+        const redis = createRedisPlugin().nodes!.find(node => node.type === 'redis-command')!;
+        const redisUrls: string[] = [];
+        const redisResult = await redis.execute!({
+            id: 'redis_1',
+            type: 'redis-command',
+            config: { redis: 'redis_1', command: 'GET', args: ['key'] }
+        } as any, {
+            configNodes: { redis_1: { url: 'redis://shared:6379' } },
+            services: {
+                redis: {
+                    command: async (url: string) => {
+                        redisUrls.push(url);
+                        return 'ok';
+                    }
+                }
+            }
+        } as any);
+        expect(redisResult.success).toBe(true);
+        expect(redisUrls).toEqual(['redis://shared:6379']);
+
+        const nats = createNatsPlugin().nodes!.find(node => node.type === 'nats-publish')!;
+        const natsServers: string[] = [];
+        const natsResult = await nats.execute!({
+            id: 'nats_1',
+            type: 'nats-publish',
+            config: { nats: 'nats_1', subject: 'events', payload: {} }
+        } as any, {
+            configNodes: { nats_1: { servers: 'nats://shared:4222' } },
+            services: {
+                nats: {
+                    publish: async (servers: string) => {
+                        natsServers.push(servers);
+                        return { subject: 'events' };
+                    }
+                }
+            }
+        } as any);
+        expect(natsResult.success).toBe(true);
+        expect(natsServers).toEqual(['nats://shared:4222']);
+
+        const coap = createCoapPlugin().nodes!.find(node => node.type === 'coap-request')!;
+        let coapOptions: any;
+        const coapResult = await coap.execute!({
+            id: 'coap_1',
+            type: 'coap-request',
+            config: { coap: 'coap_1', path: '/status', method: 'GET' }
+        } as any, {
+            configNodes: { coap_1: { host: '10.0.0.9', port: 5684 } },
+            services: {
+                coap: {
+                    request: async (options: any) => {
+                        coapOptions = options;
+                        return { code: '2.05', payload: {} };
+                    }
+                }
+            }
+        } as any);
+        expect(coapResult.success).toBe(true);
+        expect(coapOptions.host).toBe('10.0.0.9');
+        expect(coapOptions.port).toBe(5684);
     });
 
     it('registers exec settings in the palette and inspector metadata', async () => {
