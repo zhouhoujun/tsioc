@@ -693,6 +693,14 @@ Features:
   as reported,
 - stylesheet-based skin (`WORKFLOW_DESIGNER_CSS`) with `@tsdi/i18n` labels.
 
+**Streaming sequences are a deliberate non-goal.** Node-RED lets `split` emit
+one message per item (`msg.parts`) and `join` reassemble them because every
+node can run many times per flow. This engine runs a node once per execution
+and records a deterministic snapshot that can be replayed; a multi-message
+stream would conflict with resume, replay and the per-node result model.
+`split` therefore returns the array in one result and `map` / `filter` / `sort`
+/ `join` / `batch` process it, which keeps a run reproducible.
+
 The designer compiles the editable document into an immutable execution plan
 (`compileVisualWorkflow`) before running it; the plan exposes adjacency,
 reachability and entry information to hosts and tests without re-reading the
