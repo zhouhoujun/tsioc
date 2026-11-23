@@ -56,6 +56,28 @@ export class SessionApprovalRulesCommandTest {
         expect(notices[notices.length - 1]).toContain('Cleared the session approval rules');
     }
 
+    @Test('the panel adds, removes and clears session rules')
+    async panel() {
+        const { host, store, notices } = localHost();
+        store.set('session-1', ['terminal']);
+        const picks = ['__add__', 'deny', 'network'];
+        host.select = async () => picks.shift();
+        await runApprovalRulesCommand(host, 'session panel');
+        expect(store.get('session-1')).toEqual(['terminal', { category: 'network', action: 'deny' }]);
+        expect(notices[notices.length - 1]).toContain('deny network');
+
+        const removePicks = ['rule:0', 'remove'];
+        host.select = async () => removePicks.shift();
+        await runApprovalRulesCommand(host, 'session panel');
+        expect(store.get('session-1')).toEqual([{ category: 'network', action: 'deny' }]);
+
+        const clearPicks = ['__clear__'];
+        host.select = async () => clearPicks.shift();
+        await runApprovalRulesCommand(host, 'session panel');
+        expect(store.get('session-1')).toEqual([]);
+        expect(notices[notices.length - 1]).toContain('Cleared the session approval rules');
+    }
+
     @Test('web/attach hosts use the gateway RPC')
     async remoteRules() {
         const calls: Array<{ method: string; params: any }> = [];

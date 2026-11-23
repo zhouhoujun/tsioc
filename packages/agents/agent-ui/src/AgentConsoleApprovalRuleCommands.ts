@@ -213,8 +213,80 @@ function showSessionRules(host: ApprovalRuleCommandHost, rules: ApprovalRule[]):
 }
 
 /** `/permissions rules session [add|remove|clear]` — scoped to the active tab. */
+async function addSessionRuleFromPanel(host: ApprovalRuleCommandHost, rules: ApprovalRule[]): Promise<void> {
+    if (!host.select) return;
+    const action = await host.select(
+        formatAgentUiNotice(host.translator, 'approvalRulesAddActionTitle'),
+        ACTIONS.map(item => ({ label: item, value: item })),
+        0,
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+    );
+    if (!action || !ACTIONS.includes(action)) return;
+    const category = await host.select(
+        formatAgentUiNotice(host.translator, 'approvalRulesAddCategoryTitle'),
+        CATEGORIES.map(item => ({ label: item, value: item, description: describeCategoryNames(item) })),
+        0,
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+    );
+    if (!category || !CATEGORIES.includes(category)) return;
+    const rule: ApprovalRule = { category: category as any, action: action as 'ask' | 'allow' | 'deny' };
+    await saveSessionRules(host, [...rules, rule]);
+    host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandAdded', { rule: describeApprovalRule(rule) }));
+}
+
+async function openSessionRulesPanel(host: ApprovalRuleCommandHost): Promise<void> {
+    const rules = await readSessionRules(host);
+    if (!host.select) {
+        showSessionRules(host, rules);
+        return;
+    }
+    const picked = await host.select(
+        formatAgentUiNotice(host.translator, 'approvalRulesSessionTitle'),
+        [
+            ...rules.map((rule, index) => ({ label: `${index + 1}. ${describeApprovalRule(rule)}`, value: `rule:${index}` })),
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelAdd'), value: '__add__' },
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesSessionPanelClear'), value: '__clear__' },
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelCancel'), value: 'cancel' }
+        ],
+        0,
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+    );
+    if (!picked || picked === 'cancel') return;
+    if (picked === '__add__') {
+        await addSessionRuleFromPanel(host, rules);
+        return;
+    }
+    if (picked === '__clear__') {
+        await saveSessionRules(host, []);
+        host.notify(formatAgentUiNotice(host.translator, 'approvalRulesSessionCleared'));
+        return;
+    }
+    const index = Number(picked.split(':')[1]);
+    if (!Number.isInteger(index) || index < 0 || index >= rules.length) return;
+    const action = await host.select(
+        formatAgentUiNotice(host.translator, 'approvalRulesPanelActionTitle'),
+        [
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelRemove'), value: 'remove' },
+            { label: formatAgentUiNotice(host.translator, 'approvalRulesPanelCancel'), value: 'cancel' }
+        ],
+        0,
+        formatAgentUiNotice(host.translator, 'approvalRulesCommandHint')
+    );
+    if (action !== 'remove') return;
+    const [removed] = rules.splice(index, 1);
+    await saveSessionRules(host, rules);
+    host.notify(formatAgentUiNotice(host.translator, 'approvalRulesCommandRemoved', {
+        index: index + 1,
+        rule: describeApprovalRule(removed)
+    }));
+}
+
 async function runSessionApprovalRulesCommand(host: ApprovalRuleCommandHost, tokens: string[]): Promise<void> {
     const verb = String(tokens[0] || '').toLowerCase();
+    if (verb === 'panel') {
+        await openSessionRulesPanel(host);
+        return;
+    }
     const rules = await readSessionRules(host);
     if (!verb || verb === 'list' || verb === 'status') {
         showSessionRules(host, rules);

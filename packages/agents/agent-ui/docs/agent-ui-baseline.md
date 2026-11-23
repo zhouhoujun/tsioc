@@ -123,14 +123,14 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1103 passing |
 | `@tsdi/agent-gateway` | 412 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2389 passing**（4 组，190.5s：109 + 11 + 775 + 1494） |
+| `@tsdi/agent-ui` | **2390 passing**（5 组，122.5s：109 + 11 + 775 + 675 + 820） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 
 说明：
 
 - 组数由可用内存自动决定，也可通过 `AGENT_UI_TEST_GROUPS=<1..5>` 强制；
-  组数随可用内存自动调整（本次 4 组，190.5s；此前一次 PTY 用例在负载下超时，复跑通过）。
+  组数随可用内存自动调整（本次 5 组，122.5s；此前一次 PTY 用例在负载下超时，复跑通过）。
 - ordered approval rules 拆分后 `ToolApprovalManager.ts` 从 626 行降到 542 行（基线 543），
   新文件 `tools/ApprovalStrategy.ts`（<600）承载规则求值。
 - `source-size` 的外部阻塞（activities workflow-designer）已不再阻塞，当前全量通过。

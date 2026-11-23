@@ -66,6 +66,7 @@ export const AGENT_UI_NOTICE_TAIL_EN: NestedMessages = {
   inboxTaskActionHint: 'enter apply   esc close',
   inboxTaskCancelled: 'Cancelled background task {id}.',
   inboxTaskCancelFailed: 'Could not cancel background task {id}.',
+  approvalRulesSessionPanelClear: 'Clear session rules',
   sessionSwitchBusy: 'Wait for the current turn to finish before switching sessions.',
   gitSnapshotRevertMessageConfirm: 'Revert working tree to snapshot of message {ref}?',
   gitSnapshotRestoreConfirm: 'Restore the working tree captured before the last git revert?',
