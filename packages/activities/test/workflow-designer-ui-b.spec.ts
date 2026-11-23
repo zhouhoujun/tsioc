@@ -186,7 +186,7 @@ describe('Workflow Designer UI', () => {
     it('filters palette components by search query', async () => {
         const input = root.querySelector('.workflow-palette-search-input') as any;
         expect(input).toBeTruthy();
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(67);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(69);
 
         input.value = 'http';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
@@ -207,7 +207,7 @@ describe('Workflow Designer UI', () => {
 
         input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         await flush();
-        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(67);
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(69);
     });
 
     it('renders registry ports for a workflow loaded after mount', async () => {

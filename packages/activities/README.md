@@ -608,7 +608,7 @@ Features:
   without deleting it: the node and its wiring stay on the canvas (dimmed,
   struck-through title) but the run skips it and stops that branch,
 - inspector for node name/description/config fields driven by `WorkflowNodeRegistry`,
-- searchable palette: filter 67 registered node types by label, description or type,
+- searchable palette: filter 69 registered node types by label, description or type,
 - workflow settings (menu → Settings) edit the document description and a
   default run timeout stored in `metadata.timeout`; the timeout applies to
   designer runs and server run/resume/hook executions,
@@ -894,6 +894,12 @@ values, and hands the result to the transport. A missing id fails the node with
 that reference it subscribe to the shared server; `websocket-out` nodes that
 reference it broadcast to the connected clients instead of opening a new
 client connection.
+
+`tcp` and `udp` are config nodes as well. They hold the endpoint host/port
+(plus TLS for TCP and broadcast for UDP) once, and `tcp-in` / `tcp-out` /
+`udp-in` / `udp-out` reference them through the Endpoint picker. A referenced
+endpoint owns those fields; clear the reference to use the inline overrides.
+TCP listeners use the referenced TLS certificate/key when present.
 
 ### HTTP in security and uploads
 

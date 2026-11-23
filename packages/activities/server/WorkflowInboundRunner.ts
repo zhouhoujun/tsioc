@@ -2,11 +2,12 @@ import * as dgram from 'node:dgram';
 import * as fs from 'node:fs';
 import * as net from 'node:net';
 import * as path from 'node:path';
+import * as tls from 'node:tls';
 import { ActivityContext, ActivityResult } from '../src/activities/Activity';
 import { VisualWorkflowDefinition, WorkflowExecutionOptions } from '../src/visual/types';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 import { sharedMqttRegistry, WorkflowMqttRegistry } from './WorkflowMqtt';
-import { resolveMqttConfig, resolveWebSocketListenerConfig } from '../src/visual/workflow-runtime';
+import { resolveMqttConfig, resolveTcpConfig, resolveUdpConfig, resolveWebSocketListenerConfig } from '../src/visual/workflow-runtime';
 import { sharedWebSocketRegistry, WorkflowWebSocketRegistry } from './WorkflowWebSocket';
 import { configNodeMap } from '../src/visual/VisualWorkflowService';
 
@@ -179,16 +180,33 @@ export class WorkflowInboundRunner {
 
         for (const node of inboundNodes) {
             const config = node.config || {};
-            const host = String(options.host || config.host || '0.0.0.0');
-            const port = Math.max(0, Math.min(65535, Number(config.port) || 0));
+            const resolverContext = {
+                configNodes,
+                resolveCredential: options.credentialResolver
+            } as any;
+            let tcpSettings: Awaited<ReturnType<typeof resolveTcpConfig>> | undefined;
+            let udpSettings: Awaited<ReturnType<typeof resolveUdpConfig>> | undefined;
+            try {
+                if (node.type === 'tcp-in') {
+                    tcpSettings = await resolveTcpConfig(config, resolverContext);
+                } else if (node.type === 'udp-in') {
+                    udpSettings = await resolveUdpConfig(config, resolverContext);
+                }
+            } catch (error) {
+                await this.stopListeners(listeners, sockets);
+                throw error;
+            }
+            const host = String(options.host || tcpSettings?.host || udpSettings?.host || config.host || '0.0.0.0');
+            const port = tcpSettings?.port ?? udpSettings?.port
+                ?? Math.max(0, Math.min(65535, Number(config.port) || 0));
             const shouldReply = config.reply === true;
 
             if (node.type === 'tcp-in') {
-                const server = net.createServer(socket => {
+                const onConnection = (socket: any) => {
                     sockets.add(socket);
                     socket.on('close', () => sockets.delete(socket));
                     socket.on('error', () => sockets.delete(socket));
-                    socket.on('data', chunk => {
+                    socket.on('data', (chunk: any) => {
                         const remote = { address: socket.remoteAddress, port: socket.remotePort };
                         void dispatch(
                             node.id,
@@ -202,7 +220,15 @@ export class WorkflowInboundRunner {
                             } : undefined
                         );
                     });
-                });
+                };
+                const tcpTls = tcpSettings?.tls;
+                const server = tcpTls && (tcpTls.cert || tcpTls.key)
+                    ? tls.createServer({
+                        ca: tcpTls.ca,
+                        cert: tcpTls.cert,
+                        key: tcpTls.key
+                    }, onConnection)
+                    : net.createServer(onConnection);
                 try {
                     const bound = await listen(server, host, port);
                     ports.push(bound);

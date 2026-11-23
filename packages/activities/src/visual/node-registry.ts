@@ -750,11 +750,17 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Message')],
         fields: [
-            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0' }),
-            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({
+                key: 'tcp',
+                label: 'Endpoint',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'tcp-endpoint', create: true, edit: true }
+            }),
+            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0', visibleWhen: { key: 'tcp', equals: '' } }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1, visibleWhen: { key: 'tcp', equals: '' } }),
             configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { host: '0.0.0.0', port: 0, reply: false }
+        defaultConfig: { tcp: '', host: '0.0.0.0', port: 0, reply: false }
     },
     {
         type: 'udp-in',
@@ -767,11 +773,17 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Message')],
         fields: [
-            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0' }),
-            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({
+                key: 'udp',
+                label: 'Endpoint',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'udp-endpoint', create: true, edit: true }
+            }),
+            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0', visibleWhen: { key: 'udp', equals: '' } }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1, visibleWhen: { key: 'udp', equals: '' } }),
             configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { host: '0.0.0.0', port: 0, reply: false }
+        defaultConfig: { udp: '', host: '0.0.0.0', port: 0, reply: false }
     },
     {
         type: 'websocket-in',
@@ -861,9 +873,19 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 { label: '0', value: '0' },
                 { label: '1', value: '1' }
             ] }),
-            configField({ key: 'willRetain', label: 'Will retain', type: 'boolean', defaultValue: false })
+            configField({ key: 'willRetain', label: 'Will retain', type: 'boolean', defaultValue: false }),
+            configField({ key: 'birthTopic', label: 'Birth topic', type: 'text' }),
+            configField({ key: 'birthPayload', label: 'Birth payload', type: 'text' }),
+            configField({ key: 'birthQos', label: 'Birth QoS', type: 'select', defaultValue: '0', options: [
+                { label: '0', value: '0' },
+                { label: '1', value: '1' }
+            ] }),
+            configField({ key: 'birthRetain', label: 'Birth retain', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { url: 'mqtt://localhost:1883', keepalive: 60, clean: true, willQos: '0', willRetain: false }
+        defaultConfig: {
+            url: 'mqtt://localhost:1883', keepalive: 60, clean: true,
+            willQos: '0', willRetain: false, birthQos: '0', birthRetain: false
+        }
     },
     {
         type: 'mqtt-in',
@@ -909,13 +931,19 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1' }),
-            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({
+                key: 'tcp',
+                label: 'Endpoint',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'tcp-endpoint', create: true, edit: true }
+            }),
+            configField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1', visibleWhen: { key: 'tcp', equals: '' } }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1, visibleWhen: { key: 'tcp', equals: '' } }),
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the payload.' }),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 5000, min: 0, step: 1000, unit: 'ms' }),
-            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; leave empty for plain TCP.' })
+            configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; leave empty for plain TCP.', visibleWhen: { key: 'tcp', equals: '' } })
         ],
-        defaultConfig: { host: '127.0.0.1', port: 0, payload: 'payload', timeout: 5000 }
+        defaultConfig: { tcp: '', host: '127.0.0.1', port: 0, payload: 'payload', timeout: 5000 }
     },
     {
         type: 'udp-out',
@@ -931,12 +959,18 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
-            configField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1' }),
-            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({
+                key: 'udp',
+                label: 'Endpoint',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'udp-endpoint', create: true, edit: true }
+            }),
+            configField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1', visibleWhen: { key: 'udp', equals: '' } }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1, visibleWhen: { key: 'udp', equals: '' } }),
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the datagram payload.' }),
-            configField({ key: 'broadcast', label: 'Broadcast', type: 'boolean', defaultValue: false })
+            configField({ key: 'broadcast', label: 'Broadcast', type: 'boolean', defaultValue: false, visibleWhen: { key: 'udp', equals: '' } })
         ],
-        defaultConfig: { host: '127.0.0.1', port: 0, payload: 'payload', broadcast: false }
+        defaultConfig: { udp: '', host: '127.0.0.1', port: 0, payload: 'payload', broadcast: false }
     },
     {
         type: 'websocket-out',
@@ -986,6 +1020,49 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'rejectUnauthorized', label: 'Verify certificate', type: 'boolean', defaultValue: true })
         ],
         defaultConfig: { rejectUnauthorized: true }
+    },
+    {
+        type: 'tcp',
+        label: 'TCP endpoint',
+        description: 'Shared TCP endpoint for TCP nodes',
+        category: 'advanced',
+        configNode: true,
+        resource: 'tcp-endpoint',
+        icon: '⇄',
+        color: '#0f766e',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [],
+        fields: [
+            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0' }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({
+                key: 'tls',
+                label: 'TLS config',
+                type: 'select',
+                reference: { kind: 'config-node', resource: 'tls', create: true, edit: true }
+            })
+        ],
+        defaultConfig: { host: '0.0.0.0', port: 0 }
+    },
+    {
+        type: 'udp',
+        label: 'UDP endpoint',
+        description: 'Shared UDP endpoint for UDP nodes',
+        category: 'advanced',
+        configNode: true,
+        resource: 'udp-endpoint',
+        icon: '⇆',
+        color: '#0d9488',
+        textColor: '#ffffff',
+        inputs: [],
+        outputs: [],
+        fields: [
+            configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0' }),
+            configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
+            configField({ key: 'broadcast', label: 'Broadcast', type: 'boolean', defaultValue: false })
+        ],
+        defaultConfig: { host: '0.0.0.0', port: 0, broadcast: false }
     },
     {
         type: 'websocket',

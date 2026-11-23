@@ -84,6 +84,7 @@ export interface WorkflowMqttSettings {
     keepalive?: number;
     clean?: boolean;
     will?: { topic: string; payload: string; qos?: number; retain?: boolean };
+    birth?: { topic: string; payload: string; qos?: number; retain?: boolean };
     tls?: { ca?: string; cert?: string; key?: string; servername?: string; rejectUnauthorized?: boolean };
 }
 
@@ -114,6 +115,7 @@ export async function resolveMqttConfig(
     const topic = String(await resolveCredentialValue(pick('topic'), context) ?? '').trim();
     const tlsId = String(pick('tls') || '').trim();
     const willTopic = String(await resolveCredentialValue(pick('willTopic'), context) ?? '').trim();
+    const birthTopic = String(await resolveCredentialValue(pick('birthTopic'), context) ?? '').trim();
     return {
         url,
         topic,
@@ -131,6 +133,14 @@ export async function resolveMqttConfig(
                 payload: String(await resolveCredentialValue(pick('willPayload'), context) ?? ''),
                 qos: Number(pick('willQos')) === 1 ? 1 : 0,
                 retain: pick('willRetain') === true || pick('willRetain') === 'true'
+            }
+            : undefined,
+        birth: birthTopic
+            ? {
+                topic: birthTopic,
+                payload: String(await resolveCredentialValue(pick('birthPayload'), context) ?? ''),
+                qos: Number(pick('birthQos')) === 1 ? 1 : 0,
+                retain: pick('birthRetain') === true || pick('birthRetain') === 'true'
             }
             : undefined,
         tls: tlsId ? await resolveTlsOptions({ tls: tlsId }, context) : undefined
@@ -186,6 +196,80 @@ export async function resolveWebSocketListenerConfig(
         path: pathValue || undefined,
         tls: tlsId ? await resolveTlsOptions({ tls: tlsId }, context) : undefined,
         listenerId: listenerId || undefined
+    };
+}
+
+/** Resolved TCP endpoint used by `tcp-in` / `tcp-out`. */
+export interface WorkflowTcpSettings {
+    host: string;
+    port: number;
+    tls?: { ca?: string; cert?: string; key?: string; servername?: string; rejectUnauthorized?: boolean };
+    endpointId?: string;
+}
+
+/** Resolved UDP endpoint used by `udp-in` / `udp-out`. */
+export interface WorkflowUdpSettings {
+    host: string;
+    port: number;
+    broadcast: boolean;
+    endpointId?: string;
+}
+
+/**
+ * Resolve a shared `tcp` endpoint config node. Inline node values win so a
+ * node can override the shared host/port/TLS without editing the config.
+ */
+export async function resolveTcpConfig(
+    config: Record<string, any>,
+    context: ActivityContext
+): Promise<WorkflowTcpSettings> {
+    const endpointId = String(config?.tcp || '').trim();
+    const nodes = (context as any)?.configNodes || {};
+    const shared = endpointId ? nodes[endpointId] : undefined;
+    if (endpointId && !shared) {
+        throw new Error(`TCP endpoint not found: ${endpointId}. Add a TCP endpoint config node or clear the reference.`);
+    }
+    const pick = (key: string): any => {
+        const value = shared?.[key];
+        if (value !== undefined && value !== null && value !== '') {
+            return value;
+        }
+        return config?.[key];
+    };
+    const host = String(await resolveCredentialValue(pick('host'), context) ?? '').trim() || '0.0.0.0';
+    const port = Math.max(0, Math.min(65535, Number(pick('port')) || 0));
+    const tlsId = String(pick('tls') || '').trim();
+    return {
+        host,
+        port,
+        tls: tlsId ? await resolveTlsOptions({ tls: tlsId }, context) : undefined,
+        endpointId: endpointId || undefined
+    };
+}
+
+/** Resolve a shared `udp` endpoint config node (inline values win). */
+export async function resolveUdpConfig(
+    config: Record<string, any>,
+    context: ActivityContext
+): Promise<WorkflowUdpSettings> {
+    const endpointId = String(config?.udp || '').trim();
+    const nodes = (context as any)?.configNodes || {};
+    const shared = endpointId ? nodes[endpointId] : undefined;
+    if (endpointId && !shared) {
+        throw new Error(`UDP endpoint not found: ${endpointId}. Add a UDP endpoint config node or clear the reference.`);
+    }
+    const pick = (key: string): any => {
+        const value = shared?.[key];
+        if (value !== undefined && value !== null && value !== '') {
+            return value;
+        }
+        return config?.[key];
+    };
+    return {
+        host: String(await resolveCredentialValue(pick('host'), context) ?? '').trim() || '0.0.0.0',
+        port: Math.max(0, Math.min(65535, Number(pick('port')) || 0)),
+        broadcast: pick('broadcast') === true || pick('broadcast') === 'true',
+        endpointId: endpointId || undefined
     };
 }
 
@@ -1333,8 +1417,10 @@ export async function executeVisualNode(
                     });
                     return { success: true, data: { nodeId: node.id, transport, url, bytes: body.length } };
                 }
-                const host = String(await resolveCredentialValue(config.host, context) ?? '').trim();
-                const port = Math.max(0, Math.min(65535, Number(config.port) || 0));
+                const tcpSettings = transport === 'tcp' ? await resolveTcpConfig(config, context) : undefined;
+                const udpSettings = transport === 'udp' ? await resolveUdpConfig(config, context) : undefined;
+                const host = tcpSettings?.host || udpSettings?.host || '';
+                const port = tcpSettings?.port || udpSettings?.port || 0;
                 if (!host || !port) {
                     return {
                         success: false,
@@ -1343,7 +1429,8 @@ export async function executeVisualNode(
                     };
                 }
                 if (transport === 'udp') {
-                    await sender({ host, port, payload: body, timeoutMs, broadcast: config.broadcast === true });
+                    const broadcast = udpSettings?.broadcast === true;
+                    await sender({ host, port, payload: body, timeoutMs, broadcast });
                     return {
                         success: true,
                         data: {
@@ -1351,13 +1438,12 @@ export async function executeVisualNode(
                             transport,
                             host,
                             port,
-                            broadcast: config.broadcast === true,
+                            broadcast,
                             bytes: body.length
                         }
                     };
                 }
-                const tls = await resolveTlsOptions(config, context);
-                await sender({ host, port, payload: body, timeoutMs, tls });
+                await sender({ host, port, payload: body, timeoutMs, tls: tcpSettings?.tls });
                 return { success: true, data: { nodeId: node.id, transport, host, port, bytes: body.length } };
             } catch (error) {
                 return { success: false, error: error as Error, data: { nodeId: node.id, transport } };
@@ -1567,6 +1653,7 @@ export async function executeVisualNode(
                 keepalive: settings.keepalive,
                 clean: settings.clean,
                 will: settings.will,
+                birth: settings.birth,
                 tls: settings.tls
             });
             return {

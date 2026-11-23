@@ -785,7 +785,7 @@ function startDesignerServer(port) {
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !partialClean || !enterNewline || !tabAccepts
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10
-            || paletteFiltered < 1 || paletteFiltered >= 67 || paletteRestored !== 67
+            || paletteFiltered < 1 || paletteFiltered >= 69 || paletteRestored !== 69
             || !deleteDisabledBefore || !deleteEnabledAfter || localePreserved.count !== 8 || localePreserved.locale !== 'zh-CN' || !fitVisible
             || !credentialDialog.open || credentialDialog.title !== 'Credentials'
             || credentialSaved.rows !== 1 || !credentialSaved.names.includes('preview-token') || credentialSaved.leaked

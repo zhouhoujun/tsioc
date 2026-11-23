@@ -312,6 +312,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "TLS config",
                 "description": "Reusable TLS options for outbound nodes"
             },
+            "tcp": {
+                "label": "TCP endpoint",
+                "description": "Shared TCP endpoint for TCP nodes"
+            },
+            "udp": {
+                "label": "UDP endpoint",
+                "description": "Shared UDP endpoint for UDP nodes"
+            },
             "websocket": {
                 "label": "WebSocket listener",
                 "description": "Shared WebSocket server for WebSocket in/out nodes"
@@ -751,11 +759,13 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "body": "Body path"
             },
             "tcp-in": {
+                "tcp": "Endpoint",
                 "host": "Host",
                 "port": "Port",
                 "reply": "Reply with result"
             },
             "udp-in": {
+                "udp": "Endpoint",
                 "host": "Host",
                 "port": "Port",
                 "reply": "Reply with result"
@@ -789,6 +799,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mqtt": "Broker config"
             },
             "tcp-out": {
+                "tcp": "Endpoint",
                 "host": "Host",
                 "port": "Port",
                 "payload": "Payload path",
@@ -796,6 +807,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "tls": "TLS config"
             },
             "udp-out": {
+                "udp": "Endpoint",
                 "host": "Host",
                 "port": "Port",
                 "payload": "Payload path",
@@ -827,7 +839,21 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "willTopic": "Will topic",
                 "willPayload": "Will payload",
                 "willQos": "Will QoS",
-                "willRetain": "Will retain"
+                "willRetain": "Will retain",
+                "birthTopic": "Birth topic",
+                "birthPayload": "Birth payload",
+                "birthQos": "Birth QoS",
+                "birthRetain": "Birth retain"
+            },
+            "tcp": {
+                "host": "Host",
+                "port": "Port",
+                "tls": "TLS config"
+            },
+            "udp": {
+                "host": "Host",
+                "port": "Port",
+                "broadcast": "Broadcast"
             },
             "websocket": {
                 "host": "Host",
@@ -1999,6 +2025,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "label": "TLS 配置",
                 "description": "供出站节点复用的 TLS 选项"
             },
+            "tcp": {
+                "label": "TCP 端点",
+                "description": "供 TCP 节点共用的连接端点"
+            },
+            "udp": {
+                "label": "UDP 端点",
+                "description": "供 UDP 节点共用的数据报端点"
+            },
             "websocket": {
                 "label": "WebSocket 监听器",
                 "description": "供 WebSocket 输入/输出节点共用的 WebSocket 服务"
@@ -2438,11 +2472,13 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "body": "响应体路径"
             },
             "tcp-in": {
+                "tcp": "端点",
                 "host": "主机",
                 "port": "端口",
                 "reply": "回复执行结果"
             },
             "udp-in": {
+                "udp": "端点",
                 "host": "主机",
                 "port": "端口",
                 "reply": "回复执行结果"
@@ -2476,6 +2512,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mqtt": "Broker 配置"
             },
             "tcp-out": {
+                "tcp": "端点",
                 "host": "主机",
                 "port": "端口",
                 "payload": "载荷路径",
@@ -2483,6 +2520,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "tls": "TLS 配置"
             },
             "udp-out": {
+                "udp": "端点",
                 "host": "主机",
                 "port": "端口",
                 "payload": "载荷路径",
@@ -2514,7 +2552,21 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "willTopic": "遗嘱主题",
                 "willPayload": "遗嘱内容",
                 "willQos": "遗嘱 QoS",
-                "willRetain": "遗嘱保留"
+                "willRetain": "遗嘱保留",
+                "birthTopic": "上线主题",
+                "birthPayload": "上线内容",
+                "birthQos": "上线 QoS",
+                "birthRetain": "上线保留"
+            },
+            "tcp": {
+                "host": "主机",
+                "port": "端口",
+                "tls": "TLS 配置"
+            },
+            "udp": {
+                "host": "主机",
+                "port": "端口",
+                "broadcast": "广播"
             },
             "websocket": {
                 "host": "主机",

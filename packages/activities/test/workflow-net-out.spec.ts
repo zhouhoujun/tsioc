@@ -171,6 +171,59 @@ describe('Workflow outbound transports', () => {
         expect((result.data as any).clients).toEqual(3);
     });
 
+    it('resolves shared TCP and UDP endpoint config nodes', async () => {
+        const tcp: any[] = [];
+        service.setTcpSender(message => {
+            tcp.push(message);
+        });
+        const tcpDefinition: VisualWorkflowDefinition = {
+            id: 'tcp-shared',
+            name: 'TCP shared',
+            nodes: [
+                registry.createNode('tcp', { x: 0, y: 0 }, {
+                    id: 'tcp_1',
+                    config: { host: '10.0.0.5', port: 9001 }
+                }),
+                registry.createNode('tcp-out', { x: 200, y: 0 }, {
+                    id: 'tcp_out',
+                    config: { tcp: 'tcp_1', payload: 'payload' }
+                })
+            ],
+            connections: []
+        };
+        const tcpResult = await service.execute(tcpDefinition, { payload: 'hello' });
+        expect(tcpResult.success).toBe(true);
+        expect(tcp[0]).toMatchObject({ host: '10.0.0.5', port: 9001, payload: 'hello' });
+
+        const udp: any[] = [];
+        service.setUdpSender(message => {
+            udp.push(message);
+        });
+        const udpDefinition: VisualWorkflowDefinition = {
+            id: 'udp-shared',
+            name: 'UDP shared',
+            nodes: [
+                registry.createNode('udp', { x: 0, y: 0 }, {
+                    id: 'udp_1',
+                    config: { host: '10.0.0.6', port: 9002, broadcast: true }
+                }),
+                registry.createNode('udp-out', { x: 200, y: 0 }, {
+                    id: 'udp_out',
+                    config: { udp: 'udp_1', payload: 'payload' }
+                })
+            ],
+            connections: []
+        };
+        const udpResult = await service.execute(udpDefinition, { payload: 'hello' });
+        expect(udpResult.success).toBe(true);
+        expect(udp[0]).toMatchObject({
+            host: '10.0.0.6',
+            port: 9002,
+            broadcast: true,
+            payload: 'hello'
+        });
+    });
+
     it('passes UDP broadcast and WebSocket headers to host transports', async () => {
         const udp: any[] = [];
         service.setUdpSender(message => {

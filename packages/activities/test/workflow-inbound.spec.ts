@@ -97,6 +97,43 @@ describe('Workflow inbound runner', () => {
         expect(handle.running).toBe(false);
     });
 
+    it('runs a TCP listener from a shared endpoint config', async () => {
+        const sharedDefinition = definition('tcp-in');
+        const inbound = sharedDefinition.nodes.find(node => node.type === 'tcp-in')!;
+        inbound.config = { tcp: 'tcp_1', reply: true };
+        sharedDefinition.nodes.unshift(registry.createNode('tcp', { x: -200, y: 0 }, {
+            id: 'tcp_1',
+            config: { host: '127.0.0.1', port: 0 }
+        }));
+        const payloads: any[] = [];
+        const handle = await runner.start(sharedDefinition, {
+            context: {
+                actions: {
+                    echo: (ctx: any) => {
+                        payloads.push(ctx.payload);
+                        return { echo: ctx.payload };
+                    }
+                }
+            }
+        });
+        try {
+            expect(handle.ports.length).toBe(1);
+            const reply = await withTimeout(new Promise<string>((resolve, reject) => {
+                const socket = net.connect(handle.ports[0], '127.0.0.1', () => socket.write('shared'));
+                socket.setEncoding('utf8');
+                socket.once('data', text => {
+                    socket.end();
+                    resolve(String(text));
+                });
+                socket.once('error', reject);
+            }));
+            expect(payloads).toEqual(['shared']);
+            expect(JSON.parse(reply).result.echo).toBe('shared');
+        } finally {
+            await handle.stop();
+        }
+    });
+
     it('runs a workflow for every UDP datagram and replies with the result', async () => {
         const payloads: any[] = [];
         const handle = await runner.start(definition('udp-in'), {

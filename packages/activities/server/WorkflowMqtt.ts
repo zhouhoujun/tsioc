@@ -91,6 +91,8 @@ export interface MqttConnectOptions {
     clean?: boolean;
     /** Last-will message registered on CONNECT. */
     will?: { topic: string; payload: string; qos?: number; retain?: boolean };
+    /** Message published once the connection is acknowledged. */
+    birth?: { topic: string; payload: string; qos?: number; retain?: boolean };
     /** Milliseconds to wait for the broker before failing (default 10000). */
     connectTimeout?: number;
     /** Reject self-signed certificates (mqtts only). */
@@ -301,6 +303,15 @@ export class WorkflowMqttClient {
                         clearConnectTimer();
                         this.startKeepalive();
                         void this.resubscribeAll();
+                        const birth = this.options.birth;
+                        if (birth?.topic) {
+                            void this.publish({
+                                topic: birth.topic,
+                                payload: birth.payload,
+                                qos: Number(birth.qos) === 1 ? 1 : 0,
+                                retain: birth.retain === true
+                            }).catch(() => undefined);
+                        }
                         resolve();
                     },
                     error => fail(error)
@@ -623,6 +634,7 @@ export class WorkflowMqttTransport implements OnDestroy {
         keepalive?: number;
         clean?: boolean;
         will?: { topic: string; payload: string; qos?: number; retain?: boolean };
+        birth?: { topic: string; payload: string; qos?: number; retain?: boolean };
         tls?: MqttTlsOptions;
     }): Promise<void> {
         await this.registry.publish({
@@ -633,6 +645,7 @@ export class WorkflowMqttTransport implements OnDestroy {
             keepalive: message.keepalive,
             clean: message.clean,
             will: message.will,
+            birth: message.birth,
             tls: message.tls
         }, {
             topic: message.topic,
@@ -656,6 +669,7 @@ export function mqttPoolKey(options: MqttConnectOptions): string {
         options.clientId || '',
         options.clean === false ? 'clean:0' : '',
         options.will ? JSON.stringify(options.will) : '',
+        options.birth ? JSON.stringify(options.birth) : '',
         options.tls ? JSON.stringify(options.tls) : ''
     ].join('|');
 }

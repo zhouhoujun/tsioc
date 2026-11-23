@@ -219,6 +219,7 @@ export interface WorkflowMqttPublishRequest {
     keepalive?: number;
     clean?: boolean;
     will?: { topic: string; payload: string; qos?: number; retain?: boolean };
+    birth?: { topic: string; payload: string; qos?: number; retain?: boolean };
     tls?: WorkflowTlsOptions;
 }
 

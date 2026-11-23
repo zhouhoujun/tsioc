@@ -201,6 +201,27 @@ describe('Workflow MQTT transport', () => {
         }
     });
 
+    it('publishes a birth message after the connection is acknowledged', async () => {
+        const broker = await startBroker();
+        const client = new WorkflowMqttClient({
+            url: broker.url,
+            clientId: 'birth-client',
+            keepalive: 0,
+            birth: { topic: 'status/online', payload: '1', qos: 0, retain: true }
+        });
+        try {
+            await client.connect();
+            await withTimeout(new Promise<void>(resolve => {
+                const tick = () => broker.publishes.length ? resolve() : setTimeout(tick, 10);
+                tick();
+            }));
+            expect(broker.publishes).toContainEqual({ topic: 'status/online', payload: '1' });
+        } finally {
+            client.close();
+            await broker.close();
+        }
+    });
+
     it('runs a workflow for every MQTT message through the inbound runner', async () => {
         const broker = await startBroker();
         const injector: Injector = createInjector();
@@ -325,7 +346,11 @@ describe('Workflow MQTT transport', () => {
                         willTopic: 'will/topic',
                         willPayload: 'bye',
                         willQos: '1',
-                        willRetain: true
+                        willRetain: true,
+                        birthTopic: 'status/online',
+                        birthPayload: '1',
+                        birthQos: '1',
+                        birthRetain: true
                     }
                 }),
                 registry.createNode('mqtt-out', { x: 200, y: 0 }, {
@@ -340,6 +365,7 @@ describe('Workflow MQTT transport', () => {
         expect(published[0].keepalive).toBe(30);
         expect(published[0].clean).toBe(false);
         expect(published[0].will).toEqual({ topic: 'will/topic', payload: 'bye', qos: 1, retain: true });
+        expect(published[0].birth).toEqual({ topic: 'status/online', payload: '1', qos: 1, retain: true });
     });
 
     it('passes a resolved TLS config node to the MQTT transport', async () => {

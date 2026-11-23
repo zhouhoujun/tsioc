@@ -35,7 +35,7 @@ describe('Workflow configuration-node index', () => {
         });
 
         const groups = panel().groups;
-        expect(groups.map(group => group.resource)).toEqual(['mqtt-broker', 'tls', 'websocket-listener']);
+        expect(groups.map(group => group.resource)).toEqual(['mqtt-broker', 'tls', 'tcp-endpoint', 'udp-endpoint', 'websocket-listener']);
         expect(groups[0].type).toBe('mqtt');
         expect(groups[0].items.map(item => item.name)).toEqual(['prod']);
         expect(groups[0].items[0].summary).toBe('mqtt://prod:1883');
@@ -44,7 +44,11 @@ describe('Workflow configuration-node index', () => {
         expect(groups[1].items).toEqual([]);
         expect(groups[1].type).toBe('tls');
         expect(groups[2].items).toEqual([]);
-        expect(groups[2].type).toBe('websocket');
+        expect(groups[2].type).toBe('tcp');
+        expect(groups[3].items).toEqual([]);
+        expect(groups[3].type).toBe('udp');
+        expect(groups[4].items).toEqual([]);
+        expect(groups[4].type).toBe('websocket');
     });
 
     it('labels usage and distinguishes used from unused records', () => {
