@@ -124,12 +124,14 @@
 
 ### P0 — 数据与执行基础（2–3 周，最高优先）
 
-**P0.1 版本化数据库迁移（先做，阻塞后续所有 schema 改动）**
+**P0.1 版本化数据库迁移（已落地基础版 2026-11-23）**
 - 新增 `agent/src/memory/migrations/`：
   - `MigrationRunner`：`migration` journal 表（id, appliedAt），事务内执行；
   - 基线迁移：从现有 16 个实体生成初始 schema；
   - 生产库 `synchronize:false`，测试仍可用 `synchronize:true` 或跑同一迁移；
   - 启动前只读检测 + 备份提示，禁止自动覆盖旧库。
+- 状态：`AgentMigrationRunner` 已落地基线（新库建 schema、旧 synchronize 库保留数据并记基线、
+  非 agent 库拒绝启动）；生产路径改为 `synchronize:false + initDb`，测试仍可显式 synchronize。
 - 验收：旧库升级/关闭/重启数据完整；新增实体只通过 migration；生产库 integrity 门禁仍通过。
 
 **P0.2 持久化 Session Inbox + DB turn claim**

@@ -4,6 +4,7 @@ import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
 import { AgentAuditLogEntity, AgentBackgroundTaskEntity, AgentCommandExchangeEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentEvalReportEntity, AgentGoalEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSessionSnapshotEntity, AgentSummaryQualityEntity, AgentTimelineEventEntity, AgentTurnDiagnosticsEntity, AgentTurnHistoryEntity } from './memory/entities';
 import { resolveEnvHome } from './env';
+import { runAgentMigrations } from './memory/migrations/AgentMigrationRunner';
 
 const AGENT_ORM_ENTITIES = [
     AgentSessionEntity, AgentSessionSnapshotEntity, AgentMessageEntity, AgentMemoryEntity,
@@ -76,7 +77,8 @@ function loadNodeOrmRuntime(): AgentOrmNodeRuntime | null {
         TypeOrmModule.withConnection({
             type: 'sqljs' as any,
             autoLoadEntities: false as any,
-            synchronize: true,
+            synchronize: false,
+            initDb: async (dataSource) => { await runAgentMigrations(dataSource); },
             entities: [...AGENT_ORM_ENTITIES]
         } as TypeormOptions)
     ]
@@ -96,7 +98,8 @@ export class AgentOrmModule {
             location,
             autoSave: true,
             autoLoadEntities: false as any,
-            synchronize: true
+            synchronize: false,
+            initDb: async (dataSource) => { await runAgentMigrations(dataSource); }
         } as TypeormOptions);
     }
 }
@@ -108,7 +111,8 @@ export function provideAgentOrmStorage(root: string, fileName = 'agent.db'): Pro
         location,
         autoSave: true,
         autoLoadEntities: false as any,
-        synchronize: true
+        synchronize: false,
+        initDb: async (dataSource) => { await runAgentMigrations(dataSource); }
     } as TypeormOptions);
 }
 
@@ -136,14 +140,21 @@ function createAgentOrmProviders(options: TypeormOptions): Provider[] {
 }
 
 export function provideAgentOrm(options: TypeormOptions): Provider[] {
+    const initDb = options.initDb;
+    const synchronize = options.synchronize === true;
     return [
         importProvidersFrom(LoggerModule),
         { provide: ModuleLoader, useValue: new DefaultModuleLoader() },
         ...createAgentOrmProviders({
-        type: 'sqljs' as any,
-        autoLoadEntities: false as any,
-        synchronize: true,
-        ...options
-    })
+            type: 'sqljs' as any,
+            autoLoadEntities: false as any,
+            synchronize: false,
+            ...options,
+            ...(initDb
+                ? {}
+                : synchronize
+                    ? {}
+                    : { initDb: async (dataSource: any) => { await runAgentMigrations(dataSource); } })
+        })
     ];
 }
