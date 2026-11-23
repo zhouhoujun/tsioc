@@ -14,6 +14,8 @@ import { SessionPostTurnController } from './SessionPostTurnController';
 import { hadPriorClarification, isClarificationAssistantMessage } from './ClarificationFollowUp';
 import { TurnRequestController } from './TurnRequestController';
 import { TurnTerminationController } from './TurnTerminationController';
+import { TurnRecoveryController } from './TurnRecoveryController';
+import type { TurnRecoveryState, TurnRepairRecipe } from './TurnRecoveryState';
 import { cloneToolInput, safeSerializeToolInput, summarizeToolInput as summarizeToolInputView, summarizeToolOutput as summarizeToolOutputView } from './ToolInvocationSupport';
 import { ToolInvocationLifecycle } from './ToolInvocationLifecycle';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
@@ -118,29 +120,7 @@ interface TurnExecutionContext {
     readOnlyResults?: RepeatReadOnlyCallCache;
 }
 
-interface TurnRecoveryState {
-    loopPending: boolean;
-    loopInjections: number;
-    repairPending: boolean;
-    repairInjections: number;
-    consecutiveFalsifications: number;
-    totalFalsifications: number;
-    falsifiedEvidence: ToolEvidenceEntry[];
-    attemptHistory: FalsificationAttempt[];
-    repeatAttempts: number;
-    writeHints: Array<{ toolName: string; filePath: string; reason: string }>;
-    /** P79: file paths edited by write tools in the current round (verify-command inputs). */
-    editedFiles: string[];
-    repairHints: ResolvedRepairHint[];
-    repairRecipes: TurnRepairRecipe[];
-    terminated: boolean;
-    terminationMessage: string;
-}
 
-interface TurnRepairRecipe {
-    signature: string;
-    fixes: Array<{ toolName: string; inputSummary?: string }>;
-}
 
 interface ToolCompensationEntry {
     toolName: string;
@@ -183,7 +163,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -1126,13 +1106,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     message: this.createMessage('assistant', 'Token budget exhausted. The turn was stopped to prevent further cost. Provide a brief summary of completed work and remaining steps.')
                 };
             }
-            const termination = this.resolveRecoveryTermination(turnContext, maxLoopRecoveries);
+            const termination = this.recoveryController.resolveTermination(turnContext, maxLoopRecoveries);
             if (termination) {
                 return { sessionId, message: await this.completeTerminationMessage(sessionId, query, currentUserMessageId, turnContext, termination) };
             }
             await this.promoteSteer(sessionId);
             let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const recoveredRequest = this.maybeInjectRecoveryPrompt(request, turnContext);
+            const recoveredRequest = this.recoveryController.maybeInjectPrompt(request, turnContext);
             if (recoveredRequest) {
                 request = recoveredRequest;
             }
@@ -1215,14 +1195,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     message: this.createMessage('assistant', 'Token budget exhausted. The turn was stopped to prevent further cost. Provide a brief summary of completed work and remaining steps.')
                 };
             }
-            const termination = this.resolveRecoveryTermination(turnContext, maxLoopRecoveries);
+            const termination = this.recoveryController.resolveTermination(turnContext, maxLoopRecoveries);
             if (termination) {
                 const message = yield* this.completeStreamingTerminationMessage(sessionId, query, currentUserMessageId, turnContext, termination);
                 return { sessionId, message };
             }
             await this.promoteSteer(sessionId);
             let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const recoveredRequest = this.maybeInjectRecoveryPrompt(request, turnContext);
+            const recoveredRequest = this.recoveryController.maybeInjectPrompt(request, turnContext);
             if (recoveredRequest) {
                 request = recoveredRequest;
             }
@@ -1355,61 +1335,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         };
     }
 
-    private resolveRecoveryTermination(turnContext: TurnExecutionContext, maxLoopRecoveries: number): string | undefined {
-        const recovery = turnContext.recovery;
-        if (!recovery) {
-            return undefined;
-        }
-        if (recovery.terminated) {
-            return recovery.terminationMessage;
-        }
-        if (recovery.loopPending && recovery.loopInjections >= maxLoopRecoveries) {
-            recovery.loopPending = false;
-            return this.buildLoopBlockedMessage(recovery.loopInjections);
-        }
-        return undefined;
-    }
-
-    private maybeInjectRecoveryPrompt(request: ModelRequest, turnContext: TurnExecutionContext): ModelRequest | undefined {
-        const recovery = turnContext.recovery;
-        if (!recovery) {
-            return undefined;
-        }
-        if (recovery.loopPending) {
-            recovery.loopPending = false;
-            recovery.loopInjections++;
-            if (turnContext.diagnostics) {
-                turnContext.diagnostics.loopRecoveryCount = recovery.loopInjections;
-            }
-            return this.injectSystemPrompt(request, LOOP_RECOVERY_SYSTEM_PROMPT);
-        }
-        if (recovery.repairPending) {
-            recovery.repairPending = false;
-            recovery.repairInjections++;
-            if (turnContext.diagnostics) {
-                turnContext.diagnostics.falsificationCount = recovery.totalFalsifications;
-                turnContext.diagnostics.repairRoundsUsed = recovery.attemptHistory.length;
-                turnContext.diagnostics.repeatedAttemptCount = recovery.repeatAttempts;
-            }
-            const escalate = recovery.consecutiveFalsifications >= FALSIFICATION_ESCALATION_THRESHOLD;
-            const prompt = escalate
-                ? buildExplorationGuidancePrompt(recovery.attemptHistory, recovery.repairHints)
-                : buildRepairPrompt(recovery.attemptHistory, recovery.repeatAttempts, { resolvedHints: recovery.repairHints });
-            return this.injectSystemPrompt(request, prompt);
-        }
-        return undefined;
-    }
-
-    private injectSystemPrompt(request: ModelRequest, prompt: string): ModelRequest {
-        return {
-            ...request,
-            messages: [
-                this.createMessage('system', prompt),
-                ...request.messages
-            ]
-        };
-    }
-
     private async runVerificationGate(sessionId: string, turnContext: TurnExecutionContext, startIndex: number, maxRepairRounds: number): Promise<void> {
         const recovery = turnContext.recovery;
         if (!recovery) return;
@@ -1466,7 +1391,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         if (recovery.consecutiveFalsifications >= maxRepairRounds && !this.hasUnfinishedPlan(sessionId, turnContext)) {
             recovery.terminated = true;
-            recovery.terminationMessage = this.buildFalsificationSummaryMessage(recovery);
+            recovery.terminationMessage = this.recoveryController.buildFalsificationSummaryMessage(recovery);
         }
     }
 
@@ -1575,35 +1500,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 reason: `Declared write to '${fileSnapshot.filePath}' but file content did not change.`
             });
         }
-    }
-
-    private buildLoopBlockedMessage(injections: number): string {
-        return `I detected a repeating tool-call loop that did not resolve after ${injections} recovery attempt(s). Ending the turn with the results gathered so far.`;
-    }
-
-    private buildFalsificationSummaryMessage(recovery: TurnRecoveryState): string {
-        const attempts = recovery.attemptHistory;
-        if (attempts.length === 0) {
-            return `The verification gate falsified ${recovery.consecutiveFalsifications} consecutive round(s).\nEnding the turn with a failure summary.`;
-        }
-        const lines = attempts.slice(-TURN_DIAGNOSTICS_RECENT_ATTEMPTS).map(attempt => {
-            const entries = attempt.entries.slice(0, 4).map(entry => {
-                const reason = entry.falsificationReason ?? entry.error ?? 'failed';
-                return `- Tool "${entry.toolName}": ${reason}`;
-            });
-            return `Attempt ${attempt.round}:\n${entries.join('\n')}`;
-        });
-        const repeatNote = recovery.repeatAttempts > 0
-            ? `\nNote: ${recovery.repeatAttempts} already-rejected attempt(s) were repeated.`
-            : '';
-        return `The verification gate falsified ${recovery.consecutiveFalsifications} consecutive round(s) across ${attempts.length} attempt(s).\n${lines.join('\n')}${repeatNote}\nEnding the turn with a failure summary.`;
-    }
-
-    private buildTerminationWrapUpMessage(termination: string): AgentMessage {
-        return this.createMessage(
-            'user',
-            `The turn is ending because tool execution failed verification. ${termination}\n\nPlease provide a brief, natural final response to the user, in the same language the user used, explaining what was attempted, what failed, and any partial results or next steps. Do not call any more tools.`
-        );
     }
 
     private async completeTerminationMessage(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext, termination: string): Promise<AgentMessage> {
@@ -2114,6 +2010,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
+    private get recoveryController(): TurnRecoveryController {
+        return this.turnRecovery ??= new TurnRecoveryController({
+            createMessage: (role, content) => this.createMessage(role, content)
+        });
+    }
+
     private get toolLifecycleController(): ToolInvocationLifecycle {
         return this.toolLifecycle ??= new ToolInvocationLifecycle({
             app: this.app, sessions: this.sessions, toolRegistry: this.toolRegistry as any,
@@ -2132,7 +2034,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     private get turnTermination(): TurnTerminationController {
         return this.turnTerminationController ??= new TurnTerminationController({
             sessions: this.sessions,
-            buildWrapUp: termination => this.buildTerminationWrapUpMessage(termination),
+            buildWrapUp: termination => this.recoveryController.buildTerminationWrapUpMessage(termination),
             buildModelRequest: (sessionId, query, currentId, context) => this.buildModelRequest(sessionId, query, currentId, context),
             prepareRequest: (sessionId, request, context) => this.prepareModelRequest(sessionId, request, context.profile, computeTurnFalsifyRate(context.evidenceLedger), context.agent?.reasoning),
             completeModel: request => this.completeModelRequest(request),
