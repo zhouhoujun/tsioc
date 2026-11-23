@@ -15,6 +15,7 @@ import { hadPriorClarification, isClarificationAssistantMessage } from './Clarif
 import { TurnRequestController } from './TurnRequestController';
 import { TurnTerminationController } from './TurnTerminationController';
 import { cloneToolInput, safeSerializeToolInput, summarizeToolInput as summarizeToolInputView, summarizeToolOutput as summarizeToolOutputView } from './ToolInvocationSupport';
+import { ToolInvocationLifecycle } from './ToolInvocationLifecycle';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -182,7 +183,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -2113,6 +2114,21 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
+    private get toolLifecycleController(): ToolInvocationLifecycle {
+        return this.toolLifecycle ??= new ToolInvocationLifecycle({
+            app: this.app, sessions: this.sessions, toolRegistry: this.toolRegistry as any,
+            createMessage: (role, content, name, toolCallId, metadata) => this.createMessage(role, content, name, toolCallId, metadata),
+            runAfterToolHooks: async (sessionId, result, workspace) => {
+                await this.runTurnHooks('afterTool', sessionId, {
+                    sessionId, workspace, stage: 'afterTool',
+                    toolCall: { id: result.toolCall.id, name: result.toolCall.name, input: result.metadata?.toolCallInput },
+                    executionMode: result.receipt.executionMode,
+                    metadata: { receipt: result.receipt, error: result.error?.message, output: result.content }
+                });
+            }
+        });
+    }
+
     private get turnTermination(): TurnTerminationController {
         return this.turnTerminationController ??= new TurnTerminationController({
             sessions: this.sessions,
@@ -2163,7 +2179,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             settle: async (sessionId, result, context) => {
                 this.recordToolEvidence(context, result.receipt, result.error);
                 this.maybeApplyDelegationQualityGate(sessionId, result, context);
-                await this.finalizeToolInvocation(sessionId, result);
+                await this.toolLifecycleController.finalize(sessionId, result);
             },
             settleError: async (sessionId, error, context) => {
                 this.recordToolEvidence(context, {
@@ -2192,7 +2208,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         this.recordToolEvidence(turnContext, result.receipt, result.error);
         this.maybeApplyDelegationQualityGate(sessionId, result, turnContext);
         if (persistMessage) {
-            await this.finalizeToolInvocation(sessionId, result);
+            await this.toolLifecycleController.finalize(sessionId, result);
         }
         return result.error;
     }
@@ -2248,7 +2264,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const callableToolNames = new Set(callableTools.map(tool => tool.name));
         if (!callableToolNames.has(toolCall.name)) {
             const reason = `Tool "${toolCall.name}" is not available for this turn. Activate or expose it before invoking.`;
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                 ...baseReceipt,
                 status: 'skipped',
                 durationMs: 0,
@@ -2260,7 +2276,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const turnPermission = turnContext.agent?.permissions?.[toolCall.name];
         if (turnPermission === 'deny') {
             const reason = `Tool "${toolCall.name}" is denied by the turn permission matrix.`;
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                 ...baseReceipt,
                 status: 'skipped',
                 durationMs: 0,
@@ -2270,7 +2286,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const maxSteps = turnContext.agent?.maxSteps;
         if (maxSteps !== undefined && maxSteps > 0 && (turnContext.toolSteps ?? 0) >= maxSteps) {
             const reason = `Tool "${toolCall.name}" skipped: turn tool-step budget (${maxSteps}) exhausted.`;
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                 ...baseReceipt,
                 status: 'skipped',
                 durationMs: 0,
@@ -2284,7 +2300,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         if (loopResult.severity === 'break') {
             const reason = loopResult.reason ?? 'Loop detected';
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                 ...baseReceipt,
                 status: 'skipped',
                 durationMs: 0,
@@ -2294,7 +2310,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         const definition = callableTools.find(tool => tool.name === toolCall.name) ?? this.toolRegistry.getToolDefinition(toolCall.name, sessionId);
         if (!definition) {
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                 ...baseReceipt,
                 status: 'error',
                 durationMs: 0,
@@ -2304,7 +2320,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         const archetypeGate = this.checkArchetypeToolGate(sessionId, definition, toolCallInput);
         if (archetypeGate) {
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                 ...baseReceipt,
                 status: 'skipped',
                 durationMs: 0,
@@ -2312,9 +2328,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }, archetypeGate, { sessionId, reason: archetypeGate });
         }
 
-        const activationError = await this.ensureToolActivation(sessionId, definition);
+        const activationError = await this.toolLifecycleController.ensureActivation(sessionId, definition);
         if (activationError) {
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                 ...baseReceipt,
                 status: 'error',
                 durationMs: 0,
@@ -2342,7 +2358,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
             });
             if (!trustApproval.approved) {
                 const reason = `Workspace '${turnContext.workspace}' is not trusted; tool "${toolCall.name}" would modify it. Run \`tsdi-agent trust ${turnContext.workspace}\` to allow modifications.`;
-                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                     ...sandboxReceipt,
                     status: 'skipped',
                     durationMs: 0,
@@ -2379,7 +2395,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 const reason = approval.decision === ApprovalDecision.TIMEOUT
                     ? `Tool "${toolCall.name}" approval timed out.`
                     : `Tool "${toolCall.name}" was rejected.`;
-                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                     ...sandboxReceipt,
                     status: 'skipped',
                     durationMs: 0,
@@ -2389,7 +2405,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
             if (approval.decision === ApprovalDecision.CANCELLED || this.turnAbortScopes.isAborted(sessionId)) {
                 this.throwIfTurnCancelled(sessionId);
                 const reason = `Tool "${toolCall.name}" approval was cancelled.`;
-                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+                return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                     ...sandboxReceipt,
                     status: 'skipped',
                     durationMs: 0,
@@ -2410,7 +2426,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         const deniedByHook = beforeToolHookResults.find(result => result.action === 'deny');
         if (deniedByHook) {
             const reason = `Tool "${toolCall.name}" was denied by a beforeTool hook.`;
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, {
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, {
                 ...sandboxReceipt,
                 status: 'skipped',
                 durationMs: 0,
@@ -2490,7 +2506,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 : (typeof outcome.redactedOutput === 'string' ? outcome.redactedOutput : JSON.stringify(outcome.redactedOutput));
             const truncated = await spillToolOutput(this.fileAdapter, outputStr, maxChars, { workspace: turnContext.workspace, toolCallId: toolCall.id, toolName: toolCall.name, enabled: this.options.context?.spillToolOutput !== false });
             if (outcome.error) {
-                return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
+                return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
             }
             this.trackPlanProgress(sessionId, turnContext, toolCall.name, outcome.redactedOutput);
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
@@ -2550,67 +2566,8 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 error: err.message
             };
             await this.app.publishEvent(new AgentToolFailedEvent(this, sessionId, toolCall.name, err, failedReceipt));
-            return this.createFailedToolInvocationResult(toolCall, toolCallInput, inputSummary, failedReceipt, err.message);
+            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, failedReceipt, err.message);
         }
-    }
-
-    private async ensureToolActivation(sessionId: string, definition: AgentToolDefinition): Promise<Error | undefined> {
-        if (definition.activation?.kind !== 'deferred' || definition.activation?.scope !== 'session') {
-            return undefined;
-        }
-        const active = this.toolRegistry && typeof this.toolRegistry.isToolActive === 'function'
-            ? await this.toolRegistry.isToolActive(sessionId, definition.name)
-            : definition.activation?.activated === true;
-        if (active) {
-            return undefined;
-        }
-        if (!this.toolRegistry || typeof this.toolRegistry.activateTool !== 'function') {
-            return new Error(`Tool "${definition.name}" requires session activation, but no activation flow is available.`);
-        }
-        try {
-            const activated = await this.toolRegistry.activateTool(sessionId, definition.name);
-            if (!activated && !(await this.toolRegistry.isToolActive(sessionId, definition.name))) {
-                return new Error(`Tool "${definition.name}" could not be activated for this session.`);
-            }
-            return undefined;
-        } catch (error) {
-            return error instanceof Error
-                ? error
-                : new Error(`Tool "${definition.name}" could not be activated for this session.`);
-        }
-    }
-
-    private async finalizeToolInvocation(sessionId: string, result: ToolInvocationResult): Promise<void> {
-        // External content (web/MCP/browser) is data, not instructions.
-        const content = fenceToolOutputIfUntrusted(
-            !result.error ? this.toolRegistry?.getTool?.(result.toolCall.name) : undefined,
-            result.toolCall.name,
-            result.content
-        );
-        await this.sessions.append(sessionId, this.createMessage(
-            'tool',
-            content,
-            result.toolCall.name,
-            result.toolCall.id,
-            result.metadata
-        ));
-        const state = await this.sessions.get(sessionId);
-        await this.runTurnHooks('afterTool', sessionId, {
-            sessionId,
-            workspace: String(state.workspace || '').trim() || undefined,
-            stage: 'afterTool',
-            toolCall: {
-                id: result.toolCall.id,
-                name: result.toolCall.name,
-                input: result.metadata?.toolCallInput
-            },
-            executionMode: result.receipt.executionMode,
-            metadata: {
-                receipt: result.receipt,
-                error: result.error?.message,
-                output: result.content
-            }
-        });
     }
 
     private async createAssistantMessageFromResponse(sessionId: string, response: ModelResponse): Promise<AgentMessage> {
@@ -2747,31 +2704,6 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 }
             ));
         }
-    }
-
-    private createFailedToolInvocationResult(
-        toolCall: { id: string; name: string; input?: any },
-        toolCallInput: any,
-        inputSummary: string | undefined,
-        receipt: AgentToolExecutionReceipt,
-        error: string,
-        skipEvent?: { sessionId: string; reason: string }
-    ): ToolInvocationResult {
-        if (skipEvent) {
-            void this.app.publishEvent(new AgentToolSkippedEvent(this, skipEvent.sessionId, toolCall.name, skipEvent.reason, receipt));
-        }
-        return {
-            toolCall,
-            content: JSON.stringify({ error }),
-            metadata: {
-                toolCallInput,
-                inputSummary,
-                error,
-                receipt
-            },
-            receipt,
-            error: new Error(error)
-        };
     }
 
     async ensureSessionTitle(sessionId: string): Promise<string | undefined> {
