@@ -119,6 +119,29 @@ export class InboxTest {
         expect(state.approvalsFocused).toEqual(false);
     }
 
+    @Test('/inbox can cancel a background worker in place')
+    async cancelsTask() {
+        const state = createState();
+        const cancelled: string[] = [];
+        const notices: string[] = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: {
+                listApprovals: async () => [],
+                listAllBackgroundTasks: async () => [{ id: 'task-1', sessionId: 'child', status: 'failed', goal: 'build' }]
+            },
+            loadCodingTasks: async () => [],
+            notify: (message: string) => notices.push(message),
+            openSession: async () => undefined,
+            select: async (title: string) => title === 'Background task' ? 'cancel' : 'task:task-1',
+            cancelTask: async (taskId: string) => { cancelled.push(taskId); return true; }
+        };
+        await runInboxCommandView(host);
+        expect(cancelled).toEqual(['task-1']);
+        expect(notices[0]).toContain('Cancelled background task task-1');
+    }
+
     @Test('/inbox reports an empty queue instead of opening an empty menu')
     async empty() {
         const state = createState();

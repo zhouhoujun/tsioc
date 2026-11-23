@@ -13,6 +13,8 @@ export interface AgentConsoleInboxItem {
     severity: 'info' | 'warn' | 'error';
     /** Raw approval request so the picker can focus the decision surface. */
     approval?: Record<string, any>;
+    /** Raw background task for row actions (cancel). */
+    task?: Record<string, any>;
 }
 
 export interface AgentConsoleInboxInput {
@@ -83,7 +85,8 @@ export function buildInboxItems(input: AgentConsoleInboxInput): AgentConsoleInbo
                 sessionId: String(task?.sessionId || input.currentSessionId),
                 title: String(task?.goal || ''),
                 detail: String(task?.question || task?.error || task?.result?.summary || ''),
-                severity: 'warn'
+                severity: 'warn',
+                task
             });
             continue;
         }
@@ -94,7 +97,8 @@ export function buildInboxItems(input: AgentConsoleInboxInput): AgentConsoleInbo
                 sessionId: String(task?.sessionId || input.currentSessionId),
                 title: String(task?.goal || ''),
                 detail: String(task?.error || ''),
-                severity: 'error'
+                severity: 'error',
+                task
             });
             continue;
         }
@@ -156,6 +160,8 @@ export interface AgentConsoleInboxHost {
     select?(title: string, options: AgentConsoleSelectOption[], selectedIndex?: number, hint?: string): Promise<string | undefined>;
     /** Approve/deny a pending approval without leaving the inbox (cross-session). */
     decideApproval?(requestId: string, decision: 'approve' | 'deny'): Promise<boolean>;
+    /** Cancel a background task from its inbox row. */
+    cancelTask?(taskId: string): Promise<boolean>;
 }
 
 /**
@@ -233,6 +239,28 @@ export async function runInboxCommandView(host: AgentConsoleInboxHost): Promise<
             return;
         }
     }
+    if (item.kind === 'task' && host.select && host.cancelTask) {
+        const taskId = String(item.task?.id || '');
+        const action = await host.select(
+            formatAgentUiNotice(host.translator, 'inboxTaskActionTitle'),
+            [
+                { label: formatAgentUiNotice(host.translator, 'inboxTaskOpen'), value: 'open' },
+                { label: formatAgentUiNotice(host.translator, 'inboxTaskCancel'), value: 'cancel' }
+            ],
+            0,
+            formatAgentUiNotice(host.translator, 'inboxTaskActionHint')
+        );
+        if (!action) {
+            return;
+        }
+        if (action === 'cancel') {
+            const cancelled = taskId ? await host.cancelTask(taskId).catch(() => false) : false;
+            host.notify(formatAgentUiNotice(host.translator, cancelled ? 'inboxTaskCancelled' : 'inboxTaskCancelFailed', {
+                id: taskId.slice(0, 8)
+            }));
+            return;
+        }
+    }
     if (item.sessionId && item.sessionId !== host.state.sessionId) {
         await host.openSession(item.sessionId);
     }
@@ -256,6 +284,10 @@ export function inboxCommandHost(ctx: CommandHandlerContext): AgentConsoleInboxH
         notify: (message: string) => ctx.notify(message),
         openSession: (sessionId?: string) => ctx.openSession(sessionId),
         select: (title, options, index, hint) => ctx.select(title, options, index, hint),
-        decideApproval: (requestId: string, decision: 'approve' | 'deny') => ctx.applyApprovalDecision(decision, requestId)
+        decideApproval: (requestId: string, decision: 'approve' | 'deny') => ctx.applyApprovalDecision(decision, requestId),
+        cancelTask: async (taskId: string) => {
+            const result = await ctx.sessionService?.cancelBackgroundTasks?.([taskId]);
+            return !!(result && Array.isArray(result.cancelled) && result.cancelled.includes(taskId));
+        }
     };
 }
