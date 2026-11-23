@@ -11,7 +11,8 @@ import { TurnObservabilityController } from './TurnObservabilityController';
 import { collectStreamingResponse as collectStreamingResponseView } from './TurnStreamCollector';
 import { TurnToolBatchController } from './TurnToolBatchController';
 import { SessionPostTurnController } from './SessionPostTurnController';
-import { hadPriorClarification, isClarificationAssistantMessage, rewriteClarificationFollowUp } from './ClarificationFollowUp';
+import { hadPriorClarification, isClarificationAssistantMessage } from './ClarificationFollowUp';
+import { TurnRequestController } from './TurnRequestController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -179,7 +180,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -1318,114 +1319,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     private async buildModelRequest(sessionId: string, query: string, currentUserMessageId: string, turnContext?: TurnExecutionContext): Promise<ModelRequest> {
-        const state = await this.sessions.get(sessionId);
-        let messages = this.getRecentMessages(state.messages.filter(message => !isImportedChildMessage(message)), currentUserMessageId);
-        const rewrittenMessages = rewriteClarificationFollowUp(messages, currentUserMessageId);
-        if (turnContext?.diagnostics && rewrittenMessages !== messages) {
-            turnContext.diagnostics.followUpContextRewritten = true;
-        }
-        messages = rewrittenMessages;
-        const goal = await this.goalStore?.getSessionGoal(sessionId);
-        if (goal?.status === 'active') {
-            messages = [{ id: `goal-${goal.id}`, role: 'system', content: buildGoalContext(goal), createdAt: goal.updatedAt }, ...messages];
-        }
-        const workspaceRoot = String(turnContext?.workspace || '').trim();
-        if (workspaceRoot) {
-            messages = [{
-                id: 'workspace-root',
-                role: 'system',
-                content: `Workspace root: ${workspaceRoot}. Use workspace-relative paths only; never use absolute paths or '..' to escape the root, because file tools reject paths outside it.`,
-                createdAt: Date.now()
-            }, ...messages];
-        }
-        const preparedHistory = await this.contextManager.prepareHistory(messages, sessionId, currentUserMessageId);
-        messages = preparedHistory.messages;
-        await this.publishContextPreparedEvent(sessionId, preparedHistory.report);
-
-        // Capture compression metrics for diagnostics
-        const report = preparedHistory.report;
-        if (report.compactionTriggered && turnContext?.diagnostics) {
-            turnContext.diagnostics.compactionCount = (turnContext.diagnostics.compactionCount || 0) + 1;
-            turnContext.diagnostics.totalTokenSavings = (turnContext.diagnostics.totalTokenSavings || 0) + report.cumulativeTokenSavings;
-            turnContext.diagnostics.compressionRatio = report.compressionRatio;
-            turnContext.diagnostics.compactionLevel = report.level;
-        }
-        if (report.replayed && turnContext?.diagnostics) {
-            turnContext.diagnostics.replayCount = (turnContext.diagnostics.replayCount || 0) + 1;
-            turnContext.diagnostics.replayKind = report.replayKind;
-        }
-
-        // Auto-synthesise cross-session experiences when compaction happened
-        if (this.contextManager.isExperienceMemoryEnabled() && preparedHistory.report.strategy !== 'unchanged') {
-            this.contextManager.autoSynthesizeExperiences(this.memory);
-        }
-
-        if (this.contextManager.hasCompactedContent(sessionId)) {
-            const liveWindowIds = new Set(messages.map(m => m.id));
-            const recovered = this.contextManager.recoverDetail(sessionId, query, liveWindowIds);
-            if (recovered && recovered.length > 0) {
-                // Insert recovered messages before the recent window, after any summary
-                let insertAt = -1;
-                for (let i = messages.length - 1; i >= 0; i--) {
-                    if (messages[i].role === 'system' && messages[i].content.includes('Context Summary')) {
-                        insertAt = i;
-                        break;
-                    }
-                }
-                messages = [
-                    ...messages.slice(0, insertAt + 1),
-                    ...recovered,
-                    ...messages.slice(insertAt + 1)
-                ];
-            }
-        }
-
-        const memoryInjectionEnabled = this.options.ui?.memoryInjection !== false;
-        const relevantMemory = memoryInjectionEnabled ? await this.getRelevantMemory(query, sessionId) : [];
-        const memory = this.contextManager.trimMemory(
-            memoryInjectionEnabled && this.contextManager.isExperienceMemoryEnabled()
-                ? [...relevantMemory, ...(await this.contextManager.loadExperienceMemory(this.memory))]
-                : relevantMemory
-        );
-
-        if (this.promptBuilder) {
-            const promptContext = {
-                sessionId,
-                tools: this.getToolDefinitions(sessionId).map(t => ({
-                    name: t.name,
-                    description: t.description,
-                    activation: t.activation
-                })),
-                memory: memory.map(m => `- ${m.key}: ${m.value}`).join('\n'),
-                dateTime: new Date().toISOString(),
-                extra: { contextPreparation: preparedHistory.report, skillTokenBudget: this.options.skillTokenBudget, workspace: workspaceRoot, readFiles: collectToolReadPaths(messages), nativeToolSchemas: this.modelAdapter?.supportsNativeToolSchemas !== false, provider: this.modelAdapter?.provider }
-            };
-            // Static instructions stay in their own system message so a changing dynamic tail cannot break the cache prefix.
-            const buildParts = (this.promptBuilder as any).buildParts;
-            const parts = typeof buildParts === 'function' ? await buildParts.call(this.promptBuilder, promptContext) : { cacheable: await this.promptBuilder.build(promptContext), dynamic: '' };
-            const modeHint = buildArchetypeModeHint(this.resolveArchetypeConfig(sessionId));
-            const delegationHint = buildDelegationModeHint(this.resolveDelegationMode(sessionId, turnContext));
-            const personalityHint = buildPersonalityHint(this.options.ui?.personality);
-            const staticPrompt = `${parts.cacheable}${modeHint}${delegationHint}${personalityHint}`;
-            const systemMessages = [staticPrompt, parts.dynamic].filter(Boolean).map(text => this.createMessage('system', text));
-            if (systemMessages.length) messages = [...systemMessages, ...messages];
-            const qualityNote = turnContext?.delegationQualityNote;
-            if (qualityNote) {
-                turnContext!.delegationQualityNote = undefined;
-                messages = [
-                    this.createMessage('system', qualityNote),
-                    ...messages
-                ];
-            }
-        }
-
-        const request: ModelRequest = { sessionId, messages, tools: this.getToolDefinitions(sessionId), memory, summary: state.summary };
-        // Per-turn model overrides (used by delegated `llm_task` workers); undefined keeps the adapter default.
-        const modelOverride = turnContext?.agent;
-        if (modelOverride?.temperature !== undefined) request.temperature = modelOverride.temperature;
-        if (modelOverride?.maxTokens !== undefined) request.maxTokens = modelOverride.maxTokens;
-        if (modelOverride?.model !== undefined) request.model = modelOverride.model;
-        return request;
+        return this.turnRequest.build(sessionId, query, currentUserMessageId, turnContext);
     }
 
     private async publishContextPreparedEvent(sessionId: string, report: ContextPreparationReport): Promise<void> {
@@ -2258,6 +2152,21 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private buildPlanContinuation(sessionId: string, turnContext: TurnExecutionContext): string | undefined {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
+    }
+
+    private get turnRequest(): TurnRequestController {
+        return this.turnRequestController ??= new TurnRequestController({
+            sessions: this.sessions, goalStore: this.goalStore, contextManager: this.contextManager,
+            memory: this.memory, promptBuilder: this.promptBuilder, modelAdapter: this.modelAdapter as any,
+            options: this.options,
+            getRecentMessages: (messages, currentId) => this.getRecentMessages(messages, currentId),
+            getRelevantMemory: (query, sessionId) => this.getRelevantMemory(query, sessionId),
+            publishContextPrepared: (sessionId, report) => this.publishContextPreparedEvent(sessionId, report),
+            getToolDefinitions: sessionId => this.getToolDefinitions(sessionId),
+            resolveArchetypeConfig: sessionId => this.resolveArchetypeConfig(sessionId),
+            resolveDelegationMode: (sessionId, context) => this.resolveDelegationMode(sessionId, context),
+            createMessage: (role, content) => this.createMessage(role, content)
+        });
     }
 
     private get postTurn(): SessionPostTurnController {
