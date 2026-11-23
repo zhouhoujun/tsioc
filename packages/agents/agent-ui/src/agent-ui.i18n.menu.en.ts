@@ -350,6 +350,8 @@ export const AGENT_UI_MENU_EN: Record<string, any> = {
         highlightsLabel: 'Release highlights: {state}',
         highlightsDescription: 'show what changed after an upgrade',
         approvalRulesLabel: 'Approval rules: {count}',
+        sessionApprovalRulesLabel: 'Session approval rules: {count}',
+        sessionApprovalRulesDescription: 'override workspace rules for this tab only (workspace deny still wins)',
         approvalRulesDescription: 'ordered ask/allow/deny rules (last match wins)',
         pagerSizeLabel: 'Message page size',
         pagerSizeDescription: 'rows moved by page up/down in transcript navigation',

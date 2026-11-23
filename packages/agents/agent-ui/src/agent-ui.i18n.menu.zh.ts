@@ -350,6 +350,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         highlightsLabel: '发布亮点：{state}',
         highlightsDescription: '升级后展示本次更新内容',
         approvalRulesLabel: '审批规则：{count} 条',
+        sessionApprovalRulesLabel: '本会话审批规则：{count} 条',
+        sessionApprovalRulesDescription: '仅覆盖当前标签页（工作区 deny 仍然优先）',
         approvalRulesDescription: '有序 ask/allow/deny 规则（最后匹配优先）',
         pagerSizeLabel: '消息翻页大小',
         pagerSizeDescription: '转录导航中 PageUp/PageDown 一次移动的行数',

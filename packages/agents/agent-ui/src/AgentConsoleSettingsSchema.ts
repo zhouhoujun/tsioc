@@ -346,6 +346,8 @@ export const AGENT_CONSOLE_SETTINGS_FIELDS: AgentConsoleSettingsField[] = [
     actionRow('approvalRules', 'permissions', 'agent.menu.settings.approvalRulesLabel', 'Approval rules: {count}', 'agent.menu.settings.approvalRulesDescription', 'ordered ask/allow/deny rules (last match wins)', 'workspace', 'immediate',
         host => openApprovalRulesPanel(host as any),
         host => String(readEffectiveApprovalRules(host.options).length), ['/permissions rules']),
+    actionRow('sessionApprovalRules', 'permissions', 'agent.menu.settings.sessionApprovalRulesLabel', 'Session approval rules: {count}', 'agent.menu.settings.sessionApprovalRulesDescription', 'override workspace rules for this tab only (workspace deny still wins)', 'session', 'immediate',
+        host => host.runPermissionsCommand('rules session'), host => String((host.state.sessionApprovalRules?.[host.state.sessionId] || []).length), ['/permissions rules session']),
     toggleRow('readOnlyShell', 'permissions', 'agent.menu.settings.readOnlyShellLabel', 'Skip approval for read-only commands: {state}', 'agent.menu.settings.readOnlyShellDescription', 'git status, ls and cat run without prompting; pipes, redirects and writes still ask', 'workspace',
         host => host.options?.policy?.approval?.readOnlyShell === true,
         async host => {
