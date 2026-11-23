@@ -497,7 +497,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mode": "Mode",
                 "field": "Value path",
                 "delimiter": "Delimiter",
-                "header": "First row is header",
+                "header": "Header row",
                 "columns": "Columns",
                 "parseNumbers": "Parse numbers"
             },
@@ -809,13 +809,17 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "tcp": "Endpoint",
                 "host": "Host",
                 "port": "Port",
-                "reply": "Reply with result"
+                "reply": "Reply with result",
+                "framing": "Framing",
+                "separator": "Line separator",
+                "topic": "Topic"
             },
             "udp-in": {
                 "udp": "Endpoint",
                 "host": "Host",
                 "port": "Port",
-                "reply": "Reply with result"
+                "reply": "Reply with result",
+                "topic": "Topic"
             },
             "websocket-in": {
                 "websocket": "Listener",
@@ -1189,11 +1193,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "tcp-in": {
                 "host": "0.0.0.0",
-                "port": "3000"
+                "port": "3000",
+                "separator": "\\n",
+                "topic": "tcp/in"
             },
             "udp-in": {
                 "host": "0.0.0.0",
-                "port": "3000"
+                "port": "3000",
+                "topic": "udp/in"
             },
             "websocket-in": {
                 "host": "0.0.0.0",
@@ -1370,7 +1377,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "context path to CSV text or an array",
                 "delimiter": "single character between columns",
                 "mode": "parse CSV text or stringify an array",
-                "header": "treat the first row as column names",
+                "header": "parse: the first row names the columns; stringify: write a header row for object rows",
                 "columns": "Optional comma-separated columns to keep when parsing or stringifying."
             },
             "change": {
@@ -1590,12 +1597,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "tcp-in": {
                 "host": "Interface to listen on. Use 0.0.0.0 for all interfaces.",
                 "port": "Port to listen on. 0 selects a free port.",
-                "reply": "Send the final node result back to the sender."
+                "reply": "Send the final node result back to the sender.",
+                "framing": "Raw chunks run the flow for every socket read; line delimited waits for the separator.",
+                "separator": "Message terminator; \\n, \\r\\n and \\t are understood.",
+                "topic": "Optional msg.topic for inbound messages."
             },
             "udp-in": {
                 "host": "Interface to listen on. Use 0.0.0.0 for all interfaces.",
                 "port": "Port to listen on. 0 selects a free port.",
-                "reply": "Send the final node result back to the sender."
+                "reply": "Send the final node result back to the sender.",
+                "topic": "Optional msg.topic for inbound datagrams."
             },
             "websocket-in": {
                 "host": "Interface to listen on. Use 0.0.0.0 for all interfaces.",
@@ -1692,6 +1703,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "response": "Response"
         },
         "option": {
+            "stream": "Raw chunks",
+            "line": "Line delimited",
             "truthy": "is truthy",
             "falsy": "is falsy",
             "is-null": "is null",
@@ -2291,7 +2304,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "mode": "模式",
                 "field": "取值路径",
                 "delimiter": "分隔符",
-                "header": "首行为表头",
+                "header": "表头行",
                 "columns": "列",
                 "parseNumbers": "解析数字"
             },
@@ -2602,13 +2615,17 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "tcp": "端点",
                 "host": "主机",
                 "port": "端口",
-                "reply": "回复执行结果"
+                "reply": "回复执行结果",
+                "framing": "分帧方式",
+                "separator": "行分隔符",
+                "topic": "主题"
             },
             "udp-in": {
                 "udp": "端点",
                 "host": "主机",
                 "port": "端口",
-                "reply": "回复执行结果"
+                "reply": "回复执行结果",
+                "topic": "主题"
             },
             "websocket-in": {
                 "websocket": "监听器",
@@ -2966,11 +2983,14 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "tcp-in": {
                 "host": "0.0.0.0",
-                "port": "3000"
+                "port": "3000",
+                "separator": "\\n",
+                "topic": "tcp/in"
             },
             "udp-in": {
                 "host": "0.0.0.0",
-                "port": "3000"
+                "port": "3000",
+                "topic": "udp/in"
             },
             "websocket-in": {
                 "host": "0.0.0.0",
@@ -3367,12 +3387,16 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "tcp-in": {
                 "host": "监听网卡地址，0.0.0.0 表示所有网卡。",
                 "port": "监听端口，0 表示自动选择空闲端口。",
-                "reply": "把最终节点结果回写给发送方。"
+                "reply": "把最终节点结果回写给发送方。",
+                "framing": "原始分块：每次读取都触发流程；按行分帧：等到分隔符才触发。",
+                "separator": "消息结束符，支持 \\n、\\r\\n 与 \\t。",
+                "topic": "可选，写入 msg.topic。"
             },
             "udp-in": {
                 "host": "监听网卡地址，0.0.0.0 表示所有网卡。",
                 "port": "监听端口，0 表示自动选择空闲端口。",
-                "reply": "把最终节点结果回写给发送方。"
+                "reply": "把最终节点结果回写给发送方。",
+                "topic": "可选，写入 msg.topic。"
             },
             "websocket-in": {
                 "host": "监听网卡地址，0.0.0.0 表示所有网卡。",
@@ -3469,6 +3493,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "response": "响应"
         },
         "option": {
+            "stream": "原始分块",
+            "line": "按行分帧",
             "truthy": "为真",
             "falsy": "为假",
             "is-null": "为空值",

@@ -845,9 +845,22 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0', visibleWhen: { key: 'tcp', equals: '' } }),
             configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1, visibleWhen: { key: 'tcp', equals: '' } }),
-            configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false })
+            configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false }),
+            configField({
+                key: 'framing',
+                label: 'Framing',
+                type: 'select',
+                defaultValue: 'stream',
+                options: [
+                    { label: 'Raw chunks', value: 'stream' },
+                    { label: 'Line delimited', value: 'line' }
+                ],
+                description: 'Raw chunks run the flow for every socket read; line delimited waits for the separator.'
+            }),
+            configField({ key: 'separator', label: 'Line separator', type: 'text', defaultValue: '\\n', placeholder: '\\n', visibleWhen: { key: 'framing', equals: 'line' }, description: 'Message terminator; \\n, \\r\\n and \\t are understood.' }),
+            configField({ key: 'topic', label: 'Topic', type: 'text', placeholder: 'tcp/in', description: 'Optional msg.topic for inbound messages.' })
         ],
-        defaultConfig: { tcp: '', host: '0.0.0.0', port: 0, reply: false }
+        defaultConfig: { tcp: '', host: '0.0.0.0', port: 0, reply: false, framing: 'stream', separator: '\\n' }
     },
     {
         type: 'udp-in',
@@ -868,7 +881,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'host', label: 'Host', type: 'text', defaultValue: '0.0.0.0', placeholder: '0.0.0.0', visibleWhen: { key: 'udp', equals: '' } }),
             configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1, visibleWhen: { key: 'udp', equals: '' } }),
-            configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false })
+            configField({ key: 'reply', label: 'Reply with result', type: 'boolean', defaultValue: false }),
+            configField({ key: 'topic', label: 'Topic', type: 'text', placeholder: 'udp/in', description: 'Optional msg.topic for inbound datagrams.' })
         ],
         defaultConfig: { udp: '', host: '0.0.0.0', port: 0, reply: false }
     },
@@ -1618,7 +1632,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'field', label: 'Field', type: 'text', typed: true, placeholder: 'value', description: 'Path to the CSV text or array.',}),
             configField({ key: 'delimiter', label: 'Delimiter', type: 'text', defaultValue: ',', placeholder: ',', description: 'Single character used between columns.',}),
-            configField({ key: 'header', label: 'First row is header', type: 'boolean', defaultValue: true, visibleWhen: { key: 'mode', equals: 'parse' } }),
+            configField({ key: 'header', label: 'Header row', type: 'boolean', defaultValue: true, description: 'Parse: the first row names the columns. Stringify: write a header row for object rows.' }),
             configField({ key: 'columns', label: 'Columns', type: 'text', placeholder: 'name, age', group: 'Options', description: 'Optional comma-separated columns to keep when parsing or stringifying.' }),
             configField({ key: 'parseNumbers', label: 'Parse numbers', type: 'boolean', defaultValue: false, group: 'Options' })
         ],
@@ -2006,9 +2020,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         outputs: [port('out', 'out', 'output', 'Batches')],
         fields: [
             configField({ key: 'field', label: 'Array field', type: 'text', typed: true, placeholder: 'items' }),
-            configField({ key: 'size', label: 'Batch size', type: 'number', defaultValue: 10, min: 1, step: 1, description: 'Items per batch.',})
+            configField({ key: 'size', label: 'Batch size', type: 'number', defaultValue: 10, min: 1, step: 1, description: 'Items per batch.',}),
+            configField({ key: 'overlap', label: 'Overlap', type: 'number', defaultValue: 0, min: 0, step: 1, description: 'Items shared by consecutive batches; must be smaller than the batch size.' })
         ],
-        defaultConfig: { size: 10 }
+        defaultConfig: { size: 10, overlap: 0 }
     },
     {
         type: 'trycatch',

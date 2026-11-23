@@ -134,6 +134,68 @@ describe('Workflow inbound runner', () => {
         }
     });
 
+    it('frames TCP input by line and flushes the trailing fragment', async () => {
+        const payloads: any[] = [];
+        const definition = {
+            id: 'tcp-lines',
+            name: 'TCP lines',
+            nodes: [
+                registry.createNode('tcp-in', { x: 0, y: 0 }, {
+                    id: 'tcp_in',
+                    config: { host: '127.0.0.1', port: 0, framing: 'line', separator: '\\n' }
+                }),
+                registry.createNode('task', { x: 200, y: 0 }, {
+                    id: 'collect',
+                    config: { action: 'collect' }
+                })
+            ],
+            connections: [{
+                id: 'c1',
+                sourceNodeId: 'tcp_in',
+                sourcePort: 'out',
+                targetNodeId: 'collect',
+                targetPort: 'in'
+            }]
+        } as VisualWorkflowDefinition;
+        const handle = await runner.start(definition, {
+            context: {
+                actions: {
+                    collect: (ctx: any) => {
+                        payloads.push(ctx.payload);
+                        return { ok: true };
+                    }
+                }
+            }
+        });
+        try {
+            const port = handle.ports[0];
+            await withTimeout(new Promise<void>((resolve, reject) => {
+                const socket = net.connect(port, '127.0.0.1', () => {
+                    socket.write('one\ntwo\n');
+                    // Incomplete line: only emitted when the socket closes.
+                    socket.write('three');
+                    socket.end();
+                });
+                socket.on('error', reject);
+                socket.on('close', () => resolve());
+            }));
+            await withTimeout(new Promise<void>(resolve => {
+                const started = Date.now();
+                const poll = () => {
+                    if (payloads.length >= 3 || Date.now() - started > 3000) {
+                        resolve();
+                        return;
+                    }
+                    setTimeout(poll, 20);
+                };
+                poll();
+            }));
+            expect(payloads).toEqual(['one', 'two', 'three']);
+        } finally {
+            await handle.stop();
+        }
+    });
+
     it('runs a workflow for every UDP datagram and replies with the result', async () => {
         const payloads: any[] = [];
         const handle = await runner.start(definition('udp-in'), {

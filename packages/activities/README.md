@@ -482,6 +482,15 @@ repeating host/port/path (see below). Nodes that reference the same listener
 share one server, and the config node's fields are used unless the node
 overrides them inline.
 
+`tcp-in` frames input in two modes: **raw chunks** (default, one run per socket
+read) or **line delimited** (buffers until the separator, defaults to `\n`, and
+flushes the trailing fragment when the socket closes). `separator` understands
+`\n`, `\r\n` and `\t`; inbound TCP/UDP nodes can also set `topic` so downstream
+nodes see `msg.topic`. `batch` exposes the `overlap` used by the runtime
+(shared items between consecutive batches), and `csv` uses `header` in both
+directions: parse treats the first row as column names, stringify writes a
+header row for object rows unless it is cleared.
+
 ```typescript
 import { WorkflowInboundRunner } from '@tsdi/activities/server';
 

@@ -787,7 +787,7 @@ function parseCsv(text: string, delimiter: string, header: boolean): any {
     });
 }
 
-function stringifyCsv(value: any, delimiter: string): string {
+function stringifyCsv(value: any, delimiter: string, header = true): string {
     const rows: any[][] = Array.isArray(value) ? value : [];
     if (!rows.length) {
         return '';
@@ -800,10 +800,8 @@ function stringifyCsv(value: any, delimiter: string): string {
     };
     if (!Array.isArray(rows[0])) {
         const headers = Object.keys(rows[0] || {});
-        return [
-            headers.map(escape).join(delimiter),
-            ...rows.map(row => headers.map(key => escape((row as any)?.[key])).join(delimiter))
-        ].join('\n');
+        const body = rows.map(row => headers.map(key => escape((row as any)?.[key])).join(delimiter));
+        return (header ? [headers.map(escape).join(delimiter), ...body] : body).join('\n');
     }
     return rows.map(row => row.map(escape).join(delimiter)).join('\n');
 }
@@ -2059,7 +2057,7 @@ export async function executeVisualNode(
                     const rows = columns.length && Array.isArray(source)
                         ? source.map(item => Object.fromEntries(columns.map(column => [column, item?.[column]])))
                         : source;
-                    const value = stringifyCsv(rows, delimiter);
+                    const value = stringifyCsv(rows, delimiter, config.header !== false);
                     return { success: true, data: { nodeId: node.id, value } };
                 }
                 let value = parseCsv(String(source ?? ''), delimiter, config.header !== false);

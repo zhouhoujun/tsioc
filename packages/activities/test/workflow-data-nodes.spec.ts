@@ -1188,6 +1188,22 @@ describe('Workflow data & trigger nodes', () => {
         ]);
     });
 
+    it('writes CSV headers only when the header row is enabled', async () => {
+        const withHeader = await service.execute(chain([
+            { type: 'inject', config: { payload: [{ name: 'Ada', age: 36 }] } },
+            { type: 'csv', config: { field: 'payload', mode: 'stringify' } }
+        ]), {});
+        expect(withHeader.data?.executionState?.nodeStates.csv_1.result?.data?.value)
+            .toBe('name,age\nAda,36');
+
+        const withoutHeader = await service.execute(chain([
+            { type: 'inject', config: { payload: [{ name: 'Ada', age: 36 }] } },
+            { type: 'csv', config: { field: 'payload', mode: 'stringify', header: false } }
+        ]), {});
+        expect(withoutHeader.data?.executionState?.nodeStates.csv_1.result?.data?.value)
+            .toBe('Ada,36');
+    });
+
     it('extracts HTML attributes', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: { value: '<a href="https://a">A</a><a href="https://b">B</a>' } } },

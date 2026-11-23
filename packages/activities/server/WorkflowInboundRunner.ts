@@ -62,6 +62,14 @@ interface Listener {
     close(): Promise<void>;
 }
 
+/** TCP framing separator; `\n` / `\r` / `\t` escapes are understood. */
+function framingSeparator(value: any): string {
+    return String(value ?? '\n')
+        .replace(/\\r/g, '\r')
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t');
+}
+
 function parsePayload(text: string): any {
     const trimmed = text.trim();
     if (!trimmed) {
@@ -208,23 +216,47 @@ export class WorkflowInboundRunner {
             const shouldReply = config.reply === true;
 
             if (node.type === 'tcp-in') {
+                const framing = String(config.framing || 'stream');
+                const separator = framingSeparator(config.separator);
+                const topic = String(config.topic || '').trim() || undefined;
                 const onConnection = (socket: any) => {
                     sockets.add(socket);
                     socket.on('close', () => sockets.delete(socket));
                     socket.on('error', () => sockets.delete(socket));
+                    const remote = () => ({ address: socket.remoteAddress, port: socket.remotePort });
+                    const reply = shouldReply ? (payload: string) => {
+                        if (!socket.destroyed) {
+                            socket.end(payload);
+                        }
+                    } : undefined;
+                    const emit = (text: string) => {
+                        if (framing === 'line' && text === '') {
+                            return;
+                        }
+                        void dispatch(node.id, 'tcp', text, remote(), reply, topic);
+                    };
+                    // Line framing keeps the tail of an incomplete line until the
+                    // next read or the socket close.
+                    let pending = '';
                     socket.on('data', (chunk: any) => {
-                        const remote = { address: socket.remoteAddress, port: socket.remotePort };
-                        void dispatch(
-                            node.id,
-                            'tcp',
-                            chunk.toString('utf8'),
-                            remote,
-                            shouldReply ? payload => {
-                                if (!socket.destroyed) {
-                                    socket.end(payload);
-                                }
-                            } : undefined
-                        );
+                        const text = chunk.toString('utf8');
+                        if (framing !== 'line' || !separator) {
+                            emit(text);
+                            return;
+                        }
+                        pending += text;
+                        const parts = pending.split(separator);
+                        pending = parts.pop() ?? '';
+                        for (const part of parts) {
+                            emit(part);
+                        }
+                    });
+                    socket.on('close', () => {
+                        if (pending) {
+                            const text = pending;
+                            pending = '';
+                            emit(text);
+                        }
                     });
                 };
                 const tcpTls = tcpSettings?.tls;
@@ -510,7 +542,8 @@ export class WorkflowInboundRunner {
                             } catch (error) {
                                 options.onError?.(error as Error);
                             }
-                        } : undefined
+                        } : undefined,
+                        String(config.topic || '').trim() || undefined
                     );
                 });
                 try {
