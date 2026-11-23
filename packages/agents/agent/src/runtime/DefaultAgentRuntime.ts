@@ -905,15 +905,16 @@ export class DefaultAgentRuntime extends AgentRuntime {
         });
     }
 
+    override async getSessionInbox(sessionId: string) { return this.sessions.listInbox(sessionId); }
+
+    override async replaceSessionInbox(sessionId: string, items: import('../memory/SessionStore').AgentSessionInboxItem[]) { return this.sessions.replaceInbox(sessionId, items); }
+
     override async undoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
         if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; }
         return this.turnHistory.undo(sessionId);
     }
 
-    override async redoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
-        if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; }
-        return this.turnHistory.redo(sessionId);
-    }
+    override async redoTurn(sessionId: string): Promise<AgentTurnUndoResult> { if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; } return this.turnHistory.redo(sessionId); }
 
     private async recordSessionTurnCheckpoint(sessionId: string, prompt: string): Promise<void> {
         try { await this.turnHistory.record(sessionId, prompt); } catch { /* Undo falls back to per-file snapshots. */ }

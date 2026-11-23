@@ -247,6 +247,16 @@ export interface AgentSessionFact {
     updatedAt?: number;
 }
 
+export interface AgentSessionInboxItem {
+    itemId: string;
+    kind?: string;
+    payload: Record<string, any>;
+    state?: string;
+    seq?: number;
+    createdAt?: number;
+    updatedAt?: number;
+}
+
 @Abstract()
 export abstract class SessionStore {
     abstract get(sessionId: string): Promise<AgentState>;
@@ -264,6 +274,16 @@ export abstract class SessionStore {
     /** Remove messages after the first `keepCount` rows (turn-level undo). */
     async truncateMessages(_sessionId: string, _keepCount: number): Promise<void> {
         throw new Error('truncateMessages is not supported by this session store.');
+    }
+
+    /** Durable per-session input queue (oldest first). */
+    async listInbox(_sessionId: string): Promise<AgentSessionInboxItem[]> {
+        return [];
+    }
+
+    /** Replace the whole input queue in one ordered batch. */
+    async replaceInbox(_sessionId: string, _items: AgentSessionInboxItem[]): Promise<AgentSessionInboxItem[]> {
+        throw new Error('replaceInbox is not supported by this session store.');
     }
     abstract setSummary(sessionId: string, summary: string): Promise<void>;
     abstract setTitle(sessionId: string, title?: string): Promise<void>;

@@ -1,7 +1,21 @@
 import { formatAgentUiNotice } from './agent-ui.i18n';
 import { isAgentConsoleExactCommandToken } from './AgentConsoleSuggestions';
 
-export interface AgentConsoleQueuedPrompt { input: string; attachments: any[]; command?: boolean; }
+export interface AgentConsoleQueuedPrompt { input: string; attachments: any[]; command?: boolean; itemId?: string; }
+
+/** Persist the queue through the gateway RPC or the in-process runtime. */
+export function persistQueuedPrompts(host: AgentConsoleQueuedPromptHost, sessionId: string, queue: AgentConsoleQueuedPrompt[]): void {
+    const items = queue.map((entry, index) => ({
+        itemId: entry.itemId || `${sessionId}:${index}:${Date.now()}`,
+        kind: entry.command ? 'command' : 'user',
+        state: 'queued',
+        payload: { input: entry.input, attachments: entry.attachments, command: entry.command === true }
+    }));
+    const request = host.appRpc?.request
+        ? host.appRpc.request('session.inbox.replace', { sessionId, items }, host.rpcRequestContext?.())
+        : host.runtime?.replaceSessionInbox?.(sessionId, items);
+    void Promise.resolve(request).catch(() => undefined);
+}
 export interface AgentConsoleQueuedPromptHost {
     [key: string]: any;
 }
@@ -24,6 +38,7 @@ export function enqueuePrompt(
         queue.push(entry);
     }
     host.queuedPrompts.set(sessionId, queue);
+    persistQueuedPrompts(host, sessionId, queue);
     host.state.setInput('');
     host.state.clearPendingAttachments();
     host.state.setQueuedPromptCount(queue.length);
@@ -64,11 +79,15 @@ export async function drainQueuedPrompts(host: AgentConsoleQueuedPromptHost, ses
         while (queue.length && host.state.sessionId === sessionId && !host.isTurnInProgress()) {
             const next = queue.shift()!;
             host.state.setQueuedPromptCount(queue.length);
+            persistQueuedPrompts(host, sessionId, queue);
             host.state.setInput(next.input, next.input.length);
             host.state.setPendingAttachments(next.attachments);
             await host.submit();
         }
-        if (!queue.length) host.queuedPrompts.delete(sessionId);
+        if (!queue.length) {
+            host.queuedPrompts.delete(sessionId);
+        }
+        persistQueuedPrompts(host, sessionId, queue);
     } finally {
         host.drainingQueuedSessions.delete(sessionId);
     }

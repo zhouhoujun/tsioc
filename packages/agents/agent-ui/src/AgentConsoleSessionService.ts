@@ -227,6 +227,29 @@ export class AgentConsoleSessionService extends AgentConsoleSessionExportRpc {
         return loadAgentConsoleAllMessages({ appRpc: this.appRpc, sessionStore: this.sessionStore, runtime: this.runtime }, sessionId, context);
     }
 
+    async loadInbox(sessionId: string, context?: any): Promise<Array<Record<string, any>>> {
+        if (this.appRpc) {
+            const result = await this.appRpc.request('session.inbox.get', { sessionId }, context).catch(() => null);
+            return Array.isArray(result?.items) ? result.items : [];
+        }
+        if (this.runtime?.getSessionInbox) {
+            return await this.runtime.getSessionInbox(sessionId);
+        }
+        return this.sessionStore?.listInbox ? await this.sessionStore.listInbox(sessionId) : [];
+    }
+
+    async replaceInbox(sessionId: string, items: Array<Record<string, any>>, context?: any): Promise<void> {
+        if (this.appRpc) {
+            await this.appRpc.request('session.inbox.replace', { sessionId, items }, context).catch(() => undefined);
+            return;
+        }
+        if (this.runtime?.replaceSessionInbox) {
+            await this.runtime.replaceSessionInbox(sessionId, items as any);
+            return;
+        }
+        await this.sessionStore?.replaceInbox?.(sessionId, items as any);
+    }
+
     protected withCurrent(
         sessions: AgentConsoleSessionChoice[],
         currentSessionId?: string

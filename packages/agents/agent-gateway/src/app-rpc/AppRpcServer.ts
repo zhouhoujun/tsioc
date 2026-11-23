@@ -26,6 +26,7 @@ import { listCrossSessionMessages } from './session-message-list';
 import { answerSideQuestion } from './side-question';
 import { redoSessionTurn, undoSessionTurn } from './turn-undo';
 import { getSessionApprovalRules, setSessionApprovalRules } from './session-approval-rules';
+import { getSessionInbox, replaceSessionInbox } from './session-inbox';
 import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
 import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
@@ -209,6 +210,8 @@ export class AppRpcServer {
             case 'session.redo_turn': return redoSessionTurn(this as any, params, context);
             case 'session.approval_rules.set': return setSessionApprovalRules(this as any, params, context);
             case 'session.approval_rules.get': return getSessionApprovalRules(this as any, params, context);
+            case 'session.inbox.get': return getSessionInbox(this as any, params, context);
+            case 'session.inbox.replace': return replaceSessionInbox(this as any, params, context);
             case 'session.delete':
                 return this.deleteSession(requireSessionId(params), context);
             case 'session.export':
@@ -731,17 +734,13 @@ export class AppRpcServer {
         };
     }
 
-    private async listSessions(params: any, context: AppRpcRequestContext): Promise<any[]> {
-        return this.sessionHandler.listSessionInfos(context.principalId, params?.includeArchived === true, params?.includeAutomation === true);
-    }
+    private async listSessions(params: any, context: AppRpcRequestContext): Promise<any[]> { return this.sessionHandler.listSessionInfos(context.principalId, params?.includeArchived === true, params?.includeAutomation === true); }
 
     private async listSessionProjects(params: any, context: AppRpcRequestContext): Promise<any[]> {
         return this.sessionHandler.groupSessionInfos(await this.sessionHandler.listSessionInfos(context.principalId, false, params?.includeAutomation === true));
     }
 
-    private async listSessionThreads(params: any, context: AppRpcRequestContext): Promise<any[]> {
-        return this.sessionHandler.groupThreadInfos(await this.sessionHandler.listSessionInfos(context.principalId, false, params?.includeAutomation === true));
-    }
+    private async listSessionThreads(params: any, context: AppRpcRequestContext): Promise<any[]> { return this.sessionHandler.groupThreadInfos(await this.sessionHandler.listSessionInfos(context.principalId, false, params?.includeAutomation === true)); }
 
     private async queryNav(params: any, context: AppRpcRequestContext): Promise<any> {
         const infos = await this.sessionHandler.listSessionInfos(context.principalId, params?.includeArchived === true, params?.includeAutomation === true);

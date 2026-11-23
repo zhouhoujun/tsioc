@@ -123,7 +123,7 @@ rm -f run-one.tmp.ts
 | `@tsdi/agent` | 1103 passing |
 | `@tsdi/agent-gateway` | 412 passing |
 | `@tsdi/agent-tools` | 595 passing |
-| `@tsdi/agent-ui` | **2396 passing**（4 组，236.9s：109 + 11 + 766 + 1510） |
+| `@tsdi/agent-ui` | **2398 passing**（5 组，182.5s：109 + 11 + 766 + 687 + 825） |
 | tsc | agent / agent-ui / agent-gateway 通过 |
 | source-size / diff-check / production-db-integrity | 通过 |
 

@@ -134,7 +134,7 @@
   非 agent 库拒绝启动）；生产路径改为 `synchronize:false + initDb`，测试仍可显式 synchronize。
 - 验收：旧库升级/关闭/重启数据完整；新增实体只通过 migration；生产库 integrity 门禁仍通过。
 
-**P0.2 持久化 Session Inbox + DB turn claim**
+**P0.2 持久化 Session Inbox + DB turn claim（Inbox 基础版已落地 2026-11-23）**
 - 新实体 `AgentSessionInboxEntity`：`sessionId, itemId, kind(user|steer|command), payload, state(queued|steering|consumed|cancelled), seq, createdAt`。
 - 新 `SessionInboxController`（`agent/src/runtime`）：
   - `admit`（幂等，按 client message id）；
@@ -143,6 +143,9 @@
   - 与 `AgentRuntime` 事件/`run.turn_stream` 集成。
 - DB 级 turn lease：`AgentSessionEntity.activeTurnOwner/leaseUntil` 或独立 `AgentSessionLeaseEntity`；SQLite 事务内抢占；超时/进程死亡可恢复；兼容现有 `acquireSessionTurnLock`。
 - UI：`/queue` 改为优先走 `session.inbox.*` RPC，内存 Map 仅作降级；TUI/DOM 一致。
+- 状态：`AgentSessionInboxEntity` + `agent_migration 0002`、`session.inbox.get/replace` RPC、
+  runtime/runtime store 透传、UI queue write-through 与打开会话时恢复已落地；
+  **DB 级 turn lease 与 step 边界 promotion 仍未做**（当前仍是 turn 边界 + 进程内 lock）。
 - 验收：queue 重启不丢；steer 在 step 边界生效；双进程同 session 只有一个执行者；AppRpc + TUI/DOM + PTY 回归。
 
 **P0.3 运行时拆解（行为不变）**

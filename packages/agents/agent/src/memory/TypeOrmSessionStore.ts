@@ -14,6 +14,7 @@ import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMessageEntity, AgentSessionEntity, AgentSessionSnapshotEntity } from './entities';
 import { clearSessionRows, deleteSessionRows } from './session-row-cleanup';
 import { truncateSessionMessages } from './SessionMessageTruncation';
+import { listSessionInbox, replaceSessionInbox } from './SessionInboxStore';
 import { readMessageUsageRecords, readOwnerPrincipalId, readSessionFacts, readToolPayload } from './TypeOrmSessionReads';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
@@ -92,9 +93,7 @@ export class TypeOrmSessionStore extends SessionStore {
         };
     }
 
-    listMessagesPage(sessionId: string, options?: SessionMessagePageOptions, invalidCursor?: SessionMessageInvalidCursor): Promise<SessionMessagePage> {
-        return readSessionMessagePage(this.adapter, sessionId, options, invalidCursor);
-    }
+    listMessagesPage(sessionId: string, options?: SessionMessagePageOptions, invalidCursor?: SessionMessageInvalidCursor): Promise<SessionMessagePage> { return readSessionMessagePage(this.adapter, sessionId, options, invalidCursor); }
 
     async has(sessionId: string): Promise<boolean> { return !!(await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any })); }
 
@@ -219,6 +218,10 @@ export class TypeOrmSessionStore extends SessionStore {
     async truncateMessages(sessionId: string, keepCount: number): Promise<void> {
         await truncateSessionMessages(this.adapter, sessionId, keepCount);
     }
+
+    async listInbox(sessionId: string): Promise<import('./SessionStore').AgentSessionInboxItem[]> { return listSessionInbox(this.adapter, sessionId); }
+
+    async replaceInbox(sessionId: string, items: Array<import('./SessionStore').AgentSessionInboxItem>): Promise<Array<import('./SessionStore').AgentSessionInboxItem>> { return replaceSessionInbox(this.adapter, sessionId, items); }
 
     async listSections(sessionId: string): Promise<AgentSessionSection[]> {
         const session = await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any });

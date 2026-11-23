@@ -179,6 +179,21 @@ export async function openSession(
     host.state.messagesPageLoading = false;
     resetSessionMessagePager(host.state);
     host.state.messagesNewCount = cachedView ? host.state.messagesNewCount : 0;
+    if (!host.queuedPrompts.has(target.id) && host.sessionService?.loadInbox) {
+        const loaded = await host.sessionService.loadInbox(target.id, (host as any).rpcRequestContext?.());
+        const items = Array.isArray(loaded) ? loaded : [];
+        const queue = items
+            .map(item => ({
+                itemId: String(item?.itemId || ''),
+                input: String(item?.payload?.input || ''),
+                attachments: Array.isArray(item?.payload?.attachments) ? item.payload.attachments : [],
+                command: item?.payload?.command === true
+            }))
+            .filter(item => item.input.length > 0);
+        if (queue.length) {
+            host.queuedPrompts.set(target.id, queue);
+        }
+    }
     host.state.setQueuedPromptCount((host.queuedPrompts.get(target.id) || []).length);
     host.transcriptNavigationController.setFocused(false);
     host.state.setSessionsFocused(false);

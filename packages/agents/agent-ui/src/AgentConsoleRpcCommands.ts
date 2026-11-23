@@ -1,6 +1,7 @@
 import { formatAgentUiDateTime, formatAgentUiLabel, formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 import { formatAgentConsoleApprovalInput } from './AgentConsoleApprovalInput';
 import type { AgentConsoleSessionState } from './AgentConsoleSessionState';
+import { persistQueuedPrompts } from './AgentConsoleQueuedPrompts';
 
 export interface AgentConsoleRpcCommandHost {
     appRpc?: { request(method: string, params?: any, context?: any): Promise<any> } | null;
@@ -57,6 +58,7 @@ function writeQueue(host: AgentConsoleRpcCommandHost, queue: Array<{ command?: b
         host.queuedPrompts.delete(host.state.sessionId);
     }
     host.state.setQueuedPromptCount(queue.length);
+    persistQueuedPrompts(host, host.state.sessionId, queue);
 }
 
 /**
@@ -152,8 +154,7 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
             host.notify(formatAgentUiNotice(host.translator, 'noQueuedPromptsClear'));
             return true;
         }
-        host.queuedPrompts.delete(host.state.sessionId);
-        host.state.setQueuedPromptCount(0);
+        writeQueue(host, []);
         host.notify(formatAgentUiNotice(host.translator, 'clearedQueuedPrompts', { queueLength: queue.length, plural: queue.length === 1 ? '' : 's' }));
         return true;
     }
@@ -172,8 +173,7 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
         if (from !== to) {
             const [entry] = queue.splice(from, 1);
             queue.splice(to, 0, entry);
-            host.queuedPrompts.set(host.state.sessionId, queue);
-            host.state.setQueuedPromptCount(queue.length);
+            writeQueue(host, queue);
         }
         host.notify(formatAgentUiNotice(host.translator, 'queueMoved', { from: from + 1, to: to + 1 }));
         return true;
@@ -206,12 +206,7 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
         for (const index of [...indices].sort((left, right) => right - left)) {
             queue.splice(index, 1);
         }
-        if (queue.length) {
-            host.queuedPrompts.set(host.state.sessionId, queue);
-        } else {
-            host.queuedPrompts.delete(host.state.sessionId);
-        }
-        host.state.setQueuedPromptCount(queue.length);
+        writeQueue(host, queue);
         host.notify(formatAgentUiNotice(host.translator, 'queueRemovedMany', { count: indices.size, queueLength: queue.length }));
         return true;
     }
@@ -223,12 +218,7 @@ export async function runQueueCommand(host: AgentConsoleRpcCommandHost, args?: s
             return true;
         }
         const [entry] = queue.splice(index, 1);
-        if (queue.length) {
-            host.queuedPrompts.set(host.state.sessionId, queue);
-        } else {
-            host.queuedPrompts.delete(host.state.sessionId);
-        }
-        host.state.setQueuedPromptCount(queue.length);
+        writeQueue(host, queue);
         if (manage[1].toLowerCase() === 'edit') {
             // Move the queued prompt back into the composer so it can be
             // revised and sent again (removes it from the queue).

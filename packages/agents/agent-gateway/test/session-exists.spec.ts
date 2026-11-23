@@ -264,3 +264,52 @@ export class SessionApprovalRulesRpcTest {
         expect(thrown).toBeTruthy();
     }
 }
+
+@Suite('session inbox RPC')
+export class SessionInboxRpcTest {
+    private build(items: any[]) {
+        const sessions = {
+            has: async () => true,
+            get: async () => ({ sessionId: 'chat-1', messages: [] }),
+            listInbox: async () => items,
+            replaceInbox: async (_sessionId: string, next: any[]) => { items = next; return next; }
+        };
+        return new AppRpcServer(
+            {} as any,
+            new RandomUuidGenerator(),
+            sessions as any,
+            {} as any,
+            {} as any,
+            { authorize: async () => 'anonymous' } as any,
+            { track: () => undefined } as any,
+            {} as any
+        );
+    }
+
+    @Test('replaces and reads the durable queue')
+    async replaceAndGet() {
+        const items: any[] = [{ itemId: 'a', kind: 'user', payload: { input: 'hi' } }];
+        const server = this.build(items);
+        expect(await (server as any).dispatch('session.inbox.replace', {
+            sessionId: 'chat-1',
+            items: [{ itemId: 'b', kind: 'steer', payload: { input: 'next' } }]
+        }, {})).toEqual({
+            sessionId: 'chat-1',
+            items: [{ itemId: 'b', kind: 'steer', payload: { input: 'next' } }]
+        });
+        expect(await (server as any).dispatch('session.inbox.get', { sessionId: 'chat-1' }, {}))
+            .toEqual({ sessionId: 'chat-1', items: [{ itemId: 'b', kind: 'steer', payload: { input: 'next' } }] });
+    }
+
+    @Test('requires a session id')
+    async requiresSession() {
+        const server = this.build([]);
+        let thrown: any = null;
+        try {
+            await (server as any).dispatch('session.inbox.get', {}, {});
+        } catch (error) {
+            thrown = error;
+        }
+        expect(thrown).toBeTruthy();
+    }
+}

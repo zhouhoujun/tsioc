@@ -14,7 +14,26 @@ const JOURNAL_TABLE = 'agent_migration';
  * Migrations after the baseline. Add new schema changes here with a
  * chronological id; never edit an id that has shipped.
  */
-export const AGENT_MIGRATIONS: AgentMigration[] = [];
+export const AGENT_MIGRATIONS: AgentMigration[] = [
+    {
+        id: '20261123_0002_session_inbox',
+        async up(runner) {
+            await runner.query(`CREATE TABLE IF NOT EXISTS agent_session_inbox (
+                id varchar PRIMARY KEY NOT NULL,
+                sessionId varchar NOT NULL,
+                itemId varchar NOT NULL,
+                kind varchar NOT NULL,
+                payload text NOT NULL,
+                state varchar NOT NULL DEFAULT 'queued',
+                seq bigint NOT NULL,
+                createdAt bigint NOT NULL,
+                updatedAt bigint NOT NULL
+            )`);
+            await runner.query('CREATE UNIQUE INDEX IF NOT EXISTS IDX_agent_session_inbox_item ON agent_session_inbox (sessionId, itemId)');
+            await runner.query('CREATE INDEX IF NOT EXISTS IDX_agent_session_inbox_seq ON agent_session_inbox (sessionId, seq)');
+        }
+    }
+];
 
 /**
  * Versioned bootstrap for the agent database.

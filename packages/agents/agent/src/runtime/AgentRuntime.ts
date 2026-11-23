@@ -101,6 +101,16 @@ export abstract class AgentRuntime {
 
     abstract getMessages(sessionId: string): Promise<AgentMessage[]>;
 
+    /** Durable per-session input queue, oldest first. */
+    async getSessionInbox(_sessionId: string): Promise<import('../memory/SessionStore').AgentSessionInboxItem[]> {
+        return [];
+    }
+
+    /** Replace the durable input queue in one ordered batch. */
+    async replaceSessionInbox(_sessionId: string, _items: import('../memory/SessionStore').AgentSessionInboxItem[]): Promise<import('../memory/SessionStore').AgentSessionInboxItem[]> {
+        return [];
+    }
+
     /**
      * Answer a one-off side question against the session context without
      * appending the question or answer to the conversation (`/btw`).
