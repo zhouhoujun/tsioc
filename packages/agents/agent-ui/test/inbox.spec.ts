@@ -36,6 +36,20 @@ export class InboxTest {
         expect(items[4].title).toEqual('2');
     }
 
+    @Test('workers waiting for input or blocked surface as attention items')
+    waitingInput() {
+        const items = buildInboxItems({
+            currentSessionId: 'root',
+            backgroundTasks: [
+                { id: 'wait', sessionId: 'child', status: 'waiting-input', goal: 'need a choice', question: 'which branch?' },
+                { id: 'blocked', sessionId: 'child', status: 'blocked', goal: 'stuck', error: 'dependency missing' }
+            ]
+        });
+        expect(items.map(item => item.id)).toEqual(['task:wait', 'task:blocked']);
+        expect(items[0]).toMatchObject({ kind: 'task', severity: 'warn', detail: 'which branch?' });
+        expect(items[1]).toMatchObject({ kind: 'task', severity: 'warn', detail: 'dependency missing' });
+    }
+
     @Test('recent completed workers surface as idle reports, old ones do not')
     idleReports() {
         const now = 1_000_000;

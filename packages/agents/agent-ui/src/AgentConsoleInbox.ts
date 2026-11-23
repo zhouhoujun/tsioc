@@ -76,6 +76,17 @@ export function buildInboxItems(input: AgentConsoleInboxInput): AgentConsoleInbo
     const idleWindowMs = 15 * 60 * 1000;
     for (const task of input.backgroundTasks || []) {
         const status = String(task?.status || '').toLowerCase();
+        if (status === 'waiting-input' || status === 'blocked') {
+            items.push({
+                id: `task:${String(task?.id || '')}`,
+                kind: 'task',
+                sessionId: String(task?.sessionId || input.currentSessionId),
+                title: String(task?.goal || ''),
+                detail: String(task?.question || task?.error || task?.result?.summary || ''),
+                severity: 'warn'
+            });
+            continue;
+        }
         if (status === 'failed') {
             items.push({
                 id: `task:${String(task?.id || '')}`,
