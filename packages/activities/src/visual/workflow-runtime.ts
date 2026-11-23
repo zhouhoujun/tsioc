@@ -131,7 +131,7 @@ export async function resolveMqttConfig(
             ? {
                 topic: willTopic,
                 payload: String(await resolveCredentialValue(pick('willPayload'), context) ?? ''),
-                qos: Number(pick('willQos')) === 1 ? 1 : 0,
+                qos: Math.max(0, Math.min(2, Number(pick('willQos')) || 0)),
                 retain: pick('willRetain') === true || pick('willRetain') === 'true'
             }
             : undefined,
@@ -139,7 +139,7 @@ export async function resolveMqttConfig(
             ? {
                 topic: birthTopic,
                 payload: String(await resolveCredentialValue(pick('birthPayload'), context) ?? ''),
-                qos: Number(pick('birthQos')) === 1 ? 1 : 0,
+                qos: Math.max(0, Math.min(2, Number(pick('birthQos')) || 0)),
                 retain: pick('birthRetain') === true || pick('birthRetain') === 'true'
             }
             : undefined,
@@ -1450,6 +1450,8 @@ export async function executeVisualNode(
                     matched: true,
                     transport,
                     topic: inbound.topic,
+                    qos: inbound.qos,
+                    retain: inbound.retain,
                     payload: inbound.payload ?? inbound.data,
                     data: inbound.data,
                     remote: inbound.remote

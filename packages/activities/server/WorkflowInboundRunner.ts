@@ -18,6 +18,10 @@ export interface WorkflowInboundMessage {
     data: string;
     /** MQTT topic the message arrived on. */
     topic?: string;
+    /** MQTT delivery QoS (0/1/2). */
+    qos?: number;
+    /** MQTT retained-message flag. */
+    retain?: boolean;
     /** File/folder path reported by `watch`. */
     path?: string;
     /** `watch` event type (`rename` or `change`). */
@@ -128,7 +132,7 @@ export class WorkflowInboundRunner {
             remote: WorkflowInboundMessage['remote'],
             reply: ((payload: string) => void) | undefined,
             topic?: string,
-            extra?: { path?: string; event?: string }
+            extra?: { path?: string; event?: string; qos?: number; retain?: boolean }
         ): Promise<void> => {
             if (!running) {
                 return;
@@ -140,7 +144,9 @@ export class WorkflowInboundRunner {
                 remote,
                 ...(topic ? { topic } : {}),
                 ...(extra?.path ? { path: extra.path } : {}),
-                ...(extra?.event ? { event: extra.event } : {})
+                ...(extra?.event ? { event: extra.event } : {}),
+                ...(extra?.qos !== undefined ? { qos: extra.qos } : {}),
+                ...(extra?.retain !== undefined ? { retain: extra.retain } : {})
             };
             try {
                 const result = await this.service.execute(
@@ -272,7 +278,8 @@ export class WorkflowInboundRunner {
                             message.payload,
                             undefined,
                             undefined,
-                            message.topic
+                            message.topic,
+                            { qos: message.qos, retain: message.retain }
                         );
                     });
                     mqttUnsubscribes.push(off);

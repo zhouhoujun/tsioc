@@ -895,14 +895,16 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'willPayload', label: 'Will payload', type: 'text' }),
             configField({ key: 'willQos', label: 'Will QoS', type: 'select', defaultValue: '0', options: [
                 { label: '0', value: '0' },
-                { label: '1', value: '1' }
+                { label: '1', value: '1' },
+                { label: '2', value: '2' }
             ] }),
             configField({ key: 'willRetain', label: 'Will retain', type: 'boolean', defaultValue: false }),
             configField({ key: 'birthTopic', label: 'Birth topic', type: 'text' }),
             configField({ key: 'birthPayload', label: 'Birth payload', type: 'text' }),
             configField({ key: 'birthQos', label: 'Birth QoS', type: 'select', defaultValue: '0', options: [
                 { label: '0', value: '0' },
-                { label: '1', value: '1' }
+                { label: '1', value: '1' },
+                { label: '2', value: '2' }
             ] }),
             configField({ key: 'birthRetain', label: 'Birth retain', type: 'boolean', defaultValue: false })
         ],

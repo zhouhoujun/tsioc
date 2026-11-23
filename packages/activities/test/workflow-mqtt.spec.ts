@@ -175,6 +175,15 @@ describe('Workflow MQTT transport', () => {
         expect(willConnect.includes(Buffer.from('will/topic'))).toBe(true);
         expect(willConnect.includes(Buffer.from('bye'))).toBe(true);
 
+        const willQos2 = connectPacket({
+            url: 'mqtt://x',
+            clientId: 'c2',
+            will: { topic: 'will/q2', payload: 'gone', qos: 2 }
+        });
+        const willQos2Start = 1 + decodeVarint(willQos2, 1).bytes;
+        const qos2Flags = willQos2[willQos2Start + 7];
+        expect(qos2Flags & 0x18).toBe(0x10); // will QoS 2
+
         const publish = publishPacket({ topic: 'a/b', payload: 'hello', qos: 1 }, 7);
         const decoded = decodePublish(publish);
         expect(decoded.topic).toBe('a/b');

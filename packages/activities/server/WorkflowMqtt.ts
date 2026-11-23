@@ -143,7 +143,7 @@ export function connectPacket(options: MqttConnectOptions): Buffer {
     let flags = options.clean === false ? 0 : 0x02;
     if (will) {
         flags |= 0x04;
-        flags |= (Math.max(0, Math.min(1, Number(will.qos) || 0)) << 3);
+        flags |= (Math.max(0, Math.min(2, Number(will.qos) || 0)) << 3);
         if (will.retain === true) {
             flags |= 0x20;
         }
@@ -323,7 +323,7 @@ export class WorkflowMqttClient {
                             void this.publish({
                                 topic: birth.topic,
                                 payload: birth.payload,
-                                qos: Number(birth.qos) === 1 ? 1 : 0,
+                                qos: Math.max(0, Math.min(2, Number(birth.qos) || 0)) as 0 | 1 | 2,
                                 retain: birth.retain === true
                             }).catch(() => undefined);
                         }

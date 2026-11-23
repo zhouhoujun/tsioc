@@ -824,8 +824,10 @@ listeners as part of the same deployment entry.
 The shared `mqtt` config node also carries the clean-session flag, keepalive,
 and a last-will topic/payload/QoS/retain registered in CONNECT; both inbound
 subscriptions and outbound publishes use the same broker identity. QoS 0/1/2
-are supported: outbound QoS 2 waits for PUBREC/PUBCOMP and inbound QoS 2
-acknowledges with PUBREC/PUBCOMP while delivering each message once.
+are supported for publish, subscribe, will and birth: outbound QoS 2 waits for
+PUBREC/PUBCOMP and inbound QoS 2 acknowledges with PUBREC/PUBCOMP while
+delivering each message once. `mqtt-in` exposes `context.inbound.qos` and
+`retain` so downstream nodes can inspect the delivery flags.
 
 Broker settings live in an **`mqtt` config node** so they are configured once:
 
