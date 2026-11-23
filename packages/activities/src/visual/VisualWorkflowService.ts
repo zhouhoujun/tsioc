@@ -64,7 +64,10 @@ export function toWorkflowExecutionSnapshot(state: WorkflowExecutionState): Work
                 ? {
                     success: value.result.success,
                     data: value.result.data,
-                    error: value.result.error?.message as any
+                    error: value.result.error?.message as any,
+                    // Status lines are snapshotted with the run so replaying an
+                    // execution shows the same node status as the live run.
+                    ...(value.result.status ? { status: { ...value.result.status } } : {})
                 }
                 : undefined
         };

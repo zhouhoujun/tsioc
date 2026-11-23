@@ -1,5 +1,6 @@
 import {
     IVisualWorkflowNode,
+    NodeExecutionState,
     NodeExecutionStatus,
     WorkflowConfigField,
     WorkflowConfigFieldCondition,
@@ -89,6 +90,25 @@ function executionStatusLabel(
     );
 }
 
+/**
+ * Status line for a node: translated through the workflow bundle when the
+ * activity supplied a key, otherwise the reported text (`tcp 10.0.0.5:4711`).
+ */
+function nodeStatusDetail(
+    state: NodeExecutionState | undefined,
+    locale: WorkflowLocale,
+    translator?: Translator
+): string {
+    const status = state?.result?.status;
+    if (!status?.text && !status?.key) {
+        return '';
+    }
+    if (status.key) {
+        return translateWorkflow(translator, locale, status.key, status.text || status.key, status.params);
+    }
+    return String(status.text || '');
+}
+
 function nodeGeometry(node: IVisualWorkflowNode): {
     width: number;
     height: number;
@@ -173,6 +193,7 @@ const VIEW_INPUTS = Symbol('workflowCanvasViewInputs');
 type NodeViewInputs = {
     node: any;
     status: string;
+    detail: string;
     selected: boolean;
     locale: string;
     revision: number;
@@ -237,6 +258,9 @@ export function buildWorkflowCanvasModel(
             continue;
         }
         const status = (execution?.nodeStates?.[node.id]?.status as NodeExecutionStatus) || 'idle';
+        // Status lines come from the node result, so they are replayable with
+        // the snapshot and never need a live channel.
+        const detail = nodeStatusDetail(execution?.nodeStates?.[node.id], locale, translator);
         const selected = selectedNodeIds.has(node.id);
         const prior = previousNodes?.get(node.id);
         const inputs = prior ? viewInputsOf<NodeViewInputs>(prior) : undefined;
@@ -244,6 +268,7 @@ export function buildWorkflowCanvasModel(
             && prior
             && inputs.node === node
             && inputs.status === status
+            && inputs.detail === detail
             && inputs.selected === selected
             && inputs.locale === locale
             && inputs.revision === registry.revision) {
@@ -269,7 +294,7 @@ export function buildWorkflowCanvasModel(
             node.id, node.name, node.type, typeLabel, description,
             node.position.x, node.position.y, geo.width, geo.height,
             icon, color, textColor, selected ? 1 : 0, disabled ? 1 : 0,
-            status, statusLabel,
+            status, statusLabel, detail,
             portSignature(geo.inputs), portSignature(geo.outputs)
         ].join('\u0001');
         if (prior && viewSignature(prior) === signature) {
@@ -293,12 +318,13 @@ export function buildWorkflowCanvasModel(
             disabled,
             status,
             statusLabel,
+            detail,
             inputs: geo.inputs,
             outputs: geo.outputs
         };
         const next = { ...view, attrs: nodeAttrs(view) };
         markView(next, signature);
-        markInputs(next, { node, status, selected, locale, revision: registry.revision });
+        markInputs(next, { node, status, detail, selected, locale, revision: registry.revision });
         nodeViews.push(next);
     }
 
@@ -670,6 +696,7 @@ export function buildWorkflowInspectorModel(
         typeDescription: '',
             status: 'idle',
             statusLabel: '',
+            statusDetail: '',
             durationLabel: '',
             fields: [],
             resultText: '',
@@ -805,6 +832,7 @@ export function buildWorkflowInspectorModel(
         typeDescription: registry.nodeDescription(node.type, locale, translator),
         status,
         statusLabel: nodeStatusLabel(status, locale, translator),
+        statusDetail: nodeStatusDetail(execution, locale, translator),
         durationLabel: duration ? `${duration} ms` : '',
         fields,
         resultText,

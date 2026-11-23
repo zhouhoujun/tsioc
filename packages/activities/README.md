@@ -679,6 +679,14 @@ Features:
 - reusable `WorkflowRetryInterceptor` / `WorkflowTimeoutInterceptor` core
   interceptors,
 - live execution path: node and edge states are painted from execution events,
+- node status lines: an activity may return `status: { text, level, key?, params? }`
+  (the Node-RED `node.status()` equivalent). The value is snapshotted with the
+  run, so replay shows the same line; `switch`/`router` report `Route 1` or
+  `No rule matched`, `http-request` reports `HTTP 200`, and inbound
+  `tcp`/`udp`/`websocket`/`mqtt` nodes report the transport and source. The
+  canvas paints it in the node body and the inspector beside the status word;
+  `key` lets the host translate UI copy while data (`tcp 10.0.0.5:4711`) stays
+  as reported,
 - stylesheet-based skin (`WORKFLOW_DESIGNER_CSS`) with `@tsdi/i18n` labels.
 
 The designer compiles the editable document into an immutable execution plan

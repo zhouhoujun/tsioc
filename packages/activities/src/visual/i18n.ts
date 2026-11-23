@@ -31,6 +31,14 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     success: 'Done',
                     skipped: 'Skipped'
                 },
+                nodeStatus: {
+                    route: 'Route {route}',
+                    routes: 'Routes {routes}',
+                    noRule: 'No rule matched',
+                    http: 'HTTP {status}',
+                    invalidJson: 'HTTP {status} · invalid JSON',
+                    requestFailed: 'Request failed'
+                },
                 ui: {
                     run: 'Run',
                     schedule: 'Schedule',
@@ -489,6 +497,14 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     cancelled: '已取消',
                     success: '成功',
                     skipped: '跳过'
+                },
+                nodeStatus: {
+                    route: '路由 {route}',
+                    routes: '路由 {routes}',
+                    noRule: '无规则匹配',
+                    http: 'HTTP {status}',
+                    invalidJson: 'HTTP {status} · JSON 无效',
+                    requestFailed: '请求失败'
                 },
                 ui: {
                     run: '运行',

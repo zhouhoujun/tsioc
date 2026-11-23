@@ -65,6 +65,17 @@ describe('Workflow designer translations', () => {
         expect(missing).toEqual([]);
     });
 
+    it('translates node status lines', () => {
+        const keys = ['route', 'routes', 'noRule', 'http', 'invalidJson', 'requestFailed'];
+        for (const locale of locales) {
+            const messages = (WORKFLOW_DESIGNER_TRANSLATIONS[locale]?.messages as any)?.workflow;
+            expect(messages?.nodeStatus).toBeTruthy();
+            for (const key of keys) {
+                expect(messages.nodeStatus[key]).toBeTruthy();
+            }
+        }
+    });
+
     it('translates palette categories and inspector copy', () => {
         for (const locale of locales) {
             const messages = (WORKFLOW_DESIGNER_TRANSLATIONS[locale]?.messages as any)?.workflow;

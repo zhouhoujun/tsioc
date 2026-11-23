@@ -1093,7 +1093,13 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
                     return {
                         success: false,
                         error: new Error(`Invalid JSON response: ${(error as Error).message}`),
-                        data: { nodeId: node.id, status: response.status }
+                        data: { nodeId: node.id, status: response.status },
+                        status: {
+                            text: `HTTP ${response.status} · invalid JSON`,
+                            level: 'error',
+                            key: 'workflow.nodeStatus.invalidJson',
+                            params: { status: response.status }
+                        }
                     };
                 }
                 body = text;
@@ -1103,6 +1109,12 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
         return {
             success: response.ok || ignored,
             error: response.ok || ignored ? undefined : new Error(`HTTP ${response.status}`),
+            status: {
+                text: `HTTP ${response.status}`,
+                level: response.ok ? 'success' : ignored ? 'warn' : 'error',
+                key: 'workflow.nodeStatus.http',
+                params: { status: response.status }
+            },
             data: {
                 nodeId: node.id,
                 status: response.status,
@@ -1116,7 +1128,8 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
         return {
             success: false,
             error: error as Error,
-            data: { nodeId: node.id }
+            data: { nodeId: node.id },
+            status: { text: 'Request failed', level: 'error', key: 'workflow.nodeStatus.requestFailed' }
         };
     }
 }
@@ -1458,6 +1471,10 @@ export async function executeVisualNode(
                     payload: inbound.payload ?? inbound.data,
                     data: inbound.data,
                     remote: inbound.remote
+                },
+                status: {
+                    text: [transport, inbound.topic || inbound.remote].filter(Boolean).join(' '),
+                    level: 'info'
                 }
             };
         }
@@ -2329,17 +2346,42 @@ export async function executeVisualNode(
                 }
                 matchedAny = true;
                 if (!checkAll) {
-                    return { success: true, data: { nodeId: node.id, route: index + 1, value: actual } };
+                    return {
+                        success: true,
+                        data: { nodeId: node.id, route: index + 1, value: actual },
+                        status: {
+                            text: `Route ${index + 1}`,
+                            level: 'info',
+                            key: 'workflow.nodeStatus.route',
+                            params: { route: index + 1 }
+                        }
+                    };
                 }
                 routes.push(index + 1);
             }
             if (checkAll) {
                 return {
                     success: true,
-                    data: { nodeId: node.id, routes, route: routes[0] || 0, value: actual }
+                    data: { nodeId: node.id, routes, route: routes[0] || 0, value: actual },
+                    status: routes.length
+                        ? {
+                            text: `Routes ${routes.join(', ')}`,
+                            level: 'info',
+                            key: 'workflow.nodeStatus.routes',
+                            params: { routes: routes.join(', ') }
+                        }
+                        : {
+                            text: 'No rule matched',
+                            level: 'warn',
+                            key: 'workflow.nodeStatus.noRule'
+                        }
                 };
             }
-            return { success: true, data: { nodeId: node.id, route: 0, value: actual } };
+            return {
+                success: true,
+                data: { nodeId: node.id, route: 0, value: actual },
+                status: { text: 'No rule matched', level: 'warn', key: 'workflow.nodeStatus.noRule' }
+            };
         }
         case 'link':
             return {

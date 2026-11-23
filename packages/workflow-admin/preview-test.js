@@ -16,7 +16,9 @@ const os = require('os');
 const path = require('path');
 
 const DESIGNER_DIR = __dirname;
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_175_000);
+// Slightly above build.ts because the page inlines ~4.5 KB of bootstrap bytes
+// that the bundle measurement excludes.
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_180_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 /** Click a management menu entry after scrolling it into the popup viewport. */

@@ -302,6 +302,31 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-field-error')).toBeFalsy();
     });
 
+    it('paints the node status line after a run', async () => {
+        const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
+        // A configured rule that cannot match keeps the run valid and reports
+        // the no-match warning status.
+        ref.instance.designer.updateNodeConfig(node.id, {
+            field: 'value',
+            rules: [{ operator: 'equals', value: 'never' }]
+        });
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        await ref.instance.designer.run({});
+        await flush();
+
+        // The runtime reports `No rule matched`; the designer translates the
+        // status key and paints it in the node body and the inspector.
+        const desc = root.querySelector(`.workflow-node[data-node-id="${node.id}"] .workflow-node-desc`);
+        expect(desc?.textContent).toBe('无规则匹配');
+        const detail = root.querySelector('.workflow-inspector-detail');
+        expect(detail?.textContent).toBe('无规则匹配');
+
+        await waitFor(() => !!root.querySelector('.workflow-inspector-detail'));
+        await waitFor(() => root.querySelector(`.workflow-node[data-node-id="${node.id}"] .workflow-node-desc`)?.textContent === '无规则匹配');
+    });
+
     it('edits typed values inside list fields', async () => {
         const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
         ref.instance.designer.selectNode(node.id);

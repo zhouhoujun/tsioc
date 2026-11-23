@@ -126,7 +126,7 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
                     </div>
                     <div class="workflow-node-body">
                         <span class="workflow-node-type">{{node.typeLabel}}</span>
-                        <span class="workflow-node-desc">{{node.description}}</span>
+                        <span class="workflow-node-desc" title="{{node.detail || node.description}}">{{node.detail || node.description}}</span>
                     </div>
                     <span v-for="port in node.inputs"
                           v-bind="portAttrs(node, port, 'input')"

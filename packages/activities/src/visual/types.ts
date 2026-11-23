@@ -902,6 +902,8 @@ export interface WorkflowCanvasNodeView {
     disabled: boolean;
     status: NodeExecutionStatus;
     statusLabel: string;
+    /** Status line the node reported (`HTTP 200`, `Route 3`), empty when idle. */
+    detail: string;
     inputs: WorkflowCanvasPortView[];
     outputs: WorkflowCanvasPortView[];
     attrs: Record<string, string>;
@@ -1077,6 +1079,8 @@ export interface WorkflowInspectorModel {
     typeDescription: string;
     status: NodeExecutionStatus;
     statusLabel: string;
+    /** Status line the node reported during its last run. */
+    statusDetail: string;
     durationLabel: string;
     fields: WorkflowInspectorFieldView[];
     resultText: string;

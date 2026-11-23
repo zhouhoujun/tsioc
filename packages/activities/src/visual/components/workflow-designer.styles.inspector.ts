@@ -51,6 +51,15 @@ export const WORKFLOW_DESIGNER_INSPECTOR_CSS = `/* Inspector */
     color: #64748b;
 }
 
+.workflow-inspector-detail {
+    font-size: 10px;
+    color: #38bdf8;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .workflow-inspector-id {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 10px;

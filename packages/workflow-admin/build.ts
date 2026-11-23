@@ -57,9 +57,10 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // highly compressible, and parsing them at startup is skipped. The gzip
 // budget below stays the transfer gate. Raised to 1150 KB for the standalone
 // Plugins / Sessions / Audit pages, 1160 KB for mustache sections/YAML
-// template output, and 1175 KB for shared protocol endpoints; the gzip budget
-// remains the transfer gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_175_000);
+// template output, 1175 KB for shared protocol endpoints, and 1180 KB for node
+// status lines (status plumbing, translations and the inspector badge); the
+// gzip budget remains the transfer gate.
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_180_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the

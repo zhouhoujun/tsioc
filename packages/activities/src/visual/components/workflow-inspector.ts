@@ -25,6 +25,7 @@ const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     typeDescription: '',
     status: 'idle',
     statusLabel: '',
+    statusDetail: '',
     durationLabel: '',
     fields: [],
     resultText: '',
@@ -46,6 +47,7 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
         model.typeLabel,
         model.status,
         model.statusLabel,
+        model.statusDetail,
         model.durationLabel,
         model.resultText,
         model.errorText,
@@ -103,6 +105,7 @@ function schemaKey(model: WorkflowInspectorModel): string {
                 <span class="workflow-inspector-type">{{model.typeLabel}}</span>
                 <span class="workflow-inspector-id" v-if="model.nodeId">{{model.nodeId}}</span>
                 <span class="workflow-inspector-status" v-if="model.statusLabel">{{model.statusLabel}}</span>
+                <span class="workflow-inspector-detail" v-if="model.statusDetail">{{model.statusDetail}}</span>
                 <span class="workflow-inspector-duration" v-if="model.durationLabel">{{model.durationLabel}}</span>
                 <span class="workflow-status-spacer"></span>
                 <button class="workflow-inspector-restore" v-if="model.fields.length" type="button"
