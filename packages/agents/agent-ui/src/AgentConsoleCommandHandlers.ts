@@ -32,6 +32,7 @@ import { handleReview } from './AgentConsoleReviewCommands';
 import { runLspDiagnosticsCommand } from './AgentConsoleLspDiagnostics';
 import { runFormatCommand } from './AgentConsoleFormatCommand';
 import { handleSideQuestion } from './AgentConsoleSideQuestion';
+import { artifactsCommandHost, runArtifactsCommand } from './AgentConsoleArtifacts';
 import { runWorktreeCommand } from './AgentConsoleWorktreeCommands';
 import { handleDialogCommand } from './AgentConsoleDialogCommands';
 import { runWorkCommandView, workCommandHost } from './AgentConsoleWork';
@@ -80,7 +81,6 @@ async function handleProvider(ctx: CommandHandlerContext, _args: string, _resolv
     await ctx.startProviderWizard?.();
     return true;
 }
-
 // ── Simple guard + delegate handlers ─────────────────────────────────────────
 
 async function guardDelegate(ctx: CommandHandlerContext, args: string, _resolved: { command: string; matches: string[] }, method: (args: string) => Promise<boolean>): Promise<boolean> {
@@ -92,7 +92,6 @@ async function guardDelegateNoArgs(ctx: CommandHandlerContext, _args: string, _r
     if (ctx.isTurnInProgress()) { ctx.notifyBusyState(); return true; }
     return method();
 }
-
 // ── Dispatch table ───────────────────────────────────────────────────────────
 
 export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
@@ -149,6 +148,7 @@ export const COMMAND_HANDLERS: Record<string, CommandHandler> = {
     '/stash': (ctx, args, meta) => ctx.runStashCommand(canonicalArgsOf(meta, args)),
     '/queue': (ctx, args, meta) => ctx.runQueueCommand(canonicalArgsOf(meta, args)),
     '/steer': (ctx, args, meta) => ctx.runSteerCommand(canonicalArgsOf(meta, args)),
+    '/artifacts': (ctx) => runArtifactsCommand(artifactsCommandHost(ctx)).then(() => true),
     '/activity': (ctx, args, meta) => ctx.runActivityCommand(canonicalArgsOf(meta, args)),
     '/jump': (ctx, args, meta) => ctx.runActivityCommand(canonicalArgsOf(meta, args)),
     '/statusline': (ctx, args, meta) => ctx.runStatuslineCommand(canonicalArgsOf(meta, args)),
