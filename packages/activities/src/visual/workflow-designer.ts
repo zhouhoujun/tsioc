@@ -211,9 +211,26 @@ export class WorkflowDesigner {
     error = '';
     messageParams: Record<string, any> = {};
     errorParams: Record<string, any> = {};
+    /**
+     * Credential names the host exposes, or `undefined` when it has no
+     * credential store. Used to validate `{{credential:name}}` references
+     * before publishing; the host owns the actual secrets.
+     */
+    credentialNames?: string[];
 
     readonly registry: WorkflowNodeRegistry;
     readonly service?: VisualWorkflowService;
+
+    /**
+     * Record the credential names the host store exposes. `undefined` means the
+     * host has no credential store, so name checks are skipped rather than
+     * reporting every reference as missing.
+     */
+    setCredentialNames(names: string[] | undefined): void {
+        this.credentialNames = names === undefined
+            ? undefined
+            : [...new Set(names.map(name => String(name ?? '').trim()).filter(Boolean))].sort();
+    }
 
     /**
      * History stores immutable definition objects instead of serialized JSON.
@@ -1714,7 +1731,9 @@ export class WorkflowDesigner {
 
     validate(): { valid: boolean; errors: string[] } {
         const graph = validateVisualWorkflow(this.definition);
-        const configIssues = validateWorkflowConfigs(this.definition, this.registry)
+        const configIssues = validateWorkflowConfigs(this.definition, this.registry, {
+            credentials: this.credentialNames
+        })
             .map(issue => `${issue.nodeName} · ${issue.label}: ${issue.message}`);
         const errors = [...graph.errors, ...this.danglingPortErrors(), ...configIssues];
         return { valid: errors.length === 0, errors };

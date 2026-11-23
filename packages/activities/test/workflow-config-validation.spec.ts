@@ -3,6 +3,7 @@ import { createInjector, Injector, InjectUtil } from '@tsdi/ioc';
 import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowNodeRegistry } from '../src/visual/node-registry';
 import { validateWorkflowConfigs } from '../src/visual/workflow-config-validation';
+import { WorkflowDesigner } from '../src/visual/workflow-designer';
 import { VisualWorkflowDefinition } from '../src/visual/types';
 
 describe('Workflow config validation hooks', () => {
@@ -118,5 +119,86 @@ describe('Workflow config validation hooks', () => {
             entries: [{ key: 'region', value: 'eu' }]
         }, 'hook_test_filled');
         expect(validateWorkflowConfigs(definition([filled]), registry)).toEqual([]);
+    });
+});
+
+describe('Workflow credential references', () => {
+    let injector: Injector;
+    let registry: WorkflowNodeRegistry;
+
+    beforeEach(() => {
+        injector = createInjector();
+        InjectUtil.use(injector, WorkflowModule);
+        registry = injector.get(WorkflowNodeRegistry);
+    });
+
+    function definition(config: Record<string, any>): VisualWorkflowDefinition {
+        return {
+            id: 'credential-validation',
+            name: 'Credential validation',
+            nodes: [registry.createNode('mqtt-out', { x: 0, y: 0 }, { id: 'mqtt_out', config })],
+            connections: []
+        };
+    }
+
+    it('accepts references the host store exposes', () => {
+        const issues = validateWorkflowConfigs(
+            definition({ topic: 'sensors/temp', password: '{{credential:api-token}}' }),
+            registry,
+            { credentials: ['api-token'] }
+        );
+        expect(issues).toEqual([]);
+    });
+
+    it('reports references the host store does not have', () => {
+        const issues = validateWorkflowConfigs(
+            definition({ topic: 'sensors/temp', password: '{{credential:missing}}' }),
+            registry,
+            { credentials: ['api-token'] }
+        );
+        const issue = issues.find(item => item.fieldKey === 'password')!;
+        expect(issue).toBeTruthy();
+        expect(issue.message).toContain('Credential not found: missing');
+    });
+
+    it('reports malformed references and empty stores', () => {
+        const malformed = validateWorkflowConfigs(
+            definition({ topic: 'sensors/temp', password: '{{credential: }}' }),
+            registry,
+            { credentials: ['api-token'] }
+        );
+        expect(malformed.some(item => item.fieldKey === 'password'
+            && /needs a name/.test(item.message))).toBe(true);
+
+        const empty = validateWorkflowConfigs(
+            definition({ topic: 'sensors/temp', password: 'credential:api-token' }),
+            registry,
+            { credentials: [] }
+        );
+        expect(empty.some(item => /Credential not found: api-token/.test(item.message))).toBe(true);
+    });
+
+    it('skips name checks when the host has no credential store', () => {
+        const issues = validateWorkflowConfigs(
+            definition({ topic: 'sensors/temp', password: '{{credential:anything}}' }),
+            registry
+        );
+        expect(issues).toEqual([]);
+    });
+
+    it('validates designer publishing against the loaded names', () => {
+        const designer = new WorkflowDesigner({
+            definition: definition({ topic: 'sensors/temp', password: '{{credential:api-token}}' }),
+            registry
+        });
+        expect(designer.validate().valid).toBe(true);
+
+        designer.setCredentialNames(['other-token']);
+        const errors = designer.validate().errors.join(' ');
+        expect(errors).toContain('Credential not found: api-token');
+
+        designer.setCredentialNames(['api-token', 'other-token', 'api-token']);
+        expect(designer.credentialNames).toEqual(['api-token', 'other-token']);
+        expect(designer.validate().valid).toBe(true);
     });
 });

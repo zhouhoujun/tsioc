@@ -1037,6 +1037,13 @@ in-memory store so secrets are never written unencrypted. The designer's
 **Credentials** dialog lists stored names, adds or replaces a secret and deletes
 entries through the same API; stored values are never sent back to the browser.
 
+The same name list feeds validation: the designer records the names the host
+exposes (`designer.setCredentialNames(...)`), and `designer.validate()` reports
+malformed references (`{{credential: }}`) and names the store does not have
+(`Credential not found: missing`) before a publish, instead of failing on the
+first execution. When the host has no credential store the names stay
+`undefined` and name checks are skipped, so offline editors keep working.
+
 Configuration, deployment and plugin changes are recorded in an audit trail:
 
 ```text

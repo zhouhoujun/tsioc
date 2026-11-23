@@ -46,12 +46,13 @@ describe('Workflow dynamic output ports', () => {
                 ]
             }
         });
-        expect(node.outputs.map(port => port.id)).toEqual(['route-1', 'route-2', 'route-3', 'default', 'error']);
+        const outputs = node.outputs || [];
+        expect(outputs.map(port => port.id)).toEqual(['route-1', 'route-2', 'route-3', 'default', 'error']);
         // Labels summarize the rule so the canvas tooltip explains the wire.
-        expect(node.outputs[0].label).toContain('1 · =');
-        expect(node.outputs[1].label).toContain('2 · >');
-        expect(node.outputs[2].label).toContain('3 · else');
-        expect(node.outputs[3].label).toContain('Default');
+        expect(outputs[0].label).toContain('1 · =');
+        expect(outputs[1].label).toContain('2 · >');
+        expect(outputs[2].label).toContain('3 · else');
+        expect(outputs[3].label).toContain('Default');
     });
 
     it('follows rule edits and keeps connections instead of deleting wiring', () => {
@@ -59,15 +60,15 @@ describe('Workflow dynamic output ports', () => {
             { operator: 'equals', value: '1' },
             { operator: 'equals', value: '2' }
         ]);
-        designer.updateNode('switch_1', { x: 200, y: 0 });
-        expect(designer.nodes.find(node => node.id === 'switch_1')!.outputs.map(port => port.id))
+                expect((designer.nodes.find(node => node.id === 'switch_1')!.outputs || []).map(port => port.id))
             .toEqual(['route-1', 'route-2', 'default', 'error']);
 
-        designer.addNode('task', { x: 400, y: 0 }, { id: 'task_next' });
-        designer.addConnection('switch_1', 'route-2', 'task_next', 'in');
+        designer.addNode('task', { x: 400, y: 0 });
+        const task = designer.nodes[designer.nodes.length - 1];
+        designer.addConnection('switch_1', 'route-2', task.id, 'in');
         designer.updateNodeConfig('switch_1', { rules: [{ operator: 'equals', value: '1' }] });
         const node = designer.nodes.find(item => item.id === 'switch_1')!;
-        expect(node.outputs.map(port => port.id)).toEqual(['route-1', 'default', 'error']);
+        expect((node.outputs || []).map(port => port.id)).toEqual(['route-1', 'default', 'error']);
         // The wire survives and validation names the port that needs rework.
         expect(designer.connections.some(item => item.sourcePort === 'route-2')).toBe(true);
         expect(designer.validate().errors.join(' ')).toContain('route-2');
@@ -88,8 +89,8 @@ describe('Workflow dynamic output ports', () => {
 
         const reloaded = new WorkflowDesigner({ definition: legacy, registry, service });
         const node = reloaded.nodes.find(item => item.id === 'switch_1')!;
-        expect(node.outputs.map(port => port.id)).toEqual(['route-1', 'default', 'error']);
-        expect(node.outputs[0].label).toBe('1 · = 1');
+        expect((node.outputs || []).map(port => port.id)).toEqual(['route-1', 'default', 'error']);
+        expect(node.outputs![0].label).toBe('1 · = 1');
     });
 
     it('shows the derived ports on the canvas', () => {

@@ -15,6 +15,12 @@ import { ToastService } from '@tsdi/components/common/toast';
 import { WorkflowDesignerToasts } from './workflow-designer-toasts';
 import { WorkflowAuditPanelComponent } from './workflow-audit-panel';
 import { WorkflowCredentialPanelComponent } from './workflow-credential-panel';
+import {
+    refreshCredentialNames,
+    removeCredentialSecret,
+    saveCredentialSecret,
+    WorkflowCredentialState
+} from '../workflow-designer-credentials';
 import { WorkflowMetricsPanelComponent } from './workflow-metrics-panel';
 import { WorkflowDeploymentsPanelComponent } from './workflow-deployments-panel';
 import { WorkflowSettingsPanelComponent } from './workflow-settings-panel';
@@ -1177,65 +1183,45 @@ export class WorkflowDesignerComponent implements OnDestroy {
     }
 
     async refreshCredentials(): Promise<void> {
-        if (!this.store?.listCredentials) {
-            this.credentialNames = [];
-            this.credentialError = this.t('credentialsUnavailable', 'This host does not expose credential storage.');
-            return;
-        }
         this.credentialBusy = true;
-        this.credentialError = '';
-        try {
-            this.credentialNames = await this.store.listCredentials();
-        } catch (error) {
-            this.credentialError = (error as Error).message;
-        } finally {
-            this.credentialBusy = false;
-        }
+        this.applyCredentialState(await refreshCredentialNames(
+            this.store, this.designer, this.credentialsUnavailableMessage
+        ));
     }
 
     async saveCredential(): Promise<void> {
-        const name = this.credentialName.trim();
-        if (!this.store?.setCredential) {
-            this.credentialError = this.t('credentialsUnavailable', 'This host does not expose credential storage.');
-            return;
-        }
-        if (!name) {
-            this.credentialError = this.t('credentialNameRequired', 'Enter a credential name.');
-            return;
-        }
-        if (!this.credentialValue) {
-            this.credentialError = this.t('credentialValueRequired', 'Enter the secret value to store.');
-            return;
-        }
         this.credentialBusy = true;
-        this.credentialError = '';
-        try {
-            await this.store.setCredential(name, this.credentialValue);
-            this.credentialValue = '';
+        const state = await saveCredentialSecret(
+            this.store, this.designer, this.credentialName, this.credentialValue, {
+                unavailable: this.credentialsUnavailableMessage,
+                nameRequired: this.t('credentialNameRequired', 'Enter a credential name.'),
+                valueRequired: this.t('credentialValueRequired', 'Enter the secret value to store.')
+            }
+        );
+        if (state.saved) {
             this.credentialName = '';
-            await this.refreshCredentials();
-        } catch (error) {
-            this.credentialError = (error as Error).message;
-        } finally {
-            this.credentialBusy = false;
+            this.credentialValue = '';
         }
+        this.applyCredentialState(state);
     }
 
     async removeCredential(name: string): Promise<void> {
-        const id = String(name || '').trim();
-        if (!id || !this.store?.removeCredential) {
-            return;
-        }
         this.credentialBusy = true;
-        this.credentialError = '';
-        try {
-            await this.store.removeCredential(id);
-            await this.refreshCredentials();
-        } catch (error) {
-            this.credentialError = (error as Error).message;
-        } finally {
-            this.credentialBusy = false;
+        this.applyCredentialState(await removeCredentialSecret(
+            this.store, this.designer, name, this.credentialsUnavailableMessage
+        ));
+    }
+
+    protected applyCredentialState(state: WorkflowCredentialState): void {
+        if (state.names) {
+            this.credentialNames = state.names;
         }
+        this.credentialError = state.error;
+        this.credentialBusy = state.busy;
+    }
+
+    protected get credentialsUnavailableMessage(): string {
+        return this.t('credentialsUnavailable', 'This host does not expose credential storage.');
     }
 
     @Computed()

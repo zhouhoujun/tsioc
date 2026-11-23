@@ -578,6 +578,8 @@ describe('Workflow Designer UI', () => {
         await waitFor(() => !!root.querySelector('.workflow-credential-row'));
         expect(root.querySelectorAll('.workflow-credential-row').length).toBe(1);
         expect(root.querySelector('.workflow-credential-row')?.getAttribute('data-credential-name')).toBe('api-token');
+        // The host list reaches the designer so publishing validates references.
+        expect(ref.instance.designer.credentialNames).toEqual(['api-token']);
         // Secrets are never rendered, only names.
         expect(root.querySelector('.workflow-credentials')?.textContent || '').not.toContain('super-secret');
 
@@ -601,10 +603,21 @@ describe('Workflow Designer UI', () => {
         (root.querySelector('.workflow-credential-save') as any).click();
         await waitFor(() => root.querySelectorAll('.workflow-credential-row').length === 2);
         expect(saved).toEqual([['new-token', 'super-secret']]);
+        expect(ref.instance.designer.credentialNames).toEqual(['api-token', 'new-token']);
 
         (root.querySelector('[data-credential-name="api-token"] .workflow-credential-remove') as any).click();
         await waitFor(() => root.querySelectorAll('.workflow-credential-row').length === 1);
         expect(removed).toEqual(['api-token']);
+        expect(ref.instance.designer.credentialNames).toEqual(['new-token']);
+
+        // A reference to a name the store does not have blocks publishing.
+        const node = ref.instance.designer.addNode('mqtt-out', { x: 20, y: 20 })!;
+        ref.instance.designer.updateNodeConfig(node.id, {
+            topic: 'sensors/temp',
+            password: '{{credential:gone}}'
+        });
+        expect(ref.instance.designer.validate().errors.join(' '))
+            .toContain('Credential not found: gone');
 
         (root.querySelector('.workflow-credentials .workflow-publish-close') as any).click();
         await flush();

@@ -13,6 +13,58 @@ export interface WorkflowConfigIssue {
     message: string;
 }
 
+export interface WorkflowConfigValidationOptions {
+    /**
+     * Credential names exposed by the host store. `undefined` skips name
+     * checks (host has no store); an empty array means the store exists and is
+     * empty, so every reference is missing.
+     */
+    credentials?: string[];
+}
+
+/**
+ * Credential references are resolved by the host at run time. Catch malformed
+ * or unknown names while editing so publishing does not produce a workflow
+ * that only fails on its first execution.
+ */
+function credentialReference(value: any): { name: string; malformed: boolean } | undefined {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+    const text = value.trim();
+    if (!text.includes('credential:')) {
+        return undefined;
+    }
+    const braced = /^\{\{\s*credential:([^}]*)\}\}$/.exec(text);
+    if (braced) {
+        const name = braced[1].trim();
+        return { name, malformed: !name };
+    }
+    const plain = /^credential:([A-Za-z0-9_.-]+)$/.exec(text);
+    if (plain) {
+        return { name: plain[1], malformed: false };
+    }
+    // Mentions the prefix in another shape (`{{credential: }}`, `{{ credential:x}`).
+    return { name: '', malformed: true };
+}
+
+function credentialIssues(
+    value: any,
+    known: string[] | undefined
+): string | undefined {
+    const reference = credentialReference(value);
+    if (!reference) {
+        return undefined;
+    }
+    if (reference.malformed || !reference.name) {
+        return 'Credential reference needs a name: use {{credential:name}}.';
+    }
+    if (known && !known.includes(reference.name)) {
+        return `Credential not found: ${reference.name}. Store it under Credentials or use another name.`;
+    }
+    return undefined;
+}
+
 function conditionMatches(actual: any, condition: WorkflowConfigFieldCondition): boolean {
     if (condition.equals !== undefined) {
         return String(actual) === String(condition.equals);
@@ -50,7 +102,8 @@ function toFormField(field: WorkflowConfigField): DynamicFormField {
  */
 export function validateWorkflowConfigs(
     definition: VisualWorkflowDefinition,
-    registry: WorkflowNodeRegistry
+    registry: WorkflowNodeRegistry,
+    options: WorkflowConfigValidationOptions = {}
 ): WorkflowConfigIssue[] {
     const issues: WorkflowConfigIssue[] = [];
     for (const node of definition?.nodes || []) {
@@ -155,6 +208,39 @@ export function validateWorkflowConfigs(
                     message
                 });
             }
+        }
+        // Credential references resolve at run time; catch malformed or unknown
+        // names before the workflow is published.
+        for (const field of fields) {
+            const message = credentialIssues(values[field.key], options.credentials);
+            if (message) {
+                issues.push({
+                    nodeId: node.id,
+                    nodeName: node.name || node.id,
+                    fieldKey: field.key,
+                    label: field.label || field.key,
+                    message
+                });
+            }
+            if (!field.itemFields?.length) {
+                continue;
+            }
+            const items = Array.isArray(values[field.key]) ? values[field.key] : [];
+            items.forEach((item: any, index: number) => {
+                for (const child of field.itemFields!) {
+                    const childMessage = credentialIssues(item?.[child.key], options.credentials);
+                    if (!childMessage) {
+                        continue;
+                    }
+                    issues.push({
+                        nodeId: node.id,
+                        nodeName: node.name || node.id,
+                        fieldKey: `${field.key}[${index}].${child.key}`,
+                        label: `${field.label || field.key} ${index + 1} · ${child.label || child.key}`,
+                        message: childMessage
+                    });
+                }
+            });
         }
         // Typed value fields store literal classes explicitly; report text that
         // cannot be read as its declared class before the workflow runs.
