@@ -1,5 +1,6 @@
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentSessionLeaseEntity } from './entities-lease';
+import { queueTransaction } from './TransactionQueue';
 
 /**
  * Atomically claim/renew/release a session's turn lease. SQLite serializes the
@@ -11,7 +12,7 @@ export async function acquireSessionLease(
     ownerId: string,
     ttlMs: number
 ): Promise<boolean> {
-    return adapter.getRepository(AgentSessionLeaseEntity).manager.transaction(async manager => {
+    return queueTransaction(adapter, async manager => {
         const repo = manager.getRepository(AgentSessionLeaseEntity);
         const now = Date.now();
         const existing = await repo.findOne({ where: { sessionId } as any });

@@ -1,6 +1,7 @@
 import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentSessionInboxEntity } from './entities-inbox';
 import type { AgentSessionInboxItem } from './SessionStore';
+import { queueTransaction } from './TransactionQueue';
 
 /** Durable ordered input queue, kept out of the already-large session store. */
 export async function listSessionInbox(adapter: TypeormAdapter, sessionId: string): Promise<AgentSessionInboxItem[]> {
@@ -27,7 +28,7 @@ export async function replaceSessionInbox(
 ): Promise<AgentSessionInboxItem[]> {
     const repository = adapter.getRepository(AgentSessionInboxEntity);
     const now = Date.now();
-    await repository.manager.transaction(async manager => {
+    await queueTransaction(adapter, async manager => {
         const repo = manager.getRepository(AgentSessionInboxEntity);
         await repo.delete({ sessionId } as any);
         for (let index = 0; index < items.length; index++) {
@@ -54,7 +55,7 @@ export async function takeSessionInboxItem(
     kind: string
 ): Promise<import('./SessionStore').AgentSessionInboxItem | undefined> {
     const repository = adapter.getRepository(AgentSessionInboxEntity);
-    return repository.manager.transaction(async manager => {
+    return queueTransaction(adapter, async manager => {
         const repo = manager.getRepository(AgentSessionInboxEntity);
         const row = await repo.findOne({
             where: { sessionId, kind, state: 'queued' } as any,
@@ -82,9 +83,8 @@ export async function appendSessionInboxItem(
     sessionId: string,
     item: import('./SessionStore').AgentSessionInboxItem
 ): Promise<import('./SessionStore').AgentSessionInboxItem> {
-    const repository = adapter.getRepository(AgentSessionInboxEntity);
     const now = Date.now();
-    await repository.manager.transaction(async manager => {
+    await queueTransaction(adapter, async manager => {
         const repo = manager.getRepository(AgentSessionInboxEntity);
         const last = await repo.findOne({ where: { sessionId } as any, order: { seq: 'DESC' } as any });
         await repo.save(repo.create({

@@ -10,6 +10,7 @@ import { TurnHistoryController } from './TurnHistoryController';
 import { TurnObservabilityController } from './TurnObservabilityController';
 import { collectStreamingResponse as collectStreamingResponseView } from './TurnStreamCollector';
 import { TurnToolBatchController } from './TurnToolBatchController';
+import { SessionPostTurnController } from './SessionPostTurnController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -177,7 +178,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -384,9 +385,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.bindGitStepSnapshot(input.sessionId, result.message.id);
             await this.sessions.append(input.sessionId, result.message);
             await this.evaluateSessionGoal(input.sessionId, result.message.content);
-            await this.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
+            await this.postTurn.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
             await this.refreshSessionSummary(input.sessionId).catch(() => undefined);
-            await this.maybeDistillExperience(input.sessionId, userMessage, result.message);
+            await this.postTurn.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.observability.publishTurnDiagnostics(this, input.sessionId, turnContext.diagnostics);
             await this.observability.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
             await this.runTurnHooks('afterTurn', input.sessionId, {
@@ -509,9 +510,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
                 this.bindGitStepSnapshot(sessionId, result.message.id);
                 await this.sessions.append(sessionId, result.message);
-                await this.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
+                await this.postTurn.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
                 await this.refreshSessionSummary(sessionId).catch(() => undefined);
-                await this.maybeDistillExperience(sessionId, userMessage, result.message);
+                await this.postTurn.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.observability.publishTurnDiagnostics(this, sessionId, turnContext.diagnostics);
                 await this.observability.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
                 await this.runTurnHooks('afterTurn', sessionId, {
@@ -2353,6 +2354,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
+    private get postTurn(): SessionPostTurnController {
+        return this.postTurnController ??= new SessionPostTurnController({
+            sessions: this.sessions, memory: this.memory, summarizer: this.summarizer,
+            summaryAgent: this.summaryAgent, experienceDistiller: this.experienceDistiller,
+            options: this.options, app: this.app, uuid: this.uuid,
+            signal: sessionId => this.turnAbortScopes.signal(sessionId)
+        });
+    }
+
     private get toolBatch(): TurnToolBatchController {
         return this.turnToolBatch ??= new TurnToolBatchController({
             options: this.options,
@@ -3039,25 +3049,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         }
     }
 
-    async refreshSessionSummary(sessionId: string): Promise<string | undefined> {
-        const sessionOptions = this.options.session ?? {};
-        if (sessionOptions.autoSummary === false || !this.summaryAgent) {
-            return sessionOptions.autoSummary === false ? (await this.sessions.get(sessionId)).focusSummary ?? undefined : undefined;
-        }
-        const state = await this.sessions.get(sessionId);
-        if (state.focusSummary || !state.messages.length) {
-            return state.focusSummary ?? undefined;
-        }
-        try {
-            const result = await this.summaryAgent.generate(state.messages, this.turnAbortScopes.signal(sessionId));
-            if (result.summary) {
-                await this.sessions.setProjectMetadata(sessionId, { focusSummary: result.summary });
-            }
-            return result.summary ?? state.focusSummary ?? undefined;
-        } catch {
-            return state.focusSummary ?? undefined;
-        }
-    }
+    async refreshSessionSummary(sessionId: string): Promise<string | undefined> { return this.postTurn.refreshSessionSummary(sessionId); }
 
     override async getTokenBudgetState(sessionId: string): Promise<TokenBudgetScopeState[]> {
         if (!this.tokenBudgetTracker.enabled) {
@@ -3084,15 +3076,6 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
             uuid: this.uuid,
             clock: this.clock
         });
-    }
-
-    private async maybeSummarize(sessionId: string, evidence?: ToolEvidenceEntry[]): Promise<void> {
-        const state = await this.sessions.get(sessionId);
-        const threshold = this.options.session?.summaryThreshold ?? defaultAgentOptions.session!.summaryThreshold!;
-        if (state.messages.length >= threshold) {
-            const summary = await this.summarizer.summarize(state.messages, evidence, this.turnAbortScopes.signal(sessionId));
-            await this.sessions.setSummary(sessionId, summary);
-        }
     }
 
     private async getRelevantMemory(query: string, sessionId: string): Promise<AgentMemoryRecord[]> {
@@ -3130,48 +3113,6 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         } catch {
             return;
         }
-    }
-
-    private async maybeDistillExperience(sessionId: string, userMessage: AgentMessage, assistantMessage: AgentMessage): Promise<void> {
-        if (!this.experienceDistiller) {
-            return;
-        }
-        try {
-            const records = await this.experienceDistiller.distill({
-                sessionId,
-                userMessage,
-                assistantMessage,
-                createdAt: Date.now()
-            });
-            for (const record of records) {
-                const persisted = this.createDistilledMemoryRecord(sessionId, record);
-                await this.memory.put(persisted);
-                try {
-                    await this.app.publishEvent(new AgentMemoryUpdatedEvent(this, sessionId, persisted));
-                } catch {
-                    continue;
-                }
-            }
-        } catch (error) {
-            try {
-                const err = error instanceof Error ? error : new Error(String(error));
-                await this.app.publishEvent(new AgentErrorEvent(this, sessionId, err));
-            } catch {
-                return;
-            }
-        }
-    }
-
-    private createDistilledMemoryRecord(sessionId: string, record: AgentMemoryRecord): AgentMemoryRecord {
-        const createdAt = record.createdAt ?? Date.now();
-        return {
-            ...record,
-            id: this.uuid.generate(),
-            sessionId,
-            scope: record.scope ?? 'session',
-            createdAt,
-            updatedAt: record.updatedAt ?? createdAt
-        };
     }
 
     private getRecentMessages(messages: AgentMessage[], currentUserMessageId: string): AgentMessage[] {
