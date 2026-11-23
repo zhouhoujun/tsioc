@@ -564,6 +564,54 @@ describe('Workflow data & trigger nodes', () => {
         }
     });
 
+    it('sends an object payload as query parameters with paytoqs', async () => {
+        const original = (globalThis as any).fetch;
+        let captured: any;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            captured = { url, init };
+            return new Response('ok', { status: 200 });
+        };
+        try {
+            const result = await service.execute(chain([
+                {
+                    type: 'inject',
+                    config: { payload: { user: 'ada lovelace', page: 2 } }
+                },
+                {
+                    type: 'http-request',
+                    config: {
+                        url: 'https://api.example.com/search',
+                        paytoqs: true
+                    }
+                }
+            ]), {});
+            expect(result.success).toBe(true);
+            expect(captured.url).toBe('https://api.example.com/search?user=ada%20lovelace&page=2');
+
+            // An existing query string keeps both parts.
+            await service.execute(chain([
+                { type: 'inject', config: { payload: { page: 3 } } },
+                {
+                    type: 'http-request',
+                    config: {
+                        url: 'https://api.example.com/search?q=all',
+                        paytoqs: true
+                    }
+                }
+            ]), {});
+            expect(captured.url).toBe('https://api.example.com/search?q=all&page=3');
+
+            // Without paytoqs the URL stays untouched.
+            await service.execute(chain([
+                { type: 'inject', config: { payload: { page: 4 } } },
+                { type: 'http-request', config: { url: 'https://api.example.com/search' } }
+            ]), {});
+            expect(captured.url).toBe('https://api.example.com/search');
+        } finally {
+            (globalThis as any).fetch = original;
+        }
+    });
+
     it('can treat non-2xx HTTP responses as success', async () => {
         const original = (globalThis as any).fetch;
         (globalThis as any).fetch = async () => new Response('nope', { status: 500 });

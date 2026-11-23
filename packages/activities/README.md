@@ -639,8 +639,10 @@ Features:
   link/junction/sequence, try/catch, sub workflow, comment,
 - `http-request` returns `statusCode`, response headers and the final URL;
   `Ignore HTTP errors` lets 4xx/5xx responses continue with their body instead
-  of failing the node; `basic`, `bearer` and `API key` authentication use the
-  node or shared endpoint credentials,
+  of failing the node; `Send payload as query string` appends an object payload
+  to the URL (Node-RED `paytoqs`) instead of sending it as the body; `basic`,
+  `bearer` and `API key` authentication use the node or shared endpoint
+  credentials,
 - sub workflow / loop nodes resolve a stored workflow id through the host
   resolver (`service.setDefinitionResolver`; the HTTP server uses the definition
   store) or fall back to a context path / inline definition JSON; right-clicking
@@ -685,6 +687,8 @@ Features:
   `No rule matched`, `http-request` reports `HTTP 200`, and inbound
   `tcp`/`udp`/`websocket`/`mqtt` nodes report the transport and source. The
   canvas paints it in the node body and the inspector beside the status word;
+  `debug` also mirrors its message when `Show in node status` (`tostatus`) is
+  enabled, and long lines are trimmed to keep the node readable;
   `key` lets the host translate UI copy while data (`tcp 10.0.0.5:4711`) stays
   as reported,
 - stylesheet-based skin (`WORKFLOW_DESIGNER_CSS`) with `@tsdi/i18n` labels.

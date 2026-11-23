@@ -1421,9 +1421,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'error', value: 'error' }
                 ]
             }),
-            configField({ key: 'console', label: 'Also print to console', type: 'boolean', defaultValue: false, description: 'Mirror the message to the host console.' })
+            configField({ key: 'console', label: 'Also print to console', type: 'boolean', defaultValue: false, description: 'Mirror the message to the host console.' }),
+            configField({ key: 'tostatus', label: 'Show in node status', type: 'boolean', defaultValue: false, description: 'Display the message as this node\'s status line instead of only in the sidebar.' })
         ],
-        defaultConfig: { level: 'info', complete: false, console: false }
+        defaultConfig: { level: 'info', complete: false, console: false, tostatus: false }
     },
     {
         type: 'http-request',
@@ -1474,6 +1475,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 group: 'Request',}),
             configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3, placeholder: '{ "Content-Type": "application/json" }', group: 'Request',}),
             configField({ key: 'body', label: 'Body', type: 'textarea', rows: 4, typed: true, placeholder: '{ "name": "demo" }', group: 'Request', visibleWhen: { key: 'method', notEquals: 'GET' } }),
+            configField({ key: 'paytoqs', label: 'Send payload as query string', type: 'boolean', defaultValue: false, group: 'Request', description: 'Append an object payload to the URL as query parameters instead of sending it as the body.' }),
             configField({
                 key: 'responseType',
                 label: 'Response',

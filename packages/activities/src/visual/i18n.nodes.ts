@@ -461,6 +461,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "method": "Method",
                 "headers": "Headers (JSON)",
                 "body": "Body",
+                "paytoqs": "Send payload as query string",
                 "responseType": "Response handling",
                 "followRedirects": "Follow redirects",
                 "ignoreErrors": "Ignore HTTP errors",
@@ -672,6 +673,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "complete": "Complete message",
                 "level": "Level",
                 "console": "Also print to console",
+                "tostatus": "Show in node status",
                 "active": "Enabled"
             },
             "link": {
@@ -1335,6 +1337,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "method": "HTTP request method",
                 "headers": "JSON object of request headers",
                 "body": "request body for POST, PUT or PATCH",
+                "paytoqs": "append an object payload to the URL as query parameters instead of sending it as the body",
                 "responseType": "auto parses JSON when possible; text keeps raw text; JSON fails on invalid JSON",
                 "retry": "automatic retries after a failed request",
                 "retryDelay": "wait time between retries",
@@ -1465,6 +1468,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "complete": "print the complete workflow context",
                 "console": "also write to the host console for development",
                 "level": "output level: info, warn or error",
+                "tostatus": "display the message as this node's status line instead of only in the sidebar",
                 "active": "turn off to keep the node but skip its output"
             },
             "link": {
@@ -2251,6 +2255,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "method": "方法",
                 "headers": "请求头（JSON）",
                 "body": "请求体",
+                "paytoqs": "payload 作为查询串发送",
                 "responseType": "响应处理",
                 "followRedirects": "跟随重定向",
                 "ignoreErrors": "忽略 HTTP 错误",
@@ -2462,6 +2467,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "complete": "完整消息",
                 "level": "级别",
                 "console": "同时输出到控制台",
+                "tostatus": "显示在节点状态",
                 "active": "启用"
             },
             "link": {
@@ -3108,6 +3114,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "method": "HTTP 请求方法。",
                 "headers": "JSON 对象形式的请求头。",
                 "body": "POST/PUT/PATCH 的请求体。",
+                "paytoqs": "把对象 payload 追加到 URL 查询串，而不是作为请求体发送。",
                 "responseType": "自动：能解析则返回 JSON；文本：保留原文；JSON：解析失败时报错。",
                 "retry": "请求失败后的自动重试次数。",
                 "retryDelay": "两次重试之间的等待时间。",
@@ -3238,6 +3245,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "complete": "输出完整流程上下文。",
                 "console": "同时写入宿主控制台，便于开发调试。",
                 "level": "输出级别：info、warn 或 error。",
+                "tostatus": "把消息显示为节点状态行，而不只是写入侧栏。",
                 "active": "关闭后保留节点但不再输出。"
             },
             "link": {

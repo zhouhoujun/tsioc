@@ -125,6 +125,35 @@ describe('Workflow node status lines', () => {
         }
     });
 
+    it('mirrors debug output on the node when tostatus is enabled', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { total: 7 } } },
+            {
+                type: 'debug',
+                config: { field: 'payload.total', level: 'warn', tostatus: true }
+            }
+        ]), {});
+        expect(result.data?.executionState?.nodeStates.debug_1.result?.status)
+            .toEqual({ text: '7', level: 'warn' });
+
+        const quiet = await service.execute(chain([
+            { type: 'inject', config: { payload: { total: 7 } } },
+            { type: 'debug', config: { field: 'payload.total' } }
+        ]), {});
+        expect(quiet.data?.executionState?.nodeStates.debug_1.result?.status).toBeUndefined();
+    });
+
+    it('keeps long debug status lines compact', async () => {
+        const long = 'x'.repeat(200);
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { text: long } } },
+            { type: 'debug', config: { field: 'payload.text', tostatus: true } }
+        ]), {});
+        const text = result.data?.executionState?.nodeStates.debug_1.result?.status?.text || '';
+        expect(text.length).toBe(78);
+        expect(text.endsWith('…')).toBe(true);
+    });
+
     it('shows the status line on the canvas and in the inspector', async () => {
         const designer = new WorkflowDesigner({
             definition: chain([

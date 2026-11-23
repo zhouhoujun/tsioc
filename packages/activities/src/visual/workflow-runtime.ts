@@ -1018,6 +1018,20 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
             // Relative/unparseable URLs keep their original form.
         }
     }
+    // Node-RED `paytoqs`: append an object payload to the URL as query
+    // parameters instead of sending it as the body.
+    if (config.paytoqs === true && url) {
+        const payload = (context as any).msg?.payload ?? (context as any).payload;
+        if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+            const search = Object.entries(payload)
+                .filter(([, value]) => value !== undefined && value !== null)
+                .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+                .join('&');
+            if (search) {
+                url = `${url}${String(url).includes('?') ? '&' : '?'}${search}`;
+            }
+        }
+    }
     if (!url) {
         return {
             success: false,
@@ -1322,7 +1336,20 @@ export async function executeVisualNode(
                 const write = (console as any)[level] || console.log;
                 write.call(console, message);
             }
-            return { success: true, data: { nodeId: node.id, level, message } };
+            // Node-RED `tostatus`: mirror the message on the node itself.
+            const showInStatus = node.type === 'debug' && config.tostatus === true && message;
+            return {
+                success: true,
+                data: { nodeId: node.id, level, message },
+                ...(showInStatus
+                    ? {
+                        status: {
+                            text: message.length > 80 ? `${message.slice(0, 77)}…` : message,
+                            level: level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'info'
+                        }
+                    }
+                    : {})
+            };
         }
         case 'http-request':
             return runHttp(node, context);
