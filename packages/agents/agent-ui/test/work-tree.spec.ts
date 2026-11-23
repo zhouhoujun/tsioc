@@ -237,6 +237,38 @@ export class WorkTreeTest {
         expect(notices[1]).toContain('Usage: /work spawn');
     }
 
+    @Test('/work spawn --profile without a value opens a primary-profile picker')
+    async spawnsWithProfilePicker() {
+        const state = createState();
+        const spawned: Array<{ goal: string; profile?: string }> = [];
+        const host: any = {
+            translator: null,
+            state,
+            sessionService: null,
+            notify: () => undefined,
+            openSession: async () => undefined,
+            listProfiles: async () => [
+                { name: 'build', mode: 'primary' },
+                { name: 'plan', mode: 'primary' },
+                { name: 'explore', mode: 'subagent' }
+            ],
+            select: async (_title: string, options: any[]) => {
+                expect(options.map(option => option.value)).toEqual(['__default__', 'build', 'plan']);
+                return 'plan';
+            },
+            spawnWorker: async (goal: string, profile?: string) => {
+                spawned.push({ goal, profile });
+                return { taskId: 'task-pick', sessionId: 'child-pick' };
+            }
+        };
+        await runWorkCommandView(host, 'spawn refactor auth --profile');
+        expect(spawned).toEqual([{ goal: 'refactor auth', profile: 'plan' }]);
+
+        host.select = async () => undefined;
+        await runWorkCommandView(host, 'spawn refactor auth --profile');
+        expect(spawned.length).toEqual(1);
+    }
+
     @Test('/work spawn --worktree creates a worktree and passes it to the worker')
     async spawnsInWorktree() {
         const state = createState();

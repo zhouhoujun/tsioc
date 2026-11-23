@@ -137,6 +137,8 @@ export interface AgentConsoleWorkHost {
     createWorktree?(name?: string): Promise<string | undefined>;
     /** Existing managed worktrees for interactive worker selection. */
     listWorktrees?(): Promise<Array<{ path: string; branch?: string }>>;
+    /** Primary agent profiles for `--profile` selection. */
+    listProfiles?(): Promise<Array<{ name: string; description?: string; mode?: string }>>;
     /** Read-only worker report overlay. */
     openTextOverlay?(title: string, lines: string[], visibleLines?: number): void;
     /** Open the `/remotes` picker from the Work screen. */
@@ -213,7 +215,11 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
     if (tokens[0]?.toLowerCase() === 'spawn') {
         const rest = tokens.slice(1);
         const profileIndex = rest.findIndex(token => token === '--profile' || token === '-p');
-        const profile = profileIndex >= 0 ? rest[profileIndex + 1] : undefined;
+        let profile = profileIndex >= 0 ? rest[profileIndex + 1] : undefined;
+        if (profile && profile.startsWith('-')) {
+            profile = undefined;
+        }
+        const profilePick = profileIndex >= 0 && !profile;
         const worktreeIndex = rest.findIndex(token =>
             token === '--worktree' || token === '-w'
             || token.startsWith('--worktree=') || token.startsWith('-w=')
@@ -230,6 +236,27 @@ export async function runWorkCommandView(host: AgentConsoleWorkHost, args = ''):
         if (!goal) {
             host.notify(formatAgentUiNotice(host.translator, 'workSpawnUsage'));
             return;
+        }
+        if (profilePick && host.listProfiles && host.select) {
+            const profiles = (await host.listProfiles().catch(() => []))
+                .filter(profileItem => profileItem.mode !== 'subagent');
+            const picked = await host.select(
+                formatAgentUiNotice(host.translator, 'workProfilePickTitle'),
+                [
+                    { label: formatAgentUiNotice(host.translator, 'workProfilePickDefault'), value: '__default__' },
+                    ...profiles.map(item => ({
+                        label: item.name,
+                        value: item.name,
+                        description: item.description || item.mode || ''
+                    }))
+                ],
+                0,
+                formatAgentUiNotice(host.translator, 'workProfilePickHint')
+            );
+            if (!picked) {
+                return;
+            }
+            profile = picked === '__default__' ? undefined : picked;
         }
         let workspace: string | undefined;
         if (worktreeIndex >= 0) {
@@ -534,6 +561,22 @@ export function workCommandHost(ctx: CommandHandlerContext): AgentConsoleWorkHos
         listWorktrees: async () => {
             const result = await ctx.state.worktreeCommand?.({ action: 'list' }).catch(() => undefined);
             return (result?.items || []).map(item => ({ path: item.path, branch: item.branch }));
+        },
+        listProfiles: async () => {
+            if (ctx.appRpc) {
+                const result = await ctx.appRpc.request('session.archetype.list', {}, ctx.rpcRequestContext?.()).catch(() => null);
+                const profiles = Array.isArray(result?.profiles) ? result.profiles : [];
+                if (profiles.length) {
+                    return profiles.map((item: any) => ({
+                        name: String(item?.name || ''),
+                        description: item?.description ? String(item.description) : undefined,
+                        mode: item?.mode ? String(item.mode) : undefined
+                    })).filter((item: any) => !!item.name);
+                }
+            }
+            return ((ctx.runtime as any)?.listAgentProfiles?.() || [])
+                .map((item: any) => ({ name: String(item?.name || ''), description: item?.description, mode: item?.mode }))
+                .filter((item: any) => !!item.name);
         },
         openTextOverlay: (title: string, lines: string[], visibleLines?: number) => ctx.state.openTextOverlay(title, lines, visibleLines)
     };
