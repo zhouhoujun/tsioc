@@ -9,6 +9,7 @@ import { TurnHistoryStore } from './TurnHistoryStore';
 import { TurnHistoryController } from './TurnHistoryController';
 import { TurnObservabilityController } from './TurnObservabilityController';
 import { collectStreamingResponse as collectStreamingResponseView } from './TurnStreamCollector';
+import { TurnToolBatchController } from './TurnToolBatchController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -176,7 +177,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -2352,82 +2353,32 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
-    private async executeTools(
-        sessionId: string,
-        toolCalls: AgentToolCall[],
-        loopDetector: ToolLoopDetector,
-        callableTools: AgentToolDefinition[],
-        turnContext: TurnExecutionContext
-    ): Promise<void> {
-        const toolOpts = this.options.tools ?? defaultAgentOptions.tools!;
-
-        if (toolOpts.parallelExecution && toolCalls.length > 1 && this.canParallelize(toolCalls, toolOpts.parallelSafeTools ?? [])) {
-            await this.executeToolsParallel(sessionId, toolCalls, loopDetector, callableTools, turnContext);
-        } else {
-            await this.executeToolsSequential(sessionId, toolCalls, loopDetector, callableTools, turnContext);
-        }
-    }
-
-    private canParallelize(toolCalls: Array<{ name: string; input?: any }>, safeTools: string[]): boolean {
-        const approvalManager = this.toolApprovalManager;
-        return canParallelizeToolBatch(toolCalls, safeTools, {
-            requiresApproval: approvalManager
-                ? (name, input) => approvalManager.requiresApproval(name, input)
+    private get toolBatch(): TurnToolBatchController {
+        return this.turnToolBatch ??= new TurnToolBatchController({
+            options: this.options,
+            requiresApproval: this.toolApprovalManager
+                ? (name, input) => this.toolApprovalManager!.requiresApproval(name, input)
                 : undefined,
-            getDefinition: name => this.toolRegistry.getToolDefinition(name)
+            getToolDefinition: name => this.toolRegistry.getToolDefinition(name),
+            runSequential: async (sessionId, call, detector, tools, context) => { await this.invokeSingleTool(sessionId, call, detector, 'sequential', tools, context); },
+            runParallel: (sessionId, call, detector, tools, context) => this.performToolInvocation(sessionId, call, detector, 'parallel', tools, context),
+            settle: async (sessionId, result, context) => {
+                this.recordToolEvidence(context, result.receipt, result.error);
+                this.maybeApplyDelegationQualityGate(sessionId, result, context);
+                await this.finalizeToolInvocation(sessionId, result);
+            },
+            settleError: async (sessionId, error, context) => {
+                this.recordToolEvidence(context, {
+                    receiptId: this.uuid.generate(), toolCallId: 'unknown', toolName: 'unknown',
+                    executionMode: 'parallel', status: 'error', error: error.message
+                }, error);
+                await this.sessions.append(sessionId, this.createMessage('tool', JSON.stringify({ error: error.message }), 'unknown', undefined, { error: error.message }));
+            }
         });
     }
 
-    private async executeToolsSequential(
-        sessionId: string,
-        toolCalls: AgentToolCall[],
-        loopDetector: ToolLoopDetector,
-        callableTools: AgentToolDefinition[],
-        turnContext: TurnExecutionContext
-    ): Promise<void> {
-        for (const toolCall of toolCalls) {
-            await this.invokeSingleTool(sessionId, toolCall, loopDetector, 'sequential', callableTools, turnContext);
-        }
-    }
-
-    private async executeToolsParallel(
-        sessionId: string,
-        toolCalls: AgentToolCall[],
-        loopDetector: ToolLoopDetector,
-        callableTools: AgentToolDefinition[],
-        turnContext: TurnExecutionContext
-    ): Promise<void> {
-        const maxParallel = this.options.tools?.maxParallelTools ?? defaultAgentOptions.tools!.maxParallelTools!;
-        for (let i = 0; i < toolCalls.length; i += maxParallel) {
-            const batch = toolCalls.slice(i, i + maxParallel);
-            const results = await Promise.allSettled(
-                batch.map(tc => this.performToolInvocation(sessionId, tc, loopDetector, 'parallel', callableTools, turnContext))
-            );
-
-            for (const result of results) {
-                if (result.status === 'fulfilled') {
-                    this.recordToolEvidence(turnContext, result.value.receipt, result.value.error);
-                    this.maybeApplyDelegationQualityGate(sessionId, result.value, turnContext);
-                    await this.finalizeToolInvocation(sessionId, result.value);
-                } else {
-                    const err = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
-                    this.recordToolEvidence(turnContext, {
-                        receiptId: this.uuid.generate(),
-                        toolCallId: 'unknown',
-                        toolName: 'unknown',
-                        executionMode: 'parallel',
-                        status: 'error',
-                        error: err.message
-                    }, err);
-                    await this.sessions.append(sessionId, this.createMessage(
-                        'tool',
-                        JSON.stringify({ error: err.message }),
-                        'unknown', undefined,
-                        { error: err.message }
-                    ));
-                }
-            }
-        }
+    private async executeTools(sessionId: string, toolCalls: AgentToolCall[], loopDetector: ToolLoopDetector, callableTools: AgentToolDefinition[], turnContext: TurnExecutionContext): Promise<void> {
+        return this.toolBatch.execute(sessionId, toolCalls, loopDetector, callableTools, turnContext);
     }
 
     private async invokeSingleTool(
