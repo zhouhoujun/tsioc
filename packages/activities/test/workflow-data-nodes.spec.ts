@@ -1161,6 +1161,20 @@ describe('Workflow data & trigger nodes', () => {
             { type: 'scale', config: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 10, round: true } }
         ]), {});
         expect(clamped.data?.executionState?.nodeStates.scale_1.result?.data?.value).toBe(10);
+
+        // Legacy `clamp: false` keeps the historic scale behaviour.
+        const unclamped = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 150 } } },
+            { type: 'scale', config: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 10, clamp: false } }
+        ]), {});
+        expect(unclamped.data?.executionState?.nodeStates.scale_1.result?.data?.value).toBe(15);
+
+        // Explicit actions win over the legacy flag.
+        const wrapped = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 150 } } },
+            { type: 'scale', config: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 10, clamp: false, action: 'wrap' } }
+        ]), {});
+        expect(wrapped.data?.executionState?.nodeStates.scale_1.result?.data?.value).toBe(5);
     });
 
     it('honours XML attribute/text options and CSV columns', async () => {

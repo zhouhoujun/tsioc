@@ -145,6 +145,56 @@ export function resolveWorkflowTypedValue(value: any, context: ActivityContext):
     return value;
 }
 
+/** `{{expr: payload.total * 2 }}` inline expression markers. */
+const EXPRESSION_MARKER = /\{\{\s*expr:([\s\S]*?)\s*\}\}/g;
+const SOLE_EXPRESSION_MARKER = /^\{\{\s*expr:([\s\S]*?)\s*\}\}$/;
+
+/** Expression bodies referenced by a stored value's `{{expr: ...}}` markers. */
+export function workflowExpressionMarkers(value: any): string[] {
+    if (typeof value !== 'string') {
+        return [];
+    }
+    const found: string[] = [];
+    EXPRESSION_MARKER.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = EXPRESSION_MARKER.exec(value))) {
+        found.push(match[1]);
+    }
+    return found;
+}
+
+/** A string that is only one marker keeps the evaluated value's type. */
+export function isSoleExpressionMarker(value: any): boolean {
+    return typeof value === 'string' && SOLE_EXPRESSION_MARKER.test(value.trim());
+}
+
+/**
+ * Replace every `{{expr: ...}}` marker in a string with its evaluated value.
+ * A value that is only one marker returns the raw result (objects included);
+ * mixed text interpolates stringified results.
+ */
+export async function resolveWorkflowExpressionMarkers(
+    value: string,
+    context: ActivityContext
+): Promise<any> {
+    if (isSoleExpressionMarker(value)) {
+        const sole = SOLE_EXPRESSION_MARKER.exec(value.trim());
+        return evaluateWorkflowExpression(sole ? sole[1] : '', context);
+    }
+    const text = String(value ?? '');
+    let result = '';
+    let lastIndex = 0;
+    EXPRESSION_MARKER.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = EXPRESSION_MARKER.exec(text))) {
+        result += text.slice(lastIndex, match.index);
+        const resolved = await evaluateWorkflowExpression(match[1], context);
+        result += resolved === undefined || resolved === null ? '' : String(resolved);
+        lastIndex = match.index + match[0].length;
+    }
+    return result + text.slice(lastIndex);
+}
+
 /**
  * Async twin of {@link resolveWorkflowTypedValue}: expressions need an
  * evaluator, everything else resolves synchronously.

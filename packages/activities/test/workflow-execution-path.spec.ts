@@ -425,6 +425,40 @@ describe('Visual Workflow Execution Path', () => {
         expect(snapshot.nodeStates.join_p.result?.data?.branches).toBe(2);
     });
 
+    it('joins branch results as text', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_s' }),
+            registry.createNode('parallel', { x: 200, y: 0 }, { id: 'parallel_s' }),
+            registry.createNode('task', { x: 400, y: -80 }, { id: 'task_x', config: { result: { value: 'x' } } }),
+            registry.createNode('task', { x: 400, y: 80 }, { id: 'task_y', config: { result: { value: 'y' } } }),
+            registry.createNode('join', { x: 600, y: 0 }, {
+                id: 'join_s',
+                config: { mode: 'string', joiner: ',', resultField: 'text' }
+            })
+        ];
+        const edge = (id: string, source: string, sourcePort: string, target: string) => ({
+            id, sourceNodeId: source, sourcePort, targetNodeId: target, targetPort: 'in'
+        });
+        const definition = {
+            id: 'join-string-test',
+            name: 'Join string test',
+            nodes,
+            connections: [
+                edge('e1', 'start_s', 'out', 'parallel_s'),
+                edge('e2', 'parallel_s', 'out', 'task_x'),
+                edge('e3', 'parallel_s', 'out', 'task_y'),
+                edge('e4', 'task_x', 'out', 'join_s'),
+                edge('e5', 'task_y', 'out', 'join_s')
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const joined = String(result.data?.executionState?.nodeStates.join_s.result?.data?.text ?? '');
+        expect(joined.includes('"value":"x"')).toBe(true);
+        expect(joined.includes('"value":"y"')).toBe(true);
+        // One JSON blob per branch, separated by the configured joiner.
+        expect(joined.split('},{').length).toBe(2);
+    });
+
     it('keys join branch results by a property', async () => {
         const nodes = [
             registry.createNode('start', { x: 0, y: 0 }, { id: 'start_k' }),

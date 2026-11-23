@@ -2,6 +2,7 @@ import { Injectable, Type } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { Activity } from '../activities/Activity';
 import { translateWorkflow } from './i18n';
+import { validateWorkflowExpression } from './workflow-expression';
 import {
     IVisualWorkflowNode,
     NodePort,
@@ -221,7 +222,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     { label: 'Number', value: 'number' },
                     { label: 'Boolean', value: 'boolean' },
                     { label: 'Timestamp (ms)', value: 'timestamp' },
-                    { label: 'Environment variable', value: 'env' }
+                    { label: 'Environment variable', value: 'env' },
+                    { label: 'Expression', value: 'expression' }
                 ],
                 group: 'Payload'
             }),
@@ -235,6 +237,22 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 validate: (value, { values }) => values.payloadType === 'env' && !String(value ?? '').trim()
                     ? 'Name the environment variable to read.'
                     : undefined
+            }),
+            configField({
+                key: 'payloadExpression',
+                label: 'Expression',
+                type: 'text',
+                placeholder: 'payload.total * 2',
+                group: 'Payload',
+                visibleWhen: { key: 'payloadType', equals: 'expression' },
+                description: 'JSONata expression evaluated against the message, flow, global and env context.',
+                validate: value => {
+                    if (!String(value ?? '').trim()) {
+                        return 'Enter an expression for the injected payload.';
+                    }
+                    const error = validateWorkflowExpression(String(value));
+                    return error ? `Expression error: ${error}` : undefined;
+                }
             }),
             configField({ key: 'topic', label: 'Topic', type: 'text', maxLength: 200, placeholder: 'orders.created', group: 'Payload' }),
             configField({
@@ -598,11 +616,23 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'inMax', label: 'Input maximum', type: 'number', defaultValue: 100, group: 'Input range' }),
             configField({ key: 'outMin', label: 'Output minimum', type: 'number', defaultValue: 0, group: 'Output range' }),
             configField({ key: 'outMax', label: 'Output maximum', type: 'number', defaultValue: 1, group: 'Output range' }),
-            configField({ key: 'clamp', label: 'Clamp to range', type: 'boolean', defaultValue: true, group: 'Options' }),
+            configField({
+                key: 'action',
+                label: 'Out of range',
+                type: 'select',
+                defaultValue: 'clamp',
+                group: 'Options',
+                options: [
+                    { label: 'Clamp to range', value: 'clamp' },
+                    { label: 'Scale beyond range', value: 'scale' },
+                    { label: 'Wrap around', value: 'wrap' }
+                ],
+                description: 'What happens when the input falls outside the input range.'
+            }),
             configField({ key: 'round', label: 'Round result', type: 'boolean', defaultValue: false, group: 'Options' }),
             configField({ key: 'target', label: 'Write result to', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value', description: 'Context field that receives the mapped value.' })
         ],
-        defaultConfig: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 1, clamp: true, round: false, target: 'value' }
+        defaultConfig: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 1, action: 'clamp', round: false, target: 'value' }
     },
     {
         type: 'router',
@@ -722,12 +752,14 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 defaultValue: 'array',
                 options: [
                     { label: 'Branch results array', value: 'array' },
+                    { label: 'Joined text', value: 'string' },
                     { label: 'Merged object', value: 'merge' },
                     { label: 'Keys object', value: 'key' },
                     { label: 'First N branches', value: 'count' },
                     { label: 'Wait with timeout', value: 'timeout' }
                 ]
             }),
+            configField({ key: 'joiner', label: 'Joiner', type: 'text', defaultValue: ' ', placeholder: ' ', visibleWhen: { key: 'mode', equals: 'string' }, description: 'Text inserted between branch results.' }),
             configField({ key: 'keyField', label: 'Key field', type: 'text', defaultValue: 'key', placeholder: 'key', visibleWhen: { key: 'mode', equals: 'key' }, description: 'Branch result property used as the object key.' }),
             configField({ key: 'valueField', label: 'Value field', type: 'text', placeholder: 'value', visibleWhen: { key: 'mode', equals: 'key' }, description: 'Branch result property stored under each key. Empty stores the whole branch result.' }),
             configField({ key: 'count', label: 'Branch count', type: 'number', defaultValue: 2, min: 1, max: 1000, step: 1, visibleWhen: { key: 'mode', equals: 'count' }, description: 'How many successful branches are included.' }),

@@ -384,6 +384,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "event": "Event name",
                 "timeout": "Wait timeout",
                 "payloadValue": "Payload value",
+                "payloadExpression": "Expression",
                 "cron": "Cron expression",
                 "properties": "Properties",
                 "key": "Property",
@@ -418,6 +419,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "parallel": {},
             "join": {
                 "mode": "Mode",
+                "joiner": "Joiner",
                 "resultField": "Result field",
                 "ignoreEmpty": "Skip empty branches",
                 "keyField": "Key field",
@@ -704,7 +706,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "inMax": "Input maximum",
                 "outMin": "Output minimum",
                 "outMax": "Output maximum",
-                "clamp": "Clamp to range",
+                "action": "Out of range",
                 "round": "Round result",
                 "target": "Write result to"
             },
@@ -972,6 +974,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "inject": {
                 "topic": "orders.created",
                 "payload": "{ \"value\": 1 }",
+                "payloadExpression": "payload.total * 2",
                 "onceDelay": "0",
                 "interval": "1",
                 "repeatCount": "1",
@@ -998,6 +1001,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "parallel": {},
             "join": {
                 "resultField": "joined",
+                "joiner": " ",
                 "keyField": "key",
                 "valueField": "value"
             },
@@ -1275,6 +1279,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "event": "event that triggers the injection",
                 "timeout": "maximum time to wait for the event",
                 "payloadValue": "string, number or boolean value to inject",
+                "payloadExpression": "JSONata expression evaluated against the message, flow, global and env context",
                 "cron": "Five fields: minute hour day month weekday."
             },
             "task": {
@@ -1304,7 +1309,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "parallel": {},
             "join": {
-                "mode": "Collect branch results as an array or merge their data objects.",
+                "mode": "Collect branch results as an array, joined text or merge their data objects.",
+                "joiner": "Text inserted between branch results in joined-text mode.",
                 "resultField": "Context field that receives the joined value.",
                 "ignoreEmpty": "Leave branches without result data out of the joined value.",
                 "keyField": "Branch result property used as the object key.",
@@ -1507,7 +1513,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "inMax": "maximum of the input range",
                 "outMin": "minimum of the output range",
                 "outMax": "maximum of the output range",
-                "clamp": "keep the result inside the output range",
+                "action": "clamp keeps the result inside the output range, scale maps beyond it, wrap cycles back into the range",
                 "round": "round the result to an integer",
                 "target": "field that receives the mapped value"
             },
@@ -1707,6 +1713,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "response": "Response"
         },
         "option": {
+            "expression": "Expression",
+            "clamp": "Clamp to range",
+            "scale": "Scale beyond range",
+            "wrap": "Wrap around",
             "stream": "Raw chunks",
             "line": "Line delimited",
             "truthy": "is truthy",
@@ -2195,6 +2205,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "event": "事件名称",
                 "timeout": "等待超时",
                 "payloadValue": "数据值",
+                "payloadExpression": "表达式",
                 "cron": "Cron 表达式",
                 "properties": "附加属性",
                 "key": "属性",
@@ -2229,6 +2240,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "parallel": {},
             "join": {
                 "mode": "模式",
+                "joiner": "连接符",
                 "resultField": "结果字段",
                 "ignoreEmpty": "跳过空分支",
                 "keyField": "键字段",
@@ -2515,7 +2527,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "inMax": "输入最大值",
                 "outMin": "输出最小值",
                 "outMax": "输出最大值",
-                "clamp": "限制在区间内",
+                "action": "超出范围时",
                 "round": "取整",
                 "target": "结果写入字段"
             },
@@ -2781,6 +2793,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "end": {},
             "inject": {
                 "payload": "{ \"value\": 1 }",
+                "payloadExpression": "payload.total * 2",
                 "topic": "orders.created",
                 "onceDelay": "0",
                 "interval": "1",
@@ -2808,6 +2821,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "parallel": {},
             "join": {
                 "resultField": "joined",
+                "joiner": " ",
                 "keyField": "key",
                 "valueField": "value"
             },
@@ -3069,6 +3083,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "event": "触发注入的事件名称。",
                 "timeout": "等待事件的最长时间。",
                 "payloadValue": "要注入的字符串、数字或布尔值。",
+                "payloadExpression": "针对消息、flow、global 与 env 上下文求值的 JSONata 表达式。",
                 "cron": "五个字段：分 时 日 月 周。"
             },
             "task": {
@@ -3098,7 +3113,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "parallel": {},
             "join": {
-                "mode": "把分支结果收集为数组，或合并各分支的数据对象。",
+                "mode": "把分支结果收集为数组、连接文本，或合并各分支的数据对象。",
+                "joiner": "文本连接模式下插入到分支结果之间的文本。",
                 "resultField": "接收合并结果的上下文字段。",
                 "ignoreEmpty": "不把没有结果数据的分支计入合并结果。",
                 "keyField": "作为对象键的分支结果属性。",
@@ -3301,7 +3317,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "inMax": "输入区间的最大值。",
                 "outMin": "输出区间的最小值。",
                 "outMax": "输出区间的最大值。",
-                "clamp": "把结果限制在输出区间内。",
+                "action": "限制：结果落在输出区间内；继续映射：超出部分按比例继续；环绕：超出后回到区间另一端。",
                 "round": "把结果四舍五入为整数。",
                 "target": "接收映射结果的字段。"
             },
@@ -3501,6 +3517,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "response": "响应"
         },
         "option": {
+            "expression": "表达式",
+            "clamp": "限制在范围内",
+            "scale": "超出范围继续映射",
+            "wrap": "环绕",
             "stream": "原始分块",
             "line": "按行分帧",
             "truthy": "为真",

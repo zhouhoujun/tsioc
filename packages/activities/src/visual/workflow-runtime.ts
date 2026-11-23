@@ -5,7 +5,9 @@ import {
     isWorkflowValueRef,
     readWorkflowProperty as resolveFrom,
     resolveWorkflowTypedValue,
-    resolveWorkflowTypedValueAsync
+    resolveWorkflowTypedValueAsync,
+    workflowExpressionMarkers,
+    resolveWorkflowExpressionMarkers
 } from './workflow-typed-value';
 import {
     IVisualWorkflowNode,
@@ -481,6 +483,21 @@ export function resolveWorkflowValue(source: any, context: ActivityContext): any
         value = value[key];
     }
     return value;
+}
+
+/**
+ * Resolve a field value asynchronously: `{{expr: ...}}` markers, expression
+ * typed values and the usual literal/path resolution. URL/body/inject fields
+ * use this so one value can be computed without changing the stored shape.
+ */
+export async function resolveWorkflowValueAsync(source: any, context: ActivityContext): Promise<any> {
+    if (workflowExpressionMarkers(source).length) {
+        return resolveWorkflowExpressionMarkers(String(source), context);
+    }
+    if (isWorkflowValueRef(source) && source.type === 'expression') {
+        return evaluateWorkflowExpression(source.value, context);
+    }
+    return resolveWorkflowValue(source, context);
 }
 
 function matchRouterRule(actual: any, operator: string, expected: any): boolean {
@@ -1012,6 +1029,18 @@ async function waitForWorkflowEvent(context: ActivityContext, event: string, tim
     throw new Error(`Event injection requires an event bus for "${event}"`);
 }
 
+/** Request body: strings pass through, objects from expressions are JSON. */
+async function resolveRequestBody(body: any, context: ActivityContext): Promise<string | undefined> {
+    if (body === undefined || body === null || body === '') {
+        return undefined;
+    }
+    const resolved = await resolveWorkflowValueAsync(body, context);
+    if (resolved === undefined || resolved === null || resolved === '') {
+        return undefined;
+    }
+    return typeof resolved === 'object' ? JSON.stringify(resolved) : String(resolved);
+}
+
 async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> {
     const config = node.config || {};
     let endpoint: WorkflowHttpEndpointSettings;
@@ -1020,7 +1049,7 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
     } catch (error) {
         return { success: false, error: error as Error, data: { nodeId: node.id } };
     }
-    const resolvedUrl = resolveWorkflowValue(config.url, context);
+    const resolvedUrl = await resolveWorkflowValueAsync(config.url, context);
     const rawUrl = typeof config.url === 'string' ? config.url.trim() : '';
     // Literal endpoints must not be mistaken for dotted context paths.
     let url = resolvedUrl || (/^[a-z][a-z0-9+.-]*:/i.test(rawUrl) ? rawUrl : resolvedUrl);
@@ -1117,7 +1146,7 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
         const response = await fetchImpl(String(url), {
             method: String(config.method || 'GET').toUpperCase(),
             headers: Object.keys(headers).length ? headers : undefined,
-            body: config.body === undefined || config.body === '' ? undefined : String(config.body),
+            body: await resolveRequestBody(config.body, context),
             redirect: (endpoint.endpointId ? endpoint.followRedirects : config.followRedirects !== false) ? 'follow' : 'manual'
         });
         const text = await response.text();
@@ -1401,6 +1430,8 @@ export async function executeVisualNode(
             } else if (payloadType === 'boolean') {
                 const bool = config.payloadValue === undefined ? config.payload : config.payloadValue;
                 payload = bool === true || bool === 'true' || bool === 1 || bool === '1';
+            } else if (payloadType === 'expression') {
+                payload = await evaluateWorkflowExpression(String(config.payloadExpression ?? ''), context);
             } else if (payloadType === 'timestamp') {
                 payload = Date.now();
             } else if (payloadType === 'env') {
@@ -2503,10 +2534,18 @@ export async function executeVisualNode(
             const outMax = Number(config.outMax ?? 1);
             const span = inMax - inMin;
             let scaled = span === 0 ? outMin : outMin + ((input - inMin) / span) * (outMax - outMin);
-            if (config.clamp !== false) {
-                const low = Math.min(outMin, outMax);
-                const high = Math.max(outMin, outMax);
+            const low = Math.min(outMin, outMax);
+            const high = Math.max(outMin, outMax);
+            // Legacy documents only have `clamp` (often merged with the new
+            // default action), so an explicit `clamp: false` still means scale.
+            const action = config.clamp === false && (!config.action || config.action === 'clamp')
+                ? 'scale'
+                : String(config.action || 'clamp');
+            if (action === 'clamp') {
                 scaled = Math.min(high, Math.max(low, scaled));
+            } else if (action === 'wrap' && high > low) {
+                const width = high - low;
+                scaled = low + (((scaled - low) % width) + width) % width;
             }
             if (config.round === true) {
                 scaled = Math.round(scaled);
@@ -2586,7 +2625,12 @@ export async function executeVisualNode(
             const target = String(config.resultField || 'joined');
             const mode = String(config.mode || 'array');
             let value: any;
-            if (mode === 'count') {
+            if (mode === 'string') {
+                const joiner = String(config.joiner ?? ' ');
+                value = values
+                    .map(item => item && typeof item === 'object' ? JSON.stringify(item) : String(item ?? ''))
+                    .join(joiner);
+            } else if (mode === 'count') {
                 value = values.slice(0, Math.max(1, Number(config.count) || 1));
             } else if (mode === 'timeout') {
                 value = values;

@@ -645,8 +645,11 @@ Features:
   change (set/append/move/replace, values from literals, context, env or a
   JSONata expression), statistics, merge,
   split/map/filter/sort/range/batch/scale — `sort` supports multi-key ordering
-  (`keys: [{ path, order, numeric }]`, later keys break ties) — event-emit/event-wait,
-  command, condition/switch/router, parallel/join,
+  (`keys: [{ path, order, numeric }]`, later keys break ties), `scale` chooses
+  clamp/scale/wrap for out-of-range input (legacy `clamp: false` still means
+  scale) — event-emit/event-wait,
+  command, condition/switch/router, parallel/join (array, joined text, merged
+  object, keyed object, first N, timeout),
   loop (sub-workflow repeat), delay, log, HTTP request, complete/catch/status,
   link/junction/sequence, try/catch, sub workflow, comment,
 - `http-request` returns `statusCode`, response headers and the final URL;
@@ -1189,8 +1192,12 @@ boolean `true` once it is stored as `boolean`). Path fields keep the shorter
 **Expressions.** The `expression` source stores `{ "type": "expression",
 "value": "payload.total * 2" }` and is evaluated with JSONata against the
 message (payload fields are in scope at the root, plus `msg`, `flow`, `global`
-and `env`). Condition/switch/router/filter compare values and inject properties
-accept it. `jsonata` is an **optional dependency loaded on demand**
+and `env`). Condition/switch/router/filter compare values, Change rules and
+inject properties accept it, `inject` also has an `Expression` payload type, and
+string fields such as the HTTP request URL/body accept inline `{{expr: ...}}`
+markers (a value that is only one marker keeps its type, mixed text
+interpolates stringified results). `jsonata` is an **optional dependency loaded
+on demand**
 (`await import`): the designer build emits it as a separate ~82 KB lazy chunk,
 so the initial bundle only carries the wiring, and hosts that do not install it
 get a clear "install jsonata or register a host evaluator" error instead of a

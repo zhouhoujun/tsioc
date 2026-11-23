@@ -3,7 +3,8 @@ import { validateDynamicFormValues } from '@tsdi/components/common/dynamic-form'
 import { WorkflowConfigField, WorkflowConfigFieldCondition, VisualWorkflowDefinition } from './types';
 import type { WorkflowNodeRegistry } from './node-registry';
 import { referenceIds } from './workflow-config-nodes';
-import { validateWorkflowTypedValue, WORKFLOW_TYPED_CODEC } from './workflow-typed-value';
+import { validateWorkflowTypedValue, workflowExpressionMarkers, WORKFLOW_TYPED_CODEC } from './workflow-typed-value';
+import { validateWorkflowExpression } from './workflow-expression';
 
 export interface WorkflowConfigIssue {
     nodeId: string;
@@ -229,6 +230,48 @@ export function validateWorkflowConfigs(
                     message
                 });
             }
+        }
+        // `{{expr: ...}}` markers in string fields (URL/body) are validated like
+        // typed expressions once the evaluator is loaded.
+        const expressionIssue = (value: any): string | undefined => {
+            for (const expression of workflowExpressionMarkers(value)) {
+                const error = validateWorkflowExpression(expression);
+                if (error) {
+                    return `Expression error: ${error}`;
+                }
+            }
+            return undefined;
+        };
+        for (const field of fields) {
+            const message = expressionIssue(values[field.key]);
+            if (message) {
+                issues.push({
+                    nodeId: node.id,
+                    nodeName: node.name || node.id,
+                    fieldKey: field.key,
+                    label: field.label || field.key,
+                    message
+                });
+            }
+            if (!field.itemFields?.length) {
+                continue;
+            }
+            const items = Array.isArray(values[field.key]) ? values[field.key] : [];
+            items.forEach((item: any, index: number) => {
+                for (const child of field.itemFields!) {
+                    const childMessage = expressionIssue(item?.[child.key]);
+                    if (!childMessage) {
+                        continue;
+                    }
+                    issues.push({
+                        nodeId: node.id,
+                        nodeName: node.name || node.id,
+                        fieldKey: `${field.key}[${index}].${child.key}`,
+                        label: `${field.label || field.key} ${index + 1} · ${child.label || child.key}`,
+                        message: childMessage
+                    });
+                }
+            });
         }
         // Credential references resolve at run time; catch malformed or unknown
         // names before the workflow is published.

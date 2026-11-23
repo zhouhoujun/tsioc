@@ -712,6 +712,10 @@ export function buildWorkflowInspectorModel(
             ? node.config[field.key]
             : field.defaultValue;
     });
+    // Documents written before `scale.action` stored a `clamp` flag instead.
+    if (node.type === 'scale' && node.config?.action === undefined && node.config?.clamp === false) {
+        values.action = 'scale';
+    }
     const mapField = (field: WorkflowConfigField, nested = false): WorkflowInspectorFieldView => {
         const value = nested ? undefined : values[field.key];
         const reference = nested ? undefined : buildReferenceView(designer, registry, field, value, locale, translator);

@@ -66,6 +66,33 @@ describe('Workflow expressions (JSONata)', () => {
         expect(String(error.message || error)).toMatch(/position|syntax|token|unexpected/i);
     });
 
+    it('validates expression markers and inject expressions in configs', async () => {
+        await preloadWorkflowExpressions();
+        const { validateWorkflowConfigs } = require('../src/visual/workflow-config-validation');
+        const { WorkflowNodeRegistry } = require('../src/visual/node-registry');
+        const registry = new WorkflowNodeRegistry();
+        const definition = {
+            id: 'expression-config-validation',
+            name: 'Expression validation',
+            nodes: [
+                registry.createNode('http-request', { x: 0, y: 0 }, {
+                    id: 'http_1',
+                    config: { url: 'https://api.example.com/{{expr: payload.total +}}' }
+                }),
+                registry.createNode('inject', { x: 0, y: 120 }, {
+                    id: 'inject_1',
+                    config: { payloadType: 'expression', payloadExpression: 'payload.total +' }
+                })
+            ],
+            connections: []
+        };
+        const issues = validateWorkflowConfigs(definition, registry);
+        expect(issues.some((issue: any) => issue.fieldKey === 'url'
+            && /Expression error/.test(issue.message))).toBe(true);
+        expect(issues.some((issue: any) => issue.fieldKey === 'payloadExpression'
+            && /Expression error/.test(issue.message))).toBe(true);
+    });
+
     it('lets a host swap the evaluator', async () => {
         setWorkflowExpressionEvaluator({
             evaluate: async (expression: string) => `eval:${expression}`
@@ -169,6 +196,57 @@ describe('Workflow expressions (JSONata)', () => {
                 }
             ]), {});
             expect(filtered.data?.executionState?.nodeStates.filter_1.result?.data?.items).toEqual([{ v: 3 }]);
+        });
+
+        it('resolves {{expr: ...}} markers in HTTP url and body', async () => {
+            const original = (globalThis as any).fetch;
+            let captured: any;
+            (globalThis as any).fetch = async (url: string, init: any) => {
+                captured = { url, init };
+                return new Response('ok', { status: 200 });
+            };
+            try {
+                const result = await service.execute(chain([
+                    {
+                        type: 'inject',
+                        config: {
+                            payload: {
+                                target: 'https://api.example.com/items',
+                                body: { name: 'Ada', age: 36 }
+                            }
+                        }
+                    },
+                    {
+                        type: 'http-request',
+                        config: {
+                            url: '{{expr: payload.target}}',
+                            method: 'POST',
+                            body: '{{expr: payload.body}}'
+                        }
+                    }
+                ]), {});
+                expect(result.success).toBe(true);
+                expect(captured.url).toBe('https://api.example.com/items');
+                expect(captured.init.body).toBe('{"name":"Ada","age":36}');
+            } finally {
+                (globalThis as any).fetch = original;
+            }
+        });
+
+        it('injects a payload computed by an expression', async () => {
+            const result = await service.execute(chain([
+                { type: 'inject', config: { payload: { total: 21 } } },
+                {
+                    type: 'inject',
+                    config: {
+                        payloadType: 'expression',
+                        payloadExpression: '{"status": payload.total * 2}'
+                    }
+                }
+            ]), {});
+            expect(result.success).toBe(true);
+            const payload = result.data?.executionState?.nodeStates['inject_1'].result?.data?.payload;
+            expect(payload).toEqual({ status: 42 });
         });
 
         it('resolves inject property expressions', async () => {
