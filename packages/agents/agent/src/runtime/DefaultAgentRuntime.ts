@@ -20,6 +20,7 @@ import { cloneToolInput, safeSerializeToolInput, summarizeToolInput as summarize
 import { ToolInvocationLifecycle } from './ToolInvocationLifecycle';
 import { runToolPreflight } from './ToolInvocationPreflight';
 import { executeToolInvocation } from './ToolExecutionRunner';
+import { TurnAssistantController } from './TurnAssistantController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -165,7 +166,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -1122,7 +1123,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             let response = await this.completeModelRequest(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
             await this.recordTokenUsage(sessionId, response);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
-            if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.shouldRetryEmptyResponse(response)) {
+            if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.assistant.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
@@ -1134,7 +1135,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.recordTokenUsage(sessionId, response);
                 await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
             }
-            if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
+            if (this.assistant.shouldRecoverEmptyFollowUp(request, response)) {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
@@ -1172,7 +1173,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             );
             await this.recordTokenUsage(sessionId, finalResponse);
             await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
-            const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
+            const finalMessage = await this.assistant.createMessageFromResponse(sessionId, finalResponse);
             this.capturePromptCacheDiagnostics(turnContext, finalResponse);
             await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
             return { sessionId, message: finalMessage };
@@ -1214,7 +1215,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, response);
-            if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.shouldRetryEmptyResponse(response)) {
+            if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.assistant.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.emptyResponseRetryCount++;
@@ -1226,7 +1227,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 );
                 await this.recordTokenUsage(sessionId, response);
             }
-            if (this.shouldRecoverEmptyFollowUpResponse(request, response)) {
+            if (this.assistant.shouldRecoverEmptyFollowUp(request, response)) {
                 if (turnContext.diagnostics) {
                     turnContext.diagnostics.followUpRecoveryCount++;
                 }
@@ -1236,8 +1237,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 );
                 await this.recordTokenUsage(sessionId, response);
             }
-            if (this.shouldRetryEmptyResponse(response)) {
-                const toolError = await this.findRecentToolError(sessionId);
+            if (this.assistant.shouldRetryEmptyResponse(response)) {
+                const toolError = await this.assistant.findRecentToolError(sessionId);
                 if (toolError) {
                     response = yield* this.collectStreamingResponse(
                         sessionId,
@@ -1274,7 +1275,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
             await this.recordTokenUsage(sessionId, finalResponse);
-            const finalMessage = await this.createAssistantMessageFromResponse(sessionId, finalResponse);
+            const finalMessage = await this.assistant.createMessageFromResponse(sessionId, finalResponse);
             this.capturePromptCacheDiagnostics(turnContext, finalResponse);
             await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
             return { sessionId, message: finalMessage };
@@ -1984,7 +1985,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             return {};
         }
 
-        const message = await this.createAssistantMessageFromResponse(sessionId, response);
+        const message = await this.assistant.createMessageFromResponse(sessionId, response);
         this.capturePromptCacheDiagnostics(turnContext, response);
 
         const planContinuation = this.buildPlanContinuation(sessionId, turnContext);
@@ -2010,6 +2011,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private buildPlanContinuation(sessionId: string, turnContext: TurnExecutionContext): string | undefined {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
+    }
+
+    private get assistant(): TurnAssistantController {
+        return this.turnAssistant ??= new TurnAssistantController({
+            sessions: this.sessions,
+            createMessage: (role, content, metadata) => this.createMessage(role, content, undefined, undefined, metadata)
+        });
     }
 
     private get recoveryController(): TurnRecoveryController {
@@ -2204,45 +2212,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }, sessionId, toolCall, loopDetector, executionMode, toolCallInput, inputSummary, definition, sandboxReceipt, turnContext);
     }
 
-    private async createAssistantMessageFromResponse(sessionId: string, response: ModelResponse): Promise<AgentMessage> {
-        const content = await this.resolveAssistantResponseText(sessionId, response);
-        return this.createMessage('assistant', content, undefined, undefined, response.metadata);
-    }
-
-    private shouldRetryEmptyResponse(response: ModelResponse): boolean {
-        return !response.toolCalls?.length && !String(response.message ?? '').trim();
-    }
-
-    private shouldRecoverEmptyFollowUpResponse(request: ModelRequest, response: ModelResponse): boolean {
-        return this.shouldRetryEmptyResponse(response)
-            && !!findLatestFollowUpContextUserMessage(request.messages);
-    }
-
-    private async resolveAssistantResponseText(sessionId: string, response: ModelResponse): Promise<string> {        const explicitMessage = String(response.message ?? '');
-        if (explicitMessage.trim()) {
-            return explicitMessage;
-        }
-        const toolError = await this.findRecentToolError(sessionId);
-        if (toolError) {
-            return `I couldn't complete the request because a required tool failed: ${toolError}. Fix the tool input or path and retry.`;
-        }
-        return 'I couldn\'t complete the request because the model returned an empty response. This is usually a transient provider issue: retry the request, or check the configured model/provider.';
-    }
-
-    private async findRecentToolError(sessionId: string): Promise<string | undefined> {
-        const messages = (await this.sessions.get(sessionId)).messages;
-        for (let index = messages.length - 1; index >= 0; index--) {
-            const message = messages[index];
-            if (message.role === 'user') {
-                break;
-            }
-            if (message.role === 'tool' && typeof message.metadata?.error === 'string' && message.metadata.error.trim()) {
-                return message.metadata.error.trim();
-            }
-        }
-        return undefined;
-    }
-
     private async acquireSessionTurnLock(sessionId: string): Promise<() => void> {
         this.turnLeases ??= new SessionTurnLeaseManager(this.sessions, this.uuid.generate());
         const releaseLease = await this.turnLeases.enter(sessionId);
@@ -2340,25 +2309,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    async ensureSessionTitle(sessionId: string): Promise<string | undefined> {
-        const sessionOptions = this.options.session ?? {};
-        if (sessionOptions.autoTitle === false || !this.summaryAgent) {
-            return sessionOptions.autoTitle === false ? (await this.sessions.get(sessionId)).title : undefined;
-        }
-        const state = await this.sessions.get(sessionId);
-        if (state.title || !state.messages.length) {
-            return state.title;
-        }
-        try {
-            const result = await this.summaryAgent.generate(state.messages, this.turnAbortScopes.signal(sessionId));
-            if (result.title) {
-                await this.sessions.setTitle(sessionId, result.title);
-            }
-            return result.title ?? state.title;
-        } catch {
-            return state.title;
-        }
-    }
+    async ensureSessionTitle(sessionId: string): Promise<string | undefined> { return this.postTurn.ensureSessionTitle(sessionId); }
 
     async refreshSessionSummary(sessionId: string): Promise<string | undefined> { return this.postTurn.refreshSessionSummary(sessionId); }
 

@@ -35,6 +35,26 @@ export class SessionPostTurnController {
         }
     }
 
+    async ensureSessionTitle(sessionId: string): Promise<string | undefined> {
+        const sessionOptions = this.host.options.session ?? {};
+        if (sessionOptions.autoTitle === false || !this.host.summaryAgent) {
+            return sessionOptions.autoTitle === false ? (await this.host.sessions.get(sessionId)).title : undefined;
+        }
+        const state = await this.host.sessions.get(sessionId);
+        if (state.title || !state.messages.length) {
+            return state.title;
+        }
+        try {
+            const result = await this.host.summaryAgent.generate(state.messages, this.host.signal(sessionId));
+            if (result.title) {
+                await this.host.sessions.setTitle(sessionId, result.title);
+            }
+            return result.title ?? state.title;
+        } catch {
+            return state.title;
+        }
+    }
+
     async refreshSessionSummary(sessionId: string): Promise<string | undefined> {
         const sessionOptions = this.host.options.session ?? {};
         if (sessionOptions.autoSummary === false || !this.host.summaryAgent) {
