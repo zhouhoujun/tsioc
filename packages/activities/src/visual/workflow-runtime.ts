@@ -213,6 +213,8 @@ export interface WorkflowHttpEndpointSettings {
     username?: string;
     password?: string;
     token?: string;
+    apiKeyHeader?: string;
+    apiKey?: string;
     endpointId?: string;
 }
 
@@ -250,6 +252,8 @@ export async function resolveHttpConfig(
         username: await read(shared.username),
         password: await read(shared.password),
         token: await read(shared.token),
+        apiKeyHeader: String(shared.apiKeyHeader || 'x-api-key'),
+        apiKey: await read(shared.apiKey),
         endpointId
     };
 }
@@ -1090,6 +1094,16 @@ async function runHttp(node: IVisualWorkflowNode, context: ActivityContext): Pro
                 ? String(endpoint.token ?? '')
                 : String(await resolveCredentialValue(config.token, context) ?? '');
             headers.Authorization = `Bearer ${token}`;
+        } else if (authType === 'apikey') {
+            const header = endpoint.endpointId
+                ? String(endpoint.apiKeyHeader || 'x-api-key')
+                : String(config.apiKeyHeader || 'x-api-key');
+            const key = endpoint.endpointId
+                ? String(endpoint.apiKey ?? '')
+                : String(await resolveCredentialValue(config.apiKey, context) ?? '');
+            if (key) {
+                headers[header] = key;
+            }
         }
         const response = await fetchImpl(String(url), {
             method: String(config.method || 'GET').toUpperCase(),

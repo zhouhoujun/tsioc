@@ -470,7 +470,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "authType": "Authentication",
                 "username": "Username",
                 "password": "Password",
-                "token": "Bearer token"
+                "token": "Bearer token",
+                "apiKeyHeader": "API key header",
+                "apiKey": "API key"
             },
             "assign": {
                 "values": "Values (JSON)"
@@ -899,7 +901,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "authType": "Authentication",
                 "username": "Username",
                 "password": "Password",
-                "token": "Bearer token"
+                "token": "Bearer token",
+                "apiKeyHeader": "API key header",
+                "apiKey": "API key"
             },
             "tcp": {
                 "host": "Host",
@@ -1338,7 +1342,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "authType": "Optional HTTP authentication.",
                 "username": "Basic authentication username.",
                 "password": "Basic authentication password. Use {{credential:name}} to read a stored credential.",
-                "token": "Bearer token. Use {{credential:name}} to read a stored credential."
+                "token": "Bearer token. Use {{credential:name}} to read a stored credential.",
+                "apiKey": "API key value. Use {{credential:name}} to read a stored credential."
             },
             "assign": {
                 "values": "JSON object merged into flow variables"
@@ -2255,7 +2260,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "authType": "认证方式",
                 "username": "用户名",
                 "password": "密码",
-                "token": "Bearer Token"
+                "token": "Bearer Token",
+                "apiKeyHeader": "API Key 请求头",
+                "apiKey": "API Key"
             },
             "assign": {
                 "values": "值（JSON）"
@@ -2683,7 +2690,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "authType": "认证方式",
                 "username": "用户名",
                 "password": "密码",
-                "token": "Bearer Token"
+                "token": "Bearer Token",
+                "apiKeyHeader": "API Key 请求头",
+                "apiKey": "API Key"
             },
             "tcp": {
                 "host": "主机",
@@ -3106,7 +3115,8 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "authType": "可选的 HTTP 认证方式。",
                 "username": "Basic 认证用户名。",
                 "password": "Basic 认证密码；使用 {{credential:name}} 读取已保存的凭据。",
-                "token": "Bearer Token；使用 {{credential:name}} 读取已保存的凭据。"
+                "token": "Bearer Token；使用 {{credential:name}} 读取已保存的凭据。",
+                "apiKey": "API Key 值；使用 {{credential:name}} 读取已保存的凭据。"
             },
             "assign": {
                 "values": "合并到流程变量的 JSON 对象。"

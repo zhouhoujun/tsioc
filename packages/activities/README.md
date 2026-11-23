@@ -639,7 +639,8 @@ Features:
   link/junction/sequence, try/catch, sub workflow, comment,
 - `http-request` returns `statusCode`, response headers and the final URL;
   `Ignore HTTP errors` lets 4xx/5xx responses continue with their body instead
-  of failing the node,
+  of failing the node; `basic`, `bearer` and `API key` authentication use the
+  node or shared endpoint credentials,
 - sub workflow / loop nodes resolve a stored workflow id through the host
   resolver (`service.setDefinitionResolver`; the HTTP server uses the definition
   store) or fall back to a context path / inline definition JSON; right-clicking
@@ -911,7 +912,7 @@ endpoint owns those fields; clear the reference to use the inline overrides.
 TCP listeners use the referenced TLS certificate/key when present.
 
 `http` is a shared request endpoint: base URL, default headers, query
-parameters, redirect/error policy and basic/bearer auth. An `http-request` that
+parameters, redirect/error policy and basic/bearer/API-key auth. An `http-request` that
 references it resolves relative URL paths against the base URL, merges node
 headers over endpoint headers, appends the endpoint query and uses the endpoint
 credentials/policy (absolute node URLs still win).

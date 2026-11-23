@@ -516,6 +516,54 @@ describe('Workflow data & trigger nodes', () => {
         ]);
     });
 
+    it('authenticates HTTP requests with API keys', async () => {
+        const original = (globalThis as any).fetch;
+        let captured: any;
+        (globalThis as any).fetch = async (url: string, init: any) => {
+            captured = { url, init };
+            return new Response('{"ok":true}', { status: 200 });
+        };
+        service.setCredentialResolver(name => name === 'api-key' ? 'secret-key' : undefined);
+        try {
+            const shared: VisualWorkflowDefinition = {
+                id: 'http-apikey',
+                name: 'HTTP API key',
+                nodes: [
+                    registry.createNode('http', { x: 0, y: 0 }, {
+                        id: 'http_1',
+                        config: {
+                            baseUrl: 'https://api.example.com',
+                            authType: 'apikey',
+                            apiKeyHeader: 'x-api-key',
+                            apiKey: '{{credential:api-key}}'
+                        }
+                    }),
+                    registry.createNode('http-request', { x: 200, y: 0 }, {
+                        id: 'http_request',
+                        config: { http: 'http_1', url: 'items' }
+                    })
+                ],
+                connections: []
+            };
+            const sharedResult = await service.execute(shared, {});
+            expect(sharedResult.success).toBe(true);
+            expect(captured.init.headers['x-api-key']).toBe('secret-key');
+
+            const inline = await service.execute(chain([
+                { type: 'http-request', config: {
+                    url: 'https://api.example.com/items',
+                    authType: 'apikey',
+                    apiKeyHeader: 'x-custom-key',
+                    apiKey: 'inline-key'
+                } }
+            ]), {});
+            expect(inline.success).toBe(true);
+            expect(captured.init.headers['x-custom-key']).toBe('inline-key');
+        } finally {
+            (globalThis as any).fetch = original;
+        }
+    });
+
     it('can treat non-2xx HTTP responses as success', async () => {
         const original = (globalThis as any).fetch;
         (globalThis as any).fetch = async () => new Response('nope', { status: 500 });

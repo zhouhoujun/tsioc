@@ -1085,12 +1085,15 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 options: [
                     { label: 'None', value: 'none' },
                     { label: 'Basic', value: 'basic' },
-                    { label: 'Bearer token', value: 'bearer' }
+                    { label: 'Bearer token', value: 'bearer' },
+                    { label: 'API key', value: 'apikey' }
                 ]
             }),
             configField({ key: 'username', label: 'Username', type: 'text', visibleWhen: { key: 'authType', equals: 'basic' } }),
             configField({ key: 'password', label: 'Password', type: 'password', visibleWhen: { key: 'authType', equals: 'basic' } }),
-            configField({ key: 'token', label: 'Bearer token', type: 'password', visibleWhen: { key: 'authType', equals: 'bearer' } })
+            configField({ key: 'token', label: 'Bearer token', type: 'password', visibleWhen: { key: 'authType', equals: 'bearer' } }),
+            configField({ key: 'apiKeyHeader', label: 'API key header', type: 'text', defaultValue: 'x-api-key', visibleWhen: { key: 'authType', equals: 'apikey' } }),
+            configField({ key: 'apiKey', label: 'API key', type: 'password', visibleWhen: { key: 'authType', equals: 'apikey' } })
         ],
         defaultConfig: { baseUrl: '', headers: {}, query: {}, followRedirects: true, ignoreErrors: false, authType: 'none' }
     },
@@ -1367,7 +1370,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 options: [
                     { label: 'None', value: 'none' },
                     { label: 'Basic', value: 'basic' },
-                    { label: 'Bearer token', value: 'bearer' }
+                    { label: 'Bearer token', value: 'bearer' },
+                    { label: 'API key', value: 'apikey' }
                 ],
                 group: 'Authentication',
                 visibleWhen: { key: 'http', equals: '' }
@@ -1375,6 +1379,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'username', label: 'Username', type: 'text', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' } }),
             configField({ key: 'password', label: 'Password', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'basic' }, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({ key: 'token', label: 'Bearer token', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'bearer' }, description: 'Use {{credential:name}} to read a stored credential.' }),
+            configField({ key: 'apiKeyHeader', label: 'API key header', type: 'text', defaultValue: 'x-api-key', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'apikey' } }),
+            configField({ key: 'apiKey', label: 'API key', type: 'password', group: 'Authentication', visibleWhen: { key: 'authType', equals: 'apikey' }, description: 'Use {{credential:name}} to read a stored credential.' }),
             configField({
                 key: 'method',
                 label: 'Method',
