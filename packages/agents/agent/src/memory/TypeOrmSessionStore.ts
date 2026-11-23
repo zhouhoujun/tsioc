@@ -15,6 +15,7 @@ import { AgentMessageEntity, AgentSessionEntity, AgentSessionSnapshotEntity } fr
 import { clearSessionRows, deleteSessionRows } from './session-row-cleanup';
 import { truncateSessionMessages } from './SessionMessageTruncation';
 import { listSessionInbox, replaceSessionInbox } from './SessionInboxStore';
+import { acquireSessionLease, releaseSessionLease, renewSessionLease } from './SessionLeaseStore';
 import { readMessageUsageRecords, readOwnerPrincipalId, readSessionFacts, readToolPayload } from './TypeOrmSessionReads';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
 
@@ -215,18 +216,19 @@ export class TypeOrmSessionStore extends SessionStore {
         return this.get(sessionId);
     }
 
-    async truncateMessages(sessionId: string, keepCount: number): Promise<void> {
-        await truncateSessionMessages(this.adapter, sessionId, keepCount);
-    }
+    async truncateMessages(sessionId: string, keepCount: number): Promise<void> { await truncateSessionMessages(this.adapter, sessionId, keepCount); }
 
     async listInbox(sessionId: string): Promise<import('./SessionStore').AgentSessionInboxItem[]> { return listSessionInbox(this.adapter, sessionId); }
 
     async replaceInbox(sessionId: string, items: Array<import('./SessionStore').AgentSessionInboxItem>): Promise<Array<import('./SessionStore').AgentSessionInboxItem>> { return replaceSessionInbox(this.adapter, sessionId, items); }
 
-    async listSections(sessionId: string): Promise<AgentSessionSection[]> {
-        const session = await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any });
-        return Array.isArray(session?.sections) ? session.sections.map(section => ({ ...section })) : [];
-    }
+    async acquireTurnLease(sessionId: string, ownerId: string, ttlMs: number): Promise<boolean> { return acquireSessionLease(this.adapter, sessionId, ownerId, ttlMs); }
+
+    async renewTurnLease(sessionId: string, ownerId: string, ttlMs: number): Promise<boolean> { return renewSessionLease(this.adapter, sessionId, ownerId, ttlMs); }
+
+    async releaseTurnLease(sessionId: string, ownerId: string): Promise<void> { await releaseSessionLease(this.adapter, sessionId, ownerId); }
+
+    async listSections(sessionId: string): Promise<AgentSessionSection[]> { const session = await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any }); return Array.isArray(session?.sections) ? session.sections.map(section => ({ ...section })) : []; }
 
     async addSection(sessionId: string, label: string, beforeId?: string, sectionId?: string): Promise<AgentSessionSection> {
         const normalizedLabel = String(label || '').trim();
@@ -443,9 +445,7 @@ export class TypeOrmSessionStore extends SessionStore {
         }
     }
 
-    async deleteSnapshot(sessionId: string, snapshotId: string): Promise<void> {
-        await this.adapter.getRepository(AgentSessionSnapshotEntity).delete({ sessionId, snapshotId } as any);
-    }
+    async deleteSnapshot(sessionId: string, snapshotId: string): Promise<void> { await this.adapter.getRepository(AgentSessionSnapshotEntity).delete({ sessionId, snapshotId } as any); }
 
     async setOwner(sessionId: string, ownerPrincipalId?: string): Promise<void> {
         const repo = this.adapter.getRepository(AgentSessionEntity);

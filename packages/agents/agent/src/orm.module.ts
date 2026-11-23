@@ -4,6 +4,7 @@ import { DefaultModuleLoader, ModuleLoader } from '@tsdi/core';
 import { TypeOrmModule, TypeormOptions, provideTypeOrm } from '@tsdi/typeorm-adapter';
 import { AgentAuditLogEntity, AgentBackgroundTaskEntity, AgentCommandExchangeEntity, AgentCompactionHistoryEntity, AgentDelegationEdgeEntity, AgentEvalReportEntity, AgentGoalEntity, AgentMemoryEntity, AgentMessageEntity, AgentScheduledTaskEntity, AgentSessionEntity, AgentSessionSnapshotEntity, AgentSummaryQualityEntity, AgentTimelineEventEntity, AgentTurnDiagnosticsEntity, AgentTurnHistoryEntity } from './memory/entities';
 import { AgentSessionInboxEntity } from './memory/entities-inbox';
+import { AgentSessionLeaseEntity } from './memory/entities-lease';
 import { resolveEnvHome } from './env';
 import { runAgentMigrations } from './memory/migrations/AgentMigrationRunner';
 
@@ -12,7 +13,7 @@ const AGENT_ORM_ENTITIES = [
     AgentScheduledTaskEntity, AgentAuditLogEntity, AgentCompactionHistoryEntity,
     AgentTurnDiagnosticsEntity, AgentSummaryQualityEntity, AgentDelegationEdgeEntity,
     AgentGoalEntity, AgentTimelineEventEntity, AgentBackgroundTaskEntity,
-    AgentEvalReportEntity, AgentCommandExchangeEntity, AgentTurnHistoryEntity, AgentSessionInboxEntity
+    AgentEvalReportEntity, AgentCommandExchangeEntity, AgentTurnHistoryEntity, AgentSessionInboxEntity, AgentSessionLeaseEntity
 ];
 
 interface AgentOrmNodeRuntime {

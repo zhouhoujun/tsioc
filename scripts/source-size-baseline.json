@@ -1,6 +1,6 @@
 {
   "packages/activities/src/visual/components/workflow-designer-preview.component.ts": 2027,
-  "packages/activities/src/visual/components/workflow-designer.component.ts": 1801,
+  "packages/activities/src/visual/components/workflow-designer.component.ts": 1787,
   "packages/agents/agent-cli/src/config.ts": 564,
   "packages/agents/agent-gateway/src/api/SessionHandler.ts": 701,
   "packages/agents/agent-gateway/src/app-rpc/AppRpcServer.ts": 3318,
@@ -41,7 +41,7 @@
   "packages/agents/agent/src/model/AnthropicModelAdapter.ts": 657,
   "packages/agents/agent/src/model/OpenAICompatibleModelAdapter.ts": 1161,
   "packages/agents/agent/src/options.ts": 703,
-  "packages/agents/agent/src/runtime/DefaultAgentRuntime.ts": 3507,
+  "packages/agents/agent/src/runtime/DefaultAgentRuntime.ts": 3506,
   "packages/agents/agent/src/scheduler/IntervalAgentScheduler.ts": 628,
   "packages/agents/agent/src/tools/ToolApprovalManager.ts": 539
 }

@@ -27,13 +27,14 @@ export class AgentMigrationsTest {
         await source.initialize();
         try {
             const result = await runAgentMigrations(source);
-            expect(result.applied).toEqual([AGENT_BASELINE_MIGRATION_ID, '20261123_0002_session_inbox']);
+            expect(result.applied).toEqual([AGENT_BASELINE_MIGRATION_ID, '20261123_0002_session_inbox', '20261123_0003_session_lease']);
             const runner = source.createQueryRunner();
             expect(await runner.hasTable(source.getMetadata(AgentSessionEntity).tableName)).toEqual(true);
             expect(await runner.hasTable(source.getMetadata(AgentMessageEntity).tableName)).toEqual(true);
             expect(await runner.hasTable('agent_session_inbox')).toEqual(true);
+            expect(await runner.hasTable('agent_session_lease')).toEqual(true);
             expect((await runner.query('SELECT id FROM agent_migration')).map((row: any) => row.id))
-                .toEqual([AGENT_BASELINE_MIGRATION_ID, '20261123_0002_session_inbox']);
+                .toEqual([AGENT_BASELINE_MIGRATION_ID, '20261123_0002_session_inbox', '20261123_0003_session_lease']);
             await runner.release();
             expect((await runAgentMigrations(source)).applied).toEqual([]);
         } finally {
@@ -58,7 +59,7 @@ export class AgentMigrationsTest {
         await reopened.initialize();
         try {
             const result = await runAgentMigrations(reopened);
-            expect(result.applied).toEqual([AGENT_BASELINE_MIGRATION_ID, '20261123_0002_session_inbox']);
+            expect(result.applied).toEqual([AGENT_BASELINE_MIGRATION_ID, '20261123_0002_session_inbox', '20261123_0003_session_lease']);
             const reopenedTable = reopened.getMetadata(AgentSessionEntity).tableName;
             expect(await reopened.query(`SELECT sessionId FROM ${reopenedTable}`)).toEqual([{ sessionId: 'chat-1' }]);
         } finally {

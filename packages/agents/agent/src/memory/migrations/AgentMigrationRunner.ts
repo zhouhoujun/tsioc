@@ -32,7 +32,19 @@ export const AGENT_MIGRATIONS: AgentMigration[] = [
             await runner.query('CREATE UNIQUE INDEX IF NOT EXISTS IDX_agent_session_inbox_item ON agent_session_inbox (sessionId, itemId)');
             await runner.query('CREATE INDEX IF NOT EXISTS IDX_agent_session_inbox_seq ON agent_session_inbox (sessionId, seq)');
         }
-    }
+    },
+    {
+        id: '20261123_0003_session_lease',
+        async up(runner) {
+            await runner.query(`CREATE TABLE IF NOT EXISTS agent_session_lease (
+                sessionId varchar PRIMARY KEY NOT NULL,
+                ownerId varchar NOT NULL,
+                leaseUntil bigint NOT NULL,
+                updatedAt bigint NOT NULL
+            )`);
+            await runner.query('CREATE INDEX IF NOT EXISTS IDX_agent_session_lease_until ON agent_session_lease (leaseUntil)');
+        }
+    },
 ];
 
 /**

@@ -285,6 +285,13 @@ export abstract class SessionStore {
     async replaceInbox(_sessionId: string, _items: AgentSessionInboxItem[]): Promise<AgentSessionInboxItem[]> {
         throw new Error('replaceInbox is not supported by this session store.');
     }
+
+    /** Cross-process turn lease; default is a no-op for single-process stores. */
+    async acquireTurnLease(_sessionId: string, _ownerId: string, _ttlMs: number): Promise<boolean> { return true; }
+
+    async renewTurnLease(_sessionId: string, _ownerId: string, _ttlMs: number): Promise<boolean> { return true; }
+
+    async releaseTurnLease(_sessionId: string, _ownerId: string): Promise<void> { /* no-op */ }
     abstract setSummary(sessionId: string, summary: string): Promise<void>;
     abstract setTitle(sessionId: string, title?: string): Promise<void>;
     abstract setPinned(sessionId: string, pinned: boolean): Promise<void>;

@@ -3,6 +3,7 @@ import { Inject, Injectable, Optional } from '@tsdi/ioc';
 import { ApplicationArguments, ApplicationContext, RunContext, Runner, UuidGenerator, createRunContext } from '@tsdi/core';
 import { AgentRuntime, AgentTurnUndoResult, CancelTurnResult, CompactNowResult, FileUndoRedoResult } from './AgentRuntime';
 import { SessionTurnCheckpoints } from './SessionTurnCheckpoints';
+import { SessionTurnLeaseManager } from './SessionTurnLeaseManager';
 import { TurnHistoryStore } from './TurnHistoryStore';
 import { TurnHistoryController } from './TurnHistoryController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
@@ -172,7 +173,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints();
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -645,13 +646,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return { cancelled: true, ...rollback };
     }
 
-    override setReviewGate(sessionId: string, taskId: string): void {
-        this.reviewGates.set(sessionId, { active: true, taskId });
-    }
+    override setReviewGate(sessionId: string, taskId: string): void { this.reviewGates.set(sessionId, { active: true, taskId }); }
 
-    override clearReviewGate(sessionId: string): void {
-        this.reviewGates.delete(sessionId);
-    }
+    override clearReviewGate(sessionId: string): void { this.reviewGates.delete(sessionId); }
 
     override getReviewGateStatus(sessionId: string): { active: boolean; taskId?: string } {
         const gate = this.reviewGates.get(sessionId);
@@ -934,9 +931,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return { filePath: snapshot.filePath, restored: snapshot.after === null ? 'deleted' : 'content', snapshot };
     }
 
-    override listFileSnapshots(sessionId: string): FileSnapshot[] {
-        return this.fileSnapshotStore?.list(sessionId) ?? [];
-    }
+    override listFileSnapshots(sessionId: string): FileSnapshot[] { return this.fileSnapshotStore?.list(sessionId) ?? []; }
 
     override async captureGitStepSnapshot(sessionId: string, workspace: string, messageId: string): Promise<GitStepSnapshot | null> {
         if (!this.gitStepSnapshotStore) {
@@ -3163,8 +3158,11 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
     }
 
     private async acquireSessionTurnLock(sessionId: string): Promise<() => void> {
+        this.turnLeases ??= new SessionTurnLeaseManager(this.sessions, this.uuid.generate());
+        const releaseLease = await this.turnLeases.enter(sessionId);
         const currentDepth = this.sessionTurnDepths.get(sessionId) ?? 0;
         if (currentDepth >= DefaultAgentRuntime.MAX_PENDING_SESSION_TURNS) {
+            releaseLease();
             throw new Error(`Session '${sessionId}' turn queue limit reached.`);
         }
         this.sessionTurnDepths.set(sessionId, currentDepth + 1);
@@ -3204,6 +3202,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 return;
             }
             this.sessionTurnsRunning.delete(sessionId);
+            releaseLease();
         };
     }
 
