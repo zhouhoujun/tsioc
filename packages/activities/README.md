@@ -1193,8 +1193,10 @@ so the initial bundle only carries the wiring, and hosts that do not install it
 get a clear "install jsonata or register a host evaluator" error instead of a
 silent failure. `setWorkflowExpressionEvaluator()` swaps in a different
 evaluator (sandboxing, shared cache, another language) and syntax errors fail
-the node with the JSONata position/message. Compiled expressions are cached per
-session with a bounded size.
+the node with the JSONata position/message. `run` and `publish` preload the
+evaluator when the document contains expressions, so a typo is reported by
+validation (with the JSONata position) instead of on the first execution.
+Compiled expressions are cached per session with a bounded size.
 `workflow-typed-value.ts` owns decode/encode/resolution for both the inspector
 and the runtime, and the shared dynamic form accepts the codec per field, so
 DOM and TUI editors store the same shape.

@@ -1,7 +1,7 @@
 import type { DynamicFormTypedCodec } from '@tsdi/components/common/dynamic-form';
 import type { ActivityContext } from '../activities/Activity';
 import type { WorkflowValueRef } from './types';
-import { evaluateWorkflowExpression } from './workflow-expression';
+import { evaluateWorkflowExpression, validateWorkflowExpression } from './workflow-expression';
 
 /**
  * Literal classes a typed-value field may carry. `str` folds into the plain
@@ -195,7 +195,14 @@ export function decodeWorkflowTypedValue(value: any): { source: WorkflowTypedSou
  * plain strings have nothing to validate here.
  */
 export function validateWorkflowTypedValue(value: any): string | undefined {
-    if (!isWorkflowValueRef(value) || value.type !== 'literal') {
+    if (!isWorkflowValueRef(value)) {
+        return undefined;
+    }
+    if (value.type === 'expression') {
+        const message = validateWorkflowExpression(value.value);
+        return message ? `Expression error: ${message}` : undefined;
+    }
+    if (value.type !== 'literal') {
         return undefined;
     }
     const literalType = (value as any).valueType as WorkflowLiteralType | undefined;

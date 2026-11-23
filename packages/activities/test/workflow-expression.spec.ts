@@ -3,16 +3,19 @@ import { createInjector, Injector, InjectUtil } from '@tsdi/ioc';
 import { WorkflowModule } from '../src/workflow.module';
 import { WorkflowNodeRegistry } from '../src/visual/node-registry';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
+import { WorkflowDesigner } from '../src/visual/workflow-designer';
 import {
     clearWorkflowExpressions,
     evaluateWorkflowExpression,
+    preloadWorkflowExpressions,
     setWorkflowExpressionEvaluator
 } from '../src/visual/workflow-expression';
 import {
     decodeWorkflowTypedValue,
     encodeWorkflowTypedValue,
     isWorkflowTypedReference,
-    resolveWorkflowTypedValueAsync
+    resolveWorkflowTypedValueAsync,
+    validateWorkflowTypedValue
 } from '../src/visual/workflow-typed-value';
 import { VisualWorkflowDefinition } from '../src/visual/types';
 
@@ -72,6 +75,20 @@ describe('Workflow expressions (JSONata)', () => {
         // Plain values stay unaffected.
         expect(await resolveWorkflowTypedValueAsync({ type: 'msg', path: 'payload.total' }, context))
             .toBe(21);
+    });
+
+    it('validates expression syntax once the evaluator is loaded', async () => {
+        // Before loading, validation is intentionally silent (the designer does
+        // not fetch the language just to typecheck).
+        expect(validateWorkflowTypedValue({ type: 'expression', value: 'payload.total +' }))
+            .toBeUndefined();
+
+        expect(await preloadWorkflowExpressions()).toBe(true);
+        expect(validateWorkflowTypedValue({ type: 'expression', value: 'payload.total + 1' }))
+            .toBeUndefined();
+        const broken = validateWorkflowTypedValue({ type: 'expression', value: 'payload.total +' });
+        expect(broken).toContain('Expression error');
+        expect(broken).toMatch(/position|unexpected|token/i);
     });
 
     describe('runtime', () => {
@@ -168,6 +185,40 @@ describe('Workflow expressions (JSONata)', () => {
             ]), {});
             expect(result.success).toBe(true);
             expect(result.data?.executionState?.nodeStates.inject_0.result?.data?.doubled).toBe(42);
+        });
+
+        it('reports broken expressions before running', async () => {
+            const designer = new WorkflowDesigner({
+                definition: {
+                    id: 'expression-validation',
+                    name: 'Expression validation',
+                    nodes: [
+                        registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: { total: 1 } } }),
+                        registry.createNode('switch', { x: 200, y: 0 }, {
+                            id: 'switch_1',
+                            config: {
+                                field: 'payload.total',
+                                rules: [{ operator: 'equals', value: { type: 'expression', value: 'payload.total +' } }]
+                            }
+                        })
+                    ],
+                    connections: []
+                },
+                registry,
+                service
+            });
+            // `run` loads the evaluator before validating.
+            const result = await designer.run({});
+            expect(result.success).toBe(false);
+            expect(String(result.error?.message || '')).toContain('Expression error');
+            expect(String(result.error?.message || '')).toMatch(/position|unexpected|token/i);
+
+            // A valid expression passes validation and runs.
+            designer.updateNodeConfig('switch_1', {
+                rules: [{ operator: 'equals', value: { type: 'expression', value: 'payload.total' } }]
+            });
+            const ok = await designer.run({});
+            expect(ok.success).toBe(true);
         });
 
         it('fails the node with a readable message for a broken expression', async () => {

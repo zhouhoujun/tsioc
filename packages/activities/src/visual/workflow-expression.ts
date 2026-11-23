@@ -55,14 +55,54 @@ const jsonataEvaluator: WorkflowExpressionEvaluator = {
     }
 };
 
+/**
+ * Validate an expression without evaluating it. Returns `undefined` when the
+ * evaluator is not loaded yet (the designer avoids loading the language just to
+ * typecheck) or when the expression parses.
+ */
+export function validateWorkflowExpression(expression: string): string | undefined {
+    const text = String(expression ?? '').trim();
+    if (!text) {
+        return undefined;
+    }
+    const module = jsonataModule;
+    if (!module) {
+        return undefined;
+    }
+    try {
+        module(text);
+        return undefined;
+    } catch (error) {
+        return (error as Error)?.message || String(error);
+    }
+}
+
+/**
+ * Load the expression evaluator ahead of validation. Hosts call this before a
+ * publish/run so syntax errors are reported with the config, not on the first
+ * execution; returns false when the optional dependency is not installed.
+ */
+export async function preloadWorkflowExpressions(): Promise<boolean> {
+    if (jsonataModule !== undefined) {
+        return true;
+    }
+    try {
+        await loadJsonata();
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 /** Replace (or reset with `undefined`) the evaluator used for expressions. */
 export function setWorkflowExpressionEvaluator(next?: WorkflowExpressionEvaluator): void {
     evaluator = next;
 }
 
-/** Drop cached compiled expressions (tests, hot reload). */
+/** Drop the loaded module and compiled expressions (tests, hot reload). */
 export function clearWorkflowExpressions(): void {
     compiled.clear();
+    jsonataModule = undefined;
 }
 
 /**

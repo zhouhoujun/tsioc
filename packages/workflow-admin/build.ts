@@ -74,10 +74,11 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_185_000);
 // 264 KB for the toast strip; keeps ~2 KB of headroom.
 // Raised to 272 KB (2026-11) with the AOT plan payload (object literals,
 // ~5.5 KB gzip) and the Node-RED parity panels. Raised to 278 KB for the
-// standalone admin pages and shared protocol endpoints, and to 284 KB for the
-// typed-value expression source plus inline-secret migration (JSONata itself is
-// a lazy chunk and does not count); keeps ~1 KB of headroom.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 284_000);
+// standalone admin pages and shared protocol endpoints, 284 KB for the
+// typed-value expression source plus inline-secret migration, and 285 KB for
+// publish-time expression validation. JSONata itself is a lazy chunk and does
+// not count; the gzip budget stays the transfer gate.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 285_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

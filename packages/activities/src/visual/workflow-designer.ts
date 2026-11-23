@@ -21,6 +21,7 @@ import { hasCycle, validateVisualWorkflow } from './workflow-runtime';
 import { workflowNodeFrame } from './workflow-geometry';
 import { validateWorkflowConfigs } from './workflow-config-validation';
 import { migrateInlineSecrets, SecretMigrationResult } from './workflow-secrets';
+import { preloadWorkflowExpressions } from './workflow-expression';
 import { compileVisualWorkflow, CompiledWorkflow, layoutVisualWorkflow } from './workflow-compiler';
 import { VisualWorkflowService } from './VisualWorkflowService';
 import {
@@ -1699,6 +1700,7 @@ export class WorkflowDesigner {
             this.setError('workflow.error.publishUnsupported');
             return undefined;
         }
+        await this.preloadExpressions();
         // Move inline secrets first so validation and the released version both
         // see credential references.
         const original = this.definition;
@@ -1781,6 +1783,17 @@ export class WorkflowDesigner {
 
     serialize(): string {
         return this.toJSON();
+    }
+
+    /**
+     * Load the expression evaluator when the document uses expressions, so
+     * syntax errors surface from validation instead of the first execution.
+     */
+    protected async preloadExpressions(): Promise<void> {
+        if (!JSON.stringify(this.definition).includes('"expression"')) {
+            return;
+        }
+        await preloadWorkflowExpressions();
     }
 
     /**
@@ -1872,6 +1885,7 @@ export class WorkflowDesigner {
         if (this.running) {
             return { success: false, error: new Error('workflow.error.running') };
         }
+        await this.preloadExpressions();
         const validation = this.validate();
         if (!validation.valid) {
             this.setError(validation.errors.join('; '));
