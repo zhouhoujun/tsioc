@@ -867,7 +867,10 @@ through host transports:
 - `websocket-out` either connects to `url` (client mode) or, when it references
   a `websocket` listener config node, broadcasts to every client connected to
   that shared listener. Broadcasting reports the client count and fails with a
-  clear error when the listener is not running.
+  clear error when the listener is not running. Client mode accepts custom
+  handshake `headers`.
+- `udp-out` can enable socket broadcast for datagrams sent to broadcast
+  addresses.
 
 ### TLS config
 

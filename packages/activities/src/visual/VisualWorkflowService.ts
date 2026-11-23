@@ -155,6 +155,7 @@ export interface WorkflowUdpSendRequest {
     port: number;
     payload: string;
     timeoutMs?: number;
+    broadcast?: boolean;
 }
 
 /** Payload handed to the host WebSocket transport by `websocket-out`. */
@@ -162,6 +163,7 @@ export interface WorkflowWebSocketSendRequest {
     url: string;
     payload: string;
     timeoutMs?: number;
+    headers?: Record<string, string>;
     tls?: WorkflowTlsOptions;
 }
 

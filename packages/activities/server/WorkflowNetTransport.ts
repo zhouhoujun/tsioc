@@ -71,6 +71,9 @@ export class WorkflowNetTransport implements OnDestroy {
         const payload = Buffer.from(String(message.payload ?? ''), 'utf8');
         await new Promise<void>((resolve, reject) => {
             const socket = dgram.createSocket('udp4');
+            if (message.broadcast === true) {
+                socket.setBroadcast(true);
+            }
             const timeoutMs = Math.max(0, Number(message.timeoutMs) || 0);
             const timer = timeoutMs
                 ? setTimeout(() => {
@@ -107,6 +110,9 @@ export class WorkflowNetTransport implements OnDestroy {
         }
         await new Promise<void>((resolve, reject) => {
             const options: Record<string, any> = {};
+            if (message.headers && Object.keys(message.headers).length) {
+                options.headers = message.headers;
+            }
             if (message.tls && Object.keys(message.tls).length) {
                 options.tls = message.tls;
             }

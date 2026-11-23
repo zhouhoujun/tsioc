@@ -933,9 +933,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         fields: [
             configField({ key: 'host', label: 'Host', type: 'text', required: true, defaultValue: '127.0.0.1', placeholder: '127.0.0.1' }),
             configField({ key: 'port', label: 'Port', type: 'number', required: true, defaultValue: 0, min: 0, max: 65535, step: 1 }),
-            configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the datagram payload.' })
+            configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the datagram payload.' }),
+            configField({ key: 'broadcast', label: 'Broadcast', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { host: '127.0.0.1', port: 0, payload: 'payload' }
+        defaultConfig: { host: '127.0.0.1', port: 0, payload: 'payload', broadcast: false }
     },
     {
         type: 'websocket-out',
@@ -960,9 +961,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'url', label: 'URL', type: 'url', placeholder: 'ws://host:port/path', description: 'ws:// or wss:// endpoint.' }),
             configField({ key: 'payload', label: 'Payload path', type: 'text', typed: true, defaultValue: 'payload', description: 'Context path used as the message payload.' }),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 5000, min: 0, step: 1000, unit: 'ms' }),
+            configField({ key: 'headers', label: 'Headers', type: 'json', rows: 3 }),
             configField({ key: 'tls', label: 'TLS config', type: 'text', placeholder: 'tls_1', description: 'Id of a TLS config node; leave empty for plain WebSocket.' })
         ],
-        defaultConfig: { websocket: '', url: '', payload: 'payload', timeout: 5000 }
+        defaultConfig: { websocket: '', url: '', payload: 'payload', timeout: 5000, headers: {} }
     },
     {
         type: 'tls',

@@ -111,7 +111,9 @@ describe('Workflow outbound transports', () => {
     it('sends a WebSocket message to a listening server', async () => {
         const server = new WebSocketServer({ host: '127.0.0.1', port: 0 });
         const received: string[] = [];
-        server.on('connection', socket => {
+        const headers: Array<Record<string, any>> = [];
+        server.on('connection', (socket, request) => {
+            headers.push(request?.headers || {});
             socket.on('message', (chunk: any) => {
                 received.push(chunk.toString('utf8'));
                 socket.close();
@@ -123,7 +125,8 @@ describe('Workflow outbound transports', () => {
             const result = await service.execute(definition('websocket-out', {
                 url: `ws://127.0.0.1:${port}`,
                 payload: 'payload',
-                timeout: 3000
+                timeout: 3000,
+                headers: { 'x-flow': 'approved' }
             }), { payload: { ok: true } });
             expect(result.success).toBe(true);
             await withTimeout(new Promise<void>(resolve => {
@@ -131,6 +134,7 @@ describe('Workflow outbound transports', () => {
                 tick();
             }));
             expect(received[0]).toBe('{"ok":true}');
+            expect(headers[0]?.['x-flow']).toBe('approved');
         } finally {
             await new Promise<void>(resolve => server.close(() => resolve()));
         }
@@ -165,6 +169,34 @@ describe('Workflow outbound transports', () => {
             payload: '{"ok":true}'
         });
         expect((result.data as any).clients).toEqual(3);
+    });
+
+    it('passes UDP broadcast and WebSocket headers to host transports', async () => {
+        const udp: any[] = [];
+        service.setUdpSender(message => {
+            udp.push(message);
+        });
+        const udpResult = await service.execute(definition('udp-out', {
+            host: '127.0.0.1',
+            port: 9,
+            payload: 'payload',
+            broadcast: true
+        }), { payload: 'hello' });
+        expect(udpResult.success).toBe(true);
+        expect(udp[0].broadcast).toBe(true);
+
+        const sockets: any[] = [];
+        service.setWebSocketSender(message => {
+            sockets.push(message);
+        });
+        const wsResult = await service.execute(definition('websocket-out', {
+            url: 'ws://127.0.0.1:1',
+            payload: 'payload',
+            timeout: 1000,
+            headers: { 'x-flow': 'yes' }
+        }), { payload: 'hello' });
+        expect(wsResult.success).toBe(true);
+        expect(sockets[0].headers).toEqual({ 'x-flow': 'yes' });
     });
 
     it('resolves a TLS config node and its credential references', async () => {

@@ -798,13 +798,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-out": {
                 "host": "Host",
                 "port": "Port",
-                "payload": "Payload path"
+                "payload": "Payload path",
+                "broadcast": "Broadcast"
             },
             "websocket-out": {
                 "websocket": "Listener",
                 "url": "URL",
                 "payload": "Payload path",
                 "timeout": "Timeout",
+                "headers": "Headers",
                 "tls": "TLS config"
             },
             "tls": {
@@ -2483,13 +2485,15 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "udp-out": {
                 "host": "主机",
                 "port": "端口",
-                "payload": "载荷路径"
+                "payload": "载荷路径",
+                "broadcast": "广播"
             },
             "websocket-out": {
                 "websocket": "监听器",
                 "url": "URL",
                 "payload": "载荷路径",
                 "timeout": "超时",
+                "headers": "请求头",
                 "tls": "TLS 配置"
             },
             "tls": {

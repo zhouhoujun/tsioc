@@ -1323,7 +1323,14 @@ export async function executeVisualNode(
                         };
                     }
                     const tls = await resolveTlsOptions(config, context);
-                    await sender({ url, payload: body, timeoutMs, tls });
+                    const headers = coerceJson(config.headers);
+                    await sender({
+                        url,
+                        payload: body,
+                        timeoutMs,
+                        headers: headers && typeof headers === 'object' && !Array.isArray(headers) ? headers : undefined,
+                        tls
+                    });
                     return { success: true, data: { nodeId: node.id, transport, url, bytes: body.length } };
                 }
                 const host = String(await resolveCredentialValue(config.host, context) ?? '').trim();
@@ -1336,8 +1343,18 @@ export async function executeVisualNode(
                     };
                 }
                 if (transport === 'udp') {
-                    await sender({ host, port, payload: body, timeoutMs });
-                    return { success: true, data: { nodeId: node.id, transport, host, port, bytes: body.length } };
+                    await sender({ host, port, payload: body, timeoutMs, broadcast: config.broadcast === true });
+                    return {
+                        success: true,
+                        data: {
+                            nodeId: node.id,
+                            transport,
+                            host,
+                            port,
+                            broadcast: config.broadcast === true,
+                            bytes: body.length
+                        }
+                    };
                 }
                 const tls = await resolveTlsOptions(config, context);
                 await sender({ host, port, payload: body, timeoutMs, tls });
