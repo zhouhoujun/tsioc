@@ -14,7 +14,7 @@ import { TypeormAdapter } from '@tsdi/typeorm-adapter';
 import { AgentMessageEntity, AgentSessionEntity, AgentSessionSnapshotEntity } from './entities';
 import { clearSessionRows, deleteSessionRows } from './session-row-cleanup';
 import { truncateSessionMessages } from './SessionMessageTruncation';
-import { listSessionInbox, replaceSessionInbox } from './SessionInboxStore';
+import { appendSessionInboxItem, listSessionInbox, replaceSessionInbox, takeSessionInboxItem } from './SessionInboxStore';
 import { acquireSessionLease, releaseSessionLease, renewSessionLease } from './SessionLeaseStore';
 import { readMessageUsageRecords, readOwnerPrincipalId, readSessionFacts, readToolPayload } from './TypeOrmSessionReads';
 import { normalizeAgentWorkspaceIdentity } from '../AgentWorkspacePath';
@@ -95,7 +95,6 @@ export class TypeOrmSessionStore extends SessionStore {
     }
 
     listMessagesPage(sessionId: string, options?: SessionMessagePageOptions, invalidCursor?: SessionMessageInvalidCursor): Promise<SessionMessagePage> { return readSessionMessagePage(this.adapter, sessionId, options, invalidCursor); }
-
     async has(sessionId: string): Promise<boolean> { return !!(await this.adapter.getRepository(AgentSessionEntity).findOne({ where: { sessionId } as any })); }
 
     async listSessionIds(): Promise<string[]> { return (await this.adapter.getRepository(AgentSessionEntity).find({ order: { createdAt: 'ASC' } as any })).map(session => session.sessionId); }
@@ -221,6 +220,10 @@ export class TypeOrmSessionStore extends SessionStore {
     async listInbox(sessionId: string): Promise<import('./SessionStore').AgentSessionInboxItem[]> { return listSessionInbox(this.adapter, sessionId); }
 
     async replaceInbox(sessionId: string, items: Array<import('./SessionStore').AgentSessionInboxItem>): Promise<Array<import('./SessionStore').AgentSessionInboxItem>> { return replaceSessionInbox(this.adapter, sessionId, items); }
+
+    async takeInboxItem(sessionId: string, kind: string): Promise<import('./SessionStore').AgentSessionInboxItem | undefined> { return takeSessionInboxItem(this.adapter, sessionId, kind); }
+
+    async appendInboxItem(sessionId: string, item: import('./SessionStore').AgentSessionInboxItem): Promise<import('./SessionStore').AgentSessionInboxItem> { return appendSessionInboxItem(this.adapter, sessionId, item); }
 
     async acquireTurnLease(sessionId: string, ownerId: string, ttlMs: number): Promise<boolean> { return acquireSessionLease(this.adapter, sessionId, ownerId, ttlMs); }
 
@@ -395,10 +398,7 @@ export class TypeOrmSessionStore extends SessionStore {
     }
 
     async listSnapshots(sessionId: string): Promise<AgentSessionSnapshotInfo[]> {
-        const rows = await this.adapter.getRepository(AgentSessionSnapshotEntity).find({
-            where: { sessionId } as any,
-            order: { createdAt: 'DESC' as any }
-        });
+        const rows = await this.adapter.getRepository(AgentSessionSnapshotEntity).find({ where: { sessionId } as any, order: { createdAt: 'DESC' as any } });
         return rows.map(row => ({
             snapshotId: row.snapshotId,
             label: row.label ?? undefined,

@@ -26,7 +26,7 @@ import { listCrossSessionMessages } from './session-message-list';
 import { answerSideQuestion } from './side-question';
 import { redoSessionTurn, undoSessionTurn } from './turn-undo';
 import { getSessionApprovalRules, setSessionApprovalRules } from './session-approval-rules';
-import { getSessionInbox, replaceSessionInbox } from './session-inbox';
+import { appendSessionInbox, getSessionInbox, replaceSessionInbox } from './session-inbox';
 import { resolveHistoryPrincipalId, resolveHistoryPrincipalIds, resolveModelProfile } from './model-profile';
 import { CONSOLE_INPUT_HISTORY_KEY, createConsoleInputHistoryRecordId, listConsoleInputHistoryRecords, mergeConsoleInputHistoryEntries, normalizeInputHistoryEntries, parseInputHistoryEntries } from './input-history';
 import { ToolInvokeHost, invokeToolWithWorkspaceTrust } from './tool-invoke';
@@ -212,6 +212,7 @@ export class AppRpcServer {
             case 'session.approval_rules.get': return getSessionApprovalRules(this as any, params, context);
             case 'session.inbox.get': return getSessionInbox(this as any, params, context);
             case 'session.inbox.replace': return replaceSessionInbox(this as any, params, context);
+            case 'session.inbox.append': return appendSessionInbox(this as any, params, context);
             case 'session.delete':
                 return this.deleteSession(requireSessionId(params), context);
             case 'session.export':

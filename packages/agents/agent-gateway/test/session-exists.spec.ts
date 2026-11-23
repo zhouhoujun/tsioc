@@ -313,3 +313,30 @@ export class SessionInboxRpcTest {
         expect(thrown).toBeTruthy();
     }
 }
+
+@Suite('session inbox append RPC')
+export class SessionInboxAppendRpcTest {
+    @Test('appends a steer item without replacing the queue')
+    async append() {
+        const items: any[] = [];
+        const sessions = {
+            has: async () => true,
+            get: async () => ({ sessionId: 'chat-1', messages: [] }),
+            appendInboxItem: async (_sessionId: string, item: any) => { items.push(item); return item; }
+        };
+        const server = new AppRpcServer(
+            {} as any,
+            new RandomUuidGenerator(),
+            sessions as any,
+            {} as any,
+            {} as any,
+            { authorize: async () => 'anonymous' } as any,
+            { track: () => undefined } as any,
+            {} as any
+        );
+        const item = { itemId: 's1', kind: 'steer', payload: { input: 'focus' } };
+        expect(await (server as any).dispatch('session.inbox.append', { sessionId: 'chat-1', item }, {}))
+            .toEqual({ sessionId: 'chat-1', item });
+        expect(items).toEqual([item]);
+    }
+}

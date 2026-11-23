@@ -286,6 +286,17 @@ export abstract class SessionStore {
         throw new Error('replaceInbox is not supported by this session store.');
     }
 
+    /** Append one inbox item without replacing the rest of the queue. */
+    async appendInboxItem(sessionId: string, item: AgentSessionInboxItem): Promise<AgentSessionInboxItem> {
+        const items = await this.listInbox(sessionId);
+        items.push(item);
+        const next = await this.replaceInbox(sessionId, items);
+        return next[next.length - 1] ?? item;
+    }
+
+    /** Atomically remove the first queued item of a kind (step-boundary steer). */
+    async takeInboxItem(_sessionId: string, _kind: string): Promise<AgentSessionInboxItem | undefined> { return undefined; }
+
     /** Cross-process turn lease; default is a no-op for single-process stores. */
     async acquireTurnLease(_sessionId: string, _ownerId: string, _ttlMs: number): Promise<boolean> { return true; }
 

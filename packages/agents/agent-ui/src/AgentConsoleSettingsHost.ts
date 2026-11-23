@@ -276,7 +276,11 @@ export abstract class AgentConsoleSettingsHost extends AgentConsoleIntegrationHo
             state: this.state,
             translator: this.translator,
             notify: (message: string) => this.notify(message),
-            persistSettings: (patch: Record<string, any>) => this.persistSettings(patch)
+            persistSettings: (patch: Record<string, any>) => this.persistSettings(patch),
+            isTurnInProgress: () => this.isTurnInProgress(),
+            appRpc: this.appRpc,
+            runtime: (this as any).runtime,
+            rpcRequestContext: () => this.rpcRequestContext()
         }, args);
     }
 

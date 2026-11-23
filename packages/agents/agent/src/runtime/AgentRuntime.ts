@@ -111,6 +111,11 @@ export abstract class AgentRuntime {
         return [];
     }
 
+    /** Append one durable inbox item (step-boundary steer). */
+    async appendInboxItem(_sessionId: string, item: import('../memory/SessionStore').AgentSessionInboxItem): Promise<import('../memory/SessionStore').AgentSessionInboxItem> {
+        return item;
+    }
+
     /**
      * Answer a one-off side question against the session context without
      * appending the question or answer to the conversation (`/btw`).

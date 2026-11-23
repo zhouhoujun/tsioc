@@ -146,7 +146,8 @@
 - 状态：`AgentSessionInboxEntity` + `agent_migration 0002`、`session.inbox.get/replace` RPC、
   runtime/runtime store 透传、UI queue write-through 与打开会话时恢复已落地；
   DB 级 turn lease 已落地（`agent_session_lease` + heartbeat + ref-count，多进程互斥）；
-  **step 边界 promotion 仍未做**（当前仍是 turn 边界 + 进程内 queue）。
+  step 边界 steer promotion 已落地（`takeInboxItem` + loop 顶部 promote + `/steer <text>`）；
+  queued user 仍在 turn 结束后由 UI drain（与 opencode 的 idle 边界一致）。
 - 验收：queue 重启不丢；steer 在 step 边界生效；双进程同 session 只有一个执行者；AppRpc + TUI/DOM + PTY 回归。
 
 **P0.3 运行时拆解（行为不变）**

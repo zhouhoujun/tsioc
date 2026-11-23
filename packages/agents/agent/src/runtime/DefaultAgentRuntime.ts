@@ -4,6 +4,7 @@ import { ApplicationArguments, ApplicationContext, RunContext, Runner, UuidGener
 import { AgentRuntime, AgentTurnUndoResult, CancelTurnResult, CompactNowResult, FileUndoRedoResult } from './AgentRuntime';
 import { SessionTurnCheckpoints } from './SessionTurnCheckpoints';
 import { SessionTurnLeaseManager } from './SessionTurnLeaseManager';
+import { promoteInboxSteers } from './SessionInboxPromotion';
 import { TurnHistoryStore } from './TurnHistoryStore';
 import { TurnHistoryController } from './TurnHistoryController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
@@ -906,12 +907,18 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     override async replaceSessionInbox(sessionId: string, items: import('../memory/SessionStore').AgentSessionInboxItem[]) { return this.sessions.replaceInbox(sessionId, items); }
 
+    override async appendInboxItem(sessionId: string, item: import('../memory/SessionStore').AgentSessionInboxItem) { return this.sessions.appendInboxItem(sessionId, item); }
+
     override async undoTurn(sessionId: string): Promise<AgentTurnUndoResult> {
         if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; }
         return this.turnHistory.undo(sessionId);
     }
 
     override async redoTurn(sessionId: string): Promise<AgentTurnUndoResult> { if (this.sessionTurnsRunning.has(sessionId)) { return { restored: false }; } return this.turnHistory.redo(sessionId); }
+
+    private async promoteSteer(sessionId: string): Promise<void> {
+        await promoteInboxSteers(this.sessions, sessionId, (role, content, metadata) => this.createMessage(role, content, undefined, undefined, metadata));
+    }
 
     private async recordSessionTurnCheckpoint(sessionId: string, prompt: string): Promise<void> {
         try { await this.turnHistory.record(sessionId, prompt); } catch { /* Undo falls back to per-file snapshots. */ }
@@ -1107,6 +1114,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (termination) {
                 return { sessionId, message: await this.completeTerminationMessage(sessionId, query, currentUserMessageId, turnContext, termination) };
             }
+            await this.promoteSteer(sessionId);
             let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const recoveredRequest = this.maybeInjectRecoveryPrompt(request, turnContext);
             if (recoveredRequest) {
@@ -1196,6 +1204,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 const message = yield* this.completeStreamingTerminationMessage(sessionId, query, currentUserMessageId, turnContext, termination);
                 return { sessionId, message };
             }
+            await this.promoteSteer(sessionId);
             let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
             const recoveredRequest = this.maybeInjectRecoveryPrompt(request, turnContext);
             if (recoveredRequest) {
@@ -1498,22 +1507,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    private createTurnDiagnostics(): AgentTurnDiagnostics {
-        return {
-            emptyResponseRetryCount: 0,
-            followUpRecoveryCount: 0,
-            followUpContextRewritten: false,
-            finalAssistantWasClarification: false,
-            repeatedClarificationDetected: false,
-            compactionCount: 0,
-            totalTokenSavings: 0,
-            compressionRatio: undefined,
-            compactionLevel: undefined
-        };
-    }
+    private createTurnDiagnostics(): AgentTurnDiagnostics { return { emptyResponseRetryCount: 0, followUpRecoveryCount: 0, followUpContextRewritten: false, finalAssistantWasClarification: false, repeatedClarificationDetected: false, compactionCount: 0, totalTokenSavings: 0, compressionRatio: undefined, compactionLevel: undefined }; }
 
-    private createTurnRecovery(): TurnRecoveryState {
-        return {
+    private createTurnRecovery(): TurnRecoveryState { return {
             loopPending: false,
             loopInjections: 0,
             repairPending: false,
@@ -2283,9 +2279,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.resolveDefaultDelegationMode();
     }
 
-    override getSessionDelegationMode(sessionId: string): AgentDelegationMode {
-        return this.resolveSessionDelegationMode(sessionId).value;
-    }
+    override getSessionDelegationMode(sessionId: string): AgentDelegationMode { return this.resolveSessionDelegationMode(sessionId).value; }
 
     /**
      * G29: resolve the effective delegation mode for a round, in precedence
@@ -3230,9 +3224,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         this.hookManager?.unregisterFunction(stage, name);
     }
 
-    override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> {
-        return this.hookManager ? this.hookManager.describe() : [];
-    }
+    override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> { return this.hookManager ? this.hookManager.describe() : []; }
 
     private async appendHookOutputs(sessionId: string, entries: AgentHookTranscriptEntry[]): Promise<void> {
         if (!entries.length) {
