@@ -24,6 +24,10 @@ async function loadJsonata(): Promise<any> {
         return jsonataModule;
     }
     try {
+        // `jsonata` is optional at runtime (loaded on demand). Keep the literal
+        // specifier so bundlers still emit the lazy chunk; the ignore covers
+        // installs that omit the optional package.
+        // @ts-ignore - optional dependency, may be absent
         const module: any = await import('jsonata');
         jsonataModule = module.default ?? module;
     } catch {

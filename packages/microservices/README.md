@@ -80,28 +80,35 @@
 
 ---
 
-## 3. 当前主要短板
+## 3. 当前主要短板（2026-11 更新）
 
-1. **服务发现生产化不足**
-   - 目前主要实现是 `InMemoryServiceDiscovery`
-   - 缺少 Consul / Nacos / Eureka / Kubernetes / etcd 适配
-   - Gateway 可接入 discovery，但需要生产级 registry 和 watch/cache 实现
+> 详细证据与计划见 [`IMPROVEMENT-PLAN.md`](./IMPROVEMENT-PLAN.md) §12（已完成项）与 §13（Streams/JetStream 设计）。
 
-2. **Gateway 仍偏“应用内网关”**
-   - 负载均衡、限流、重试、熔断、健康探测、认证都在进程内实现
-   - 缺少连接池、隔离舱、背压、请求排队等生产级能力
+1. **broker 投递语义仍不统一**
+   - Kafka / AMQP / MQTT / NATS 已有至少一次、重试、DLQ 与 `ConsumerRuntime`；
+   - Redis 默认仍是 pub/sub（at-most-once），但已提供 `delivery: 'stream'` 消费组后端（XACK/XAUTOCLAIM，见 §13.1）；
+   - NATS 默认仍是 core（at-most-once），但已提供 `delivery: 'jetstream'` durable 消费者（ack/nak/maxDeliver，见 §13.2）。
 
-3. **协议能力不统一**
-   - 各协议已有统一 Client/Server feature，但缺少显式的 capability 矩阵
-   - 例如 request-response、pub/sub、stream、幂等、重试语义、发现地址
+2. **服务发现缺真实注册中心回归**
+   - 已有 InMemory / Consul / Nacos / Eureka / Kubernetes 适配；
+   - 仍缺 etcd 适配，以及 Consul/Nacos/Eureka 的容器化 e2e（受 Docker 环境限制）。
 
-4. **可观测性不完整**
-   - 有 metrics/tracing/health，但缺少统一 OpenTelemetry 语义约定
-   - trace propagation、错误分类、SLO 指标仍需统一
+3. **Gateway 剩余的是实测与调优，不是功能缺失**
+   - 已有编译路由表、限流/配额、熔断、bulkhead、重试、5 种 LB、缓存/ETag/压缩、SLO、共享状态；
+   - 出站连接池仍是 opt-in（回环实测主要改善 p99，见 §12.12）；
+   - 仍缺大流量真实上游压测与默认值调优。
 
-5. **构建与 AOT 复杂**
-   - 装饰器预编译/元数据生成链路复杂
-   - 不同包构建方式仍需进一步统一
+4. **协议能力矩阵尚未显式化**
+   - `describeService` 可汇总启用的能力；
+   - 但没有在启动时自检每个 transport 的 request-response / pub-sub / stream / 幂等 / 重试语义。
+
+5. **可观测性接近完整，但语义未完全统一**
+   - 已有 `_ms`/`_seconds` 双单位、event-loop lag、consumer 指标、Prometheus/OTLP 导出；
+   - 仍缺完整的 OpenTelemetry semantic conventions 与统一 SLO 仪表。
+
+6. **构建与 AOT 复杂**
+   - 装饰器预编译/元数据生成链路复杂；
+   - 不同包构建方式仍需进一步统一。
 
 ---
 

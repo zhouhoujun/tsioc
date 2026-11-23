@@ -37,6 +37,7 @@
 | S1 | 2~3 周 | 可靠性内核 | at-least-once/DLQ/重试可用；启动/关闭顺序正确；错误全是 `Error`；trace 并发隔离 |
 | S2 | 2~3 周 | 结构与性能治理 | Gateway 拆分；编译路由表；LB 内核统一；有基准与阈值 |
 | S3 | 持续 | 可观测 / DX / 规模化 | defineService、capabilities、doctor、OpenAPI 端点、每包 README、扩展基准 |
+| S4 | 2~3 周 | 性能回退修复 + 正确性 + 可靠性收口 | 见 §12：路由匹配恢复、指标单位修正、请求路径去阻塞、消费幂等 |
 
 ---
 
@@ -723,9 +724,321 @@ OTLP Collector 实机导出、Consul/Nacos/Eureka 实机容器。
 
 ---
 
+## 13. S5 设计草案：broker 至少一次后端（Redis Streams / NATS JetStream）
+
+> 现状：Redis 是 pub/sub（at-most-once）、NATS 是 core（at-most-once）。二者都没有消费组、pending 与重投。以下为落地设计，需真实 broker 环境验证（本机可源码构建 Redis、下载 nats-server）。
+
+### 13.1 Redis Streams（已落地，2026-11-23）
+
+- 配置（客户端与服务端必须一致）：`delivery: 'pubsub' | 'stream'`（默认 `pubsub`），`group?: string`（默认 `tsdi`），`streamKey?: string`（默认 `tsdi:<group>`），`consumer?: string`（默认实例 id）。
+- 消息封装：`{ topic, headers, payload }`；`topic` 用于服务端按路由 pattern 过滤（通配符仍在服务端匹配），entry id 作为幂等键。
+- 服务端：
+  1. `XGROUP CREATE <streamKey> <group> $ MKSTREAM`（`BUSYGROUP` 忽略）；
+  2. `XREADGROUP GROUP <group> <consumer> BLOCK <ms> COUNT <n> STREAMS <streamKey> '>'` 循环；
+  3. 处理成功 `XACK`；失败按现有 `retry`/DLQ 策略处理，未 ACK 的条目由 `XAUTOCLAIM`（或 `XPENDING` + `XCLAIM`）在 `claimIdleMs` 后接管；
+  4. 关闭时取消读循环并等待在途处理（复用 `ConsumerRuntime.drain`）。
+- 客户端：`XADD` 发布；**请求/响应仍走 pub/sub 回复通道**（第一期不改变 request-response 语义），仅 fire-and-forget `emit` 使用 Streams。
+- 幂等：`ConsumerRuntime.idempotency` + entry id；重复投递只执行一次。
+- 测试：真实 Redis（本机 `redis-server`）覆盖消费 + XACK + 客户端 XADD（`redis-stream.e2e.spec.ts` 2 passing，完整 Redis 套件 76 passing）。
+- 已实现：`delivery/streamKey/group/consumer/blockMs/claimIdleMs`、`XGROUP CREATE MKSTREAM`、`XREADGROUP BLOCK`、成功 `XACK`、空读时 `XAUTOCLAIM` 回收、关闭时停止循环并限时等待在途处理；客户端 `observe:'events'` 走 `XADD`。
+- 未实现：失败条目的应用级 DLQ（当前保留 pending，由 `XAUTOCLAIM` 重试）、多消费者分摊的显式测试（可使用相同 group + 不同 consumer 验证，留待后续）。
+
+### 13.2 NATS JetStream（已落地，2026-11-23）
+
+- 配置：`delivery: 'core' | 'jetstream'`（默认 `core`），`stream?: string`、`durable?: string`、`ackWaitMs?`、`maxDeliver?`。
+- 服务端：`js.consumers.get(stream, durable)` + `consume()`，显式 `ack()`/`nak()`；`max_deliver` 与 DLQ subject 复用现有配置。
+- 客户端：`js.publish(subject, payload)`；请求/响应（reply inbox）保持 core NATS。
+- 测试：本机 `nats-server -js` 覆盖 durable 消费 + `ack`、客户端 `js.publish`（`nats-jetstream.e2e.spec.ts` 2 passing，完整 NATS 套件 63 passing）。
+- 已实现：`delivery/stream/streamSubjects/durable/jetstreamSubject/ackWaitMs/maxDeliver/idempotency`；stream 缺失时自动创建；`ack()` 成功、`nak()` 失败重投、`maxDeliver` 后 `term()`（或 `deadLetterSubject` 转发后 ack）；JetStream 模式下跳过同一 subject 的 core 订阅，避免 handler 执行两次；关闭时 unsubscribe + 限时等待消费循环。
+- 未实现：durable 恢复/多副本队列分摊的显式用例；`stream` 配置变更时的消费者重建。
+
+### 13.3 落地顺序
+
+1. ~~先做 Redis Streams（本机可完整验证）；~~（已落地）
+2. ~~再做 JetStream（nats-server 二进制已可运行）；~~（已落地）
+3. 两者都复用 `ConsumerRuntime` 的 retry/idempotency/drain，不新增第二套生命周期。
+
+---
+
 ## 附：本文的证据来源
 
 - 源码走查：`gateway/`、`service/`、`client/`、`transport/`、`common/src/response.ts`、`tracing/`、`discovery/`、各 broker server/factory、`admin/web/admin.state.ts`。
 - 实跑：19 个包执行（16 个通过：`discovery` 81、`client` 84、`service` 63、`config` 75、`health` 19、`metrics` 54、`tracing` 45、`mime` 56、`transport` 52、`swagger` 10、`mcp` 38、`grpc` 28、`tcp` 65、`udp` 54、`ws` 88、`coap` 25）；`gateway`/`contract`/`http` 编译失败（错误见 §1.3）。
 - 并发 span 复现：在 `tracing` 包内用两个并发 `startSpan` 观察 parent 关系（临时脚本已删除，未进入仓库）。
 - 门禁/CI/发布：`scripts/agents-gate.sh`、`.github/workflows/agents-gate.yml`、`scripts/check-package-deps.mjs`、`scripts/verify-package-publish.mjs`、`scripts/prepare-package-publish.mjs`。
+
+---
+
+## 12. S4 复核（2026-11-23）：S0–S3 之后的现状、短板与优化计划
+
+> 复核对象：当前 `7.tui` 工作区（干净树）。
+> 方法：8 个核心包全量测试复跑 + 基准复跑 + 热点路径源码走查；只列**当前仍然成立**的问题。
+> 先说结论：**S2 记录的路由匹配提升在 `gateway-kit` 抽取后已经回退，而且没有门禁发现它**。这是本轮最高优先级修复项。
+>
+> 进展（2026-11-23）：S4.1（路由索引）、S4.2（指标单位）、S4.7（基准门禁）已完成；S4.3 完成异步压缩、ETag 复用与 Router 淘汰、S4.4 完成标签键优化、S4.5 完成运行时幂等/drain，Kafka/AMQP/MQTT/NATS 已接入；S4.6 完成实测评估（不改默认）；§13.1 Redis Streams 与 §13.2 NATS JetStream 均已落地。详见 §12.12 / §13。
+
+### 12.1 复核基线（本次实跑）
+
+| 项目 | 结果 |
+|---|---|
+| 测试 | gateway 150 / service 97 / http 50 / client 88 / metrics 67 / discovery 87 / tracing 55 / health 24，全部 EXIT=0 |
+| 基准 | `npm run bench -- --routes 100,1000,10000 --samples 2000` |
+| 体量 | `node scripts/check-source-size.mjs` → OK |
+| 工作区 | 干净（无未提交改动） |
+
+`route-match`（只测网关路由匹配，不转发、不走 socket）与提交的基线对比：
+
+| routes | 基线 ops/sec | 当前 ops/sec | 变化 | 基线 p99 | 当前 p99 |
+|---|---|---|---|---|---|
+| 100 | 292,210 | 75,208 | **-74%** | 0.0228 ms | 0.0724 ms |
+| 1,000 | 303,196 | 14,931 | **-95%** | 0.0205 ms | 0.1396 ms |
+| 10,000 | 316,591 | 1,609 | **-99.5%** | 0.0165 ms | 1.3962 ms |
+
+`transport-route-match`（service Router 的 trie）仍然保持 0.77M–1.4M ops/sec，没有回退。
+因此回退只发生在 gateway 路由表，`service/src/router` 的 trie 与缓存是健康的。
+
+### 12.2 P0：Gateway 路由匹配退回线性扫描
+
+- 旧实现（`5b633028b`，即 S2 提交）在 `GatewayRouteTable` 内部维护 static/param/wildcard 三叉 trie：`match()` 按路径段下行收集候选，只有命中的分支进入 `accepts`，复杂度与路由总数无关。
+- `a87103e1e` 把排序与匹配委托给 `@tsdi/gateway-kit` 的 `GatewayRouter.match()`（`packages/gateway-kit/src/router.ts:91`）。该实现是**按优先级顺序遍历全部路由**：对每条路由先 `acceptsMethod`、再 `matchSegments`，首个命中返回。
+- 100/1k/10k 路由就对应 100/1k/10k 次比较，与 §12.1 的线性下降完全吻合；10k 时单请求 1.4 ms 的 p99 也说明它是纯 CPU 瓶颈。
+- 这不是"数据规模变大"的正常现象，而是**共享抽取时丢失了索引**。`benchmarks/results/baseline.json` 仍停留在 2026-11-16 的数字，`ms-bench` stage 只验证 harness 能跑通（`scripts/agents-gate.sh:369`），不做回归比较，所以没人发现。
+
+**修复方向（保留共享 kit，不回退抽取）**
+
+1. 在 `@tsdi/gateway-kit` 内给 `GatewayRouter` 增加**首段分桶 + 静态段索引**：编译期建 `Map<首段, entry[]>`，`param`/`*` 与首段为 `:` 的路由进兜底桶；`match()` 只遍历候选桶。对外 API、优先级、`matchMode` 全部不变。
+2. 或让 `GatewayRouteTable` 在编译期产出 `segments[0] → 候选下标数组`，`match()` 仅对候选做段匹配。
+3. `accepts` 回调（header/canary）继续在候选项上执行，语义不变；`legacy: true` 保留原来的线性前缀扫描。
+
+**验收**：`route-match` 100/1k/10k 恢复到 ≥ 200,000 ops/sec，10k p99 ≤ 0.05 ms；回归用例覆盖 prefix / param / wildcard / priority / legacy 五种语义。
+
+### 12.3 P0：`*_seconds` 直方图桶单位错误
+
+- `recordDuration()`（`metrics/src/timing.ts:11`）同时写 `*_ms` 和 `*_seconds`，但 `MetricsRegistry.histogram()`（`metrics/src/registry.ts:121`）对两者使用**同一组桶**，默认值是毫秒边界 `[5,10,25,…,10000]`（`registry.ts:30`）。
+- 后果：所有 ≤ 5 秒的请求在 `_seconds` 直方图里全部落进 `le=5` 第一桶，分位数完全失真；超过 5 秒才继续分桶，但边界仍是毫秒语义。
+- `OtlpHttpMetricsExporter` 进一步把**每个**直方图的 `unit` 硬编码为 `'ms'`（`metrics/src/exporters/otlp.ts:176`），秒指标导出到 OTLP collector 后连单位都是错的；Prometheus 文本导出同样受桶边界影响。
+- 这个问题不影响功能，但会让 S3 新增的 `_seconds` 指标在真实 dashboard 上不可用——属于"看起来有、实际不可信"。
+
+**修复方向**
+
+- 按指标名后缀选择桶组：`_ms` 用现有表，`_seconds` 用 `[0.005,0.01,0.025,0.05,0.1,0.25,0.5,1,2.5,5,10]`；新增 `latencyBucketsSeconds` 选项，默认由 ms 表推导，显式配置优先。
+- OTLP `unit` 按名字后缀推断：`_seconds` → `s`，`_bytes` → `By`，其余 `1`（秒指标不再标 `ms`）。
+- Prometheus 导出的 `le` 边界自动跟随所选桶组。
+
+**验收**：单测断言 1.5 s 落在 `le=2.5` 而不是 `le=5`；OTLP payload 的 `unit === 's'`；`/metrics` 文本里 `_seconds_bucket` 边界为秒值。
+
+### 12.4 P1：请求热路径上的阻塞与放大
+
+| # | 问题 | 证据 | 影响 | 方向 |
+|---|---|---|---|---|
+| 1 | 响应压缩同步阻塞事件循环 | `gateway/src/gateway.response.ts:241` `gzipSync` / `brotliCompressSync` | 压缩期间进程停摆；`minSize` 只有下限 256B，没有上限 | 改异步 `zlib.gzip/brotliCompress`；加 `maxSize`（超限跳过或流式）；压缩级别可配 |
+| 2 | ETag 同步哈希 + 全量序列化 | `gateway.response.ts:261` `createHash('sha1')` + `JSON.stringify` | 缓存开启时每个响应再序列化一次并哈希 | 复用已序列化的 body；大 body 跳过 ETag；可选更快哈希 |
+| 3 | Router 缓存满即全清 | `service/src/router/router.optimize.ts:626` `cache.clear()`；`params` 满时同样 `clear()`（:616） | 达到上限瞬间全部 miss，形成周期性 stampede（本轮未压测 p99 尖峰） | 改 LRU（`Map` delete+set），或按比例淘汰最老一半（已按 1/8 批量淘汰落地） |
+| 4 | Metrics 标签键每次重排 | `metrics/src/registry.ts:75` `{...defaultLabels,...labels}` + `Object.entries().sort(localeCompare)` | 每次写入 4–6 次 `localeCompare`；`recordDuration` 双发 → 单请求约 3 个指标、6 次排序 | 无默认标签时跳过合并；用普通 `<`/`>` 比较；调用方预生成 key 的快速路径 |
+| 5 | 拒绝路径每请求重算路由默认值 | `gateway/src/gateway.interceptor.ts:232` `denyByRule` 内 `resolveRoute(...)`；`resolveRoute` 每请求 6 次 `getOption` + 多次展开（:326） | 规则拒绝流量（429/403 风暴）下额外分配与查表 | 规则路由在编译期缓存 resolved route |
+
+### 12.5 P1：可靠性语义仍然缺口
+
+| # | 问题 | 证据 | 影响 |
+|---|---|---|---|
+| 1 | 消费端无幂等/去重 | `service/src/consumer/ConsumerRuntime.ts` 只有 retry/ack/fail，没有 message-id 去重 | at-least-once 下重复投递会重复执行副作用；Kafka 重试与 AMQP DLX 会放大该问题 |
+| 2 | 无统一 drain | `ConsumerRuntime` 没有排队 waiter 的取消/排空协议 | 关闭时等待中的任务可能被丢弃或悬挂，`onShutdown` 结果不可预期 |
+| 3 | Redis 仅 pub/sub | `redis/src/server/redis-server.ts:83` 只订阅 channel/pattern | 断线或重启即丢消息；与规划里"Streams consumer group"不一致 |
+| 4 | NATS 仅 core at-most-once | `nats/src/server/options.ts` | 同上；JetStream 尚未作为可选后端接入 |
+| 5 | DLQ/失败语义只覆盖部分 broker | Kafka/AMQP/MQTT/NATS 各自实现，没有共享抽象 | 各协议失败路径不一致，排障与迁移成本高 |
+
+### 12.6 P2：连接与分配层面的成本
+
+| # | 问题 | 证据 | 方向 |
+|---|---|---|---|
+| 1 | Gateway 上游默认无连接池 | `gateway/src/gateway.interceptor.ts:421` `httpPool` 是 opt-in，默认走全局 fetch | 已实测（§12.12）：回环吞吐受服务端限制，连接池主要改善 p99（~10%）；保持 opt-in，文档建议生产显式配置 |
+| 2 | Client 每请求 `injector.get` | `client/src/AbstractClient.ts:77-78` 取 `Tracer` / `MetricsCollector` | 已实测 ~49ns/次，缓存收益不足以覆盖注入器替换风险，保持现状 |
+| 3 | HTTP server 每请求组装 context | `http/src/server/http-server.ts:240` 每次 `createRequestContext` + 元组数组 + adapter | 已实测 ~131ns/次，属于必要开销，不改 |
+| 4 | Discovery 定时器分散 | `discovery/src/consul.discovery.ts:48` 等每实例多定时器 | 低频轮询、无实测问题，暂不合并 |
+
+### 12.7 S4 计划
+
+| 阶段 | 主题 | 关键动作 | 退出标准 |
+|---|---|---|---|
+| S4.1 | 修复路由性能回退（P0） | gateway-kit 增加候选索引；恢复 10k 路由性能 | route-match 100/1k/10k ≥ 200k ops/sec，p99 ≤ 0.05 ms（已完成，见 §12.12） |
+| S4.2 | 指标正确性（P0） | 秒桶、OTLP unit、Prometheus 边界 | 单测覆盖单位；抓取与 OTLP payload 校验（已完成，见 §12.12） |
+| S4.3 | 请求路径去阻塞（P1） | 异步压缩、ETag 复用、Router LRU | 1MB 响应压缩时 event-loop lag p99 < 20 ms；stampede 用例通过（压缩、ETag、Router 均已完成） |
+| S4.4 | 指标写入热路径（P1） | 标签键/合并优化 + 新基准 | `metrics-write` 实测 1.6x（无默认标签）/ 1.36x（有默认标签）；2x 不可达，瓶颈在 Map 键（已完成） |
+| S4.5 | 消费幂等与 drain（P1） | `IdempotencyStore` 抽象 + `ConsumerRuntime` drain；Redis Streams / NATS JetStream 可选后端 | 重复投递只执行一次；关闭时排队任务有明确结果（运行时 + Kafka/AMQP/MQTT/NATS 已完成；Redis 仅 pub/sub，Streams/JetStream 待做） |
+| S4.6 | 连接与生命周期（P2） | 默认连接池、client 依赖缓存、discovery 定时器收敛 | 已评估（§12.12）：client/context 成本不足以改动；连接池保持 opt-in；定时器暂不合并 |
+| S4.7 | 门禁补强 | `ms-bench` 增加与 baseline 的回归比较（阈值可配、host 噪声可跳过） | 人为回退到线性扫描时 gate 失败（已完成，见 §12.12） |
+
+### 12.8 可度量目标
+
+| 指标 | 当前 | 目标 | 测量方式 |
+|---|---|---|---|
+| gateway route-match 10k p99 | 1.396 ms | ≤ 0.05 ms | `npm run bench` |
+| gateway route-match 10k ops/sec | 1,609 | ≥ 200,000 | 同上 |
+| metrics 写入（3 指标/请求） | ~273k samples/sec（818k writes/sec） | ~390k samples/sec（1.18M writes/sec） | `metrics-write` 场景 |
+| 1MB 响应压缩 p50 | — | ~8.5 ms（异步线程池，不阻塞事件循环） | `gateway-compress` 场景 |
+| 1MB + ETag p50 | 14.97 ms（重复序列化） | 10.02 ms（复用序列化） | `gateway-compress`（etag=true） |
+| Router 缓存命中率（10k 唯一路径） | 周期性归零 | 稳定 ≥ 90% | 新增 `router-cache` 场景 |
+| 消费重复投递副作用 | 未覆盖 | 恰好 1 次 | service 单测 + Kafka/AMQP spec（已覆盖） |
+| `metrics-scrape`（1k 序列） | — | p50 ~3.2 ms | `npm run bench` |
+| `consumer-runtime`（1k 消息/并发 32） | — | ~165k msg/sec | `npm run bench` |
+
+### 12.9 基准扩展
+
+`benchmarks/run.ts` 目前有 `route-match`、`metrics-write`、`metrics-scrape`、`consumer-runtime`、`gateway-compress`、`gateway-forward` 与 `transport-route-match`。建议再新增（全部进程内、无 socket）：
+
+1. ~~`metrics-write`：固定标签集合写入 counter/histogram，输出 ops/sec。~~（已实现）
+2. ~~`metrics-scrape`：1k 序列下 `getMetrics()` + Prometheus 文本生成耗时。~~（已实现）
+3. ~~`gateway-compress`：1KB / 64KB / 1MB JSON 的 gzip/br 耗时。~~（已实现）
+4. `router-cache`：10k 唯一路径 + 10k 重复路径两轮，验证 LRU 改造前后的命中率与 p99。
+5. ~~`consumer-runtime`：1k 消息、并发 32、10% 失败的端到端耗时与 in-flight 峰值。~~（已实现）
+6. ~~`gateway-forward`：本地回环 `http.Server`，对比 `httpPool` 开关下请求的 p50/p99。~~（已实现）
+
+每个场景都写进 `results/baseline.json`，并与 `ms-bench` 的回归比较共用阈值。
+
+### 12.10 兼容与风险
+
+- gateway-kit 路由索引只改内部匹配结构；`GatewayRouter` 公共 API、显式 `priority` 排序、`matchMode: 'prefix'` 行为不变，`legacy` 模式保留原线性路径。
+- 指标桶变更会影响已有 dashboard 的 `le` 边界。`_ms` 指标保持不动；`_seconds` 是本轮新增，修正不算破坏性变更，但仍提供 `latencyBucketsSeconds` 显式覆盖。
+- 压缩改异步会让 `GatewayResponse.send()` 从同步写入变成 `Promise`，需要 interceptor/upstream 用 `await` 承接；这是内部契约变更，必须回归 gateway 全部 152 用例。
+- 幂等存储默认内存实现、Redis 实现可选；默认仍是"至少一次"，只是**新增**去重能力，不改变现有语义。
+- Router 缓存改 LRU 只影响淘汰顺序，不影响匹配结果；需要断言 route revision 变化后缓存仍然全量失效。
+
+### 12.11 本轮不做
+
+- 不引入新的 broker 中间件依赖（Docker e2e 继续 opt-in，`MS_BROKER_PROFILE=1`）。
+- 不重写 `ConsumerRuntime` 的并发模型，只在现有 ack/retry 之上加去重与 drain。
+- 不为追求基准数字放宽 host/method 校验，或让 `previewMatch` 走与真实转发不同的快捷路径。
+- 不删除、不降级任何现有用户可见能力（压缩、ETag、缓存、远端注册中心、多副本共享状态）。
+
+### 12.12 执行记录：S4.1 / S4.2 / S4.7（2026-11-23）
+
+#### S4.1 路由索引（`packages/gateway-kit/src/router.ts`）
+
+- 编译期建 static/param/wildcard 段 trie（`rebuild` / `insert` / `collect`），`match()` 只遍历请求路径可达的分支；候选仍按全局 `rank`（priority desc, 声明序）排序，语义与线性实现一致。
+- `acceptsMethod` 缓存大写 method 集合（`route.methods` 引用变化时重建）；`matchSegments` 参数惰性分配，字面量不匹配不再产生对象。
+- `getRoutes()` 恢复真正的声明顺序（之前 `match` 排序会污染返回值，OpenAPI 顺序不稳定）。
+- 新增 4 个用例：20k 路由定位、显式 priority 跨分支合并、root/wildcard/param 混排、`getRoutes()` 声明顺序。
+
+实测（`npm run bench -- --routes 100,1000,10000 --samples 2000`，同机同 Node）：
+
+| routes | 修复前 ops/sec | 修复后 ops/sec（3 次中位） | 修复前 p50 | 修复后 p50 |
+|---|---|---|---|---|
+| 100 | 75,208 | 131,969 | 0.01 ms | 0.0024 ms |
+| 1,000 | 14,931 | 275,129 | 0.0556 ms | 0.0025 ms |
+| 10,000 | 1,609 | 327,341 | 0.5668 ms | 0.0023 ms |
+
+关键不是绝对吞吐（受机器噪声影响），而是 **p50 不再随路由数增长**：10k/100 的 p50 比从 56.7 降到 0.96。
+吞吐在 100 条时低于旧基线是 JIT/启动噪声（p50 反而更好）；10k 吞吐已超过旧基线。
+
+#### S4.2 指标单位（`packages/microservices/metrics`）
+
+- `MetricsRegistry` 维护两套桶：`buckets`（ms）与 `secondsBuckets`（默认 `buckets / 1000`），`histogram()` 按指标名 `_seconds` 后缀选择；新增 `setSecondsBuckets` 与 `latencyBucketsSeconds` 选项（显式配置优先）。
+- `useMetrics` 与 `MetricsModule.withOptions` 都通过构造器/工厂应用同一配置。
+- OTLP 导出按名字推断 `unit`：`_seconds → s`、`_bytes → By`、`_ms → ms`、其余 `1`（之前所有直方图硬编码 `ms`）。
+- 新增用例：秒桶落点（1.5s → `le=2.5`）、自定义 ms 桶推导秒桶 + 显式覆盖、OTLP unit/bounds、`useMetrics` 端到端 `_seconds` 与 `_ms` sum 比例。
+
+#### S4.3 请求路径去阻塞（部分完成）
+
+- **异步压缩**（`gateway/src/gateway.response.ts`）：`gzipSync`/`brotliCompressSync` → `zlib.gzip`/`brotliCompress` + `promisify`，`GatewayResponse.send()` 变为 `Promise`；`GatewayUpstream` 的 4 个 `sendResponse` 返回改为 `return await`，确保 bulkhead/endpoint 在响应真正写出后才释放。
+- 新增 `compression.maxSize`：超过上限的响应不再压缩（默认不限制，保持既有行为）。
+- 回归用例：`does not block the event loop while compressing`（2MB gzip 期间 `setImmediate` 必须先执行）。已用临时同步实现验证该用例在旧代码上失败（`Expected: true, Received: false`），异步实现通过。
+- **Router 缓存淘汰**（`service/src/router/router.optimize.ts`）：`setCache` / `params` 达到 `maxCacheSize` 时不再 `clear()` 全清，改为淘汰最旧 1/8；新增用例断言容量满后仍保留大部分条目（全清会只剩 1 条）。
+- **ETag 复用**：缓存/ETag 改为在掩码之后计算（校验值描述实际表示），JSON payload 只 `JSON.stringify` 一次，序列化结果直接传给 adapter（原本 ETag 与 adapter 各序列化一次）。ETag 路由的对象 payload 现在以字符串下发，并在缺少 content-type 时补 `application/json; charset=utf-8`。
+- 实测 `gateway-compress`：1MB + ETag p50 **14.97 ms → 10.02 ms**（单次 10.0ms 运行；基线中位 12.7ms，no-etag 8.5ms），64KB **0.96 → 0.91 ms**。剩余成本是 ETag 必须的序列化 + sha1。
+- 用例：etag payload 只序列化一次且 adapter 收到字符串、ETag 基于掩码后的表示。
+
+#### S4.4 指标写入热路径
+
+- `getLabelsKey`：默认标签为空时不再 `{...defaults,...labels}` 合并；排序从 `localeCompare` 改为默认字符串比较；`map().join()` 改为直接拼接。
+- 实测（`metrics` 包内探针，3 次写入/请求：1 counter + 2 histogram）：
+
+| 场景 | 优化前 | 优化后 | 提升 |
+|---|---|---|---|
+| 无默认标签 | 818k writes/sec | 1.31M writes/sec | 1.60x |
+| 有默认标签（2 个） | 581k writes/sec | 788k writes/sec | 1.36x |
+
+- 新增 `benchmarks/run.ts` 的 `metrics-write` 场景（3 次写入/样本，标签复用），并纳入基线与 gate（26 个场景）。
+- 尝试过但**实测无收益已回退**：非累积桶计数 + 读取时累加、`Map.has`/`get` 合并。瓶颈在长字符串 key 的 `Map` 哈希与标签键构造，不在桶循环。
+- 未加 `WeakMap<labels, key>` 缓存：生产路径每次请求新建 labels 对象，命中率低，且有 labels 被原地修改后串标签的风险。
+
+#### S4.5 消费幂等与 drain（运行时 + Kafka）
+
+- 新增 `ConsumerMessage.skip()`：正常成功仍由 transport（AMQP transfer hook）ack，重复投递用 `skip()` 单独结算；未提供时回退到 `ack()`。
+- 新增 `service/src/consumer/idempotency.ts`：`ConsumerIdempotencyStore` 接口与有界、惰性过期的 `MemoryIdempotencyStore`（满时先清过期、再淘汰最旧 1/8，无定时器）。
+- `ConsumerRuntimeOptions.idempotency`（opt-in）：`handle()` 在 `message.id` 存在时先 `reserve`；重复投递直接 `ack` 并计入 `stats().duplicates`，不执行业务 handler；处理失败会 `release`，保证重投仍可重试。
+- ack 移到重试循环之外：handler 成功后 ack 抛错不会再次执行业务逻辑（避免重复副作用），错误交给 transport。
+- `close()` + `drain(timeoutMs)`：关闭后拒绝新投递（`CONSUMER_CLOSED`），已接受的在跑/排队任务完成；`drain` 返回是否在超时前排空。
+- Kafka 接入：`ConsumerMessage.id = topic:partition:offset`；`KafkaServOptions.idempotency` 透传；`onShutdown` 先 `consumer.stop()` 再 `drain(5s)`，超时记录错误日志。
+- 用例：重复只执行一次、`skip()` 结算重复、失败释放后可重试、无 id/无 store 保持至少一次、TTL 过期、自定义 store、内存 store 边界、store 抛错释放槽位、close/drain/超时；Kafka delivery spec 新增 2 个（重复 offset 不再执行、失败后重投执行）；AMQP 新增 3 个（messageId 去重、`x-tsdi-id` 头、无 id 保持至少一次）。
+- AMQP 接入：`id = properties.messageId ?? headers['x-tsdi-id']`；`skip()` 直接 `channel.ack(msg)`；`AmqpServOptions.idempotency` 透传。
+- MQTT/NATS drain：先停止投递（MQTT 关闭 client、NATS 取消订阅）→ `runtime.close()` → `runtime.drain(5s)` → 断开连接；超时记录错误日志。
+- AMQP drain：保存 `consumerTag`，关闭时 `channel.cancel(tag)` 停止新投递 → `runtime.close()` → `drain(5s)`（channel 保持打开，transfer hook 仍可 ack）→ 关闭 channel/connection。
+- 无 broker 回归：三处均用 fake client/channel 的 hermetic 用例验证“shutdown 返回前在途 handler 已完成”，并断言取消/关闭顺序。
+- Redis 仅 pub/sub，没有 `ConsumerRuntime`，drain 不适用；Redis Streams / NATS JetStream 仍未作为可选后端。MQTT/NATS 无稳定消息 id，未接幂等。
+
+#### S4.6 连接与分配层（评估完成，未改默认）
+
+| 项 | 实测 | 结论 |
+|---|---|---|
+| Client 每请求 `injector.get` | ~49 ns/次（2 次/请求） | 10k rps 下 <0.2%、100k rps 下 ~2%，不改（避免注入器替换后的缓存失效） |
+| HTTP server `createRequestContext` | ~131 ns/次 | 必要开销，不改 |
+| Gateway 上游连接池 | `gateway-forward` 16 并发/200 请求：默认 1000 req/s p99 71.5ms；`httpPool(64/1)` 965 req/s p99 64.7ms | 回环吞吐受单线程服务端限制；连接池主要改善 tail latency（~10%）。保持 opt-in（现有文档契约），生产建议显式配置 |
+| Discovery 定时器 | 每 watch 一个 interval，低频轮询 | 无实测问题，暂不合并 |
+
+`gateway-forward` 场景已纳入 gate，防止转发路径与连接池行为回退。
+
+#### 门禁修复：`ms-tsc` 作用域（2026-11-23）
+
+- 现象：`ms-tsc` 对 11 个包失败，错误全部指向 `packages/activities/src/visual/workflow-expression.ts` 找不到 `jsonata`，与微服务源码无关。
+- 根因：13 个包的 `tsconfig.json` 没有 `include`（或只有 `exclude: ["test"]`），`tsc` 默认把包根的 `taskfile.ts` 纳入；它依赖 `@tsdi/compiler → @tsdi/activities → jsonata`，于是每个包都在编译整棵仓库依赖图（metrics 单包 1,258 个文件）。
+- 修复：13 个 `tsconfig.json` 统一为 `include: ["index.ts", "src/**/*"]` + `exclude: ["node_modules", "test"]`；`workflow-expression.ts` 的 `jsonata` 动态导入标注为可选依赖（保留字面量 specifier 供 bundler 分包）。
+- 环境：`jsonata` 已声明在 `packages/activities/package.json`，但开发环境 `node_modules` 缺失；用 `npm install --no-save --package-lock=false jsonata@2.2.2` 恢复（未改 package.json / lockfile）。
+- 结果：`ms-tsc` **PASS**（26 个包）；metrics 单包 tsc 图从 1,258 降到 652 个文件；activities 495 passing。
+
+#### 真实 broker 验证（2026-11-23）
+
+Docker Desktop 恢复后，使用本地 `test-kafka` / `test-rabbit` / `test_mqtt` / `test-nats` / `test_redis` 容器跑完整 broker 门禁：
+
+```bash
+MS_BROKER_PROFILE=1 MQTT_TEST_EXTERNAL=1 MQTT_TEST_PORT=1883 \
+  bash scripts/agents-gate.sh ms-brokers
+# PASS（amqp/kafka/mqtt/nats/redis）
+```
+
+单包结果：AMQP **68**、Kafka **84**、MQTT **89**、NATS **63**、Redis **76**（均真实 broker）。
+
+期间修复：
+- **AMQP frameMax**：新版 RabbitMQ 要求 `frame_max >= 8192`，amqplib 默认 4096。`amqp.connect` 现在通过 URL query 注入 `frameMax=16384`（默认，可配置），并新增 `frameMax` 选项。
+- **MQTT 测试外部 broker**：`mqtt/test/test-broker.ts` 支持 `MQTT_TEST_EXTERNAL=1` + `MQTT_TEST_PORT` 直接使用已有 broker（容器），不再强制 spawn `/usr/sbin/mosquitto`；同时修复 `onShutdown` 兜底定时器在 `finish` 之后才赋值导致 1s 后再次 `end()` 的问题。
+- Kafka `handles Kafka object pattern messages` 首轮偶发失败，复跑 84 passing，判定为时序抖动。
+
+#### S4.7 基准门禁
+
+- 新增 `scripts/check-ms-bench.mjs`：p50（主判据）+ 吞吐（需 p50 同步恶化）+ 路由数扩展比（`p50@10k / p50@100`，默认 ≤ 6）。
+- `min-p50-delta`（默认 10µs）过滤亚微秒抖动；阈值可用 `MS_BENCH_MAX_*` 或 CLI 调整；`--update` 刷新基线。
+- `agents-gate.sh` 的 `ms-bench` 从“harness smoke”改为 100/1k/10k + 回归比较。
+- 基线用 3 次运行的中位数重建（`benchmarks/results/baseline.json`）。
+- 场景从 16 扩展到 26：新增 `metrics-scrape`（1k 序列）、`consumer-runtime`（1k 消息/并发 32/10% 失败）、`gateway-compress`（1KB/64KB/1MB × ETag 开关）、`gateway-forward`（回环，默认 fetch vs `httpPool`）。
+- 反向验证：拿修复前的报告跑门禁 → 3 条 `route-match` 失败 + 扩展比 56.68 > 6，EXIT=1；修复后报告 → OK。
+
+#### 验证结果
+
+| 项目 | 结果 |
+|---|---|
+| `packages/gateway-kit` | 18 passing |
+| `packages/microservices/gateway` | 152 passing |
+| `packages/microservices/service` | 108 passing |
+| `packages/microservices/metrics` | 71 passing |
+| `packages/agents/agent-gateway` | 415 passing |
+| `packages/microservices/kafka`（delivery spec，无需 broker） | 10 passing |
+| `packages/microservices/amqp`（retry-dlx spec，无需 broker） | 12 passing |
+| `packages/microservices/mqtt`（delivery spec，无需 broker） | 7 passing |
+| `packages/microservices/nats`（delivery spec，无需 broker） | 6 passing |
+| `packages/microservices/redis`（本机源码构建 Redis，127.0.0.1:6379） | 76 passing（含 Streams） |
+| `packages/microservices/nats`（容器 nats-server `-js`，4222） | 63 passing（含 JetStream） |
+| `bash scripts/agents-gate.sh ms-bench` | PASS |
+| `bash scripts/agents-gate.sh ms-tsc` | PASS（26 个包） |
+| `packages/activities`（含 jsonata 表达式用例） | 495 passing |
+| `npx tsc --noEmit`（gateway-kit / microservices gateway / service / metrics / kafka） | 仅剩仓库既有 `jsonata` 缺失（`packages/activities`，与本次改动无关） |
+
+未做：JetStream durable 恢复/多副本分摊用例；Redis Streams 应用级 DLQ。S4.6 已评估、不改默认（连接池仍 opt-in）。

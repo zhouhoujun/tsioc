@@ -362,13 +362,15 @@ run_ms_tsc() {
     fi
 }
 
-# run_ms_bench — benchmark smoke. Only proves the harness runs and emits JSON;
-# absolute numbers are never gated (host-dependent). Regression comparison stays
-# a manual/CI-optional step against the committed baseline.
+# run_ms_bench — benchmark regression gate. Runs the in-process harness and
+# compares p50 / throughput / route-count scaling against the committed
+# baseline. Host noise is absorbed by `min-p50-delta`; tune budgets with
+# MS_BENCH_MAX_P50_REGRESSION / MS_BENCH_MAX_OPS_REGRESSION / MS_BENCH_MAX_SCALING.
 run_ms_bench() {
-    local id="ms-bench" label="microservice benchmark harness smoke"
+    local id="ms-bench" label="microservice benchmark regression"
     local log="$LOG_DIR/$id.log"
-    if npm run bench -- --routes 100,1000 --samples 200 --json "$LOG_DIR/ms-bench.json" >"$log" 2>&1; then
+    if npm run bench -- --routes 100,1000,10000 --samples 1000 --json "$LOG_DIR/ms-bench.json" >"$log" 2>&1 \
+        && node scripts/check-ms-bench.mjs --current "$LOG_DIR/ms-bench.json" >>"$log" 2>&1; then
         stage_pass "$id" "$label"
     else
         stage_fail "$id" "$label"
