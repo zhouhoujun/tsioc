@@ -19,6 +19,7 @@ import type { TurnRecoveryState, TurnRepairRecipe } from './TurnRecoveryState';
 import { cloneToolInput, safeSerializeToolInput, summarizeToolInput as summarizeToolInputView, summarizeToolOutput as summarizeToolOutputView } from './ToolInvocationSupport';
 import { ToolInvocationLifecycle } from './ToolInvocationLifecycle';
 import { runToolPreflight } from './ToolInvocationPreflight';
+import { executeToolInvocation } from './ToolExecutionRunner';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -2188,131 +2189,19 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         await this.app.publishEvent(new AgentToolInvokedEvent(this, sessionId, toolCall.name, toolCallInput, sandboxReceipt));
 
-        // Phase 1 compensation: snapshot pre-call state so the side effects can
-        // be undone when the turn is cancelled or fails.
-        let compensationCapture: unknown;
-        let fileSnapshot: FileSnapshot | null = null;
-        const tool = this.toolRegistry.getTool(toolCall.name);
-        if (tool?.captureCompensation && tool.compensate) {
-            try {
-                compensationCapture = await tool.captureCompensation(toolCallInput, {
-                    sessionId,
-                    memory: this.memory,
-                    principalId: turnContext.principalId,
-                    workspace: turnContext.workspace
-                });
-            } catch {
-                compensationCapture = undefined;
-            }
-        }
-        if (tool?.captureFileSnapshot) {
-            try {
-                const captured = await tool.captureFileSnapshot(toolCallInput, {
-                    sessionId,
-                    memory: this.memory,
-                    principalId: turnContext.principalId,
-                    workspace: turnContext.workspace
-                });
-                if (captured) {
-                    fileSnapshot = {
-                        ...captured,
-                        timestamp: this.now(),
-                        toolName: toolCall.name,
-                        toolCallId: toolCall.id,
-                        after: null
-                    };
-                }
-            } catch {
-                fileSnapshot = null;
-            }
-        }
-
-        if (this.toolExecutionCoordinator) {
-            const outcome = await this.toolExecutionCoordinator.execute({
-                sessionId,
-                principalId: turnContext.principalId,
-                workspace: turnContext.workspace,
-                signal: this.turnAbortScopes.signal(sessionId),
-                toolCall: { id: toolCall.id, name: toolCall.name, input: toolCallInput },
-                definition,
-                executionMode,
-                inputSummary,
-                baseReceipt: sandboxReceipt,
-                repeatCache: turnContext.readOnlyResults ??= new RepeatReadOnlyCallCache(),
-                sandboxMode: effectiveSandboxMode(this.sessionSandboxModes.get(sessionId), this.options),
-                escalateSandbox: error => requestSandboxEscalation(this.toolApprovalManager, toolCall.name, toolCallInput, sessionId, error)
-            });
-            if (outcome.redactedOutput !== undefined) {
-                loopDetector.record(toolCall.name, toolCallInput, outcome.redactedOutput);
-            }
-            const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
-            const outputStr = outcome.redactedOutput === undefined
-                ? JSON.stringify({ error: outcome.error?.message ?? outcome.receipt.error ?? 'tool failed' })
-                : (typeof outcome.redactedOutput === 'string' ? outcome.redactedOutput : JSON.stringify(outcome.redactedOutput));
-            const truncated = await spillToolOutput(this.fileAdapter, outputStr, maxChars, { workspace: turnContext.workspace, toolCallId: toolCall.id, toolName: toolCall.name, enabled: this.options.context?.spillToolOutput !== false });
-            if (outcome.error) {
-                return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, outcome.receipt, outcome.error.message);
-            }
-            this.trackPlanProgress(sessionId, turnContext, toolCall.name, outcome.redactedOutput);
-            this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
-            await this.captureWriteFalsificationHint(sessionId, turnContext, toolCall, definition, fileSnapshot);
-            await this.pushFileSnapshot(sessionId, fileSnapshot);
-            this.trackEditedFile(turnContext, toolCall, definition, fileSnapshot);
-            return {
-                toolCall,
-                content: truncated,
-                metadata: {
-                    toolCallInput,
-                    inputSummary,
-                    receipt: outcome.receipt,
-                    attempts: outcome.attempts
-                },
-                receipt: outcome.receipt,
-                structuredOutput: toolCall.name === 'coding_task' ? outcome.redactedOutput : undefined
-            };
-        }
-
-        const startedAt = this.now();
-        try {
-            const output = await this.toolRegistry.invoke(toolCall.name, toolCallInput, sessionId, turnContext.principalId, turnContext.workspace);
-            loopDetector.record(toolCall.name, toolCallInput, output);
-            this.trackPlanProgress(sessionId, turnContext, toolCall.name, output);
-            const maxChars = this.options.context?.maxToolResultChars ?? defaultAgentOptions.context!.maxToolResultChars!;
-            const outputStr = typeof output === 'string' ? output : JSON.stringify(output);
-            const truncated = await spillToolOutput(this.fileAdapter, outputStr, maxChars, { workspace: turnContext.workspace, toolCallId: toolCall.id, toolName: toolCall.name, enabled: this.options.context?.spillToolOutput !== false });
-            const completedReceipt: AgentToolExecutionReceipt = {
-                ...sandboxReceipt,
-                status: 'success',
-                durationMs: Math.max(0, this.now() - startedAt),
-                outputSummary: summarizeToolOutputView(toolCall.name, output)
-            };
-            await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output, completedReceipt));
-            this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
-            await this.captureWriteFalsificationHint(sessionId, turnContext, toolCall, definition, fileSnapshot);
-            await this.pushFileSnapshot(sessionId, fileSnapshot);
-            this.trackEditedFile(turnContext, toolCall, definition, fileSnapshot);
-            return {
-                toolCall,
-                content: truncated,
-                metadata: {
-                    toolCallInput,
-                    inputSummary,
-                    receipt: completedReceipt
-                },
-                receipt: completedReceipt,
-                structuredOutput: toolCall.name === 'coding_task' ? output : undefined
-            };
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            const failedReceipt: AgentToolExecutionReceipt = {
-                ...sandboxReceipt,
-                status: 'error',
-                durationMs: Math.max(0, this.now() - startedAt),
-                error: err.message
-            };
-            await this.app.publishEvent(new AgentToolFailedEvent(this, sessionId, toolCall.name, err, failedReceipt));
-            return this.toolLifecycleController.failed(toolCall, toolCallInput, inputSummary, failedReceipt, err.message);
-        }
+        return executeToolInvocation({
+            app: this.app, options: this.options, toolRegistry: this.toolRegistry,
+            toolExecutionCoordinator: this.toolExecutionCoordinator, fileAdapter: this.fileAdapter,
+            memory: this.memory, approvalManager: this.toolApprovalManager,
+            now: () => this.now(), signal: id => this.turnAbortScopes.signal(id), sandboxMode: id => effectiveSandboxMode(this.sessionSandboxModes.get(id), this.options),
+            fail: (call, input, summary, receipt, error) => this.toolLifecycleController.failed(call, input, summary, receipt, error),
+            recordLoop: (name, input, output) => loopDetector.record(name, input, output),
+            trackPlan: (id, context, name, output) => this.trackPlanProgress(id, context, name, output),
+            pushCompensation: (id, name, callId, capture) => this.pushToolCompensation(id, name, callId, capture),
+            captureWriteHint: (id, context, call, def, snapshot) => this.captureWriteFalsificationHint(id, context, call, def, snapshot),
+            pushFileSnapshot: (id, snapshot) => this.pushFileSnapshot(id, snapshot),
+            trackEditedFile: (context, call, def, snapshot) => this.trackEditedFile(context, call, def, snapshot)
+        }, sessionId, toolCall, loopDetector, executionMode, toolCallInput, inputSummary, definition, sandboxReceipt, turnContext);
     }
 
     private async createAssistantMessageFromResponse(sessionId: string, response: ModelResponse): Promise<AgentMessage> {
