@@ -1,6 +1,7 @@
 export function decodeGlobalKey(raw: string): string {
     if (raw === '\u001b') return 'escape';
     if (raw === '\t') return 'tab';
+    if (raw === '\u001b[Z') return 'shift+tab';
     // Enter/Ctrl+M share the CR byte; keymaps name it `enter` so leader chords
     // such as `ctrl+x enter` can be expressed like any other key.
     if (raw === '\r' || raw === '\n') return 'enter';

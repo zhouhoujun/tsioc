@@ -109,6 +109,17 @@ export async function runAgentsCommandView(host: AgentProfileHost, args: string)
     const current = host.state.activeArchetype
         || host.runtime?.getSessionArchetype?.(host.state.sessionId)
         || 'build';
+    if (tokens[0] === 'next' || tokens[0] === 'cycle') {
+        const candidates = (await listAgentProfiles(host)).filter(profile => profile.mode !== 'subagent');
+        if (candidates.length > 1) {
+            const index = candidates.findIndex(profile => profile.name === current);
+            const next = candidates[(index + 1) % candidates.length]?.name;
+            if (next && next !== current) {
+                await switchAgentProfile(host, next);
+            }
+        }
+        return;
+    }
     if (requested) {
         await switchAgentProfile(host, requested);
         return;

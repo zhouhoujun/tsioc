@@ -50,6 +50,8 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     'ctrl+x shift+t': 'theme',
     'ctrl+x m': 'model',
     'ctrl+x a': 'archetypes',
+    /** opencode parity: cycle agent profiles without opening the picker. */
+    'shift+tab': 'archetype-cycle',
     'ctrl+x s': 'status',
     'ctrl+x shift+s': 'stash-draft',
     'ctrl+x shift+c': 'copy-draft',

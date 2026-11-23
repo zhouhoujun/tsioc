@@ -111,7 +111,7 @@ mountAgentWebConsole(document.getElementById('app')!, {
 ## TUI commands (~70)
 
 Core: `/help` `/btw` `/status` `/model` `/tools` `/keymap` `/theme` `/settings` (settings center; `/settings menu` for the classic tabs) `/compact` `/highlights` (aliases `/whatsnew`)
-Agents: `/agents` / `/archetype` switches the session profile; `/agents default [name]` reads or sets the default profile for new sessions
+Agents: `/agents` / `/archetype` switches the session profile; `shift+tab` cycles primary profiles; `/agents default [name]` reads or sets the default profile for new sessions
 Session: `/resume` `/archive` `/delete` `/fork` `/side` `/share` `/unshare` `/import` `/msg` `/sections` `/threads`
 Display: `/raw` `/thinking` `/timeline` `/display` `/layout` `/statusline` `/title` `/export`
 Transcript: `/activity` (alias `/jump`) jump to tools/reasoning/plan/diff/errors/final answer

@@ -173,6 +173,7 @@ export async function executeGlobalKeyActionView(
         sessions: '/sessions',
         model: '/model',
         archetypes: '/archetype',
+        'archetype-cycle': '/archetype next',
         status: '/status',
         copy: '/copy',
         'command-outputs': '/outputs',

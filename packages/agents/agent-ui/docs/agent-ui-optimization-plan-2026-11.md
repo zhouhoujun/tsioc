@@ -131,7 +131,7 @@ DOM/TUI/PTY/bench）也强于多数同类项目。
 | `/btw` 侧问 | ✅ | ✅ | ❌ | 对齐 |
 | `/highlights` 更新提示 | ✅ `/highlights`（升级后自动一次，可关闭） | ✅ | ◐ | 对齐 |
 | 模型切换 | ✅ `/model` + F2 最近 | ✅ Ctrl+X M / F2 | ✅ | 对齐 |
-| Agent profiles | ◐ archetype（命令切换） | ✅ `/agents`、Shift+Tab | ✅ profiles | AMS P0 |
+| Agent profiles | ✅ `/agents` 选择 + `shift+tab` 循环（跳过 subagent） | ✅ `/agents`、Shift+Tab | ✅ profiles | 对齐 |
 | 权限规则 | ✅ ordered rules（action/resource，last match）+ durable allow | ✅ ordered rules（action/resource/effect，last match）、durable allow、scanner | ✅ sandbox × approval policy + auto-review | 对齐（scanner opt-in） |
 | LSP 诊断 | ✅ `/check [paths]` 只读诊断面板（`/lsp` 别名） | ✅ | ◐ | 对齐 |
 | Formatter | ✅ `/format [paths] [--check]`（LSP `textDocument/formatting`） | ✅ | ◐ | 对齐 |
@@ -242,6 +242,7 @@ paint ≤25ms；`tab-switch` / `long-session` / DOM/TUI gate 不回退。
   工具，默认写回、`--check` 预览，写入走 `fs` 审批类别与 workspace trust；
 - `/highlights` 发布说明浮层（`/whatsnew` 别名）：升级后按版本自动展示一次，设置页可关闭；
 - `ctrl+p` 命令面板改为全量非隐藏命令目录（不再局限于精选 `/` 菜单），空查询时把最近执行命令置顶；
+- `shift+tab` 循环当前会话的可选 agent profile（跳过 subagent），与 `/archetype next` 同一路径；
 - turn undo/redo 持久化：`AgentTurnHistoryEntity` 保存 turn 边界、redo 消息与文件快照栈，
   `TurnHistoryController` 懒加载/串行写回，重启后 `/undo`、`/redo` 与文件级撤销仍可用；
 - `!` shell mode、`@file#Lx-Ly`、tab 键盘循环/恢复、`/btw`、Web/PWA 通知、设置页。

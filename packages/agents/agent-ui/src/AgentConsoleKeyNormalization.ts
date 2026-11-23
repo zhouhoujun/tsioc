@@ -18,6 +18,9 @@ export function normalizeAgentConsoleBrowserKey(
     if (altKey) {
         return shiftKey ? `alt+shift+${rawKey}` : `alt+${rawKey}`;
     }
+    if (shiftKey && rawKey === 'tab') {
+        return 'shift+tab';
+    }
     if (/^f\d{1,2}$/.test(rawKey)) {
         return shiftKey ? `shift+${rawKey}` : rawKey;
     }

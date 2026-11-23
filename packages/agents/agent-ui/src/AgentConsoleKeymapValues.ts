@@ -24,6 +24,7 @@ export type AgentConsoleGlobalAction =
     | 'theme'
     | 'model'
     | 'archetypes'
+    | 'archetype-cycle'
     | 'status'
     | 'copy'
     | 'copy-draft'
@@ -67,7 +68,7 @@ export type AgentConsoleGlobalAction =
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
-    'copy-draft', 'theme', 'model', 'archetypes', 'status', 'copy', 'interrupt-turn', 'command-palette', 'toggle-thinking', 'open-editor',
+    'copy-draft', 'theme', 'model', 'archetypes', 'archetype-cycle', 'status', 'copy', 'interrupt-turn', 'command-palette', 'toggle-thinking', 'open-editor',
     'thread-child-first', 'thread-cycle-next', 'thread-cycle-prev', 'thread-parent',
     'message-page-up', 'message-page-down', 'message-half-page-up', 'message-half-page-down', 'message-line-up', 'message-line-down', 'message-first', 'message-last', 'message-last-user', 'message-prev-user', 'message-next-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
