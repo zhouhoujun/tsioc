@@ -8,6 +8,7 @@ import { promoteInboxSteers } from './SessionInboxPromotion';
 import { TurnHistoryStore } from './TurnHistoryStore';
 import { TurnHistoryController } from './TurnHistoryController';
 import { TurnObservabilityController } from './TurnObservabilityController';
+import { collectStreamingResponse as collectStreamingResponseView } from './TurnStreamCollector';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -2282,137 +2283,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }));
     }
 
-    private async *collectStreamingResponse(
-        sessionId: string,
-        request: ModelRequest
-    ): AsyncGenerator<StreamChunk, ModelResponse, void> {
-        let message = '';
-        let reasoningContent = '';
-        let toolCalls: AgentToolCall[] = [];
-        let usage: Record<string, any> | undefined;
-        let metadata: Record<string, any> = {};
-        const seenToolCalls = new Set<string>();
-        // Providers attach usage only to the final 'done' chunk. Compose a per-chunk
-        // estimated total (context-manager tokenizer heuristic) so live token meters
-        // advance during generation; real chunk usage wins, and estimates (tagged
-        // `estimated`) never persist into response metadata or audit records.
-        let estimatedCompletionTokens = 0;
-        let estimatedPromptTokens: number | undefined;
-        let estimatedCachedPromptTokens: number | undefined;
-
-        const resolveChunkUsage = (chunk: StreamChunk): Record<string, any> | undefined => {
-            if (chunk.usage) {
-                return chunk.usage as Record<string, any>;
-            }
-            if (chunk.type !== 'text' && chunk.type !== 'reasoning') {
-                return undefined;
-            }
-            return {
-                ...(estimatedPromptTokens !== undefined ? {
-                    promptTokens: estimatedPromptTokens,
-                    totalTokens: estimatedPromptTokens + estimatedCompletionTokens
-                } : {}),
-                ...(estimatedCachedPromptTokens !== undefined ? { cachedPromptTokens: estimatedCachedPromptTokens } : {}),
-                completionTokens: estimatedCompletionTokens,
-                estimated: true
-            };
-        };
-
-        for await (const chunk of this.streamModelRequest(request)) {
-            const freshToolCalls = this.collectFreshStreamingToolCalls(seenToolCalls, chunk.toolCalls);
-
-            if (chunk.type === 'text') {
-                message += chunk.content ?? '';
-                estimatedCompletionTokens += this.contextManager.estimateTokens(chunk.content ?? '');
-            }
-            if (chunk.type === 'reasoning') {
-                reasoningContent += chunk.content ?? '';
-                estimatedCompletionTokens += this.contextManager.estimateTokens(chunk.content ?? '');
-            }
-            if (chunk.usage) {
-                const source = chunk.usage as Record<string, any>;
-                usage = source;
-                if (typeof source.promptTokens === 'number' && Number.isFinite(source.promptTokens) && estimatedPromptTokens === undefined) {
-                    estimatedPromptTokens = source.promptTokens;
-                }
-                if (typeof source.cachedPromptTokens === 'number' && Number.isFinite(source.cachedPromptTokens) && estimatedCachedPromptTokens === undefined) {
-                    estimatedCachedPromptTokens = source.cachedPromptTokens;
-                }
-            }
-            const chunkUsage = resolveChunkUsage(chunk);
-
-            if (chunk.type !== 'done' || chunk.usage || freshToolCalls.length) {
-                await this.app.publishEvent(new AgentStreamChunkEvent(
-                    this,
-                    sessionId,
-                    chunk.type === 'done' && freshToolCalls.length ? 'tool_call' : chunk.type,
-                    chunk.type === 'tool_call' || (chunk.type === 'done' && freshToolCalls.length)
-                        ? describeToolCallNames(freshToolCalls)
-                        : chunk.content,
-                    freshToolCalls.length ? freshToolCalls : chunk.toolCalls,
-                    chunkUsage
-                ));
-            }
-
-            if (freshToolCalls.length) {
-                toolCalls = toolCalls.concat(freshToolCalls);
-            }
-            if (chunk.metadata) {
-                metadata = { ...metadata, ...chunk.metadata };
-            }
-
-            if (chunk.type === 'done' && freshToolCalls.length) {
-                yield {
-                    type: 'tool_call',
-                    content: describeToolCallNames(freshToolCalls),
-                    toolCalls: freshToolCalls
-                };
-            }
-
-            if (chunk.type !== 'done' || chunk.usage) {
-                yield {
-                    type: chunk.type,
-                    content: chunk.type === 'tool_call'
-                        ? describeToolCallNames(freshToolCalls)
-                        : chunk.content,
-                    toolCalls: chunk.type === 'tool_call' ? freshToolCalls : undefined,
-                    usage: chunkUsage
-                };
-            }
-        }
-
-        const response: ModelResponse = {
-            message,
-            toolCalls: toolCalls.length ? toolCalls : undefined,
-            metadata: {
-                ...metadata,
-                usage,
-                reasoningContent: reasoningContent || undefined
-            }
-        };
-        await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
-        return response;
-    }
-
-    private collectFreshStreamingToolCalls(
-        seen: Set<string>,
-        incoming?: AgentToolCall[]
-    ): AgentToolCall[] {
-        if (!incoming?.length) {
-            return [];
-        }
-
-        const fresh: AgentToolCall[] = [];
-        for (const toolCall of incoming) {
-            const id = String(toolCall.id || '').trim() || `tool-${toolCall.name}-${fresh.length}`;
-            if (seen.has(id)) {
-                continue;
-            }
-            seen.add(id);
-            const normalized = { ...toolCall, id };
-            fresh.push(normalized);
-        }
-        return fresh;
+    private async *collectStreamingResponse(sessionId: string, request: ModelRequest): AsyncGenerator<StreamChunk, ModelResponse, void> {
+        return yield* collectStreamingResponseView({
+            source: this,
+            stream: req => this.streamModelRequest(req),
+            publish: event => this.app.publishEvent(event),
+            estimateTokens: text => this.contextManager.estimateTokens(text),
+            buildCompletedEvent: (id, response) => this.buildModelCompletedEvent(id, response)
+        }, sessionId, request);
     }
 
     /** Tell the model how many tool rounds are left, once, before the cap hits. */
