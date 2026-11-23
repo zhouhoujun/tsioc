@@ -111,6 +111,21 @@ describe('Workflow file nodes', () => {
         expect(String(result.error?.message || '')).toContain('outside the allowed workspace root');
     });
 
+    it('adds a trailing newline when requested', async () => {
+        const file = path.join(root, 'lines.txt');
+        const first = await service.execute(flow([
+            { type: 'file-out', id: 'write', config: { path: 'lines.txt', payload: 'payload', newline: true } }
+        ]), { payload: 'line' });
+        expect(first.success).toBe(true);
+        expect(fs.readFileSync(file, 'utf8')).toBe('line\n');
+
+        const second = await service.execute(flow([
+            { type: 'file-out', id: 'write', config: { path: 'lines.txt', payload: 'payload', newline: true, append: true } }
+        ]), { payload: 'next' });
+        expect(second.success).toBe(true);
+        expect(fs.readFileSync(file, 'utf8')).toBe('line\nnext\n');
+    });
+
     it('reports a clear error when the host has no file access', async () => {
         const bare = createInjector();
         InjectUtil.use(bare, WorkflowModule);

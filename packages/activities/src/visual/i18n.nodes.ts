@@ -836,6 +836,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "Payload path",
                 "encoding": "Encoding",
                 "append": "Append",
+                "newline": "Add newline",
                 "mkdir": "Create folders"
             },
             "watch": {
@@ -2510,6 +2511,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "payload": "载荷路径",
                 "encoding": "编码",
                 "append": "追加写入",
+                "newline": "追加换行",
                 "mkdir": "自动创建目录"
             },
             "watch": {

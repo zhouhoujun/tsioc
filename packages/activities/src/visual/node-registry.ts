@@ -1547,9 +1547,10 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 { label: 'Base64', value: 'base64' }
             ] }),
             configField({ key: 'append', label: 'Append', type: 'boolean', defaultValue: false }),
+            configField({ key: 'newline', label: 'Add newline', type: 'boolean', defaultValue: false }),
             configField({ key: 'mkdir', label: 'Create folders', type: 'boolean', defaultValue: true })
         ],
-        defaultConfig: { path: '', payload: 'payload', encoding: 'utf8', append: false, mkdir: true }
+        defaultConfig: { path: '', payload: 'payload', encoding: 'utf8', append: false, newline: false, mkdir: true }
     },
     {
         type: 'watch',

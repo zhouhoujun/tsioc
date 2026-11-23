@@ -1353,12 +1353,16 @@ export async function executeVisualNode(
                 };
             }
             const value = resolveWorkflowValue(config.payload === undefined ? 'payload' : config.payload, context);
-            const data = typeof value === 'string' ? value : JSON.stringify(value ?? null);
+            const encoding = String(config.encoding || 'utf8');
+            let data = typeof value === 'string' ? value : JSON.stringify(value ?? null);
+            if (config.newline === true && encoding !== 'base64' && !data.endsWith('\n')) {
+                data += '\n';
+            }
             try {
                 const result = await write({
                     path,
                     data,
-                    encoding: String(config.encoding || 'utf8'),
+                    encoding,
                     append: config.append === true,
                     mkdir: config.mkdir !== false
                 });

@@ -914,7 +914,7 @@ client connection.
 `file-in`, `file-out`, `watch` and `tail` run on the host and stay inside the workspace:
 
 ```text
-file-out  { path: "data/out.json", payload: "payload", append: false, mkdir: true }
+file-out  { path: "data/out.json", payload: "payload", append: false, newline: false, mkdir: true }
 file-in   { path: "data/out.json", encoding: "utf8", parse: "auto", deleteAfterRead: false }
 watch     { path: "data", recursive: false, debounce: 200, event: "all" }
 tail      { path: "logs/app.log", split: true, sendWholeFile: false }
@@ -925,6 +925,8 @@ tail      { path: "logs/app.log", split: true, sendWholeFile: false }
 - `file-in` parses valid JSON when `parse: "auto"`, otherwise keeps the text;
   `deleteAfterRead` removes the file through the host remover after a successful
   read and reports `removed` in the node result
+- `file-out` can append, create parent folders and add a trailing newline
+  (`newline: true`, UTF-8 only) when the content does not already end with one
 - `watch` starts one run per debounced change with
   `context.inbound = { transport: "watch", path, event }`; the watcher is closed
   when the run handle stops
