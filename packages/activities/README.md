@@ -1132,6 +1132,21 @@ boolean `true` once it is stored as `boolean`). Path fields keep the shorter
 and the runtime, and the shared dynamic form accepts the codec per field, so
 DOM and TUI editors store the same shape.
 
+**Validation hooks.** Declarative rules cover required/format/range checks;
+two hooks cover the rest, mirroring Node-RED's `validate(value, opt)`:
+
+- `WorkflowConfigField.validate(value, { values, field })` runs after the
+  declarative rules with the whole node configuration, so a field can depend on
+  other fields (for example an inject node needing a variable name when the
+  payload type is `env`). It also runs for list rows with the row values as
+  context.
+- `WorkflowNodeDefinition.validateConfig(config)` reports structural problems
+  that span rows: a switch with no rules, or an `else` rule that is duplicated
+  or not last.
+
+Both surface through `validateWorkflowConfigs`, which the designer uses on
+save/publish, and are reported next to the field they belong to.
+
 ### Workflow plugins
 
 `WorkflowPluginRegistry` installs custom nodes, services and lifecycle hooks:

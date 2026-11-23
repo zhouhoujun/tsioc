@@ -33,6 +33,32 @@ function configField(field: WorkflowConfigField): WorkflowConfigField {
     return { ...field };
 }
 
+/**
+ * Shared structural checks for rule-based routing nodes: a switch without rules
+ * has nowhere to route, and an `else` rule is only reachable as the last rule.
+ */
+function validateRoutingRules(config: Record<string, any>): Array<{ fieldKey: string; message: string }> {
+    const rules = Array.isArray(config?.rules) ? config.rules : [];
+    const issues: Array<{ fieldKey: string; message: string }> = [];
+    if (!rules.length) {
+        issues.push({
+            fieldKey: 'rules',
+            message: 'Add at least one rule so the node has a route to follow.'
+        });
+        return issues;
+    }
+    const elseIndexes = rules
+        .map((rule: any, index: number) => String(rule?.operator || '') === 'else' ? index : -1)
+        .filter((index: number) => index >= 0);
+    if (elseIndexes.length > 1) {
+        issues.push({ fieldKey: 'rules', message: 'Only one "else" rule is allowed.' });
+    }
+    if (elseIndexes.length && elseIndexes[elseIndexes.length - 1] !== rules.length - 1) {
+        issues.push({ fieldKey: 'rules', message: 'The "else" rule must be the last rule.' });
+    }
+    return issues;
+}
+
 const VALUE_PATH_PATTERN = '^\\$?\\.?[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$';
 const DEFAULT_NODE_WIDTH = 184;
 const DEFAULT_NODE_HEIGHT = 64;
@@ -119,7 +145,18 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'repeatCount', label: 'Repeat count', type: 'number', defaultValue: 1, min: 0, step: 1, group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'interval' }, description: 'How many times the interval trigger runs. 0 means until stopped.' }),
             configField({ key: 'cron', label: 'Cron expression', type: 'text', placeholder: '0 9 * * 1-5', group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'cron' }, pattern: '^\\s*\\S+(\\s+\\S+){4}\\s*$', description: 'Five fields: minute hour day month weekday.' }),
-            configField({ key: 'event', label: 'Event name', type: 'text', placeholder: 'order.created', pattern: '^[A-Za-z_$][A-Za-z0-9_$.:-]*$', group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'event' } }),
+            configField({
+                key: 'event',
+                label: 'Event name',
+                type: 'text',
+                placeholder: 'order.created',
+                pattern: '^[A-Za-z_$][A-Za-z0-9_$.:-]*$',
+                group: 'Trigger',
+                visibleWhen: { key: 'trigger', equals: 'event' },
+                validate: value => String(value ?? '').trim()
+                    ? undefined
+                    : 'Name the event this inject waits for.'
+            }),
             configField({ key: 'timeout', label: 'Wait timeout', type: 'number', defaultValue: 30, min: 0, step: 1, unit: 's', group: 'Trigger', visibleWhen: { key: 'trigger', equals: 'event' } }),
             configField({
                 key: 'payloadType',
@@ -137,7 +174,16 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 group: 'Payload'
             }),
             configField({ key: 'payload', label: 'Payload fields', type: 'json', defaultValue: {}, group: 'Payload', visibleWhen: { key: 'payloadType', equals: 'json' } }),
-            configField({ key: 'payloadValue', label: 'Payload value', type: 'text', group: 'Payload', visibleWhen: { key: 'payloadType', in: ['string', 'number', 'boolean', 'env'] } }),
+            configField({
+                key: 'payloadValue',
+                label: 'Payload value',
+                type: 'text',
+                group: 'Payload',
+                visibleWhen: { key: 'payloadType', in: ['string', 'number', 'boolean', 'env'] },
+                validate: (value, { values }) => values.payloadType === 'env' && !String(value ?? '').trim()
+                    ? 'Name the environment variable to read.'
+                    : undefined
+            }),
             configField({ key: 'topic', label: 'Topic', type: 'text', maxLength: 200, placeholder: 'orders.created', group: 'Payload' }),
             configField({
                 key: 'properties',
@@ -295,7 +341,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             }),
             configField({ key: 'checkAll', label: 'Check all rules', type: 'boolean', defaultValue: false })
         ],
-        defaultConfig: { rules: [], checkAll: false }
+        defaultConfig: { rules: [], checkAll: false },
+        validateConfig: validateRoutingRules
     },
     {
         type: 'junction',
@@ -561,7 +608,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 ]
             })
         ],
-        defaultConfig: { rules: [] }
+        defaultConfig: { rules: [] },
+        validateConfig: validateRoutingRules
     },
     {
         type: 'complete',

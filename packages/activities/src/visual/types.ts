@@ -655,6 +655,17 @@ export interface WorkflowReferenceSpec {
 }
 
 /**
+ * Context handed to a field-level validation hook. `values` is the whole node
+ * configuration (defaults applied) so rules can depend on other fields, which
+ * mirrors Node-RED's `validate(value, opt)` contract.
+ */
+export interface WorkflowConfigFieldValidation {
+    value: any;
+    values: Record<string, any>;
+    field: WorkflowConfigField;
+}
+
+/**
  * 节点配置字段定义
  * Node config field definition.
  */
@@ -666,6 +677,11 @@ export interface WorkflowConfigField extends Omit<DynamicFormField, 'type' | 'la
     rules?: Array<WorkflowConfigRule | WorkflowConfigRuleType>;
     /** Nested item schema for list fields. */
     itemFields?: WorkflowConfigField[];
+    /**
+     * Cross-field validation hook. Return an actionable message or nothing;
+     * the inspector/validation panel reports it next to this field.
+     */
+    validate?: (value: any, context: WorkflowConfigFieldValidation) => string | undefined;
     /** Group header shown above this field in the inspector. */
     group?: string;
     /** Only render the field when the referenced config value matches. */
@@ -739,6 +755,16 @@ export interface WorkflowNodeDefinition {
      * Default config.
      */
     defaultConfig?: Record<string, any>;
+    /**
+     * Structural configuration validation. Return messages (optionally keyed to
+     * a field) for rules that span several fields or list rows, such as a
+     * routing node needing at least one rule or a fallback rule in last place.
+     */
+    validateConfig?: (config: Record<string, any>) => Array<string | {
+        fieldKey?: string;
+        label?: string;
+        message: string;
+    }>;
     /**
      * 是否只允许出现一次（例如 start/end）
      * Whether only one instance may exist.

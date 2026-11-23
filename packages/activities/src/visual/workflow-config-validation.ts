@@ -108,7 +108,53 @@ export function validateWorkflowConfigs(
                         message: issue.message
                     });
                 }
+                for (const child of visible) {
+                    const definitionChild = (nodeDefinition.fields || [])
+                        .find(item => item.key === field.key)
+                        ?.itemFields
+                        ?.find(item => item.key === child.key);
+                    if (typeof definitionChild?.validate !== 'function') {
+                        continue;
+                    }
+                    const childMessage = definitionChild.validate(item?.[child.key], {
+                        value: item?.[child.key],
+                        values: item || {},
+                        field: definitionChild
+                    });
+                    if (!childMessage) {
+                        continue;
+                    }
+                    issues.push({
+                        nodeId: node.id,
+                        nodeName: node.name || node.id,
+                        fieldKey: `${field.key}[${index}].${child.key}`,
+                        label: `${field.label || field.key} ${index + 1} · ${child.label || child.key}`,
+                        message: childMessage
+                    });
+                }
             });
+        }
+        // Field-level cross-field hooks run after the declarative rules so a
+        // field can depend on the rest of the node configuration.
+        const visibleKeys = new Set(fields.map(field => field.key));
+        for (const field of nodeDefinition.fields) {
+            if (!visibleKeys.has(field.key) || typeof field.validate !== 'function') {
+                continue;
+            }
+            const message = field.validate(values[field.key], {
+                value: values[field.key],
+                values,
+                field
+            });
+            if (message) {
+                issues.push({
+                    nodeId: node.id,
+                    nodeName: node.name || node.id,
+                    fieldKey: field.key,
+                    label: fields.find(item => item.key === field.key)?.label || field.key,
+                    message
+                });
+            }
         }
         // Typed value fields store literal classes explicitly; report text that
         // cannot be read as its declared class before the workflow runs.
@@ -149,7 +195,8 @@ export function validateWorkflowConfigs(
             const spec = field.reference;
             if (!spec) {
                 continue;
-            }            const ids = referenceIds(config[field.key]);
+            }
+            const ids = referenceIds(config[field.key]);
             if (!ids.length) {
                 continue;
             }
@@ -164,6 +211,26 @@ export function validateWorkflowConfigs(
                 label: field.label || field.key,
                 message: `Reference not found: ${missing.join(', ')}. Pick an existing ${referenceNoun(spec)} or create one.`
             });
+        }
+        // Structural rules that span rows/fields report through the node hook.
+        if (typeof nodeDefinition.validateConfig === 'function') {
+            const results = nodeDefinition.validateConfig(config) || [];
+            for (const result of results) {
+                const normalized = typeof result === 'string' ? { message: result } : result;
+                if (!normalized?.message) {
+                    continue;
+                }
+                issues.push({
+                    nodeId: node.id,
+                    nodeName: node.name || node.id,
+                    fieldKey: normalized.fieldKey || 'config',
+                    label: normalized.label
+                        || (normalized.fieldKey
+                            ? fields.find(field => field.key === normalized.fieldKey)?.label || normalized.fieldKey
+                            : nodeDefinition.label),
+                    message: normalized.message
+                });
+            }
         }
     }
     return issues;
