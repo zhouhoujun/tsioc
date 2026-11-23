@@ -14,6 +14,7 @@ import { SessionPostTurnController } from './SessionPostTurnController';
 import { hadPriorClarification, isClarificationAssistantMessage } from './ClarificationFollowUp';
 import { TurnRequestController } from './TurnRequestController';
 import { TurnTerminationController } from './TurnTerminationController';
+import { cloneToolInput, safeSerializeToolInput, summarizeToolInput as summarizeToolInputView, summarizeToolOutput as summarizeToolOutputView } from './ToolInvocationSupport';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -2241,8 +2242,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         callableTools: AgentToolDefinition[],
         turnContext: TurnExecutionContext
     ): Promise<ToolInvocationResult> {
-        let toolCallInput = this.cloneToolInput(toolCall.input);
-        let inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
+        let toolCallInput = cloneToolInput(toolCall.input);
+        let inputSummary = summarizeToolInputView(toolCall.name, toolCallInput);
         let baseReceipt = createToolBaseReceipt(this.uuid.generate(), toolCall, executionMode, inputSummary);
         const callableToolNames = new Set(callableTools.map(tool => tool.name));
         if (!callableToolNames.has(toolCall.name)) {
@@ -2418,8 +2419,8 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         }
         const rewrittenToolInput = beforeToolHookResults.find(result => result.input !== undefined)?.input;
         if (rewrittenToolInput !== undefined) {
-            toolCallInput = this.cloneToolInput(rewrittenToolInput);
-            inputSummary = this.summarizeToolInput(toolCall.name, toolCallInput);
+            toolCallInput = cloneToolInput(rewrittenToolInput);
+            inputSummary = summarizeToolInputView(toolCall.name, toolCallInput);
             baseReceipt = createToolBaseReceipt(this.uuid.generate(), toolCall, executionMode, inputSummary);
             sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
         }
@@ -2522,7 +2523,7 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 ...sandboxReceipt,
                 status: 'success',
                 durationMs: Math.max(0, this.now() - startedAt),
-                outputSummary: this.summarizeToolOutput(toolCall.name, output)
+                outputSummary: summarizeToolOutputView(toolCall.name, output)
             };
             await this.app.publishEvent(new AgentToolCompletedEvent(this, sessionId, toolCall.name, output, completedReceipt));
             this.pushToolCompensation(sessionId, toolCall.name, toolCall.id, compensationCapture);
@@ -2577,49 +2578,6 @@ let sandboxReceipt = decorateToolSandboxReceipt(baseReceipt, sandboxState);
                 ? error
                 : new Error(`Tool "${definition.name}" could not be activated for this session.`);
         }
-    }
-
-    private safeSerialize(input: any): string | undefined {
-        if (input === undefined) {
-            return undefined;
-        }
-        const seen = new WeakSet<object>();
-        try {
-            return JSON.stringify(input, (_key, current) => {
-                if (typeof current === 'bigint') {
-                    return current.toString();
-                }
-                if (current && typeof current === 'object') {
-                    if (seen.has(current)) {
-                        return '[circular]';
-                    }
-                    seen.add(current);
-                }
-                return current;
-            });
-        } catch {
-            return '[unserializable]';
-        }
-    }
-
-    private cloneToolInput(input: any): any {
-        const serialized = this.safeSerialize(input);
-        if (serialized == null) {
-            return input;
-        }
-        try {
-            return JSON.parse(serialized);
-        } catch {
-            return serialized;
-        }
-    }
-
-    private summarizeToolInput(toolName: string, input: any): string | undefined {
-        return summarizeToolDisplayText(toolName, input, 'input');
-    }
-
-    private summarizeToolOutput(toolName: string, output: any): string | undefined {
-        return summarizeToolDisplayText(toolName, output, 'output');
     }
 
     private async finalizeToolInvocation(sessionId: string, result: ToolInvocationResult): Promise<void> {
