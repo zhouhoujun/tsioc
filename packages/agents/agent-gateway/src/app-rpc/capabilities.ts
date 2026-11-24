@@ -1,3 +1,4 @@
+import { AGENT_RPC_CONTRACT_METHOD_IDS } from './rpc-contracts';
 import { GatewayCapabilityRegistry } from '@tsdi/gateway-kit';
 
 /**
@@ -89,7 +90,7 @@ const AGENT_APP_RPC_METHOD_IDS = [
     'approval.approve',
     'approval.reject',
     'tools.list',
-    'permission.rules.list',
+    ...AGENT_RPC_CONTRACT_METHOD_IDS,
     'tools.activate',
     'tools.invoke',
     'hooks.list',
@@ -163,8 +164,6 @@ const AGENT_APP_RPC_METHOD_IDS = [
     'goal.link',
     'goal.complete',
     'goal.reopen',
-    'artifact.list',
-    'artifact.get',
     'background_task.list',
     'background_task.get',
     'background_task.cancel',

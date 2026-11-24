@@ -20,8 +20,7 @@ import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
-import { listPermissionRules as listPermissionRulesResult } from './permission-rules';
-import { getArtifactFromRpc, listArtifactsFromRpc } from './artifacts-rpc';
+import { resolveAgentRpcContract } from './rpc-contracts';
 import { importSessionFromRpc } from './session-import';
 import { sendSessionMessageFromRpc } from './session-message';
 import { listCrossSessionMessages } from './session-message-list';
@@ -164,6 +163,10 @@ export class AppRpcServer {
     }
 
     private async dispatch(method: string, params: any, context: AppRpcRequestContext): Promise<any> {
+        const contract = resolveAgentRpcContract(method);
+        if (contract) {
+            return contract.handler({ params, context, runtime: this.runtime, authorize: id => this.ensureSessionAccess(id, context) });
+        }
         switch (method) {
             case 'app.ping':
                 return {
@@ -299,8 +302,6 @@ export class AppRpcServer {
             case 'goal.link': return this.linkGoal(params, context);
             case 'goal.complete': return this.updateGoalStatus(params, context, 'completed');
             case 'goal.reopen': return this.updateGoalStatus(params, context, 'active');
-            case 'artifact.list': return listArtifactsFromRpc({ params, runtime: this.runtime, authorize: id => this.ensureSessionAccess(id, context) });
-            case 'artifact.get': return getArtifactFromRpc({ params, runtime: this.runtime, id: requireString(params?.id ?? params?.artifactId, 'id'), authorize: id => this.ensureSessionAccess(id, context) });
             case 'run.turn':
                 return this.runTurn(params, context);
             case 'run.cancel':
@@ -327,7 +328,6 @@ export class AppRpcServer {
                 return this.decideApproval(params, context, false);
             case 'tools.list':
                 return this.tools.getToolDefinitions(optionalSessionId(params));
-            case 'permission.rules.list': return listPermissionRulesResult(this.runtime, params);
             case 'hooks.trust.list':
                 // Declared hooks (hooks.json) with the trust state of their
                 // current definition hash; settings pages show this.

@@ -166,12 +166,17 @@
   `SessionGoalController`、`WorkspaceRootController`、`TurnCompensationController` 等；
   `DefaultAgentRuntime` 从 3506 行降至 **1471 行**（baseline 同提交下调），agent 测试 **1124 passing**。
 
-**P0.4 协议契约单一来源（不重写 transport）**
+**P0.4 协议契约单一来源（新方法已落地 descriptor 2026-11-24）**
 - 新 `agent-gateway/src/app-rpc/contracts.ts`：每 method 一个 descriptor `{params?, result?, capability?, handler}`；
 - 由 descriptor 生成 `AGENT_APP_RPC_METHODS`/typed client/`capabilities`，`AppRpcServer` 用 handler map 调度；
 - contract test 校验：每个 capability 有 handler、每个 handler 有 capability、REST/WS 关键面覆盖；
 - 先覆盖新增方法，旧 switch 可逐步迁移。
 - 验收：新增 method 不再需要手改 union/count；`app.capabilities` 与 dispatch 一致。
+- 状态：新增 `app-rpc/rpc-contracts.ts`：`{ method, description, handler }` descriptor 注册表；
+  `AGENT_RPC_CONTRACT_METHOD_IDS` 以字面量元组并入 `AGENT_APP_RPC_METHODS`（保持 typed client 收窄），
+  `AppRpcServer.dispatch` 先查 contract 再走旧 switch；`permission.rules.list`、`artifact.list/get`
+  已迁移，contract 测试校验 capability 唯一性/handler 行为。**剩余**：把旧 switch 方法逐步迁入 descriptor，
+  并由 descriptor 生成 JSON Schema/OpenAPI/client 类型。
 
 ### P1 — 安全、权限与回滚（2–3 周）
 
