@@ -97,6 +97,58 @@ describe('Workflow inbound runner', () => {
         expect(handle.running).toBe(false);
     });
 
+    it('answers every line-framed TCP message without closing the socket', async () => {
+        const payloads: any[] = [];
+        const framed = definition('tcp-in');
+        framed.nodes[0].config = {
+            host: '127.0.0.1',
+            port: 0,
+            reply: true,
+            framing: 'line',
+            separator: '\\n'
+        };
+        const handle = await runner.start(framed, {
+            context: {
+                actions: {
+                    echo: (ctx: any) => {
+                        payloads.push(ctx.payload);
+                        return { echo: ctx.payload };
+                    }
+                }
+            }
+        });
+        try {
+            const port = handle.ports[0];
+            const replies = await withTimeout(new Promise<string[]>((resolve, reject) => {
+                const socket = net.connect(port, '127.0.0.1', () => socket.write('a\nb\n'));
+                socket.setEncoding('utf8');
+                let buffer = '';
+                const lines: string[] = [];
+                socket.on('data', text => {
+                    buffer += String(text);
+                    const parts = buffer.split('\n');
+                    buffer = parts.pop() || '';
+                    for (const part of parts) {
+                        if (part) {
+                            lines.push(part);
+                        }
+                    }
+                    if (lines.length >= 2) {
+                        socket.end();
+                        resolve(lines);
+                    }
+                });
+                socket.once('error', reject);
+            }));
+            expect(payloads).toEqual(['a', 'b']);
+            expect(replies.length).toBe(2);
+            expect(JSON.parse(replies[0]).result.echo).toBe('a');
+            expect(JSON.parse(replies[1]).result.echo).toBe('b');
+        } finally {
+            await handle.stop();
+        }
+    });
+
     it('runs a TCP listener from a shared endpoint config', async () => {
         const sharedDefinition = definition('tcp-in');
         const inbound = sharedDefinition.nodes.find(node => node.type === 'tcp-in')!;

@@ -224,10 +224,17 @@ export class WorkflowInboundRunner {
                     socket.on('close', () => sockets.delete(socket));
                     socket.on('error', () => sockets.delete(socket));
                     const remote = () => ({ address: socket.remoteAddress, port: socket.remotePort });
+                    // Line framing keeps the connection open so every framed
+                    // message can be answered; raw chunks end after one reply.
                     const reply = shouldReply ? (payload: string) => {
-                        if (!socket.destroyed) {
-                            socket.end(payload);
+                        if (socket.destroyed) {
+                            return;
                         }
+                        if (framing === 'line' && separator) {
+                            socket.write(String(payload).replace(/\r?\n?$/, '') + separator);
+                            return;
+                        }
+                        socket.end(payload);
                     } : undefined;
                     const emit = (text: string) => {
                         if (framing === 'line' && text === '') {

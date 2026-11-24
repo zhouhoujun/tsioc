@@ -9,8 +9,6 @@ import type { CodeDiagnostic } from './code-editor-analysis';
 
 type EditorLanguage = 'javascript' | 'json' | 'xml' | 'html' | 'htmlmixed' | 'css' | 'shell';
 
-/** Marks the textarea whose editor host has already been initialized. */
-const CODE_EDITOR_MARKER = '__workflowCodeEditor';
 
 /**
  * Collapse the host's `data-dynamic-code` value into a known editor language.
@@ -313,25 +311,7 @@ export class WorkflowCodeMirrorDirective implements OnDestroy {
         if (!element || typeof element.tagName !== 'string') {
             return;
         }
-        // Views can be reused when the form schema swaps fields; a second
-        // directive instance attached to the same textarea must not insert a
-        // duplicate editor host/status line.
-        const previous: any = (element as any)[CODE_EDITOR_MARKER];
-        if (previous && previous !== this) {
-            if (!previous.destroyed) {
-                return;
-            }
-            // The previous editor is gone (view destroyed without cleanup):
-            // drop its leftovers and take the textarea over.
-            let stale = element.nextElementSibling as HTMLElement | null;
-            while (stale && (stale.classList.contains('workflow-code-editor-host')
-                || stale.classList.contains('workflow-code-status'))) {
-                const next = stale.nextElementSibling as HTMLElement | null;
-                stale.remove();
-                stale = next;
-            }
-        }
-        (element as any)[CODE_EDITOR_MARKER] = this;
+
         // A field swap can replace the textarea without destroying the previous
         // directive, leaving its host/status behind. A field renders one code
         // editor at a time, so drop leftovers before inserting ours.
@@ -602,9 +582,6 @@ export class WorkflowCodeMirrorDirective implements OnDestroy {
         this.status = undefined;
         if (this.textarea) {
             this.textarea.style.display = this.previousDisplay;
-            if ((this.textarea as any)[CODE_EDITOR_MARKER] === this) {
-                delete (this.textarea as any)[CODE_EDITOR_MARKER];
-            }
             this.textarea = undefined;
         }
     }

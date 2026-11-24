@@ -96,15 +96,15 @@ describe('Workflow message envelope and scopes', () => {
                     code: [
                         'global.set("environment", "prod");',
                         'flow.set("count", 5);',
-                        'msg.payload = { count: flow.get("count"), env: global.get("environment"), direct: flow.count };',
+                        'msg.payload = { count: flow.get("count"), env: global.get("environment"), direct: flow.count, stage: env.get("STAGE") };',
                         'return msg;'
                     ].join('\n')
                 }
             }
-        ]), {});
+        ]), { env: { STAGE: 'beta' } });
         expect(result.success).toBe(true);
         expect(result.data?.executionState?.nodeStates.function_0.result?.data?.payload)
-            .toEqual({ count: 5, env: 'prod', direct: 5 });
+            .toEqual({ count: 5, env: 'prod', direct: 5, stage: 'beta' });
     });
 
     it('forwards the last message passed to node.send when the code returns nothing', async () => {

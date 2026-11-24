@@ -47,7 +47,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 
 | Node-RED | Type here | Notes |
 | --- | --- | --- |
-| function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context` plus Node-RED-style `node.status()`, `node.info/warn/debug/error()`, `node.id`/`node.name`, `node.send(msg)` (last send forwarded) and `flow.get/set` / `global.get/set`. Set **Outputs** > 1 and return an array of messages to route one message per output port; each wire gets its own branch-local message while `flow`/`global` stay shared |
+| function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context` plus Node-RED-style `node.status()`, `node.info/warn/debug/error()`, `node.id`/`node.name`, `node.send(msg)` (last send forwarded) and `flow.get/set` / `global.get/set` and `env.get/has`. Set **Outputs** > 1 and return an array of messages to route one message per output port; each wire gets its own branch-local message while `flow`/`global` stay shared |
 | switch | `switch`, `router` | `+` one output per rule (**dynamic ports**, no eight-output limit), all rule operators, check-all fan-out, `else`, output labels summarize the rule; compare values may be typed values or JSONata |
 | change | `change` | `+` set/delete/append/move/search-and-replace; values from literal, `msg`/`flow`/`global`/`env` or a **JSONata expression** |
 | range | `scale` | `~` maps a value between ranges with **clamp / scale / wrap / drop** (legacy `clamp: false` still scales; drop stops the branch). The `range` type here is a sequence generator |
@@ -64,7 +64,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | http in / response | `http-in`, `http-response` | `=` method/path matching, request metadata, response status/headers/body; CORS, uploads, query/policy on the inbound endpoint |
 | http request | `http-request` | `+` shared `http` endpoint (base URL, headers, query, redirect/error policy, basic/bearer/API-key auth), retry, timeout, response type, **`paytoqs`**, ignore errors; URL/body accept `{{expr: ...}}` |
 | mqtt in/out | `mqtt-in`, `mqtt-out` | `+` shared `mqtt` broker config node, QoS 0-2, retain, keepalive, clean session, will + birth, client id, TLS profile |
-| tcp in/out | `tcp-in`, `tcp-out` | `+` shared `tcp` endpoint (host/port/TLS), **line framing** (separator with `\n`/`\r\n`/`\t`, trailing fragment flushed on close), reply, topic |
+| tcp in/out | `tcp-in`, `tcp-out` | `+` shared `tcp` endpoint (host/port/TLS), **line framing** (separator with `\n`/`\r\n`/`\t`, trailing fragment flushed on close, one reply per framed message without closing the socket), topic |
 | udp in/out | `udp-in`, `udp-out` | `+` shared `udp` endpoint incl. broadcast, reply, topic |
 | websocket in/out | `websocket-in`, `websocket-out` | `+` shared listener/client config nodes, path, subprotocol, headers, broadcast to connected clients |
 | tls | `tls` | `=` reusable CA/cert/key/servername/verify profile; secrets can be credentials |
