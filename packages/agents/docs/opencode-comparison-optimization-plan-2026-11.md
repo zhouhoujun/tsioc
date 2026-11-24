@@ -235,11 +235,16 @@
   展示已发布产物 ID。**剩余**：Web iframe 内嵌展示（HTTP 文件服务已落地：`GET /artifacts/:sessionId/:id/*path`，
 带会话归属校验、`text/html` 等 MIME、nosniff 与 CSP sandbox；工具返回的 URL 已带 sessionId）。
 
-**P2.2 Compaction v2**
+**P2.2 Compaction v2（后台 precompute 已落地 2026-11-24）**
 - 后台 precompute：接近阈值时启动 summary fiber，记录失败次数/有效期；下一 step 直接采用。
 - native window：adapter 支持时保存 provider-native compaction；按 model 重放，避免跨模型污染。
 - shrink 阶梯：overflow 后按比例缩小 keep/buffer；缓存前缀感知。
 - 验收：长会话不阻塞；summary 质量/成本指标；overflow 恢复；现有 anchors/recoverDetail 不回归。
+- 状态：turn 结束后若接近 compaction 阈值，`AgentContextManager.precomputeCompaction` 在后台启动
+  compactable prefix 的 summary（不阻塞 turn）；压缩时仅当缓存 message ids 仍是当前 oldMessages 的
+  **前缀**才复用，并只对新增 suffix 追加 summary（incremental），失败/过期自动回退完整 summary。
+  现有 light/medium/deep 分级与 deep `aggressivePrune` 保留（shrink 阶梯基础）。
+  **剩余**：provider-native compaction window、按比例的 keep/buffer shrink 调优。
 
 **P2.3 工具变换与插件 hooks（工具变换已落地 2026-11-24）**
 - 扩展 `AgentHooks` 域：`tool.execute.before/after`、`permission.evaluate`、`model.request/response/retry`、`config.observe`；

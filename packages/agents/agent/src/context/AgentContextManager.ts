@@ -2,6 +2,7 @@ import { Injectable } from '@tsdi/ioc';
 import { AgentMessage, getAgentMessageImageParts, getAgentMessageText } from '../runtime/AgentMessage';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
+import { CompactionPrecompute } from './CompactionPrecompute';
 import { MemoryStore } from '../memory/MemoryStore';
 import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
 import { RedactionFilter } from '../harness/RedactionFilter';
@@ -202,7 +203,7 @@ export class AgentContextManager {
     private compactionThreshold = 0;
     private cumulativeTokenSavings = 0;
     private originalMessageStore = new Map<string, StashedContext>();
-    private compactionHookRunner?: CompactionHookRunner;
+    private compactionHookRunner?: CompactionHookRunner; private readonly compactionPrecompute = new CompactionPrecompute();
     private redactionFilter = new RedactionFilter();
 
     // Adaptive budget tracking
@@ -283,7 +284,6 @@ export class AgentContextManager {
         const tokenThreshold = Math.min(this.effectiveCompactionMinTokens, this.budget.maxHistoryTokens);
         return estimatedTokens >= tokenThreshold;
     }
-
     /**
      * True when there is prior-turn history beyond the recent window that
      * compaction could actually summarize. The in-flight turn is never
@@ -298,7 +298,6 @@ export class AgentContextManager {
         const conversation = prefix.filter(message => message.role !== 'system');
         return conversation.length > this.effectiveRecentWindow;
     }
-
     /**
      * Stash a snapshot of original messages before compaction so detail recovery
      * can retrieve them later when a user query references compacted content.
@@ -317,7 +316,6 @@ export class AgentContextManager {
             }
         }
     }
-
     /**
      * Purge expired entries from the stash based on stashTTL.
      * No-op when stashTTL is 0 or undefined.
@@ -596,6 +594,8 @@ export class AgentContextManager {
     private get effectiveRecentWindow(): number {
         return this.adaptiveEnabled ? this.dynamicRecentWindow : this.budget.recentMessageWindow;
     }
+
+    precomputeCompaction(messages: AgentMessage[]): void { this.compactionPrecompute.maybeSchedule({ messages, summarizer: this.summarizer, effectiveMinTokens: this.effectiveCompactionMinTokens, maxHistoryTokens: this.budget.maxHistoryTokens, messageThreshold: this.compactionThreshold, split: value => this.splitMessagesForCompaction(value), estimate: value => this.estimateMessages(value) }); }
 
     async prepareHistory(messages: AgentMessage[], sessionId?: string, currentUserMessageId?: string): Promise<{ messages: AgentMessage[]; report: ContextPreparationReport }> {
         const beforeMessageCount = messages.length;
@@ -948,7 +948,7 @@ export class AgentContextManager {
         try {
             const minimalAnchors = level === 'deep';
             const preservedAnchors = this.resolveCompactionAnchors(oldMessages, recentMessages, minimalAnchors);
-            const summary = await this.summarizer.summarize(oldMessages);
+            const summary = await this.compactionPrecompute.summary(oldMessages, this.summarizer);
             if (!summary?.trim()) {
                 const prepared = this.pruneHistory(messages);
                 return {

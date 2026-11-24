@@ -339,6 +339,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
             await this.bindGitStepSnapshot(input.sessionId, result.message.id, turnContext.workspace);
             await this.sessions.append(input.sessionId, result.message);
+            this.contextManager.precomputeCompaction((await this.sessions.get(input.sessionId)).messages);
             await this.evaluateSessionGoal(input.sessionId, result.message.content);
             await this.postTurn.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
             await this.refreshSessionSummary(input.sessionId).catch(() => undefined);
@@ -447,6 +448,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
                 await this.bindGitStepSnapshot(sessionId, result.message.id, turnContext.workspace);
                 await this.sessions.append(sessionId, result.message);
+                this.contextManager.precomputeCompaction((await this.sessions.get(sessionId)).messages);
                 await this.postTurn.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
                 await this.refreshSessionSummary(sessionId).catch(() => undefined);
                 await this.postTurn.maybeDistillExperience(sessionId, userMessage, result.message);
@@ -639,7 +641,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
     ): Promise<{ compensated: number; toolCallIds: string[] }> {
         return this.compensations.rollback(sessionId, reason);
     }
-
     private get observability(): TurnObservabilityController {
         return this.turnObservability ??= new TurnObservabilityController({
             app: this.app, uuid: this.uuid, telemetry: this.telemetry,
