@@ -109,6 +109,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | Credentials | `secret` fields, `{{credential:name}}`, publish-time validation against the host store, write-time migration of inline values |
 | Node status | `ActivityResult.status` painted on the canvas + inspector, translated by `key`/`params`; `node.status({fill, shape, text})` maps Node-RED fills to semantic levels and renders dot/ring indicators |
 | Node activation | `disabled` nodes keep their wiring but are skipped |
+| Performance harness | `bench/index.ts` measures registry lookups, palette, canvas rebuild/incremental, inspector, config validation, typed values and execution; `npm run bench` reports, `npm run bench:check` enforces generous calibration-scaled budgets |
 
 ## Deliberate non-goals
 

@@ -5,6 +5,8 @@
     "scripts": {
         "build": "ts-node -r tsconfig-paths/register taskfile.ts",
         "test": "node run-tests.js",
+        "bench": "ts-node -r tsconfig-paths/register bench/index.ts",
+        "bench:check": "node ../../scripts/check-activities-bench.mjs",
         "test:coverage": "node run-tests.js -c",
         "test:ui": "node run-ui-tests.js",
         "test:all": "npm run test && npm run test:ui"
