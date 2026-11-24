@@ -2056,6 +2056,8 @@ export async function executeVisualNode(
                 const msg = (context as any).msg || { payload: (context as any).payload };
                 const flow = scoped((context as any).flow || {});
                 const global = scoped((context as any).global || {});
+                // `env` already carries non-enumerable get/has helpers from the
+                // service environment scope.
                 const env = (context as any).env || {};
                 const run = async (code: string) => {
                     // Trusted-code node: same trust level as a Node-RED function node.
