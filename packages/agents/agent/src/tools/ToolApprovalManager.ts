@@ -1,125 +1,18 @@
-import { Abstract, Injectable, Optional, Inject, token } from '@tsdi/ioc';
+import { Injectable, Optional, Inject } from '@tsdi/ioc';
 import { ApplicationContext, UuidGenerator } from '@tsdi/core';
 import { AgentApprovalRequestedEvent, AgentApprovalCompletedEvent, AgentApprovalFailedEvent } from '../runtime/AgentEvents';
 import { AuditSink, AgentAuditRecord } from '../harness/AuditSink';
 import { AgentClock, AGENT_CLOCK } from '../runtime/Clock';
 import type { ApprovalRule } from './ApprovalStrategy';
+import type { PermissionRule } from '../permissions/PermissionEngine';
+import {
+    AgentApprovalOptions, AgentApprovalReviewer, AgentApprovalStrategy, ApprovalDecision, ApprovalManager,
+    ApprovalManagerOptions, ApprovalRequest, ApprovalRequestView, ApprovalResult, ApprovalReviewer,
+    ApprovalStrategy, ReviewSuggestion
+} from './approval-contracts';
+export * from './approval-contracts';
 export { ApprovalRule, ApprovalRuleObject, DefaultApprovalStrategy } from './ApprovalStrategy';
 
-export interface ApprovalStrategy {
-    requires(toolName: string, input: any, sessionId?: string): boolean;
-    reason(toolName: string, input: any): string;
-    /** Structured form of `reason` for localized rendering. */
-    reasonDetail?(toolName: string, input: any): { code: string; params?: Record<string, any> };
-    /** Whether a matched approval rule denies without entering the pending surface (granular `mode: 'auto-deny'`). */
-    autoDenies?(toolName: string, input: any, sessionId?: string): boolean;
-    /** Whether an injected ApprovalReviewer may resolve requests without a human (A2). */
-    autoReview?: boolean;
-    /** Per-session rule overrides; evaluated after the workspace rules. */
-    setSessionRules?(sessionId: string, rules: ApprovalRule[]): void;
-    getSessionRules?(sessionId: string): ApprovalRule[];
-}
-
-export const AgentApprovalStrategy = token<ApprovalStrategy>('AgentApprovalStrategy');
-
-/**
- * A2: automatic approval review. An optional reviewer inspects the gated tool
- * (definition + input + session evidence) and may suggest a decision. Only
- * `approve` / `deny` short-circuit the human flow; `needs-human` and any
- * reviewer failure fall back to the normal pending-approval surface.
- */
-export type ReviewSuggestion = 'approve' | 'deny' | 'needs-human';
-
-export interface ApprovalReviewContext {
-    toolName: string;
-    input: any;
-    inputSummary?: string;
-    sessionId: string;
-    reason: string;
-}
-
-export interface ApprovalReviewer {
-    review(context: ApprovalReviewContext):
-        | Promise<ReviewSuggestion | { action: ReviewSuggestion; reason?: string }>
-        | ReviewSuggestion
-        | { action: ReviewSuggestion; reason?: string };
-}
-
-export const AgentApprovalReviewer = token<ApprovalReviewer>('AgentApprovalReviewer');
-
-export interface ApprovalManagerOptions {
-    defaultTimeoutMs?: number;
-    maxTimeoutMs?: number;
-    maxPendingApprovals?: number;
-    autoDeny?: boolean;
-    /** A2: run the injected ApprovalReviewer before surfacing a human approval. */
-    autoReview?: boolean;
-    /** G79: automatically approve all requests for this session (e.g. automation / headless mode). */
-    autoApprove?: boolean;
-}
-export const AgentApprovalOptions = token<ApprovalManagerOptions>('AgentApprovalOptions');
-
-export enum ApprovalDecision {
-    APPROVED = 'approved',
-    DENIED = 'denied',
-    TIMEOUT = 'timeout',
-    NOT_REQUIRED = 'not_required',
-    CANCELLED = 'cancelled'
-}
-
-export interface ApprovalRequest {
-    id: string;
-    toolName: string;
-    input: any;
-    hasInput: boolean;
-    inputSummary?: string;
-    sessionId: string;
-    reason: string;
-    reasonDetail?: { code: string; params?: Record<string, any> };
-    summary: string;
-    createdAt: number;
-    timeoutMs: number;
-    expiresAt: number;
-}
-
-export interface ApprovalRequestView {
-    id: string;
-    toolName: string;
-    sessionId: string;
-    reason: string;
-    reasonDetail?: { code: string; params?: Record<string, any> };
-    summary: string;
-    hasInput: boolean;
-    inputSummary?: string;
-    createdAt: number;
-    timeoutMs: number;
-    expiresAt: number;
-}
-
-export interface ApprovalResult {
-    decision: ApprovalDecision;
-    request?: ApprovalRequest;
-}
-
-/** IoC contract for approval consumers; implementations may be replaced per host. */
-@Abstract()
-export abstract class ApprovalManager {
-    abstract checkApproval(toolName: string, input: any, sessionId: string, force?: boolean): Promise<ApprovalResult>;
-    abstract requireApproval(toolName: string, input: any, sessionId: string): Promise<boolean>;
-    abstract requiresApproval(toolName: string, input: any): boolean;
-    abstract approve(requestId: string): boolean;
-    abstract reject(requestId: string): boolean;
-    abstract cancelBySession(sessionId: string): number;
-    abstract getPending(): ApprovalRequestView[];
-    abstract isConfigured(): boolean;
-    abstract isAutoApproveEnabled(): boolean;
-    abstract setAutoApprove(enabled: boolean): void;
-    /** Optional: project-scoped tool allow list (durable "always allow"). */
-    setAllowRules?(_rules: string[]): void;
-    getAllowRules?(): string[];
-    /** Optional: hosts that expose an approval-timeout setting update it here. */
-    setDefaultTimeout(_timeoutMs: number): void { /* no-op for managers without a queue policy */ }
-}
 
 const DEFAULT_APPROVAL_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_APPROVAL_TIMEOUT_MS = 300000;
@@ -178,7 +71,7 @@ export class ToolApprovalManager extends ApprovalManager {
 
     private pending = new Map<string, {
         request: ApprovalRequest;
-        resolve: (decision: ApprovalDecision) => void;
+        resolve: (decision: ApprovalDecision, feedback?: string) => void;
         abortController: AbortController;
     }>();
 
@@ -240,7 +133,15 @@ export class ToolApprovalManager extends ApprovalManager {
 
     getSessionRules(sessionId: string): ApprovalRule[] { return this.strategy?.getSessionRules?.(sessionId) ?? []; }
 
-    setAllowRules(rules: string[]): void { const seen = new Set<string>(); this.allowRules = (Array.isArray(rules) ? rules : []).map(rule => String(rule || '').trim()).filter(rule => rule && !seen.has(rule) && !!seen.add(rule)).slice(-50); }
+    setAllowRules(rules: string[]): void { const seen = new Set<string>(); this.allowRules = (Array.isArray(rules) ? rules : []).map(rule => String(rule || '').trim()).filter(rule => rule && !seen.has(rule) && !!seen.add(rule)).slice(-50); this.strategy?.setSavedAllowPatterns?.(this.allowRules); }
+
+    setPermissionRules(rules: PermissionRule[] | (() => PermissionRule[] | undefined)): void { this.strategy?.setPermissionRules?.(rules); }
+
+    listPermissionRules(sessionId?: string): PermissionRule[] { return this.strategy?.listPermissionRules?.(sessionId) ?? []; }
+
+    inspectPermission(toolName: string, input: any, sessionId?: string): import('../permissions/PermissionEngine').PermissionDecision | undefined {
+        return this.strategy?.explainPermission?.(toolName, input, sessionId);
+    }
 
     getAllowRules(): string[] { return [...this.allowRules]; }
 
@@ -298,9 +199,14 @@ export class ToolApprovalManager extends ApprovalManager {
             }
         }
 
+        let feedback: string | undefined;
         const decision = await new Promise<ApprovalDecision>((resolve) => {
             const abortController = new AbortController();
-            this.pending.set(request.id, { request, resolve, abortController });
+            this.pending.set(request.id, {
+                request,
+                resolve: (decision, note) => { feedback = note; resolve(decision); },
+                abortController
+            });
             this.app.publishEvent(new AgentApprovalRequestedEvent(this, this.toRequestView(request)))
                 .catch(() => {});
             // v19-A2: use clock.sleep() for deterministic timeout in tests
@@ -325,7 +231,7 @@ export class ToolApprovalManager extends ApprovalManager {
         this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), decision === ApprovalDecision.APPROVED))
             .catch(() => {});
         await this.recordApprovalAudit(request, decision);
-        return { decision, request };
+        return { decision, request, ...(feedback ? { feedback } : {}) };
     }
 
     async requireApproval(toolName: string, input: any, sessionId: string): Promise<boolean> {
@@ -376,12 +282,12 @@ export class ToolApprovalManager extends ApprovalManager {
         return true;
     }
 
-    reject(requestId: string): boolean {
+    reject(requestId: string, feedback?: string): boolean {
         const pending = this.pending.get(requestId);
         if (!pending) return false;
         this.pending.delete(requestId);
         pending.abortController.abort();
-        pending.resolve(ApprovalDecision.DENIED);
+        pending.resolve(ApprovalDecision.DENIED, typeof feedback === 'string' ? feedback.trim().slice(0, 2000) : undefined);
         return true;
     }
 

@@ -227,6 +227,37 @@ async function showPermissionInspector(host: PolicyCommandHost, tool?: string, r
     const target = String(tool || '').trim();
     const approvalRules = readEffectiveApprovalRules(host.options);
     lines.push(formatAgentUiNotice(host.translator, 'permissionApprovalRulesLine', { count: approvalRules.length }));
+    let v3Rules: any[] = [];
+    let v3Decision: any;
+    if (host.appRpc) {
+        const result = await host.appRpc.request(
+            'permission.rules.list',
+            { sessionId, ...(target ? { tool: target, resource } : {}) },
+            host.rpcRequestContext()
+        ).catch(() => null);
+        v3Rules = Array.isArray(result?.rules) ? result.rules : [];
+        v3Decision = result?.decision;
+    } else {
+        v3Rules = host.runtime?.listPermissionRules?.(sessionId) || [];
+        v3Decision = target ? host.runtime?.inspectPermission?.(target, resource, sessionId) : undefined;
+    }
+    if (v3Rules.length) {
+        const layerCount = (layer: string) => v3Rules.filter(rule => rule?.layer === layer).length;
+        lines.push(formatAgentUiNotice(host.translator, 'permissionV3RulesLine', {
+            count: v3Rules.length,
+            workspace: layerCount('workspace'),
+            session: layerCount('session'),
+            saved: layerCount('saved')
+        }));
+    }
+    if (target && v3Decision?.matched) {
+        lines.push(formatAgentUiNotice(host.translator, 'permissionV3MatchLine', {
+            effect: String(v3Decision.effect || '').toUpperCase(),
+            layer: v3Decision.layer || '-',
+            action: v3Decision.rule?.action || '-',
+            resource: v3Decision.rule?.resource || '*'
+        }));
+    }
     if (target) {
         const decision = explainAgentConsolePermission(target, {
             level,

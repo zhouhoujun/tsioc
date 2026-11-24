@@ -83,7 +83,7 @@ export class ApprovalHandler {
             }
             const applied = approve
                 ? this.approvalManager.approve(requestId)
-                : this.approvalManager.reject(requestId);
+                : this.approvalManager.reject(requestId, typeof params?.['feedback'] === 'string' ? params['feedback'] : undefined);
             res.writeHead(200, { 'Content-Type': 'application/json' })
                 .end(JSON.stringify({
                     requestId,

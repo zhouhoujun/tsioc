@@ -69,13 +69,13 @@ export abstract class AgentConsoleSessionExportRpc extends AgentConsoleSessionSe
         return [];
     }
 
-    async decideApproval(decision: 'approve' | 'deny', requestId: string, context?: any): Promise<Record<string, any> | null> {
+    async decideApproval(decision: 'approve' | 'deny', requestId: string, context?: any, feedback?: string): Promise<Record<string, any> | null> {
         if (!this.appRpc || !requestId) {
             return null;
         }
         const result = await this.appRpc.request(
             decision === 'approve' ? 'approval.approve' : 'approval.reject',
-            { requestId },
+            { requestId, ...(feedback ? { feedback } : {}) },
             context
         );
         return result ?? null;

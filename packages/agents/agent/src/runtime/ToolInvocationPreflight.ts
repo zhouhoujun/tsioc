@@ -18,7 +18,7 @@ export interface ToolPreflightHost {
     trust?: { isTrusted(workspace: string): boolean };
     isWorkspaceMutating(definition: AgentToolDefinition): boolean;
     resolveTrust(input: any): Promise<{ approved: boolean }>;
-    approvalManager?: { checkApproval(name: string, input: any, sessionId: string, force?: boolean): Promise<{ decision: ApprovalDecision }> };
+    approvalManager?: { checkApproval(name: string, input: any, sessionId: string, force?: boolean): Promise<{ decision: ApprovalDecision; feedback?: string }> };
     runHooks(stage: 'onApproval' | 'beforeTool', sessionId: string, context: any): Promise<any[]>;
     isAborted(sessionId: string): boolean;
     throwIfCancelled(sessionId: string): void;
@@ -116,7 +116,11 @@ export async function runToolPreflight(
             }
         });
         if (approval.decision === ApprovalDecision.DENIED || approval.decision === ApprovalDecision.TIMEOUT) {
-            const reason = approval.decision === ApprovalDecision.TIMEOUT ? `Tool "${toolCall.name}" approval timed out.` : `Tool "${toolCall.name}" was rejected.`;
+            const reason = approval.decision === ApprovalDecision.TIMEOUT
+                ? `Tool "${toolCall.name}" approval timed out.`
+                : approval.feedback
+                    ? `Tool "${toolCall.name}" was rejected: ${approval.feedback}`
+                    : `Tool "${toolCall.name}" was rejected.`;
             return { failed: host.fail(toolCall, toolCallInput, inputSummary, { ...sandboxReceipt, status: 'skipped', durationMs: 0, error: reason }, reason, { sessionId, reason }) };
         }
         if (approval.decision === ApprovalDecision.CANCELLED || host.isAborted(sessionId)) {

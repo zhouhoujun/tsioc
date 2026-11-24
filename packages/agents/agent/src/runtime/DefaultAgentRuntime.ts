@@ -179,6 +179,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.contextManager.setSummarizer(this.summarizer, this.options.context.compactionThreshold);
         }
         this.approvalManager = this.toolApprovalManager = this.resolveApprovalManager(this.approvalManagerInput);
+        this.toolApprovalManager?.setPermissionRules?.(() => this.options.policy?.permissions);
         if (!this.toolExecutionCoordinator) {
             this.toolExecutionCoordinator = new ToolExecutionCoordinator(
                 this.toolRegistry,
@@ -400,9 +401,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.goals.update(goalId, patch);
     }
 
-    private async evaluateSessionGoal(sessionId: string, assistantText: string): Promise<void> {
-        await this.goals.evaluateCompletion(sessionId, assistantText);
-    }
+    private async evaluateSessionGoal(sessionId: string, assistantText: string): Promise<void> { await this.goals.evaluateCompletion(sessionId, assistantText); }
 
     async *runStreamingTurn(
         sessionId: string,
@@ -763,9 +762,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return message;
     }
 
-    private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): AsyncGenerator<StreamChunk, AgentTurnResult, void> {
-        return yield* this.turnLoop.run(sessionId, query, currentUserMessageId, turnContext, true);
-    }
+    private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): AsyncGenerator<StreamChunk, AgentTurnResult, void> { return yield* this.turnLoop.run(sessionId, query, currentUserMessageId, turnContext, true); }
 
     override async askSideQuestion(sessionId: string, question: string): Promise<string> {
         const text = String(question || '').trim();
@@ -909,9 +906,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     override getSessionDelegationMode(sessionId: string): AgentDelegationMode { return this.modes.getDelegationMode(sessionId); }
 
-    protected resolveDelegationMode(sessionId: string, turnContext?: TurnExecutionContext): AgentDelegationMode {
-        return this.modes.resolveDelegationMode(sessionId, turnContext);
-    }
+    protected resolveDelegationMode(sessionId: string, turnContext?: TurnExecutionContext): AgentDelegationMode { return this.modes.resolveDelegationMode(sessionId, turnContext); }
 
     private getToolDefinitions(sessionId: string): AgentToolDefinition[] {
         return this.modes.applyToolFilter(sessionId, this.toolRegistry.getCallableToolDefinitions(sessionId));
@@ -1384,6 +1379,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
     override unregisterHookFunction(stage: AgentLifecycleHookStage, name?: string): void { this.hooks.unregister(stage, name); }
 
     override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> { return this.hooks.summary(); }
+
+    listPermissionRules(sessionId?: string): import('../permissions/PermissionEngine').PermissionRule[] { return this.toolApprovalManager?.listPermissionRules?.(sessionId) ?? []; }
+
+    inspectPermission(toolName: string, input: any, sessionId?: string): import('../permissions/PermissionEngine').PermissionDecision | undefined { return this.toolApprovalManager?.inspectPermission?.(toolName, input, sessionId); }
 
     async ensureSessionTitle(sessionId: string): Promise<string | undefined> { return this.postTurn.ensureSessionTitle(sessionId); }
 

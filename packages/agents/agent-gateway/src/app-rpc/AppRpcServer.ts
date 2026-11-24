@@ -20,6 +20,7 @@ import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
+import { listPermissionRules as listPermissionRulesResult } from './permission-rules';
 import { importSessionFromRpc } from './session-import';
 import { sendSessionMessageFromRpc } from './session-message';
 import { listCrossSessionMessages } from './session-message-list';
@@ -326,6 +327,7 @@ export class AppRpcServer {
                 return this.decideApproval(params, context, false);
             case 'tools.list':
                 return this.tools.getToolDefinitions(optionalSessionId(params));
+            case 'permission.rules.list': return listPermissionRulesResult(this.runtime, params);
             case 'hooks.trust.list':
                 // Declared hooks (hooks.json) with the trust state of their
                 // current definition hash; settings pages show this.
@@ -1418,9 +1420,8 @@ export class AppRpcServer {
             return { requestId, applied: false };
         }
         await this.ensureSessionAccess(pending.sessionId, context);
-        const applied = approve
-            ? this.approvalManager.approve(requestId)
-            : this.approvalManager.reject(requestId);
+        const applied = approve ? this.approvalManager.approve(requestId)
+            : this.approvalManager.reject(requestId, typeof params?.feedback === 'string' ? params.feedback : undefined);
         return {
             requestId,
             sessionId: pending.sessionId,

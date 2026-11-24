@@ -149,6 +149,8 @@ export const AGENT_UI_NOTICE_EN_PART3: NestedMessages = {
   permissionReasonLevel: 'the current security level',
   permissionReasonDefault: 'default policy asks before running tools',
   permissionApprovalRulesLine: 'Ordered approval rules: {count}',
+  permissionV3RulesLine: 'V3 permission rules: {count} (workspace {workspace} · session {session} · saved {saved})',
+  permissionV3MatchLine: 'V3 decision: {effect} via {action} {resource} ({layer})',
   permissionApprovalMatchLine: 'Approval rule: {decision} · #{index} {rule}',
   permissionApprovalNoMatchLine: 'Approval rule: no match (default policy applies)',
   permissionsTitle: 'Permissions',

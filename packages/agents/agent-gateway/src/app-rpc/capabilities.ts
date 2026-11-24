@@ -89,6 +89,7 @@ const AGENT_APP_RPC_METHOD_IDS = [
     'approval.approve',
     'approval.reject',
     'tools.list',
+    'permission.rules.list',
     'tools.activate',
     'tools.invoke',
     'hooks.list',

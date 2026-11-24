@@ -149,6 +149,8 @@ export const AGENT_UI_NOTICE_ZH_PART3: NestedMessages = {
   permissionReasonLevel: '当前安全级别',
   permissionReasonDefault: '默认策略：执行工具前询问',
   permissionApprovalRulesLine: '有序审批规则：{count} 条',
+  permissionV3RulesLine: 'V3 权限规则：{count} 条（workspace {workspace} · session {session} · saved {saved}）',
+  permissionV3MatchLine: 'V3 判定：{effect}，规则 {action} {resource}（{layer}）',
   permissionApprovalMatchLine: '审批规则：{decision} · #{index} {rule}',
   permissionApprovalNoMatchLine: '审批规则：无匹配（使用默认策略）',
   permissionsTitle: '权限',

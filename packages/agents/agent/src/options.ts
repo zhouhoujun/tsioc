@@ -292,7 +292,6 @@ export interface AgentOptions extends AgentPromptOptions {
     /** G29: per-session delegation mode (default 'explicit'). Per-turn overrides via AgentTurnInput.agent.delegationMode. */
     delegationMode?: AgentDelegationMode;
 }
-
 export interface AgentPolicyLimits {
     commandOutputHistoryCap?: number;
     commandOutputPageSize?: number;
@@ -320,7 +319,6 @@ export interface AgentPolicyApproval {
     /** Opt-in shell scanner: read-only inspection commands (`git status`, `ls`, ...) skip approval; see `inspectShellCommand`. */
     readOnlyShell?: boolean;
 }
-
 /** A7: OS sandbox settings folded into the policy source chain (default < workspace < session < request). */
 export interface AgentPolicySandbox {
     /** OS-level sandbox mode for process-executing tools (falls back to `AgentOptions.sandbox.mode`, then 'off'). */
@@ -330,7 +328,6 @@ export interface AgentPolicySandbox {
     /** Proxy enforcement for sandboxed child processes (falls back to `AgentOptions.sandbox.proxy`, then none). */
     proxy?: AgentSandboxOptions['proxy'];
 }
-
 /** A8: render budgets folded into the policy source chain (default < workspace < session < request). */
 export interface AgentPolicyRender {
     /** Auxiliary tool/event/file-change/system/error content preview lines, folded with tail preserved (falls back to the schema default, then 8). */
@@ -343,6 +340,7 @@ export interface AgentPolicyRender {
 
 export interface AgentPolicyConfig {
     limits?: AgentPolicyLimits;
+    permissions?: import('./permissions/PermissionEngine').PermissionRule[];
     /** P70: schema default session archetype used when a session has no explicit override (falls back to `AgentOptions.defaultArchetype`, then `'build'`). */
     defaultArchetype?: string;
     /** G29: schema default session delegation mode used when a session has no explicit override (falls back to `AgentOptions.delegationMode`, then `'explicit'`). */
@@ -374,6 +372,7 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         .map(item => item?.verification?.writeTools)
         .filter((tools): tools is string[] => !!tools && tools.length > 0)
         .pop();
+    const permissions = overrides.map(item => item?.permissions).filter((rules): rules is NonNullable<AgentPolicyConfig['permissions']> => !!rules && rules.length > 0).pop();
     const approvalRequireApproval = overrides
         .map(item => item?.approval?.requireApproval)
         .filter((rules): rules is ApprovalRule[] => !!rules && rules.length > 0)
@@ -426,6 +425,7 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
     const source = overrides.map(item => item?.source).filter(Boolean).pop() as AgentPolicySource | undefined;
     return {
         limits,
+        ...(permissions ? { permissions: permissions.slice() } : {}),
         ...(defaultArchetype ? { defaultArchetype } : {}),
         ...(delegationMode ? { delegationMode } : {}),
         ...(verificationWriteTools ? { verification: { writeTools: verificationWriteTools.slice() } } : {}),

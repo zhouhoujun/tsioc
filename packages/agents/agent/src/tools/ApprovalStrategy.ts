@@ -1,4 +1,5 @@
 import type { ApprovalStrategy } from './ToolApprovalManager';
+import { PermissionDecision, PermissionEngine, PermissionRule, compileApprovalRules, compileSavedAllowPatterns } from '../permissions/PermissionEngine';
 import { ApprovalCategory, classifyApprovalCategory } from './approval-categories';
 import { approvalCommand, inspectShellCommand } from './shell-command-scanner';
 
@@ -36,6 +37,8 @@ export interface ApprovalRuleExplanation {
     index?: number;
     /** True when the last match was an object rule (the scanner must not relax it). */
     explicit: boolean;
+    /** P1.1: v3 permission engine decision when permission rules are configured. */
+    permission?: PermissionDecision;
 }
 
 const RESOURCE_KEYS = ['path', 'filePath', 'target', 'command', 'cmd', 'url', 'cwd', 'pattern', 'query'];
@@ -48,6 +51,10 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
     private readOnlyShell?: () => boolean;
     /** Live rule list: settings edits apply without rebuilding the manager. */
     private liveRules?: () => ApprovalRule[] | undefined;
+    /** P1.1: v3 permission engine (workspace/session/saved layers). */
+    private permissionEngine?: PermissionEngine;
+    private permissionSource?: PermissionRule[] | (() => PermissionRule[] | undefined);
+    private savedAllowPatterns: string[] = [];
 
     constructor(blocked?: ApprovalRule[], autoReview = false, readOnlyShell?: () => boolean, liveRules?: () => ApprovalRule[] | undefined) {
         this.rules = blocked ?? ['shell.exec', 'fs.write', 'fs.delete', 'db.execute', 'deploy', 'sudo.exec', 'playwright_browser', 'admin.*'];
@@ -80,13 +87,60 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         }
     }
 
+    /** P1.1: attach the v3 engine; later calls refresh the live workspace/session/saved layers. */
+    setPermissionEngine(engine?: PermissionEngine): void {
+        this.permissionEngine = engine;
+        this.refreshPermissionLayers();
+    }
+
+    /** P1.1: live workspace permission rules (settings edits apply without rebuilding). */
+    setPermissionRules(rules: PermissionRule[] | (() => PermissionRule[] | undefined)): void {
+        this.permissionSource = rules;
+        this.permissionEngine ??= new PermissionEngine();
+        this.refreshPermissionLayers();
+    }
+
+    /** P1.1: durable "always allow" patterns form the saved layer. */
+    setSavedAllowPatterns(patterns: string[]): void {
+        this.savedAllowPatterns = (Array.isArray(patterns) ? patterns : []).map(pattern => String(pattern || '').trim()).filter(Boolean);
+        this.permissionEngine ??= new PermissionEngine();
+        this.refreshPermissionLayers();
+    }
+
+    listPermissionRules(sessionId?: string): PermissionRule[] {
+        if (!this.permissionEngine) {
+            return [];
+        }
+        this.refreshPermissionLayers();
+        this.permissionEngine.setLayer('session', compileApprovalRules(sessionId ? this.sessionRules.get(sessionId) : [], 'session'));
+        return this.permissionEngine.list();
+    }
+
+    explainPermission(toolName: string, input: any, sessionId?: string): PermissionDecision | undefined {
+        return this.permissionEngine ? this.explain(toolName, input, sessionId).permission : undefined;
+    }
+
+    private refreshPermissionLayers(): void {
+        if (!this.permissionEngine) {
+            return;
+        }
+        const workspace = typeof this.permissionSource === 'function' ? this.permissionSource() : this.permissionSource;
+        this.permissionEngine.setLayer('workspace', workspace ?? []);
+        this.permissionEngine.setLayer('saved', compileSavedAllowPatterns(this.savedAllowPatterns));
+    }
+
     getSessionRules(sessionId: string): ApprovalRule[] {
         return [...(this.sessionRules.get(sessionId) || [])];
     }
 
     /** Explain the last matching ordered rule without applying the shell scanner. */
-    explain(toolName: string, input?: any): ApprovalRuleExplanation {
-        return this.explainRules(toolName, input);
+    explain(toolName: string, input?: any, sessionId?: string): ApprovalRuleExplanation {
+        const base = this.explainRules(toolName, input);
+        if (!this.permissionEngine) {
+            return base;
+        }
+        this.permissionEngine.setLayer('session', compileApprovalRules(sessionId ? this.sessionRules.get(sessionId) : [], 'session'));
+        return { ...base, permission: this.permissionEngine.explain({ tool: toolName, input, sessionId }) };
     }
 
     private explainRules(toolName: string, input: any, rulesOverride?: ApprovalRule[]): ApprovalRuleExplanation {
@@ -133,6 +187,22 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         // Workspace deny is a hard floor: a per-session allow must not bypass it.
         if (base.decision === 'deny') {
             return 'deny';
+        }
+        if (this.permissionEngine) {
+            this.refreshPermissionLayers();
+            this.permissionEngine.setLayer('session', compileApprovalRules(sessionId ? this.sessionRules.get(sessionId) : [], 'session'));
+            const decision = this.permissionEngine.evaluate({ tool: toolName, input, sessionId, category: toolCategory });
+            if (decision.denied) {
+                return 'deny';
+            }
+            if (decision.matched && decision.effect) {
+                if (decision.effect === 'ask' && !base.explicit && toolCategory === 'sandbox' && this.readOnlyShell?.()) {
+                    if (inspectShellCommand(approvalCommand(input)).readOnly) {
+                        return 'allow';
+                    }
+                }
+                return decision.effect;
+            }
         }
         const session = sessionId ? this.sessionRules.get(sessionId) : undefined;
         const explained = session?.length ? this.explainRules(toolName, input, session) : base;

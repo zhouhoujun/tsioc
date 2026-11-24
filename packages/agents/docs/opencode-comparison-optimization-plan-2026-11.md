@@ -150,7 +150,7 @@
   queued user 仍在 turn 结束后由 UI drain（与 opencode 的 idle 边界一致）。
 - 验收：queue 重启不丢；steer 在 step 边界生效；双进程同 session 只有一个执行者；AppRpc + TUI/DOM + PTY 回归。
 
-**P0.3 运行时拆解（行为不变）**
+**P0.3 运行时拆解（已完成 2026-11-24，行为不变）**
 - 以现有 `TurnHistoryController` 为模板，新建：
   - `TurnLoopController`（统一 non-stream/stream 的 round 状态机）；
   - `TurnToolController`（parallel/sequential、approval、hooks、snapshot、compensation）；
@@ -159,6 +159,12 @@
   - `TurnRecoveryController`（empty-response、loop、termination、token budget）。
 - `DefaultAgentRuntime` 只保留 facade/事件/公共 API，目标 < 1500 行；每步同提交下调 baseline。
 - 验收：现有 1103 agent tests 全绿；无行为 diff；source-size 下降。
+- 状态：目标已达成。新增 `TurnLoopController`（统一 non-stream/stream）、`TurnStreamCollector`、
+  `TurnToolBatchController`、`TurnRequestController`、`TurnAssistantController`、`TurnTerminationController`、
+  `TurnRecoveryController`、`TurnObservabilityController`、`SessionPostTurnController`、`SessionSnapshotController`、
+  `PolicyResolutionController`、`HookController`、`SessionModeController`、`DelegationSessionController`、
+  `SessionGoalController`、`WorkspaceRootController`、`TurnCompensationController` 等；
+  `DefaultAgentRuntime` 从 3506 行降至 **1471 行**（baseline 同提交下调），agent 测试 **1124 passing**。
 
 **P0.4 协议契约单一来源（不重写 transport）**
 - 新 `agent-gateway/src/app-rpc/contracts.ts`：每 method 一个 descriptor `{params?, result?, capability?, handler}`；
@@ -169,7 +175,7 @@
 
 ### P1 — 安全、权限与回滚（2–3 周）
 
-**P1.1 Permission v3（保留现有 UI/队列）**
+**P1.1 Permission v3（核心已落地 2026-11-24；保留现有 UI/队列）**
 - 新 `agent/src/permissions/PermissionEngine.ts`：
   - `Rule {action, resource, effect}`，`Wildcard.match`，last-match-wins；
   - 层：default → workspace → session → agent → saved；
@@ -179,6 +185,11 @@
 - 增加：reject 可带用户反馈（corrected error），无人在场 `Unattended` ruleset，`always` 保存到 `permission_saved`。
 - UI：`/permissions inspect` 显示匹配规则/层；审批弹窗支持“拒绝并说明”。
 - 验收：规则表驱动单测；TUI/Web 一致；现有 allow/deny 行为不回归；OS sandbox/trust 保留。
+- 状态：`permissions/PermissionEngine.ts` 已落地（action+resource→effect、wildcard、五层、
+  deny hard floor、legacy 规则编译、live workspace/session/saved 层）；`DefaultApprovalStrategy` 接入引擎；
+  durable allow 即 saved 层；reject 支持 feedback 并写入工具错误；RPC `permission.rules.list` 返回规则与命中层；
+  `/permissions inspect` 展示 V3 规则数量/命中。**剩余**：`Unattended` ruleset 与审批弹窗“拒绝并说明”输入 UI；
+  archetype allow/deny 编译到 agent 层（当前仍由 archetype 工具闸门执行）。
 
 **P1.2 Snapshot v2 + message-level revert**
 - 新 `ContentAddressedSnapshotStore`：
