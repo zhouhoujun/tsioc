@@ -1,4 +1,5 @@
 import type { ActivityContext } from '../../activities/Activity';
+import type { IVisualWorkflowNode } from '../types';
 import {
     isWorkflowValueRef,
     resolveWorkflowExpressionMarkers,
@@ -191,4 +192,104 @@ export function changeContextValue(
     }
     owner[key] = value;
     return value;
+}
+
+export function matchRouterRule(actual: any, operator: string, expected: any): boolean {
+    switch (operator) {
+        case 'equals':
+            // eslint-disable-next-line eqeqeq
+            return actual == expected;
+        case 'not-equals':
+            // eslint-disable-next-line eqeqeq
+            return actual != expected;
+        case 'contains':
+            return Array.isArray(actual)
+                ? actual.some(item => String(item) === String(expected))
+                : String(actual ?? '').includes(String(expected ?? ''));
+        case 'regex':
+            try {
+                return new RegExp(String(expected ?? '')).test(String(actual ?? ''));
+            } catch {
+                return false;
+            }
+        case 'gt':
+            return Number(actual) > Number(expected);
+        case 'gte':
+            return Number(actual) >= Number(expected);
+        case 'lt':
+            return Number(actual) < Number(expected);
+        case 'lte':
+            return Number(actual) <= Number(expected);
+        case 'truthy':
+            return !!actual;
+        case 'falsy':
+            return !actual;
+        case 'is-null':
+            return actual === null || actual === undefined;
+        case 'is-not-null':
+            return actual !== null && actual !== undefined;
+        case 'is-empty':
+            return actual === null
+                || actual === undefined
+                || actual === ''
+                || (Array.isArray(actual) && actual.length === 0)
+                || (typeof actual === 'object' && !Array.isArray(actual) && Object.keys(actual).length === 0);
+        case 'is-not-empty':
+            return !(actual === null
+                || actual === undefined
+                || actual === ''
+                || (Array.isArray(actual) && actual.length === 0)
+                || (typeof actual === 'object' && !Array.isArray(actual) && Object.keys(actual).length === 0));
+        default:
+            return false;
+    }
+}
+
+/**
+ * Evaluate a condition node using `config.condition`, `config.field` and
+ * `config.operator`, or the `config.value` comparison value.
+ */
+export function evaluateCondition(node: IVisualWorkflowNode | undefined, context: ActivityContext): boolean {
+    const config = node?.config || {};
+    if (config.condition !== undefined) {
+        if (typeof config.condition === 'function') {
+            return Boolean(config.condition(context));
+        }
+        if (typeof config.condition === 'boolean') {
+            return config.condition;
+        }
+        return Boolean(resolveWorkflowValue(config.condition, context));
+    }
+    if (config.field !== undefined) {
+        const actual = resolveWorkflowValue(config.field, context);
+        return compareValues(actual, String(config.operator || 'truthy'), resolveCompareValue(config.value, context));
+    }
+    return true;
+}
+
+/**
+ * Async twin of {@link evaluateCondition}: compares against a value that may be
+ * an expression (JSONata). The sync form stays for hosts that only use plain
+ * values and for backwards compatibility.
+ */
+export async function evaluateConditionAsync(
+    node: IVisualWorkflowNode | undefined,
+    context: ActivityContext
+): Promise<boolean> {
+    const config = node?.config || {};
+    if (config.condition !== undefined) {
+        if (typeof config.condition === 'function') {
+            return Boolean(config.condition(context));
+        }
+        if (typeof config.condition === 'boolean') {
+            return config.condition;
+        }
+        return Boolean(resolveWorkflowValue(config.condition, context));
+    }
+    if (config.field !== undefined) {
+        const actual = resolveWorkflowValue(config.field, context);
+        const expected = await resolveCompareValueAsync(config.value, context);
+        return compareValues(actual, String(config.operator || 'truthy'), expected);
+    }
+    return true;
 }
