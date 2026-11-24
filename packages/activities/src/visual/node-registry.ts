@@ -539,7 +539,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             configField({ key: 'target', label: 'Target field', type: 'text', defaultValue: 'value', pattern: VALUE_PATH_PATTERN, placeholder: 'value' }),
             configField({ key: 'attributes', label: 'Include attributes', type: 'boolean', defaultValue: true, group: 'Options', description: 'Include XML attributes as @attrs in the parsed result.', visibleWhen: { key: 'mode', equals: 'parse' } }),
             configField({ key: 'text', label: 'Include text', type: 'boolean', defaultValue: true, group: 'Options', description: 'Include element text as #text in the parsed result.', visibleWhen: { key: 'mode', equals: 'parse' } }),
-            configField({ key: 'pretty', label: 'Pretty print', type: 'boolean', defaultValue: false, group: 'Options', visibleWhen: { key: 'mode', equals: 'stringify' } })
+            configField({ key: 'pretty', label: 'Pretty print', type: 'boolean', defaultValue: false, group: 'Options', visibleWhen: { key: 'mode', equals: 'stringify' } }),
+            configField({ key: 'declaration', label: 'XML declaration', type: 'boolean', defaultValue: false, group: 'Options', visibleWhen: { key: 'mode', equals: 'stringify' }, description: 'Prepend the XML version/encoding declaration.' })
         ],
         defaultConfig: { mode: 'parse', field: 'value', target: 'value', attributes: true, text: true }
     },
@@ -1690,8 +1691,23 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 ]
             }),
             configField({ key: 'field', label: 'Field', type: 'text', typed: true, placeholder: 'value', description: 'Path to the CSV text or array.',}),
-            configField({ key: 'delimiter', label: 'Delimiter', type: 'text', defaultValue: ',', placeholder: ',', description: 'Single character used between columns.',}),
+            configField({
+                key: 'separator',
+                label: 'Separator',
+                type: 'select',
+                defaultValue: 'comma',
+                options: [
+                    { label: 'Comma', value: 'comma' },
+                    { label: 'Tab', value: 'tab' },
+                    { label: 'Space', value: 'space' },
+                    { label: 'Semicolon', value: 'semicolon' },
+                    { label: 'Custom', value: 'custom' }
+                ],
+                description: 'Column separator preset.'
+            }),
+            configField({ key: 'delimiter', label: 'Custom separator', type: 'text', defaultValue: ',', placeholder: '|', visibleWhen: { key: 'separator', equals: 'custom' }, description: 'Single character used between columns.' }),
             configField({ key: 'header', label: 'Header row', type: 'boolean', defaultValue: true, description: 'Parse: the first row names the columns. Stringify: write a header row for object rows.' }),
+            configField({ key: 'includeEmptyStrings', label: 'Include empty cells', type: 'boolean', defaultValue: true, group: 'Options', description: 'Keep empty cells as empty strings; clear to omit them from object rows.' }),
             configField({ key: 'columns', label: 'Columns', type: 'text', placeholder: 'name, age', group: 'Options', description: 'Optional comma-separated columns to keep when parsing or stringifying.' }),
             configField({ key: 'parseNumbers', label: 'Parse numbers', type: 'boolean', defaultValue: false, group: 'Options' })
         ],

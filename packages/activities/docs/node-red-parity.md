@@ -80,9 +80,9 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | join | `join` | `~` joins **parallel branch results**: array, **joined text** (`joiner`), merged object, keyed object, first N, timeout |
 | sort | `sort` | `+` single path or **multi-key** (`keys: [{ path, order, numeric }]`), numeric/lexical |
 | batch | `batch` | `+` size + **overlap** chunking |
-| csv | `csv` | `+` parse/stringify, delimiter, header row (both directions), column projection, numeric parsing |
+| csv | `csv` | `+` parse/stringify, separator presets (comma/tab/space/semicolon/custom, legacy delimiter), header row (both directions), column projection, numeric parsing, optional omission of empty cells |
 | json | `json` | `+` parse/stringify/pretty with a configurable field |
-| xml | `xml` | `+` attributes/text toggles, pretty |
+| xml | `xml` | `+` attributes/text toggles, pretty print, optional XML declaration when stringifying |
 | html | `html` | `~` text/links/attribute extraction (no scraping selectors) |
 | yaml | `yaml` | `+` parse/stringify |
 | subflow | `subprocess`, `loop` | `~` stored workflow id or inline definition, `inputs`/`outputs` path mapping; no editor subflow canvas |
@@ -124,5 +124,5 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 
 ## Known gaps worth revisiting
 
-- CSV `multi`/`include_empty` and XML/Buffer encodings.
+- CSV `multi` (one message per row) and Buffer encodings.
 - Editor expression completion inside the panel beyond the JSONata syntax check.

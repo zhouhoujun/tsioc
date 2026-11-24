@@ -2187,7 +2187,17 @@ export async function executeVisualNode(
         }
         case 'csv': {
             const source = resolveWorkflowValue(config.field || 'value', context);
-            const delimiter = String(config.delimiter ?? ',');
+            // Preset separator wins; legacy documents only have `delimiter`.
+            const separatorPresets: Record<string, string> = {
+                comma: ',',
+                tab: '\t',
+                space: ' ',
+                semicolon: ';'
+            };
+            const separator = String(config.separator || '');
+            const delimiter = separator && separator !== 'custom'
+                ? separatorPresets[separator] ?? ','
+                : String(config.delimiter ?? ',');
             try {
                 const columns = String(config.columns || '').split(',').map(item => item.trim()).filter(Boolean);
                 if (String(config.mode || 'parse') === 'stringify') {
@@ -2200,6 +2210,12 @@ export async function executeVisualNode(
                 let value = parseCsv(String(source ?? ''), delimiter, config.header !== false);
                 if (columns.length) {
                     value = (value as any[]).map((row: any) => Object.fromEntries(columns.map(column => [column, row?.[column]])));
+                }
+                if (config.includeEmptyStrings === false) {
+                    value = (value as any[]).map((row: any) => Array.isArray(row)
+                        ? row
+                        : Object.fromEntries(Object.entries(row).filter(([, cell]) =>
+                            cell !== '' && cell !== null && cell !== undefined)));
                 }
                 if (config.parseNumbers === true) {
                     const toNumber = (cell: any): any => {
@@ -2718,7 +2734,10 @@ export async function executeVisualNode(
                 if (mode === 'stringify') {
                     const value = typeof source === 'string' ? JSON.parse(source) : source;
                     const name = Object.keys(value || {})[0] || 'root';
-                    const xml = serializeXmlValue(name, value?.[name], config.pretty === true).trim();
+                    let xml = serializeXmlValue(name, value?.[name], config.pretty === true).trim();
+                    if (config.declaration === true) {
+                        xml = `<?xml version="1.0" encoding="UTF-8"?>\n${xml}`;
+                    }
                     return { success: true, data: { nodeId: node.id, [target]: xml, value: xml } };
                 }
                 const value = pruneXmlValue(

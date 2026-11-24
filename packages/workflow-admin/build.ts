@@ -58,13 +58,13 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // budget below stays the transfer gate. Raised to 1150 KB for the standalone
 // Plugins / Sessions / Audit pages, 1160 KB for mustache sections/YAML
 // template output, 1175 KB for shared protocol endpoints, 1180 KB for node
-// status lines, 1185 KB for the typed-value expression source, and 1205 KB for
-// the expression editor overlay (panel, styles, config-path helper and the
-// list-row action hook); it keeps ~5 KB of headroom over the preview page's
-// inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB) loaded on
+// status lines, 1185 KB for the typed-value expression source, 1205 KB for the
+// expression editor overlay (panel, styles, config-path helper and the
+// list-row action hook), and 1210 KB for the CSV/XML parity options; it keeps
+// ~5 KB of headroom over the preview page's inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB) loaded on
 // first evaluation, so the initial budget only carries the wiring; the gzip
 // budget remains the gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_205_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_210_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the

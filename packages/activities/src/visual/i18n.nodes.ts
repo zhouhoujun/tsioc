@@ -499,8 +499,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "csv": {
                 "mode": "Mode",
                 "field": "Value path",
-                "delimiter": "Delimiter",
+                "separator": "Separator",
+                "delimiter": "Custom separator",
                 "header": "Header row",
+                "includeEmptyStrings": "Include empty cells",
                 "columns": "Columns",
                 "parseNumbers": "Parse numbers"
             },
@@ -698,6 +700,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "XML path",
                 "target": "Write result to",
                 "pretty": "Pretty print",
+                "declaration": "XML declaration",
                 "attributes": "Include attributes",
                 "text": "Include text"
             },
@@ -1038,7 +1041,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "csv": {
                 "field": "value",
-                "delimiter": ",",
+                "delimiter": "|",
                 "columns": "name, age"
             },
             "change": {
@@ -1385,7 +1388,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "csv": {
                 "field": "context path to CSV text or an array",
+                "separator": "comma/tab/space/semicolon preset, or custom for the field below",
                 "delimiter": "single character between columns",
+                "includeEmptyStrings": "keep empty cells as empty strings; clear to omit them from object rows",
                 "mode": "parse CSV text or stringify an array",
                 "header": "parse: the first row names the columns; stringify: write a header row for object rows",
                 "columns": "Optional comma-separated columns to keep when parsing or stringifying."
@@ -1506,6 +1511,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "context path containing XML text or an object",
                 "target": "context field that receives the result",
                 "pretty": "indent serialized XML",
+                "declaration": "prepend the XML version/encoding declaration",
                 "attributes": "Include XML attributes as @attrs in the parsed result.",
                 "text": "Include element text as #text in the parsed result."
             },
@@ -1716,6 +1722,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
         },
         "option": {
             "expression": "Expression",
+            "comma": "Comma",
+            "tab": "Tab",
+            "space": "Space",
+            "semicolon": "Semicolon",
+            "custom": "Custom",
             "clamp": "Clamp to range",
             "scale": "Scale beyond range",
             "wrap": "Wrap around",
@@ -2322,8 +2333,10 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "csv": {
                 "mode": "模式",
                 "field": "取值路径",
-                "delimiter": "分隔符",
+                "separator": "分隔符预设",
+                "delimiter": "自定义分隔符",
                 "header": "表头行",
+                "includeEmptyStrings": "保留空单元格",
                 "columns": "列",
                 "parseNumbers": "解析数字"
             },
@@ -2521,6 +2534,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "XML 路径",
                 "target": "结果写入字段",
                 "pretty": "格式化输出",
+                "declaration": "XML 声明",
                 "attributes": "包含属性",
                 "text": "包含文本"
             },
@@ -2860,7 +2874,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "csv": {
                 "field": "value",
-                "delimiter": ",",
+                "delimiter": "|",
                 "columns": "name, age"
             },
             "change": {
@@ -3191,7 +3205,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "csv": {
                 "field": "CSV 文本或数组的上下文路径。",
+                "separator": "逗号/制表符/空格/分号预设；选择自定义时使用下方字段。",
                 "delimiter": "列之间的单字符分隔符。",
+                "includeEmptyStrings": "保留空单元格为空字符串；清除后对象行会省略空单元格。",
                 "mode": "解析 CSV 文本，或把数组序列化为 CSV。",
                 "header": "解析时把首行作为字段名。",
                 "columns": "可选：解析或序列化时保留的列，逗号分隔。"
@@ -3312,6 +3328,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "field": "包含 XML 或对象的上下文路径。",
                 "target": "接收解析或序列化结果的上下文字段。",
                 "pretty": "序列化时使用缩进。",
+                "declaration": "在序列化结果前添加 XML 版本/编码声明。",
                 "attributes": "解析结果中包含 XML 属性（@attrs）。",
                 "text": "解析结果中包含元素文本（#text）。"
             },
@@ -3522,6 +3539,11 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
         },
         "option": {
             "expression": "表达式",
+            "comma": "逗号",
+            "tab": "制表符",
+            "space": "空格",
+            "semicolon": "分号",
+            "custom": "自定义",
             "clamp": "限制在范围内",
             "scale": "超出范围继续映射",
             "wrap": "环绕",

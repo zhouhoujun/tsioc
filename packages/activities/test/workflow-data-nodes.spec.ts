@@ -1260,6 +1260,53 @@ describe('Workflow data & trigger nodes', () => {
             .toBe('Ada,36');
     });
 
+    it('uses CSV separator presets and can omit empty cells', async () => {
+        const tabbed = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 'name\tage\nA\t1' } } },
+            { type: 'csv', config: { field: 'value', mode: 'parse', separator: 'tab' } }
+        ]), {});
+        expect(tabbed.data?.executionState?.nodeStates.csv_1.result?.data?.value)
+            .toEqual([{ name: 'A', age: '1' }]);
+
+        // Legacy documents only have `delimiter`; the preset stays absent.
+        const legacy = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 'name;age\nA;1' } } },
+            { type: 'csv', config: { field: 'value', mode: 'parse', delimiter: ';' } }
+        ]), {});
+        expect(legacy.data?.executionState?.nodeStates.csv_1.result?.data?.value)
+            .toEqual([{ name: 'A', age: '1' }]);
+
+        const kept = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 'name,age\nA,\nB,2' } } },
+            { type: 'csv', config: { field: 'value', mode: 'parse' } }
+        ]), {});
+        expect(kept.data?.executionState?.nodeStates.csv_1.result?.data?.value)
+            .toEqual([{ name: 'A', age: '' }, { name: 'B', age: '2' }]);
+
+        const omitted = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 'name,age\nA,\nB,2' } } },
+            {
+                type: 'csv',
+                config: { field: 'value', mode: 'parse', includeEmptyStrings: false }
+            }
+        ]), {});
+        expect(omitted.data?.executionState?.nodeStates.csv_1.result?.data?.value)
+            .toEqual([{ name: 'A' }, { name: 'B', age: '2' }]);
+    });
+
+    it('prepends the XML declaration when stringifying', async () => {
+        const result = await service.execute(chain([
+            { type: 'inject', config: { payload: { root: { item: 1 } } } },
+            {
+                type: 'xml',
+                config: { field: 'payload', mode: 'stringify', declaration: true }
+            }
+        ]), {});
+        const xml = String(result.data?.executionState?.nodeStates.xml_1.result?.data?.value ?? '');
+        expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
+        expect(xml).toContain('<root>');
+    });
+
     it('extracts HTML attributes', async () => {
         const result = await service.execute(chain([
             { type: 'inject', config: { payload: { value: '<a href="https://a">A</a><a href="https://b">B</a>' } } },

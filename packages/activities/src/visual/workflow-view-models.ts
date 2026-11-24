@@ -712,6 +712,12 @@ export function buildWorkflowInspectorModel(
             ? node.config[field.key]
             : field.defaultValue;
     });
+    // CSV documents written before the separator preset only stored `delimiter`.
+    if (node.type === 'csv' && node.config?.separator === undefined) {
+        const presets: Record<string, string> = { ',': 'comma', '\t': 'tab', ' ': 'space', ';': 'semicolon' };
+        const delimiter = String(node.config?.delimiter ?? ',');
+        values.separator = presets[delimiter] || 'custom';
+    }
     // Documents written before `scale.action` stored a `clamp` flag instead;
     // default merging may have added the new default action, so an explicit
     // `clamp: false` still selects "scale".
