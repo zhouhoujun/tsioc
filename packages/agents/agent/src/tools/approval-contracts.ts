@@ -18,6 +18,8 @@ export interface ApprovalStrategy {
     setSavedAllowPatterns?(patterns: string[]): void;
     /** P1.1: live workspace v3 permission rules. */
     setPermissionRules?(rules: PermissionRule[] | (() => PermissionRule[] | undefined)): void;
+    /** P1.1: dynamic permission layer (agent archetype rules). */
+    setPermissionLayer?(layer: import('../permissions/PermissionEngine').PermissionLayer, provider: ((request: import('../permissions/PermissionEngine').PermissionRequest) => import('../permissions/PermissionEngine').PermissionRule[] | undefined) | undefined): void;
     /** P1.1: current v3 rules across layers. */
     listPermissionRules?(sessionId?: string): PermissionRule[];
     /** P1.1: v3 decision for a tool call (undefined when no rule matched). */
@@ -128,6 +130,7 @@ export abstract class ApprovalManager {
     getAllowRules?(): string[];
     /** P1.1: v3 permission rules (live source allowed so settings edits apply without rebuild). */
     setPermissionRules?(_rules: PermissionRule[] | (() => PermissionRule[] | undefined)): void;
+    setPermissionLayer?(_layer: import('../permissions/PermissionEngine').PermissionLayer, _provider: ((request: import('../permissions/PermissionEngine').PermissionRequest) => import('../permissions/PermissionEngine').PermissionRule[] | undefined) | undefined): void;
     listPermissionRules?(_sessionId?: string): PermissionRule[];
     inspectPermission?(_toolName: string, _input: any, _sessionId?: string): import('../permissions/PermissionEngine').PermissionDecision | undefined;
     /** Optional: hosts that expose an approval-timeout setting update it here. */

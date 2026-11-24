@@ -297,6 +297,10 @@
     `components/html` 编译器模块的类继承求值顺序卡住**（splitting 冒烟测试在
     `HtmlTemplateParser`/`at extends yt` 处报 `Class extends value undefined`），待继续破环后再启用
     `chunkNames`/splitting；当前保持 `splitting:false`，首屏 gzip 483 KiB。
+- 状态（2026-11-24）：`PermissionEngine` 支持动态 layer provider，runtime 将当前 archetype 的
+  `permissions.deny` 编译为 `agent` 层 deny 规则（hard floor，session/saved allow 不能绕过）；
+  descriptor 生成 JSON Schema 文档 `buildAgentRpcJsonSchema()`，`GET /rpc-schema.json` 与
+  OpenAPI 的 `x-rpc-contracts` 同步下发。
 - 减少 `as any`/ctx bag：为 host factories 定义窄接口，逐步消除 147 处 `as any`。
 - TUI storybook/headless frame capture；把 PTY 超时用例改为可重试/隔离。
 - 测试内存/墙钟预算写入 gate；source-size baseline 继续下降。

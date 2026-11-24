@@ -27,6 +27,7 @@ import { MemoryRetrievalController } from './MemoryRetrievalController';
 import { SessionSnapshotController } from './SessionSnapshotController';
 import { ContentAddressedSnapshotStore } from '../harness/ContentAddressedSnapshotStore';
 import { ArtifactManifest, ArtifactStore } from '../artifacts/ArtifactStore';
+import { compileArchetypePermissionRules } from '../permissions/archetype-rules';
 import { HookController } from './HookController';
 import { PolicyResolutionController } from './PolicyResolutionController';
 import { TurnLoopController } from './TurnLoopController';
@@ -136,7 +137,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
-
     constructor(
         protected modelAdapter: ModelAdapter,
         protected toolRegistry: ToolRegistry,
@@ -182,6 +182,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         this.approvalManager = this.toolApprovalManager = this.resolveApprovalManager(this.approvalManagerInput);
         this.toolApprovalManager?.setPermissionRules?.(() => this.options.policy?.permissions);
+        this.toolApprovalManager?.setPermissionLayer?.('agent', request => compileArchetypePermissionRules(this.modes.archetypeConfig(request.sessionId ?? '')));
         if (!this.toolExecutionCoordinator) {
             this.toolExecutionCoordinator = new ToolExecutionCoordinator(
                 this.toolRegistry,
@@ -209,11 +210,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             });
         });
     }
-
     protected now(): number {
         return this.clock?.now() ?? Date.now();
     }
-
     protected async sleep(ms: number): Promise<void> {
         if (!Number.isFinite(ms) || ms <= 0) {
             return;

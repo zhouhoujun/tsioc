@@ -13,6 +13,7 @@ import { EvalHandler } from '../api/EvalHandler';
 import { ShareHandler } from '../api/ShareHandler';
 import { PairHandler } from '../api/PairHandler';
 import { ArtifactHandler } from '../api/ArtifactHandler';
+import { buildAgentRpcJsonSchema } from '../app-rpc/rpc-contracts';
 import { AppRpcHandler } from '../api/AppRpcHandler';
 import { ChatWebSocket } from '../ws/ChatWebSocket';
 import { GATEWAY_CONFIG } from '../tokens';
@@ -97,6 +98,13 @@ export class GatewayBootstrap {
         ];
 
         this.gateway.addRoutes(allRoutes);
+        this.gateway.addRoute({
+            method: 'GET', path: '/rpc-schema.json', auth: false,
+            handler: async (_req, res) => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(buildAgentRpcJsonSchema()));
+            }
+        });
         this.gateway.addRoute({
             method: 'GET', path: '/openapi.json', auth: false,
             handler: async (_req, res) => {

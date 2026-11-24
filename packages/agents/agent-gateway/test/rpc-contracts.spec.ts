@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { AGENT_APP_RPC_METHODS, AgentAppRpcMethod, buildAgentAppRpcCapabilities } from '../src/app-rpc/capabilities';
-import { AGENT_RPC_CONTRACTS, AGENT_RPC_CONTRACT_METHOD_IDS, buildAgentRpcContractSchemas, resolveAgentRpcContract } from '../src/app-rpc/rpc-contracts';
+import { AGENT_RPC_CONTRACTS, AGENT_RPC_CONTRACT_METHOD_IDS, buildAgentRpcContractSchemas, buildAgentRpcJsonSchema, resolveAgentRpcContract } from '../src/app-rpc/rpc-contracts';
 
 @Suite('rpc descriptor contracts')
 export class RpcContractsTest {
@@ -33,6 +33,12 @@ export class RpcContractsTest {
         expect(capabilities.protocolVersion).toEqual(1);
         expect(capabilities.contractSchemas.methods['session.revert.stage']).toBeTruthy();
         expect(capabilities.methods).toEqual(AGENT_APP_RPC_METHODS);
+
+        const document = buildAgentRpcJsonSchema();
+        expect(document.$schema).toContain('json-schema.org');
+        expect(document.contractVersion).toEqual(1);
+        expect(Object.keys(document.methods)).toEqual([...AGENT_RPC_CONTRACT_METHOD_IDS]);
+        expect(document.methods['artifact.list'].params.required).toEqual(['sessionId']);
     }
 
     @Test('handlers tolerate unknown fields for forward compatibility')

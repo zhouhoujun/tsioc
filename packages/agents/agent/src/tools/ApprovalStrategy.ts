@@ -1,5 +1,5 @@
 import type { ApprovalStrategy } from './ToolApprovalManager';
-import { PermissionDecision, PermissionEngine, PermissionRule, compileApprovalRules, compileSavedAllowPatterns } from '../permissions/PermissionEngine';
+import { PermissionDecision, PermissionEngine, PermissionLayer, PermissionRequest, PermissionRule, compileApprovalRules, compileSavedAllowPatterns } from '../permissions/PermissionEngine';
 import { ApprovalCategory, classifyApprovalCategory } from './approval-categories';
 import { approvalCommand, inspectShellCommand } from './shell-command-scanner';
 
@@ -98,6 +98,12 @@ export class DefaultApprovalStrategy implements ApprovalStrategy {
         this.permissionSource = rules;
         this.permissionEngine ??= new PermissionEngine();
         this.refreshPermissionLayers();
+    }
+
+    /** P1.1: dynamic layer provider (agent archetype rules per request). */
+    setPermissionLayer(layer: PermissionLayer, provider: ((request: PermissionRequest) => PermissionRule[] | undefined) | undefined): void {
+        this.permissionEngine ??= new PermissionEngine();
+        this.permissionEngine.setLayerProvider(layer, provider);
     }
 
     /** P1.1: durable "always allow" patterns form the saved layer. */

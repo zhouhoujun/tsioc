@@ -111,3 +111,20 @@ export function buildAgentRpcContractSchemas() {
         }]))
     };
 }
+
+/** P4: standalone JSON Schema document derived from the same descriptors. */
+export function buildAgentRpcJsonSchema() {
+    const methods = Object.fromEntries(AGENT_RPC_CONTRACTS.map(contract => [contract.method, {
+        description: contract.description,
+        params: contract.paramsSchema ?? { type: 'object' as const },
+        result: contract.resultSchema ?? { type: 'object' as const }
+    }]));
+    return {
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        $id: 'https://tsdi.dev/schemas/agent-rpc.json',
+        title: 'TSDI Agent JSON-RPC',
+        protocolVersion: 1,
+        contractVersion: 1,
+        methods
+    };
+}

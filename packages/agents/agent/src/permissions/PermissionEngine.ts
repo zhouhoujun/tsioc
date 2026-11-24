@@ -218,9 +218,15 @@ function matchesRule(rule: PermissionRule, request: PermissionRequest, actions: 
  */
 export class PermissionEngine {
     private readonly layers = new Map<PermissionLayer, PermissionRule[]>();
+    private readonly providers = new Map<PermissionLayer, (request: PermissionRequest) => PermissionRule[] | undefined>();
 
     setLayer(layer: PermissionLayer, rules: PermissionRule[]): void {
         this.layers.set(layer, rules.map(rule => ({ ...rule, layer })));
+    }
+
+    /** Dynamic layer (e.g. the session's archetype deny list) merged after static rules. */
+    setLayerProvider(layer: PermissionLayer, provider: ((request: PermissionRequest) => PermissionRule[] | undefined) | undefined): void {
+        if (provider) this.providers.set(layer, provider); else this.providers.delete(layer);
     }
 
     getLayer(layer: PermissionLayer): PermissionRule[] {
@@ -243,7 +249,16 @@ export class PermissionEngine {
         let layer: PermissionLayer | undefined;
         let denied = false;
         for (const name of PERMISSION_LAYERS) {
-            for (const candidate of this.layers.get(name) ?? []) {
+            let dynamic: PermissionRule[] = [];
+            const provider = this.providers.get(name);
+            if (provider) {
+                try {
+                    dynamic = (provider(request) ?? []).map(rule => ({ ...rule, layer: name }));
+                } catch {
+                    dynamic = [];
+                }
+            }
+            for (const candidate of [...(this.layers.get(name) ?? []), ...dynamic]) {
                 if (!matchesRule(candidate, request, actions, resources)) {
                     continue;
                 }

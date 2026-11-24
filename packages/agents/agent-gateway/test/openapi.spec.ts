@@ -20,6 +20,7 @@ class OpenApiDocumentSpec {
         expect(document.components.securitySchemes.bearerAuth.scheme).toBe('bearer');
         // JSON-RPC methods ride along as an OpenAPI extension.
         expect((document as any)['x-rpc-methods']).toContain('session.list');
+        expect((document as any)['x-rpc-contracts'].methods['session.revert.stage'].params.type).toEqual('object');
     }
 
     @Test('merges methods for the same normalized path')

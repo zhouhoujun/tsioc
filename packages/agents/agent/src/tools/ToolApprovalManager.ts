@@ -137,6 +137,10 @@ export class ToolApprovalManager extends ApprovalManager {
 
     setPermissionRules(rules: PermissionRule[] | (() => PermissionRule[] | undefined)): void { this.strategy?.setPermissionRules?.(rules); }
 
+    setPermissionLayer(layer: import('../permissions/PermissionEngine').PermissionLayer, provider: ((request: import('../permissions/PermissionEngine').PermissionRequest) => import('../permissions/PermissionEngine').PermissionRule[] | undefined) | undefined): void {
+        this.strategy?.setPermissionLayer?.(layer, provider);
+    }
+
     listPermissionRules(sessionId?: string): PermissionRule[] { return this.strategy?.listPermissionRules?.(sessionId) ?? []; }
 
     inspectPermission(toolName: string, input: any, sessionId?: string): import('../permissions/PermissionEngine').PermissionDecision | undefined {

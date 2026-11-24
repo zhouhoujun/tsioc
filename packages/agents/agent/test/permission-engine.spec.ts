@@ -2,6 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { PermissionEngine, matchPermissionPattern, compileApprovalRules } from '../src/permissions/PermissionEngine';
 import { DefaultApprovalStrategy } from '../src/tools/ApprovalStrategy';
+import { compileArchetypePermissionRules } from '../src/permissions/archetype-rules';
 import { ApprovalDecision, ToolApprovalManager } from '../src/tools/ToolApprovalManager';
 import { RandomUuidGenerator } from '@tsdi/core';
 
@@ -111,6 +112,23 @@ export class ApprovalPermissionRulesTest {
             expect(result.decision).toEqual(expected);
             expect(manager.getPending()).toEqual([]);
         }
+    }
+
+    @Test('archetype deny rules compile into the agent layer as a hard floor')
+    archetypeAgentLayer() {
+        const compiled = compileArchetypePermissionRules({ name: 'plan', permissions: { deny: ['terminal', 'write_*'] } } as any);
+        expect(compiled.map(rule => [rule.action, rule.resource, rule.effect, rule.layer])).toEqual([
+            ['tool', 'terminal', 'deny', 'agent'],
+            ['tool', 'write_*', 'deny', 'agent']
+        ]);
+
+        const strategy = new DefaultApprovalStrategy(['shell.exec']);
+        strategy.setPermissionLayer('agent', () => compiled);
+        strategy.setSavedAllowPatterns(['terminal']);
+        expect(strategy.autoDenies('terminal', {})).toEqual(true);
+        expect(strategy.requires('terminal', {})).toEqual(true);
+        expect(strategy.requires('read_file', { path: 'a.ts' })).toEqual(false);
+        expect(strategy.explain('terminal', {}).permission?.denied).toEqual(true);
     }
 
     @Test('manager saved allow rules feed the saved layer')
