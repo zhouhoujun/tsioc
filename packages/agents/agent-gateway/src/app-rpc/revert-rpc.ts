@@ -11,7 +11,8 @@ export async function stageRevertFromRpc(input: RevertRpcInput): Promise<any> {
     const sessionId = requireSessionId(input.params);
     await input.authorize(sessionId);
     const messageId = requireString(input.params?.messageId, 'messageId');
-    return { staged: await input.runtime.stageSessionRevert?.(sessionId, messageId) ?? null };
+    const paths = Array.isArray(input.params?.paths) ? input.params.paths.map((path: any) => String(path)) : undefined;
+    return { staged: await input.runtime.stageSessionRevert?.(sessionId, messageId, paths) ?? null };
 }
 
 export async function clearRevertFromRpc(input: RevertRpcInput): Promise<any> {

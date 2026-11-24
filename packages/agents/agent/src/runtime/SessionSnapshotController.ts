@@ -17,7 +17,7 @@ export interface SessionSnapshotHost {
 /** File undo/redo, content snapshots and git step snapshots. */
 export class SessionSnapshotController {
     private pendingGit = new Map<string, string>();
-    private stagedReverts = new Map<string, { messageId: string; files: string[] }>();
+    private stagedReverts = new Map<string, { messageId: string; files: string[]; paths?: string[] }>();
 
     constructor(private readonly host: SessionSnapshotHost) {
     }
@@ -78,14 +78,16 @@ export class SessionSnapshotController {
     }
 
     /** P1.2: preview the files a message-level revert would restore without applying it. */
-    async stageRevert(sessionId: string, messageId: string): Promise<{ messageId: string; files: string[]; restoreOrder: 'reverse' }> {
+    async stageRevert(sessionId: string, messageId: string, paths?: string[]): Promise<{ messageId: string; files: string[]; restoreOrder: 'reverse' }> {
         const workspace = await this.host.workspace(sessionId);
         const manifests = workspace && this.host.contentSnapshots ? await this.host.contentSnapshots.list(sessionId, workspace) : [];
         const manifest = manifests.find(item => item.id === messageId || item.messageId === messageId);
         const diff = manifest ? null : await this.diffGit(sessionId, messageId);
-        const files = manifest ? manifest.files.map(file => file.path) : (diff?.files ?? []).map(file => file.filePath);
+        const selected = paths?.length ? new Set(paths.map(path => path.replace(/\\/g, '/'))) : undefined;
+        const all = manifest ? manifest.files.map(file => file.path) : (diff?.files ?? []).map(file => file.filePath);
+        const files = selected ? all.filter(path => selected.has(path)) : all;
         const staged = { messageId, files, restoreOrder: 'reverse' as const };
-        this.stagedReverts.set(sessionId, { messageId, files: staged.files });
+        this.stagedReverts.set(sessionId, { messageId, files, ...(selected ? { paths: Array.from(selected) } : {}) });
         return staged;
     }
 
@@ -99,6 +101,15 @@ export class SessionSnapshotController {
             return { reverted: false, error: 'no staged revert' };
         }
         this.stagedReverts.delete(sessionId);
+        if (staged.paths?.length && this.host.contentSnapshots) {
+            const workspace = await this.host.workspace(sessionId);
+            if (workspace) {
+                const content = await this.host.contentSnapshots.restore(sessionId, workspace, staged.messageId, 'before', staged.paths);
+                if (content.restored) {
+                    return { reverted: true, messageId: staged.messageId, restoredFiles: content.files };
+                }
+            }
+        }
         return this.revertGit(sessionId, staged.messageId);
     }
 

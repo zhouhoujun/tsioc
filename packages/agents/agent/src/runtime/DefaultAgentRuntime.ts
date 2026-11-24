@@ -689,7 +689,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     override async listGitStepSnapshots(sessionId: string): Promise<GitStepSnapshot[]> { return this.snapshots.listGit(sessionId); }
 
     override async diffGitStepSnapshot(sessionId: string, ref: string): Promise<GitStepDiff | null> { return this.snapshots.diffGit(sessionId, ref); }
-    stageSessionRevert(sessionId: string, messageId: string) { return this.snapshots.stageRevert(sessionId, messageId); }
+    stageSessionRevert(sessionId: string, messageId: string, paths?: string[]) { return this.snapshots.stageRevert(sessionId, messageId, paths); }
     clearStagedSessionRevert(sessionId: string): boolean { return this.snapshots.clearStagedRevert(sessionId); }
     commitStagedSessionRevert(sessionId: string): Promise<GitRevertResult> { return this.snapshots.commitStagedRevert(sessionId); }
 
