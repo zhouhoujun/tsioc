@@ -1380,6 +1380,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> { return this.hooks.summary(); }
 
+    transformTools(editor: (actor: import('../tools/ToolRegistry').ToolTransformEditor) => void): number { return this.toolRegistry.transform(editor); }
     listPermissionRules(sessionId?: string): import('../permissions/PermissionEngine').PermissionRule[] { return this.toolApprovalManager?.listPermissionRules?.(sessionId) ?? []; }
 
     inspectPermission(toolName: string, input: any, sessionId?: string): import('../permissions/PermissionEngine').PermissionDecision | undefined { return this.toolApprovalManager?.inspectPermission?.(toolName, input, sessionId); }

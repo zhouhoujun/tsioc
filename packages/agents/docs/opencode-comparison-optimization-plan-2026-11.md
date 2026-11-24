@@ -223,11 +223,15 @@
 - shrink 阶梯：overflow 后按比例缩小 keep/buffer；缓存前缀感知。
 - 验收：长会话不阻塞；summary 质量/成本指标；overflow 恢复；现有 anchors/recoverDetail 不回归。
 
-**P2.3 工具变换与插件 hooks**
+**P2.3 工具变换与插件 hooks（工具变换已落地 2026-11-24）**
 - 扩展 `AgentHooks` 域：`tool.execute.before/after`、`permission.evaluate`、`model.request/response/retry`、`config.observe`；
 - `ToolRegistry.transform(editor)`：add/hide/rename/namespace，带 revision；session snapshot 与 prompt cache 兼容；
 - 插件 manifest 声明 hooks/tools/config，支持 per-workspace enable/disable；保留 command/http/mcp 传输。
 - 验收：插件可新增/隐藏工具；工具权限/审批仍生效；配置热更新不丢会话。
+- 状态：`ToolRegistry.transform(editor)` 已落地（`add`/`hide`/`rename`/`namespace`，单调 `transformRevision`
+  供 prompt cache/会话快照失效）；`LocalToolRegistry` 按 expose 名称生成定义，`invoke/activateTool/isToolActive`
+  解析 expose→raw，默认无变换时行为不变。**剩余**：`tool.execute.before/after`、`permission.evaluate`、
+  `model.request/response/retry`、`config.observe` 钩子域与插件 manifest/按 workspace 启停。
 
 ### P3 — 实时执行与协议平台（2 周）
 

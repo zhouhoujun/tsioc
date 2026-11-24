@@ -2,11 +2,30 @@ import { Abstract } from '@tsdi/ioc';
 import { AgentTool, AgentToolDefinition } from './AgentTool';
 import { resolveToolExecutionHints } from '../harness/ToolSandboxPolicy';
 
+/** P2.3: editor passed to `ToolRegistry.transform` (add/hide/rename/namespace). */
+export interface ToolTransformEditor {
+    add(tool: AgentTool): void;
+    hide(name: string): void;
+    rename(from: string, to: string): void;
+    /** Expose the named tools (default: all) under `<prefix>.<name>`. */
+    namespace(prefix: string, names?: string[]): void;
+}
+
 @Abstract()
 export abstract class ToolRegistry {
     abstract getTools(): AgentTool[];
     abstract getTool(name: string): AgentTool | undefined;
     abstract invoke(name: string, input: any, sessionId: string, principalId?: string, workspace?: string, signal?: AbortSignal, sandboxMode?: import('../harness/sandbox-exec').SandboxMode): Promise<any>;
+
+    /** P2.3: transform the exposed tool set; returns the new revision (0 = unsupported). */
+    transform(_editor: (actor: ToolTransformEditor) => void): number {
+        return 0;
+    }
+
+    /** Monotonic transform revision for prompt-cache/session-snapshot invalidation. */
+    get transformRevision(): number {
+        return 0;
+    }
 
     getToolDefinitions(sessionId?: string): AgentToolDefinition[] {
         return this.getTools().map(tool => this.toDefinition(tool, sessionId));

@@ -64,6 +64,27 @@ class DescribedTool implements AgentTool {
     }
 }
 
+class AlwaysTool implements AgentTool {
+    name = 'always';
+    description = 'always active';
+    inputSchema = { type: 'object' };
+    toolset = 'custom';
+    source = 'test';
+
+    getDefinition() {
+        return {
+            name: this.name,
+            description: this.description,
+            inputSchema: this.inputSchema,
+            toolset: this.toolset,
+            source: this.source,
+            activation: { kind: 'always' as const, scope: 'global' as const }
+        };
+    }
+
+    async invoke(input: any): Promise<any> { return input; }
+}
+
 class DeferredDefinitionTool implements AgentTool {
     name = 'heavy_tool';
     description = 'heavy schema tool';
@@ -697,6 +718,28 @@ export class BuiltinToolsTest {
         expect(classifyApprovalCategory('process.start')).toEqual('sandbox');
         expect(classifyApprovalCategory('echo')).toBeUndefined();
         expect(classifyApprovalCategory('memory.put')).toBeUndefined();
+    }
+
+    @Test('P2.3: tool transforms add, hide, rename and namespace exposed tools')
+    async toolTransforms() {
+        const { memoryStore, sessionStore, activationStore } = await bootStores();
+        const registry = new LocalToolRegistry([new DescribedTool()], memoryStore, sessionStore, activationStore);
+        const revision = registry.transform(editor => {
+            editor.add(new AlwaysTool());
+            editor.rename('described', 'docs.described');
+            editor.namespace('plug', ['always']);
+        });
+        expect(revision).toEqual(1);
+        expect(registry.transformRevision).toEqual(1);
+        expect(registry.getToolDefinition('docs.described')?.name).toEqual('docs.described');
+        expect(registry.getToolDefinition('described')?.name).toEqual('docs.described');
+        expect(registry.getToolDefinition('plug.always')?.name).toEqual('plug.always');
+        expect(registry.getCallableToolDefinitions('s1').map(item => item.name)).toContain('plug.always');
+        expect(await registry.invoke('plug.always', { ok: 1 }, 's1')).toEqual({ ok: 1 });
+
+        registry.transform(editor => editor.hide('described'));
+        expect(registry.getToolDefinition('docs.described')).toBeUndefined();
+        expect(registry.transformRevision).toEqual(2);
     }
 
     @Test('A3: category classifier prefers tool metadata over name heuristics')

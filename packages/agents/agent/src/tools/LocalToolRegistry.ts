@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@tsdi/ioc';
-import { ToolRegistry } from './ToolRegistry';
 import { AgentTool, AgentToolDefinition } from './AgentTool';
 import { AGENT_TOOLS } from '../tokens';
 import { MemoryStore } from '../memory/MemoryStore';
 import { SessionStore } from '../memory/SessionStore';
 import { ToolActivationStore } from './ToolActivationStore';
+import { ToolRegistry, ToolTransformEditor } from './ToolRegistry';
 
 const ALWAYS_ACTIVE_TOOL_NAMES = new Set(['tool_search', 'tool_inspect']);
 const ALWAYS_ACTIVE_TOOLSETS = new Set(['registry']);
@@ -13,6 +13,13 @@ const LOCAL_DEFERRED_TOOLSETS = new Set(['filesystem', 'filesystem_write', 'sear
 
 @Injectable()
 export class LocalToolRegistry extends ToolRegistry {
+
+    /** P2.3: additive tools/hidden names/exposed renames applied by `transform`. */
+    private transformedAdded: AgentTool[] = [];
+    private transformedHidden = new Set<string>();
+    private transformedNames = new Map<string, string>();
+    private exposedNames = new Map<string, string>();
+    private revision = 0;
 
     constructor(
         @Inject(AGENT_TOOLS, { defaultValue: [] }) private tools: AgentTool[],
@@ -23,12 +30,54 @@ export class LocalToolRegistry extends ToolRegistry {
         super();
     }
 
+    get transformRevision(): number {
+        return this.revision;
+    }
+
     getTools(): AgentTool[] {
         return Array.from(this.getToolMap().values());
     }
 
     getTool(name: string): AgentTool | undefined {
         return this.getToolMap().get(name);
+    }
+
+    getToolDefinition(name: string, sessionId?: string): AgentToolDefinition | undefined {
+        const tool = this.getTool(this.resolveRawName(name));
+        return tool ? this.toDefinition(tool, sessionId) : undefined;
+    }
+
+    /** P2.3: add/hide/rename/namespace tools; returns the new revision. */
+    transform(editor: (actor: ToolTransformEditor) => void): number {
+        const added: AgentTool[] = [];
+        const hidden: string[] = [];
+        const renames: Array<[string, string]> = [];
+        editor({
+            add: tool => { if (tool?.name) added.push(tool); },
+            hide: name => { if (name) hidden.push(name); },
+            rename: (from, to) => { if (from && to) renames.push([from, to]); },
+            namespace: (prefix, names) => {
+                if (!prefix) return;
+                const targets = names?.length ? names.slice() : Array.from(this.getRawToolMap().keys());
+                for (const name of targets) {
+                    renames.push([name, `${prefix}.${name}`]);
+                }
+            }
+        });
+        for (const tool of added) {
+            if (!this.transformedAdded.some(existing => existing.name === tool.name)) {
+                this.transformedAdded.push(tool);
+            }
+        }
+        for (const name of hidden) {
+            this.transformedHidden.add(name);
+        }
+        for (const [from, to] of renames) {
+            this.transformedNames.set(from, to);
+        }
+        this.rebuildExposedNames();
+        this.revision++;
+        return this.revision;
     }
 
     getCallableToolDefinitions(sessionId?: string): AgentToolDefinition[] {
@@ -41,30 +90,33 @@ export class LocalToolRegistry extends ToolRegistry {
     }
 
     async activateTool(sessionId: string, name: string): Promise<boolean> {
-        const tool = this.getTool(name);
+        const raw = this.resolveRawName(name);
+        const tool = this.getTool(raw);
         if (!tool) {
             throw new Error(`Tool '${name}' not found`);
         }
-        this.activationStore.activate(sessionId, name);
+        this.activationStore.activate(sessionId, raw);
         return true;
     }
 
     async isToolActive(sessionId: string, name: string): Promise<boolean> {
-        const tool = this.getTool(name);
+        const raw = this.resolveRawName(name);
+        const tool = this.getTool(raw);
         if (!tool) {
             return false;
         }
-        const definition = this.toDefinition(tool, sessionId);
+        const definition = super.toDefinition(tool, sessionId);
         return this.isAlwaysActiveDefinition(definition)
-            || this.hasActivation(sessionId, name);
+            || this.hasActivation(sessionId, raw);
     }
 
     async invoke(name: string, input: any, sessionId: string, principalId?: string, workspace?: string, signal?: AbortSignal, sandboxMode?: import('../harness/sandbox-exec').SandboxMode): Promise<any> {
-        const tool = this.getTool(name);
+        const raw = this.resolveRawName(name);
+        const tool = this.getTool(raw);
         if (!tool) {
             throw new Error(`Tool '${name}' not found`);
         }
-        if (!(await this.isToolActive(sessionId, name))) {
+        if (!(await this.isToolActive(sessionId, raw))) {
             throw new Error(`Tool '${name}' is not activated for this session. Activate it through the host or approval flow before invoking it.`);
         }
         const resolvedWorkspace = String(workspace || (this.sessionStore ? (await this.sessionStore.get(sessionId)).workspace : '') || '').trim() || undefined;
@@ -85,9 +137,9 @@ export class LocalToolRegistry extends ToolRegistry {
             ? true
             : !!sessionId && this.shouldExposeFullDefinition({ ...definition, activation: resolvedActivation }, sessionId);
         if (!sessionId || active) {
-            return resolvedActivation ? { ...definition, activation: resolvedActivation } : definition;
+            return this.renameDefinition(resolvedActivation ? { ...definition, activation: resolvedActivation } : definition);
         }
-        return {
+        return this.renameDefinition({
             name: definition.name,
             description: definition.description,
             toolset: definition.toolset,
@@ -98,13 +150,35 @@ export class LocalToolRegistry extends ToolRegistry {
             tags: definition.tags,
             activation: resolvedActivation,
             provenance: definition.provenance
-        };
+        });
     }
 
     private toCallableDefinition(tool: AgentTool, sessionId: string): AgentToolDefinition {
         const definition = super.toDefinition(tool, sessionId);
         const resolvedActivation = this.resolveActivation(definition, sessionId);
-        return resolvedActivation ? { ...definition, activation: resolvedActivation } : definition;
+        return this.renameDefinition(resolvedActivation ? { ...definition, activation: resolvedActivation } : definition);
+    }
+
+    private renameDefinition(definition: AgentToolDefinition): AgentToolDefinition {
+        if (!this.transformedNames.size) {
+            return definition;
+        }
+        const exposed = this.transformedNames.get(definition.name);
+        if (!exposed) {
+            return definition;
+        }
+        return { ...definition, name: exposed, canonicalName: definition.canonicalName ?? definition.name };
+    }
+
+    private resolveRawName(name: string): string {
+        return this.exposedNames.get(name) ?? name;
+    }
+
+    private rebuildExposedNames(): void {
+        this.exposedNames.clear();
+        for (const [raw, exposed] of this.transformedNames) {
+            this.exposedNames.set(exposed, raw);
+        }
     }
 
     private isCallableDefinition(definition: AgentToolDefinition, sessionId: string): boolean {
@@ -114,14 +188,14 @@ export class LocalToolRegistry extends ToolRegistry {
         if (definition.activation?.kind === 'deferred' && definition.activation?.scope === 'session') {
             return true;
         }
-        return this.hasActivation(sessionId, definition.name);
+        return this.hasActivation(sessionId, this.resolveRawName(definition.name));
     }
 
     private shouldExposeFullDefinition(definition: AgentToolDefinition, sessionId: string): boolean {
         if (this.isAlwaysActiveDefinition(definition)) {
             return true;
         }
-        return this.hasActivation(sessionId, definition.name);
+        return this.hasActivation(sessionId, this.resolveRawName(definition.name));
     }
 
     private resolveActivation(definition: AgentToolDefinition, sessionId?: string): AgentToolDefinition['activation'] {
@@ -152,12 +226,19 @@ export class LocalToolRegistry extends ToolRegistry {
     }
 
     private getToolMap(): Map<string, AgentTool> {
+        return this.getRawToolMap();
+    }
+
+    private getRawToolMap(): Map<string, AgentTool> {
         const deduped = new Map<string, AgentTool>();
-        this.tools.forEach(tool => {
+        [...this.tools, ...this.transformedAdded].forEach(tool => {
             if (!deduped.has(tool.name)) {
                 deduped.set(tool.name, tool);
             }
         });
+        for (const hidden of this.transformedHidden) {
+            deduped.delete(hidden);
+        }
         return deduped;
     }
 
