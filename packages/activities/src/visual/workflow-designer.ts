@@ -26,6 +26,7 @@ import { preloadWorkflowExpressions } from './workflow-expression';
 import { compileVisualWorkflow, CompiledWorkflow, layoutVisualWorkflow } from './workflow-compiler';
 import { VisualWorkflowService } from './VisualWorkflowService';
 import { WorkflowDefinitionStore, WorkflowDefinitionSummary, WorkflowRelease, WorkflowStoreSaveOptions } from './workflow-store';
+import { WorkflowLibraryCache } from './workflow-library-cache';
 
 const HISTORY_LIMIT = 100;
 const MIN_ZOOM = 0.35;
@@ -247,6 +248,8 @@ export class WorkflowDesigner {
      */
     private savedSnapshot?: string;
     private savedSummary?: WorkflowDefinitionSummary;
+    /** Stored workflows offered by subflow/loop reference pickers. */
+    readonly workflowLibrary = new WorkflowLibraryCache();
 
     constructor(options: WorkflowDesignerOptions = {}) {
         this.registry = options.registry || new WorkflowNodeRegistry();
@@ -1769,17 +1772,11 @@ export class WorkflowDesigner {
         return this.load(definition, true);
     }
 
-    listSaved(store: WorkflowDefinitionStore): Promise<WorkflowDefinitionSummary[]> {
-        return store.list();
-    }
+    listSaved(store: WorkflowDefinitionStore): Promise<WorkflowDefinitionSummary[]> { return store.list(); }
 
-    async removeSaved(store: WorkflowDefinitionStore, id: string): Promise<boolean> {
-        return store.remove(id);
-    }
+    async removeSaved(store: WorkflowDefinitionStore, id: string): Promise<boolean> { return store.remove(id); }
 
-    serialize(): string {
-        return this.toJSON();
-    }
+    serialize(): string { return this.toJSON(); }
 
     /**
      * Load the expression evaluator when the document uses expressions, so

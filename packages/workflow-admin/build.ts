@@ -82,9 +82,10 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_215_000);
 // typed-value expression source plus inline-secret migration, 285 KB for
 // publish-time expression validation, 289 KB for the expression editor
 // overlay, 290 KB for multi-output function routing plus the code-editor host
-// cleanup, and 291 KB for the sub-workflow menu actions. JSONata itself is a
-// lazy chunk and does not count; the gzip budget stays the transfer gate.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 291_000);
+// cleanup, 291 KB for the sub-workflow menu actions, and 292 KB for the
+// library-backed subflow source picker. JSONata itself is a lazy chunk and
+// does not count; the gzip budget stays the transfer gate.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 292_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

@@ -432,6 +432,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "loop": {
                 "iterations": "Iterations",
                 "delay": "Delay",
+                "workflowMode": "Workflow source",
                 "workflow": "Sub-workflow source"
             },
             "trigger": {
@@ -580,6 +581,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "Timeout"
             },
             "subprocess": {
+                "workflowMode": "Workflow source",
                 "workflow": "Workflow id or JSON",
                 "inputs": "Input ports",
                 "outputs": "Output ports"
@@ -1327,6 +1329,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "loop": {
                 "iterations": "Number of times to run the sub-workflow.",
                 "delay": "Wait between sub-workflow runs.",
+                "workflowMode": "Pick a saved workflow, read an id or definition from context, or paste a definition.",
                 "workflow": "Workflow id, context path, or inline JSON definition to repeat."
             },
             "trigger": {
@@ -1463,6 +1466,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "route to the timeout port after this delay"
             },
             "subprocess": {
+                "workflowMode": "Pick a saved workflow, read an id or definition from context, or paste a definition.",
                 "workflow": "Stored workflow id, context path, or inline definition JSON.",
                 "inputs": "Child context key to parent context path.",
                 "outputs": "Parent context key to child result path."
@@ -1723,6 +1727,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
         },
         "option": {
             "expression": "Expression",
+            "stored": "Stored workflow",
+            "context": "Context value",
+            "inline": "Inline definition",
             "comma": "Comma",
             "tab": "Tab",
             "space": "Space",
@@ -2267,6 +2274,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "loop": {
                 "iterations": "迭代次数",
                 "delay": "延迟",
+                "workflowMode": "工作流来源",
                 "workflow": "子流程来源"
             },
             "trigger": {
@@ -2415,6 +2423,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超时"
             },
             "subprocess": {
+                "workflowMode": "工作流来源",
                 "workflow": "工作流 ID 或 JSON",
                 "inputs": "输入端口",
                 "outputs": "输出端口"
@@ -3145,6 +3154,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             "loop": {
                 "iterations": "子工作流执行次数。",
                 "delay": "两次子流程执行之间的等待时间。",
+                "workflowMode": "选择已保存的工作流、从上下文读取 ID 或定义，或直接粘贴定义。",
                 "workflow": "要重复执行的工作流 ID、上下文路径或内联 JSON 定义。"
             },
             "trigger": {
@@ -3281,6 +3291,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超过该时间后进入超时端口。"
             },
             "subprocess": {
+                "workflowMode": "选择已保存的工作流、从上下文读取 ID 或定义，或直接粘贴定义。",
                 "workflow": "已保存的工作流 ID、上下文路径或内联定义 JSON。",
                 "inputs": "子流程上下文键 → 父流程上下文路径。",
                 "outputs": "父流程上下文键 → 子流程结果路径。"
@@ -3541,6 +3552,9 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
         },
         "option": {
             "expression": "表达式",
+            "stored": "已保存工作流",
+            "context": "上下文值",
+            "inline": "内联定义",
             "comma": "逗号",
             "tab": "制表符",
             "space": "空格",

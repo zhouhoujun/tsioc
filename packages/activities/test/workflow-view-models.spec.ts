@@ -36,6 +36,41 @@ describe('Workflow canvas incremental view model', () => {
         expect(field.options.some(option => option.value === 'task_1')).toBe(true);
     });
 
+    it('renders a stored workflow picker for subflow sources', () => {
+        const { designer, registry } = createDesigner();
+        designer.workflowLibrary.set([
+            { id: 'wf_child', name: 'Child flow', updatedAt: '2026-01-01' } as any
+        ]);
+        const node = designer.addNode('subprocess', { x: 0, y: 0 })!;
+        designer.selectNode(node.id);
+        const field = (key: string) => buildWorkflowInspectorModel(designer, registry, 'en')
+            .fields.find(item => item.key === key)!;
+        expect(field('workflowMode').type).toBe('select');
+        expect(field('workflow').type).toBe('select');
+        expect(field('workflow').reference?.kind).toBe('workflow');
+        expect(field('workflow').options.some(option => option.value === 'wf_child')).toBe(true);
+        expect(field('workflow').options.find(option => option.value === 'wf_child')?.label).toBe('Child flow');
+    });
+
+    it('infers the workflow control from documents without a mode', () => {
+        const { designer, registry } = createDesigner();
+        const cases: Array<[any, string]> = [
+            ['child_1', 'select'],
+            ['flow.child', 'text'],
+            ['{\"id\":\"inline\"}', 'textarea']
+        ];
+        const nodes = cases.map(([value], index) => designer.addNode('subprocess', { x: index * 10, y: 0 }, {
+            config: { workflow: value }
+        })!);
+        cases.forEach(([, type], index) => {
+            designer.selectNode(nodes[index].id);
+            const field = buildWorkflowInspectorModel(designer, registry, 'en')
+                .fields.find(item => item.key === 'workflow')!;
+            expect(field.type).toBe(type);
+            expect(field.reference?.kind).toBe(type === 'select' ? 'workflow' : undefined);
+        });
+    });
+
     it('derives the scale action from the legacy clamp flag', () => {
         const { designer, registry } = createDesigner();
         const node = designer.addNode('scale', { x: 0, y: 0 }, {

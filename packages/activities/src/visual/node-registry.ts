@@ -3,6 +3,7 @@ import { Translator } from '@tsdi/i18n';
 import { Activity } from '../activities/Activity';
 import { translateWorkflow } from './i18n';
 import { validateWorkflowExpression } from './workflow-expression';
+import { workflowSourceFields } from './workflow-subflow-fields';
 import {
     IVisualWorkflowNode,
     NodePort,
@@ -30,9 +31,7 @@ function port(id: string, name: string, type: NodePort['type'], label: string): 
     return { id, name, type, label };
 }
 
-function configField(field: WorkflowConfigField): WorkflowConfigField {
-    return { ...field };
-}
+function configField(field: WorkflowConfigField): WorkflowConfigField { return { ...field }; }
 
 /**
  * Shared structural checks for rule-based routing nodes: a switch without rules
@@ -822,6 +821,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
+            ...workflowSourceFields(),
             configField({ key: 'workflow', label: 'Sub-workflow source', type: 'text', placeholder: 'workflow_id', description: 'Workflow id, context path, or inline JSON definition to repeat.' }),
             configField({ key: 'iterations', label: 'Iterations', type: 'number', defaultValue: 1, min: 1, max: 10000, step: 1 }),
             configField({ key: 'delay', label: 'Delay between runs', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Options' })
@@ -2154,6 +2154,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
             port('error', 'error', 'output', 'Error')
         ],
         fields: [
+            ...workflowSourceFields(),
             configField({ key: 'workflow', label: 'Workflow id or JSON', type: 'textarea', required: true, rows: 6, placeholder: 'workflow_id', description: 'Stored workflow id, context path, or inline definition JSON.' }),
             configField({ key: 'inputs', label: 'Input ports', type: 'json', defaultValue: {}, placeholder: '{ "orderId": "payload.id" }', description: 'Child context key to parent context path.' }),
             configField({ key: 'outputs', label: 'Output ports', type: 'json', defaultValue: {}, placeholder: '{ "total": "payload.total" }', description: 'Parent context key to child result path.' })
@@ -2223,9 +2224,7 @@ export class WorkflowNodeRegistry {
     }
 
     /** Monotonic change marker used by derived palette/inspector view caches. */
-    get revision(): number {
-        return this._revision;
-    }
+    get revision(): number { return this._revision; }
 
     register(definition: WorkflowNodeDefinition): this {
         if (!definition?.type) {

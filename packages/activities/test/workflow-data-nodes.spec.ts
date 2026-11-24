@@ -318,6 +318,39 @@ describe('Workflow data & trigger nodes', () => {
         expect(String(missing.error?.message || '')).toContain('not found');
     });
 
+    it('resolves sub-workflow sources for every workflow mode hint', async () => {
+        const child: VisualWorkflowDefinition = {
+            id: 'mode-child',
+            name: 'Mode child',
+            nodes: [
+                registry.createNode('function', { x: 0, y: 0 }, {
+                    id: 'mode_fn',
+                    config: { code: 'global.modeRuns = (global.modeRuns || 0) + 1; return {};' }
+                })
+            ],
+            connections: []
+        };
+        service.setDefinitionResolver(id => id === 'mode-child' ? child : undefined);
+
+        const stored = await service.execute(chain([
+            { type: 'subprocess', config: { workflowMode: 'stored', workflow: 'mode-child' } }
+        ]), {});
+        expect(stored.success).toBe(true);
+        expect(service.getGlobalContext().modeRuns).toBe(1);
+
+        const context = await service.execute(chain([
+            { type: 'subprocess', config: { workflowMode: 'context', workflow: 'childFlow' } }
+        ]), { childFlow: child });
+        expect(context.success).toBe(true);
+        expect(service.getGlobalContext().modeRuns).toBe(2);
+
+        const inline = await service.execute(chain([
+            { type: 'subprocess', config: { workflowMode: 'inline', workflow: JSON.stringify(child) } }
+        ]), {});
+        expect(inline.success).toBe(true);
+        expect(service.getGlobalContext().modeRuns).toBe(3);
+    });
+
     it('maps sub-workflow input and output ports', async () => {
         const child: VisualWorkflowDefinition = {
             id: 'port-child',

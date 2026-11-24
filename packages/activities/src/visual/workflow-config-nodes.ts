@@ -1,9 +1,14 @@
 import {
     IVisualWorkflowNode,
     VisualWorkflowDefinition,
+    WorkflowConfigField,
+    WorkflowInspectorReferenceView,
     WorkflowReferenceSpec
 } from './types';
-import type { WorkflowNodeRegistry } from './node-registry';
+import type { WorkflowDesigner } from './workflow-designer';
+import { translateWorkflow } from './i18n';
+import type { Translator } from '@tsdi/i18n';
+import type { WorkflowLocale, WorkflowNodeRegistry } from './node-registry';
 
 /**
  * Configuration-node helpers.
@@ -224,6 +229,26 @@ export function nodeReferenceOptions(
     return options;
 }
 
+/** Control a loop/subprocess `workflow` value needs, derived from its text. */
+export function workflowSourceMode(
+    nodeType: string,
+    values: Record<string, any>
+): 'stored' | 'context' | 'inline' | undefined {
+    if (nodeType !== 'subprocess' && nodeType !== 'loop') {
+        return undefined;
+    }
+    const mode = String(values.workflowMode || '');
+    if (mode === 'stored' || mode === 'context' || mode === 'inline') {
+        return mode;
+    }
+    // Documents written before `workflowMode` kept one value; infer its shape.
+    const text = typeof values.workflow === 'string' ? values.workflow.trim() : '';
+    if (/^[\[{]/.test(text)) {
+        return 'inline';
+    }
+    return /^[A-Za-z_$][\w$]*\./.test(text) ? 'context' : 'stored';
+}
+
 /**
  * Signature of the config nodes a reference field can pick.
  *
@@ -235,16 +260,20 @@ export function nodeReferenceOptions(
 export function configNodesSignature(
     definition: VisualWorkflowDefinition | undefined,
     registry: WorkflowNodeRegistry,
-    nodeType: string
+    nodeType: string,
+    workflows: Array<{ id: string; name?: string }> = []
 ): string {
     const fields = registry.get(nodeType)?.fields || [];
-    if (!fields.some(field => field.reference)) {
+    const isSubflow = nodeType === 'subprocess' || nodeType === 'loop';
+    if (!fields.some(field => field.reference) && !isSubflow) {
         return '';
     }
-    return (definition?.nodes || [])
+    const nodes = (definition?.nodes || [])
         .filter(node => isConfigNode(registry, node.type))
         .map(node => `${node.id}:${node.name || ''}:${JSON.stringify(node.config || {})}`)
         .join('|');
+    const library = isSubflow ? workflows.map(item => `${item.id}:${item.name || ''}`).join('|') : '';
+    return `${nodes}||${library}`;
 }
 
 /** Label for a stored id; falls back to the raw id when it no longer resolves. */
@@ -255,4 +284,112 @@ export function referenceLabel(
 ): string {
     const node = (definition?.nodes || []).find(item => item.id === id);
     return node ? (node.name || node.id) : id;
+}
+
+/**
+ * Resolve a declared reference field into picker options plus create/edit
+ * actions. The stored value is never rewritten here; the picker only changes
+ * how it is chosen.
+ */
+export function buildReferenceView(
+    designer: WorkflowDesigner,
+    registry: WorkflowNodeRegistry,
+    field: WorkflowConfigField,
+    value: any,
+    locale: WorkflowLocale,
+    translator?: Translator
+): WorkflowInspectorReferenceView | undefined {
+    const spec = field.reference;
+    if (!spec) {
+        return undefined;
+    }
+    const definition = designer.definition;
+    let options: Array<{ label: string; value: string; description?: string }> = [];
+    if (spec.kind === 'config-node') {
+        options = configNodeOptions(definition, registry, spec.resource || '');
+    } else if (spec.kind === 'node') {
+        const candidates = (definition?.nodes || [])
+            .filter(node => node.id !== designer.selectedNode?.id && !isConfigNode(registry, node.type));
+        options = nodeReferenceOptions(candidates, registry, locale, translator, spec.multiple === true);
+    } else if (spec.kind === 'workflow') {
+        // Stored workflows live in the host store, not in this document.
+        options = (designer.workflowLibrary?.options || []).map(item => ({
+            label: item.name || item.id,
+            value: item.id,
+            description: item.updatedAt
+        }));
+    } else if (spec.kind === 'link') {
+        const names = new Set<string>();
+        (definition?.nodes || []).forEach(node => {
+            if (node.type !== 'link') {
+                return;
+            }
+            String(node.config?.links || '').split(',').forEach(name => {
+                const trimmed = name.trim();
+                if (trimmed) {
+                    names.add(trimmed);
+                }
+            });
+        });
+        options = Array.from(names).map(name => ({ label: name, value: name }));
+    }
+
+    const ids = referenceIds(value);
+    if (!field.required) {
+        options = [
+            {
+                label: translateWorkflow(translator, locale, 'workflow.ui.none', '— none —'),
+                value: ''
+            },
+            ...options
+        ];
+    }
+    const known = new Set(options.map(option => option.value));
+    const missingIds = ids.filter(id => !known.has(id));
+    if (missingIds.length) {
+        // Keep the stored id visible instead of rendering an empty select.
+        options = [
+            ...missingIds.map(id => ({
+                label: `${id} (${translateWorkflow(translator, locale, 'workflow.ui.referenceMissing', 'missing')})`,
+                value: id,
+                description: translateWorkflow(
+                    translator,
+                    locale,
+                    'workflow.ui.referenceMissingHint',
+                    'The referenced record no longer exists.'
+                )
+            })),
+            ...options
+        ];
+    }
+
+    const actions: Array<{ id: string; label: string; title?: string }> = [];
+    if (spec.create) {
+        actions.push({
+            id: 'create',
+            label: '＋',
+            title: translateWorkflow(translator, locale, 'workflow.ui.newReference', 'New')
+        });
+    }
+    if (spec.edit && ids.length && missingIds.length < ids.length) {
+        actions.push({
+            id: 'edit',
+            label: '✎',
+            title: translateWorkflow(translator, locale, 'workflow.ui.editReference', 'Edit')
+        });
+    }
+
+    return {
+        kind: spec.kind,
+        resource: spec.resource,
+        multiple: spec.multiple === true,
+        missing: missingIds.length > 0,
+        options,
+        label: spec.kind === 'config-node'
+            ? ids.map(id => referenceLabel(definition, registry, id)).join(', ')
+            : spec.kind === 'workflow'
+                ? ids.map(id => designer.workflowLibrary?.options.find(item => item.id === id)?.name || id).join(', ')
+                : ids.join(', '),
+        actions
+    };
 }

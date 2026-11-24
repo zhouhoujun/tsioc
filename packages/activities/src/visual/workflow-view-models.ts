@@ -24,13 +24,7 @@ import { WorkflowDesigner } from './workflow-designer';
 import { Translator } from '@tsdi/i18n';
 import { resolveWorkflowText, translateWorkflow } from './i18n';
 import { decodeWorkflowTypedValue } from './workflow-typed-value';
-import {
-    configNodeOptions,
-    isConfigNode,
-    nodeReferenceOptions,
-    referenceIds,
-    referenceLabel
-} from './workflow-config-nodes';
+import { buildReferenceView, workflowSourceMode } from './workflow-config-nodes';
 import {
     WORKFLOW_NODE_WIDTH,
     WORKFLOW_PORT_SPACING,
@@ -573,105 +567,6 @@ function fieldResetValue(field: { type: string; defaultValue?: any }): any {
     return value === undefined || value === null ? '' : String(value);
 }
 
-/**
- * Resolve a declared reference field into picker options plus create/edit
- * actions. The stored value is never rewritten here; the picker only changes
- * how it is chosen.
- */
-function buildReferenceView(
-    designer: WorkflowDesigner,
-    registry: WorkflowNodeRegistry,
-    field: WorkflowConfigField,
-    value: any,
-    locale: WorkflowLocale,
-    translator?: Translator
-): WorkflowInspectorReferenceView | undefined {
-    const spec = field.reference;
-    if (!spec) {
-        return undefined;
-    }
-    const definition = designer.definition;
-    let options: Array<{ label: string; value: string; description?: string }> = [];
-    if (spec.kind === 'config-node') {
-        options = configNodeOptions(definition, registry, spec.resource || '');
-    } else if (spec.kind === 'node') {
-        const candidates = (definition?.nodes || [])
-            .filter(node => node.id !== designer.selectedNode?.id && !isConfigNode(registry, node.type));
-        options = nodeReferenceOptions(candidates, registry, locale, translator, spec.multiple === true);
-    } else if (spec.kind === 'link') {
-        const names = new Set<string>();
-        (definition?.nodes || []).forEach(node => {
-            if (node.type !== 'link') {
-                return;
-            }
-            String(node.config?.links || '').split(',').forEach(name => {
-                const trimmed = name.trim();
-                if (trimmed) {
-                    names.add(trimmed);
-                }
-            });
-        });
-        options = Array.from(names).map(name => ({ label: name, value: name }));
-    }
-
-    const ids = referenceIds(value);
-    if (!field.required) {
-        options = [
-            {
-                label: translateWorkflow(translator, locale, 'workflow.ui.none', '— none —'),
-                value: ''
-            },
-            ...options
-        ];
-    }
-    const known = new Set(options.map(option => option.value));
-    const missingIds = ids.filter(id => !known.has(id));
-    if (missingIds.length) {
-        // Keep the stored id visible instead of rendering an empty select.
-        options = [
-            ...missingIds.map(id => ({
-                label: `${id} (${translateWorkflow(translator, locale, 'workflow.ui.referenceMissing', 'missing')})`,
-                value: id,
-                description: translateWorkflow(
-                    translator,
-                    locale,
-                    'workflow.ui.referenceMissingHint',
-                    'The referenced record no longer exists.'
-                )
-            })),
-            ...options
-        ];
-    }
-
-    const actions: Array<{ id: string; label: string; title?: string }> = [];
-    if (spec.create) {
-        actions.push({
-            id: 'create',
-            label: '＋',
-            title: translateWorkflow(translator, locale, 'workflow.ui.newReference', 'New')
-        });
-    }
-    if (spec.edit && ids.length && missingIds.length < ids.length) {
-        actions.push({
-            id: 'edit',
-            label: '✎',
-            title: translateWorkflow(translator, locale, 'workflow.ui.editReference', 'Edit')
-        });
-    }
-
-    return {
-        kind: spec.kind,
-        resource: spec.resource,
-        multiple: spec.multiple === true,
-        missing: missingIds.length > 0,
-        options,
-        label: spec.kind === 'config-node'
-            ? ids.map(id => referenceLabel(definition, registry, id)).join(', ')
-            : ids.join(', '),
-        actions
-    };
-}
-
 export function buildWorkflowInspectorModel(
     designer: WorkflowDesigner,
     registry: WorkflowNodeRegistry,
@@ -724,7 +619,13 @@ export function buildWorkflowInspectorModel(
     }
     const mapField = (field: WorkflowConfigField, nested = false): WorkflowInspectorFieldView => {
         const value = nested ? undefined : values[field.key];
-        const reference = nested ? undefined : buildReferenceView(designer, registry, field, value, locale, translator);
+        const sourceMode = field.key === 'workflow' ? workflowSourceMode(node.type, node.config || {}) : undefined;
+        const referenceField: WorkflowConfigField = sourceMode === 'stored'
+            ? { ...field, type: 'select', reference: { kind: 'workflow' } }
+            : field;
+        const reference = nested || (sourceMode && sourceMode !== 'stored')
+            ? undefined
+            : buildReferenceView(designer, registry, referenceField, value, locale, translator);
         return {
             key: field.key,
             label: translateWorkflow(
@@ -733,7 +634,7 @@ export function buildWorkflowInspectorModel(
                 `workflow.field.${node.type}.${field.key}`,
                 field.label
             ),
-            type: field.type,
+            type: sourceMode === 'stored' ? 'select' : sourceMode === 'inline' ? 'textarea' : sourceMode === 'context' ? 'text' : field.type,
             typed: field.typed === true,
             typedValue: field.typedValue === true,
             value,
@@ -779,7 +680,7 @@ export function buildWorkflowInspectorModel(
             span: field.span,
             minLength: field.minLength,
             maxLength: field.maxLength,
-            rows: field.rows || (field.type === 'json' ? 4 : field.type === 'code' ? 8 : 3),
+            rows: sourceMode === 'inline' ? 6 : field.rows || (field.type === 'json' ? 4 : field.type === 'code' ? 8 : 3),
             required: field.required === true,
             readonly: field.readonly === true,
             disabled: field.disabled === true,

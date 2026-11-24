@@ -305,6 +305,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
             document.addEventListener('click', this.menuClickHandler, true);
         }
         this.saveState = this.designer.dirty ? 'dirty' : 'saved';
+        void this.refreshLibrary().catch((error: Error) => { this.libraryError = error.message; });
         this.bindGlobalShortcuts();
         if (this.initialDefinition) {
             this.designer.load(this.initialDefinition);
@@ -909,13 +910,11 @@ export class WorkflowDesignerComponent implements OnDestroy {
     toggleJson(): void { this.preview?.toggleJson(); }
     handleCanvas(payload: any): void { this.preview?.handleCanvas(payload); }
 
-    toggleShortcuts(): void {
-        this.preview?.toggleShortcuts();
-    }
+    toggleShortcuts(): void { this.preview?.toggleShortcuts(); }
 
     async openLibrary(): Promise<void> {
         try {
-            this.libraryItems = await this.designer.listSaved(this.store);
+            await this.refreshLibrary();
             this.libraryError = '';
         } catch (error) {
             this.libraryError = (error as Error).message;
@@ -1793,6 +1792,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
     private async refreshLibrary(): Promise<void> {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         self.libraryItems = await self.designer.listSaved(self.store);
+        self.designer.workflowLibrary.set(self.libraryItems);
     }
 }
 

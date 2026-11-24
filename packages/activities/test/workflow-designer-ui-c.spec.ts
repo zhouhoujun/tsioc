@@ -395,6 +395,30 @@ describe('Workflow Designer UI', () => {
             .toBe(childId);
     });
 
+    it('picks a stored workflow and switches the subflow source control', async () => {
+        ref.instance.designer.workflowLibrary.set([
+            { id: 'wf_child', name: 'Child flow', updatedAt: 'now' } as any
+        ]);
+        const node = ref.instance.designer.addNode('subprocess', { x: 60, y: 60 })!;
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const select = root.querySelector('.workflow-field[data-field-key="workflow"] select') as any;
+        expect(select).toBeTruthy();
+        expect(Array.from(select.options).some((option: any) => option.value === 'wf_child')).toBe(true);
+        select.value = 'wf_child';
+        select.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await waitFor(() => ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.workflow === 'wf_child');
+
+        // The mode select swaps the same value's control to a context path.
+        const mode = root.querySelector('.workflow-field[data-field-key="workflowMode"] select') as any;
+        expect(mode).toBeTruthy();
+        mode.value = 'context';
+        mode.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await waitFor(() => !!root.querySelector('.workflow-field[data-field-key="workflow"] input'));
+        expect(root.querySelector('.workflow-field[data-field-key="workflow"] select')).toBeFalsy();
+    });
+
     it('paints the node status line after a run', async () => {
         const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
         // A configured rule that cannot match keeps the run valid and reports

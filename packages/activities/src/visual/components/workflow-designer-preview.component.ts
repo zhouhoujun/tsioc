@@ -976,7 +976,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         // Reference pickers resolve against sibling config nodes, so the cache
         // key must follow their id/name/summary even when the selected node's
         // own config object is unchanged.
-        const configNodes = configNodesSignature(this.designer.definition, this.registry, type);
+        const configNodes = configNodesSignature(this.designer.definition, this.registry, type, this.designer.workflowLibrary?.options);
         const cache = this.inspectorModelCache;
         if (cache && cache.nodeId === nodeId && cache.name === name && cache.description === description
             && cache.type === type && cache.config === config && cache.disabled === disabled
