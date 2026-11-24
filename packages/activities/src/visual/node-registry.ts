@@ -1762,23 +1762,14 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                     configField({ key: 'search', label: 'Search for', type: 'text', visibleWhen: { key: 'action', equals: 'replace' } }),
                     configField({ key: 'replace', label: 'Replace with', type: 'text', visibleWhen: { key: 'action', equals: 'replace' } }),
                     configField({
-                        key: 'valueFrom',
-                        label: 'Value from',
-                        type: 'select',
-                        defaultValue: 'literal',
-                        options: [
-                            { label: 'Literal / JSON', value: 'literal' },
-                            { label: 'Message property', value: 'msg' },
-                            { label: 'Flow context', value: 'flow' },
-                            { label: 'Global context', value: 'global' },
-                            { label: 'Environment', value: 'env' },
-                            { label: 'Expression', value: 'expression' }
-                        ],
-                        visibleWhen: { key: 'action', in: ['set', 'append'] }
-                    }),
-                    configField({ key: 'value', label: 'Value', type: 'json', visibleWhen: { key: 'action', in: ['set', 'append'] }, description: 'New value or item to append.' }),
-                    configField({ key: 'valuePath', label: 'Value path', type: 'text', visibleWhen: { key: 'action', in: ['set', 'append'] } }),
-                    configField({ key: 'valueExpression', label: 'Expression', type: 'text', placeholder: 'payload.total * 2', visibleWhen: { key: 'valueFrom', equals: 'expression' }, description: 'JSONata expression evaluated against the message, flow, global and env context.' })
+                        key: 'value',
+                        label: 'Value',
+                        type: 'text',
+                        typed: true,
+                        typedValue: true,
+                        visibleWhen: { key: 'action', in: ['set', 'append'] },
+                        description: 'New value or item to append: literal, JSON, context reference or JSONata expression.'
+                    })
                 ]
             })
         ],

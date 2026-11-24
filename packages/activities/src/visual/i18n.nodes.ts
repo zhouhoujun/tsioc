@@ -1398,7 +1398,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "change": {
                 "field": "context path to modify, for example variables.name",
-                "value": "new value; JSON is supported",
+                "value": "new value: literal, JSON, context reference or JSONata expression",
                 "rules": "rules run in order, one change per row",
                 "action": "Set replaces, Delete removes, Append adds to a list or string",
                 "valueExpression": "JSONata expression evaluated against the message, flow, global and env context"
@@ -3216,7 +3216,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
             },
             "change": {
                 "field": "要修改的上下文路径。",
-                "value": "新值，支持 JSON。",
+                "value": "新值：字面量、JSON、上下文引用或 JSONata 表达式。",
                 "rules": "按顺序执行，每行修改一个字段。",
                 "action": "Set 替换，Delete 删除，Append 追加到列表或字符串。",
                 "valueExpression": "针对消息、flow、global 与 env 上下文求值的 JSONata 表达式。"

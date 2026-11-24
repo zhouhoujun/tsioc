@@ -21,15 +21,11 @@ import { hasCycle, validateVisualWorkflow } from './workflow-runtime';
 import { workflowNodeFrame } from './workflow-geometry';
 import { validateWorkflowConfigs } from './workflow-config-validation';
 import { migrateInlineSecrets, SecretMigrationResult } from './workflow-secrets';
+import { migrateNodeConfig } from './workflow-config-migrations';
 import { preloadWorkflowExpressions } from './workflow-expression';
 import { compileVisualWorkflow, CompiledWorkflow, layoutVisualWorkflow } from './workflow-compiler';
 import { VisualWorkflowService } from './VisualWorkflowService';
-import {
-    WorkflowDefinitionStore,
-    WorkflowDefinitionSummary,
-    WorkflowRelease,
-    WorkflowStoreSaveOptions
-} from './workflow-store';
+import { WorkflowDefinitionStore, WorkflowDefinitionSummary, WorkflowRelease, WorkflowStoreSaveOptions } from './workflow-store';
 
 const HISTORY_LIMIT = 100;
 const MIN_ZOOM = 0.35;
@@ -1986,7 +1982,7 @@ export class WorkflowDesigner {
         const nodes = (definition.nodes || []).map(node => {
             const registered = this.registry.get(node.type);
             const fallback = registered?.defaultConfig;
-            const config = { ...(fallback || {}), ...(node.config || {}) };
+            const config = migrateNodeConfig(node.type, { ...(fallback || {}), ...(node.config || {}) });
             return {
                 ...node,
                 position: node.position || { x: 0, y: 0 },

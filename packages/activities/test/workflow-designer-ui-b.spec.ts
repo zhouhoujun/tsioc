@@ -516,6 +516,13 @@ describe('Workflow Designer UI', () => {
         await waitFor(() => ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.[0]?.field === 'variables.name');
         expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.[0]?.field).toBe('variables.name');
 
+        // Change rules carry one typed value instead of value/valueFrom/valuePath.
+        const valueField = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="value"]') as any;
+        expect(valueField).toBeTruthy();
+        expect(valueField.querySelector('[data-value-type]')).toBeTruthy();
+        expect(root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="valueFrom"]')).toBeFalsy();
+        expect(root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="valueExpression"]')).toBeFalsy();
+
         const action = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="action"] select.workflow-select') as any;
         expect(action).toBeTruthy();
         expect(action.value).toBe('set');

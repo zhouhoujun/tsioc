@@ -1,5 +1,5 @@
 import { evaluateWorkflowExpression } from '../../workflow-expression';
-import { readWorkflowProperty, resolveWorkflowMarkersAsync } from '../../workflow-typed-value';
+import { readWorkflowProperty, resolveWorkflowMarkersAsync, resolveWorkflowTypedValueAsync } from '../../workflow-typed-value';
 import { registerWorkflowNodeHandlers } from '../workflow-node-handlers';
 import {
     arrayFrom,
@@ -67,6 +67,9 @@ registerWorkflowNodeHandlers({
                                 ruleValue = resolveFrom((context as any).global || {}, valuePath);
                             } else if (valueFrom === 'env') {
                                 ruleValue = resolveFrom((context as any).env || {}, valuePath);
+                            } else if (rule.value && typeof rule.value === 'object' && typeof rule.value.type === 'string') {
+                                // Typed value (context reference, literal class or expression).
+                                ruleValue = await resolveWorkflowTypedValueAsync(rule.value, context);
                             } else {
                                 ruleValue = coerceJson(rule.value);
                             }
