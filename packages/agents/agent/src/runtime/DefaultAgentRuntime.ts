@@ -30,17 +30,19 @@ import { PolicyResolutionController } from './PolicyResolutionController';
 import { TurnLoopController } from './TurnLoopController';
 import { SessionModeController } from './SessionModeController';
 import { DelegationSessionController } from './DelegationSessionController';
+import { SessionGoalController } from './SessionGoalController';
+import { WorkspaceRootController } from './WorkspaceRootController';
+import { TurnCompensationController } from './TurnCompensationController';
 import type { TurnExecutionContext } from './TurnExecutionContext';
 import { FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
 import { AgentMessage, AgentMessagePart, AgentTurnMessageInput, collectToolReadPaths, isImportedChildMessage, normalizeAgentMessageParts } from './AgentMessage';
-import { AgentCompensationEvent, AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
+import { AgentContextPreparedEvent, AgentErrorEvent, AgentMemoryRetrievedEvent, AgentMemoryRetrievalFailedEvent, AgentMemoryRetrievalStartedEvent, AgentMemoryUpdatedEvent, AgentModelCompletedEvent, AgentStreamChunkEvent, AgentTokenBudgetExceededEvent, AgentTokenBudgetReminderEvent, AgentToolCompletedEvent, AgentToolExecutionReceipt, AgentToolFailedEvent, AgentToolInvokedEvent, AgentToolSkippedEvent, AgentTurnCancelledEvent, AgentTurnCompletedEvent, AgentTurnDiagnostics, AgentTurnDiagnosticsEvent, AgentTurnStartedEvent } from './AgentEvents';
 import { AgentTurnCancelledError } from './AgentTurnCancelledError';
 import { TurnAbortScopes } from './TurnAbortScopes';
 import { PlanContinuationTracker } from './PlanContinuation';
-import { findProjectRoot } from '../project/agents-doc';
 import { isWorkspaceMutatingTool, resolveWorkspaceTrustApproval } from '../project/workspace-trust';
 import { ModelAdapter } from '../model/ModelAdapter';
 import { ModelRequest } from '../model/ModelRequest';
@@ -95,7 +97,7 @@ import { nearToolRoundLimitPrompt } from './tool-round-budget';
 import { canParallelizeToolBatch, describeToolCallNames } from './tool-dispatch-policy';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
 import { buildPersonalityHint } from '../prompt/personality-presets';
-import { buildGoalContext, CreateGoalInput, evaluateGoalCompletion, Goal, GoalStatus, GoalStore } from '../goal/GoalStore';
+import { buildGoalContext, CreateGoalInput, Goal, GoalStatus, GoalStore } from '../goal/GoalStore';
 import {
     AgentArchetype,
     DEFAULT_ARCHETYPE,
@@ -115,12 +117,6 @@ interface ToolInvocationResult {
     structuredOutput?: any;
 }
 
-interface ToolCompensationEntry {
-    toolName: string;
-    toolCallId: string;
-    captured: unknown;
-}
-
 @Injectable()
 export class DefaultAgentRuntime extends AgentRuntime {
     protected contextManager: AgentContextManager;
@@ -132,7 +128,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionTurnDepths = new Map<string, number>();
     protected sessionTurnsRunning = new Set<string>();
     protected turnAbortScopes = new TurnAbortScopes();
-    protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
     protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
@@ -391,30 +386,22 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.contextManager.synthesizeExperiences(options);
     }
 
-    override async createGoal(input: CreateGoalInput, sessionId?: string): Promise<Goal> {
-        if (!this.goalStore) throw new Error('Goal store unavailable.');
-        const goal = await this.goalStore.create(input);
-        if (sessionId) await this.goalStore.linkSession(sessionId, goal.id);
-        return goal;
-    }
+    override async createGoal(input: CreateGoalInput, sessionId?: string): Promise<Goal> { return this.goals.create(input, sessionId); }
 
-    override async listGoals(status?: GoalStatus): Promise<Goal[]> { return this.goalStore?.list(status) ?? []; }
-    override async getGoal(goalId: string): Promise<Goal | undefined> { return this.goalStore?.get(goalId); }
-    override async getSessionGoal(sessionId: string): Promise<Goal | undefined> { return this.goalStore?.getSessionGoal(sessionId); }
-    override async linkSessionGoal(sessionId: string, goalId?: string): Promise<void> {
-        if (!this.goalStore) throw new Error('Goal store unavailable.');
-        await this.goalStore.linkSession(sessionId, goalId);
-    }
+    override async listGoals(status?: GoalStatus): Promise<Goal[]> { return this.goals.list(status); }
+
+    override async getGoal(goalId: string): Promise<Goal | undefined> { return this.goals.get(goalId); }
+
+    override async getSessionGoal(sessionId: string): Promise<Goal | undefined> { return this.goals.getSessionGoal(sessionId); }
+
+    override async linkSessionGoal(sessionId: string, goalId?: string): Promise<void> { await this.goals.linkSession(sessionId, goalId); }
+
     override async updateGoal(goalId: string, patch: Partial<Pick<Goal, 'title' | 'objective' | 'successCriteria' | 'status'>>): Promise<Goal> {
-        if (!this.goalStore) throw new Error('Goal store unavailable.');
-        return this.goalStore.update(goalId, patch);
+        return this.goals.update(goalId, patch);
     }
 
     private async evaluateSessionGoal(sessionId: string, assistantText: string): Promise<void> {
-        const goal = await this.goalStore?.getSessionGoal(sessionId);
-        if (goal && evaluateGoalCompletion(goal, assistantText)) {
-            await this.goalStore!.update(goal.id, { status: 'completed' });
-        }
+        await this.goals.evaluateCompletion(sessionId, assistantText);
     }
 
     async *runStreamingTurn(
@@ -517,41 +504,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
     }
 
-    protected async ensureSessionWorkspace(sessionId: string): Promise<void> {
-        const workspace = this.resolveWorkspace();
-        if (!workspace) {
-            return;
-        }
-        const state = await this.sessions.get(sessionId);
-        if (state.workspace === workspace) {
-            return;
-        }
-        await this.sessions.setWorkspace(sessionId, workspace);
-    }
+    protected async ensureSessionWorkspace(sessionId: string): Promise<void> { await this.workspaceRoot.ensureSessionWorkspace(sessionId); }
 
-    protected async resolveSessionWorkspace(sessionId: string): Promise<string | undefined> {
-        const state = await this.sessions.get(sessionId);
-        return String(state.workspace || '').trim() || undefined;
-    }
+    protected async resolveSessionWorkspace(sessionId: string): Promise<string | undefined> { return this.workspaceRoot.resolveSessionWorkspace(sessionId); }
 
-    protected resolveWorkspace(): string | undefined {
-        const consoleOptions = this.options.ui?.console as Record<string, any> | undefined;
-        const workspace = String(this.options.workspace || consoleOptions?.workspace || this.appArgs?.cwd || '').trim();
-        if (!workspace) {
-            return undefined;
-        }
-        const adapter = this.fileAdapter as (FileAdapter & { existsSync?: (path: string) => boolean }) | null | undefined;
-        if (adapter && typeof adapter.existsSync === 'function' && adapter.existsSync(workspace)) {
-            const root = findProjectRoot(workspace, {
-                stopAtHome: false,
-                exists: path => adapter.existsSync!(path)
-            });
-            if (root) {
-                return root;
-            }
-        }
-        return workspace;
-    }
+    protected resolveWorkspace(): string | undefined { return this.workspaceRoot.resolveWorkspace(); }
 
     async putMemory(sessionId: string, key: string, value: string, scope: 'session' | 'global' = 'session'): Promise<AgentMemoryRecord> {
         const record: AgentMemoryRecord = {
@@ -675,63 +632,19 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.delegation.cancelChildren(sessionId);
     }
 
-    protected getCompensationStack(sessionId: string): ToolCompensationEntry[] {
-        let stack = this.sessionCompensationStacks.get(sessionId);
-        if (!stack) {
-            stack = [];
-            this.sessionCompensationStacks.set(sessionId, stack);
-        }
-        return stack;
+    protected getCompensationStack(sessionId: string): ReturnType<TurnCompensationController['getStack']> {
+        return this.compensations.getStack(sessionId);
     }
 
     protected pushToolCompensation(sessionId: string, toolName: string, toolCallId: string, captured: unknown): void {
-        if (captured === undefined) {
-            return;
-        }
-        this.getCompensationStack(sessionId).push({ toolName, toolCallId, captured });
+        this.compensations.push(sessionId, toolName, toolCallId, captured);
     }
 
-    /**
-     * Roll back the turn's successful side-effecting tool calls in reverse
-     * order. Each entry is passed to the tool's compensate() hook with the
-     * snapshot captured before the call ran. Returns how many entries were
-     * compensated and their tool call ids; failures during rollback are
-     * collected but do not stop the remaining entries. When at least one
-     * entry is compensated, an AgentCompensationEvent is published so
-     * listeners can surface the rollback.
-     */
     protected async rollbackTurnCompensations(
         sessionId: string,
         reason: 'cancelled' | 'error'
     ): Promise<{ compensated: number; toolCallIds: string[] }> {
-        const stack = this.sessionCompensationStacks.get(sessionId);
-        if (!stack?.length) {
-            this.sessionCompensationStacks.delete(sessionId);
-            return { compensated: 0, toolCallIds: [] };
-        }
-        const toolCallIds: string[] = [];
-        let compensated = 0;
-        for (const entry of [...stack].reverse()) {
-            const tool = this.toolRegistry.getTool(entry.toolName);
-            if (!tool?.compensate) {
-                continue;
-            }
-            toolCallIds.push(entry.toolCallId);
-            try {
-                await tool.compensate(entry.captured, {
-                    sessionId,
-                    memory: this.memory
-                });
-                compensated++;
-            } catch {
-                continue;
-            }
-        }
-        this.sessionCompensationStacks.delete(sessionId);
-        if (compensated > 0) {
-            await this.app.publishEvent(new AgentCompensationEvent(this, sessionId, reason, compensated, toolCallIds)).catch(() => {});
-        }
-        return { compensated, toolCallIds };
+        return this.compensations.rollback(sessionId, reason);
     }
 
     private get observability(): TurnObservabilityController {
@@ -1090,6 +1003,34 @@ export class DefaultAgentRuntime extends AgentRuntime {
             messages: (id) => this.getMessages(id),
             createMessage: (role, content) => this.createMessage(role, content),
             resolveDefaultArchetype: () => this.policy.resolveDefaultArchetype()
+        });
+    }
+
+    private goalController?: SessionGoalController;
+
+    private get goals(): SessionGoalController {
+        return this.goalController ??= new SessionGoalController({ goalStore: this.goalStore });
+    }
+
+    private workspaceRootController?: WorkspaceRootController;
+
+    private get workspaceRoot(): WorkspaceRootController {
+        return this.workspaceRootController ??= new WorkspaceRootController({
+            options: this.options,
+            appArgs: this.appArgs as { cwd?: string } | undefined,
+            fileAdapter: this.fileAdapter,
+            sessions: this.sessions
+        });
+    }
+
+    private compensationController?: TurnCompensationController;
+
+    private get compensations(): TurnCompensationController {
+        return this.compensationController ??= new TurnCompensationController({
+            toolRegistry: this.toolRegistry,
+            memory: this.memory,
+            publish: (event) => this.app.publishEvent(event),
+            source: this
         });
     }
 
