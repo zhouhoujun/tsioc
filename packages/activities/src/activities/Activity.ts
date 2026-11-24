@@ -13,6 +13,10 @@ export interface ActivityNodeStatus {
     key?: string;
     /** Parameters for {@link key}. */
     params?: Record<string, any>;
+    /** Node-RED status indicator shape; hosts paint a dot or a hollow ring. */
+    shape?: 'dot' | 'ring';
+    /** Node-RED status fill (colour name or CSS colour). */
+    fill?: string;
 }
 
 export interface ActivityResult<T = any> {

@@ -187,6 +187,46 @@ describe('Workflow node status lines', () => {
         expect(state?.result?.status).toEqual({ text: 'boom', level: 'error' });
     });
 
+    it('maps Node-RED status fill and shape onto the canvas indicator', async () => {
+        const result = await service.execute(chain([
+            {
+                type: 'function',
+                config: {
+                    code: 'node.status({ fill: "red", shape: "ring", text: "bad" }); return msg;'
+                }
+            }
+        ]), {});
+        expect(result.data?.executionState?.nodeStates.function_0.result?.status)
+            .toEqual({ text: 'bad', level: 'error', shape: 'ring', fill: 'red' });
+
+        // A named fill without an explicit level sets the semantic level too.
+        const ok = await service.execute(chain([
+            { type: 'function', config: { code: 'node.status({ fill: "green", text: "ok" }); return msg;' } }
+        ]), {});
+        expect(ok.data?.executionState?.nodeStates.function_0.result?.status?.level).toBe('success');
+
+        const designer = new WorkflowDesigner({
+            definition: chain([
+                { type: 'inject', config: { payload: 1 } },
+                {
+                    type: 'function',
+                    config: {
+                        code: 'node.status({ fill: "red", shape: "ring", text: "bad" }); return msg;'
+                    }
+                }
+            ]),
+            registry,
+            service
+        });
+        await designer.run({});
+        const node = buildWorkflowCanvasModel(designer, registry, 'en')
+            .nodes.find(item => item.id === 'function_1')!;
+        expect(node.statusShape).toBe('ring');
+        expect(node.statusFill).toBe('red');
+        expect(node.statusStyle).toContain('background:transparent');
+        expect(node.statusStyle).toContain('border:1px solid red');
+    });
+
     it('shows the status line on the canvas and in the inspector', async () => {
         const designer = new WorkflowDesigner({
             definition: chain([

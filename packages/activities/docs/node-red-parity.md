@@ -107,7 +107,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | Dynamic outputs | `WorkflowNodeDefinition.outputsFor(config)` (switch/router one port per rule) |
 | Shared endpoints | Config nodes (`mqtt`, `tls`, `http`, `tcp`, `udp`, `websocket`, ...) with reference pickers and missing-reference validation |
 | Credentials | `secret` fields, `{{credential:name}}`, publish-time validation against the host store, write-time migration of inline values |
-| Node status | `ActivityResult.status` painted on the canvas + inspector, translated by `key`/`params` |
+| Node status | `ActivityResult.status` painted on the canvas + inspector, translated by `key`/`params`; `node.status({fill, shape, text})` maps Node-RED fills to semantic levels and renders dot/ring indicators |
 | Node activation | `disabled` nodes keep their wiring but are skipped |
 
 ## Deliberate non-goals

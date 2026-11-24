@@ -13,6 +13,16 @@ import {
     resolveWorkflowValueAsync
 } from '../values';
 
+/** Node-RED status fills map onto the semantic levels used by the canvas. */
+const STATUS_FILL_LEVELS: Record<string, ActivityNodeStatus['level']> = {
+    red: 'error',
+    green: 'success',
+    yellow: 'warn',
+    blue: 'info',
+    grey: 'info',
+    gray: 'info'
+};
+
 async function runTask(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> {
     const config = node.config || {};
     if (config.fail === true) {
@@ -317,14 +327,21 @@ registerWorkflowNodeHandlers({
                     // Node-RED `node.status`/`node.warn`/... helpers captured by the
                     // sandbox and attached to the result.
                     let pendingStatus: ActivityNodeStatus | undefined;
-                    const setStatus = (text: any, level: ActivityNodeStatus['level'] = 'info'): void => {
+                    const setStatus = (
+                        text: any,
+                        level: ActivityNodeStatus['level'] = 'info',
+                        shape?: ActivityNodeStatus['shape'],
+                        fill?: string
+                    ): void => {
                         const value = String(text ?? '').trim();
                         if (!value) {
                             return;
                         }
                         pendingStatus = {
                             text: value.length > 80 ? `${value.slice(0, 77)}…` : value,
-                            level
+                            level,
+                            ...(shape ? { shape } : {}),
+                            ...(fill ? { fill } : {})
                         };
                     };
                     const logger = (context as any).logger;
@@ -368,10 +385,16 @@ registerWorkflowNodeHandlers({
                         },
                         status: (value: any) => {
                             if (value && typeof value === 'object') {
-                                const level = String(value.level || 'info');
-                                setStatus(value.text, level === 'success' || level === 'warn' || level === 'error'
-                                    ? level
-                                    : 'info');
+                                const fill = String(value.fill || '').trim();
+                                const shape = value.shape === 'ring' ? 'ring' : value.shape === 'dot' ? 'dot' : undefined;
+                                const named = STATUS_FILL_LEVELS[fill.toLowerCase()];
+                                const level = String(value.level || named || 'info');
+                                setStatus(
+                                    value.text,
+                                    level === 'success' || level === 'warn' || level === 'error' ? level : 'info',
+                                    shape,
+                                    fill || undefined
+                                );
                             } else {
                                 setStatus(value);
                             }

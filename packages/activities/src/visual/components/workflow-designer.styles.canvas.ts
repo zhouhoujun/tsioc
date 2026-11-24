@@ -441,6 +441,15 @@ export const WORKFLOW_DESIGNER_CANVAS_CSS = `/* Palette */
     white-space: nowrap;
 }
 
+.workflow-node-status-shape {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 4px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
 .workflow-node-body {
     padding: 8px 10px 10px;
     display: flex;

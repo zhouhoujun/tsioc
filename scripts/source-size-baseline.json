@@ -6,7 +6,7 @@
   "packages/activities/src/visual/workflow-designer.ts": 2119,
   "packages/activities/src/visual/workflow-runtime.ts": 465,
   "packages/activities/src/visual/workflow-store.ts": 857,
-  "packages/activities/src/visual/workflow-view-models.ts": 931,
+  "packages/activities/src/visual/workflow-view-models.ts": 892,
   "packages/agents/agent-cli/src/config.ts": 564,
   "packages/agents/agent-gateway/src/api/SessionHandler.ts": 701,
   "packages/agents/agent-gateway/src/app-rpc/AppRpcServer.ts": 3318,

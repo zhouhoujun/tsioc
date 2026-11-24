@@ -20,6 +20,8 @@ import {
     WorkflowToolbarModel
 } from './types';
 import { localize, WorkflowLocale, WorkflowNodeRegistry } from './node-registry';
+import { executionStatusLabel, nodeStatusDetail, nodeStatusLabel, statusIndicatorStyle } from './workflow-node-status';
+export { nodeStatusLabel } from './workflow-node-status';
 import { WorkflowDesigner } from './workflow-designer';
 import { Translator } from '@tsdi/i18n';
 import { resolveWorkflowText, translateWorkflow } from './i18n';
@@ -52,56 +54,6 @@ const STATUS_LABELS: Record<NodeExecutionStatus, string> = {
 
 function groupSlug(group: string): string {
     return String(group).toLowerCase().replace(/[^a-z0-9]+/g, '-');
-}
-
-export function nodeStatusLabel(status: NodeExecutionStatus, locale: WorkflowLocale, translator?: Translator): string {
-    return translateWorkflow(
-        translator,
-        locale,
-        `workflow.status.${status}`,
-        STATUS_LABELS[status] || STATUS_LABELS.idle
-    );
-}
-
-function executionStatusLabel(
-    status: string | undefined,
-    locale: WorkflowLocale,
-    translator?: Translator
-): string {
-    const key = status || 'idle';
-    const fallback: Record<string, string> = {
-        running: 'Running',
-        completed: 'Completed',
-        failed: 'Failed',
-        cancelled: 'Cancelled',
-        pending: 'Pending',
-        idle: 'Idle'
-    };
-    return translateWorkflow(
-        translator,
-        locale,
-        `workflow.status.${key}`,
-        fallback[key] || fallback.idle
-    );
-}
-
-/**
- * Status line for a node: translated through the workflow bundle when the
- * activity supplied a key, otherwise the reported text (`tcp 10.0.0.5:4711`).
- */
-function nodeStatusDetail(
-    state: NodeExecutionState | undefined,
-    locale: WorkflowLocale,
-    translator?: Translator
-): string {
-    const status = state?.result?.status;
-    if (!status?.text && !status?.key) {
-        return '';
-    }
-    if (status.key) {
-        return translateWorkflow(translator, locale, status.key, status.text || status.key, status.params);
-    }
-    return String(status.text || '');
 }
 
 function nodeGeometry(node: IVisualWorkflowNode): {
@@ -188,6 +140,7 @@ const VIEW_INPUTS = Symbol('workflowCanvasViewInputs');
 type NodeViewInputs = {
     node: any;
     status: string;
+    statusStyle: string;
     detail: string;
     selected: boolean;
     locale: string;
@@ -256,6 +209,10 @@ export function buildWorkflowCanvasModel(
         // Status lines come from the node result, so they are replayable with
         // the snapshot and never need a live channel.
         const detail = nodeStatusDetail(execution?.nodeStates?.[node.id], locale, translator);
+        const statusMeta = execution?.nodeStates?.[node.id]?.result?.status;
+        const statusShape = statusMeta?.shape;
+        const statusFill = statusMeta?.fill;
+        const statusStyle = statusIndicatorStyle(statusShape, statusFill);
         const selected = selectedNodeIds.has(node.id);
         const prior = previousNodes?.get(node.id);
         const inputs = prior ? viewInputsOf<NodeViewInputs>(prior) : undefined;
@@ -263,6 +220,7 @@ export function buildWorkflowCanvasModel(
             && prior
             && inputs.node === node
             && inputs.status === status
+            && inputs.statusStyle === statusStyle
             && inputs.detail === detail
             && inputs.selected === selected
             && inputs.locale === locale
@@ -289,7 +247,7 @@ export function buildWorkflowCanvasModel(
             node.id, node.name, node.type, typeLabel, description,
             node.position.x, node.position.y, geo.width, geo.height,
             icon, color, textColor, selected ? 1 : 0, disabled ? 1 : 0,
-            status, statusLabel, detail,
+            status, statusLabel, detail, statusStyle,
             portSignature(geo.inputs), portSignature(geo.outputs)
         ].join('\u0001');
         if (prior && viewSignature(prior) === signature) {
@@ -313,13 +271,16 @@ export function buildWorkflowCanvasModel(
             disabled,
             status,
             statusLabel,
+            statusShape,
+            statusFill,
+            statusStyle,
             detail,
             inputs: geo.inputs,
             outputs: geo.outputs
         };
         const next = { ...view, attrs: nodeAttrs(view) };
         markView(next, signature);
-        markInputs(next, { node, status, detail, selected, locale, revision: registry.revision });
+        markInputs(next, { node, status, statusStyle, detail, selected, locale, revision: registry.revision });
         nodeViews.push(next);
     }
 

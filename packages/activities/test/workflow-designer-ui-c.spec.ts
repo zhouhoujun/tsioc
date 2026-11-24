@@ -419,6 +419,20 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-field[data-field-key="workflow"] select')).toBeFalsy();
     });
 
+    it('paints the Node-RED status indicator shape and fill', async () => {
+        const node = ref.instance.designer.addNode('function', { x: 40, y: 40 })!;
+        ref.instance.designer.updateNodeConfig(node.id, {
+            code: 'node.status({ fill: "red", shape: "ring", text: "bad" }); return msg;'
+        });
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+        await ref.instance.designer.run({});
+        await waitFor(() => !!root.querySelector(`.workflow-node[data-node-id="${node.id}"] .workflow-node-status-shape`));
+        const shape = root.querySelector(`.workflow-node[data-node-id="${node.id}"] .workflow-node-status-shape`) as any;
+        expect(shape.getAttribute('data-status-shape')).toBe('ring');
+        expect(String(shape.getAttribute('style') || '')).toContain('background:transparent');
+    });
+
     it('paints the node status line after a run', async () => {
         const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
         // A configured rule that cannot match keeps the run valid and reports

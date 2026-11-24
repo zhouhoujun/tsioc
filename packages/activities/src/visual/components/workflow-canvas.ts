@@ -122,7 +122,9 @@ const EMPTY_CANVAS: WorkflowCanvasModel = {
                     <div class="workflow-node-header">
                         <span class="workflow-node-icon"><icon [name]="node.type" [glyph]="node.icon" size="sm"></icon></span>
                         <span class="workflow-node-title">{{node.name}}</span>
-                        <span class="workflow-node-status" v-if="node.statusLabel">{{node.statusLabel}}</span>
+                        <span class="workflow-node-status" v-if="node.statusLabel"><span
+                            class="workflow-node-status-shape" v-if="node.statusStyle"
+                            data-status-shape="{{node.statusShape || 'dot'}}" [style]="node.statusStyle"></span>{{node.statusLabel}}</span>
                     </div>
                     <div class="workflow-node-body">
                         <span class="workflow-node-type">{{node.typeLabel}}</span>

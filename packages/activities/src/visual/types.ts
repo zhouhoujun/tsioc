@@ -910,6 +910,11 @@ export interface WorkflowCanvasNodeView {
     disabled: boolean;
     status: NodeExecutionStatus;
     statusLabel: string;
+    /** Node-RED status indicator shape/fill reported by the node. */
+    statusShape?: string;
+    statusFill?: string;
+    /** Inline style for the indicator dot/ring, empty when not reported. */
+    statusStyle?: string;
     /** Status line the node reported (`HTTP 200`, `Route 3`), empty when idle. */
     detail: string;
     inputs: WorkflowCanvasPortView[];
