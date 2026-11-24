@@ -4,6 +4,7 @@ import { Activity } from '../activities/Activity';
 import { translateWorkflow } from './i18n';
 import { validateWorkflowExpression } from './workflow-expression';
 import { workflowSourceFields } from './workflow-subflow-fields';
+import { buildWorkflowPaletteGroups, workflowNodeProtocol } from './workflow-palette-groups';
 import {
     IVisualWorkflowNode,
     NodePort,
@@ -17,15 +18,7 @@ import {
 
 export type WorkflowLocale = 'zh-CN' | 'en';
 
-export const WORKFLOW_CATEGORY_LABELS: Record<WorkflowNodeCategory, string> = {
-    trigger: 'Triggers',
-    flow: 'Flow control',
-    action: 'Actions',
-    data: 'Data',
-    storage: 'Storage',
-    error: 'Error handling',
-    advanced: 'Advanced'
-};
+export { WORKFLOW_CATEGORY_LABELS } from './workflow-palette-groups';
 
 function port(id: string, name: string, type: NodePort['type'], label: string): NodePort {
     return { id, name, type, label };
@@ -2294,18 +2287,7 @@ export class WorkflowNodeRegistry {
     }
 
     palette(locale: WorkflowLocale = 'zh-CN', translator?: Translator): WorkflowPaletteGroup[] {
-        return this.categories().map(category => ({
-            id: category,
-            label: translateWorkflow(
-                translator,
-                locale,
-                `workflow.category.${category}`,
-                WORKFLOW_CATEGORY_LABELS[category]
-            ),
-            items: this.list()
-                .filter(def => def.category === category)
-                .map(def => this.paletteItem(def, locale, translator))
-        }));
+        return buildWorkflowPaletteGroups(this, locale, translator);
     }
 
     paletteItem(
@@ -2319,7 +2301,8 @@ export class WorkflowNodeRegistry {
             description: this.nodeDescription(definition.type, locale, translator),
             icon: definition.icon,
             color: definition.color,
-            category: definition.category
+            category: definition.category,
+            protocol: workflowNodeProtocol(definition.type, definition.protocol)
         };
     }
 

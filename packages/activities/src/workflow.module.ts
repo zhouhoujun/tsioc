@@ -3,6 +3,7 @@ import { AopModule } from '@tsdi/aop';
 import { ComponentsModule } from '@tsdi/components';
 import { BaseComponentsModule } from '@tsdi/components/common';
 import { TabBarModule } from '@tsdi/components/common/tab-bar';
+import { AccordionModule } from '@tsdi/components/common/accordion';
 import { MenuBarModule } from '@tsdi/components/common/menu-bar';
 import { IconModule } from '@tsdi/components/common/icon';
 import { DynamicFormModule } from '@tsdi/components/common/dynamic-form';
@@ -74,6 +75,7 @@ import {
         ComponentsModule,
         BaseComponentsModule,
         TabBarModule,
+        AccordionModule,
         MenuBarModule,
         IconModule,
         DynamicFormModule,
@@ -164,6 +166,7 @@ import {
         ComponentsModule,
         BaseComponentsModule,
         TabBarModule,
+        AccordionModule,
         MenuBarModule,
         IconModule,
         DynamicFormModule,

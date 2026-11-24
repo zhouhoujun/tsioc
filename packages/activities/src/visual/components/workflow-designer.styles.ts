@@ -7,6 +7,7 @@ import { WORKFLOW_DESIGNER_INSPECTOR_CSS } from './workflow-designer.styles.insp
 import { WORKFLOW_DESIGNER_STATUS_CSS } from './workflow-designer.styles.status';
 import { WORKFLOW_DESIGNER_THEME_CSS } from './workflow-designer.styles.theme';
 import { WORKFLOW_DESIGNER_INTERACTION_CSS } from './workflow-designer.styles.interaction';
+import { installAccordionStyles } from '@tsdi/components/common/accordion';
 
 export const WORKFLOW_DESIGNER_STYLE_ID = 'tsdi-workflow-designer-styles';
 
@@ -40,4 +41,7 @@ export function installWorkflowDesignerStyles(doc?: Document | null): void {
     style.setAttribute('id', WORKFLOW_DESIGNER_STYLE_ID);
     style.textContent = WORKFLOW_DESIGNER_CSS;
     doc.head.appendChild(style);
+    // Shared palette groups use <ui-accordion>; install its skin once with the
+    // designer sheet so every host (admin, preview, embedded) gets it.
+    installAccordionStyles(doc);
 }

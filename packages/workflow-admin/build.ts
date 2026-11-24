@@ -64,11 +64,12 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // for the unified Change value editor, 1216 KB for the subflow source picker
 // and Node-RED status shape/fill, 1218 KB for inline inspector issues, and 1219 KB
 // for live expression completion paths and 1221 KB for fixed dialog chrome in
-// the browser preview; it keeps ~1 KB of headroom over the preview page's
-// inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB) loaded on
-// first evaluation, so the initial budget only carries the wiring; the gzip
-// budget remains the gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_221_000);
+// the browser preview; 1235 KB for protocol-grouped palette sections, the
+// shared accordion and its icon rows (~7 KB raw); it keeps ~7 KB of headroom over the preview
+// page's inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB)
+// loaded on first evaluation, so the initial budget only carries the wiring;
+// the gzip budget remains the gate.
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_235_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
@@ -86,10 +87,11 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_221_000);
 // publish-time expression validation, 289 KB for the expression editor
 // overlay, 290 KB for multi-output function routing plus the code-editor host
 // cleanup, 291 KB for the sub-workflow menu actions, 292 KB for the
-// library-backed subflow source picker, and 293 KB for inline inspector
-// issues. JSONata itself is a lazy chunk and
-// does not count; the gzip budget stays the transfer gate.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 293_000);
+// library-backed subflow source picker, 293 KB for inline inspector issues, and
+// 298 KB for protocol-grouped palette sections plus the shared accordion rows.
+// JSONata itself is a lazy chunk and does not count; the gzip budget stays the
+// transfer gate.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 298_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

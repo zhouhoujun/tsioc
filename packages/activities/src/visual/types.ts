@@ -733,6 +733,14 @@ export interface WorkflowNodeDefinition {
      */
     category: WorkflowNodeCategory;
     /**
+     * 协议族
+     * Transport protocol family (`http`, `websocket`, `tcp`, ...). Protocol
+     * nodes are grouped by this value in the palette instead of by category.
+     * When omitted the registry infers it from the node type prefix, so
+     * plugins do not have to repeat it for `mqtt-*`/`coap-*` style types.
+     */
+    protocol?: string;
+    /**
      * 图标（单字符或 emoji）
      * Icon glyph.
      */
@@ -818,6 +826,8 @@ export interface WorkflowPaletteItem {
     icon: string;
     color: string;
     category: WorkflowNodeCategory;
+    /** Protocol family for protocol groups; omitted for category groups. */
+    protocol?: string;
 }
 
 /**
@@ -825,9 +835,12 @@ export interface WorkflowPaletteItem {
  * Palette group.
  */
 export interface WorkflowPaletteGroup {
-    id: WorkflowNodeCategory;
+    /** Category id, or `protocol-<name>` for a protocol group. */
+    id: string;
     label: string;
     items: WorkflowPaletteItem[];
+    /** Protocol family when this group collects protocol nodes. */
+    protocol?: string;
 }
 
 /**

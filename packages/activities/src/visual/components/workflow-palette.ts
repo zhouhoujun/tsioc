@@ -1,6 +1,7 @@
 import { Attribute, Component } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
+import { AccordionItem } from '@tsdi/components/common/accordion';
 import { translateWorkflow } from '../i18n';
 import { WorkflowPaletteGroup, WorkflowPaletteItem } from '../types';
 
@@ -25,21 +26,18 @@ import { WorkflowPaletteGroup, WorkflowPaletteItem } from '../types';
                 @keydown="searchKeydown($event)" />
         </div>
         <div class="workflow-palette-empty" v-if="query && !visibleGroups.length">{{noMatchesLabel}}</div>
-        <div class="workflow-palette-group" v-for="group in visibleGroups">
-            <div class="workflow-palette-title">{{group.label}}</div>
-            <div class="workflow-palette-item"
-                 v-for="entry in group.items"
-                 draggable="true"
-                 [title]="entry.description"
-                 data-node-type="{{entry.type}}"
-                 @click="add(entry)"
-                 @dragstart="dragStart($event, entry)">
-                <span class="workflow-palette-icon" data-node-type="{{entry.type}}"><icon [name]="entry.type" [glyph]="entry.icon" size="sm"></icon></span>
-                <span class="workflow-palette-text">
-                    <span class="workflow-palette-label">{{entry.label}}</span>
-                    <span class="workflow-palette-desc">{{entry.description}}</span>
-                </span>
-            </div>
+        <div class="{{groupClass(group)}}" v-for="group in visibleGroups"
+            data-palette-group="{{group.id}}" data-protocol="{{group.protocol}}">
+            <ui-accordion controlled
+                :title="group.label"
+                :count="group.items.length"
+                :expanded="groupExpanded(group)"
+                :toggleAction="toggleActionFor(group)"
+                :items="accordionItems(group)"
+                :selectAction="selectAccordionItem"
+                :dragStartAction="dragAccordionItem"
+                :draggable="true">
+            </ui-accordion>
         </div>
     </div>`
 })
@@ -50,6 +48,9 @@ export class WorkflowPaletteComponent {
     @Attribute() dragStartAction?: (event: any, item: WorkflowPaletteItem) => void;
 
     query = '';
+
+    /** Groups start expanded; hosts keep the collapsed state while mounted. */
+    collapsedGroups: Record<string, boolean> = {};
 
     constructor(@Optional() private translator?: Translator) { }
 
@@ -88,6 +89,63 @@ export class WorkflowPaletteComponent {
             }))
             .filter(group => group.items.length > 0);
     }
+
+    groupClass(group: WorkflowPaletteGroup): string {
+        const classes = ['workflow-palette-group'];
+        if (group.protocol) {
+            classes.push('is-protocol');
+        }
+        if (!this.groupExpanded(group)) {
+            classes.push('is-collapsed');
+        }
+        return classes.join(' ');
+    }
+
+    /** Search always reveals matches; otherwise the user's toggle wins. */
+    groupExpanded(group: WorkflowPaletteGroup): boolean {
+        if (this.query.trim()) {
+            return true;
+        }
+        return !this.collapsedGroups[group.id];
+    }
+
+    toggleGroup(group: WorkflowPaletteGroup, expanded: boolean): void {
+        // While filtering, the matching groups are forced open so results are
+        // never hidden behind a previously collapsed header.
+        if (this.query.trim()) {
+            return;
+        }
+        this.collapsedGroups[group.id] = !expanded;
+    }
+
+    /** Bind one callback per row; keeps `this` on the palette proxy. */
+    toggleActionFor(group: WorkflowPaletteGroup): (expanded: boolean) => void {
+        return expanded => this.toggleGroup(group, expanded);
+    }
+
+    /** Map registry entries to the shared accordion row shape. */
+    accordionItems(group: WorkflowPaletteGroup): AccordionItem[] {
+        return (group.items || []).map(entry => ({
+            id: entry.type,
+            label: entry.label,
+            description: entry.description,
+            icon: entry.type,
+            iconGlyph: entry.icon,
+            className: 'workflow-palette-item',
+            iconClassName: 'workflow-palette-icon',
+            attrs: { 'data-node-type': entry.type },
+            iconAttrs: { 'data-node-type': entry.type },
+            value: entry
+        }));
+    }
+
+    readonly selectAccordionItem = (item: WorkflowPaletteItem): void => {
+        this.add(item);
+    };
+
+    readonly dragAccordionItem = (event: any, item: WorkflowPaletteItem): void => {
+        this.dragStart(event, item);
+    };
 
     search(event: any): void {
         this.query = String(event?.target?.value ?? '');

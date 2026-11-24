@@ -222,6 +222,58 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelectorAll('.workflow-palette-item').length).toBe(71);
     });
 
+    it('renders palette groups as accordions without losing components', async () => {
+        const groups = Array.from(root.querySelectorAll('.workflow-palette-group')) as any[];
+        expect(groups.length).toBeGreaterThan(10);
+        expect(root.querySelector('.workflow-palette-group[data-protocol="http"]')).toBeTruthy();
+        expect(root.querySelector('.workflow-palette-group[data-protocol="mqtt"]')).toBeTruthy();
+
+        const httpGroup = root.querySelector('.workflow-palette-group[data-protocol="http"]') as any;
+        const toggle = httpGroup.querySelector('.ui-accordion-header') as any;
+        const items = httpGroup.querySelector('.ui-accordion-body') as any;
+
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(items.hasAttribute('hidden')).toBe(false);
+        // Rows are rendered by the shared accordion body, not left as host
+        // siblings, and keep the palette's data hooks for drag/drop tests.
+        expect(items.querySelectorAll('.workflow-palette-item').length).toBe(4);
+        expect((items.querySelector('.workflow-palette-item') as any).getAttribute('data-node-type')).toBeTruthy();
+
+        toggle.click();
+        await flush();
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        expect(items.hasAttribute('hidden')).toBe(true);
+        expect(httpGroup.className).toContain('is-collapsed');
+        // Collapsed groups keep their rows mounted: search, counts and drag
+        // targets stay stable while the header only hides the section.
+        expect(root.querySelectorAll('.workflow-palette-item').length).toBe(71);
+
+        toggle.click();
+        await flush();
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(items.hasAttribute('hidden')).toBe(false);
+        expect(httpGroup.className).not.toContain('is-collapsed');
+
+        // Filtering reopens a collapsed group so matches are never hidden, and
+        // clearing the query restores the user's collapsed state.
+        toggle.click();
+        await flush();
+        const input = root.querySelector('.workflow-palette-search-input') as any;
+        input.value = 'http';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        let filtered = root.querySelector('.workflow-palette-group[data-protocol="http"]') as any;
+        expect(filtered.querySelector('.ui-accordion-header').getAttribute('aria-expanded')).toBe('true');
+        expect(filtered.querySelector('.ui-accordion-body').hasAttribute('hidden')).toBe(false);
+
+        input.value = '';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        filtered = root.querySelector('.workflow-palette-group[data-protocol="http"]') as any;
+        expect(filtered.querySelector('.ui-accordion-header').getAttribute('aria-expanded')).toBe('false');
+        expect(filtered.querySelector('.ui-accordion-body').hasAttribute('hidden')).toBe(true);
+    });
+
     it('renders registry ports for a workflow loaded after mount', async () => {
         // Regression: normalization used to mutate the assigned definition in
         // place, so view-model caches keyed on definition identity kept serving

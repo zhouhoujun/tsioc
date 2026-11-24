@@ -41,13 +41,29 @@ export const WORKFLOW_DESIGNER_CANVAS_CSS = `/* Palette */
     color: #64748b;
 }
 
-.workflow-palette-title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #64748b;
-    margin: 10px 2px 6px;
+.workflow-palette-group {
+    display: flex;
+    flex-direction: column;
+    /* The shared accordion owns the header/body markup; the palette only maps
+       its skin variables to the designer theme tokens. */
+    --ui-accordion-margin: 10px 0 6px;
+    --ui-accordion-title-color: var(--wf-theme-muted, #64748b);
+    --ui-accordion-hover-background: var(--wf-theme-hover, #e2e8f0);
+    --ui-accordion-hover-border: var(--wf-theme-border, #e2e8f0);
+    --ui-accordion-hover-color: var(--wf-theme-text, #0f172a);
+    --ui-accordion-focus-ring: var(--wf-theme-focus-ring, rgba(37, 99, 235, 0.2));
+    --ui-accordion-count-background: var(--wf-theme-surface-alt, #e2e8f0);
+    --ui-accordion-count-color: var(--wf-theme-muted, #64748b);
+    --ui-accordion-item-gap: 8px;
+    --ui-accordion-item-icon-size: 24px;
+    --ui-accordion-item-icon-radius: 6px;
+    --ui-accordion-item-icon-background: var(--wf-accent, #64748b);
+    --ui-accordion-item-icon-color: #ffffff;
+}
+
+.workflow-palette-group.is-protocol {
+    --ui-accordion-title-color: var(--wf-theme-primary, #2563eb);
+    --ui-accordion-hover-color: var(--wf-theme-text, #0f172a);
 }
 
 .workflow-palette-item {
@@ -85,21 +101,15 @@ export const WORKFLOW_DESIGNER_CANVAS_CSS = `/* Palette */
     background: var(--wf-accent, #64748b);
 }
 
-.workflow-palette-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.workflow-palette-label {
+.workflow-palette-item .ui-accordion-item-label {
     font-size: 12px;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--wf-theme-text, #0f172a);
 }
 
-.workflow-palette-desc {
+.workflow-palette-item .ui-accordion-item-description {
     font-size: 10px;
-    color: #64748b;
+    color: var(--wf-theme-muted, #64748b);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

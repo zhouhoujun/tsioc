@@ -21,6 +21,17 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     error: 'Error handling',
                     advanced: 'Advanced'
                 },
+                protocol: {
+                    http: 'HTTP',
+                    websocket: 'WebSocket',
+                    tcp: 'TCP',
+                    udp: 'UDP',
+                    mqtt: 'MQTT',
+                    coap: 'CoAP',
+                    redis: 'Redis',
+                    nats: 'NATS',
+                    tls: 'TLS'
+                },
                 status: {
                     idle: 'Idle',
                     pending: 'Pending',
@@ -498,6 +509,17 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     storage: '存储',
                     error: '异常处理',
                     advanced: '高级'
+                },
+                protocol: {
+                    http: 'HTTP',
+                    websocket: 'WebSocket',
+                    tcp: 'TCP',
+                    udp: 'UDP',
+                    mqtt: 'MQTT',
+                    coap: 'CoAP',
+                    redis: 'Redis',
+                    nats: 'NATS',
+                    tls: 'TLS'
                 },
                 status: {
                     idle: '空闲',
