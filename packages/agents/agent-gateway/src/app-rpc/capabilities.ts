@@ -1,4 +1,4 @@
-import { AGENT_RPC_CONTRACT_METHOD_IDS } from './rpc-contracts';
+import { AGENT_RPC_CONTRACT_METHOD_IDS, buildAgentRpcContractSchemas } from './rpc-contracts';
 import { GatewayCapabilityRegistry } from '@tsdi/gateway-kit';
 
 /**
@@ -214,6 +214,7 @@ export function buildAgentAppRpcCapabilities() {
         features: { sse: true, ws: true, approvals: true, queue: true },
         methods: AGENT_APP_RPC_METHODS,
         descriptors: AGENT_APP_RPC_CAPABILITIES.list(),
+        contractSchemas: buildAgentRpcContractSchemas(),
         streamingMethods: ['run.turn_stream']
     };
 }

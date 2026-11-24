@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { AGENT_APP_RPC_METHODS, AgentAppRpcMethod } from '../src/app-rpc/capabilities';
-import { AGENT_RPC_CONTRACTS, AGENT_RPC_CONTRACT_METHOD_IDS, resolveAgentRpcContract } from '../src/app-rpc/rpc-contracts';
+import { AGENT_APP_RPC_METHODS, AgentAppRpcMethod, buildAgentAppRpcCapabilities } from '../src/app-rpc/capabilities';
+import { AGENT_RPC_CONTRACTS, AGENT_RPC_CONTRACT_METHOD_IDS, buildAgentRpcContractSchemas, resolveAgentRpcContract } from '../src/app-rpc/rpc-contracts';
 
 @Suite('rpc descriptor contracts')
 export class RpcContractsTest {
@@ -14,6 +14,37 @@ export class RpcContractsTest {
         expect(AGENT_RPC_CONTRACTS.length).toEqual(AGENT_RPC_CONTRACT_METHOD_IDS.length);
         const typed: AgentAppRpcMethod = 'artifact.get';
         expect(typed).toEqual('artifact.get');
+    }
+
+    @Test('contract schemas are advertised with the capability payload')
+    contractSchemas() {
+        const schemas = buildAgentRpcContractSchemas();
+        expect(schemas.contractVersion).toEqual(1);
+        for (const contract of AGENT_RPC_CONTRACTS) {
+            const entry = schemas.methods[contract.method];
+            expect(entry).toBeTruthy();
+            expect(entry.params.type).toEqual('object');
+            expect(entry.result.type).toEqual('object');
+            for (const required of contract.paramsSchema?.required ?? []) {
+                expect(Object.keys(contract.paramsSchema?.properties ?? {})).toContain(required);
+            }
+        }
+        const capabilities = buildAgentAppRpcCapabilities();
+        expect(capabilities.protocolVersion).toEqual(1);
+        expect(capabilities.contractSchemas.methods['session.revert.stage']).toBeTruthy();
+        expect(capabilities.methods).toEqual(AGENT_APP_RPC_METHODS);
+    }
+
+    @Test('handlers tolerate unknown fields for forward compatibility')
+    async unknownFields() {
+        const contract = resolveAgentRpcContract('permission.rules.list')!;
+        const result = await contract.handler({
+            params: { sessionId: 's1', unknownFlag: true, nested: { a: 1 } },
+            context: {} as any,
+            runtime: { listPermissionRules: () => [] },
+            authorize: async () => undefined
+        });
+        expect(result.rules).toEqual([]);
     }
 
     @Test('permission contract returns rules from the runtime')

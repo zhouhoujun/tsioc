@@ -258,10 +258,15 @@
   - 每 call 支持 cooperative cancel（AbortSignal）。
 - 验收：长工具调用首完成时间下降；事件顺序/审批/取消无回归；PTY/SSE 测试。
 
-**P3.2 协议生成/版本化**
+**P3.2 协议生成/版本化（descriptor schema 已落地 2026-11-24）**
 - 用 P0.4 descriptor 生成 JSON Schema/OpenAPI 与 typed client；加入 `protocolVersion` 与兼容性测试；
 - SSE/WS 事件契约纳入同一 schema；客户端未知字段容错。
 - 验收：client 与 server 方法集合一致；breaking change 由测试拦截。
+- 状态：descriptor 增加 `paramsSchema`/`resultSchema`，`buildAgentRpcContractSchemas()` 生成
+  `contractVersion: 1` 的 method → `{description, params, result}` 表，随 `app.capabilities`
+  以 `contractSchemas` 下发（`protocolVersion` 保持 1 兼容）；contract 测试校验每个 schema、
+  required 字段存在、typed client 方法集合一致，并覆盖未知字段前向兼容。**剩余**：由同一 descriptor
+  生成 OpenAPI/JSON Schema 文件、旧 switch 方法迁入。
 
 **P3.3 远程环境（按需）**
 - 借鉴 Environment 抽象，把 files/exec/shell 抽象为 local/remote；
