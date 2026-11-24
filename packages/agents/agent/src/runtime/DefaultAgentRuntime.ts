@@ -28,6 +28,8 @@ import { SessionSnapshotController } from './SessionSnapshotController';
 import { HookController } from './HookController';
 import { PolicyResolutionController } from './PolicyResolutionController';
 import { TurnLoopController } from './TurnLoopController';
+import { SessionModeController } from './SessionModeController';
+import { DelegationSessionController } from './DelegationSessionController';
 import type { TurnExecutionContext } from './TurnExecutionContext';
 import { FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
@@ -130,7 +132,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionTurnDepths = new Map<string, number>();
     protected sessionTurnsRunning = new Set<string>();
     protected turnAbortScopes = new TurnAbortScopes();
-    protected sessionChildSessions = new Map<string, Set<string>>();
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
@@ -663,139 +664,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     registerChildSession(parentSessionId: string, childSessionId: string, metadata?: Record<string, any>): void {
-        const children = this.sessionChildSessions.get(parentSessionId) ?? new Set<string>();
-        children.add(childSessionId);
-        this.sessionChildSessions.set(parentSessionId, children);
-        this.recordDelegationEdge(parentSessionId, childSessionId, metadata);
-        this.annotateChildSession(parentSessionId, childSessionId, metadata);
+        this.delegation.register(parentSessionId, childSessionId, metadata);
     }
 
     unregisterChildSession(parentSessionId: string, childSessionId: string, status?: DelegationEdgeStatus): void {
-        const children = this.sessionChildSessions.get(parentSessionId);
-        if (!children) {
-            return;
-        }
-        children.delete(childSessionId);
-        if (!children.size) {
-            this.sessionChildSessions.delete(parentSessionId);
-        }
-        this.closeDelegationEdge(parentSessionId, childSessionId, status ?? 'completed');
-        this.annotateChildThreadStatus(childSessionId, status ?? 'completed');
+        this.delegation.unregister(parentSessionId, childSessionId, status);
     }
 
     protected async cancelChildTurns(sessionId: string): Promise<void> {
-        const children = this.sessionChildSessions.get(sessionId);
-        if (!children?.size) {
-            return;
-        }
-        for (const childSessionId of Array.from(children)) {
-            if (!this.turnAbortScopes.isActive(childSessionId)) {
-                continue;
-            }
-            this.toolApprovalManager?.cancelBySession(childSessionId);
-            this.turnAbortScopes.cancel(childSessionId);
-            this.closeDelegationEdge(sessionId, childSessionId, 'cancelled');
-            this.annotateChildThreadStatus(childSessionId, 'cancelled');
-            await this.rollbackTurnCompensations(childSessionId, 'cancelled');
-            await this.cancelChildTurns(childSessionId);
-        }
-    }
-
-    private recordDelegationEdge(parentSessionId: string, childSessionId: string, metadata?: Record<string, any>): void {
-        if (!this.delegationGraph) {
-            return;
-        }
-        this.delegationGraph.append({
-            parentSessionId,
-            childSessionId,
-            kind: 'nested',
-            status: 'active',
-            metadata
-        }).catch(() => {
-            // delegation graph persistence must not break session hierarchy tracking
-        });
-    }
-
-    private closeDelegationEdge(parentSessionId: string, childSessionId: string, status: DelegationEdgeStatus): void {
-        if (!this.delegationGraph) {
-            return;
-        }
-        this.delegationGraph.markClosed(parentSessionId, childSessionId, status).catch(() => {
-            // delegation graph persistence must not break session hierarchy tracking
-        });
-    }
-
-    /**
-     * Best-effort thread annotation for spawned worker sessions: the child is
-     * marked with `sessionRole: 'worker'` and linked back to the parent's
-     * origin thread (the parent `primaryThreadId`, falling back to the parent
-     * session id), and its focus summary defaults to the delegation goal. This
-     * lets the derived thread index group delegated sessions without requiring
-     * explicit metadata. Existing explicit fields are preserved; a child with
-     * an explicit non-worker role is left untouched. The write is
-     * fire-and-forget: annotation must never break the delegation flow.
-     */
-    private annotateChildSession(parentSessionId: string, childSessionId: string, metadata?: Record<string, any>): void {
-        void (async () => {
-            try {
-                const parent = await this.sessions.get(parentSessionId);
-                const child = await this.sessions.get(childSessionId);
-                const explicitRole = String(child.sessionRole || '').trim();
-                if (explicitRole && explicitRole !== 'worker') {
-                    return;
-                }
-                const goal = typeof metadata?.goal === 'string' ? metadata.goal.trim() : '';
-                await this.mergeProjectMetadata(childSessionId, {
-                    originThreadId: String(parent.primaryThreadId || '').trim() || parentSessionId,
-                    sessionRole: 'worker',
-                    focusSummary: goal || undefined
-                });
-            } catch {
-                // worker session annotation must not break the delegation flow
-            }
-        })();
-    }
-
-    /**
-     * Best-effort thread status annotation when a delegation edge closes:
-     * maps the edge outcome onto the worker thread status so the derived
-     * thread index reflects finished workers (`completed` → completed,
-     * `failed` → blocked, `cancelled` → abandoned). Fire-and-forget like the
-     * sibling annotations: it must never break the delegation flow.
-     */
-    private annotateChildThreadStatus(childSessionId: string, status: DelegationEdgeStatus): void {
-        const threadStatus = status === 'completed' ? 'completed'
-            : status === 'failed' ? 'blocked'
-            : status === 'cancelled' ? 'abandoned' : undefined;
-        if (!threadStatus) {
-            return;
-        }
-        void (async () => {
-            try {
-                await this.mergeProjectMetadata(childSessionId, { threadStatus });
-            } catch {
-                // worker thread status annotation must not break the delegation flow
-            }
-        })();
-    }
-
-    /**
-     * Read-modify-write merge of project metadata: existing explicit fields
-     * win, the patch only fills gaps. `setProjectMetadata` overwrites the
-     * whole metadata block, so without the merge the annotation would clear
-     * fields that were set earlier (e.g. a pre-existing projectId).
-     */
-    private async mergeProjectMetadata(sessionId: string, patch: AgentSessionProjectMetadata): Promise<void> {
-        const existing = await this.sessions.get(sessionId);
-        await this.sessions.setProjectMetadata(sessionId, {
-            projectId: existing.projectId ?? patch.projectId,
-            primaryThreadId: existing.primaryThreadId ?? patch.primaryThreadId,
-            originThreadId: existing.originThreadId ?? patch.originThreadId,
-            sessionRole: existing.sessionRole ?? patch.sessionRole,
-            rootRequest: existing.rootRequest ?? patch.rootRequest,
-            focusSummary: existing.focusSummary ?? patch.focusSummary,
-            threadStatus: existing.threadStatus ?? patch.threadStatus
-        });
+        await this.delegation.cancelChildren(sessionId);
     }
 
     protected getCompensationStack(sessionId: string): ToolCompensationEntry[] {
@@ -931,7 +808,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected prepareModelRequest(sessionId: string, request: ModelRequest, profile?: string, falsifyRate?: number, reasoning?: boolean): ModelRequest {
         this.throwIfTurnCancelled(sessionId);
         request.signal = this.turnAbortScopes.signal(sessionId);
-        const resolvedProfile = profile || this.sessionModelProfiles.get(sessionId);
+        const resolvedProfile = profile || this.modes.modelProfile(sessionId);
         if (resolvedProfile) {
             request.profile = resolvedProfile;
         }
@@ -1069,35 +946,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
             && hadPriorClarification((await this.sessions.get(sessionId)).messages, currentUserMessageId);
     }
 
-    protected sessionToolFilters = new Map<string, Set<string>>();
+    setSessionToolFilter(sessionId: string, toolsets: string[]): void { this.modes.setToolFilter(sessionId, toolsets); }
 
-    setSessionToolFilter(sessionId: string, toolsets: string[]): void {
-        if (toolsets.length === 0) {
-            this.sessionToolFilters.delete(sessionId);
-        } else {
-            this.sessionToolFilters.set(sessionId, new Set(toolsets));
-        }
-    }
+    clearSessionToolFilter(sessionId: string): void { this.modes.clearToolFilter(sessionId); }
 
-    clearSessionToolFilter(sessionId: string): void {
-        this.sessionToolFilters.delete(sessionId);
-    }
+    setSessionModelProfile(sessionId: string, profileName: string): void { this.modes.setModelProfile(sessionId, profileName); }
 
-    protected sessionModelProfiles = new Map<string, string>();
-
-    setSessionModelProfile(sessionId: string, profileName: string): void {
-        this.sessionModelProfiles.set(sessionId, profileName);
-    }
-
-    clearSessionModelProfile(sessionId: string): void {
-        this.sessionModelProfiles.delete(sessionId);
-    }
-
-    protected sessionPlanModes = new Set<string>();
-    protected sessionArchetypes = new Map<string, string>();
-    protected sessionSandboxModes = new Map<string, import('../harness/sandbox-exec').SandboxMode>();
-    protected sessionDelegationModes = new Map<string, AgentDelegationMode>();
-    protected pendingArchetypeSwitches = new Map<string, Promise<void>>();
+    clearSessionModelProfile(sessionId: string): void { this.modes.clearModelProfile(sessionId); }
 
     protected resolveDefaultArchetype(): AgentPolicyResolution<string> { return this.policy.resolveDefaultArchetype(); }
 
@@ -1111,238 +966,50 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     setApprovalTimeout(timeoutMs: number): void { this.policy.setApprovalTimeout(timeoutMs); }
 
-    setPlanMode(sessionId: string, enabled: boolean): void {
-        if (enabled) {
-            this.setSessionArchetype(sessionId, 'plan');
-        } else {
-            this.setSessionArchetype(sessionId, this.resolveDefaultArchetype().value);
-        }
-    }
+    setPlanMode(sessionId: string, enabled: boolean): void { this.modes.setPlanMode(sessionId, enabled); }
 
-    isPlanMode(sessionId: string): boolean {
-        return this.resolveArchetypeConfig(sessionId)?.readOnly === true || this.sessionPlanModes.has(sessionId);
-    }
+    isPlanMode(sessionId: string): boolean { return this.modes.isPlanMode(sessionId); }
 
-    setSessionArchetype(sessionId: string, archetype: string | null | undefined): void {
-        const previous = this.getSessionArchetype(sessionId);
-        const next = archetype
-            ? this.normalizeArchetypeName(archetype)
-            : this.resolveDefaultArchetype().value;
-        if (!next) {
-            this.sessionArchetypes.delete(sessionId);
-        } else {
-            this.sessionArchetypes.set(sessionId, next);
-        }
-        const config = this.resolveArchetypeConfig(sessionId);
-        if (config?.readOnly) {
-            this.sessionPlanModes.add(sessionId);
-        } else {
-            this.sessionPlanModes.delete(sessionId);
-        }
-        if (next !== previous) {
-            const switchConfig = resolveArchetype(this.options.archetypes, next);
-            if (switchConfig) {
-                const previousPending = this.pendingArchetypeSwitches.get(sessionId) ?? Promise.resolve();
-                const pending = previousPending
-                    .then(() => this.appendArchetypeSwitchMessage(sessionId, switchConfig, previous))
-                    .finally(() => {
-                        if (this.pendingArchetypeSwitches.get(sessionId) === pending) {
-                            this.pendingArchetypeSwitches.delete(sessionId);
-                        }
-                    });
-                this.pendingArchetypeSwitches.set(sessionId, pending);
-            }
-        }
-    }
+    setSessionArchetype(sessionId: string, archetype: string | null | undefined): void { this.modes.setArchetype(sessionId, archetype); }
 
-    protected async waitForPendingArchetypeSwitch(sessionId: string): Promise<void> {
-        await this.pendingArchetypeSwitches.get(sessionId);
-    }
+    protected async waitForPendingArchetypeSwitch(sessionId: string): Promise<void> { await this.modes.waitForPendingSwitch(sessionId); }
 
-    getSessionArchetype(sessionId: string): string {
-        return this.resolveSessionArchetype(sessionId).value;
-    }
+    getSessionArchetype(sessionId: string): string { return this.modes.getArchetype(sessionId); }
 
-    listArchetypes(): string[] {
-        return listArchetypes(this.options.archetypes).map(archetype => archetype.name);
-    }
+    listArchetypes(): string[] { return this.modes.listArchetypeNames(); }
 
-    listAgentProfiles(): AgentArchetype[] {
-        return listArchetypes(this.options.archetypes);
-    }
+    listAgentProfiles(): AgentArchetype[] { return this.modes.listAgentProfiles(); }
 
-    protected resolveArchetypeConfig(sessionId: string): AgentArchetype | undefined {
-        return resolveArchetype(this.options.archetypes, this.getSessionArchetype(sessionId));
-    }
-
-    protected normalizeArchetypeName(name: string): string {
-        const lower = String(name).trim().toLowerCase();
-        if (lower === 'planner') {
-            return 'plan';
-        }
-        if (lower === 'execute' || lower === 'coder' || lower === 'default') {
-            return DEFAULT_ARCHETYPE;
-        }
-        if (lower === 'audit') {
-            return 'review';
-        }
-        return lower;
-    }
-
-    protected async appendArchetypeSwitchMessage(
-        sessionId: string,
-        config: AgentArchetype,
-        previous: string
-    ): Promise<void> {
-        try {
-            const existing = await this.getMessages(sessionId);
-            if (!existing.length) {
-                return;
-            }
-            await this.sessions.append(
-                sessionId,
-                this.createMessage('system', buildArchetypeSwitchMessage(config, previous))
-            );
-        } catch {
-            // a failed switch note must never break archetype switching
-        }
-    }
+    protected resolveArchetypeConfig(sessionId: string): AgentArchetype | undefined { return this.modes.archetypeConfig(sessionId); }
 
     override async setSessionWorkspace(sessionId: string, workspace?: string): Promise<void> { await this.sessions.setWorkspace(sessionId, workspace); }
 
-    setSessionSandboxMode(sessionId: string, mode?: import('../harness/sandbox-exec').SandboxMode | null): void {
-        if (mode == null) {
-            this.sessionSandboxModes.delete(sessionId);
-            return;
-        }
-        this.sessionSandboxModes.set(sessionId, mode);
-    }
+    setSessionSandboxMode(sessionId: string, mode?: import('../harness/sandbox-exec').SandboxMode | null): void { this.modes.setSandboxMode(sessionId, mode); }
 
-    getSessionSandboxMode(sessionId: string): import('../harness/sandbox-exec').SandboxMode | undefined {
-        return this.sessionSandboxModes.get(sessionId);
-    }
+    getSessionSandboxMode(sessionId: string): import('../harness/sandbox-exec').SandboxMode | undefined { return this.modes.sandboxMode(sessionId); }
 
-    override setSessionDelegationMode(sessionId: string, mode?: AgentDelegationMode | null): void {
-        if (mode == null) {
-            this.sessionDelegationModes.delete(sessionId);
-            return;
-        }
-        const normalized = normalizeDelegationMode(mode);
-        if (!normalized) {
-            return;
-        }
-        this.sessionDelegationModes.set(sessionId, normalized);
-    }
+    override setSessionDelegationMode(sessionId: string, mode?: AgentDelegationMode | null): void { this.modes.setDelegationMode(sessionId, mode); }
 
-    /** G29: default delegation mode with the policy layer that supplied it (policy > legacy option > schema). */
-    protected resolveDefaultDelegationMode(): AgentPolicyResolution<AgentDelegationMode> {
-        const policyMode = normalizeDelegationMode(this.options.policy?.delegationMode);
-        if (policyMode) {
-            return { value: policyMode, source: this.options.policy?.source ?? 'workspace' };
-        }
-        const legacyMode = normalizeDelegationMode(this.options.delegationMode);
-        if (legacyMode) {
-            return {
-                value: legacyMode,
-                source: legacyMode === DEFAULT_DELEGATION_MODE ? 'default' : 'workspace'
-            };
-        }
-        return { value: DEFAULT_DELEGATION_MODE, source: 'default' };
-    }
+    protected resolveDefaultDelegationMode(): AgentPolicyResolution<AgentDelegationMode> { return this.modes.resolveDefaultDelegationMode(); }
 
-    /** G29: session delegation mode with observable source; falls back to the default chain when no session override exists. */
-    resolveSessionDelegationMode(sessionId: string): AgentPolicyResolution<AgentDelegationMode> {
-        const sessionMode = this.sessionDelegationModes.get(sessionId);
-        if (sessionMode) {
-            return { value: sessionMode, source: 'session' };
-        }
-        return this.resolveDefaultDelegationMode();
-    }
+    resolveSessionDelegationMode(sessionId: string): AgentPolicyResolution<AgentDelegationMode> { return this.modes.resolveSessionDelegationMode(sessionId); }
 
-    override getSessionDelegationMode(sessionId: string): AgentDelegationMode { return this.resolveSessionDelegationMode(sessionId).value; }
+    override getSessionDelegationMode(sessionId: string): AgentDelegationMode { return this.modes.getDelegationMode(sessionId); }
 
-    /**
-     * G29: resolve the effective delegation mode for a round, in precedence
-     * order: per-turn agent config -> session override -> option default.
-     */
-    protected resolveDelegationMode(
-        sessionId: string,
-        turnContext?: TurnExecutionContext
-    ): AgentDelegationMode {
-        const perTurn = turnContext?.agent?.delegationMode;
-        if (perTurn) {
-            return normalizeDelegationMode(perTurn) ?? DEFAULT_DELEGATION_MODE;
-        }
-        return this.getSessionDelegationMode(sessionId);
+    protected resolveDelegationMode(sessionId: string, turnContext?: TurnExecutionContext): AgentDelegationMode {
+        return this.modes.resolveDelegationMode(sessionId, turnContext);
     }
 
     private getToolDefinitions(sessionId: string): AgentToolDefinition[] {
-        const defs = this.toolRegistry.getCallableToolDefinitions(sessionId);
-        const filter = this.sessionToolFilters.get(sessionId);
-        if (!filter || filter.size === 0) {
-            return defs;
-        }
-        return defs.filter(d => d.toolset && filter.has(d.toolset));
+        return this.modes.applyToolFilter(sessionId, this.toolRegistry.getCallableToolDefinitions(sessionId));
     }
 
-    /**
-     * Archetype tool gate: deny rules win, allow rules pass, then a readOnly
-     * archetype denies write-capable tools unless the input satisfies a
-     * configured write path. Returns the denial reason or undefined to allow.
-     */
     protected checkArchetypeToolGate(
         sessionId: string,
         definition: AgentToolDefinition,
         input: Record<string, any>
     ): string | undefined {
-        const archetype = this.resolveArchetypeConfig(sessionId);
-        if (!archetype) {
-            return undefined;
-        }
-        const permission = archetype.permissions;
-        const toolName = definition.name;
-
-        if (permission?.deny?.some(pattern => this.matchToolPattern(toolName, pattern))) {
-            return `Tool "${toolName}" is denied by the "${archetype.name}" archetype.`;
-        }
-        if (permission?.allow?.length && permission.allow.some(pattern => this.matchToolPattern(toolName, pattern))) {
-            return undefined;
-        }
-        if (archetype.readOnly === true && !definition.execution?.readOnly) {
-            if (permission?.writePaths?.length && this.inputMatchesWritePaths(input, permission.writePaths)) {
-                return undefined;
-            }
-            return `Tool "${toolName}" is disabled in ${archetype.name} mode (read-only session).`;
-        }
-        return undefined;
-    }
-
-    protected matchToolPattern(toolName: string, pattern: string): boolean {
-        if (pattern.endsWith('*')) {
-            return toolName.startsWith(pattern.slice(0, -1));
-        }
-        return toolName === pattern;
-    }
-
-    protected inputMatchesWritePaths(input: Record<string, any>, writePaths: string[]): boolean {
-        const candidates: string[] = [];
-        const collect = (value: any): void => {
-            if (typeof value === 'string') {
-                candidates.push(value);
-            } else if (Array.isArray(value)) {
-                value.forEach(collect);
-            } else if (value && typeof value === 'object') {
-                Object.values(value).forEach(collect);
-            }
-        };
-        collect(input);
-        return candidates.some(value => writePaths.some(prefix => {
-            const normalizedValue = value.replace(/^[./\\]+/, '');
-            const normalizedPrefix = prefix.replace(/^[./\\]+/, '').replace(/\/+$/, '');
-            return normalizedValue === normalizedPrefix
-                || normalizedValue.startsWith(normalizedPrefix + '/')
-                || normalizedValue.startsWith(normalizedPrefix + '\\');
-        }));
+        return this.modes.checkToolGate(sessionId, definition, input);
     }
 
     private async *collectStreamingResponse(sessionId: string, request: ModelRequest): AsyncGenerator<StreamChunk, ModelResponse, void> {
@@ -1414,6 +1081,31 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
+    private sessionModeController?: SessionModeController;
+
+    private get modes(): SessionModeController {
+        return this.sessionModeController ??= new SessionModeController({
+            options: this.options,
+            sessions: this.sessions,
+            messages: (id) => this.getMessages(id),
+            createMessage: (role, content) => this.createMessage(role, content),
+            resolveDefaultArchetype: () => this.policy.resolveDefaultArchetype()
+        });
+    }
+
+    private delegationSessionController?: DelegationSessionController;
+
+    private get delegation(): DelegationSessionController {
+        return this.delegationSessionController ??= new DelegationSessionController({
+            sessions: this.sessions,
+            delegationGraph: this.delegationGraph,
+            isTurnActive: (id) => this.turnAbortScopes.isActive(id),
+            cancelApprovals: (id) => this.toolApprovalManager?.cancelBySession(id),
+            cancelTurn: (id) => this.turnAbortScopes.cancel(id),
+            rollback: async (id, reason) => { await this.rollbackTurnCompensations(id, reason); }
+        });
+    }
+
     private turnLoopController?: TurnLoopController;
 
     private get turnLoop(): TurnLoopController {
@@ -1454,7 +1146,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     private get policy(): PolicyResolutionController {
         return this.policyResolution ??= new PolicyResolutionController({
             options: this.options, approvalManager: () => this.toolApprovalManager,
-            sessionArchetype: id => this.sessionArchetypes.get(id)
+            sessionArchetype: id => this.modes.archetypes.get(id)
         });
     }
 
@@ -1663,7 +1355,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             resolveSandbox: (definition, workspace, supported, mode) => resolveSessionToolSandboxState(definition, workspace, supported, mode),
             decorateSandbox: (receipt, state) => decorateToolSandboxReceipt(receipt, state),
             supportsSandbox: () => !!this.toolExecutionCoordinator?.isSandboxExecutionSupported(),
-            sessionSandboxMode: id => id ? effectiveSandboxMode(this.sessionSandboxModes.get(id), this.options) : undefined,
+            sessionSandboxMode: id => id ? effectiveSandboxMode(this.modes.sandboxMode(id), this.options) : undefined,
             trust: this.workspaceTrust ?? undefined,
             isWorkspaceMutating: definition => isWorkspaceMutatingTool(definition),
             resolveTrust: input => resolveWorkspaceTrustApproval(input),
@@ -1686,7 +1378,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             app: this.app, options: this.options, toolRegistry: this.toolRegistry,
             toolExecutionCoordinator: this.toolExecutionCoordinator, fileAdapter: this.fileAdapter,
             memory: this.memory, approvalManager: this.toolApprovalManager,
-            now: () => this.now(), signal: id => this.turnAbortScopes.signal(id), sandboxMode: id => effectiveSandboxMode(this.sessionSandboxModes.get(id), this.options),
+            now: () => this.now(), signal: id => this.turnAbortScopes.signal(id), sandboxMode: id => effectiveSandboxMode(this.modes.sandboxMode(id), this.options),
             fail: (call, input, summary, receipt, error) => this.toolLifecycleController.failed(call, input, summary, receipt, error),
             recordLoop: (name, input, output) => loopDetector.record(name, input, output),
             trackPlan: (id, context, name, output) => this.trackPlanProgress(id, context, name, output),
