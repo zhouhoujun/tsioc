@@ -67,7 +67,10 @@ export class SessionSnapshotController {
         const git = await this.host.gitSnapshots?.unrevert(sessionId).catch(() => null);
         if (git?.reverted) return git;
         const workspace = await this.host.workspace(sessionId);
-        const id = this.host.contentSnapshots?.lastRevertedId(sessionId);
+        let id = this.host.contentSnapshots?.lastRevertedId(sessionId);
+        if (!id && workspace && this.host.contentSnapshots) {
+            id = await this.host.contentSnapshots.lastRevertedIdFromDisk(sessionId, workspace);
+        }
         const content = workspace && this.host.contentSnapshots && id
             ? await this.host.contentSnapshots.restore(sessionId, workspace, id, 'after')
             : null;

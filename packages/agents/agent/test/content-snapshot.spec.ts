@@ -152,5 +152,16 @@ export class ContentAddressedSnapshotTest {
         const committed = await controller.commitStagedRevert('s1');
         expect(committed.reverted).toEqual(true);
         expect(await adapter.readText('/work/app/a.txt')).toEqual('v1');
+
+        // Cross-process: a fresh store/controller recovers the last reverted id from disk.
+        const restarted = new SessionSnapshotController({
+            fileAdapter: adapter,
+            contentSnapshots: new ContentAddressedSnapshotStore(adapter),
+            workspace: async () => '/work/app',
+            afterFileChange: async () => undefined
+        });
+        const restored = await restarted.unrevertGit('s1');
+        expect(restored.reverted).toEqual(true);
+        expect(await adapter.readText('/work/app/a.txt')).toEqual('v2');
     }
 }

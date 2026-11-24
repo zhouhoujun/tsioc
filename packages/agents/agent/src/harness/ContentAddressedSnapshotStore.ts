@@ -251,8 +251,10 @@ export class ContentAddressedSnapshotStore {
         }
         if (which === 'before') {
             this.lastReverted.set(sessionId, id);
+            await this.writeLastRevert(manifest, true);
         } else {
             this.lastReverted.delete(sessionId);
+            await this.writeLastRevert(manifest, false);
         }
         return { restored: true, files: restored, snapshotId: manifest.id, messageId: manifest.messageId };
     }
@@ -260,6 +262,47 @@ export class ContentAddressedSnapshotStore {
     /** The message id reverted last for a session (`unrevert` target). */
     lastRevertedId(sessionId: string): string | undefined {
         return this.lastReverted.get(sessionId);
+    }
+
+    /** Cross-process fallback: read the persisted last-revert marker from the workspace. */
+    async lastRevertedIdFromDisk(sessionId: string, workspace: string): Promise<string | undefined> {
+        const cached = this.lastReverted.get(sessionId);
+        if (cached) {
+            return cached;
+        }
+        const path = this.lastRevertPath(workspace, sessionId);
+        const text = await this.adapter.readText(path).catch(() => null);
+        if (!text) {
+            return undefined;
+        }
+        try {
+            const parsed = JSON.parse(text);
+            const messageId = typeof parsed?.messageId === 'string' ? parsed.messageId : undefined;
+            if (messageId) {
+                this.lastReverted.set(sessionId, messageId);
+            }
+            return messageId;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private async writeLastRevert(manifest: ContentSnapshotManifest, reverted: boolean): Promise<void> {
+        const path = this.lastRevertPath(manifest.workspace, manifest.sessionId);
+        try {
+            if (!reverted) {
+                await this.adapter.remove(path, { force: true });
+                return;
+            }
+            await this.adapter.mkdir(dirnameAgentPath(path), { recursive: true });
+            await this.adapter.writeText(path, JSON.stringify({ messageId: manifest.id, snapshotId: manifest.id, revertedAt: Date.now() }));
+        } catch {
+            // best-effort marker; in-process lastRevertedId still works
+        }
+    }
+
+    private lastRevertPath(workspace: string, sessionId: string): string {
+        return this.adapter.join(this.sessionDir(workspace, sessionId), 'last-revert.json');
     }
 
     private async storeBlob(workspace: string, content: string | null): Promise<string | null> {

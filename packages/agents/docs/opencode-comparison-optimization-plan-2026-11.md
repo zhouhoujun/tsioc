@@ -214,7 +214,9 @@
   `<snapshot session>/<message>.json` manifest（文件路径 + before/after hash，不再内联正文）；
   `SessionSnapshotController` 在 turn 结束提交 manifest，并在无 git / git 失败时把
   `list/diff/revert/unrevert` 回退到内容快照，复用现有 `session.git_snapshot.*` RPC 与 UI。
-  **剩余**：`/undo` 映射到 stage+restore prompt、跨进程记录 last-revert（当前 unrevert 依赖进程内记录）。
+  **剩余**：`/undo` 映射到 stage+restore prompt。跨进程 last-revert 已落地：revert 时在
+  `<workspace>/.tsdi-agent/snapshots/<session>/last-revert.json` 写 marker，`unrevert` 在新进程里
+  从磁盘恢复目标 message id。
   三阶段 RPC 已落地：`session.revert.stage`（返回将恢复的文件列表，优先读 content manifest；支持
   `paths` 只选择部分文件）、`session.revert.clear`、`session.revert.commit`（应用已 stage 的
   message revert；带 `paths` 时走 content-addressed 局部恢复）。
