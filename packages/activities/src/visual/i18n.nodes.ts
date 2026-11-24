@@ -399,6 +399,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "Timeout"
             },
             "function": {
+                "outputs": "Outputs",
                 "code": "JavaScript code",
                 "timeout": "Timeout",
                 "initialize": "Initialize code",
@@ -1291,6 +1292,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "maximum time for this step; 0 means no limit"
             },
             "function": {
+                "outputs": "number of output ports; with more than one, return one message per port as an array",
                 "code": "return the next message; context and input expose the flow context",
                 "timeout": "maximum time for this step; 0 means no limit",
                 "initialize": "Optional code that runs before the main function. Returned objects are merged into the context.",
@@ -2220,6 +2222,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "超时"
             },
             "function": {
+                "outputs": "输出数量",
                 "code": "JavaScript 代码",
                 "timeout": "超时",
                 "initialize": "初始化代码",
@@ -3095,6 +3098,7 @@ export const WORKFLOW_NODE_TRANSLATIONS: Record<string, Record<string, any>> = {
                 "timeout": "此步骤的最长执行时间，0 表示不限制。"
             },
             "function": {
+                "outputs": "输出端口数量；大于 1 时返回消息数组，按顺序对应各端口。",
                 "code": "返回下一步消息。context 与 input 都是流程上下文。",
                 "timeout": "此步骤的最长执行时间，0 表示不限制。",
                 "initialize": "可选：在主函数前执行，返回的对象会合并到上下文。",

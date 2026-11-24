@@ -381,6 +381,56 @@ describe('Visual Workflow Execution Path', () => {
         expect(designer.execution).toBeUndefined();
     });
 
+    it('routes one message per function output', async () => {
+        const nodes = [
+            registry.createNode('start', { x: 0, y: 0 }, { id: 'start_m' }),
+            registry.createNode('function', { x: 200, y: 0 }, {
+                id: 'function_m',
+                config: {
+                    outputs: 2,
+                    code: 'return [{ ...msg, payload: "a" }, { ...msg, payload: "b" }];'
+                }
+            }),
+            registry.createNode('log', { x: 400, y: -80 }, { id: 'log_a', config: { field: 'payload' } }),
+            registry.createNode('log', { x: 400, y: 80 }, { id: 'log_b', config: { field: 'payload' } })
+        ];
+        const definition = {
+            id: 'function-multi-output',
+            name: 'Function multi output',
+            nodes,
+            connections: [
+                { id: 'e1', sourceNodeId: 'start_m', sourcePort: 'out', targetNodeId: 'function_m', targetPort: 'in' },
+                { id: 'e2', sourceNodeId: 'function_m', sourcePort: 'out', targetNodeId: 'log_a', targetPort: 'in' },
+                { id: 'e3', sourceNodeId: 'function_m', sourcePort: 'out-2', targetNodeId: 'log_b', targetPort: 'in' }
+            ]
+        };
+        const result = await service.execute(definition, {});
+        const states = result.data?.executionState?.nodeStates || {};
+        expect(result.success).toBe(true);
+        expect(states.function_m.result?.data?.outputs).toHaveLength(2);
+        expect(states.log_a.result?.data?.message).toBe('a');
+        expect(states.log_b.result?.data?.message).toBe('b');
+    });
+
+    it('keeps array results for single-output functions', async () => {
+        const definition = {
+            id: 'function-array-result',
+            name: 'Function array result',
+            nodes: [
+                registry.createNode('start', { x: 0, y: 0 }, { id: 'start_arr' }),
+                registry.createNode('function', { x: 200, y: 0 }, {
+                    id: 'function_arr',
+                    config: { code: 'return [1, 2, 3];' }
+                })
+            ],
+            connections: [
+                { id: 'e1', sourceNodeId: 'start_arr', sourcePort: 'out', targetNodeId: 'function_arr', targetPort: 'in' }
+            ]
+        };
+        const result = await service.execute(definition, {});
+        expect(result.data?.executionState?.nodeStates.function_arr.result?.data?.result).toEqual([1, 2, 3]);
+    });
+
     it('waits for all parallel branches at a join node', async () => {
         const nodes = [
             registry.createNode('start', { x: 0, y: 0 }, { id: 'start_p' }),

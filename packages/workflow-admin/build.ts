@@ -79,10 +79,11 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_205_000);
 // ~5.5 KB gzip) and the Node-RED parity panels. Raised to 278 KB for the
 // standalone admin pages and shared protocol endpoints, 284 KB for the
 // typed-value expression source plus inline-secret migration, 285 KB for
-// publish-time expression validation, and 289 KB for the expression editor
-// overlay. JSONata itself is a lazy chunk and does not count; the gzip budget
-// stays the transfer gate.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 289_000);
+// publish-time expression validation, 289 KB for the expression editor
+// overlay, and 290 KB for multi-output function routing plus the code-editor
+// host cleanup. JSONata itself is a lazy chunk and does not count; the gzip
+// budget stays the transfer gate.
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 290_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

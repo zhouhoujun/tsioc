@@ -64,6 +64,22 @@ const VALUE_PATH_PATTERN = '^\\$?\\.?[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za
 const DEFAULT_NODE_WIDTH = 184;
 const DEFAULT_NODE_HEIGHT = 64;
 
+/**
+ * Function node ports: the first port keeps the historical `out` id so existing
+ * wires survive, additional ports are `out-2..out-N`. Multi-output functions
+ * return one message per port and the engine routes each wire with its own
+ * branch-local context.
+ */
+function functionOutputs(config: Record<string, any>): NodePort[] {
+    const count = Math.max(1, Math.min(8, Number(config?.outputs) || 1));
+    const ports: NodePort[] = [port('out', 'out', 'output', 'Output 1')];
+    for (let index = 2; index <= count; index++) {
+        ports.push(port(`out-${index}`, `out-${index}`, 'output', `Output ${index}`));
+    }
+    ports.push(port('error', 'error', 'output', 'Error'));
+    return ports;
+}
+
 /** Operator glyph used in generated output-port labels. */
 const ROUTE_OPERATOR_LABELS: Record<string, string> = {
     'equals': '=',
@@ -307,6 +323,15 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         ],
         fields: [
             configField({
+                key: 'outputs',
+                label: 'Outputs',
+                type: 'number',
+                defaultValue: 1,
+                min: 1,
+                max: 8,
+                step: 1,
+                description: 'Number of output ports. With more than one, return an array of messages to route one per port.',}),
+            configField({
                 key: 'code',
                 label: 'Code',
                 type: 'code',
@@ -317,7 +342,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 description: 'Trusted code. `context` is the workflow context, `input` is the previous result data. Press Ctrl+Space for context and variable suggestions.',}),
             configField({ key: 'timeout', label: 'Timeout', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Reliability',})
         ],
-        defaultConfig: { code: 'return input;' }
+        defaultConfig: { code: 'return input;', outputs: 1 },
+        outputsFor: functionOutputs
     },
     {
         type: 'condition',

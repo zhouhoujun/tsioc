@@ -19,8 +19,9 @@ in `src/visual/node-registry.ts` (definitions), `src/visual/workflow-runtime.ts`
 
 Consequences that are deliberate:
 
-- A node cannot emit N messages to downstream branches in one run; use arrays
-  plus the array nodes, or `loop`/`subprocess` for repeated sub-workflows.
+- A node cannot emit N messages to the same branch in one run; `function` with
+  more than one output can route one message per port, and arrays plus the
+  array nodes (or `loop`/`subprocess`) cover repeated sub-workflows.
 - Payload mutation flows through the `ActivityContext` (`msg`, `flow`,
   `global`, `env`, `payload`), not through a chain of cloned messages.
 
@@ -46,7 +47,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 
 | Node-RED | Type here | Notes |
 | --- | --- | --- |
-| function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context` plus Node-RED-style `node.status()`, `node.info/warn/debug/error()`, `node.id`/`node.name`, `node.send(msg)` (one result per run: the last send is forwarded) and `flow.get/set` / `global.get/set`. Multi-output `node.send([a,b])` is not supported (DAG model) |
+| function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context` plus Node-RED-style `node.status()`, `node.info/warn/debug/error()`, `node.id`/`node.name`, `node.send(msg)` (last send forwarded) and `flow.get/set` / `global.get/set`. Set **Outputs** > 1 and return an array of messages to route one message per output port; each wire gets its own branch-local message while `flow`/`global` stay shared |
 | switch | `switch`, `router` | `+` one output per rule (**dynamic ports**, no eight-output limit), all rule operators, check-all fan-out, `else`, output labels summarize the rule; compare values may be typed values or JSONata |
 | change | `change` | `+` set/delete/append/move/search-and-replace; values from literal, `msg`/`flow`/`global`/`env` or a **JSONata expression** |
 | range | `scale` | `~` maps a value between ranges with **clamp / scale / wrap / drop** (legacy `clamp: false` still scales; drop stops the branch). The `range` type here is a sequence generator |
@@ -123,6 +124,5 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 
 ## Known gaps worth revisiting
 
-- `function` multi-output (needs a branch-aware message contract).
 - CSV `multi`/`include_empty` and XML/Buffer encodings.
 - Editor expression completion inside the panel beyond the JSONata syntax check.

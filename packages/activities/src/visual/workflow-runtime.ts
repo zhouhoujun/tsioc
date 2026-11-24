@@ -2095,6 +2095,22 @@ export async function executeVisualNode(
                         Object.assign(context, finalized);
                     }
                 }
+                const outputCount = Math.max(1, Math.min(8, Number(config.outputs) || 1));
+                if (outputCount > 1 && Array.isArray(value)) {
+                    // Multi-output: one message per port (`out`, `out-2`, ...).
+                    const ids = ['out', ...Array.from({ length: outputCount - 1 }, (_, index) => `out-${index + 2}`)];
+                    const messages: Record<string, any> = {};
+                    value.slice(0, outputCount).forEach((item: any, index: number) => {
+                        if (item !== undefined && item !== null) {
+                            messages[ids[index]] = item;
+                        }
+                    });
+                    return {
+                        success: true,
+                        data: { nodeId: node.id, outputs: value, messages },
+                        ...(pendingStatus ? { status: pendingStatus } : {})
+                    };
+                }
                 if (value && typeof value === 'object' && !Array.isArray(value)) {
                     const isMessage = 'payload' in value
                         || 'topic' in value

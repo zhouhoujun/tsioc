@@ -1611,9 +1611,23 @@ export class VisualWorkflowService {
         _connection: NodeConnection
     ): ActivityContext {
         const data = { ...(result.data || {}) } as Record<string, any>;
+        // Multi-output nodes hand each wire its own message.
+        const portMessages = data.messages && typeof data.messages === 'object' && !Array.isArray(data.messages)
+            ? data.messages as Record<string, any>
+            : undefined;
+        const portMessage = portMessages ? portMessages[_connection.sourcePort] : undefined;
+        delete data.messages;
         // The message is branch-local; do not share the same object across
         // parallel wires. `flow`/`global` stay shared by design.
         delete data.msg;
+        if (portMessage && typeof portMessage === 'object') {
+            return {
+                ...context,
+                ...data,
+                msg: { ...portMessage },
+                payload: portMessage.payload
+            };
+        }
         const current = (context as any).msg;
         const msg = current
             ? { ...current, meta: { ...(current.meta || {}) } }
@@ -1661,6 +1675,11 @@ export class VisualWorkflowService {
         // A node may decide not to forward the message at all.
         if (result.drop === true) {
             return [];
+        }
+        // Multi-output nodes route one message per port.
+        const portMessages = (result.data as any)?.messages;
+        if (portMessages && typeof portMessages === 'object' && !Array.isArray(portMessages)) {
+            return outgoing.filter(connection => portMessages[connection.sourcePort] !== undefined);
         }
 
         const explicitPort = result.data?.port;
