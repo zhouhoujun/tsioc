@@ -1061,6 +1061,25 @@ resolves `total` from the child result and exposes it as the node's `msg`
 (so downstream nodes read `payload.total`). Without mappings the whole parent
 context is passed through, as before.
 
+**Authoring a sub workflow.** A sub workflow is an ordinary workflow document;
+`subprocess`/`loop` just execute it with a mapped context.
+
+1. Create the child document (the `+` tab or `/new`), give it a stable id and
+   build it like any other workflow. A `start`/`end` pair is a convenient
+   skeleton; any node without an incoming wire also acts as an entry point.
+2. Point the parent node's `workflow` at it. The field accepts a stored id, a
+   context path that resolves to an id at run time, or an inline definition
+   JSON, so the same node can be driven per message.
+3. Map the boundary with `inputs`/`outputs` (see above). Use paths from the
+   child result for outputs, for example `nodeResults.task_1.data.value`.
+4. Right-click the node and choose **Open sub workflow** to jump to the child
+   tab; the breadcrumb above the canvas switches back to the parent. Reopening
+   the parent keeps the child tab in place.
+
+`loop` runs the same source `iterations` times with an optional delay and
+inherits the remaining timeout budget instead of restarting it. A failing child
+stops the parent unless the node is wired to `error`/`trycatch`.
+
 Credentials are stored outside workflow definitions and never returned by the API:
 
 ```text
