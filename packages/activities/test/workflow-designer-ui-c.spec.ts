@@ -321,6 +321,9 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-expression-panel')).toBeTruthy();
         const input = root.querySelector('.workflow-expression-text') as any;
         expect(input.value).toBe('keep');
+        const suggestions = decodeURIComponent(input.getAttribute('data-code-suggestions') || '');
+        expect(suggestions).toContain('payload');
+        expect(suggestions).toContain('$sum');
 
         // Broken syntax is reported by the lazy JSONata validator.
         input.value = 'payload.total +';

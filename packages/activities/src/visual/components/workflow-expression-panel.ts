@@ -6,6 +6,7 @@ import type { WorkflowDesigner } from '../workflow-designer';
 import { decodeWorkflowTypedValue } from '../workflow-typed-value';
 import { patchConfigPath, readConfigPath } from '../workflow-config-path';
 import { preloadWorkflowExpressions, validateWorkflowExpression } from '../workflow-expression';
+import { WORKFLOW_EXPRESSION_SUGGESTIONS } from '../workflow-expression-suggestions';
 
 /**
  * Expression editing overlay for typed values.
@@ -28,8 +29,8 @@ import { preloadWorkflowExpressions, validateWorkflowExpression } from '../workf
             </div>
             <div class="workflow-publish-hint">{{hint}}</div>
             <textarea class="workflow-expression-text" rows="9" data-dynamic-code="javascript"
-                data-code-value="{{encodedValue}}" [value]="value" placeholder="payload.total * 2"
-                @input="input"></textarea>
+                data-code-value="{{encodedValue}}" data-code-suggestions="{{suggestionData}}"
+                [value]="value" placeholder="payload.total * 2" @input="input"></textarea>
             <div class="workflow-expression-error" v-if="error">{{error}}</div>
             <div class="workflow-expression-ok" v-if="valid && !error">{{validLabel}}</div>
             <div class="workflow-publish-actions">
@@ -48,6 +49,8 @@ export class WorkflowExpressionPanelComponent {
     @Attribute() locale = 'zh-CN';
     /** Notify the host that the document changed (dirty state/autosave). */
     @Attribute() notifyAction?: () => void;
+    /** Completion names for the lazy CodeMirror editor. */
+    @Attribute() suggestions: string[] = WORKFLOW_EXPRESSION_SUGGESTIONS;
 
     visible = false;
     value = '';
@@ -116,6 +119,10 @@ export class WorkflowExpressionPanelComponent {
     /** `data-code-value` is URL encoded because the editor directive decodes it. */
     get encodedValue(): string {
         return encodeURIComponent(String(this.value ?? ''));
+    }
+
+    get suggestionData(): string {
+        return encodeURIComponent(JSON.stringify(this.suggestions || []));
     }
 
     readonly input = (event: any): void => {
