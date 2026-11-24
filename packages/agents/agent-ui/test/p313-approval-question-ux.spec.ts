@@ -7,6 +7,7 @@ import {
     AgentConsolePendingQuestionPanelComponent,
     AgentConsoleSessionState
 } from '../src';
+import { consumeApprovalFeedbackView } from '../src/AgentConsoleApprovalFeedback';
 
 function makeState(): AgentConsoleSessionState {
     return new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
@@ -30,6 +31,50 @@ function approval(overrides: Record<string, any> = {}): any {
 
 @Suite('approval and question interaction UX (P313)')
 export class P313ApprovalQuestionUxTest {
+    @Test('uppercase D opens rejection-feedback mode instead of leaking into the draft')
+    async denyWithNoteKey() {
+        const state = makeState();
+        state.upsertPendingApproval(approval({ id: 'approval-note' }));
+        state.requestApprovalAttention();
+        await state.processDecodedInput({ text: 'D' }, 'D', {
+            isClosed: false,
+            onExit: () => undefined,
+            hasActiveTextPrompt: false,
+            transcriptNavigationController: navigationFor(state)
+        });
+        expect(state.approvalFeedbackRequestId).toEqual('approval-note');
+        expect(state.approvalsFocused).toEqual(false);
+        expect(state.input).toEqual('');
+    }
+
+    @Test('submitting feedback rejects with the note and restores the approval dialog')
+    async feedbackSubmit() {
+        const calls: Array<{ decision: string; id: string; feedback?: string }> = [];
+        const state: any = {
+            approvalFeedbackRequestId: 'approval-1',
+            input: 'touch outside the workspace',
+            pendingApprovals: [approval()],
+            setInput: (value: string) => { state.input = value; },
+            setNotice: (message: string) => { state.notice = message; },
+            setApprovalsFocused: (focused: boolean) => { state.focused = focused; }
+        };
+        const handled = await consumeApprovalFeedbackView({
+            feedbackRequestId: () => state.approvalFeedbackRequestId,
+            feedbackText: () => state.input,
+            pendingApprovalCount: () => state.pendingApprovals.length,
+            clearFeedbackRequest: () => { state.approvalFeedbackRequestId = undefined; },
+            setInput: state.setInput,
+            setNotice: state.setNotice,
+            setApprovalsFocused: state.setApprovalsFocused,
+            applyApprovalDecision: async (decision, id, feedback) => { calls.push({ decision, id, feedback }); return true; }
+        });
+        expect(handled).toEqual(true);
+        expect(calls).toEqual([{ decision: 'deny', id: 'approval-1', feedback: 'touch outside the workspace' }]);
+        expect(state.input).toEqual('');
+        expect(state.approvalFeedbackRequestId).toBeUndefined();
+        expect(state.focused).toEqual(true);
+    }
+
     @Test('an approval decision key never leaks into the composer draft')
     async approvalDecisionKeyDoesNotLeakIntoInput() {
         const state = makeState();

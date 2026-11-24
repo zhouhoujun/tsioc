@@ -27,6 +27,7 @@ import { AgentConsoleTheme, AgentConsoleThemeStyles, defaultAgentConsoleTheme } 
         <label class="approval-option approval-option-always" @click="approveAlwaysSelected"><span class="approval-key" aria-hidden="true">A  </span>{{allowAlwaysLabel}}</label>
         <label class="approval-option approval-option-project" @click="approveProjectSelected"><span class="approval-key" aria-hidden="true">p  </span>{{allowProjectLabel}}</label>
         <label class="approval-option approval-option-deny" @click="denySelected"><span class="approval-key" aria-hidden="true">d  </span>{{denyLabel}}</label>
+        <label class="approval-option approval-option-deny-reason" @click="denyWithNoteSelected"><span class="approval-key" aria-hidden="true">D  </span>{{denyWithNoteLabel}}</label>
         <label class="dialog-hint approval-actions" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
     </div>
     `
@@ -59,6 +60,14 @@ export class AgentConsoleApprovalsPanelComponent {
     async approveAlwaysSelected(): Promise<void> { const approval = this.state.selectedApproval; if (approval) await this.state.approvalAlwaysAllowAction?.(approval.id); }
     async approveProjectSelected(): Promise<void> { const approval = this.state.selectedApproval; if (approval) await this.state.approvalAllowProjectAction?.(approval.id); }
     async denySelected(): Promise<void> { await this.resolveSelected('deny'); }
+    async denyWithNoteSelected(): Promise<void> {
+        const approval = this.state.selectedApproval;
+        if (!approval) return;
+        this.state.approvalFeedbackRequestId = approval.id;
+        this.state.setApprovalsFocused(false);
+        this.state.setInput('');
+        this.state.setNotice(this.translate('agent.notice.approvalFeedbackHint', undefined, 'Type why the tool is rejected, then Enter (empty Enter rejects without a note)'));
+    }
     selectApproval(id: string): void { this.state.setSelectedApprovalId(id); this.state.setApprovalsFocused(true); }
     protected async resolveSelected(decision: 'approve' | 'deny'): Promise<void> {
         const approval = this.state.selectedApproval;
@@ -68,6 +77,7 @@ export class AgentConsoleApprovalsPanelComponent {
     get allowAlwaysLabel(): string { return this.translate('agent.approval.allowAlways', undefined, 'Always allow (session)'); }
     get allowProjectLabel(): string { return this.translate('agent.approval.allowProject', undefined, 'Always allow (project)'); }
     get denyLabel(): string { return this.translate('agent.approval.deny', undefined, 'Deny'); }
+    get denyWithNoteLabel(): string { return this.translate('agent.approval.denyWithNote', undefined, 'Deny with a note'); }
     get allowOptionStyle() { return this.activeThemeStyles.toolsAccent; }
     get denyOptionStyle() { return this.activeThemeStyles.statusErrorValue; }
 

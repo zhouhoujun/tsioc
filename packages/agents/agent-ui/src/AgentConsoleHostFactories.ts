@@ -24,7 +24,6 @@ import type { GitSnapshotCommandHost } from './AgentConsoleGitSnapshotCommands';
 import type { ExtensionCommandHost } from './AgentConsoleExtensionCommands';
 import type { PolicyCommandHost } from './AgentConsolePolicyCommands';
 import type { PreferenceCommandHost } from './AgentConsolePreferenceCommands';
-
 export function runtimeHost(self: any): AgentConsoleRuntimeHost {
     return {
         state: self.state,
@@ -46,7 +45,6 @@ export function runtimeHost(self: any): AgentConsoleRuntimeHost {
         rpcRequestContext: () => self.rpcRequestContext()
     };
 }
-
 export function keymapCommandHost(self: any): KeymapCommandHost {
     
     return {
@@ -167,7 +165,9 @@ export function turnInputHost(self: any): AgentConsoleTurnInputHost {
         refreshTurnArtifacts: () => self.refreshTurnArtifacts(),
         refreshSessions: () => self.refreshSessions().catch(() => undefined),
         drainQueuedPrompts: (sessionId: string) => self.drainQueuedPrompts(sessionId),
-        translate: self.translator ? (key: string, params?: Record<string, any>) => self.translator!.translate(key, params) : undefined
+        translate: self.translator ? (key: string, params?: Record<string, any>) => self.translator!.translate(key, params) : undefined,
+        consumeApprovalFeedback: () => self.consumeApprovalFeedback?.() ?? Promise.resolve(false),
+        hasApprovalFeedback: () => !!self.state.approvalFeedbackRequestId
     };
 }
 export function promptMentionHost(self: any): PromptMentionHost {

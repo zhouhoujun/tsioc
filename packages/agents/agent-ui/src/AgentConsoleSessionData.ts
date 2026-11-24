@@ -343,6 +343,8 @@ export class AgentConsoleSessionData {
     activateSelectedToolAction?: (toolName: string) => void | Promise<void>;
     revertGitSnapshotFromDetailAction?: () => void | Promise<void>;
     resolveApprovalAction?: (decision: 'approve' | 'deny', requestId: string) => void | Promise<void>;
+    /** P1.1: request id whose rejection feedback is being typed in the composer. */
+    approvalFeedbackRequestId?: string;
     /** Approve the request and auto-approve the rest of the session (`A`). */
     approvalAlwaysAllowAction?: (requestId: string) => void | Promise<void>;
     approvalAllowProjectAction?: (requestId: string) => void | Promise<void>;

@@ -193,8 +193,10 @@
 - 状态：`permissions/PermissionEngine.ts` 已落地（action+resource→effect、wildcard、五层、
   deny hard floor、legacy 规则编译、live workspace/session/saved 层）；`DefaultApprovalStrategy` 接入引擎；
   durable allow 即 saved 层；reject 支持 feedback 并写入工具错误；RPC `permission.rules.list` 返回规则与命中层；
-  `/permissions inspect` 展示 V3 规则数量/命中。**剩余**：审批弹窗“拒绝并说明”输入 UI；
-  archetype allow/deny 编译到 agent 层（当前仍由 archetype 工具闸门执行）。
+  `/permissions inspect` 展示 V3 规则数量/命中。**剩余**：archetype allow/deny 编译到 agent 层（当前仍由 archetype 工具闸门执行）。
+  审批弹窗“拒绝并说明”已落地：大写 `D`（或弹窗 “Deny with a note” 选项）把焦点交给 composer，
+  Enter 提交时带 note 调用 `approval.reject(requestId, feedback)`，工具错误显示该说明，
+  其余 pending approval 仍在时重新聚焦弹窗；空 Enter 等价于普通拒绝。
   `Unattended` ruleset 已落地：`policy.approval.unattended = 'deny' | 'allow'`，审批管理器在无人值守时
   立即返回并发布 completed 事件（不进入 pending）；`/permissions unattended [deny|allow|off]` 写入运行
   options 并持久化到 workspace `settings.json`（web/attach 经 `settings.ui.set`，本地 TUI 走同一设置存储）。

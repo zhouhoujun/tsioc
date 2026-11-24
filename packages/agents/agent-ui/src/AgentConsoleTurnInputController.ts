@@ -78,6 +78,10 @@ export interface AgentConsoleTurnInputHost {
     refreshSessions?(): Promise<void>;
     drainQueuedPrompts(sessionId: string): Promise<void>;
     translate?: (key: string, params?: Record<string, any>) => string | undefined;
+    /** P1.1: consume `D`-initiated rejection feedback before a normal turn submit. */
+    consumeApprovalFeedback?: () => Promise<boolean>;
+    /** Synchronous guard so the normal submit path keeps its existing timing. */
+    hasApprovalFeedback?: () => boolean;
 }
 
 /**
@@ -168,6 +172,7 @@ export async function submitMultilineDraftView(host: AgentConsoleTurnInputHost):
  * before delegating to the turn stream run loop.
  */
 export async function submitView(host: AgentConsoleTurnInputHost): Promise<void> {
+        if (host.hasApprovalFeedback?.() && await host.consumeApprovalFeedback?.()) return;
         const value = host.state.input.trim();
         if (!value) { return; }
         if (host.state.providerWizard?.open && host.state.providerWizard?.phase === 'enter') {

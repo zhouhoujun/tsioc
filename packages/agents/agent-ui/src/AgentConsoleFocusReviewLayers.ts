@@ -69,8 +69,21 @@ export abstract class AgentConsoleFocusReviewLayers {
         if (normalized === 'copy') return this.copyApproval();
         if (normalized === 'approve-always') return this.resolveApprovalAlways();
         if (normalized === 'approve-project') return this.resolveApprovalProject();
+        if (normalized === 'deny-reason') return this.beginApprovalFeedback();
         if (normalized === 'approve' || normalized === 'deny') return this.resolveApproval(normalized);
         return false;
+    }
+
+    /** Uppercase `D`: focus the composer to type a rejection explanation. */
+    private beginApprovalFeedback(): boolean {
+        const state = this.state;
+        const requestId = state.selectedApproval?.id;
+        if (!requestId) return false;
+        state.approvalFeedbackRequestId = requestId;
+        state.setApprovalsFocused(false);
+        state.setInput('');
+        state.setNotice(state.translateLabel('agent.notice.approvalFeedbackHint', undefined, 'Type why the tool is rejected, then Enter (empty Enter rejects without a note)'));
+        return true;
     }
 
     private async cancelFocusedTask(): Promise<boolean> { await this.state.cancelFocusedCodingTask(); return true; }

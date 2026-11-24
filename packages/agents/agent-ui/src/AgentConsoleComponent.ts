@@ -1,4 +1,5 @@
 import { ApplicationContext, formatCompactNumber } from '@tsdi/core';
+import { consumeApprovalFeedbackFor } from './AgentConsoleApprovalFeedback';
 import { bootstrapConsole, disposeConsole } from './AgentConsoleBootstrap';
 import { AgentConsoleSessionArtifactsHost } from './AgentConsoleSessionArtifactsHost';
 import { ToastService } from '@tsdi/components/common/toast';
@@ -374,7 +375,6 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
     protected freshSessionScoped = false;
     protected queuedPrompts = new Map<string, AgentConsoleQueuedPrompt[]>();
     protected drainingQueuedSessions = new Set<string>();
-
     protected activeThemeName: AgentConsoleThemeName = 'dark';
     protected editTargetMessageId = '';
     protected editDraftBefore = '';
@@ -449,11 +449,9 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         }
         return [...defaultAgentConsoleStatusline];
     }
-
     protected resolveInitialTitleFields(): AgentConsoleTitleField[] {
         return [...defaultAgentConsoleTitle];
     }
-
     protected resolveInitialModelProfile(): string {
         return resolveInitialModelProfile(this.modelCtx());
     }
@@ -522,15 +520,17 @@ export class AgentConsoleComponent extends AgentConsoleSessionArtifactsHost impl
         return refreshPendingApprovals(sessionId, this.state, this.resolvedApprovalManager, this.appRpc, this.sessionService, () => this.updateTerminalTitle());
     }
 
-    protected async applyApprovalDecision(decision: 'approve' | 'deny', requestId: string): Promise<boolean> {
+    protected async consumeApprovalFeedback(): Promise<boolean> { return consumeApprovalFeedbackFor(this); }
+
+    protected async applyApprovalDecision(decision: 'approve' | 'deny', requestId: string, feedback?: string): Promise<boolean> {
         // In-process turns run through the app RPC server, which owns the queue.
         if (this.appRpc && this.sessionService) {
-            const result = await this.sessionService.decideApproval(decision, requestId, this.rpcRequestContext());
+            const result = await this.sessionService.decideApproval(decision, requestId, this.rpcRequestContext(), feedback);
             return result?.applied === true;
         }
         if (this.resolvedApprovalManager) {
             const manager = this.resolvedApprovalManager;
-            return decision === 'approve' ? manager.approve(requestId) : manager.reject(requestId);
+            return decision === 'approve' ? manager.approve(requestId) : manager.reject(requestId, feedback);
         }
         return false;
     }
