@@ -47,6 +47,38 @@ function emitProject(configPath: string, overrides: Record<string, unknown>, emi
     console.log(`web console AOT precompiled ${result.outputFiles.length} module(s) (${path.basename(configPath)})`);
 }
 
+/**
+ * AOT emits `import { applyPrecompiledType } from "@tsdi/ioc"` in every module,
+ * including the ioc package itself. That self-import closes a barrel cycle for
+ * every ioc module and makes esbuild unable to order `ModuleRef extends
+ * Injector` when code splitting is enabled. Point ioc's own modules at the
+ * helper module directly (other packages keep importing the public barrel).
+ */
+function rewriteIocSelfImports(): void {
+    const iocSrc = path.join(TSC_OUT, 'ioc', 'src');
+    if (!fs.existsSync(iocSrc)) {
+        return;
+    }
+    const helper = path.join(iocSrc, 'metadata', 'precompiled.js');
+    const walk = (dir: string): void => {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                walk(full);
+            } else if (entry.name.endsWith('.js')) {
+                const source = fs.readFileSync(full, 'utf8');
+                const relative = path.relative(path.dirname(full), helper).split(path.sep).join('/');
+                const target = relative.startsWith('.') ? relative : `./${relative}`;
+                const rewritten = source.replace(/(['"])@tsdi\/ioc\1/g, `'${target}'`);
+                if (rewritten !== source) {
+                    fs.writeFileSync(full, rewritten);
+                }
+            }
+        }
+    };
+    walk(iocSrc);
+}
+
 function compileWithTsc(): void {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
     emitProject(path.join(PACKAGE_DIR, 'tsconfig.web.json'), {
@@ -78,6 +110,7 @@ function compileWithTsc(): void {
             throw new Error(`tsc failed to emit web-entry.js`);
         }
     }
+    rewriteIocSelfImports();
     if (!fs.existsSync(BUNDLE_ENTRY)) {
         throw new Error(`tsc output missing web console browser entry: ${BUNDLE_ENTRY}`);
     }

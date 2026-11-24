@@ -1,6 +1,6 @@
 import { Type, Modules, AbstractType } from './types';
 import { Token } from './tokens';
-import { Injector, InjectorRecord } from './injector';
+import type { Injector, InjectorRecord } from './injector';
 import { isPlainObject } from './utils/obj';
 import { isArray, isBoolean, isDefined, isFunction, isNil } from './utils/chk';
 import { ArgumentException } from './exception';

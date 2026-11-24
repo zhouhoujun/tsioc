@@ -271,9 +271,12 @@
   - 状态（2026-11-24）：initial gzip 从 **558.5 → 483.0 KiB**，build-web 现在**无条件**执行
     ≤500 KiB / lazy chunk ≤150 KiB 预算（超限时提示“改为 lazy chunk，不要删除功能”）；
     `AgentConsoleDiagnosticsHost` 的 `/voice` 已改为动态 `import()`（voice 模块不再静态进入首屏 graph）；
-    `@tsdi/ioc` 内部类型引用改为 `import type` 以削弱 ESM 环。**真正 code-splitting 仍被
-    `ModuleRef extends Injector` 的共享 chunk 求值顺序卡住**（试开 splitting 后 node 冒烟测试报
-    `Class extends value undefined`），待继续破环后再启用 `chunkNames`/splitting。
+    `@tsdi/ioc` 内部大量类型引用改为 `import type`，`InvocationFactory` 拆到独立模块，并在 web build
+    中把 ioc 自身的 AOT helper 自引用（`@tsdi/ioc`）改写为相对 `metadata/precompiled`，消除了
+    `ModuleRef extends Injector` 的首个求值顺序错误。**真正 code-splitting 仍被
+    `components/html` 编译器模块的类继承求值顺序卡住**（splitting 冒烟测试在
+    `HtmlTemplateParser`/`at extends yt` 处报 `Class extends value undefined`），待继续破环后再启用
+    `chunkNames`/splitting；当前保持 `splitting:false`，首屏 gzip 483 KiB。
 - 减少 `as any`/ctx bag：为 host factories 定义窄接口，逐步消除 147 处 `as any`。
 - TUI storybook/headless frame capture；把 PTY 超时用例改为可重试/隔离。
 - 测试内存/墙钟预算写入 gate；source-size baseline 继续下降。

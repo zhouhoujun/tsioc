@@ -1,15 +1,15 @@
 import { OnDestroy, Destroyable, DestroyCallback } from './destroy';
-import { AbstractType } from './types';
-import { ClassProvider, ExistingProvider, FactoryProvider, Provider, ValueProvider } from './providers';
+import type { AbstractType } from './types';
+import type { ClassProvider, ExistingProvider, FactoryProvider, Provider, ValueProvider } from './providers';
 import { Token, InjectFlags, token } from './tokens';
 import { Abstract } from './metadata/fac';
-import { ProvidedInMetadata } from './metadata/meta';
+import type { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
 import type { InvokeProviders } from './context';
 import { Exception } from './exception';
 import type { Runtime } from './runtime';
-import { Parameter } from './resolver';
-import { RunContext } from './handlers/contexts';
+import type { Parameter } from './resolver';
+import type { RunContext } from './handlers/contexts';
 
 
 export const RECORDS = Symbol('RECORDS');

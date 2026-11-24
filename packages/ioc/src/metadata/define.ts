@@ -1,7 +1,7 @@
 import { HandlerFn } from '../handlers/handler';
-import { Resolve } from '../injector';
+import type { Resolve } from '../injector';
 import { InvocationFactory } from '../invocation';
-import { IocContext, RuntimeContext } from '../lifescope/context';
+import type { IocContext, RuntimeContext } from '../lifescope/context';
 import { ClassRef } from './class';
 
 /**

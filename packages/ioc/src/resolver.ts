@@ -1,9 +1,9 @@
-import { RunContext } from './handlers/contexts';
-import { Handler, HandlerFn, HandlerLike } from './handlers/handler';
-import { Interceptor, InterceptorFn, InterceptorLike } from './handlers/interceptor';
+import type { RunContext } from './handlers/contexts';
+import type { Handler, HandlerFn, HandlerLike } from './handlers/handler';
+import type { Interceptor, InterceptorFn, InterceptorLike } from './handlers/interceptor';
 import type { Injector, InjectorRecord } from './injector';
 import { InjectFlags, Token, token, TokenOf } from './tokens';
-import { AbstractType } from './types';
+import type { AbstractType } from './types';
 import { isObject } from './utils/chk';
 
 

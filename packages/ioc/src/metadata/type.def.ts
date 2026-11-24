@@ -1,11 +1,11 @@
 import 'reflect-metadata';
-import { InvokeOptions } from '../context';
-import { ModuleWithProviders, Provider } from '../providers';
-import { ResolveInterceptorLike } from '../resolver';
-import { Token, TokenOf } from '../tokens';
-import { AbstractType, Annotation, AnnotationType, Type } from '../types';
-import { DecoratorFn, DecorDefine, RunableDefine } from './define';
-import { AnnotationMetadata, ParameterMetadata, PropertyMetadata } from './meta';
+import type { InvokeOptions } from '../context';
+import type { ModuleWithProviders, Provider } from '../providers';
+import type { ResolveInterceptorLike } from '../resolver';
+import type { Token, TokenOf } from '../tokens';
+import type { AbstractType, Annotation, AnnotationType, Type } from '../types';
+import type { DecoratorFn, DecorDefine, RunableDefine } from './define';
+import type { AnnotationMetadata, ParameterMetadata, PropertyMetadata } from './meta';
 
 
 
