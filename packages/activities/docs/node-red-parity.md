@@ -37,8 +37,8 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | --- | --- | --- |
 | inject | `inject` | `~` payload types JSON/string/number/boolean/timestamp/env/**expression**, arbitrary properties that target the message, flow or global scope (each value can be a typed value or expression), topic, manual/interval/cron/event trigger, start delay and repeat count |
 | debug | `debug` | `+` value path, complete message, level, console mirror, **Show in node status** (`tostatus`) |
-| complete | `complete` | `~` `scope` filter (node ids/types) instead of a multi-select |
-| catch | `catch` | `~` same scope filter; errors carry the failed node id/message |
+| complete | `complete` | `~` multi-select `scope` picker of node ids/types instead of Node-RED's node list |
+| catch | `catch` | `~` same multi-select scope picker; errors carry the failed node id/message |
 | status | `status` | `~` reacts to workflow status events; status lines are also painted on nodes |
 | link in/out/call/return | `link` | `=` mode + comma-separated names + call timeout |
 | comment | `comment` | `=` |
@@ -86,7 +86,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | xml | `xml` | `+` attributes/text toggles, pretty print, optional XML declaration when stringifying |
 | html | `html` | `~` text/links/attribute extraction (no scraping selectors) |
 | yaml | `yaml` | `+` parse/stringify |
-| subflow | `subprocess`, `loop` | `~` stored workflow picker (library-backed) with `Workflow source` = stored/context/inline, `inputs`/`outputs` path mapping, child tabs with a breadcrumb back to the parent (see the README's *Sub-workflow ports* section); the picker and node menu can create and bind a child document, and the picker opens the referenced workflow; ids missing from the loaded library are reported inline; documents saved before the mode picker keep auto-detecting the value shape; there is no subflow canvas with generated in/out nodes |
+| subflow | `subprocess`, `loop` | `~` stored workflow picker (library-backed) with `Workflow source` = stored/context/inline, `inputs`/`outputs` path mapping, child tabs with a breadcrumb back to the parent (see the README's *Sub-workflow ports* section); the picker and node menu can create and bind a child document, and the picker opens the referenced workflow; ids missing from the loaded library are reported inline, and a workflow cannot reference itself (excluded from the picker and rejected by validation); documents saved before the mode picker keep auto-detecting the value shape; there is no subflow canvas with generated in/out nodes |
 | tail | `tail` | `+` line splitting, initial file content, workspace-root sandbox |
 
 ### Nodes without a Node-RED counterpart

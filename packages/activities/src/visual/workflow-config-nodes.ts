@@ -312,8 +312,11 @@ export function buildReferenceView(
             .filter(node => node.id !== designer.selectedNode?.id && !isConfigNode(registry, node.type));
         options = nodeReferenceOptions(candidates, registry, locale, translator, spec.multiple === true);
     } else if (spec.kind === 'workflow') {
-        // Stored workflows live in the host store, not in this document.
-        options = (designer.workflowLibrary?.options || []).map(item => ({
+        // Stored workflows live in the host store, not in this document; a
+        // workflow cannot execute itself.
+        options = (designer.workflowLibrary?.options || [])
+            .filter(item => item.id !== definition?.id)
+            .map(item => ({
             label: item.name || item.id,
             value: item.id,
             description: item.updatedAt

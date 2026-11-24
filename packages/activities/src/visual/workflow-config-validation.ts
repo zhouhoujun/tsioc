@@ -396,7 +396,19 @@ export function validateWorkflowConfigs(
                 // stored workflow id.
                 continue;
             }
-            const ids = referenceIds(config[field.key]);
+            const ids = referenceIds(config[field.key]).filter(id => {
+                if (spec.kind === 'workflow' && id === definition.id) {
+                    issues.push({
+                        nodeId: node.id,
+                        nodeName: node.name || node.id,
+                        fieldKey: field.key,
+                        label: field.label || field.key,
+                        message: 'A workflow cannot reference itself. Pick another workflow.'
+                    });
+                    return false;
+                }
+                return id !== undefined;
+            });
             if (!ids.length) {
                 continue;
             }

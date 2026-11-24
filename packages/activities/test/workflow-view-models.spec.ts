@@ -55,6 +55,7 @@ describe('Workflow canvas incremental view model', () => {
     it('renders a stored workflow picker for subflow sources', () => {
         const { designer, registry } = createDesigner();
         designer.workflowLibrary.set([
+            { id: designer.definition.id, name: 'Self', updatedAt: '2026-01-01' } as any,
             { id: 'wf_child', name: 'Child flow', updatedAt: '2026-01-01' } as any
         ]);
         const node = designer.addNode('subprocess', { x: 0, y: 0 })!;
@@ -66,6 +67,8 @@ describe('Workflow canvas incremental view model', () => {
         expect(field('workflow').reference?.kind).toBe('workflow');
         expect(field('workflow').options.some(option => option.value === 'wf_child')).toBe(true);
         expect(field('workflow').options.find(option => option.value === 'wf_child')?.label).toBe('Child flow');
+        // The active document cannot be its own sub-workflow.
+        expect(field('workflow').options.some(option => option.value === designer.definition.id)).toBe(false);
         // The picker can create a child document; edit appears once one is picked.
         expect((field('workflow').actions || []).map(action => action.id)).toEqual(['create']);
         designer.updateNodeConfig(node.id, { workflow: 'wf_child' });

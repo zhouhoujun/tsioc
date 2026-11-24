@@ -75,6 +75,15 @@ describe('Workflow config validation hooks', () => {
             .some(item => item.fieldKey === 'event' && /event this inject waits for/.test(item.message))).toBe(true);
     });
 
+    it('rejects a workflow that references itself', () => {
+        const def = definition([node('subprocess', { workflow: 'validation-hooks' }, 'sub_self')]);
+        const issues = validateWorkflowConfigs(def, registry);
+        expect(issues.some(item => item.fieldKey === 'workflow' && /itself/.test(item.message))).toBe(true);
+        // A library entry for the same id must not make self-reference valid.
+        const withLibrary = validateWorkflowConfigs(def, registry, { workflows: ['validation-hooks'] });
+        expect(withLibrary.some(item => /itself/.test(item.message))).toBe(true);
+    });
+
     it('checks stored workflow references once the library is known', () => {
         const stored = node('subprocess', { workflow: 'wf_child' }, 'sub_stored');
         const def = definition([stored]);
