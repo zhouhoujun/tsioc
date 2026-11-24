@@ -221,7 +221,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await new Promise<void>(resolve => setTimeout(resolve, ms));
     }
 
-    updateModelOptions(model?: AgentOptions['model']): void { if (!model) return; if (this.options === defaultAgentOptions) { this.options = { ...defaultAgentOptions, model: { ...model } }; } else { this.options.model = model; } this.modelAdapter.updateOptions?.(model); }
+    updateModelOptions(model?: AgentOptions['model']): void { if (!model) return; if (this.options === defaultAgentOptions) { this.options = { ...defaultAgentOptions, model: { ...model } }; } else { this.options.model = model; } this.modelAdapter.updateOptions?.(model); void this.hooks.runConfig({ model }); }
     async runTurn(
         sessionId: string,
         input: string,
@@ -388,19 +388,15 @@ export class DefaultAgentRuntime extends AgentRuntime {
     synthesizeExperiences(options?: SynthesisOptions): SynthesisReport {
         return this.contextManager.synthesizeExperiences(options);
     }
-
     override async createGoal(input: CreateGoalInput, sessionId?: string): Promise<Goal> { return this.goals.create(input, sessionId); }
     override async listGoals(status?: GoalStatus): Promise<Goal[]> { return this.goals.list(status); }
     override async getGoal(goalId: string): Promise<Goal | undefined> { return this.goals.get(goalId); }
     override async getSessionGoal(sessionId: string): Promise<Goal | undefined> { return this.goals.getSessionGoal(sessionId); }
     override async linkSessionGoal(sessionId: string, goalId?: string): Promise<void> { await this.goals.linkSession(sessionId, goalId); }
-
     override async updateGoal(goalId: string, patch: Partial<Pick<Goal, 'title' | 'objective' | 'successCriteria' | 'status'>>): Promise<Goal> {
         return this.goals.update(goalId, patch);
     }
-
     private async evaluateSessionGoal(sessionId: string, assistantText: string): Promise<void> { await this.goals.evaluateCompletion(sessionId, assistantText); }
-
     async *runStreamingTurn(
         sessionId: string,
         input: string,
@@ -739,14 +735,18 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     private async *respondNonStreaming(sessionId: string, request: ModelRequest): AsyncGenerator<StreamChunk, ModelResponse, void> {
+        await this.hooks.runModel('model.request', sessionId, { model: request.model, tools: request.tools?.length ?? 0 });
         const response = await this.completeModelRequest(request);
+        await this.hooks.runModel('model.response', sessionId, { model: response.metadata?.model ?? request.model, usage: response.metadata?.usage });
         await this.tokenUsageController.recordUsage(sessionId, response);
         await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response));
         return response;
     }
 
     private async *respondStreaming(sessionId: string, request: ModelRequest): AsyncGenerator<StreamChunk, ModelResponse, void> {
+        await this.hooks.runModel('model.request', sessionId, { model: request.model, tools: request.tools?.length ?? 0 });
         const response = yield* this.collectStreamingResponse(sessionId, request);
+        await this.hooks.runModel('model.response', sessionId, { model: response.metadata?.model ?? request.model, usage: response.metadata?.usage });
         await this.tokenUsageController.recordUsage(sessionId, response);
         return response;
     }
@@ -1084,6 +1084,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.hooksController ??= new HookController({
             hookManager: this.hookManager, sessions: this.sessions,
             signal: id => this.turnAbortScopes.signal(id),
+            workspace: id => this.resolveSessionWorkspace(id),
             createMessage: (role, content, metadata) => this.createMessage(role, content, undefined, undefined, metadata)
         });
     }

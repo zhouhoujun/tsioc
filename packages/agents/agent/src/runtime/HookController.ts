@@ -8,6 +8,7 @@ export interface HookControllerHost {
     hookManager?: AgentHookManager;
     sessions: SessionStore;
     signal(sessionId: string): AbortSignal | undefined;
+    workspace?(sessionId: string): Promise<string | undefined>;
     createMessage(role: 'system', content: string, metadata?: Record<string, any>): AgentMessage;
 }
 
@@ -23,6 +24,29 @@ export class HookController {
         const output = await this.host.hookManager.run(stage, context, this.host.signal(sessionId));
         await this.appendOutputs(sessionId, output.entries);
         return output.results;
+    }
+
+    /** P2.3: model.request / model.response observation hooks (no request mutation). */
+    async runModel(stage: 'model.request' | 'model.response', sessionId: string, model: Record<string, any>): Promise<void> {
+        if (!this.host.hookManager?.hasHooks(stage)) {
+            return;
+        }
+        const output = await this.host.hookManager.run(stage, {
+            sessionId,
+            workspace: await this.host.workspace?.(sessionId),
+            stage,
+            model
+        }, this.host.signal(sessionId));
+        await this.appendOutputs(sessionId, output.entries);
+    }
+
+    /** P2.3: config.observe hooks fire when runtime options change (not persisted to a session). */
+    async runConfig(config: Record<string, any>): Promise<void> {
+        if (!this.host.hookManager?.hasHooks('config.observe')) {
+            return;
+        }
+        await this.host.hookManager.run('config.observe', { sessionId: '', stage: 'config.observe', config })
+            .catch(() => undefined);
     }
 
     register(stage: AgentLifecycleHookStage, hook: AgentFunctionHookDefinition): void {

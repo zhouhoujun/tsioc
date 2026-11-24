@@ -1,6 +1,20 @@
 import { Abstract, Injectable } from '@tsdi/ioc';
 
-export type AgentLifecycleHookStage = 'beforeTurn' | 'afterTurn' | 'beforeTool' | 'afterTool' | 'onApproval' | 'beforeCompaction' | 'afterCompaction';
+export type AgentLifecycleHookStage =
+    | 'beforeTurn' | 'afterTurn' | 'beforeTool' | 'afterTool' | 'onApproval' | 'beforeCompaction' | 'afterCompaction'
+    | 'tool.execute.before' | 'tool.execute.after' | 'permission.evaluate'
+    | 'model.request' | 'model.response' | 'config.observe';
+
+const HOOK_STAGE_ALIASES: Partial<Record<AgentLifecycleHookStage, AgentLifecycleHookStage>> = {
+    'tool.execute.before': 'beforeTool',
+    'tool.execute.after': 'afterTool',
+    'permission.evaluate': 'onApproval'
+};
+
+/** Map plugin-style stage names onto the canonical lifecycle stages. */
+export function canonicalHookStage(stage: AgentLifecycleHookStage): AgentLifecycleHookStage { return HOOK_STAGE_ALIASES[stage] ?? stage; }
+
+import { collectStageOptions } from './hook-stage-options';
 
 import { AgentHookTransportExecutor } from './AgentHookTransport';
 
@@ -32,13 +46,6 @@ export interface AgentHookDefinition {
     agent?: string;
 }
 
-/**
- * In-process JS function hook handler. Runs without shell spawning (usable in
- * browser/no-Node environments). A `beforeTool` hook may return `input` to
- * rewrite the tool input before execution. Fields other than `input` are
- * normalized by the hook manager (exitCode/stdout/stderr/durationMs default
- * when omitted).
- */
 export type AgentHookFunction = (ctx: AgentHookContext) => Partial<AgentHookExecutionResult> | Promise<Partial<AgentHookExecutionResult>>;
 
 export interface AgentFunctionHookDefinition {
@@ -46,30 +53,18 @@ export interface AgentFunctionHookDefinition {
     handler: AgentHookFunction;
 }
 
-export interface AgentFunctionHooksOptions {
-    beforeTurn?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
-    afterTurn?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
-    beforeTool?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
-    afterTool?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
-    onApproval?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
-    beforeCompaction?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
-    afterCompaction?: AgentFunctionHookDefinition | AgentFunctionHookDefinition[];
-}
+export type AgentFunctionHooksOptions = Partial<Record<AgentLifecycleHookStage, AgentFunctionHookDefinition | AgentFunctionHookDefinition[]>>;
 
-export interface AgentHooksOptions {
+/** One hook definition (or list) per lifecycle stage, including P2.3 aliases. */
+export type AgentHookStageOptions = Partial<Record<AgentLifecycleHookStage, AgentHookDefinition | AgentHookDefinition[]>>;
+
+export interface AgentHooksOptions extends AgentHookStageOptions {
     /** Deny project hooks unless they are explicitly marked `trusted`. */
     requireTrust?: boolean;
     /** Injectable fetch for HTTP hooks (defaults to the host global). */
     fetch?: typeof fetch;
     /** Host-provided executors for mcp/prompt/subagent transports. */
     executors?: AgentHookTransportExecutor[];
-    beforeTurn?: AgentHookDefinition | AgentHookDefinition[];
-    afterTurn?: AgentHookDefinition | AgentHookDefinition[];
-    beforeTool?: AgentHookDefinition | AgentHookDefinition[];
-    afterTool?: AgentHookDefinition | AgentHookDefinition[];
-    onApproval?: AgentHookDefinition | AgentHookDefinition[];
-    beforeCompaction?: AgentHookDefinition | AgentHookDefinition[];
-    afterCompaction?: AgentHookDefinition | AgentHookDefinition[];
     /** In-process JS function hooks. Run before shell hooks for the same stage. */
     functions?: AgentFunctionHooksOptions;
 }
@@ -84,6 +79,10 @@ export interface AgentHookContext {
     toolDefinition?: { name: string; description?: string; execution?: Record<string, any> };
     executionMode?: 'sequential' | 'parallel';
     approval?: { toolName: string; decision: string; reason?: string };
+    /** model.request / model.response payload. */
+    model?: Record<string, any>;
+    /** config.observe payload. */
+    config?: Record<string, any>;
     turn?: { status: 'started' | 'completed' | 'cancelled' | 'failed'; message?: string; error?: string };
     compaction?: {
         phase: 'before' | 'after';
@@ -166,12 +165,14 @@ export class NoopAgentHookCommandExecutor extends AgentHookCommandExecutor {
 
 export class AgentHookManager {
     private readonly functionHooks: Partial<Record<AgentLifecycleHookStage, AgentFunctionHookDefinition[]>>;
+    private readonly stageOptions: AgentHookStageOptions;
     private readonly transportExecutors: AgentHookTransportExecutor[];
 
     constructor(
         private readonly hooks: AgentHooksOptions | undefined,
         private readonly executor?: AgentHookCommandExecutor | null
     ) {
+        this.stageOptions = collectStageOptions(this.hooks);
         this.functionHooks = this.collectFunctionHooks(this.hooks?.functions);
         this.transportExecutors = this.hooks?.executors ?? [];
     }
@@ -180,7 +181,8 @@ export class AgentHookManager {
         if (!stage) {
             return this.stages().some(name => this.normalizeStageHooks(name).length > 0 || this.normalizeFunctionStageHooks(name).length > 0);
         }
-        return this.normalizeStageHooks(stage).length > 0 || this.normalizeFunctionStageHooks(stage).length > 0;
+        const canonical = canonicalHookStage(stage);
+        return this.normalizeStageHooks(canonical).length > 0 || this.normalizeFunctionStageHooks(canonical).length > 0;
     }
 
     describe(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> {
@@ -192,6 +194,7 @@ export class AgentHookManager {
     }
 
     async run(stage: AgentLifecycleHookStage, context: AgentHookContext, signal?: AbortSignal): Promise<AgentHookRunOutput> {
+        stage = canonicalHookStage(stage);
         const entries: AgentHookTranscriptEntry[] = [];
         const results: AgentHookExecutionResult[] = [];
         const functionHooks = this.normalizeFunctionStageHooks(stage);
@@ -249,6 +252,7 @@ export class AgentHookManager {
     }
 
     registerFunction(stage: AgentLifecycleHookStage, hook: AgentFunctionHookDefinition): void {
+        stage = canonicalHookStage(stage);
         const normalized = this.normalizeFunctionHook(hook);
         if (!normalized) {
             return;
@@ -259,6 +263,7 @@ export class AgentHookManager {
     }
 
     unregisterFunction(stage: AgentLifecycleHookStage, name?: string): void {
+        stage = canonicalHookStage(stage);
         const list = this.functionHooks[stage];
         if (!list?.length) {
             return;
@@ -275,16 +280,14 @@ export class AgentHookManager {
         if (!functions) {
             return collected;
         }
-        for (const stage of this.stages()) {
-            const value = functions[stage];
-            if (!value) {
-                continue;
-            }
+        for (const key of Object.keys(functions) as AgentLifecycleHookStage[]) {
+            const value = functions[key];
             const list = (Array.isArray(value) ? value : [value])
                 .map(hook => this.normalizeFunctionHook(hook))
                 .filter((hook): hook is AgentFunctionHookDefinition => !!hook);
+            const stage = canonicalHookStage(key);
             if (list.length) {
-                collected[stage] = list;
+                collected[stage] = [...(collected[stage] ?? []), ...list];
             }
         }
         return collected;
@@ -352,11 +355,11 @@ export class AgentHookManager {
     }
 
     private stages(): AgentLifecycleHookStage[] {
-        return ['beforeTurn', 'afterTurn', 'beforeTool', 'afterTool', 'onApproval', 'beforeCompaction', 'afterCompaction'];
+        return ['beforeTurn', 'afterTurn', 'beforeTool', 'afterTool', 'onApproval', 'beforeCompaction', 'afterCompaction', 'model.request', 'model.response', 'config.observe'];
     }
 
     private normalizeStageHooks(stage: AgentLifecycleHookStage): AgentHookDefinition[] {
-        const value = this.hooks?.[stage];
+        const value = this.stageOptions[stage];
         if (!value) {
             return [];
         }

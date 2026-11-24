@@ -240,8 +240,10 @@
 - 验收：插件可新增/隐藏工具；工具权限/审批仍生效；配置热更新不丢会话。
 - 状态：`ToolRegistry.transform(editor)` 已落地（`add`/`hide`/`rename`/`namespace`，单调 `transformRevision`
   供 prompt cache/会话快照失效）；`LocalToolRegistry` 按 expose 名称生成定义，`invoke/activateTool/isToolActive`
-  解析 expose→raw，默认无变换时行为不变。**剩余**：`tool.execute.before/after`、`permission.evaluate`、
-  `model.request/response/retry`、`config.observe` 钩子域与插件 manifest/按 workspace 启停。
+  解析 expose→raw，默认无变换时行为不变。**剩余**：插件 manifest/按 workspace 启停。
+  钩子域已落地：`tool.execute.before/after`、`permission.evaluate` 作为 beforeTool/afterTool/onApproval 别名，
+  `model.request` / `model.response` 在每次模型调用前后触发（观察型，可写 transcript），
+  `config.observe` 在运行时模型配置变更时触发；`model.retry` 仍未接入重试点。
 
 ### P3 — 实时执行与协议平台（2 周）
 

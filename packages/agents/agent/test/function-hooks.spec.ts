@@ -321,4 +321,59 @@ export class AgentFunctionHooksTest {
             expect(toolMessage).toBeDefined();
         } finally { await ctx.close(); }
     }
+    @Test('plugin-style tool.execute.before aliases the beforeTool stage')
+    async toolExecuteBeforeAlias() {
+        const model = new RewriteModelAdapter();
+        const registry = new RecordingToolRegistry();
+        const { runtime, ctx } = await createRuntime(model, registry, {
+            hooks: {
+                functions: {
+                    'tool.execute.before': { name: 'alias-deny', handler: () => ({ action: 'deny' as const, error: 'alias blocked' }) }
+                }
+            }
+        });
+        try {
+            await runtime.runTurn('alias-1', 'run the tool');
+            expect(registry.invoked).toEqual([]);
+        } finally { await ctx.close(); }
+    }
+
+    @Test('model.request/model.response hooks observe each model call')
+    async modelStageHooks() {
+        const model = new RewriteModelAdapter();
+        const registry = new RecordingToolRegistry();
+        const seen: string[] = [];
+        const { runtime, ctx } = await createRuntime(model, registry, {
+            hooks: {
+                functions: {
+                    'model.request': { name: 'observe-request', handler: (context: any) => { seen.push(`request:${context.model?.tools ?? 0}`); return {}; } },
+                    'model.response': { name: 'observe-response', handler: () => { seen.push('response'); return {}; } }
+                }
+            }
+        });
+        try {
+            await runtime.runTurn('model-hooks-1', 'run the tool');
+            expect(seen.filter(item => item.startsWith('request:')).length).toEqual(2);
+            expect(seen.filter(item => item === 'response').length).toEqual(2);
+        } finally { await ctx.close(); }
+    }
+
+    @Test('config.observe hooks fire when model options change')
+    async configObserveHook() {
+        const model = new RewriteModelAdapter();
+        const registry = new RecordingToolRegistry();
+        const seen: string[] = [];
+        const { runtime, ctx } = await createRuntime(model, registry, {
+            hooks: {
+                functions: {
+                    'config.observe': { name: 'observe-config', handler: (context: any) => { seen.push(String(context.config?.model?.name ?? 'model')); return {}; } }
+                }
+            }
+        });
+        try {
+            (runtime as any).updateModelOptions({ name: 'next-model' });
+            await new Promise(resolve => setTimeout(resolve, 10));
+            expect(seen).toEqual(['next-model']);
+        } finally { await ctx.close(); }
+    }
 }
