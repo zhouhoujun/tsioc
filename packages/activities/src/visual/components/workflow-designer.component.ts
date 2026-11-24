@@ -39,6 +39,7 @@ import {
 } from '../workflow-store';
 import { installWorkflowDesignerStyles } from './workflow-designer.styles';
 import { WorkflowDesignerPreviewComponent } from './workflow-designer-preview.component';
+import { createSubflowForNode, openReferencedWorkflowTab } from '../workflow-subflow-actions';
 import { WORKFLOW_ACTION_BUS } from '../workflow-action-bus';
 import { WorkflowPluginManager, WorkflowPluginManifest, WorkflowPluginNodeManifest } from '../../plugins/types';
 
@@ -405,8 +406,8 @@ export class WorkflowDesignerComponent implements OnDestroy {
         this.tabSourceCache = undefined;
     }
 
-    /** Create a blank workflow in a new tab. */
-    async createWorkflowTab(): Promise<void> {
+    /** Create a blank workflow in a new tab; resolves to the new id. */
+    async createWorkflowTab(): Promise<string> {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
         await self.persistActiveTab();
         const definition = createBlankWorkflowDefinition(
@@ -420,6 +421,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
             self.setActiveTab(tab);
         });
         self.emitTabs();
+        return definition.id;
     }
 
     /** Open a saved workflow in a new tab or activate its existing tab. */
@@ -866,23 +868,25 @@ export class WorkflowDesignerComponent implements OnDestroy {
         self.preview?.handleToolbarAction(action);
     };
 
-    readonly openReferencedWorkflow = async (id: string): Promise<void> => {
+    readonly openReferencedWorkflow = (id: string): void => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
-        const parent = self.designer?.definition.id;
-        const opened = await self.openWorkflowTab(id);
-        if (opened && parent && parent !== id) {
-            const name = (self.workflowTabs.find(tab => tab.id === parent)?.designer?.definition?.name) || parent;
-            self.subflowParents = { ...self.subflowParents, [id]: { id: parent, name } };
-        } else if (!opened) {
-            self.designer.error = self.libraryError || self.t(
-                'notFound',
-                'Workflow not found'
-            ) + `: ${id}`;
-        }
+        void openReferencedWorkflowTab(self, id).then(result => {
+            if (result === 'missing') {
+                self.designer.error = self.libraryError || `${self.t('notFound', 'Workflow not found')}: ${id}`;
+            }
+        });
     };
+    /** Breadcrumb hook used by the sub-workflow helpers. */
+    registerSubflowParent(childId: string, parentId: string, name: string): void {
+        this.subflowParents = { ...this.subflowParents, [childId]: { id: parentId, name } };
+    }
 
-    readonly previewHostAction = (action: string): void => {
+    readonly previewHostAction = (action: string, payload?: string): void => {
         const self = (this.selfRef || this) as WorkflowDesignerComponent;
+        if (action === 'new-subflow') {
+            void createSubflowForNode(self, payload || self.designer?.selectedNode?.id || '', self.t('subflowSuffix', 'subflow'));
+            return;
+        }
         self.toolbarAction(action);
     };
 

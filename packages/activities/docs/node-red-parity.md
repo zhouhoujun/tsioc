@@ -85,7 +85,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | xml | `xml` | `+` attributes/text toggles, pretty print, optional XML declaration when stringifying |
 | html | `html` | `~` text/links/attribute extraction (no scraping selectors) |
 | yaml | `yaml` | `+` parse/stringify |
-| subflow | `subprocess`, `loop` | `~` stored workflow id, context path or inline definition, `inputs`/`outputs` path mapping, child tabs with a breadcrumb back to the parent (see the README's *Sub-workflow ports* section); there is no subflow canvas with generated in/out nodes |
+| subflow | `subprocess`, `loop` | `~` stored workflow id, context path or inline definition, `inputs`/`outputs` path mapping, child tabs with a breadcrumb back to the parent (see the README's *Sub-workflow ports* section); the node menu can create and bind a child document in one action; there is no subflow canvas with generated in/out nodes |
 | tail | `tail` | `+` line splitting, initial file content, workspace-root sandbox |
 
 ### Nodes without a Node-RED counterpart

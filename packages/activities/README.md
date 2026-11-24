@@ -1064,10 +1064,13 @@ context is passed through, as before.
 **Authoring a sub workflow.** A sub workflow is an ordinary workflow document;
 `subprocess`/`loop` just execute it with a mapped context.
 
-1. Create the child document (the `+` tab or `/new`), give it a stable id and
-   build it like any other workflow. A `start`/`end` pair is a convenient
-   skeleton; any node without an incoming wire also acts as an entry point.
-2. Point the parent node's `workflow` at it. The field accepts a stored id, a
+1. Create the child document: right-click a `subprocess`/`loop` node and choose
+   **New sub workflow**. A blank tab opens, named after the node, and the node's
+   `workflow` is bound to it in one step (the breadcrumb remembers the parent).
+   You can also create it from the `+` tab or `/new` and set the id by hand.
+   A `start`/`end` pair is a convenient skeleton; any node without an incoming
+   wire also acts as an entry point.
+2. Point the parent node's `workflow` at it (already done by the action). The field accepts a stored id, a
    context path that resolves to an id at run time, or an inline definition
    JSON, so the same node can be driven per message.
 3. Map the boundary with `inputs`/`outputs` (see above). Use paths from the

@@ -348,6 +348,37 @@ describe('Workflow Designer UI', () => {
         expect(rules?.[0]?.value).toEqual({ type: 'expression', value: 'payload.total * 2' });
     });
 
+    it('creates a sub workflow document and binds the node to it', async () => {
+        const node = ref.instance.designer.addNode('subprocess', { x: 60, y: 60 })!;
+        const parentId = ref.instance.designer.definition.id;
+        const parentName = ref.instance.designer.definition.name;
+        await flush();
+
+        const canvasNode = root.querySelector(`.workflow-node[data-node-id="${node.id}"]`) as any;
+        canvasNode.dispatchEvent(new (doc.defaultView as any).MouseEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            clientX: 120,
+            clientY: 120
+        }));
+        await flush();
+        const create = root.querySelector('.workflow-node-menu-item[data-subflow="create"]') as any;
+        expect(create).toBeTruthy();
+        create.click();
+        await waitFor(() => ref.instance.designer.definition.id !== parentId);
+
+        const childId = ref.instance.designer.definition.id;
+        expect(childId).not.toBe(parentId);
+        expect(ref.instance.designer.definition.name).toContain('子流程');
+        // The breadcrumb knows the parent while the child tab is active.
+        expect(ref.instance.subflowTrail?.[0]?.label).toBe(parentName);
+
+        await ref.instance.openWorkflowTab(parentId);
+        await flush();
+        expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.workflow)
+            .toBe(childId);
+    });
+
     it('paints the node status line after a run', async () => {
         const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
         // A configured rule that cannot match keeps the run valid and reports

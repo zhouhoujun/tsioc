@@ -48,6 +48,7 @@ import { WorkflowConfigDialogComponent } from './workflow-config-dialog.componen
 import { WorkflowConfigNodesComponent } from './workflow-config-nodes.component';
 import { WorkflowExpressionPanelComponent } from './workflow-expression-panel';
 import { workflowShortcutRows } from '../workflow-shortcut-rows';
+import { canCreateSubflow, subflowWorkflowId } from '../workflow-subflow-actions';
 import { decodeWorkflowTypedValue } from '../workflow-typed-value';
 import { patchConfigPath, readConfigPath } from '../workflow-config-path';
 import { preloadWorkflowExpressions, validateWorkflowExpression } from '../workflow-expression';
@@ -188,7 +189,9 @@ function sameModelKey(previous: any[], next: any[]): boolean {
             <button type="button" class="workflow-node-menu-item" v-if="canUngroupSelection"
                 @click="ungroupMenuSelection">{{ungroupLabel}}</button>
             <button type="button" class="workflow-node-menu-item" v-if="referencedWorkflowId"
-                data-subflow="true" @click="openReferencedWorkflow">{{openSubflowLabel}}</button>
+                data-subflow="true" @click="openReferencedWorkflow">{{tr('openSubflow', 'Open sub workflow')}}</button>
+            <button type="button" class="workflow-node-menu-item" v-if="canCreateSubflow"
+                data-subflow="create" @click="createSubflowMenuNode">{{tr('newSubflow', 'New sub workflow')}}</button>
             <button type="button" class="workflow-node-menu-item" @click="duplicateMenuNode">{{duplicateLabel}}</button>
             <button type="button" class="workflow-node-menu-item is-danger" @click="deleteMenuNode">{{deleteLabel}}</button>
         </div>
@@ -234,7 +237,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     @Attribute() showStatusbar = true;
     @Attribute() showRunLogs = true;
     /** Handles shell actions (save/open-library) in the host. */
-    @Attribute() hostAction?: (action: string) => void;
+    @Attribute() hostAction?: (action: string, payload?: string) => void;
     @ViewChild('expressionPanel') expressionPanel?: WorkflowExpressionPanelComponent;
 
     /** Open a referenced workflow document by id (host tab host). */
@@ -715,20 +718,17 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     get referencedWorkflowId(): string {
-        const node = this.designer?.nodes.find(item => item.id === this.nodeMenuId);
-        if (!node || (node.type !== 'subprocess' && node.type !== 'loop')) {
-            return '';
-        }
-        const value = node.config?.workflow;
-        if (typeof value !== 'string') {
-            return '';
-        }
-        const text = value.trim();
-        return /^[A-Za-z0-9_-]+$/.test(text) ? text : '';
+        return subflowWorkflowId(this.designer?.nodes.find(item => item.id === this.nodeMenuId));
     }
 
-    get openSubflowLabel(): string {
-        return this.t('openSubflow', 'Open sub workflow');
+    get canCreateSubflow(): boolean {
+        return canCreateSubflow(this.designer?.nodes.find(item => item.id === this.nodeMenuId));
+    }
+
+    createSubflowMenuNode(): void {
+        const self = (this.selfRef || this) as WorkflowDesignerPreviewComponent;
+        self.showNodeMenu = false;
+        self.hostAction?.('new-subflow', self.nodeMenuId);
     }
 
     openReferencedWorkflow(): void {
