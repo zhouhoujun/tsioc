@@ -642,7 +642,7 @@ Features:
   duplicate (`Ctrl+D`), JSON import/export,
 - Node-RED-style base components: inject (manual / interval / cron / event), debug,
   trigger (first + optional second message), function (sandbox with `node.status`/
-  `node.warn`/`node.error` helpers), template (mustache sections + text/JSON/YAML
+  `node.warn`/`node.error`/`node.send` and `flow.get/set` helpers), template (mustache sections + text/JSON/YAML
   output), JSON, CSV, XML, HTML, YAML, RBE, combine,
   change (set/append/move/replace, values from literals, context, env or a
   JSONata expression), statistics, merge,

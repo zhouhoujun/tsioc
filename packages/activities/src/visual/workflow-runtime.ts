@@ -1994,9 +1994,35 @@ export async function executeVisualNode(
                 };
             };
             const logger = (context as any).logger;
+            /** Node-RED style `flow.get/set` on the shared scope objects. */
+            const scoped = (target: Record<string, any>) => new Proxy(target, {
+                get(store, key) {
+                    if (key === 'get') {
+                        return (name: string, fallback?: any) =>
+                            store[name as any] === undefined ? fallback : store[name as any];
+                    }
+                    if (key === 'set') {
+                        return (name: string, value: any) => {
+                            store[name as any] = value;
+                            return value;
+                        };
+                    }
+                    return store[key as any];
+                },
+                set(store, key, value) {
+                    store[key as any] = value;
+                    return true;
+                }
+            });
+            /** Messages passed to `node.send`; DAG runs forward one result. */
+            const sent: any[] = [];
             const nodeApi = {
                 id: node.id,
                 name: node.name,
+                send: (value: any) => {
+                    sent.push(value);
+                    return nodeApi;
+                },
                 status: (value: any) => {
                     if (value && typeof value === 'object') {
                         const level = String(value.level || 'info');
@@ -2028,8 +2054,8 @@ export async function executeVisualNode(
             try {
                 const source = String(config.code || 'return input;');
                 const msg = (context as any).msg || { payload: (context as any).payload };
-                const flow = (context as any).flow || {};
-                const global = (context as any).global || {};
+                const flow = scoped((context as any).flow || {});
+                const global = scoped((context as any).global || {});
                 const env = (context as any).env || {};
                 const run = async (code: string) => {
                     // Trusted-code node: same trust level as a Node-RED function node.
@@ -2058,7 +2084,11 @@ export async function executeVisualNode(
                         Object.assign(context, initial);
                     }
                 }
-                const value = await run(source);
+                let value = await run(source);
+                if ((value === undefined || value === null) && sent.length) {
+                    // `node.send(msg)` without a return keeps the last message.
+                    value = sent[sent.length - 1];
+                }
                 if (String(config.finalize || '').trim()) {
                     const finalized = await run(String(config.finalize));
                     if (finalized && typeof finalized === 'object' && !Array.isArray(finalized)) {

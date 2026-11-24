@@ -88,6 +88,49 @@ describe('Workflow message envelope and scopes', () => {
         expect(result.data?.executionState?.nodeStates.condition_1.result?.data?.condition).toBe(true);
     });
 
+    it('exposes Node-RED style flow/global get/set helpers to function nodes', async () => {
+        const result = await service.execute(chain([
+            {
+                type: 'function',
+                config: {
+                    code: [
+                        'global.set("environment", "prod");',
+                        'flow.set("count", 5);',
+                        'msg.payload = { count: flow.get("count"), env: global.get("environment"), direct: flow.count };',
+                        'return msg;'
+                    ].join('\n')
+                }
+            }
+        ]), {});
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.function_0.result?.data?.payload)
+            .toEqual({ count: 5, env: 'prod', direct: 5 });
+    });
+
+    it('forwards the last message passed to node.send when the code returns nothing', async () => {
+        const single = await service.execute(chain([
+            {
+                type: 'function',
+                config: { code: 'msg.payload = "sent"; node.send(msg);' }
+            }
+        ]), {});
+        expect(single.data?.executionState?.nodeStates.function_0.result?.data?.payload).toBe('sent');
+
+        const multiple = await service.execute(chain([
+            {
+                type: 'function',
+                config: {
+                    code: [
+                        'node.send({ ...msg, payload: "first" });',
+                        'node.send({ ...msg, payload: "last" });'
+                    ].join('\n')
+                }
+            }
+        ]), {});
+        // A DAG run forwards one result; the last send wins.
+        expect(multiple.data?.executionState?.nodeStates.function_0.result?.data?.payload).toBe('last');
+    });
+
     it('resolves typed value references from msg/flow/global/env', () => {
         const context: any = {
             msg: { payload: { user: { name: 'Ada' } }, topic: 'users' },
