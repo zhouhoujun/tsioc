@@ -26,7 +26,10 @@ import { TokenUsageController } from './TokenUsageController';
 import { MemoryRetrievalController } from './MemoryRetrievalController';
 import { SessionSnapshotController } from './SessionSnapshotController';
 import { HookController } from './HookController';
-import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
+import { PolicyResolutionController } from './PolicyResolutionController';
+import { TurnLoopController } from './TurnLoopController';
+import type { TurnExecutionContext } from './TurnExecutionContext';
+import { FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
 import { TurnHandler } from './TurnHandler';
@@ -86,7 +89,7 @@ import { fenceToolOutputIfUntrusted } from '../harness/TrustBoundary';
 import { AgentDelegationMode, DEFAULT_DELEGATION_MODE, buildDelegationModeHint, buildDelegationQualityNote, normalizeDelegationMode } from './DelegationMode';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 import { RepeatReadOnlyCallCache } from './tool-repeat-cache';
-import { MAX_TOOL_ROUNDS_PROMPT, nearToolRoundLimitPrompt } from './tool-round-budget';
+import { nearToolRoundLimitPrompt } from './tool-round-budget';
 import { canParallelizeToolBatch, describeToolCallNames } from './tool-dispatch-policy';
 import { AgentFunctionHookDefinition, AgentHookCommandExecutor, AgentHookContext, AgentHookExecutionResult, AgentHookManager, AgentHookTranscriptEntry, AgentLifecycleHookStage } from '../hooks/AgentHooks';
 import { buildPersonalityHint } from '../prompt/personality-presets';
@@ -110,50 +113,10 @@ interface ToolInvocationResult {
     structuredOutput?: any;
 }
 
-interface TurnExecutionContext {
-    principalId?: string;
-    workspace?: string;
-    diagnostics?: AgentTurnDiagnostics;
-    profile?: string;
-    evidenceLedger?: EvidenceLedger;
-    recovery?: TurnRecoveryState;
-    agent?: AgentTurnAgentConfig;
-    toolSteps?: number;
-    /** Set when a `todo` tool result updated this turn's plan; gates plan-continuation. */
-    planTouched?: boolean;
-    /** Number of plan-continuation prompts already injected this turn. */
-    planContinuations?: number;
-    /** G29: transient delegation quality note injected into the next model request (proactive mode). */
-    delegationQualityNote?: string;
-    readOnlyResults?: RepeatReadOnlyCallCache;
-}
-
-
-
 interface ToolCompensationEntry {
     toolName: string;
     toolCallId: string;
     captured: unknown;
-}
-
-const EMPTY_RESPONSE_RETRY_BACKOFF_MS = 150;
-const LOOP_RECOVERY_SYSTEM_PROMPT = 'You are repeating the same tool calls without making progress. Change strategy: try a different tool, different arguments, or break the work into smaller steps. If you cannot make progress, state clearly that you are blocked and explain why instead of repeating the same calls.';
-
-function sameStringList(left: string[], right: string[]): boolean {
-    return left.length === right.length && left.every((value, index) => value === right[index]);
-}
-
-function sameApprovalRule(left: ApprovalRule, right: ApprovalRule): boolean {
-    if (typeof left === 'string' || typeof right === 'string') {
-        return left === right;
-    }
-    return left.category === right.category
-        && left.mode === right.mode
-        && sameStringList(left.names ?? [], right.names ?? []);
-}
-
-function sameApprovalRules(left: ApprovalRule[], right: ApprovalRule[]): boolean {
-    return left.length === right.length && left.every((rule, index) => sameApprovalRule(rule, right[index]));
 }
 
 @Injectable()
@@ -171,7 +134,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private hooksController?: HookController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -982,193 +945,36 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     private async completeTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): Promise<AgentTurnResult> {
-        const loopDetector = new ToolLoopDetector();
-        loopDetector.reset();
-        let round = 0;
-        const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
-        const maxLoopRecoveries = this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!;
-        const maxRepairRounds = this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!;
-        let emptyResponseRetryCount = 0;
-
-        turnLoop: while (true) {
-            this.throwIfTurnCancelled(sessionId);
-            if (await this.tokenUsageController.enforceBudget(sessionId)) {
-                return {
-                    sessionId,
-                    message: this.createMessage('assistant', 'Token budget exhausted. The turn was stopped to prevent further cost. Provide a brief summary of completed work and remaining steps.')
-                };
-            }
-            const termination = this.recoveryController.resolveTermination(turnContext, maxLoopRecoveries);
-            if (termination) {
-                return { sessionId, message: await this.completeTerminationMessage(sessionId, query, currentUserMessageId, turnContext, termination) };
-            }
-            await this.promoteSteer(sessionId);
-            let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const recoveredRequest = this.recoveryController.maybeInjectPrompt(request, turnContext);
-            if (recoveredRequest) {
-                request = recoveredRequest;
-            }
-            const falsifyRate = computeTurnFalsifyRate(turnContext.evidenceLedger);
-            let response = await this.completeModelRequest(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
-            await this.tokenUsageController.recordUsage(sessionId, response);
-            await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response));
-            if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.assistant.shouldRetryEmptyResponse(response)) {
-                emptyResponseRetryCount++;
-                if (turnContext.diagnostics) {
-                    turnContext.diagnostics.emptyResponseRetryCount++;
-                }
-                await this.sleep(EMPTY_RESPONSE_RETRY_BACKOFF_MS * emptyResponseRetryCount);
-                response = await this.completeModelRequest(
-                    this.prepareModelRequest(sessionId, buildEmptyResponseRetryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
-                );
-                await this.tokenUsageController.recordUsage(sessionId, response);
-                await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response));
-            }
-            if (this.assistant.shouldRecoverEmptyFollowUp(request, response)) {
-                if (turnContext.diagnostics) {
-                    turnContext.diagnostics.followUpRecoveryCount++;
-                }
-                response = await this.completeModelRequest(
-                    this.prepareModelRequest(sessionId, buildFollowUpRecoveryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
-                );
-                await this.tokenUsageController.recordUsage(sessionId, response);
-                await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response));
-            }
-
-            const roundStartEvidence = turnContext.evidenceLedger?.size ?? 0;
-            const handled = await this.handleModelResponse(sessionId, response, currentUserMessageId, loopDetector, request.tools, turnContext);
-            if (handled.message) {
-                return { sessionId, message: handled.message };
-            }
-
-            await this.verificationController.runGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
-
-            round++;
-            if (round <= maxRounds) {
-                await this.warnNearToolRoundLimit(sessionId, round, maxRounds);
-                continue turnLoop;
-            }
-            this.throwIfTurnCancelled(sessionId);
-            const resume = this.buildPlanContinuation(sessionId, turnContext);
-            if (resume) {
-                await this.sessions.append(sessionId, this.createMessage('user', resume));
-                round = 0;
-                continue turnLoop;
-            }
-            await this.sessions.append(sessionId, this.createMessage('user', MAX_TOOL_ROUNDS_PROMPT));
-            const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const finalResponse = await this.completeModelRequest(
-                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
-            );
-            await this.tokenUsageController.recordUsage(sessionId, finalResponse);
-            await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, finalResponse));
-            const finalMessage = await this.assistant.createMessageFromResponse(sessionId, finalResponse);
-            this.capturePromptCacheDiagnostics(turnContext, finalResponse);
-            await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
-            return { sessionId, message: finalMessage };
+        const run = this.turnLoop.run(sessionId, query, currentUserMessageId, turnContext, false);
+        let step = await run.next();
+        while (!step.done) {
+            step = await run.next();
         }
+        return step.value;
+    }
+
+    private async *respondNonStreaming(sessionId: string, request: ModelRequest): AsyncGenerator<StreamChunk, ModelResponse, void> {
+        const response = await this.completeModelRequest(request);
+        await this.tokenUsageController.recordUsage(sessionId, response);
+        await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response));
+        return response;
+    }
+
+    private async *respondStreaming(sessionId: string, request: ModelRequest): AsyncGenerator<StreamChunk, ModelResponse, void> {
+        const response = yield* this.collectStreamingResponse(sessionId, request);
+        await this.tokenUsageController.recordUsage(sessionId, response);
+        return response;
+    }
+
+    private async finalizeTurnResponse(sessionId: string, currentUserMessageId: string, response: ModelResponse, turnContext: TurnExecutionContext): Promise<AgentMessage> {
+        const message = await this.assistant.createMessageFromResponse(sessionId, response);
+        this.capturePromptCacheDiagnostics(turnContext, response);
+        await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, message, turnContext);
+        return message;
     }
 
     private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): AsyncGenerator<StreamChunk, AgentTurnResult, void> {
-        const loopDetector = new ToolLoopDetector();
-        loopDetector.reset();
-        let round = 0;
-        const maxRounds = this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!;
-        const maxLoopRecoveries = this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!;
-        const maxRepairRounds = this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!;
-        let emptyResponseRetryCount = 0;
-
-        turnLoop: while (true) {
-            this.throwIfTurnCancelled(sessionId);
-            if (await this.tokenUsageController.enforceBudget(sessionId)) {
-                yield { type: 'text', content: '\n\n[Token budget exhausted. Stopping turn.]\n\n' };
-                return {
-                    sessionId,
-                    message: this.createMessage('assistant', 'Token budget exhausted. The turn was stopped to prevent further cost. Provide a brief summary of completed work and remaining steps.')
-                };
-            }
-            const termination = this.recoveryController.resolveTermination(turnContext, maxLoopRecoveries);
-            if (termination) {
-                const message = yield* this.completeStreamingTerminationMessage(sessionId, query, currentUserMessageId, turnContext, termination);
-                return { sessionId, message };
-            }
-            await this.promoteSteer(sessionId);
-            let request = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const recoveredRequest = this.recoveryController.maybeInjectPrompt(request, turnContext);
-            if (recoveredRequest) {
-                request = recoveredRequest;
-            }
-            const falsifyRate = computeTurnFalsifyRate(turnContext.evidenceLedger);
-            let response = yield* this.collectStreamingResponse(
-                sessionId,
-                this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
-            );
-            await this.tokenUsageController.recordUsage(sessionId, response);
-            if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.assistant.shouldRetryEmptyResponse(response)) {
-                emptyResponseRetryCount++;
-                if (turnContext.diagnostics) {
-                    turnContext.diagnostics.emptyResponseRetryCount++;
-                }
-                await this.sleep(EMPTY_RESPONSE_RETRY_BACKOFF_MS * emptyResponseRetryCount);
-                response = yield* this.collectStreamingResponse(
-                    sessionId,
-                    this.prepareModelRequest(sessionId, buildEmptyResponseRetryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
-                );
-                await this.tokenUsageController.recordUsage(sessionId, response);
-            }
-            if (this.assistant.shouldRecoverEmptyFollowUp(request, response)) {
-                if (turnContext.diagnostics) {
-                    turnContext.diagnostics.followUpRecoveryCount++;
-                }
-                response = yield* this.collectStreamingResponse(
-                    sessionId,
-                    this.prepareModelRequest(sessionId, buildFollowUpRecoveryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
-                );
-                await this.tokenUsageController.recordUsage(sessionId, response);
-            }
-            if (this.assistant.shouldRetryEmptyResponse(response)) {
-                const toolError = await this.assistant.findRecentToolError(sessionId);
-                if (toolError) {
-                    response = yield* this.collectStreamingResponse(
-                        sessionId,
-                        this.prepareModelRequest(sessionId, buildToolErrorRecoveryRequest(request, toolError, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
-                    );
-                    await this.tokenUsageController.recordUsage(sessionId, response);
-                }
-            }
-
-            const roundStartEvidence = turnContext.evidenceLedger?.size ?? 0;
-            const handled = await this.handleModelResponse(sessionId, response, currentUserMessageId, loopDetector, request.tools, turnContext);
-            if (handled.message) {
-                return { sessionId, message: handled.message };
-            }
-
-            await this.verificationController.runGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
-
-            round++;
-            if (round <= maxRounds) {
-                await this.warnNearToolRoundLimit(sessionId, round, maxRounds);
-                continue turnLoop;
-            }
-            this.throwIfTurnCancelled(sessionId);
-            const resume = this.buildPlanContinuation(sessionId, turnContext);
-            if (resume) {
-                await this.sessions.append(sessionId, this.createMessage('user', resume));
-                round = 0;
-                continue turnLoop;
-            }
-            await this.sessions.append(sessionId, this.createMessage('user', MAX_TOOL_ROUNDS_PROMPT));
-            const finalRequest = await this.buildModelRequest(sessionId, query, currentUserMessageId, turnContext);
-            const finalResponse = yield* this.collectStreamingResponse(
-                sessionId,
-                this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
-            );
-            await this.tokenUsageController.recordUsage(sessionId, finalResponse);
-            const finalMessage = await this.assistant.createMessageFromResponse(sessionId, finalResponse);
-            this.capturePromptCacheDiagnostics(turnContext, finalResponse);
-            await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
-            return { sessionId, message: finalMessage };
-        }
+        return yield* this.turnLoop.run(sessionId, query, currentUserMessageId, turnContext, true);
     }
 
     override async askSideQuestion(sessionId: string, question: string): Promise<string> {
@@ -1293,95 +1099,17 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionDelegationModes = new Map<string, AgentDelegationMode>();
     protected pendingArchetypeSwitches = new Map<string, Promise<void>>();
 
-    /** P70: default archetype with the policy layer that supplied it (policy > legacy option > schema). */
-    protected resolveDefaultArchetype(): AgentPolicyResolution<string> {
-        const policyArchetype = this.options.policy?.defaultArchetype;
-        if (policyArchetype) {
-            return { value: policyArchetype, source: this.options.policy?.source ?? 'workspace' };
-        }
-        const legacyArchetype = this.options.defaultArchetype;
-        if (legacyArchetype) {
-            return {
-                value: legacyArchetype,
-                source: legacyArchetype === DEFAULT_ARCHETYPE ? 'default' : 'workspace'
-            };
-        }
-        return { value: DEFAULT_ARCHETYPE, source: 'default' };
-    }
+    protected resolveDefaultArchetype(): AgentPolicyResolution<string> { return this.policy.resolveDefaultArchetype(); }
 
-    /** P70: session archetype with observable source; falls back to the default chain when no session override exists. */
-    resolveSessionArchetype(sessionId: string): AgentPolicyResolution<string> {
-        const sessionArchetype = this.sessionArchetypes.get(sessionId);
-        if (sessionArchetype) {
-            return { value: sessionArchetype, source: 'session' };
-        }
-        return this.resolveDefaultArchetype();
-    }
+    resolveSessionArchetype(sessionId: string): AgentPolicyResolution<string> { return this.policy.resolveSessionArchetype(sessionId); }
 
-    /**
-     * B2: verification write-tool list with observable source. Mirrors the
-     * default chain (policy > legacy option > schema defaults); a legacy list
-     * identical to the schema default is reported as 'default'.
-     */
-    resolveVerificationWriteTools(): AgentPolicyResolution<string[]> {
-        const policyWriteTools = this.options.policy?.verification?.writeTools;
-        if (policyWriteTools?.length) {
-            return { value: policyWriteTools.slice(), source: this.options.policy?.source ?? 'workspace' };
-        }
-        const legacyWriteTools = this.options.verificationWriteTools;
-        if (legacyWriteTools?.length) {
-            return {
-                value: legacyWriteTools.slice(),
-                source: sameStringList(legacyWriteTools, DEFAULT_VERIFICATION_WRITE_TOOLS) ? 'default' : 'workspace'
-            };
-        }
-        return { value: DEFAULT_VERIFICATION_WRITE_TOOLS.slice(), source: 'default' };
-    }
+    resolveVerificationWriteTools(): AgentPolicyResolution<string[]> { return this.policy.resolveVerificationWriteTools(); }
 
-    /** A5: approval rule list with observable source; policy `approval.requireApproval` wins over the legacy `tools.requireApproval`, then `DEFAULT_APPROVAL_REQUIRED_RULES`. */
-    resolveApprovalRequired(): AgentPolicyResolution<ApprovalRule[]> {
-        const policyRules = this.options.policy?.approval?.requireApproval;
-        // An explicit empty list disables the gate; only an unset list uses defaults.
-        if (Array.isArray(policyRules)) {
-            return { value: policyRules.slice(), source: this.options.policy?.source ?? 'workspace' };
-        }
-        const legacyRules = this.options.tools?.requireApproval;
-        if (Array.isArray(legacyRules)) {
-            const source = sameApprovalRules(legacyRules, DEFAULT_APPROVAL_REQUIRED_RULES) ? 'default' : 'workspace';
-            return { value: legacyRules.slice(), source };
-        }
-        return { value: DEFAULT_APPROVAL_REQUIRED_RULES.slice(), source: 'default' };
-    }
+    resolveApprovalRequired(): AgentPolicyResolution<ApprovalRule[]> { return this.policy.resolveApprovalRequired(); }
 
-    /** A5: approval auto-review flag with observable source; policy `approval.autoReview` wins over the legacy `tools.approvalAutoReview`, then false. */
-    resolveApprovalAutoReview(): AgentPolicyResolution<boolean> {
-        const policyAutoReview = this.options.policy?.approval?.autoReview;
-        if (policyAutoReview !== undefined) {
-            return { value: policyAutoReview, source: this.options.policy?.source ?? 'workspace' };
-        }
-        const legacyAutoReview = this.options.tools?.approvalAutoReview;
-        if (legacyAutoReview !== undefined) {
-            return {
-                value: legacyAutoReview,
-                source: legacyAutoReview === false ? 'default' : 'workspace'
-            };
-        }
-        return { value: false, source: 'default' };
-    }
+    resolveApprovalAutoReview(): AgentPolicyResolution<boolean> { return this.policy.resolveApprovalAutoReview(); }
 
-    /**
-     * Update the approval timeout for this runtime: new approval requests use
-     * the value and the workspace policy keeps it for later turns.
-     */
-    setApprovalTimeout(timeoutMs: number): void {
-        const requested = Math.floor(Number(timeoutMs));
-        if (!Number.isFinite(requested) || requested <= 0) {
-            return;
-        }
-        const limits = { ...(this.options.policy?.limits || {}), approvalTimeoutMs: requested };
-        this.options.policy = { ...(this.options.policy || {}), limits };
-        this.toolApprovalManager?.setDefaultTimeout?.(requested);
-    }
+    setApprovalTimeout(timeoutMs: number): void { this.policy.setApprovalTimeout(timeoutMs); }
 
     setPlanMode(sessionId: string, enabled: boolean): void {
         if (enabled) {
@@ -1684,6 +1412,50 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     private buildPlanContinuation(sessionId: string, turnContext: TurnExecutionContext): string | undefined {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
+    }
+
+    private turnLoopController?: TurnLoopController;
+
+    private get turnLoop(): TurnLoopController {
+        return this.turnLoopController ??= new TurnLoopController({
+            maxRounds: this.options.maxToolRounds ?? defaultAgentOptions.maxToolRounds!,
+            maxLoopRecoveries: this.options.maxLoopRecoveries ?? defaultAgentOptions.maxLoopRecoveries!,
+            throwIfTurnCancelled: (id) => this.throwIfTurnCancelled(id),
+            sleep: (ms) => this.sleep(ms),
+            enforceBudget: (id) => this.tokenUsageController.enforceBudget(id),
+            resolveTermination: (context, max) => this.recoveryController.resolveTermination(context, max),
+            promoteSteer: (id) => this.promoteSteer(id),
+            buildRequest: (id, query, userMessageId, context) => this.buildModelRequest(id, query, userMessageId, context),
+            maybeInjectPrompt: (request, context) => this.recoveryController.maybeInjectPrompt(request, context),
+            prepareRequest: (id, request, context) => this.prepareModelRequest(
+                id, request, context.profile, computeTurnFalsifyRate(context.evidenceLedger), context.agent?.reasoning
+            ),
+            respond: (id, request) => this.respondNonStreaming(id, request),
+            respondStreaming: (id, request) => this.respondStreaming(id, request),
+            createMessage: (role, content) => this.createMessage(role, content),
+            shouldRetryEmptyResponse: (response) => this.assistant.shouldRetryEmptyResponse(response),
+            shouldRecoverEmptyFollowUp: (request, response) => this.assistant.shouldRecoverEmptyFollowUp(request, response),
+            findRecentToolError: (id) => this.assistant.findRecentToolError(id),
+            handleResponse: (id, response, messageId, detector, tools, context) => this.handleModelResponse(
+                id, response, messageId, detector, tools!, context
+            ),
+            runGate: (id, context, roundStartEvidence) => this.verificationController.runGate(
+                id, context, roundStartEvidence, this.options.maxRepairRounds ?? defaultAgentOptions.maxRepairRounds!
+            ),
+            warnNearToolRoundLimit: (id, round, maxRounds) => this.warnNearToolRoundLimit(id, round, maxRounds),
+            buildPlanContinuation: (id, context) => this.buildPlanContinuation(id, context),
+            append: async (id, message) => { await this.sessions.append(id, message); },
+            finalizeResponse: (id, messageId, response, context) => this.finalizeTurnResponse(id, messageId, response, context),
+            completeTermination: (id, query, messageId, context, termination) => this.completeTerminationMessage(id, query, messageId, context, termination),
+            completeStreamingTermination: (id, query, messageId, context, termination) => this.completeStreamingTerminationMessage(id, query, messageId, context, termination)
+        });
+    }
+
+    private get policy(): PolicyResolutionController {
+        return this.policyResolution ??= new PolicyResolutionController({
+            options: this.options, approvalManager: () => this.toolApprovalManager,
+            sessionArchetype: id => this.sessionArchetypes.get(id)
+        });
     }
 
     private get hooks(): HookController {
