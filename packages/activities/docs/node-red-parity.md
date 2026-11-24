@@ -49,7 +49,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context`; returns one message. Multi-output `node.send([a,b])` is not supported (DAG model) |
 | switch | `switch`, `router` | `+` one output per rule (**dynamic ports**, no eight-output limit), all rule operators, check-all fan-out, `else`, output labels summarize the rule; compare values may be typed values or JSONata |
 | change | `change` | `+` set/delete/append/move/search-and-replace; values from literal, `msg`/`flow`/`global`/`env` or a **JSONata expression** |
-| range | `scale` | `~` maps a value between ranges with **clamp / scale / wrap** (legacy `clamp: false` still scales). The `range` type here is a sequence generator |
+| range | `scale` | `~` maps a value between ranges with **clamp / scale / wrap / drop** (legacy `clamp: false` still scales; drop stops the branch). The `range` type here is a sequence generator |
 | template | `template` | `+` mustache sections or plain text; output text/JSON/YAML |
 | delay | `delay` | `+` fixed/random/rate modes, `msg.delay` override, rate queue/drop |
 | trigger | `trigger` | `~` first + optional second message, per-emit delay, new-message mode |
@@ -124,6 +124,5 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 ## Known gaps worth revisiting
 
 - `function` multi-output (needs a branch-aware message contract).
-- `range` "drop" action (needs a branch-stop result).
 - CSV `multi`/`include_empty` and XML/Buffer encodings.
 - Editor expression completion inside the panel beyond the JSONata syntax check.

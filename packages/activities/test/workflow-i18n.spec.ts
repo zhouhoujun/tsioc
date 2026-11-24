@@ -66,7 +66,7 @@ describe('Workflow designer translations', () => {
     });
 
     it('translates node status lines', () => {
-        const keys = ['route', 'routes', 'noRule', 'http', 'invalidJson', 'requestFailed'];
+        const keys = ['route', 'routes', 'noRule', 'http', 'invalidJson', 'requestFailed', 'dropped'];
         for (const locale of locales) {
             const messages = (WORKFLOW_DESIGNER_TRANSLATIONS[locale]?.messages as any)?.workflow;
             expect(messages?.nodeStatus).toBeTruthy();

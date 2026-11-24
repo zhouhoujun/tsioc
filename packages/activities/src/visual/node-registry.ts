@@ -625,7 +625,8 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 options: [
                     { label: 'Clamp to range', value: 'clamp' },
                     { label: 'Scale beyond range', value: 'scale' },
-                    { label: 'Wrap around', value: 'wrap' }
+                    { label: 'Wrap around', value: 'wrap' },
+                    { label: 'Drop the message', value: 'drop' }
                 ],
                 description: 'What happens when the input falls outside the input range.'
             }),

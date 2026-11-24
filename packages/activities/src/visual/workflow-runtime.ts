@@ -2545,6 +2545,15 @@ export async function executeVisualNode(
             const action = config.clamp === false && (!config.action || config.action === 'clamp')
                 ? 'scale'
                 : String(config.action || 'clamp');
+            if (action === 'drop' && (input < Math.min(inMin, inMax) || input > Math.max(inMin, inMax))) {
+                // Out of range stops the branch instead of forwarding a value.
+                return {
+                    success: true,
+                    data: { nodeId: node.id, dropped: true, value: input },
+                    drop: true,
+                    status: { text: 'Dropped (out of range)', level: 'warn', key: 'workflow.nodeStatus.dropped' }
+                };
+            }
             if (action === 'clamp') {
                 scaled = Math.min(high, Math.max(low, scaled));
             } else if (action === 'wrap' && high > low) {

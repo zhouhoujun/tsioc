@@ -1177,6 +1177,48 @@ describe('Workflow data & trigger nodes', () => {
         expect(wrapped.data?.executionState?.nodeStates.scale_1.result?.data?.value).toBe(5);
     });
 
+    it('drops out-of-range scale values and skips the branch', async () => {
+        const dropped = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 150 } } },
+            {
+                type: 'scale',
+                config: {
+                    field: 'value',
+                    inMin: 0,
+                    inMax: 100,
+                    outMin: 0,
+                    outMax: 10,
+                    action: 'drop'
+                }
+            },
+            { type: 'task', config: { result: { after: true } } }
+        ]), {});
+        const droppedStates = dropped.data?.executionState?.nodeStates || {};
+        expect(droppedStates.scale_1.status).toBe('success');
+        expect(droppedStates.scale_1.result?.data?.dropped).toBe(true);
+        expect(droppedStates.scale_1.result?.status?.key).toBe('workflow.nodeStatus.dropped');
+        expect(droppedStates.task_2.status).toBe('skipped');
+
+        const passed = await service.execute(chain([
+            { type: 'inject', config: { payload: { value: 50 } } },
+            {
+                type: 'scale',
+                config: {
+                    field: 'value',
+                    inMin: 0,
+                    inMax: 100,
+                    outMin: 0,
+                    outMax: 10,
+                    action: 'drop'
+                }
+            },
+            { type: 'task', config: { result: { after: true } } }
+        ]), {});
+        const passedStates = passed.data?.executionState?.nodeStates || {};
+        expect(passedStates.scale_1.result?.data?.value).toBe(5);
+        expect(passedStates.task_2.status).toBe('success');
+    });
+
     it('honours XML attribute/text options and CSV columns', async () => {
         const xml = await service.execute(chain([
             { type: 'inject', config: { payload: { value: '<root><item id="1">A</item></root>' } } },

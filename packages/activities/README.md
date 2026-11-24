@@ -646,8 +646,8 @@ Features:
   JSONata expression), statistics, merge,
   split/map/filter/sort/range/batch/scale — `sort` supports multi-key ordering
   (`keys: [{ path, order, numeric }]`, later keys break ties), `scale` chooses
-  clamp/scale/wrap for out-of-range input (legacy `clamp: false` still means
-  scale) — event-emit/event-wait,
+  clamp/scale/wrap/drop for out-of-range input (legacy `clamp: false` still
+  means scale; drop stops the branch) — event-emit/event-wait,
   command, condition/switch/router, parallel/join (array, joined text, merged
   object, keyed object, first N, timeout),
   loop (sub-workflow repeat), delay, log, HTTP request, complete/catch/status,

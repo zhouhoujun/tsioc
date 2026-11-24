@@ -20,6 +20,11 @@ export interface ActivityResult<T = any> {
     data?: T;
     error?: Error;
     /**
+     * Stop the branch without failing: outgoing edges are marked skipped (the
+     * Node-RED "do not send the message" behaviour, e.g. range drop).
+     */
+    drop?: boolean;
+    /**
      * Last status reported by the activity. Visual hosts show it on the node
      * (the Node-RED `node.status()` equivalent); it is not part of the payload.
      */

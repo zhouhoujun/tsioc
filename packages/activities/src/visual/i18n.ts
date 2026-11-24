@@ -37,7 +37,8 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     noRule: 'No rule matched',
                     http: 'HTTP {status}',
                     invalidJson: 'HTTP {status} · invalid JSON',
-                    requestFailed: 'Request failed'
+                    requestFailed: 'Request failed',
+                    dropped: 'Dropped (out of range)'
                 },
                 ui: {
                     run: 'Run',
@@ -512,7 +513,8 @@ const BASE_WORKFLOW_TRANSLATIONS: Record<string, TranslationBundle> = {
                     noRule: '无规则匹配',
                     http: 'HTTP {status}',
                     invalidJson: 'HTTP {status} · JSON 无效',
-                    requestFailed: '请求失败'
+                    requestFailed: '请求失败',
+                    dropped: '已丢弃（超出范围）'
                 },
                 ui: {
                     run: '运行',

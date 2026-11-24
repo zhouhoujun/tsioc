@@ -65,9 +65,10 @@ export function toWorkflowExecutionSnapshot(state: WorkflowExecutionState): Work
                     success: value.result.success,
                     data: value.result.data,
                     error: value.result.error?.message as any,
-                    // Status lines are snapshotted with the run so replaying an
-                    // execution shows the same node status as the live run.
-                    ...(value.result.status ? { status: { ...value.result.status } } : {})
+                    // Status lines and branch drops are snapshotted with the run
+                    // so replaying an execution matches the live run.
+                    ...(value.result.status ? { status: { ...value.result.status } } : {}),
+                    ...(value.result.drop ? { drop: true } : {})
                 }
                 : undefined
         };
@@ -1655,6 +1656,10 @@ export class VisualWorkflowService {
     ): NodeConnection[] {
         const outgoing = plan.outgoing.get(node.id) || [];
         if (!outgoing.length) {
+            return [];
+        }
+        // A node may decide not to forward the message at all.
+        if (result.drop === true) {
             return [];
         }
 
