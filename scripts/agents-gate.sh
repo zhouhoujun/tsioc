@@ -73,7 +73,19 @@ stage_skip() { SKIP_COUNT=$((SKIP_COUNT + 1)); echo "[GATE-SKIP] $1: $2"; }
 run_npm_test() {
     local id="$1" label="$2" dir="$3"
     local log="$LOG_DIR/$id.log"
+    local started
+    started=$(date +%s)
     if (cd "$dir" && npm run test >"$log" 2>&1); then
+        local elapsed=$(( $(date +%s) - started ))
+        local budget
+        budget=$(node -e "try{const b=require('./scripts/test-budget-baseline.json');process.stdout.write(String(b['$id']||0))}catch{process.stdout.write('0')}" 2>/dev/null || echo 0)
+        echo "wall clock: ${elapsed}s (budget ${budget}s)" >>"$log"
+        if [ "$budget" -gt 0 ] && [ "$elapsed" -gt "$budget" ]; then
+            stage_fail "$id" "$label (${elapsed}s > ${budget}s wall-clock budget)"
+            echo "--- $id exceeded the wall-clock test budget ---" >&2
+            tail -10 "$log" >&2
+            return
+        fi
         stage_pass "$id" "$label"
     else
         stage_fail "$id" "$label"

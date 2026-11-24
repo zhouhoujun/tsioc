@@ -1,0 +1,14 @@
+{
+  "agent": 900,
+  "agent-channels": 300,
+  "agent-cli": 600,
+  "agent-gateway": 600,
+  "agent-providers": 300,
+  "agent-ssh": 300,
+  "agent-tools": 600,
+  "agent-ui": 1200,
+  "components": 600,
+  "components-common": 600,
+  "components-console": 600,
+  "components-html": 600
+}
