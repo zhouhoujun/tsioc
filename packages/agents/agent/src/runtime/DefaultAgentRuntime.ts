@@ -25,6 +25,7 @@ import { VerificationController } from './VerificationController';
 import { TokenUsageController } from './TokenUsageController';
 import { MemoryRetrievalController } from './MemoryRetrievalController';
 import { SessionSnapshotController } from './SessionSnapshotController';
+import { HookController } from './HookController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -170,7 +171,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private hooksController?: HookController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -238,7 +239,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             if (!compaction.sessionId || !this.hookManager?.hasHooks(stage)) {
                 return;
             }
-            await this.runTurnHooks(stage, compaction.sessionId, {
+            await this.hooks.run(stage, compaction.sessionId, {
                 sessionId: compaction.sessionId,
                 workspace: await this.resolveSessionWorkspace(compaction.sessionId),
                 stage,
@@ -361,7 +362,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             profile: input.profile,
             agent: input.agent
         };
-        await this.runTurnHooks('beforeTurn', input.sessionId, {
+        await this.hooks.run('beforeTurn', input.sessionId, {
             sessionId: input.sessionId,
             principalId: input.principalId,
             workspace: turnContext.workspace,
@@ -382,7 +383,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             await this.postTurn.maybeDistillExperience(input.sessionId, userMessage, result.message);
             await this.observability.publishTurnDiagnostics(this, input.sessionId, turnContext.diagnostics);
             await this.observability.recordTurnDiagnostics(input.sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
-            await this.runTurnHooks('afterTurn', input.sessionId, {
+            await this.hooks.run('afterTurn', input.sessionId, {
                 sessionId: input.sessionId,
                 principalId: input.principalId,
                 workspace: turnContext.workspace,
@@ -396,7 +397,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.pendingGitStepSnapshots.delete(input.sessionId);
             if (error instanceof AgentTurnCancelledError || this.turnAbortScopes.isAborted(input.sessionId)) {
                 await this.rollbackTurnCompensations(input.sessionId, 'cancelled');
-                await this.runTurnHooks('afterTurn', input.sessionId, {
+                await this.hooks.run('afterTurn', input.sessionId, {
                     sessionId: input.sessionId,
                     principalId: input.principalId,
                     workspace: turnContext.workspace,
@@ -409,7 +410,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             const err = error instanceof Error ? error : new Error(String(error));
             await this.rollbackTurnCompensations(input.sessionId, 'error'); await this.sessions.append(input.sessionId, this.createMessage('assistant', `Error: ${err.message}`, undefined, undefined, { error: true })).catch(() => undefined);
-            await this.runTurnHooks('afterTurn', input.sessionId, {
+            await this.hooks.run('afterTurn', input.sessionId, {
                 sessionId: input.sessionId,
                 principalId: input.principalId,
                 workspace: turnContext.workspace,
@@ -487,7 +488,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 profile,
                 agent
             };
-            await this.runTurnHooks('beforeTurn', sessionId, {
+            await this.hooks.run('beforeTurn', sessionId, {
                 sessionId,
                 principalId,
                 workspace: turnContext.workspace,
@@ -507,7 +508,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 await this.postTurn.maybeDistillExperience(sessionId, userMessage, result.message);
                 await this.observability.publishTurnDiagnostics(this, sessionId, turnContext.diagnostics);
                 await this.observability.recordTurnDiagnostics(sessionId, turnContext.diagnostics, turnContext.evidenceLedger, turnContext.recovery, turnContext.workspace);
-                await this.runTurnHooks('afterTurn', sessionId, {
+                await this.hooks.run('afterTurn', sessionId, {
                     sessionId,
                     principalId,
                     workspace: turnContext.workspace,
@@ -522,7 +523,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 this.pendingGitStepSnapshots.delete(sessionId);
                 if (error instanceof AgentTurnCancelledError || this.turnAbortScopes.isAborted(sessionId)) {
                     await this.rollbackTurnCompensations(sessionId, 'cancelled');
-                    await this.runTurnHooks('afterTurn', sessionId, {
+                    await this.hooks.run('afterTurn', sessionId, {
                         sessionId,
                         principalId,
                         workspace: turnContext.workspace,
@@ -535,7 +536,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 }
                 const err = error instanceof Error ? error : new Error(String(error));
                 await this.rollbackTurnCompensations(sessionId, 'error'); await this.sessions.append(sessionId, this.createMessage('assistant', `Error: ${err.message}`, undefined, undefined, { error: true })).catch(() => undefined);
-                await this.runTurnHooks('afterTurn', sessionId, {
+                await this.hooks.run('afterTurn', sessionId, {
                     sessionId,
                     principalId,
                     workspace: turnContext.workspace,
@@ -1685,6 +1686,14 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
+    private get hooks(): HookController {
+        return this.hooksController ??= new HookController({
+            hookManager: this.hookManager, sessions: this.sessions,
+            signal: id => this.turnAbortScopes.signal(id),
+            createMessage: (role, content, metadata) => this.createMessage(role, content, undefined, undefined, metadata)
+        });
+    }
+
     private get snapshots(): SessionSnapshotController {
         return this.sessionSnapshots ??= new SessionSnapshotController({
             fileAdapter: this.fileAdapter, fileSnapshots: this.fileSnapshotStore,
@@ -1735,7 +1744,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             app: this.app, sessions: this.sessions, toolRegistry: this.toolRegistry as any,
             createMessage: (role, content, name, toolCallId, metadata) => this.createMessage(role, content, name, toolCallId, metadata),
             runAfterToolHooks: async (sessionId, result, workspace) => {
-                await this.runTurnHooks('afterTool', sessionId, {
+                await this.hooks.run('afterTool', sessionId, {
                     sessionId, workspace, stage: 'afterTool',
                     toolCall: { id: result.toolCall.id, name: result.toolCall.name, input: result.metadata?.toolCallInput },
                     executionMode: result.receipt.executionMode,
@@ -1887,7 +1896,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             isWorkspaceMutating: definition => isWorkspaceMutatingTool(definition),
             resolveTrust: input => resolveWorkspaceTrustApproval(input),
             approvalManager: this.toolApprovalManager,
-            runHooks: (stage, id, context) => this.runTurnHooks(stage, id, context),
+            runHooks: (stage, id, context) => this.hooks.run(stage, id, context),
             isAborted: id => this.turnAbortScopes.isAborted(id),
             throwIfCancelled: id => this.throwIfTurnCancelled(id),
             uuid: () => this.uuid.generate()
@@ -1965,53 +1974,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
         };
     }
 
-    private async runTurnHooks(
-        stage: AgentHookContext['stage'],
-        sessionId: string,
-        context: AgentHookContext
-    ): Promise<AgentHookExecutionResult[]> {
-        if (!this.hookManager?.hasHooks(stage)) {
-            return [];
-        }
-        const output = await this.hookManager.run(stage, context, this.turnAbortScopes.signal(sessionId));
-        await this.appendHookOutputs(sessionId, output.entries);
-        return output.results;
-    }
+    override registerHookFunction(stage: AgentLifecycleHookStage, hook: AgentFunctionHookDefinition): void { this.hooks.register(stage, hook); }
 
-    override registerHookFunction(
-        stage: AgentLifecycleHookStage,
-        hook: AgentFunctionHookDefinition
-    ): void {
-        this.hookManager?.registerFunction(stage, hook);
-    }
+    override unregisterHookFunction(stage: AgentLifecycleHookStage, name?: string): void { this.hooks.unregister(stage, name); }
 
-    override unregisterHookFunction(stage: AgentLifecycleHookStage, name?: string): void {
-        this.hookManager?.unregisterFunction(stage, name);
-    }
-
-    override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> { return this.hookManager ? this.hookManager.describe() : []; }
-
-    private async appendHookOutputs(sessionId: string, entries: AgentHookTranscriptEntry[]): Promise<void> {
-        if (!entries.length) {
-            return;
-        }
-        for (const entry of entries) {
-            await this.sessions.append(sessionId, this.createMessage(
-                'system',
-                entry.content,
-                undefined,
-                undefined,
-                {
-                    kind: 'hook',
-                    hookStage: entry.stage,
-                    hookName: entry.name,
-                    exitCode: entry.exitCode,
-                    durationMs: entry.durationMs,
-                    stderr: entry.stderr
-                }
-            ));
-        }
-    }
+    override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> { return this.hooks.summary(); }
 
     async ensureSessionTitle(sessionId: string): Promise<string | undefined> { return this.postTurn.ensureSessionTitle(sessionId); }
 
