@@ -1,4 +1,3 @@
-import { parseYaml, stringifyYaml } from './workflow-yaml';
 import { getWorkflowNodeHandler } from './runtime/workflow-node-handlers';
 import './runtime/control-handlers';
 import './runtime/handlers/parsers';
@@ -6,26 +5,9 @@ import './runtime/handlers/data';
 import './runtime/handlers/flow';
 import './runtime/handlers/action';
 import './runtime/handlers/network';
-import { pause } from './runtime/timing';
-import {
-    coerceJson,
-    compareValues,
-    resolveCompareValue,
-    resolveCompareValueAsync,
-    resolveCredentialValue,
-    resolveWorkflowValue
-} from './runtime/values';
-import { evaluateWorkflowExpression } from './workflow-expression';
-import { Activity, ActivityContext, ActivityNodeStatus, ActivityResult } from '../activities/Activity';
-import {
-    isWorkflowValueRef,
-    readWorkflowProperty as resolveFrom,
-    resolveWorkflowTypedValue,
-    resolveWorkflowTypedValueAsync,
-    workflowExpressionMarkers,
-    resolveWorkflowExpressionMarkers,
-    resolveWorkflowMarkersAsync
-} from './workflow-typed-value';
+import './runtime/handlers/subflow';
+import { coerceJson } from './runtime/values';
+import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
 import {
     IVisualWorkflowNode,
     NodeConnection,
@@ -72,31 +54,6 @@ export interface VisualNodeRuntimeHost {
 
 /** Parse a text payload as JSON when possible (file-in auto mode). */
 
-async function resolveSubWorkflow(
-    source: any,
-    context: ActivityContext,
-    host?: VisualNodeRuntimeHost
-): Promise<VisualWorkflowDefinition | undefined> {
-    let definition = resolveWorkflowValue(source, context);
-    if (!definition) {
-        definition = coerceJson(source);
-    }
-    if (typeof definition === 'string') {
-        const key = definition;
-        definition = (context as any).workflows?.[key] || (context as any)[key];
-        if (!definition && host?.resolveDefinition) {
-            definition = await host.resolveDefinition(key);
-        }
-    }
-    return definition && typeof definition === 'object'
-        ? definition as VisualWorkflowDefinition
-        : undefined;
-}
-
-/**
- * Execute one visual node. The runtime keeps node semantics platform-neutral so
- * the same definition runs from the browser editor, the terminal and a server.
- */
 function createActivity(node: IVisualWorkflowNode): Activity | undefined {
     const type = node.activityType;
     if (!type) {
@@ -145,152 +102,6 @@ export async function executeVisualNode(
 
     switch (node.type) {
 
-        case 'loop': {
-            const iterations = Math.max(0, Math.min(10000, Number(config.iterations ?? 1) || 0));
-            const definition = await resolveSubWorkflow(config.workflow, context, host);
-            if (!definition || !host?.executeDefinition) {
-                return {
-                    success: false,
-                    error: new Error('Loop requires a sub-workflow source'),
-                    data: { nodeId: node.id, iterations }
-                };
-            }
-            const results: ActivityResult[] = [];
-            for (let index = 0; index < iterations; index++) {
-                if (index > 0 && Number(config.delay) > 0) {
-                    if (!(await pause(Number(config.delay), extras?.cancelled))) {
-                        return { success: false, error: new Error('Workflow cancelled'), data: { nodeId: node.id, iterations: index } };
-                    }
-                }
-                const child = await host.executeDefinition(definition as VisualWorkflowDefinition, context);
-                results.push(child);
-                if (!child.success) {
-                    return {
-                        success: false,
-                        error: child.error || new Error('Loop sub-workflow failed'),
-                        data: { nodeId: node.id, iterations: index + 1, results, count: results.length }
-                    };
-                }
-            }
-            return { success: true, data: { nodeId: node.id, iterations, results, count: results.length } };
-        }
-
-        case 'event-emit': {
-            const event = String(config.event || 'workflow.event');
-            const payload = await resolveWorkflowMarkersAsync(coerceJson(config.payload), context);
-            const bus = (context as any).eventBus || (context as any).events;
-            if (bus && typeof bus.emit === 'function') {
-                bus.emit(event, payload);
-                return { success: true, data: { nodeId: node.id, event, emitted: true, payload } };
-            }
-            if (typeof (context as any).emit === 'function') {
-                (context as any).emit(event, payload);
-                return { success: true, data: { nodeId: node.id, event, emitted: true, payload } };
-            }
-            return { success: true, data: { nodeId: node.id, event, emitted: false, payload } };
-        }
-        case 'event-wait': {
-            const event = String(config.event || 'workflow.event');
-            const timeout = Math.max(0, Number(config.timeout) || 0);
-            const bus = (context as any).eventBus || (context as any).events;
-            try {
-                if (bus && typeof bus.wait === 'function') {
-                    const value = await bus.wait(event, timeout);
-                    return { success: true, data: { nodeId: node.id, event, value, waited: true } };
-                }
-                if (typeof (context as any).waitEvent === 'function') {
-                    const value = timeout
-                        ? await Promise.race([
-                            Promise.resolve((context as any).waitEvent(event)),
-                            new Promise(resolve => setTimeout(() => resolve(undefined), timeout))
-                        ])
-                        : await (context as any).waitEvent(event);
-                    return { success: true, data: { nodeId: node.id, event, value, waited: true } };
-                }
-                return { success: true, data: { nodeId: node.id, event, waited: false } };
-            } catch (error) {
-                return { success: false, error: error as Error, data: { nodeId: node.id, event } };
-            }
-        }
-        case 'command': {
-            const command = String(config.command || '');
-            const rawArgs = config.args;
-            const args = Array.isArray(rawArgs)
-                ? rawArgs.map(item => item && typeof item === 'object' && 'value' in item ? item.value : item)
-                : coerceJson(rawArgs);
-            const executor = (context as any).exec
-                || (context as any).runCommand
-                || (context as any).commands?.[command];
-            if (typeof executor === 'function') {
-                try {
-                    const result = await executor(command, args, context);
-                    return {
-                        success: true,
-                        data: result && typeof result === 'object'
-                            ? { ...result, nodeId: node.id, command }
-                            : { nodeId: node.id, command, result }
-                    };
-                } catch (error) {
-                    return { success: false, error: error as Error, data: { nodeId: node.id, command } };
-                }
-            }
-            return { success: true, data: { nodeId: node.id, command, skipped: true, args } };
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        case 'subprocess': {
-            const source = config.workflow;
-            const definition = await resolveSubWorkflow(source, context, host);
-            if (definition && host?.executeDefinition) {
-                // `inputs`/`outputs` map subflow ports to context paths so the
-                // parent chooses what the child sees and what comes back.
-                const inputs = coerceJson(config.inputs) || {};
-                const childContext: any = { ...context };
-                Object.keys(inputs).forEach(key => {
-                    childContext[key] = resolveWorkflowValue(inputs[key], context);
-                });
-                const result = await host.executeDefinition(definition, childContext);
-                const outputs = coerceJson(config.outputs) || {};
-                const mapped: Record<string, any> = {};
-                Object.keys(outputs).forEach(key => {
-                    const path = outputs[key];
-                    const value = resolveFrom(result.data, path);
-                    mapped[key] = value === undefined ? resolveFrom(result, path) : value;
-                });
-                const hasOutputs = Object.keys(mapped).length > 0;
-                return {
-                    success: result.success,
-                    data: {
-                        nodeId: node.id,
-                        subprocess: result.data,
-                        ...(hasOutputs ? { msg: mapped, payload: mapped } : {})
-                    },
-                    error: result.error
-                };
-            }
-            if (source === undefined || source === null || source === '') {
-                return { success: true, data: { nodeId: node.id, skipped: true, reason: 'No sub workflow configured' } };
-            }
-            return {
-                success: false,
-                error: new Error(`Sub-workflow not found: ${String(source)}. Configure a workflow id, a context path, or inline definition.`),
-                data: { nodeId: node.id }
-            };
-        }
         case 'custom':
         default:
             if (config.execute && typeof config.execute === 'function') {

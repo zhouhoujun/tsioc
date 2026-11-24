@@ -5,6 +5,7 @@ import type { IVisualWorkflowNode } from '../../types';
 import { registerWorkflowNodeHandlers, WorkflowNodeHandlerInput } from '../workflow-node-handlers';
 import { templateText } from '../template';
 import { pause, waitForWorkflowEvent } from '../timing';
+import { resolveWorkflowMarkersAsync } from '../../workflow-typed-value';
 import {
     coerceJson,
     resolveCompareValueAsync,
@@ -321,6 +322,70 @@ registerWorkflowNodeHandlers({
                         };
                     }
                     return { success: true, data: { nodeId: node.id, triggered: true, payload } };
+    },
+    'event-emit': async ({ node, context }) => {
+        const config = node.config || {};
+    const event = String(config.event || 'workflow.event');
+    const payload = await resolveWorkflowMarkersAsync(coerceJson(config.payload), context);
+    const bus = (context as any).eventBus || (context as any).events;
+    if (bus && typeof bus.emit === 'function') {
+        bus.emit(event, payload);
+        return { success: true, data: { nodeId: node.id, event, emitted: true, payload } };
+    }
+    if (typeof (context as any).emit === 'function') {
+        (context as any).emit(event, payload);
+        return { success: true, data: { nodeId: node.id, event, emitted: true, payload } };
+    }
+    return { success: true, data: { nodeId: node.id, event, emitted: false, payload } };
+    },
+    'event-wait': async ({ node, context }) => {
+        const config = node.config || {};
+    const event = String(config.event || 'workflow.event');
+    const timeout = Math.max(0, Number(config.timeout) || 0);
+    const bus = (context as any).eventBus || (context as any).events;
+    try {
+        if (bus && typeof bus.wait === 'function') {
+            const value = await bus.wait(event, timeout);
+            return { success: true, data: { nodeId: node.id, event, value, waited: true } };
+        }
+        if (typeof (context as any).waitEvent === 'function') {
+            const value = timeout
+                ? await Promise.race([
+                    Promise.resolve((context as any).waitEvent(event)),
+                    new Promise(resolve => setTimeout(() => resolve(undefined), timeout))
+                ])
+                : await (context as any).waitEvent(event);
+            return { success: true, data: { nodeId: node.id, event, value, waited: true } };
+        }
+        return { success: true, data: { nodeId: node.id, event, waited: false } };
+    } catch (error) {
+        return { success: false, error: error as Error, data: { nodeId: node.id, event } };
+    }
+    },
+    command: async ({ node, context }) => {
+        const config = node.config || {};
+    const command = String(config.command || '');
+    const rawArgs = config.args;
+    const args = Array.isArray(rawArgs)
+        ? rawArgs.map(item => item && typeof item === 'object' && 'value' in item ? item.value : item)
+        : coerceJson(rawArgs);
+    const executor = (context as any).exec
+        || (context as any).runCommand
+        || (context as any).commands?.[command];
+    if (typeof executor === 'function') {
+        try {
+            const result = await executor(command, args, context);
+            return {
+                success: true,
+                data: result && typeof result === 'object'
+                    ? { ...result, nodeId: node.id, command }
+                    : { nodeId: node.id, command, result }
+            };
+        } catch (error) {
+            return { success: false, error: error as Error, data: { nodeId: node.id, command } };
+        }
+    }
+    return { success: true, data: { nodeId: node.id, command, skipped: true, args } };
     },
     function: async ({ node, context, host, extras }) => {
         const config = node.config || {};

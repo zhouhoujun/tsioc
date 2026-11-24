@@ -53,11 +53,13 @@ describe('Workflow node handler registry', () => {
         expect(types).toContain('parallel');
         expect(types).toContain('trycatch');
         expect(getWorkflowNodeHandler('start')).toBeTruthy();
-        // The network family registers too; loop/subprocess still run from the
-        // inline runtime switch until their migration lands.
+        // Network and subflow families register too; only `custom` stays as the
+        // inline fallback for plugin/host node types.
         expect(getWorkflowNodeHandler('http-request')).toBeTruthy();
         expect(getWorkflowNodeHandler('file-in')).toBeTruthy();
-        expect(getWorkflowNodeHandler('loop')).toBeUndefined();
+        expect(getWorkflowNodeHandler('loop')).toBeTruthy();
+        expect(getWorkflowNodeHandler('subprocess')).toBeTruthy();
+        expect(getWorkflowNodeHandler('custom')).toBeUndefined();
     });
 
     it('executes registered handlers instead of the inline switch', async () => {
