@@ -1,8 +1,8 @@
 {
-  "initialBytes": 1909126,
-  "initialGzipBytes": 493699,
-  "lazyBytes": 430493,
-  "lazyGzipBytes": 119081,
-  "lazyChunkCount": 1,
-  "largestLazyGzipBytes": 119081
+  "initialBytes": 1897001,
+  "initialGzipBytes": 488984,
+  "lazyBytes": 818683,
+  "lazyGzipBytes": 238822,
+  "lazyChunkCount": 8,
+  "largestLazyGzipBytes": 119167
 }

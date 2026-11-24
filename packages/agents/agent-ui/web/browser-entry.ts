@@ -1,3 +1,4 @@
+import './framework-entry';
 import { runAgentWebConsole } from '../web-console';
 
 /**

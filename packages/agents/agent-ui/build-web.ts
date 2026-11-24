@@ -491,10 +491,11 @@ async function main(): Promise<void> {
     fs.rmSync(path.join(distDir, 'chunks'), { recursive: true, force: true });
     const result = await esbuild.build({
         ...sharedBuildOptions,
-        entryPoints: [BUNDLE_ENTRY],
+        entryPoints: { 'agent-console': BUNDLE_ENTRY, 'agent-framework': path.join(TSC_OUT, 'agents', 'agent-ui', 'web', 'framework-entry.js') },
         outdir: distDir,
-        entryNames: 'agent-console',
-        splitting: false,
+        entryNames: '[name]',
+        chunkNames: 'chunks/[name]-[hash]',
+        splitting: true,
         metafile: true,
     });
     const outputFiles = Object.keys(result.metafile?.outputs || {})

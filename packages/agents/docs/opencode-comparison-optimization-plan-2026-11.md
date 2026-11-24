@@ -298,10 +298,11 @@
     中把 ioc 自身的 AOT helper 自引用（`@tsdi/ioc`）改写为相对 `metadata/precompiled`，消除了
     `ModuleRef extends Injector` 的首个求值顺序错误。**真正 code-splitting 仍被
     `components/html` 编译器模块的类继承求值顺序卡住**（splitting 冒烟测试在
-    `HtmlTemplateParser`/`at extends yt` 处报 `Class extends value undefined`）。作为不依赖整树
-    splitting 的落地方式，`/voice` 现已构建为独立 ESM lazy chunk（`web/dist/chunks/agent-console-voice.js`，
-    gzip ~116 KiB），浏览器首次 `/voice` 时按 URL 加载，TUI/测试通过 `installVoiceHandlers()` 注入；
-    首屏 gzip **482.1 KiB**（<500 KiB），lazy chunk ≤150 KiB 预算通过。
+    `HtmlTemplateParser`/`at extends yt` 处报 `Class extends value undefined`）。通过给 web build
+    增加一个 `web/framework-entry.ts`（先导入 ioc/components/common/html）作为第二个 esbuild entry，
+    让共享 chunk 按框架优先的顺序求值，`splitting:true` 已可安全启用：主入口首屏 gzip **477.5 KiB**，
+    组件渲染器/html/json/xml 与 `/voice` 共 8 个 lazy chunk（最大 116.4 KiB gzip，≤150 KiB 预算）。
+    `/voice` 仍由独立 ESM chunk 按需加载；TUI/测试通过 `installVoiceHandlers()` 注入。
 - 状态（2026-11-24）：`PermissionEngine` 支持动态 layer provider，runtime 将当前 archetype 的
   `permissions.deny` 编译为 `agent` 层 deny 规则（hard floor，session/saved allow 不能绕过）；
   descriptor 生成 JSON Schema 文档 `buildAgentRpcJsonSchema()`，`GET /rpc-schema.json` 与
