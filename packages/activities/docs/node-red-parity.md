@@ -124,5 +124,8 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 
 ## Known gaps worth revisiting
 
-- CSV `multi` (one message per row) and Buffer encodings.
-- Editor expression completion inside the panel beyond the JSONata syntax check.
+- CSV `multi` (one message per row) is the streaming non-goal in another shape.
+- Binary payloads are base64 strings (`file-in`/`file-out` honour `encoding`);
+  there is intentionally no `Buffer` type in the renderer-neutral runtime.
+- Editor expression completion offers scope names and common JSONata functions;
+  it does not complete against a live evaluation scope yet.
