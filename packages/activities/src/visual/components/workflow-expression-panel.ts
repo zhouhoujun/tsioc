@@ -1,4 +1,4 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, NoReactive } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
@@ -6,7 +6,7 @@ import type { WorkflowDesigner } from '../workflow-designer';
 import { decodeWorkflowTypedValue } from '../workflow-typed-value';
 import { patchConfigPath, readConfigPath } from '../workflow-config-path';
 import { preloadWorkflowExpressions, validateWorkflowExpression } from '../workflow-expression';
-import { WORKFLOW_EXPRESSION_SUGGESTIONS } from '../workflow-expression-suggestions';
+import { WORKFLOW_EXPRESSION_SUGGESTIONS, workflowExpressionScopeSuggestions } from '../workflow-expression-suggestions';
 
 /**
  * Expression editing overlay for typed values.
@@ -58,6 +58,7 @@ export class WorkflowExpressionPanelComponent {
     valid = false;
     protected target?: { nodeId: string; path: string };
     protected selfRef?: WorkflowExpressionPanelComponent;
+    @NoReactive() private suggestionCache?: { execution: any; base: string; values: string };
 
     constructor(@Optional() private translator?: Translator) { }
 
@@ -122,7 +123,17 @@ export class WorkflowExpressionPanelComponent {
     }
 
     get suggestionData(): string {
-        return encodeURIComponent(JSON.stringify(this.suggestions || []));
+        const execution = this.designer?.execution;
+        const base = (this.suggestions || []).join('\u0000');
+        const cache = this.suggestionCache;
+        if (cache && cache.execution === execution && cache.base === base) {
+            return cache.values;
+        }
+        const values = new Set(this.suggestions || []);
+        workflowExpressionScopeSuggestions(this.designer).forEach(value => values.add(value));
+        const encoded = encodeURIComponent(JSON.stringify(Array.from(values)));
+        this.suggestionCache = { execution, base, values: encoded };
+        return encoded;
     }
 
     readonly input = (event: any): void => {

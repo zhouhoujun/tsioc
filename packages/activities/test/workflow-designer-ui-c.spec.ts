@@ -310,6 +310,11 @@ describe('Workflow Designer UI', () => {
         });
         ref.instance.designer.selectNode(node.id);
         await flush();
+        // A previous run exposes its payload shape to expression completion.
+        (ref.instance.designer as any).execution = {
+            nodeStates: { inject_0: { result: { data: { payload: { total: 21 } } } } }
+        } as any;
+        await flush();
 
         const action = root.querySelector(
             '.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-action="expression"]'
@@ -324,6 +329,8 @@ describe('Workflow Designer UI', () => {
         const suggestions = decodeURIComponent(input.getAttribute('data-code-suggestions') || '');
         expect(suggestions).toContain('payload');
         expect(suggestions).toContain('$sum');
+        // Live paths from the last run join the static completions.
+        expect(suggestions).toContain('payload.total');
 
         // Broken syntax is reported by the lazy JSONata validator.
         input.value = 'payload.total +';

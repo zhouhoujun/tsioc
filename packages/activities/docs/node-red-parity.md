@@ -13,7 +13,7 @@ in `src/visual/node-registry.ts` (definitions), `src/visual/workflow-runtime.ts`
 | Execution | Message-level: a node runs once per message and may `send` many messages on many ports | DAG run: a node runs once per execution and returns one result |
 | Sequences | `msg.parts` streams a message per item | `split` returns the array; `map`/`filter`/`sort`/`join`/`batch` process it |
 | Replay | Not built in | Immutable execution plan + snapshots (`WorkflowExecutionSnapshot`) with deterministic replay/resume |
-| Status | `node.status({fill, shape, text})` pushed live | `ActivityResult.status = { text, level, key?, params? }`, snapshotted with the run |
+| Status | `node.status({fill, shape, text})` pushed live | `ActivityResult.status = { text, level, key?, params?, shape?, fill? }`, snapshotted with the run and painted as a dot/ring |
 | Context | `node`/`flow`/`global` stores (pluggable) | `flow`/`global`/`env` plus **node-local** `node` state (`node.get/set/has`, typed source `node`, expression scope `node`); persists per workflow + node in the service, cleared by `clearNodeRuntimeState` |
 | Credentials | Separate `flows_cred.json`; `node.credentials` | `{{credential:name}}` references resolved by the host; writes migrate inline values into the store |
 | Node definition | Definition + runtime + editor hooks in one file | Central registry (fields/ports/palette) + per-type runtime handlers (`registerWorkflowNodeHandler`) + plugin `execute` |
@@ -101,7 +101,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | --- | --- |
 | Field schema (label/hint/unit/group/visibility/validation rules) | `WorkflowConfigField` in `types.ts`, rendered by `@tsdi/components/common/dynamic-form` on DOM and TUI |
 | Typed values | `literal`/`number`/`boolean`/`JSON`/`regex`/`expression`/`msg`/`flow`/`global`/`env`/`node`; stored as `{ type, value }` objects (legacy prefixes still resolve) |
-| Expressions | JSONata via the optional `jsonata` package, loaded on demand; typed values, Change rules, inject payload and `{{expr: ...}}` markers in URL/body/assign/log/event/http-response |
+| Expressions | JSONata via the optional `jsonata` package, loaded on demand; typed values, Change rules, inject payload and `{{expr: ...}}` markers in URL/body/assign/log/event/http-response; the editor completes static scope names/JSONata functions plus paths observed in the last run (`payload.*`, `variables.*`, ...) |
 | Cross-field validation | `WorkflowConfigField.validate(value, { values, field })` |
 | Inline validation | Inspector issues for the selected node (required, references, stored workflow ids once the library is loaded, typed literals, expressions, credential names) come from the same `validateWorkflowConfigs` pass used on run/publish, with `nodeId` scoping so unrelated nodes never add noise |
 | Structural validation | `WorkflowNodeDefinition.validateConfig(config)` (for example switch rules/else placement) |
@@ -131,5 +131,6 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 - CSV `multi` (one message per row) is the streaming non-goal in another shape.
 - Binary payloads are base64 strings (`file-in`/`file-out` honour `encoding`);
   there is intentionally no `Buffer` type in the renderer-neutral runtime.
-- Editor expression completion offers scope names and common JSONata functions;
-  it does not complete against a live evaluation scope yet.
+- Expression completion now includes paths from the last run's node results, but
+  it does not evaluate a draft expression or inspect the current message before
+  a run.

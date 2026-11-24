@@ -62,11 +62,12 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // expression editor overlay (panel, styles, config-path helper and the
 // list-row action hook), 1210 KB for the CSV/XML parity options, and 1215 KB
 // for the unified Change value editor, 1216 KB for the subflow source picker
-// and Node-RED status shape/fill, and 1218 KB for inline inspector issues; it
-// keeps ~2 KB of headroom over the preview page's inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB) loaded on
+// and Node-RED status shape/fill, 1218 KB for inline inspector issues, and 1219 KB
+// for live expression completion paths; it keeps ~1 KB of headroom over the
+// preview page's inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB) loaded on
 // first evaluation, so the initial budget only carries the wiring; the gzip
 // budget remains the gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_218_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_219_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
