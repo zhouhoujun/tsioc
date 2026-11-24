@@ -17,6 +17,7 @@ export interface SessionSnapshotHost {
 /** File undo/redo, content snapshots and git step snapshots. */
 export class SessionSnapshotController {
     private pendingGit = new Map<string, string>();
+    private stagedReverts = new Map<string, { messageId: string; files: string[] }>();
 
     constructor(private readonly host: SessionSnapshotHost) {
     }
@@ -74,6 +75,31 @@ export class SessionSnapshotController {
             return { reverted: true, messageId: content.messageId, restoredFiles: content.files };
         }
         return git ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
+    }
+
+    /** P1.2: preview the files a message-level revert would restore without applying it. */
+    async stageRevert(sessionId: string, messageId: string): Promise<{ messageId: string; files: string[]; restoreOrder: 'reverse' }> {
+        const workspace = await this.host.workspace(sessionId);
+        const manifests = workspace && this.host.contentSnapshots ? await this.host.contentSnapshots.list(sessionId, workspace) : [];
+        const manifest = manifests.find(item => item.id === messageId || item.messageId === messageId);
+        const diff = manifest ? null : await this.diffGit(sessionId, messageId);
+        const files = manifest ? manifest.files.map(file => file.path) : (diff?.files ?? []).map(file => file.filePath);
+        const staged = { messageId, files, restoreOrder: 'reverse' as const };
+        this.stagedReverts.set(sessionId, { messageId, files: staged.files });
+        return staged;
+    }
+
+    clearStagedRevert(sessionId: string): boolean {
+        return this.stagedReverts.delete(sessionId);
+    }
+
+    async commitStagedRevert(sessionId: string): Promise<GitRevertResult> {
+        const staged = this.stagedReverts.get(sessionId);
+        if (!staged) {
+            return { reverted: false, error: 'no staged revert' };
+        }
+        this.stagedReverts.delete(sessionId);
+        return this.revertGit(sessionId, staged.messageId);
     }
 
     async listGit(sessionId: string): Promise<GitStepSnapshot[]> {

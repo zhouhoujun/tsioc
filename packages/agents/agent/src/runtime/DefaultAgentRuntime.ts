@@ -689,6 +689,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
     override async listGitStepSnapshots(sessionId: string): Promise<GitStepSnapshot[]> { return this.snapshots.listGit(sessionId); }
 
     override async diffGitStepSnapshot(sessionId: string, ref: string): Promise<GitStepDiff | null> { return this.snapshots.diffGit(sessionId, ref); }
+    stageSessionRevert(sessionId: string, messageId: string) { return this.snapshots.stageRevert(sessionId, messageId); }
+    clearStagedSessionRevert(sessionId: string): boolean { return this.snapshots.clearStagedRevert(sessionId); }
+    commitStagedSessionRevert(sessionId: string): Promise<GitRevertResult> { return this.snapshots.commitStagedRevert(sessionId); }
 
     protected async beginGitStepSnapshot(sessionId: string, workspace?: string): Promise<void> { return this.snapshots.beginGit(sessionId, workspace); }
 
@@ -851,13 +854,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     setSessionToolFilter(sessionId: string, toolsets: string[]): void { this.modes.setToolFilter(sessionId, toolsets); }
-
     clearSessionToolFilter(sessionId: string): void { this.modes.clearToolFilter(sessionId); }
-
     setSessionModelProfile(sessionId: string, profileName: string): void { this.modes.setModelProfile(sessionId, profileName); }
-
     clearSessionModelProfile(sessionId: string): void { this.modes.clearModelProfile(sessionId); }
-
     protected resolveDefaultArchetype(): AgentPolicyResolution<string> { return this.policy.resolveDefaultArchetype(); }
 
     resolveSessionArchetype(sessionId: string): AgentPolicyResolution<string> { return this.policy.resolveSessionArchetype(sessionId); }

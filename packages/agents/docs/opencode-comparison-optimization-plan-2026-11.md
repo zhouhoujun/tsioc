@@ -209,7 +209,9 @@
   `<snapshot session>/<message>.json` manifest（文件路径 + before/after hash，不再内联正文）；
   `SessionSnapshotController` 在 turn 结束提交 manifest，并在无 git / git 失败时把
   `list/diff/revert/unrevert` 回退到内容快照，复用现有 `session.git_snapshot.*` RPC 与 UI。
-  **剩余**：stage/clear/commit 三阶段 RPC 与 `/undo` 映射、跨进程记录 last-revert（当前 unrevert 依赖进程内记录）。
+  **剩余**：`/undo` 映射到 stage+restore prompt、跨进程记录 last-revert（当前 unrevert 依赖进程内记录）。
+  三阶段 RPC 已落地：`session.revert.stage`（返回将恢复的文件列表，优先读 content manifest）、
+  `session.revert.clear`、`session.revert.commit`（应用已 stage 的 message revert）。
 
 ### P2 — 产物、压缩与扩展（2–3 周）
 

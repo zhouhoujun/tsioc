@@ -134,5 +134,15 @@ export class ContentAddressedSnapshotTest {
         expect(unrevert.reverted).toEqual(true);
         expect(await adapter.readText('/work/app/a.txt')).toEqual('v2');
         expect(changes).toEqual(['s1']);
+
+        const staged = await controller.stageRevert('s1', 'm1');
+        expect(staged.files).toEqual(['a.txt']);
+        expect(controller.clearStagedRevert('s1')).toEqual(true);
+        expect((await controller.commitStagedRevert('s1')).reverted).toEqual(false);
+
+        await controller.stageRevert('s1', 'm1');
+        const committed = await controller.commitStagedRevert('s1');
+        expect(committed.reverted).toEqual(true);
+        expect(await adapter.readText('/work/app/a.txt')).toEqual('v1');
     }
 }

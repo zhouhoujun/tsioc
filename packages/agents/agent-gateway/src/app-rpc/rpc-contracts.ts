@@ -2,6 +2,7 @@ import type { AppRpcRequestContext } from '../contracts/AppRpc';
 import { listPermissionRules } from './permission-rules';
 import { getArtifactFromRpc, listArtifactsFromRpc } from './artifacts-rpc';
 import { requireString } from './request-helpers';
+import { clearRevertFromRpc, commitRevertFromRpc, stageRevertFromRpc } from './revert-rpc';
 
 /**
  * P0.4: descriptor-based RPC contracts.
@@ -29,7 +30,10 @@ export interface AgentRpcContract {
 export const AGENT_RPC_CONTRACT_METHOD_IDS = [
     'permission.rules.list',
     'artifact.list',
-    'artifact.get'
+    'artifact.get',
+    'session.revert.stage',
+    'session.revert.clear',
+    'session.revert.commit'
 ] as const;
 
 type AgentRpcContractMethod = typeof AGENT_RPC_CONTRACT_METHOD_IDS[number];
@@ -48,6 +52,18 @@ const CONTRACT_DEFINITIONS: Record<AgentRpcContractMethod, Omit<AgentRpcContract
         handler: ({ params, runtime, authorize }) => getArtifactFromRpc({
             params, runtime, authorize, id: requireString(params?.id ?? params?.artifactId, 'id')
         })
+    },
+    'session.revert.stage': {
+        description: 'Stage a message-level revert and return the files it would restore.',
+        handler: ({ params, runtime, authorize }) => stageRevertFromRpc({ params, runtime, authorize })
+    },
+    'session.revert.clear': {
+        description: 'Clear the staged message-level revert.',
+        handler: ({ params, runtime, authorize }) => clearRevertFromRpc({ params, runtime, authorize })
+    },
+    'session.revert.commit': {
+        description: 'Apply the staged message-level revert.',
+        handler: ({ params, runtime, authorize }) => commitRevertFromRpc({ params, runtime, authorize })
     }
 };
 

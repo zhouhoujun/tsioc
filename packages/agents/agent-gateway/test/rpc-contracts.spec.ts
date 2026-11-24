@@ -46,4 +46,22 @@ export class RpcContractsTest {
         expect(got.artifact.id).toEqual('a1');
         expect(authorized).toEqual(['s1', 's1']);
     }
+
+    @Test('revert contracts stage, clear and commit through the runtime')
+    async revertContracts() {
+        const authorized: string[] = [];
+        const calls: string[] = [];
+        const runtime = {
+            stageSessionRevert: async (sessionId: string, messageId: string) => { calls.push(`stage:${sessionId}:${messageId}`); return { messageId, files: ['a.txt'], restoreOrder: 'reverse' }; },
+            clearStagedSessionRevert: async (sessionId: string) => { calls.push(`clear:${sessionId}`); return true; },
+            commitStagedSessionRevert: async (sessionId: string) => { calls.push(`commit:${sessionId}`); return { reverted: true, restoredFiles: 1 }; }
+        };
+        const input = { params: { sessionId: 's1', messageId: 'm1' }, context: {} as any, runtime, authorize: async (id: string) => { authorized.push(id); } };
+        const staged = await resolveAgentRpcContract('session.revert.stage')!.handler(input);
+        expect(staged.staged.files).toEqual(['a.txt']);
+        expect((await resolveAgentRpcContract('session.revert.clear')!.handler(input)).cleared).toEqual(true);
+        expect((await resolveAgentRpcContract('session.revert.commit')!.handler(input)).result.reverted).toEqual(true);
+        expect(calls).toEqual(['stage:s1:m1', 'clear:s1', 'commit:s1']);
+        expect(authorized).toEqual(['s1', 's1', 's1']);
+    }
 }
