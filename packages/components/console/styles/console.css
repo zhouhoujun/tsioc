@@ -126,12 +126,14 @@
 .message-line,
 .tab,
 .tab-close,
+.tab-scroll,
 .dialog-close {
     transition: background-color 140ms ease;
 }
 .message-line[data-hover="fade"]:hover,
 .tab:hover,
 .tab-close:hover,
+.tab-scroll:hover,
 .dialog-close:hover {
     background-color: var(--console-hover-bg, #303e4f);
 }
@@ -550,6 +552,28 @@
     font-weight: bold;
 }
 .tab-new:hover {
+    background-color: var(--console-hover-bg, #303e4f);
+}
+
+
+.tab-scroll {
+    color: var(--console-accent, #86a9d6);
+    background-color: transparent;
+}
+.tab-scroll[data-disabled="true"] {
+    color: var(--console-meta, #6e7681);
+}
+.tab-scroll:hover {
+    background-color: var(--console-hover-bg, #303e4f);
+}
+
+.settings-section-scroll {
+    color: var(--console-accent, #86a9d6);
+}
+.settings-section-scroll[data-disabled="true"] {
+    color: var(--console-meta, #6e7681);
+}
+.settings-section-scroll:hover {
     background-color: var(--console-hover-bg, #303e4f);
 }
 .console-toast-stack {

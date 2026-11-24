@@ -29,26 +29,92 @@ export class SessionTabWindowTest {
         const items = source.items;
         expect(items.length).toEqual(12);
         expect(items.some(item => item.disabled)).toEqual(false);
+        expect(source.windowed).toEqual(false);
+        expect(source.canScrollBack).toEqual(false);
+        expect(source.canScrollForward).toEqual(false);
     }
 
-    @Test('windows a long strip around the active tab and adds overflow markers')
+    @Test('windows a long strip around the active tab without inert markers')
     windowsLongStrip() {
-        // Active tab at the end: the window clips from the left.
-        const tail = seed(12, 11, 60).items;
-        expect(tail[0].disabled).toEqual(true);
-        expect(tail[0].id).toEqual('');
-        expect(tail[tail.length - 1].id).toEqual('session-11');
-        expect(tail[tail.length - 1].active).toEqual(true);
-        expect(tail.length).toBeLessThan(12);
+        // Active tab at the end: the page ends on it.
+        const tail = seed(12, 11, 60);
+        const tailItems = tail.items;
+        expect(tail.windowed).toEqual(true);
+        expect(tailItems.length).toBeLessThan(12);
+        expect(tailItems.some(item => item.disabled)).toEqual(false);
+        expect(tailItems[tailItems.length - 1].id).toEqual('session-11');
+        expect(tailItems[tailItems.length - 1].active).toEqual(true);
+        expect(tail.canScrollBack).toEqual(true);
+        expect(tail.canScrollForward).toEqual(false);
 
-        // Active tab in the middle: markers on both sides.
-        const middle = seed(12, 6, 60).items;
-        expect(middle[0].disabled).toEqual(true);
-        expect(middle[middle.length - 1].disabled).toEqual(true);
-        expect(middle.some(item => item.id === 'session-6' && item.active)).toEqual(true);
+        // Active tab in the middle: both arrows can page.
+        const middle = seed(12, 6, 60);
+        const middleItems = middle.items;
+        expect(middleItems.some(item => item.id === 'session-6' && item.active)).toEqual(true);
+        expect(middle.canScrollBack).toEqual(true);
+        expect(middle.canScrollForward).toEqual(true);
     }
 
-    @Test('a disabled overflow marker is not selectable')
+    @Test('the arrows page the strip and the active change re-centers it')
+    pagesWithArrows() {
+        const source = seed(12, 0, 60);
+        const first = source.items;
+        expect(first[0].id).toEqual('session-0');
+        expect(source.canScrollBack).toEqual(false);
+        expect(source.canScrollForward).toEqual(true);
+
+        source.scrollForward();
+        const second = source.items;
+        expect(second[0].id).toEqual('session-3');
+        expect(second[0].id).not.toEqual(first[0].id);
+        expect(source.canScrollBack).toEqual(true);
+
+        // The tab bar forwards the arrow clicks to the same paging actions.
+        const bar = new TabBarComponent();
+        bar.source = source;
+        expect(bar.arrowsVisible).toEqual(true);
+        expect(bar.scrollBackDisabled).toEqual(false);
+        bar.scrollForward();
+        expect(source.items[0].id).not.toEqual(second[0].id);
+
+        // Selecting another tab abandons the manual page and follows it.
+        (source as any).state.sessionId = 'session-11';
+        const followed = source.items;
+        expect(followed[followed.length - 1].id).toEqual('session-11');
+        expect(followed[followed.length - 1].active).toEqual(true);
+        expect(source.canScrollForward).toEqual(false);
+    }
+
+    @Test('paging stops at both edges')
+    pagesToEdges() {
+        const source = seed(12, 0, 60);
+        source.scrollBack();
+        expect(source.items[0].id).toEqual('session-0');
+        for (let index = 0; index < 8; index += 1) {
+            source.scrollForward();
+        }
+        const last = source.items;
+        expect(last[last.length - 1].id).toEqual('session-11');
+        expect(source.canScrollForward).toEqual(false);
+    }
+
+    @Test('a short last page still pages back to a full page')
+    pagesBackFromShortTail() {
+        // 13 tabs leave a one-tab last page on a three-tab page size.
+        const source = seed(13, 0, 60);
+        const pageSize = source.items.length;
+        expect(pageSize).toBeGreaterThan(1);
+        for (let index = 0; index < 12; index += 1) {
+            source.scrollForward();
+        }
+        expect(source.canScrollForward).toEqual(false);
+        expect(source.items.length).toBeLessThan(pageSize);
+        source.scrollBack();
+        expect(source.items.length).toBeGreaterThan(1);
+        expect(source.items[source.items.length - 1].id).toEqual('session-11');
+    }
+
+    @Test('a disabled marker is not selectable')
     markerIsInert() {
         const bar = new TabBarComponent();
         const selected: string[] = [];

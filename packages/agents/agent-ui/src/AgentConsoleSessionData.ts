@@ -66,6 +66,10 @@ export class AgentConsoleSessionData {
     maxOverlayVisibleLines = 0;
     /** Terminal columns for the session tab strip; 0 on hosts that scroll it (web). */
     tabStripColumns = 0;
+    /** First visible session tab when the terminal strip is scrolled; -1 follows the active tab. */
+    tabWindowStart = -1;
+    /** Active session id when the strip was scrolled by hand; an active change re-centers. */
+    tabWindowAnchor = '';
     /** All tabs reserve a close affordance and reveal it while the tab is
      *  hovered (DOM through CSS, the TUI surface at paint time). */
     tabCloseOnHover = true;
@@ -308,6 +312,8 @@ export class AgentConsoleSessionData {
     settingsCenterTitle = '';
     settingsCenterMeta = '';
     settingsCenterHint = '';
+    /** First visible dialog section when the section strip is paged; -1 follows the active one. */
+    settingsCenterSectionStart = -1;
     settingsCenterPickAction?: (id: string) => void | Promise<void>;
     settingsCenterSectionPickAction?: (id: AgentConsoleSettingsSectionId) => void | Promise<void>;
     /** Web settings page: same schema as the overlay, rendered as a popup card. */

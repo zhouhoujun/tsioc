@@ -418,6 +418,7 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
    radius, close-button and hover behaviour live in the component stylesheet. */
 #agent-console tab-bar {
     --tab-strip-background: transparent;
+    --tab-scroll-background: var(--agent-web-bg);
     --tab-surface: var(--agent-web-panel-raised);
     --tab-border: var(--agent-web-border);
     --tab-text: var(--agent-web-strong);

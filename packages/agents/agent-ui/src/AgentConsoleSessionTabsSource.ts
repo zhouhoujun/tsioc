@@ -5,7 +5,17 @@ import { TabBarSource, TabItem } from '@tsdi/components/common/tab-bar';
 import { AgentConsoleSessionState, AgentConsoleSessionItem } from './AgentConsoleSessionState';
 import { resolveAgentConsoleSessionTabs } from './AgentConsoleSessionTabList';
 export { resolveAgentConsoleSessionTabs } from './AgentConsoleSessionTabList';
-import { formatAgentUiLabel } from './agent-ui.i18n';
+import { resolveAgentConsoleStripWindow } from './AgentConsoleStripWindow';
+import { formatAgentPanelLabel, formatAgentUiLabel } from './agent-ui.i18n';
+
+interface AgentConsoleTabWindow {
+    visible: TabItem[];
+    start: number;
+    end: number;
+    canBack: boolean;
+    canForward: boolean;
+    backStart: number;
+}
 
 /**
  * Resolve the sessions shown in the top strip: only the current project and,
@@ -16,9 +26,15 @@ import { formatAgentUiLabel } from './agent-ui.i18n';
  * Agent-ui data/actions for the shared `tab-bar`. It scopes the strip to
  * the current project/workspace, applies the console theme and forwards tab
  * actions to the console state.
+ *
+ * The terminal strip cannot scroll like a DOM strip, so it windows its items
+ * around the active tab and switches pages left/right with the shared arrows.
+ * Browsers leave `windowed` false and let the strip scroll itself.
  */
 @Injectable()
 export class AgentConsoleSessionTabsSource implements TabBarSource {
+    protected lastWindow?: { start: number; end: number };
+
     constructor(private state: AgentConsoleSessionState, @Optional() private translator?: TranslatorService) {
     }
 
@@ -26,11 +42,64 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
         return this.state.messageLayout === 'viewport';
     }
 
+    /** Terminal strips window `items`; DOM hosts scroll the strip natively. */
+    get windowed(): boolean {
+        return this.visible && Math.floor(Number(this.state.tabStripColumns) || 0) > 0;
+    }
+
     get items(): TabItem[] {
         if (!this.visible) {
             return [];
         }
-        const items = resolveAgentConsoleSessionTabs(this.state).map(session => {
+        return this.resolveWindow(this.allItems()).visible;
+    }
+
+    /** Overflow navigation for the terminal strip (DOM arrows scroll natively). */
+    get canScrollBack(): boolean {
+        return this.windowed && this.resolveWindow(this.allItems()).canBack;
+    }
+
+    get canScrollForward(): boolean {
+        return this.windowed && this.resolveWindow(this.allItems()).canForward;
+    }
+
+    get scrollBackLabel(): string {
+        return ' ‹ ';
+    }
+
+    get scrollForwardLabel(): string {
+        return ' › ';
+    }
+
+    get scrollBackTitle(): string {
+        return formatAgentPanelLabel(this.translator, 'sessions', 'scrollBack', 'Scroll tabs left');
+    }
+
+    get scrollForwardTitle(): string {
+        return formatAgentPanelLabel(this.translator, 'sessions', 'scrollForward', 'Scroll tabs right');
+    }
+
+    scrollBack(): void {
+        const window = this.resolveWindow(this.allItems());
+        if (!window.canBack) {
+            return;
+        }
+        this.state.tabWindowStart = window.backStart;
+        this.state.tabWindowAnchor = String(this.state.sessionId || '');
+    }
+
+    scrollForward(): void {
+        const window = this.resolveWindow(this.allItems());
+        if (!window.canForward) {
+            return;
+        }
+        this.state.tabWindowStart = window.end;
+        this.state.tabWindowAnchor = String(this.state.sessionId || '');
+    }
+
+    /** All tabs in strip order, before winnowing to the visible page. */
+    protected allItems(): TabItem[] {
+        return resolveAgentConsoleSessionTabs(this.state).map(session => {
             const active = session.id === this.state.sessionId || !!session.current;
             return {
                 id: session.id,
@@ -41,56 +110,62 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
                 showClose: (active ? true : (this.state.tabCloseOnHover ? 'hover' : false)) as TabItem['showClose']
             };
         });
-        return this.windowItems(items);
     }
 
     /**
-     * Terminal strips cannot scroll: keep the active tab and `+` visible by
-     * showing a window around it plus `…` markers. Browser strips keep every
-     * tab (they scroll horizontally), so this only runs when the host reports
-     * terminal columns.
+     * Window the strip around the active tab (or around the page the user
+     * scrolled to) and report whether the arrows can page further. Selecting
+     * another tab re-centers because the manual page is anchored to the session
+     * that was active when the arrows were used.
      */
-    protected windowItems(items: TabItem[]): TabItem[] {
+    protected resolveWindow(items: TabItem[]): AgentConsoleTabWindow {
+        const all: AgentConsoleTabWindow = {
+            visible: items,
+            start: 0,
+            end: items.length,
+            canBack: false,
+            canForward: false,
+            backStart: 0
+        };
         const columns = Math.floor(Number(this.state.tabStripColumns) || 0);
         if (!items.length || columns <= 0) {
-            return items;
+            this.lastWindow = { start: 0, end: items.length };
+            return all;
         }
-        const budget = Math.max(12, columns - getDisplayWidth(this.createLabel) - 1);
         const widthOf = (item: TabItem): number => getDisplayWidth(item.label) + (item.showClose ? 3 : 0);
         const total = items.reduce((sum, item) => sum + widthOf(item), 0);
-        if (total <= budget) {
-            return items;
+        const plainBudget = Math.max(12, columns - getDisplayWidth(this.createLabel) - 1);
+        if (total <= plainBudget) {
+            this.lastWindow = { start: 0, end: items.length };
+            return all;
         }
-        const active = Math.max(0, items.findIndex(item => item.active));
-        const indicator = 3;
-        const fits = (start: number, end: number, used: number): boolean =>
-            used + (start > 0 ? indicator : 0) + (end < items.length ? indicator : 0) <= budget;
-        let best = { start: active, end: active + 1 };
-        for (let start = active; start >= 0; start -= 1) {
-            let used = 0;
-            for (let end = start + 1; end <= items.length; end += 1) {
-                used += widthOf(items[end - 1]);
-                if (!fits(start, end, used)) {
-                    break;
-                }
-                if (start <= active && end > active) {
-                    const size = end - start;
-                    const bestSize = best.end - best.start;
-                    const centered = Math.abs((start + end - 1) / 2 - active);
-                    const bestCentered = Math.abs((best.start + best.end - 1) / 2 - active);
-                    if (size > bestSize || (size === bestSize && centered < bestCentered)) {
-                        best = { start, end };
-                    }
-                }
-            }
-        }
-        const windowed = items.slice(best.start, best.end);
-        const marker = (): TabItem => ({ id: '', label: ' … ', active: false, showClose: false, disabled: true });
-        return [
-            ...(best.start > 0 ? [marker()] : []),
-            ...windowed,
-            ...(best.end < items.length ? [marker()] : [])
-        ];
+        // The arrows keep their cells at both ends; reserve them even at a page
+        // boundary so the strip does not jump when paging.
+        const arrowBudget = getDisplayWidth(this.scrollBackLabel) + getDisplayWidth(this.scrollForwardLabel);
+        const budget = Math.max(4, plainBudget - arrowBudget);
+        const sessionId = String(this.state.sessionId || '');
+        const activeById = sessionId ? items.findIndex(item => item.id === sessionId) : -1;
+        const active = Math.max(0, activeById >= 0 ? activeById : items.findIndex(item => item.active));
+        // A manual page is anchored to the session that was active when the
+        // arrows were used, so selecting another tab re-centers the strip.
+        const anchor = String(this.state.tabWindowAnchor || '');
+        const manual = anchor && anchor === sessionId ? this.state.tabWindowStart : -1;
+        const window = resolveAgentConsoleStripWindow({
+            count: items.length,
+            widthOf: index => widthOf(items[index]),
+            active,
+            budget,
+            start: manual
+        });
+        this.lastWindow = { start: window.start, end: window.end };
+        return {
+            visible: items.slice(window.start, window.end),
+            start: window.start,
+            end: window.end,
+            canBack: window.canBack,
+            canForward: window.canForward,
+            backStart: window.backStart
+        };
     }
 
     get createLabel(): string {

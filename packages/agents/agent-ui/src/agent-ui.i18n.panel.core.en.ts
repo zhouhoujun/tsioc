@@ -18,7 +18,9 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         untitled: 'New session',
         projectsTitle: 'Projects',
         threadsTitle: 'Threads',
-        sectionsTitle: 'Sections'
+        sectionsTitle: 'Sections',
+        scrollBack: 'Scroll tabs left',
+        scrollForward: 'Scroll tabs right'
     },
     sidebar: {
         title: 'Agent center',

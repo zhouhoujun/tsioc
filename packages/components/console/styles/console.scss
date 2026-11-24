@@ -137,12 +137,14 @@ $idle: var(--console-idle, #6fa37a);
 .message-line,
 .tab,
 .tab-close,
+.tab-scroll,
 .dialog-close {
     transition: background-color 140ms ease;
 }
 .message-line[data-hover="fade"]:hover,
 .tab:hover,
 .tab-close:hover,
+.tab-scroll:hover,
 .dialog-close:hover {
     background-color: var(--console-hover-bg, #303e4f);
 }
@@ -568,6 +570,28 @@ $idle: var(--console-idle, #6fa37a);
     font-weight: bold;
 }
 .tab-new:hover {
+    background-color: var(--console-hover-bg, #303e4f);
+}
+// Overflow paging controls sit at both ends of the strip like a generic tabs
+// component; the disabled edge stays muted so the strip keeps its cells.
+.tab-scroll {
+    color: $accent;
+    background-color: transparent;
+}
+.tab-scroll[data-disabled="true"] {
+    color: $meta;
+}
+.tab-scroll:hover {
+    background-color: var(--console-hover-bg, #303e4f);
+}
+// Dialog section strip: the same left/right paging controls as the tab strip.
+.settings-section-scroll {
+    color: $accent;
+}
+.settings-section-scroll[data-disabled="true"] {
+    color: $meta;
+}
+.settings-section-scroll:hover {
     background-color: var(--console-hover-bg, #303e4f);
 }
 .console-toast-stack {

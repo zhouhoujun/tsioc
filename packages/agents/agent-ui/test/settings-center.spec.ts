@@ -1,7 +1,13 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
+import { Application } from '@tsdi/core';
+import { ComponentFactory, ComponentsModule } from '@tsdi/components';
+import { TuiRenderer, TuiTerminalSurface, TuiTemplateModule } from '@tsdi/components/console';
+import { AgentModule } from '@tsdi/agent';
+import { AgentConsoleComponent, AgentUiModule } from '../src';
 import { createConsole, RuntimeStub, SchedulerStub } from './_helpers';
 import { handleSettingsCenterKey, selectSettingsCenterSection } from '../src/AgentConsoleSettingsCenter';
+import { AGENT_CONSOLE_SETTINGS_SECTIONS } from '../src/AgentConsoleSettingsSchema';
 import { AgentConsoleSettingsCenterPanelComponent } from '../src/AgentConsoleSettingsCenterPanel';
 
 @Suite('agent console settings center')
@@ -336,5 +342,103 @@ export class AgentConsoleSettingsCenterTest {
         expect(state.settingsCenterOpen).toEqual(false);
         expect(mounts).toEqual(1);
         expect(state.settingsCenterRows.some((row: any) => row.id === 'thinking')).toEqual(true);
+    }
+
+    @Test('a narrow dialog pages its section strip with arrows')
+    async sectionStripPages() {
+        const { component, state } = await this.createConsoleWithPersist();
+        await component.handleCommand('/settings');
+        state.tabStripColumns = 80;
+        const panel = new AgentConsoleSettingsCenterPanelComponent(state, undefined);
+        const ids = () => panel.sectionEntries.map(entry => entry.id);
+        const allIds = AGENT_CONSOLE_SETTINGS_SECTIONS.map(section => section.id);
+
+        expect(panel.sectionArrowsVisible).toEqual(true);
+        expect(panel.sectionScrollBackDisabled).toEqual(true);
+        expect(panel.sectionScrollForwardDisabled).toEqual(false);
+        expect(ids()).not.toContain('data');
+
+        panel.scrollSectionsForward();
+        expect(ids()).toContain('data');
+        expect(panel.sectionScrollBackDisabled).toEqual(false);
+        expect(panel.sectionScrollForwardDisabled).toEqual(true);
+
+        // A short last page still pages back to a full page.
+        panel.scrollSectionsBack();
+        expect(ids()[0]).toEqual('general');
+        expect(ids().length).toBeGreaterThan(1);
+        expect(panel.sectionScrollBackDisabled).toEqual(true);
+
+        // Wide terminals fit every section and hide the arrows.
+        state.tabStripColumns = 120;
+        expect(panel.sectionArrowsVisible).toEqual(false);
+        expect(ids()).toEqual(allIds);
+
+        // Selecting a section abandons the manual page and follows it.
+        state.tabStripColumns = 80;
+        panel.scrollSectionsForward();
+        expect(ids()).not.toContain('general');
+        selectSettingsCenterSection(component, 'data');
+        expect(ids()).toContain('data');
+        expect(panel.sectionEntries.find(entry => entry.active)?.id).toEqual('data');
+        expect(panel.sectionScrollForwardDisabled).toEqual(true);
+    }
+
+    @Test('terminal clicks page the dialog section strip')
+    async sectionStripTerminalClick() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+            const component: any = ref.instance;
+            const state: any = component.sessionState;
+            state.tabStripColumns = 80;
+            await component.handleCommand('/settings');
+            for (let index = 0; index < 32; index += 1) {
+                await Promise.resolve();
+            }
+            surface = new TuiTerminalSurface({
+                renderer: ctx.get(TuiRenderer),
+                root: ref.elementRef.nativeElement,
+                width: 80,
+                height: 30,
+                nativeScrollback: false,
+                scrollViewport: true,
+                scrollRegionId: 'transcript',
+                footerRegionId: 'footer',
+                output: { write() { /* noop */ } }
+            });
+            surface.render();
+            const stripRow = () => String((surface!.lastRenderedLines || [])[5] || '').replace(/\x1b\[[0-9;]*m/g, '');
+            expect(stripRow()).toContain('‹');
+            expect(stripRow()).toContain('General');
+            expect(stripRow()).not.toContain('Data & tooling');
+
+            const target = (className: string) => surface!.clickTargets.find(entry =>
+                String((entry.node as any)?.getAttribute?.('class') || '').includes(className) && entry.y === 5);
+            const forward = target('settings-section-scroll-forward');
+            expect(!!forward).toEqual(true);
+            surface.dispatchMouse({ button: 0, x: forward!.x + 1, y: forward!.y + 1, release: false });
+            surface.dispatchMouse({ button: 0, x: forward!.x + 1, y: forward!.y + 1, release: true });
+            for (let index = 0; index < 16; index += 1) {
+                await Promise.resolve();
+            }
+            surface.render();
+            expect(stripRow()).toContain('Data & tooling');
+
+            const back = target('settings-section-scroll-back');
+            expect(!!back).toEqual(true);
+            surface.dispatchMouse({ button: 0, x: back!.x + 1, y: back!.y + 1, release: false });
+            surface.dispatchMouse({ button: 0, x: back!.x + 1, y: back!.y + 1, release: true });
+            for (let index = 0; index < 16; index += 1) {
+                await Promise.resolve();
+            }
+            surface.render();
+            expect(stripRow()).toContain('General');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
     }
 }

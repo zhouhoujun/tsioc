@@ -35,6 +35,8 @@ export interface AgentConsoleSettingsCenterState {
     settingsCenterSection: AgentConsoleSettingsSectionId;
     settingsCenterQuery: string;
     settingsCenterIndex: number;
+    /** First visible dialog section when paged; -1 follows the active section. */
+    settingsCenterSectionStart: number;
     settingsCenterRows: AgentConsoleSettingsRow[];
     settingsCenterTitle: string;
     settingsCenterMeta: string;
@@ -134,6 +136,7 @@ export function openAgentConsoleSettings(host: AgentConsoleSettingsCenterHost, q
     state.settingsCenterOpen = true;
     state.settingsCenterQuery = String(query || '').trim();
     state.settingsCenterIndex = 0;
+    state.settingsCenterSectionStart = -1;
     if (section) {
         state.settingsCenterSection = section;
     }
@@ -155,6 +158,7 @@ export function openAgentConsoleSettingsPage(host: AgentConsoleSettingsCenterHos
     state.settingsPageOpen = true;
     state.settingsCenterQuery = String(query || '').trim();
     state.settingsCenterIndex = 0;
+    state.settingsCenterSectionStart = -1;
     if (section) {
         state.settingsCenterSection = section;
     }
@@ -205,6 +209,7 @@ export function selectSettingsCenterSection(host: AgentConsoleSettingsCenterHost
     state.settingsCenterSection = id;
     state.settingsCenterQuery = '';
     state.settingsCenterIndex = 0;
+    state.settingsCenterSectionStart = -1;
     buildAgentConsoleSettingsRows(host);
 }
 
@@ -216,6 +221,7 @@ export function switchSettingsCenterSection(host: AgentConsoleSettingsCenterHost
     state.settingsCenterSection = next.id;
     state.settingsCenterQuery = '';
     state.settingsCenterIndex = 0;
+    state.settingsCenterSectionStart = -1;
     buildAgentConsoleSettingsRows(host);
 }
 

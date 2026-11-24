@@ -18,7 +18,9 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         untitled: '新会话',
         projectsTitle: '项目',
         threadsTitle: '线程',
-        sectionsTitle: '分区'
+        sectionsTitle: '分区',
+        scrollBack: '向左切换标签',
+        scrollForward: '向右切换标签'
     },
     sidebar: {
         title: '代理中心',

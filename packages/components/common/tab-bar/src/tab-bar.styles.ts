@@ -141,6 +141,51 @@ tab-bar {
 .tab-new:active {
     transform: scale(0.96);
 }
+
+/* Overflow paging arrows: pinned to each end of the scrollable strip so the
+   tabs page beneath them instead of hiding the control off-screen. */
+.tab-scroll {
+    position: sticky;
+    z-index: 2;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    padding: 6px 4px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: var(--tab-scroll-background, var(--tab-surface, #ffffff));
+    color: var(--tab-accent, #2563eb);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: pre;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+.tab-scroll-back {
+    left: 0;
+}
+
+.tab-scroll-forward {
+    right: 0;
+}
+
+.tab-scroll:hover {
+    background: var(--tab-hover, #f1f5f9);
+}
+
+.tab-scroll[data-disabled="true"] {
+    color: var(--tab-muted, #94a3b8);
+    cursor: default;
+    opacity: 0.55;
+}
+
+.tab-scroll[data-disabled="true"]:hover {
+    background: var(--tab-scroll-background, var(--tab-surface, #ffffff));
+}
 `;
 
 /** Install the shared tab strip skin once per document (idempotent). */

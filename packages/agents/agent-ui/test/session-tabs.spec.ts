@@ -279,4 +279,63 @@ export class SessionTabsTest {
             await ctx.close();
         }
     }
+
+    @Test('overflowing terminal tabs page left and right with the shared arrows')
+    async pagesOverflowingTabs() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const ref = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await ref.render();
+            const state: any = ref.instance.sessionState;
+            state.setSessions(Array.from({ length: 8 }, (_value, index) => ({
+                id: `session-${index}`,
+                current: index === 0,
+                title: `Tab ${index}`,
+                workspace: '/work'
+            })));
+            state.setOpenSessionIds(state.sessions.map((session: any) => session.id));
+            state.tabStripColumns = 48;
+            for (let index = 0; index < 32; index++) await Promise.resolve();
+            surface = new TuiTerminalSurface({
+                renderer: ctx.get(TuiRenderer),
+                root: ref.elementRef.nativeElement,
+                width: 48,
+                height: 24,
+                nativeScrollback: false,
+                scrollViewport: true,
+                scrollRegionId: 'transcript',
+                footerRegionId: 'footer',
+                output: { write() { /* noop */ } }
+            });
+            surface.render();
+            const header = () => String((surface!.lastRenderedLines || [])[0] || '').replace(/\x1b\[[0-9;]*m/g, '');
+            expect(header()).toContain('Tab 0');
+            expect(header()).toContain('‹');
+            expect(header()).toContain('›');
+            expect(header()).not.toContain('Tab 7');
+
+            const target = (className: string) => surface!.clickTargets.find(entry =>
+                String((entry.node as any)?.getAttribute?.('class') || '').includes(className) && entry.y === 0);
+            const forward = target('tab-scroll-forward');
+            expect(!!forward).toEqual(true);
+            surface.dispatchMouse({ button: 0, x: forward!.x + 1, y: forward!.y + 1, release: false });
+            surface.dispatchMouse({ button: 0, x: forward!.x + 1, y: forward!.y + 1, release: true });
+            for (let index = 0; index < 16; index++) await Promise.resolve();
+            surface.render();
+            expect(header()).not.toContain('Tab 0');
+            expect(header()).toContain('Tab 3');
+
+            const back = target('tab-scroll-back');
+            expect(!!back).toEqual(true);
+            surface.dispatchMouse({ button: 0, x: back!.x + 1, y: back!.y + 1, release: false });
+            surface.dispatchMouse({ button: 0, x: back!.x + 1, y: back!.y + 1, release: true });
+            for (let index = 0; index < 16; index++) await Promise.resolve();
+            surface.render();
+            expect(header()).toContain('Tab 0');
+        } finally {
+            surface?.destroy();
+            await ctx.close();
+        }
+    }
 }

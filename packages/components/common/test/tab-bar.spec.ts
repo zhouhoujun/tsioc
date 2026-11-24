@@ -43,4 +43,31 @@ export class TabBarComponentTest {
         expect(bar.createLabel).toEqual('+');
         expect(bar.closeLabel).toEqual('✕');
     }
+
+    @Test('host-windowed strips page through the source arrows')
+    pagesWindowedSource() {
+        const bar = new TabBarComponent();
+        const paged: string[] = [];
+        let backEnabled = false;
+        let forwardEnabled = true;
+        bar.source = {
+            visible: true,
+            items: [{ id: 'a', label: ' Alpha ', active: true }],
+            windowed: true,
+            get canScrollBack() { return backEnabled; },
+            get canScrollForward() { return forwardEnabled; },
+            scrollBack: () => { paged.push('back'); backEnabled = false; forwardEnabled = true; },
+            scrollForward: () => { paged.push('forward'); backEnabled = true; forwardEnabled = false; }
+        };
+        expect(bar.hostWindowed).toEqual(true);
+        expect(bar.arrowsVisible).toEqual(true);
+        expect(bar.scrollBackDisabled).toEqual(true);
+        expect(bar.scrollForwardDisabled).toEqual(false);
+        bar.scrollBack();
+        expect(paged).toEqual([]);
+        bar.scrollForward();
+        expect(paged).toEqual(['forward']);
+        expect(bar.scrollBackDisabled).toEqual(false);
+        expect(bar.scrollForwardDisabled).toEqual(true);
+    }
 }

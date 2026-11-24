@@ -104,4 +104,50 @@ export class TabBarDomTest {
         expect(closed).toEqual(['a']);
         expect(selected).toEqual([]);
     }
+
+    @Test('DOM overflow pins paging arrows and scrolls the strip')
+    async domOverflowArrows() {
+        const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;
+        ref.instance.source = {
+            ...source,
+            items: [
+                { id: 'a', label: ' Alpha ', active: true, showClose: true },
+                { id: 'b', label: ' Beta ', active: false, showClose: true },
+                { id: 'c', label: ' Gamma ', active: false, showClose: true },
+                { id: 'd', label: ' Delta ', active: false, showClose: true }
+            ]
+        };
+        await ref.render();
+        await Promise.resolve();
+        const root = (ref.instance as any).resolveStripElement() as any;
+        // JSDOM has no layout engine; provide the metrics a real browser
+        // reports for an overflowing strip.
+        Object.defineProperty(root, 'clientWidth', { configurable: true, value: 100 });
+        Object.defineProperty(root, 'scrollWidth', { configurable: true, value: 400 });
+        root.scrollLeft = 0;
+        const settle = async () => { for (let index = 0; index < 8; index += 1) { await Promise.resolve(); } };
+        (ref.instance as any).syncDomOverflow();
+        await settle();
+        const back = root.querySelector('.tab-scroll-back') as any;
+        const forward = root.querySelector('.tab-scroll-forward') as any;
+        expect(!!back).toEqual(true);
+        expect(!!forward).toEqual(true);
+        expect(back.hasAttribute('hidden')).toEqual(false);
+        expect(back.getAttribute('data-disabled')).toEqual('true');
+        expect(forward.hasAttribute('hidden')).toEqual(false);
+        expect(forward.getAttribute('data-disabled')).toEqual('false');
+        forward.click();
+        await settle();
+        // Paging moves the native scroll offset; the left arrow then enables.
+        expect(root.scrollLeft).toBeGreaterThan(0);
+        (ref.instance as any).syncDomOverflow();
+        await settle();
+        expect(back.getAttribute('data-disabled')).toEqual('false');
+        back.click();
+        await settle();
+        expect(root.scrollLeft).toEqual(0);
+        (ref.instance as any).syncDomOverflow();
+        await settle();
+        expect(back.getAttribute('data-disabled')).toEqual('true');
+    }
 }

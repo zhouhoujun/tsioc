@@ -257,6 +257,8 @@ export const AGENT_UI_MENU_ZH: Record<string, any> = {
         pageHint: '设置即时保存',
         pageEmptyHint: '换个关键词或选择其它分区。',
         centerHint: '上/下 移动   左/右 分区   回车 应用   ctrl+r 重置   输入即搜索   esc 关闭',
+        sectionScrollBack: '向左切换分区',
+        sectionScrollForward: '向右切换分区',
         emptyResults: '没有匹配的设置',
         resetUnavailable: '该设置没有可恢复的默认值。',
         fieldModel: '模型：{name}',

@@ -125,9 +125,20 @@ export class TabsComponent implements AfterViewInit {
             get showCreate() { return source.showCreate; },
             get createLabel() { return source.createLabel; },
             get closeLabel() { return source.closeLabel; },
+            // Overflow navigation stays with the host: terminal strips window
+            // their own items, while DOM strips scroll themselves.
+            get windowed() { return source.windowed; },
+            get canScrollBack() { return source.canScrollBack; },
+            get canScrollForward() { return source.canScrollForward; },
+            get scrollBackLabel() { return source.scrollBackLabel; },
+            get scrollForwardLabel() { return source.scrollForwardLabel; },
+            get scrollBackTitle() { return source.scrollBackTitle; },
+            get scrollForwardTitle() { return source.scrollForwardTitle; },
             select: (id: string) => this.activate(id),
             create: () => source.create?.(),
-            close: (id: string) => source.close?.(id)
+            close: (id: string) => source.close?.(id),
+            scrollBack: () => source.scrollBack?.(),
+            scrollForward: () => source.scrollForward?.()
         };
     }
 

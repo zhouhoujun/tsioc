@@ -123,7 +123,7 @@ Diagnostics: `/check <file...>` (alias `/lsp`) runs read-only LSP diagnostics; `
 Browser/PWA: while the page is hidden, approvals, pending questions and turn completion raise system notifications (permission is requested on the first click/keypress)
 Side questions: `/btw <question>` answers from the current context without adding to the transcript
 Mentions: `@path` attaches a file/dir hint; `@path#L20-L45` (or `#20-45`) attaches that line range
-Tabs: `ctrl+tab` / `ctrl+shift+tab` cycle tabs (`alt+]` / `alt+[` in browsers); `ctrl+shift+t` (`alt+shift+t`) reopens the last closed tab; `ctrl+x w` closes the active tab
+Tabs: `ctrl+tab` / `ctrl+shift+tab` cycle tabs (`alt+]` / `alt+[` in browsers); `ctrl+shift+t` (`alt+shift+t`) reopens the last closed tab; `ctrl+x w` closes the active tab; when the strip overflows, `‹`/`›` page it (click in the TUI, pinned arrows scroll the web strip)
 History: `/undo` reverts the latest prompt, messages and file changes (prompt returns to the composer); `/redo` re-applies the undone turn. Turn boundaries and file snapshots are persisted, so this survives a process restart. `/rewind` is the file-level selector.
 Review: `/review` `/diff` `/approve`
 Hooks: `/hooks` `/memories` `/fast` `/personality` `/debug-config` `/experimental`
@@ -172,8 +172,9 @@ scannable code must fit in one visible screen.
 - `/settings` opens the schema-driven settings popup: sections (General, Model, Permissions, Agents,
   Integrations, Keybinds, Data & tooling), `up/down` move, `left/right` switch section, `enter` applies,
   `ctrl+r` restores a toggle default, typing filters every setting and `/settings <query>` deep-links.
-  Rows show scope (workspace/global/session) and effect (immediate/next turn). `/settings menu` keeps the
-  legacy tab menu.
+  Rows show scope (workspace/global/session) and effect (immediate/next turn). When the section strip
+  does not fit the dialog, `‹`/`›` page it the same way as the session tab strip. `/settings menu` keeps
+  the legacy tab menu.
 - In transcript navigation (`PageUp` from an empty composer), `[` / `]` jump to the previous/next user prompt; `Shift+G` jumps to the last prompt.
 
 ## License
