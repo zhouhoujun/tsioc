@@ -21,6 +21,7 @@ import {
     validateVisualWorkflow,
     VisualNodeRuntimeHost
 } from './workflow-runtime';
+import { enterWorkflow } from './runtime/subflow-chain';
 import { compileVisualWorkflow, CompiledWorkflow } from './workflow-compiler';
 import { WorkflowScheduleHandle, WorkflowScheduleOptions, WorkflowScheduler } from './workflow-scheduler';
 import { VisualNodeActivityAdapter } from './VisualNodeActivityAdapter';
@@ -309,6 +310,7 @@ export class VisualWorkflowService {
             || options.resumeFrom?.executionId
             || this.generateExecutionId();
         const runtimeContext = this.withMessageContext(this.withPluginServices(context), options, definition);
+        enterWorkflow(runtimeContext, definition.id);
         await this.restoreContext(definition, runtimeContext);
         const state = options.resumeFrom
             ? this.createStateFromCheckpoint(definition, options.resumeFrom, executionId)
@@ -633,9 +635,7 @@ export class VisualWorkflowService {
     }
 
     /** Shared `global` scope exposed to every execution of this service. */
-    getGlobalContext(): Record<string, any> {
-        return this.globalContext;
-    }
+    getGlobalContext(): Record<string, any> { return this.globalContext; }
 
     /** `global` scope: service-wide values plus `global-config` nodes. */
     private globalScope(

@@ -5,6 +5,7 @@ import { registerWorkflowNodeHandlers } from '../workflow-node-handlers';
 import { pause } from '../timing';
 import { coerceJson, resolveWorkflowValue } from '../values';
 import { readWorkflowProperty as resolveFrom } from '../../workflow-typed-value';
+import { subflowChainError } from '../subflow-chain';
 
 async function resolveSubWorkflow(
     source: any,
@@ -40,6 +41,10 @@ registerWorkflowNodeHandlers({
             data: { nodeId: node.id, iterations }
         };
     }
+    const cycle = subflowChainError(context, definition.id);
+    if (cycle) {
+        return { success: false, error: cycle, data: { nodeId: node.id, iterations } };
+    }
     const results: ActivityResult[] = [];
     for (let index = 0; index < iterations; index++) {
         if (index > 0 && Number(config.delay) > 0) {
@@ -63,6 +68,10 @@ registerWorkflowNodeHandlers({
         const config = node.config || {};
     const source = config.workflow;
     const definition = await resolveSubWorkflow(source, context, host);
+    const cycle = definition ? subflowChainError(context, definition.id) : undefined;
+    if (cycle) {
+        return { success: false, error: cycle, data: { nodeId: node.id, workflow: definition?.id } };
+    }
     if (definition && host?.executeDefinition) {
         // `inputs`/`outputs` map subflow ports to context paths so the
         // parent chooses what the child sees and what comes back.

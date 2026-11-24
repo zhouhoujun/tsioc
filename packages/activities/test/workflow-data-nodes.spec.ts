@@ -351,6 +351,53 @@ describe('Workflow data & trigger nodes', () => {
         expect(service.getGlobalContext().modeRuns).toBe(3);
     });
 
+    it('stops indirectly recursive sub workflows and keeps later runs clean', async () => {
+        const leaf: VisualWorkflowDefinition = {
+            id: 'chain-leaf',
+            name: 'Leaf',
+            nodes: [registry.createNode('function', { x: 0, y: 0 }, {
+                id: 'leaf_fn',
+                config: { code: 'return { done: true };' }
+            })],
+            connections: []
+        };
+        const parent: VisualWorkflowDefinition = {
+            id: 'chain-parent',
+            name: 'Parent',
+            nodes: [registry.createNode('subprocess', { x: 0, y: 0 }, {
+                id: 'down',
+                config: { workflow: 'chain-child' }
+            })],
+            connections: []
+        };
+        const child: VisualWorkflowDefinition = {
+            id: 'chain-child',
+            name: 'Child',
+            nodes: [registry.createNode('subprocess', { x: 0, y: 0 }, {
+                id: 'back',
+                config: { workflow: 'chain-parent' }
+            })],
+            connections: []
+        };
+        service.setDefinitionResolver(id =>
+            id === 'chain-leaf' ? leaf : id === 'chain-parent' ? parent : id === 'chain-child' ? child : undefined);
+
+        const cycle = await service.execute(parent, {});
+        expect(cycle.success).toBe(false);
+        expect(String(cycle.error?.message || '')).toContain('cycle');
+        expect(String(cycle.error?.message || '')).toContain('chain-parent → chain-child → chain-parent');
+
+        // Each execution starts from a fresh definition chain.
+        const first = await service.execute(chain([
+            { type: 'subprocess', config: { workflow: 'chain-leaf' } }
+        ]), {});
+        const second = await service.execute(chain([
+            { type: 'subprocess', config: { workflow: 'chain-leaf' } }
+        ]), {});
+        expect(first.success).toBe(true);
+        expect(second.success).toBe(true);
+    });
+
     it('maps sub-workflow input and output ports', async () => {
         const child: VisualWorkflowDefinition = {
             id: 'port-child',
