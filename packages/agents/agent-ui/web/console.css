@@ -693,6 +693,14 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
     line-height: 1.6;
 }
 
+#agent-console .console-approvals-panel .approval-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+    overflow: auto;
+}
+
 #agent-console .console-approvals-panel .approval-title {
     font-size: 13.5px;
     font-weight: 600;
@@ -801,7 +809,9 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
     pointer-events: auto;
     margin: 0 auto;
     max-height: calc(100vh - var(--agent-web-footer-height, 96px) - 120px);
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* The dialog component host wrapper is width:auto by default, so `margin:auto`
@@ -1458,7 +1468,26 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
     font-size: 13px;
     line-height: 1.6;
     max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Menus are one scrolling card (rows are the whole content), dialogs keep
+   their title/actions fixed and scroll an inner body only. */
+#agent-console [renderregion="menu"] > .console-panel {
+    display: block;
     overflow: auto;
+}
+
+#agent-console dialog-panel > .console-panel > .dialog-body,
+#agent-console agent-console-text-overlay-panel > .console-panel > .dialog-body,
+#agent-console agent-console-pending-question-panel .console-panel.list-panel > .list,
+#agent-console agent-console-approvals-panel .console-panel.list-panel > .list,
+#agent-console agent-console-select-panel .console-panel.select-list > .list,
+#agent-console .settings-center-panel > .settings-rows {
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 #agent-console dialog-panel > .console-panel > .dialog-close,

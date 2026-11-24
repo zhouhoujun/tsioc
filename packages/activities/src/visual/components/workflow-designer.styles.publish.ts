@@ -237,6 +237,16 @@ export const WORKFLOW_DESIGNER_PUBLISH_CSS = `/* Rename workflow dialog */
 .workflow-config-dialog-panel {
     width: min(460px, 100%);
     max-height: min(80vh, 640px);
+    overflow: hidden;
+}
+
+/* The dialog head and actions stay fixed; only the fields scroll. */
+.workflow-config-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow: auto;
 }
 

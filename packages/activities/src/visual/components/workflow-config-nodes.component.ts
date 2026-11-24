@@ -39,6 +39,7 @@ export interface WorkflowConfigNodeGroupView {
                 <button class="workflow-btn workflow-publish-close" type="button"
                     [aria-label]="closeLabel" [title]="closeLabel" @click="close">✕</button>
             </div>
+            <div class="workflow-config-nodes-body">
             <div class="workflow-config-node-group" v-for="group in groups" data-config-group="{{group.resource}}">
                 <div class="workflow-config-node-group-head">
                     <span class="workflow-config-node-group-label">{{group.label}}</span>
@@ -56,6 +57,7 @@ export interface WorkflowConfigNodeGroupView {
                         [aria-label]="editLabel(item)" @click="edit(item.id)">✎</button>
                 </div>
                 <div class="workflow-config-node-empty" v-if="!group.items.length">{{emptyLabel}}</div>
+            </div>
             </div>
             <div class="workflow-publish-actions">
                 <button class="workflow-btn" type="button" @click="close">{{closeLabel}}</button>

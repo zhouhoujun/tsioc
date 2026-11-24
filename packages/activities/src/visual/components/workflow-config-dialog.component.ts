@@ -32,16 +32,18 @@ import { configNodeOptions, configNodeTypeForResource } from '../workflow-config
                 <button class="workflow-btn workflow-publish-close" type="button"
                     [aria-label]="closeLabel" [title]="closeLabel" @click="close">✕</button>
             </div>
-            <label class="workflow-group-field">
-                <span>{{nameLabel}}</span>
-                <input class="workflow-config-name-input" type="text"
-                    [value]="name" @input="nameInput" @keydown="dialogKey" />
-            </label>
-            <dynamic-form #configForm classPrefix="workflow" :schema="schema"
-                :value="values" :contextKey="configId"
-                :emptyLabel="emptyLabel" :changeAction="dialogChange">
-            </dynamic-form>
-            <div class="workflow-publish-error" v-if="error">{{error}}</div>
+            <div class="workflow-config-dialog-body">
+                <label class="workflow-group-field">
+                    <span>{{nameLabel}}</span>
+                    <input class="workflow-config-name-input" type="text"
+                        [value]="name" @input="nameInput" @keydown="dialogKey" />
+                </label>
+                <dynamic-form #configForm classPrefix="workflow" :schema="schema"
+                    :value="values" :contextKey="configId"
+                    :emptyLabel="emptyLabel" :changeAction="dialogChange">
+                </dynamic-form>
+                <div class="workflow-publish-error" v-if="error">{{error}}</div>
+            </div>
             <div class="workflow-publish-actions">
                 <button class="workflow-btn" type="button" @click="close">{{cancelLabel}}</button>
                 <button class="workflow-btn workflow-btn-primary workflow-config-save" type="button"

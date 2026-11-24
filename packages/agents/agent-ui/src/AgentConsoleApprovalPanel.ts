@@ -19,6 +19,7 @@ import { AgentConsoleTheme, AgentConsoleThemeStyles, defaultAgentConsoleTheme } 
     template: `
     <div class="console-panel dialog-panel console-approvals-panel" role="dialog" aria-label="{{accessibilityLabel}}"><label class="dialog-close" data-cell-width="2" @click="closeApproval">✕</label>
         <label class="dialog-title approval-title">{{approvalsTitleLabel}}</label>
+        <div class="approval-body">
         <label class="approval-summary" v-show="approvalsSummaryLabel">{{approvalsSummaryLabel}}</label>
         <label class="approval-item" data-selected="{{item.selected}}" v-for="item in approvalItems" @click="selectApproval(item.id)">{{item.label}}</label>
         <label class="approval-detail" v-for="line in selectedApprovalRequestLines">{{line}}</label>
@@ -28,6 +29,7 @@ import { AgentConsoleTheme, AgentConsoleThemeStyles, defaultAgentConsoleTheme } 
         <label class="approval-option approval-option-project" @click="approveProjectSelected"><span class="approval-key" aria-hidden="true">p  </span>{{allowProjectLabel}}</label>
         <label class="approval-option approval-option-deny" @click="denySelected"><span class="approval-key" aria-hidden="true">d  </span>{{denyLabel}}</label>
         <label class="approval-option approval-option-deny-reason" @click="denyWithNoteSelected"><span class="approval-key" aria-hidden="true">D  </span>{{denyWithNoteLabel}}</label>
+        </div>
         <label class="dialog-hint approval-actions" v-show="approvalActionsLabel">{{approvalActionsLabel}}</label>
     </div>
     `

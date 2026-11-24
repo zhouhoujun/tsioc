@@ -101,6 +101,13 @@ describe('Workflow Designer UI', () => {
         expect(dialog.showConfigDialog).toBe(true);
         expect(dialog.configType).toBe('mqtt');
         expect(root.querySelector('.workflow-config-dialog')).toBeTruthy();
+        // The head/actions stay outside the scrolling body.
+        const dialogPanel = root.querySelector('.workflow-config-dialog-panel') as any;
+        expect(dialogPanel.firstElementChild?.classList.contains('workflow-publish-head')).toBe(true);
+        const dialogBody = dialogPanel.querySelector('.workflow-config-dialog-body') as any;
+        expect(dialogBody).toBeTruthy();
+        expect(dialogBody.querySelector('dynamic-form')).toBeTruthy();
+        expect(dialogBody.contains(dialogPanel.querySelector('.workflow-publish-actions'))).toBe(false);
 
         dialog.name = 'prod';
         dialog.values = { url: 'mqtt://prod:1883' };
@@ -134,6 +141,11 @@ describe('Workflow Designer UI', () => {
         await flush();
         const panel = ref.instance.preview!.configNodes!;
         expect(panel.visible).toBe(true);
+        const nodesPanel = root.querySelector('.workflow-config-nodes-panel') as any;
+        const nodesBody = nodesPanel.querySelector('.workflow-config-nodes-body') as any;
+        expect(nodesBody).toBeTruthy();
+        expect(nodesBody.querySelector('[data-config-group]')).toBeTruthy();
+        expect(nodesBody.contains(nodesPanel.querySelector('.workflow-publish-actions'))).toBe(false);
         const brokerRow = root.querySelector(`.workflow-config-nodes [data-config-id="${created.id}"]`) as any;
         expect(brokerRow).toBeTruthy();
         expect(brokerRow.querySelector('.workflow-config-node-name').textContent).toBe('prod');
