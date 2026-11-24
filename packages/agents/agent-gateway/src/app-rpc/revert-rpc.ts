@@ -1,8 +1,9 @@
 import { requireSessionId, requireString } from './request-helpers';
+import type { AgentRpcRuntime } from './rpc-contracts';
 
 export interface RevertRpcInput {
     params: any;
-    runtime: any;
+    runtime: AgentRpcRuntime;
     authorize(sessionId: string): Promise<void>;
 }
 

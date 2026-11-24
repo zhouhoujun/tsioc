@@ -13,10 +13,22 @@ import { listPluginsFromRpc, setPluginEnabledFromRpc } from './plugins-rpc';
  * lockstep. Legacy methods remain in the AppRpcServer switch and are migrated
  * incrementally (new methods must be added here).
  */
+/** Narrow runtime surface used by descriptor handlers (no `any` ctx bag). */
+export interface AgentRpcRuntime {
+    listPermissionRules?(sessionId?: string): any[];
+    inspectPermission?(toolName: string, input: any, sessionId?: string): any;
+    listArtifacts?(sessionId: string): Promise<any[]>;
+    getArtifact?(sessionId: string, id: string): Promise<any>;
+    stageSessionRevert?(sessionId: string, messageId: string, paths?: string[]): any;
+    clearStagedSessionRevert?(sessionId: string): any;
+    commitStagedSessionRevert?(sessionId: string): any;
+    plugins?: { list?(): any[]; setEnabled?(id: string, enabled: boolean): Promise<boolean> };
+}
+
 export interface AgentRpcContractContext {
     params: any;
     context: AppRpcRequestContext;
-    runtime: any;
+    runtime: AgentRpcRuntime;
     authorize(sessionId: string): Promise<void>;
 }
 

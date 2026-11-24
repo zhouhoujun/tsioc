@@ -20,7 +20,7 @@ import { toAppRpcError } from './rpcError';
 import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mode';
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
-import { resolveAgentRpcContract } from './rpc-contracts';
+import { resolveAgentRpcContract, type AgentRpcRuntime } from './rpc-contracts';
 import { importSessionFromRpc } from './session-import';
 import { sendSessionMessageFromRpc } from './session-message';
 import { listCrossSessionMessages } from './session-message-list';
@@ -165,7 +165,7 @@ export class AppRpcServer {
     private async dispatch(method: string, params: any, context: AppRpcRequestContext): Promise<any> {
         const contract = resolveAgentRpcContract(method);
         if (contract) {
-            return contract.handler({ params, context, runtime: this.runtime, authorize: id => this.ensureSessionAccess(id, context) });
+            return contract.handler({ params, context, runtime: this.runtime as unknown as AgentRpcRuntime, authorize: id => this.ensureSessionAccess(id, context) });
         }
         switch (method) {
             case 'app.ping':

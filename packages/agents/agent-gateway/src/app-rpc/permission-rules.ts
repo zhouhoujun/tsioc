@@ -1,7 +1,8 @@
 import { optionalSessionId } from './request-helpers';
+import type { AgentRpcRuntime } from './rpc-contracts';
 
 /** P1.1: v3 permission rules plus the effective decision for an optional tool probe. */
-export function listPermissionRules(runtime: any, params: any): any {
+export function listPermissionRules(runtime: AgentRpcRuntime, params: any): any {
     const sessionId = optionalSessionId(params);
     const rules = runtime.listPermissionRules?.(sessionId) ?? [];
     const tool = typeof params?.tool === 'string' ? params.tool.trim() : '';

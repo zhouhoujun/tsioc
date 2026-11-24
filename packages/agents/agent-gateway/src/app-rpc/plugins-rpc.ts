@@ -1,8 +1,9 @@
 import { requireString } from './request-helpers';
+import type { AgentRpcRuntime } from './rpc-contracts';
 
 export interface PluginRpcInput {
     params: any;
-    runtime: any;
+    runtime: AgentRpcRuntime;
 }
 
 export function listPluginsFromRpc(input: PluginRpcInput): any {
