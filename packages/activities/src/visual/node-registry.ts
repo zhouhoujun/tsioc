@@ -822,7 +822,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         ],
         fields: [
             ...workflowSourceFields(),
-            configField({ key: 'workflow', label: 'Sub-workflow source', type: 'text', placeholder: 'workflow_id', description: 'Workflow id, context path, or inline JSON definition to repeat.' }),
+            configField({ key: 'workflow', label: 'Sub-workflow source', type: 'text', reference: { kind: 'workflow', create: true, edit: true }, placeholder: 'workflow_id', description: 'Workflow id, context path, or inline JSON definition to repeat.' }),
             configField({ key: 'iterations', label: 'Iterations', type: 'number', defaultValue: 1, min: 1, max: 10000, step: 1 }),
             configField({ key: 'delay', label: 'Delay between runs', type: 'number', defaultValue: 0, min: 0, step: 100, unit: 'ms', group: 'Options' })
         ],
@@ -2155,7 +2155,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         ],
         fields: [
             ...workflowSourceFields(),
-            configField({ key: 'workflow', label: 'Workflow id or JSON', type: 'textarea', required: true, rows: 6, placeholder: 'workflow_id', description: 'Stored workflow id, context path, or inline definition JSON.' }),
+            configField({ key: 'workflow', label: 'Workflow id or JSON', type: 'textarea', reference: { kind: 'workflow', create: true, edit: true }, required: true, rows: 6, placeholder: 'workflow_id', description: 'Stored workflow id, context path, or inline definition JSON.' }),
             configField({ key: 'inputs', label: 'Input ports', type: 'json', defaultValue: {}, placeholder: '{ "orderId": "payload.id" }', description: 'Child context key to parent context path.' }),
             configField({ key: 'outputs', label: 'Output ports', type: 'json', defaultValue: {}, placeholder: '{ "total": "payload.total" }', description: 'Parent context key to child result path.' })
         ],

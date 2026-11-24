@@ -86,7 +86,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | xml | `xml` | `+` attributes/text toggles, pretty print, optional XML declaration when stringifying |
 | html | `html` | `~` text/links/attribute extraction (no scraping selectors) |
 | yaml | `yaml` | `+` parse/stringify |
-| subflow | `subprocess`, `loop` | `~` stored workflow picker (library-backed) with `Workflow source` = stored/context/inline, `inputs`/`outputs` path mapping, child tabs with a breadcrumb back to the parent (see the README's *Sub-workflow ports* section); the node menu can create and bind a child document in one action; documents saved before the mode picker keep auto-detecting the value shape; there is no subflow canvas with generated in/out nodes |
+| subflow | `subprocess`, `loop` | `~` stored workflow picker (library-backed) with `Workflow source` = stored/context/inline, `inputs`/`outputs` path mapping, child tabs with a breadcrumb back to the parent (see the README's *Sub-workflow ports* section); the picker and node menu can create and bind a child document, and the picker opens the referenced workflow; ids missing from the loaded library are reported inline; documents saved before the mode picker keep auto-detecting the value shape; there is no subflow canvas with generated in/out nodes |
 | tail | `tail` | `+` line splitting, initial file content, workspace-root sandbox |
 
 ### Nodes without a Node-RED counterpart
@@ -103,7 +103,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | Typed values | `literal`/`number`/`boolean`/`JSON`/`regex`/`expression`/`msg`/`flow`/`global`/`env`/`node`; stored as `{ type, value }` objects (legacy prefixes still resolve) |
 | Expressions | JSONata via the optional `jsonata` package, loaded on demand; typed values, Change rules, inject payload and `{{expr: ...}}` markers in URL/body/assign/log/event/http-response |
 | Cross-field validation | `WorkflowConfigField.validate(value, { values, field })` |
-| Inline validation | Inspector issues for the selected node (required, references, typed literals, expressions, credential names) are derived from the same `validateWorkflowConfigs` pass used on run/publish, with `nodeId` scoping so unrelated nodes never add noise |
+| Inline validation | Inspector issues for the selected node (required, references, stored workflow ids once the library is loaded, typed literals, expressions, credential names) come from the same `validateWorkflowConfigs` pass used on run/publish, with `nodeId` scoping so unrelated nodes never add noise |
 | Structural validation | `WorkflowNodeDefinition.validateConfig(config)` (for example switch rules/else placement) |
 | Dynamic outputs | `WorkflowNodeDefinition.outputsFor(config)` (switch/router one port per rule) |
 | Shared endpoints | Config nodes (`mqtt`, `tls`, `http`, `tcp`, `udp`, `websocket`, ...) with reference pickers and missing-reference validation |

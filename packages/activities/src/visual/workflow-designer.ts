@@ -1797,10 +1797,10 @@ export class WorkflowDesigner {
     validate(): { valid: boolean; errors: string[]; warnings: string[] } {
         const graph = validateVisualWorkflow(this.definition);
         const configIssues = validateWorkflowConfigs(this.definition, this.registry, {
-            credentials: this.credentialNames
+            credentials: this.credentialNames,
+            workflows: this.workflowLibrary.ids
         });
-        const describe = (issue: typeof configIssues[number]) =>
-            `${issue.nodeName} · ${issue.label}: ${issue.message}`;
+        const describe = (issue: typeof configIssues[number]) => `${issue.nodeName} · ${issue.label}: ${issue.message}`;
         const errors = [
             ...graph.errors,
             ...this.danglingPortErrors(),

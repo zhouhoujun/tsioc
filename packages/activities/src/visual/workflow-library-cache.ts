@@ -9,8 +9,16 @@ import type { WorkflowDefinitionSummary } from './workflow-store';
  */
 export class WorkflowLibraryCache {
     options: WorkflowDefinitionSummary[] = [];
+    /** True once a host store answered; an empty list then really means empty. */
+    loaded = false;
 
     set(items: WorkflowDefinitionSummary[]): void {
         this.options = items.map(item => ({ ...item }));
+        this.loaded = true;
+    }
+
+    /** Stored ids for reference validation; `undefined` before the first load. */
+    get ids(): string[] | undefined {
+        return this.loaded ? this.options.map(item => item.id) : undefined;
     }
 }

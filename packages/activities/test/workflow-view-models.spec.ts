@@ -66,6 +66,26 @@ describe('Workflow canvas incremental view model', () => {
         expect(field('workflow').reference?.kind).toBe('workflow');
         expect(field('workflow').options.some(option => option.value === 'wf_child')).toBe(true);
         expect(field('workflow').options.find(option => option.value === 'wf_child')?.label).toBe('Child flow');
+        // The picker can create a child document; edit appears once one is picked.
+        expect((field('workflow').actions || []).map(action => action.id)).toEqual(['create']);
+        designer.updateNodeConfig(node.id, { workflow: 'wf_child' });
+        designer.selectNode(node.id);
+        const picked = buildWorkflowInspectorModel(designer, registry, 'en')
+            .fields.find(item => item.key === 'workflow')!;
+        expect((picked.actions || []).map(action => action.id)).toEqual(['create', 'edit']);
+    });
+
+    it('reports stored workflows that the loaded library no longer has', () => {
+        const { designer, registry } = createDesigner();
+        designer.workflowLibrary.set([{ id: 'wf_child', name: 'Child flow', updatedAt: 'now' } as any]);
+        const node = designer.addNode('subprocess', { x: 0, y: 0 })!;
+        designer.updateNodeConfig(node.id, { workflow: 'ghost_wf' });
+        designer.selectNode(node.id);
+        const issues = buildWorkflowInspectorModel(designer, registry, 'en').issues;
+        expect(issues.some(issue => issue.fieldKey === 'workflow' && issue.message.includes('ghost_wf'))).toBe(true);
+
+        designer.updateNodeConfig(node.id, { workflow: 'wf_child' });
+        expect(buildWorkflowInspectorModel(designer, registry, 'en').issues).toEqual([]);
     });
 
     it('infers the workflow control from documents without a mode', () => {

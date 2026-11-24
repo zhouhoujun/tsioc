@@ -1,6 +1,6 @@
 {
   "packages/activities/src/visual/VisualWorkflowService.ts": 1980,
-  "packages/activities/src/visual/components/workflow-designer-preview.component.ts": 2020,
+  "packages/activities/src/visual/components/workflow-designer-preview.component.ts": 2019,
   "packages/activities/src/visual/components/workflow-designer.component.ts": 1800,
   "packages/activities/src/visual/node-registry.ts": 2428,
   "packages/activities/src/visual/workflow-designer.ts": 2119,

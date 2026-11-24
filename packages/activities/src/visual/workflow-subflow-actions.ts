@@ -81,3 +81,31 @@ export async function createSubflowForNode(
     host.registerSubflowParent(created, parentId, parentName);
     return created;
 }
+
+/**
+ * Inspector field actions for the stored-workflow picker: create a child
+ * document bound to the node, or open the referenced workflow in a tab.
+ * Returns true when the action belonged to the picker.
+ */
+export function handleSubflowFieldAction(
+    designer: WorkflowDesigner,
+    key: string,
+    actionId: string,
+    nodeId: string | undefined,
+    hostAction?: (action: string, payload?: string) => void,
+    openWorkflow?: (id: string) => void
+): boolean {
+    if (key !== 'workflow' || (actionId !== 'create' && actionId !== 'edit')) {
+        return false;
+    }
+    const node = designer?.nodes.find(item => item.id === nodeId);
+    if (actionId === 'create') {
+        hostAction?.('new-subflow', node?.id || nodeId);
+        return true;
+    }
+    const id = subflowWorkflowId(node);
+    if (id) {
+        openWorkflow?.(id);
+    }
+    return true;
+}

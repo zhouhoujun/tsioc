@@ -2,7 +2,7 @@ import type { DynamicFormField } from '@tsdi/components/common/dynamic-form';
 import { validateDynamicFormValues } from '@tsdi/components/common/dynamic-form';
 import { WorkflowConfigField, WorkflowConfigFieldCondition, WorkflowInspectorIssue, VisualWorkflowDefinition } from './types';
 import type { WorkflowNodeRegistry } from './node-registry';
-import { referenceIds } from './workflow-config-nodes';
+import { referenceIds, workflowSourceMode } from './workflow-config-nodes';
 import { validateWorkflowTypedValue, workflowExpressionMarkers, WORKFLOW_TYPED_CODEC } from './workflow-typed-value';
 import { validateWorkflowExpression } from './workflow-expression';
 
@@ -28,6 +28,11 @@ export interface WorkflowConfigValidationOptions {
     credentials?: string[];
     /** Only validate this node (inspector inline validation). */
     nodeId?: string;
+    /**
+     * Stored workflow ids offered by the editor library. `undefined` skips
+     * workflow-reference checks (the host may resolve definitions elsewhere).
+     */
+    workflows?: string[];
 }
 
 /**
@@ -128,9 +133,11 @@ function inlineSecretWarning(field: { secret?: boolean }, value: any): string | 
 export function workflowInspectorIssues(
     definition: VisualWorkflowDefinition,
     registry: WorkflowNodeRegistry,
-    nodeId: string
+    nodeId: string,
+    library?: { loaded: boolean; options: Array<{ id: string }> }
 ): WorkflowInspectorIssue[] {
-    return validateWorkflowConfigs(definition, registry, { nodeId }).map(issue => ({
+    const workflows = library?.loaded ? library.options.map(item => item.id) : undefined;
+    return validateWorkflowConfigs(definition, registry, { nodeId, workflows }).map(issue => ({
         fieldKey: issue.fieldKey,
         label: issue.label,
         message: issue.message,
@@ -384,11 +391,16 @@ export function validateWorkflowConfigs(
             if (!spec) {
                 continue;
             }
+            if (spec.kind === 'workflow' && workflowSourceMode(node.type, config) !== 'stored') {
+                // Context/inline sources carry a path or a definition, not a
+                // stored workflow id.
+                continue;
+            }
             const ids = referenceIds(config[field.key]);
             if (!ids.length) {
                 continue;
             }
-            const missing = ids.filter(id => !resolveReference(id, spec, definition, registry));
+            const missing = ids.filter(id => !resolveReference(id, spec, definition, registry, options.workflows));
             if (!missing.length) {
                 continue;
             }
@@ -429,7 +441,8 @@ function resolveReference(
     id: string,
     spec: NonNullable<WorkflowConfigField['reference']>,
     definition: VisualWorkflowDefinition,
-    registry: WorkflowNodeRegistry
+    registry: WorkflowNodeRegistry,
+    workflows?: string[]
 ): boolean {
     const nodes = definition?.nodes || [];
     if (spec.kind === 'config-node') {
@@ -449,7 +462,10 @@ function resolveReference(
         return nodes.some(item => item.type === 'link'
             && String(item.config?.links || '').split(',').map(name => name.trim()).includes(id));
     }
-    // Workflow and credential references are resolved by the host store.
+    if (spec.kind === 'workflow') {
+        return !workflows || workflows.includes(id);
+    }
+    // Credential references are resolved by the host store at run time.
     return true;
 }
 

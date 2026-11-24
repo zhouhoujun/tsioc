@@ -573,7 +573,7 @@ export function buildWorkflowInspectorModel(
         const value = nested ? undefined : values[field.key];
         const sourceMode = field.key === 'workflow' ? workflowSourceMode(node.type, node.config || {}) : undefined;
         const referenceField: WorkflowConfigField = sourceMode === 'stored'
-            ? { ...field, type: 'select', reference: { kind: 'workflow' } }
+            ? { ...field, type: 'select', reference: { kind: 'workflow', create: true, edit: true } }
             : field;
         const reference = nested || (sourceMode && sourceMode !== 'stored')
             ? undefined
@@ -698,7 +698,7 @@ export function buildWorkflowInspectorModel(
         statusDetail: nodeStatusDetail(execution, locale, translator),
         durationLabel: duration ? `${duration} ms` : '',
         fields,
-        issues: workflowInspectorIssues(designer.definition, registry, node.id),
+        issues: workflowInspectorIssues(designer.definition, registry, node.id, designer.workflowLibrary),
         resultText,
         errorText: execution?.error || ''
     };

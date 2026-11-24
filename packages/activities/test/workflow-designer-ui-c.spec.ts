@@ -395,6 +395,26 @@ describe('Workflow Designer UI', () => {
             .toBe(childId);
     });
 
+    it('creates a child sub workflow from the picker action', async () => {
+        ref.instance.designer.workflowLibrary.set([
+            { id: 'wf_child', name: 'Child flow', updatedAt: 'now' } as any
+        ]);
+        const node = ref.instance.designer.addNode('subprocess', { x: 60, y: 60 })!;
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const create = root.querySelector('.workflow-field[data-field-key="workflow"] [data-field-action="create"]') as any;
+        expect(create).toBeTruthy();
+        const parentId = ref.instance.designer.definition.id;
+        create.click();
+        await waitFor(() => ref.instance.designer.definition.id !== parentId);
+
+        await ref.instance.openWorkflowTab(parentId);
+        await flush();
+        expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.workflow)
+            .toBeTruthy();
+    });
+
     it('shows inline config issues in the inspector', async () => {
         const node = ref.instance.designer.addNode('subprocess', { x: 40, y: 40 })!;
         ref.instance.designer.selectNode(node.id);
@@ -403,6 +423,11 @@ describe('Workflow Designer UI', () => {
         expect(issue).toBeTruthy();
         expect(issue.textContent).toContain('Required');
 
+        // Once the library knows the id, the required + missing-reference
+        // issues both clear.
+        ref.instance.designer.workflowLibrary.set([
+            { id: 'child', name: 'Child flow', updatedAt: 'now' } as any
+        ]);
         ref.instance.designer.updateNodeConfig(node.id, { workflow: 'child' });
         await flush();
         expect(root.querySelector('.workflow-inspector-issue')).toBeFalsy();

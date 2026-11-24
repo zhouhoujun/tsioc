@@ -48,7 +48,7 @@ import { WorkflowConfigDialogComponent } from './workflow-config-dialog.componen
 import { WorkflowConfigNodesComponent } from './workflow-config-nodes.component';
 import { WorkflowExpressionPanelComponent } from './workflow-expression-panel';
 import { workflowShortcutRows } from '../workflow-shortcut-rows';
-import { canCreateSubflow, subflowWorkflowId } from '../workflow-subflow-actions';
+import { canCreateSubflow, handleSubflowFieldAction, subflowWorkflowId } from '../workflow-subflow-actions';
 import { decodeWorkflowTypedValue } from '../workflow-typed-value';
 import { patchConfigPath, readConfigPath } from '../workflow-config-path';
 import { preloadWorkflowExpressions, validateWorkflowExpression } from '../workflow-expression';
@@ -383,9 +383,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         this.themeChangeAction?.(this.themeName);
     }
 
-    get isZh(): boolean {
-        return this.localeValue === 'zh-CN';
-    }
+    get isZh(): boolean { return this.localeValue === 'zh-CN'; }
 
     /** Template-facing translate helper (bindings cannot call the private method). */
     readonly tr = (key: string, fallback: string): string => {
@@ -398,13 +396,9 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
         return translateWorkflow(self.translator, self.localeValue, `workflow.ui.${key}`, fallback);
     }
 
-    get nodeWord(): string {
-        return this.t('nodeWord', 'nodes');
-    }
+    get nodeWord(): string { return this.t('nodeWord', 'nodes'); }
 
-    get jsonTitle(): string {
-        return this.t('jsonTitle', 'Workflow JSON (generated visually)');
-    }
+    get jsonTitle(): string { return this.t('jsonTitle', 'Workflow JSON (generated visually)'); }
 
     get applyLabel(): string {
         return this.t('apply', 'Apply');
@@ -683,6 +677,11 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     readonly inspectorAction = (key: string, actionId: string, nodeId?: string): void => {
         if (actionId === 'expression') {
             (this.selfRef || this).expressionPanel?.open(key, nodeId);
+            return;
+        }
+        // The stored-workflow picker creates a child document or opens the
+        // referenced workflow through the shell's tab host.
+        if (handleSubflowFieldAction(this.designer, key, actionId, nodeId, this.hostAction, this.openWorkflowAction)) {
             return;
         }
         this.configDialog?.handleAction(key, actionId, nodeId);

@@ -75,6 +75,16 @@ describe('Workflow config validation hooks', () => {
             .some(item => item.fieldKey === 'event' && /event this inject waits for/.test(item.message))).toBe(true);
     });
 
+    it('checks stored workflow references once the library is known', () => {
+        const stored = node('subprocess', { workflow: 'wf_child' }, 'sub_stored');
+        const def = definition([stored]);
+        // No library supplied: the host may resolve definitions elsewhere.
+        expect(validateWorkflowConfigs(def, registry)).toEqual([]);
+        expect(validateWorkflowConfigs(def, registry, { workflows: ['wf_child'] })).toEqual([]);
+        const issues = validateWorkflowConfigs(def, registry, { workflows: ['other_workflow'] });
+        expect(issues.some(issue => issue.fieldKey === 'workflow' && issue.message.includes('wf_child'))).toBe(true);
+    });
+
     it('validates a single node for inline inspector issues', () => {
         const missing = node('subprocess', {}, 'sub_missing');
         const configured = node('subprocess', { workflow: 'child' }, 'sub_configured');
