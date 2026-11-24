@@ -734,9 +734,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     private async completeTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): Promise<AgentTurnResult> {
         const run = this.turnLoop.run(sessionId, query, currentUserMessageId, turnContext, false);
         let step = await run.next();
-        while (!step.done) {
-            step = await run.next();
-        }
+        while (!step.done) step = await run.next();
         return step.value;
     }
 
@@ -1380,6 +1378,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     transformTools(editor: (actor: import('../tools/ToolRegistry').ToolTransformEditor) => void): number { return this.toolRegistry.transform(editor); }
     async listArtifacts(sessionId: string): Promise<ArtifactManifest[]> { return this.fileAdapter ? this.saveArtifacts().list(await this.resolveSessionWorkspace(sessionId)) : []; }
     async getArtifact(sessionId: string, id: string): Promise<ArtifactManifest | undefined> { return this.fileAdapter ? this.saveArtifacts().get(await this.resolveSessionWorkspace(sessionId), id) : undefined; }
+    async readArtifact(sessionId: string, id: string, path?: string): Promise<import('../artifacts/ArtifactStore').ArtifactReadResult | undefined> { return this.fileAdapter ? this.saveArtifacts().read(await this.resolveSessionWorkspace(sessionId), id, path) : undefined; }
     private saveArtifacts(): ArtifactStore { return this.artifactProvider ??= new ArtifactStore(this.fileAdapter!); }
     listPermissionRules(sessionId?: string): import('../permissions/PermissionEngine').PermissionRule[] { return this.toolApprovalManager?.listPermissionRules?.(sessionId) ?? []; }
 

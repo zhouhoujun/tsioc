@@ -19,7 +19,7 @@ export class ArtifactToolsTest {
             }, context);
             expect(created.title).toEqual('Report');
             expect(created.entry).toEqual('index.html');
-            expect(created.url).toEqual(`/artifacts/${created.id}/index.html`);
+            expect(created.url).toEqual(`/artifacts/s1/${created.id}/index.html`);
             expect(readFileSync(join(workspace, '.tsdi-agent/artifacts', created.id, 'index.html'), 'utf8')).toEqual('<h1>v1</h1>');
 
             const read = new ArtifactReadTool();

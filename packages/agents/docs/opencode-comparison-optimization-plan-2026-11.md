@@ -219,7 +219,8 @@
 - 状态：`agent/src/artifacts/ArtifactStore.ts`（`.tsdi-agent/artifacts/<id>/manifest.json` + 文件，
   entry/mime/路径穿越校验）；`@tsdi/agent-tools` 新增 `artifact_create/read/update/delete` 工具并注册；
   runtime `listArtifacts/getArtifact`；RPC `artifact.list/get`（带 session 访问校验）；`/artifacts`
-  展示已发布产物 ID。**剩余**：`GET /artifacts/<id>` HTTP 文件服务与 Web iframe 内嵌、permission `artifact` 规则示例。
+  展示已发布产物 ID。**剩余**：Web iframe 内嵌展示（HTTP 文件服务已落地：`GET /artifacts/:sessionId/:id/*path`，
+带会话归属校验、`text/html` 等 MIME、nosniff 与 CSP sandbox；工具返回的 URL 已带 sessionId）。
 
 **P2.2 Compaction v2**
 - 后台 precompute：接近阈值时启动 summary fiber，记录失败次数/有效期；下一 step 直接采用。

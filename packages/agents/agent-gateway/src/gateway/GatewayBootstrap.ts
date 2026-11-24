@@ -12,6 +12,7 @@ import { ReviewHandler } from '../api/ReviewHandler';
 import { EvalHandler } from '../api/EvalHandler';
 import { ShareHandler } from '../api/ShareHandler';
 import { PairHandler } from '../api/PairHandler';
+import { ArtifactHandler } from '../api/ArtifactHandler';
 import { AppRpcHandler } from '../api/AppRpcHandler';
 import { ChatWebSocket } from '../ws/ChatWebSocket';
 import { GATEWAY_CONFIG } from '../tokens';
@@ -75,6 +76,7 @@ export class GatewayBootstrap {
         const shares = this.optionalHandler(ShareHandler, this.shares);
         const chatWs = this.optionalHandler(ChatWebSocket, this.chatWs);
         const pair = this.optionalHandler(PairHandler, this.pair);
+        const artifacts = this.optionalHandler(ArtifactHandler, undefined as ArtifactHandler | undefined);
 
         // Collect routes from all handlers
         const allRoutes = [
@@ -90,6 +92,7 @@ export class GatewayBootstrap {
             ...(evals?.getRoutes() ?? []),
             ...(shares?.getRoutes() ?? []),
             ...(pair?.getRoutes() ?? []),
+            ...(artifacts?.getRoutes() ?? []),
             ...(chatWs?.getRoutes() ?? [])
         ];
 

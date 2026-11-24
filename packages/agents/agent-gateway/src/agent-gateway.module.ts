@@ -27,6 +27,7 @@ import { SummaryQualityHandler } from './api/SummaryQualityHandler';
 import { UsageHandler } from './api/UsageHandler';
 import { DelegationHandler } from './api/DelegationHandler';
 import { ApprovalHandler } from './api/ApprovalHandler';
+import { ArtifactHandler } from './api/ArtifactHandler';
 import { StatsHandler } from './api/StatsHandler';
 import { AppRpcHandler } from './api/AppRpcHandler';
 import { AppRpcServer } from './app-rpc/AppRpcServer';
@@ -71,6 +72,7 @@ import { ApprovalWebhookNotifier } from './approval/ApprovalWebhookNotifier';
         UsageHandler,
         DelegationHandler,
         ApprovalHandler,
+        ArtifactHandler,
         ApprovalWebhookNotifier,
         StatsHandler,
         CloudTaskQueue,
@@ -106,6 +108,7 @@ import { ApprovalWebhookNotifier } from './approval/ApprovalWebhookNotifier';
         UsageHandler,
         DelegationHandler,
         ApprovalHandler,
+        ArtifactHandler,
         StatsHandler,
         CloudTaskQueue,
         MdnsServiceDiscovery,

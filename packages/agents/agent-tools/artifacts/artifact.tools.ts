@@ -51,7 +51,7 @@ export class ArtifactCreateTool implements AgentTool {
             mime: input?.mime ? String(input.mime) : undefined,
             files: Array.isArray(input?.files) ? input.files : []
         });
-        return { ...summarize(manifest), url: `/artifacts/${manifest.id}/${manifest.entry}` };
+        return { ...summarize(manifest), url: `/artifacts/${context.sessionId}/${manifest.id}/${manifest.entry}` };
     }
 }
 
