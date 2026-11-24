@@ -30,16 +30,16 @@ export interface SelectOption {
                 optionActiveClass="select-option is-selected"
                 @keydown="emitKeydown($event)"
                 @select-option="emitSelection($event)"></select>
+            <label class="select-title" v-if="title">{{title}}</label>
+            <label class="select-meta" v-if="meta">{{meta}}</label>
             <div class="select-rows" role="listbox" aria-label="{{ariaLabel}}" [style]="scrollStyle">
-                <label class="select-title" v-if="title">{{title}}</label>
-                <label class="select-meta" v-if="meta">{{meta}}</label>
                 <label class="{{option.className}}" role="option" aria-selected="{{option.selected}}" v-for="option in visibleOptions" trackBy="index" @click="choose(option.index)">
                     <span class="select-option-label">{{option.label}}</span><span class="select-option-description" v-if="option.description">{{option.description}}</span>
                 </label>
                 <label class="select-empty" v-if="emptyText && !visibleOptions.length">{{emptyText}}</label>
                 <label class="select-detail" v-for="line in detailLines" v-if="detailLines && detailLines.length">{{line}}</label>
-                <label class="select-hint" v-if="hint">{{hint}}</label>
             </div>
+            <label class="select-hint" v-if="hint">{{hint}}</label>
         </div>
     </div>`
 })

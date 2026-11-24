@@ -31,9 +31,11 @@ describe('Web console dialog scrolling', () => {
         expect(body).toContain('min-height: 0');
     });
 
-    it('keeps menus as one scrolling card and approvals title fixed', () => {
-        const menu = rule('#agent-console [renderregion="menu"] > .console-panel {');
-        expect(menu).toContain('overflow: auto');
+    it('scrolls menu rows and approval rows instead of the card', () => {
+        const selectRows = rule('#agent-console [renderregion="menu"] .console-panel.select-list > .select-shell > .select-rows,');
+        expect(selectRows).toContain('flex: 1 1 auto');
+        expect(selectRows).toContain('min-height: 0');
+        expect(css).not.toContain('#agent-console [renderregion="menu"] > .console-panel {\n    display: block;');
 
         const approvalBody = rule('#agent-console .console-approvals-panel .approval-body {');
         expect(approvalBody).toContain('overflow: auto');

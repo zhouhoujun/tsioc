@@ -1473,20 +1473,24 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
     overflow: hidden;
 }
 
-/* Menus are one scrolling card (rows are the whole content), dialogs keep
-   their title/actions fixed and scroll an inner body only. */
-#agent-console [renderregion="menu"] > .console-panel {
-    display: block;
-    overflow: auto;
-}
-
+/* Dialogs and menus keep their title/actions fixed; only the body, list or
+   select rows scroll. */
 #agent-console dialog-panel > .console-panel > .dialog-body,
 #agent-console agent-console-text-overlay-panel > .console-panel > .dialog-body,
 #agent-console agent-console-pending-question-panel .console-panel.list-panel > .list,
 #agent-console agent-console-approvals-panel .console-panel.list-panel > .list,
-#agent-console agent-console-select-panel .console-panel.select-list > .list,
+#agent-console agent-console-select-panel .console-panel.select-list > .select-shell > .select-rows,
+#agent-console [renderregion="menu"] .console-panel > .list,
+#agent-console [renderregion="menu"] .console-panel.select-list > .select-shell > .select-rows,
 #agent-console .settings-center-panel > .settings-rows {
     flex: 1 1 auto;
+    min-height: 0;
+}
+
+#agent-console [renderregion="menu"] .console-panel.select-list > .select-shell,
+#agent-console agent-console-select-panel .console-panel.select-list > .select-shell {
+    display: flex;
+    flex-direction: column;
     min-height: 0;
 }
 

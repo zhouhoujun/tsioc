@@ -16,7 +16,8 @@ import { ToastEntry } from '../toast';
     <list :items="rows" :emptyLabel="emptyLabel" :selectValueAction="selectRow"></list>
     <list :items="rows" :visibleItems="1" showScrollbar></list>
     <select-list :options="options" :selectedIndex="1" :visibleCount="2"
-        ariaLabel="Picker" :fitContent="true" :emptyText="emptyLabel"></select-list>
+        ariaLabel="Picker" title="Options" hint="Choose one"
+        :fitContent="true" :emptyText="emptyLabel"></select-list>
     <toast-stack :items="toasts" :messageWidth="18"></toast-stack>`
 })
 class CommonWidgetsHostComponent {
@@ -128,6 +129,11 @@ export class CommonWidgetsDomTest {
         const rows = select.hostView.rootNodes[0].querySelector('.select-rows') as HTMLElement;
         expect(rows.style.maxHeight).toEqual('60vh');
         expect(rows.style.overflowY).toEqual('auto');
+        // Header/footer sit outside the scrolling rows.
+        expect(rows.querySelector('.select-title')).toBeFalsy();
+        expect(rows.querySelector('.select-hint')).toBeFalsy();
+        expect(root.querySelector('.select-title')?.textContent).toContain('Options');
+        expect(root.querySelector('.select-hint')?.textContent).toContain('Choose one');
         expect(root.textContent).toContain('Two');
         // visibleCount=2 around index 1 still shows the selected row only once.
         expect(root.querySelectorAll('.select-option')).toHaveLength(2);

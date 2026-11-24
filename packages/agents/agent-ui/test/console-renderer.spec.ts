@@ -2830,6 +2830,9 @@ export class AgentConsoleTuiRendererTest {
             const rootLines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 80 });
             expect(rootLines.some((line: string) => line.includes('› 13. Option 13'))).toBe(true);
             expect(rootLines.some((line: string) => line.includes('16. Option 16'))).toBe(true);
+            // Only the option window scrolls; the title and hint stay put.
+            expect(rootLines.some((line: string) => line.includes('Many options'))).toBe(true);
+            expect(rootLines.some((line: string) => line.includes('up/down move'))).toBe(true);
         } finally {
             await tuiCtx.close();
         }
@@ -3002,6 +3005,36 @@ export class AgentConsoleTuiRendererTest {
         const contents = planItem!.lines.map(line => line.content).join('\n');
         expect(contents).toContain('# 待办');
         expect(contents).toContain('[ ] Step 13');
+    }
+
+    @Test('scrolling a TUI dialog moves its content only, not title or footer')
+    async textOverlayScrollKeepsChrome() {
+        const tuiCtx = await Application.run(AgentModule, {
+            deps: [AgentUiModule, TuiTemplateModule, ComponentsModule]
+        });
+        try {
+            const consoleRef = tuiCtx.get(ComponentFactory).create(AgentConsoleComponent, { injector: tuiCtx });
+            await consoleRef.render();
+            const renderer = tuiCtx.get(TuiRenderer);
+            const state: any = consoleRef.instance.sessionState;
+            state.openTextOverlay('Long output', Array.from({ length: 60 }, (_value, index) => `line ${index + 1}`), 5);
+            state.scrollTextOverlayPage(1);
+            await Promise.resolve();
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const plain = (line: string) => String(line || '').replace(/\x1b\[[0-9;]*m/g, '');
+            const lines = renderer.renderToTuiLines(consoleRef.hostView.rootNodes, { width: 80 }).map(plain);
+            // Scrolled content stays inside the dialog body...
+            const scroll = Number(state.textOverlay.scroll) || 0;
+            expect(scroll).toBeGreaterThan(0);
+            expect(lines.some(line => line.includes(`line ${scroll + 1}`))).toBe(true);
+            expect(lines.some(line => line.trim() === 'line 1')).toBe(false);
+            // ...while the title and key hint remain visible.
+            expect(lines.some(line => line.includes('Long output'))).toBe(true);
+            expect(lines.some(line => line.includes('Esc close') || line.includes('↑↓'))).toBe(true);
+        } finally {
+            await tuiCtx.close();
+        }
     }
 
     @Test('/keymap list opens a scrollable overlay that Esc closes')
