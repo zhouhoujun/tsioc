@@ -21,6 +21,7 @@ import { ToolInvocationLifecycle } from './ToolInvocationLifecycle';
 import { runToolPreflight } from './ToolInvocationPreflight';
 import { executeToolInvocation } from './ToolExecutionRunner';
 import { TurnAssistantController } from './TurnAssistantController';
+import { VerificationController } from './VerificationController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -166,7 +167,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -1152,7 +1153,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 return { sessionId, message: handled.message };
             }
 
-            await this.runVerificationGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
+            await this.verificationController.runGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
 
             round++;
             if (round <= maxRounds) {
@@ -1254,7 +1255,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 return { sessionId, message: handled.message };
             }
 
-            await this.runVerificationGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
+            await this.verificationController.runGate(sessionId, turnContext, roundStartEvidence, maxRepairRounds);
 
             round++;
             if (round <= maxRounds) {
@@ -1336,173 +1337,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             terminated: false,
             terminationMessage: ''
         };
-    }
-
-    private async runVerificationGate(sessionId: string, turnContext: TurnExecutionContext, startIndex: number, maxRepairRounds: number): Promise<void> {
-        const recovery = turnContext.recovery;
-        if (!recovery) return;
-        const editedFiles = recovery.editedFiles;
-        await this.runVerificationCommands(sessionId, turnContext);
-        const writeTools = this.resolveVerificationWriteTools().value;
-        const gate = new VerificationGate({ writeTools });
-        const result = gate.verify(turnContext.evidenceLedger, startIndex, recovery.writeHints, editedFiles);
-        recovery.writeHints = [];
-        const roundEntries = turnContext.evidenceLedger?.entriesFrom(startIndex) ?? [];
-        const falsifiedIds = new Set(result.falsifiedEvidence.map(entry => entry.id).filter(Boolean));
-        const goodEntries = roundEntries.filter(entry => !falsifiedIds.has(entry.id));
-        if (recovery.attemptHistory.length > 0 && recovery.consecutiveFalsifications > 0 && goodEntries.length > 0) {
-            const covered = new Set(recovery.repairRecipes.map(recipe => recipe.signature));
-            for (const recipe of this.buildRepairRecipes(recovery.attemptHistory, goodEntries)) {
-                if (!covered.has(recipe.signature)) {
-                    recovery.repairRecipes.push(recipe);
-                    covered.add(recipe.signature);
-                }
-            }
-        }
-        if (!result.falsified) {
-            recovery.consecutiveFalsifications = 0;
-            return;
-        }
-        const entryIds = result.falsifiedEvidence.map(entry => entry.id).filter(Boolean);
-        if (entryIds.length) {
-            turnContext.evidenceLedger?.markFalsified(entryIds, result.reasons.join('; '));
-        }
-        recovery.falsifiedEvidence = result.falsifiedEvidence;
-        recovery.consecutiveFalsifications++;
-        recovery.totalFalsifications++;
-        recovery.repairPending = true;
-
-        const signatures = result.falsifiedEvidence.map(entry => buildAttemptSignature(entry.toolName, entry.inputSummary));
-        const knownSignatures = new Set(recovery.attemptHistory.flatMap(attempt => attempt.signatures));
-        recovery.repeatAttempts += signatures.filter(signature => knownSignatures.has(signature)).length;
-        recovery.attemptHistory.push({
-            round: recovery.totalFalsifications,
-            entries: result.falsifiedEvidence,
-            signatures,
-            reasons: [...result.reasons]
-        });
-        const coveredHintSignatures = new Set(recovery.repairHints.map(hint => hint.signature));
-        if (signatures.some(signature => !coveredHintSignatures.has(signature))) {
-            const hintSignatures = [...new Set(recovery.attemptHistory.flatMap(attempt => attempt.signatures))];
-            recovery.repairHints = await this.loadResolvedRepairHints(sessionId, hintSignatures, turnContext.workspace);
-        }
-
-        if (turnContext.diagnostics) {
-            turnContext.diagnostics.falsificationCount = recovery.totalFalsifications;
-            turnContext.diagnostics.repairRoundsUsed = recovery.attemptHistory.length;
-            turnContext.diagnostics.repeatedAttemptCount = recovery.repeatAttempts;
-        }
-        if (recovery.consecutiveFalsifications >= maxRepairRounds && !this.hasUnfinishedPlan(sessionId, turnContext)) {
-            recovery.terminated = true;
-            recovery.terminationMessage = this.recoveryController.buildFalsificationSummaryMessage(recovery);
-        }
-    }
-
-    private trackEditedFile(turnContext: TurnExecutionContext, toolCall: { name: string }, definition: AgentToolDefinition, fileSnapshot: FileSnapshot | null): void {
-        const recovery = turnContext.recovery;
-        if (!recovery || !fileSnapshot?.filePath) {
-            return;
-        }
-        const writeTools = this.resolveVerificationWriteTools().value;
-        if (!writeTools.includes(toolCall.name) && !writeTools.includes(definition.name)) {
-            return;
-        }
-        recovery.editedFiles.push(fileSnapshot.filePath);
-    }
-
-    private async runVerificationCommands(sessionId: string, turnContext: TurnExecutionContext): Promise<void> {
-        const recovery = turnContext.recovery;
-        const verification = this.options.verification;
-        if (!recovery || verification?.enabled === false) {
-            return;
-        }
-        const editedFiles = recovery.editedFiles;
-        recovery.editedFiles = [];
-        if (editedFiles.length === 0) {
-            return;
-        }
-        try {
-            const runner = new VerifyCommandRunner({
-                verifyCommands: verification?.verifyCommands,
-                autoScripts: verification?.autoScripts,
-                timeoutMs: verification?.timeoutMs,
-                maxOutputChars: verification?.maxOutputChars,
-                workspace: turnContext.workspace,
-                // Esc must stop a running `npm run typecheck`/test command.
-                signal: this.turnAbortScopes.signal(sessionId)
-            });
-            const runs = await runner.run(editedFiles);
-            recordVerifyCommandEvidence(
-                turnContext.evidenceLedger,
-                runs,
-                verification?.timeoutMs ?? DEFAULT_VERIFY_TIMEOUT_MS
-            );
-        } catch {
-            // verification commands must never break the turn loop
-        }
-    }
-
-    private buildRepairRecipes(attempts: FalsificationAttempt[], fixEntries: ToolEvidenceEntry[]): TurnRepairRecipe[] {
-        if (fixEntries.length === 0 || attempts.length === 0) {
-            return [];
-        }
-        const fixes = fixEntries.map(entry => ({ toolName: entry.toolName, inputSummary: entry.inputSummary }));
-        const goodSignatures = new Set(fixEntries.map(entry => buildAttemptSignature(entry.toolName, entry.inputSummary)));
-        const goodTools = new Set(fixEntries.map(entry => entry.toolName));
-        const recipes: TurnRepairRecipe[] = [];
-        const seen = new Set<string>();
-        for (const attempt of attempts) {
-            for (const signature of attempt.signatures) {
-                if (seen.has(signature)) {
-                    continue;
-                }
-                seen.add(signature);
-                const engaged = goodSignatures.has(signature) || attempt.entries.some(entry => goodTools.has(entry.toolName));
-                if (engaged) {
-                    recipes.push({ signature, fixes });
-                }
-            }
-        }
-        return recipes;
-    }
-
-    private async loadResolvedRepairHints(sessionId: string, signatures: string[], workspace?: string): Promise<ResolvedRepairHint[]> {
-        if (!this.turnDiagnosticsStore || signatures.length === 0) {
-            return [];
-        }
-        try {
-            const records = workspace
-                ? await this.turnDiagnosticsStore.list(undefined, { workspaceId: workspace, limit: TURN_DIAGNOSTICS_LIMIT, order: 'DESC' })
-                : await this.turnDiagnosticsStore.list(sessionId, { limit: TURN_DIAGNOSTICS_LIMIT, order: 'DESC' });
-            return collectResolvedRepairHints(records, signatures);
-        } catch {
-            return [];
-        }
-    }
-
-    private async captureWriteFalsificationHint(
-        sessionId: string,
-        turnContext: TurnExecutionContext,
-        toolCall: { id: string; name: string },
-        definition: AgentToolDefinition,
-        fileSnapshot: FileSnapshot | null
-    ): Promise<void> {
-        const recovery = turnContext.recovery;
-        if (!recovery || !fileSnapshot || fileSnapshot.before === null) {
-            return;
-        }
-        const writeTools = this.resolveVerificationWriteTools().value;
-        if (!writeTools.includes(toolCall.name) && !writeTools.includes(definition.name)) {
-            return;
-        }
-        const after = await this.readRuntimeFileText(fileSnapshot.filePath);
-        if (after !== null && after === fileSnapshot.before) {
-            recovery.writeHints.push({
-                toolName: toolCall.name,
-                filePath: fileSnapshot.filePath,
-                reason: `Declared write to '${fileSnapshot.filePath}' but file content did not change.`
-            });
-        }
     }
 
     private async completeTerminationMessage(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext, termination: string): Promise<AgentMessage> {
@@ -2013,6 +1847,17 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
+    private get verificationController(): VerificationController {
+        return this.verification ??= new VerificationController({
+            options: this.options, turnDiagnosticsStore: this.turnDiagnosticsStore,
+            signal: id => this.turnAbortScopes.signal(id),
+            readFileText: path => this.readRuntimeFileText(path),
+            resolveWriteTools: () => this.resolveVerificationWriteTools().value,
+            hasUnfinishedPlan: (id, context) => this.hasUnfinishedPlan(id, context),
+            falsificationSummary: recovery => this.recoveryController.buildFalsificationSummaryMessage(recovery)
+        });
+    }
+
     private get assistant(): TurnAssistantController {
         return this.turnAssistant ??= new TurnAssistantController({
             sessions: this.sessions,
@@ -2206,9 +2051,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             recordLoop: (name, input, output) => loopDetector.record(name, input, output),
             trackPlan: (id, context, name, output) => this.trackPlanProgress(id, context, name, output),
             pushCompensation: (id, name, callId, capture) => this.pushToolCompensation(id, name, callId, capture),
-            captureWriteHint: (id, context, call, def, snapshot) => this.captureWriteFalsificationHint(id, context, call, def, snapshot),
+            captureWriteHint: (id, context, call, def, snapshot) => this.verificationController.captureWriteHint(id, context, call, def, snapshot),
             pushFileSnapshot: (id, snapshot) => this.pushFileSnapshot(id, snapshot),
-            trackEditedFile: (context, call, def, snapshot) => this.trackEditedFile(context, call, def, snapshot)
+            trackEditedFile: (context, call, def, snapshot) => this.verificationController.trackEditedFile(context, call, def, snapshot)
         }, sessionId, toolCall, loopDetector, executionMode, toolCallInput, inputSummary, definition, sandboxReceipt, turnContext);
     }
 
