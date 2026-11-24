@@ -61,7 +61,7 @@ import {
     openWorktreeDiff
 } from './AgentConsoleReviewHandlers';
 import { getGlobalProcess } from './global-process';
-import { decodeVoiceAudioChunk, handleVoiceCommand, playVoiceReply, startVoiceCapture, stopVoiceCapture, VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
+import type { VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
 import { activateModelProfile, consumePendingTurnModelProfile, cycleModelVariant, cycleRecentModel, EffortLevel, getModelProfileOptions, loadModelProfileOptions, openModelSwitcher, persistModelStore, queueNextTurnModelProfile, recordRecentModel, resolveInitialModelProfile, resolveModelProfileConfig, restoreModelStore, setModelReasoningEffort, toggleModelFavorite, ModelHandlerContext } from './AgentConsoleModelHandlers'; import { promptModelUnavailable } from './AgentConsoleModelAvailability';
 import { dismissEditMode, enterEditMode, EditModeHandlerContext, extractEditableMessageText, getEditableImageParts, getEditableUserMessages, handleIdleEscape, startEditTarget } from './AgentConsoleEditModeHandlers';
 import { formatAgentPagerStatusCopy, formatAgentPanelLabel, formatAgentUiDateTime, formatAgentUiLabel, formatAgentUiNotice } from './agent-ui.i18n';

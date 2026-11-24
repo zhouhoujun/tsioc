@@ -268,6 +268,12 @@
 ### P4 — 性能、UI 与门禁（1–2 周）
 
 - 打破 `@tsdi/ioc` ESM cycle，按 settings/review/LSP/voice 做真正 lazy chunks；initial gzip 目标 ≤500 KiB。
+  - 状态（2026-11-24）：initial gzip 从 **558.5 → 483.0 KiB**，build-web 现在**无条件**执行
+    ≤500 KiB / lazy chunk ≤150 KiB 预算（超限时提示“改为 lazy chunk，不要删除功能”）；
+    `AgentConsoleDiagnosticsHost` 的 `/voice` 已改为动态 `import()`（voice 模块不再静态进入首屏 graph）；
+    `@tsdi/ioc` 内部类型引用改为 `import type` 以削弱 ESM 环。**真正 code-splitting 仍被
+    `ModuleRef extends Injector` 的共享 chunk 求值顺序卡住**（试开 splitting 后 node 冒烟测试报
+    `Class extends value undefined`），待继续破环后再启用 `chunkNames`/splitting。
 - 减少 `as any`/ctx bag：为 host factories 定义窄接口，逐步消除 147 处 `as any`。
 - TUI storybook/headless frame capture；把 PTY 超时用例改为可重试/隔离。
 - 测试内存/墙钟预算写入 gate；source-size baseline 继续下降。

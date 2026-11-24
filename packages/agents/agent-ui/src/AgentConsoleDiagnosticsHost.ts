@@ -34,13 +34,6 @@ import {
     openDelegationListView,
     openDelegationTreeView
 } from './AgentConsoleHarnessCommands';
-import {
-    decodeVoiceAudioChunk,
-    handleVoiceCommand,
-    playVoiceReply,
-    startVoiceCapture,
-    stopVoiceCapture
-} from './AgentConsoleVoiceHandlers';
 import { buildTurnMessageInput } from './AgentConsoleExportHandlers';
 import { AgentConsoleProjectHost } from './AgentConsoleProjectHost';
 
@@ -146,24 +139,21 @@ export abstract class AgentConsoleDiagnosticsHost extends AgentConsoleProjectHos
         return runHarnessStopCommand(this.sessionService, (message: string) => this.notify(message), taskId, this.translator);
     }
 
+    // Voice/audio adapters are a lazy chunk: `/voice` pays the import cost, not first paint.
     protected async handleVoiceCommand(arg: string): Promise<boolean> {
-        return handleVoiceCommand(this.voiceCtx(), arg);
+        return (await import('./AgentConsoleVoiceHandlers')).handleVoiceCommand(this.voiceCtx(), arg);
     }
 
     protected async startVoiceCapture(sessionId: string): Promise<string | undefined> {
-        return startVoiceCapture(this.voiceCtx(), sessionId);
+        return (await import('./AgentConsoleVoiceHandlers')).startVoiceCapture(this.voiceCtx(), sessionId);
     }
 
     protected async stopVoiceCapture(cancel: boolean): Promise<void> {
-        return stopVoiceCapture(this.voiceCtx(), cancel);
+        return (await import('./AgentConsoleVoiceHandlers')).stopVoiceCapture(this.voiceCtx(), cancel);
     }
 
     protected async playVoiceReply(result: Record<string, any>): Promise<string | undefined> {
-        return playVoiceReply(this.voiceCtx(), result);
-    }
-
-    protected decodeVoiceAudioChunk(value: string): Uint8Array {
-        return decodeVoiceAudioChunk(value);
+        return (await import('./AgentConsoleVoiceHandlers')).playVoiceReply(this.voiceCtx(), result);
     }
 
     /**

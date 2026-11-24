@@ -365,8 +365,9 @@ interface WebSizeReport {
  * Regression budget: the committed baseline is the measured build. Growth is
  * allowed up to 3% / 16 KiB (gzip) so dependency updates do not flap, while a
  * real regression fails the production build (and the agents gate).
- * `AGENT_UI_WEB_BUDGET_STRICT=1` additionally enforces the optimization-plan
- * targets (initial gzip <= 700 KiB, largest lazy chunk <= 150 KiB gzip).
+ * The optimization-plan targets are enforced unconditionally: initial gzip
+ * <= 500 KiB and largest lazy chunk <= 150 KiB gzip. Features stay; heavier
+ * optional surfaces must become lazy chunks instead of being removed.
  */
 function checkSiteBudget(report: WebSizeReport): void {
     const baselinePath = path.join(PACKAGE_DIR, 'web-size-baseline.json');
@@ -386,15 +387,13 @@ function checkSiteBudget(report: WebSizeReport): void {
             + `Update web-size-baseline.json only with an intentional bundle change.`
         );
     }
-    if (process.env.AGENT_UI_WEB_BUDGET_STRICT === '1') {
-        const initialTarget = 700 * 1024;
-        const lazyChunkTarget = 150 * 1024;
-        if (report.initialGzipBytes > initialTarget) {
-            throw new Error(`web console initial gzip ${(report.initialGzipBytes / 1024).toFixed(1)} KiB exceeds the strict 700 KiB target.`);
-        }
-        if (report.largestLazyGzipBytes > lazyChunkTarget) {
-            throw new Error(`largest lazy chunk gzip ${(report.largestLazyGzipBytes / 1024).toFixed(1)} KiB exceeds the strict 150 KiB target.`);
-        }
+    const initialTarget = 500 * 1024;
+    const lazyChunkTarget = 150 * 1024;
+    if (report.initialGzipBytes > initialTarget) {
+        throw new Error(`web console initial gzip ${(report.initialGzipBytes / 1024).toFixed(1)} KiB exceeds the 500 KiB target; move optional features to lazy chunks instead of removing them.`);
+    }
+    if (report.largestLazyGzipBytes > lazyChunkTarget) {
+        throw new Error(`largest lazy chunk gzip ${(report.largestLazyGzipBytes / 1024).toFixed(1)} KiB exceeds the 150 KiB target.`);
     }
 }
 

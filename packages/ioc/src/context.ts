@@ -2,7 +2,7 @@ import { AbstractType, Type } from './types';
 import { InjectFlags, Token, TokenOf } from './tokens';
 import { ResolveInterceptorLike } from './resolver';
 import { Provider } from './providers';
-import { Injector } from './injector';
+import type { Injector } from './injector';
 import { isArray } from './utils/chk';
 
 /**

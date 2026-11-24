@@ -5,9 +5,9 @@ import { Token, InjectFlags, token } from './tokens';
 import { Abstract } from './metadata/fac';
 import { ProvidedInMetadata } from './metadata/meta';
 import { isArray } from './utils/chk';
-import { InvokeProviders } from './context';
+import type { InvokeProviders } from './context';
 import { Exception } from './exception';
-import { Runtime } from './runtime';
+import type { Runtime } from './runtime';
 import { Parameter } from './resolver';
 import { RunContext } from './handlers/contexts';
 
