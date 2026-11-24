@@ -7,6 +7,7 @@ import type { AgentConsoleSessionService } from './AgentConsoleSessionService';
 import type { AgentConsolePendingAttachment } from './AgentConsoleSessionState';
 import type { HarnessCommandHost } from './AgentConsoleHarnessCommands';
 import type { VoiceHandlerContext } from './AgentConsoleVoiceHandlers';
+import { loadVoiceHandlers } from './AgentConsoleVoiceLoader';
 import {
     openSummaryQualityRecords,
     openTurnDiagnosticsListView,
@@ -141,19 +142,19 @@ export abstract class AgentConsoleDiagnosticsHost extends AgentConsoleProjectHos
 
     // Voice/audio adapters are a lazy chunk: `/voice` pays the import cost, not first paint.
     protected async handleVoiceCommand(arg: string): Promise<boolean> {
-        return (await import('./AgentConsoleVoiceHandlers')).handleVoiceCommand(this.voiceCtx(), arg);
+        return (await loadVoiceHandlers()).handleVoiceCommand(this.voiceCtx(), arg);
     }
 
     protected async startVoiceCapture(sessionId: string): Promise<string | undefined> {
-        return (await import('./AgentConsoleVoiceHandlers')).startVoiceCapture(this.voiceCtx(), sessionId);
+        return (await loadVoiceHandlers()).startVoiceCapture(this.voiceCtx(), sessionId);
     }
 
     protected async stopVoiceCapture(cancel: boolean): Promise<void> {
-        return (await import('./AgentConsoleVoiceHandlers')).stopVoiceCapture(this.voiceCtx(), cancel);
+        return (await loadVoiceHandlers()).stopVoiceCapture(this.voiceCtx(), cancel);
     }
 
     protected async playVoiceReply(result: Record<string, any>): Promise<string | undefined> {
-        return (await import('./AgentConsoleVoiceHandlers')).playVoiceReply(this.voiceCtx(), result);
+        return (await loadVoiceHandlers()).playVoiceReply(this.voiceCtx(), result);
     }
 
     /**

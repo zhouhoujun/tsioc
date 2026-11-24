@@ -48,8 +48,8 @@ export class WebSelectRowsTest {
         expect(rows.map(row => row.querySelector('.select-option-label')?.textContent)).toEqual(['ask', 'auto']);
         expect(rows[0].getAttribute('aria-selected')).toEqual('true');
         expect(rows[1].getAttribute('aria-selected')).toEqual('false');
-        expect(root.querySelector('.select-rows .select-title')?.textContent).toContain('Security level');
-        expect(root.querySelector('.select-rows .select-hint')?.textContent).toContain('enter accept');
+        expect(root.querySelector('.select-title')?.textContent).toContain('Security level');
+        expect(root.querySelector('.select-hint')?.textContent).toContain('enter accept');
 
         rows[1].click();
         await settle();

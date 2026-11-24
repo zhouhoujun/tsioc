@@ -488,8 +488,7 @@ async function main(): Promise<void> {
     // undefined`). The standalone embedder bundle and the TypeORM stub below
     // still keep the entry small; real lazy feature chunks are tracked in
     // docs/agent-ui-optimization-plan-2026-11.md (needs the cycles broken).
-    const chunksDir = path.join(distDir, 'chunks');
-    fs.rmSync(chunksDir, { recursive: true, force: true });
+    fs.rmSync(path.join(distDir, 'chunks'), { recursive: true, force: true });
     const result = await esbuild.build({
         ...sharedBuildOptions,
         entryPoints: [BUNDLE_ENTRY],
@@ -508,12 +507,31 @@ async function main(): Promise<void> {
         path.join(distDir, 'bundle-meta.json'),
         JSON.stringify(result.metafile, null, 2)
     );
+
+    // P4 lazy feature chunk: `/voice` is loaded on demand as its own ESM module.
+    const chunksDir = path.join(distDir, 'chunks');
+    fs.mkdirSync(chunksDir, { recursive: true });
+    const voiceEntry = path.join(TSC_OUT, 'agents', 'agent-ui', 'src', 'AgentConsoleVoiceHandlers.js');
+    const voiceOutfile = path.join(chunksDir, 'agent-console-voice.js');
+    if (fs.existsSync(voiceEntry)) {
+        await esbuild.build({
+            ...sharedBuildOptions,
+            entryPoints: [voiceEntry],
+            outfile: voiceOutfile,
+            sourcemap: true,
+            splitting: false,
+        });
+        console.log(`lazy voice chunk written to ${voiceOutfile}`);
+    }
+
     // The worker is built separately (classic worker entry); include it so the
     // service worker can precache everything the page may load.
     const workerAsset = fs.existsSync(workerOutfile) ? './dist/agent-console-markdown-worker.js' : undefined;
+    const voiceAsset = fs.existsSync(voiceOutfile) ? './dist/chunks/agent-console-voice.js' : undefined;
     const assets = Array.from(new Set([
         ...outputs,
-        ...(workerAsset ? [workerAsset] : [])
+        ...(workerAsset ? [workerAsset] : []),
+        ...(voiceAsset ? [voiceAsset] : [])
     ])).sort();
     fs.writeFileSync(
         path.join(distDir, 'assets.json'),
@@ -521,7 +539,8 @@ async function main(): Promise<void> {
     );
     console.log(`web console site written to ${distDir} (${assets.length} javascript asset(s))`);
     verifySiteBuild(distDir, assets, standaloneOutfile);
-    reportSiteSizes(distDir, outputFiles);
+    const siteFiles = [...outputFiles, ...(fs.existsSync(voiceOutfile) ? [voiceOutfile] : [])];
+    reportSiteSizes(distDir, siteFiles);
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
 }
 

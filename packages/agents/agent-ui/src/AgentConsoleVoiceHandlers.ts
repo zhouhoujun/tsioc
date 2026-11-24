@@ -6,7 +6,7 @@
  * capture state (`voiceCaptureSessionId` / `voiceCaptureFeed`) stays on the
  * component and is reached through getter/setter hooks.
  */
-import { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat } from '@tsdi/common';
+import type { AudioCaptureAdapter, AudioPlaybackAdapter, AudioPlaybackFormat } from '@tsdi/common';
 import type { AgentConsoleCommandOutputEntry } from './AgentConsoleSessionState';
 import { formatAgentUiNotice, type AgentUiTranslator } from './agent-ui.i18n';
 

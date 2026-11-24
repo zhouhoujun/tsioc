@@ -20,6 +20,10 @@ import {
     InMemoryCommandExecutionControl,
     normalizeAgentWorkspaceIdentity
 } from '@tsdi/agent';
+
+import * as voiceHandlers from '../src/AgentConsoleVoiceHandlers';
+import { installVoiceHandlers } from '../src/AgentConsoleVoiceLoader';
+installVoiceHandlers(voiceHandlers);
 import {
     AgentConsoleComponent,
     AgentConsoleEventBridge,
