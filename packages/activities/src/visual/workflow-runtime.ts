@@ -1,6 +1,12 @@
 import { parseYaml, stringifyYaml } from './workflow-yaml';
 import { getWorkflowNodeHandler } from './runtime/workflow-node-handlers';
 import './runtime/control-handlers';
+import './runtime/handlers/parsers';
+import {
+    resolveCredentialValue,
+    resolveWorkflowValue,
+    resolveWorkflowValueAsync
+} from './runtime/values';
 import { evaluateWorkflowExpression } from './workflow-expression';
 import { Activity, ActivityContext, ActivityNodeStatus, ActivityResult } from '../activities/Activity';
 import {
@@ -17,6 +23,8 @@ import {
     NodeConnection,
     VisualWorkflowDefinition
 } from './types';
+
+export { resolveCredentialValue, resolveWorkflowValue } from './runtime/values';
 
 async function pause(ms: number, cancelled?: () => boolean): Promise<boolean> {
     const total = Math.max(0, ms);
@@ -414,94 +422,8 @@ export async function resolveTlsOptions(
     };
 }
 
-/**
- * Resolve `{{credential:name}}` / `credential:name` values through the host
- * credential resolver. Plain values stay untouched for backwards compatibility.
- */
-export async function resolveCredentialValue(
-    value: any,
-    context: ActivityContext
-): Promise<any> {
-    const text = String(value ?? '').trim();
-    const match = /^\{\{\s*credential:([^}]+?)\s*\}\}$/.exec(text)
-        || /^credential:([A-Za-z0-9_.-]+)$/.exec(text);
-    if (!match) {
-        return value;
-    }
-    const name = match[1].trim();
-    const resolver = (context as any).resolveCredential;
-    if (typeof resolver !== 'function') {
-        throw new Error(`Credential "${name}" is not available in this host. Configure a credential store.`);
-    }
-    const resolved = await resolver(name);
-    if (resolved === undefined) {
-        throw new Error(`Credential not found: ${name}`);
-    }
-    return resolved;
-}
 
-/**
- * Resolve a dotted path (`input.approved`, `$.input.approved`) against the
- * workflow context. Literals (quoted strings, numbers, booleans, null) are
- * returned as-is so node configs remain JSON friendly. Typed value references
- * (objects) resolve through {@link resolveWorkflowTypedValue}.
- */
-export function resolveWorkflowValue(source: any, context: ActivityContext): any {
-    if (typeof source === 'function') {
-        return source(context);
-    }
-    if (source === undefined || source === null) {
-        return source;
-    }
-    if (isWorkflowValueRef(source)) {
-        return resolveWorkflowTypedValue(source, context);
-    }
-    if (typeof source !== 'string') {
-        return source;
-    }
-    const text = source.trim();
-    if (!text) {
-        return '';
-    }
-    if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
-        return text.slice(1, -1);
-    }
-    if (text === 'true') return true;
-    if (text === 'false') return false;
-    if (text === 'null') return null;
-    if (text === 'undefined') return undefined;
-    if (/^-?\d+(\.\d+)?$/.test(text)) {
-        return Number(text);
-    }
-    const path = text
-        .replace(/^\$\.?/, '')
-        .replace(/^context\./, '')
-        .split('.')
-        .filter(Boolean);
-    let value: any = context;
-    for (const key of path) {
-        if (value === undefined || value === null) {
-            return undefined;
-        }
-        value = value[key];
-    }
-    return value;
-}
 
-/**
- * Resolve a field value asynchronously: `{{expr: ...}}` markers, expression
- * typed values and the usual literal/path resolution. URL/body/inject fields
- * use this so one value can be computed without changing the stored shape.
- */
-export async function resolveWorkflowValueAsync(source: any, context: ActivityContext): Promise<any> {
-    if (workflowExpressionMarkers(source).length) {
-        return resolveWorkflowExpressionMarkers(String(source), context);
-    }
-    if (isWorkflowValueRef(source) && source.type === 'expression') {
-        return evaluateWorkflowExpression(source.value, context);
-    }
-    return resolveWorkflowValue(source, context);
-}
 
 function matchRouterRule(actual: any, operator: string, expected: any): boolean {
     switch (operator) {
@@ -758,261 +680,6 @@ function changeContextValue(
     return value;
 }
 
-function parseCsv(text: string, delimiter: string, header: boolean): any {
-    const rows: string[][] = [];
-    let row: string[] = [];
-    let cell = '';
-    let quoted = false;
-    const source = String(text ?? '');
-    for (let index = 0; index < source.length; index++) {
-        const char = source[index];
-        if (quoted) {
-            if (char === '"') {
-                if (source[index + 1] === '"') {
-                    cell += '"';
-                    index++;
-                } else {
-                    quoted = false;
-                }
-            } else {
-                cell += char;
-            }
-        } else if (char === '"') {
-            quoted = true;
-        } else if (char === delimiter) {
-            row.push(cell);
-            cell = '';
-        } else if (char === '\n') {
-            row.push(cell);
-            rows.push(row);
-            row = [];
-            cell = '';
-        } else if (char !== '\r') {
-            cell += char;
-        }
-    }
-    if (cell || row.length) {
-        row.push(cell);
-        rows.push(row);
-    }
-    if (!header || !rows.length) {
-        return rows;
-    }
-    const keys = rows[0];
-    return rows.slice(1).map(values => {
-        const item: Record<string, string> = {};
-        keys.forEach((key, index) => {
-            item[key] = values[index] ?? '';
-        });
-        return item;
-    });
-}
-
-function stringifyCsv(value: any, delimiter: string, header = true): string {
-    const rows: any[][] = Array.isArray(value) ? value : [];
-    if (!rows.length) {
-        return '';
-    }
-    const escape = (cell: any) => {
-        const text = cell === undefined || cell === null ? '' : String(cell);
-        return /["\n\r]/.test(text) || text.includes(delimiter)
-            ? `"${text.replace(/"/g, '""')}"`
-            : text;
-    };
-    if (!Array.isArray(rows[0])) {
-        const headers = Object.keys(rows[0] || {});
-        const body = rows.map(row => headers.map(key => escape((row as any)?.[key])).join(delimiter));
-        return (header ? [headers.map(escape).join(delimiter), ...body] : body).join('\n');
-    }
-    return rows.map(row => row.map(escape).join(delimiter)).join('\n');
-}
-
-function createActivity(node: IVisualWorkflowNode): Activity | undefined {
-    const type = node.activityType;
-    if (!type) {
-        return undefined;
-    }
-    try {
-        const activity = new (type as any)();
-        Object.assign(activity, node.config || {});
-        return activity as Activity;
-    } catch {
-        return undefined;
-    }
-}
-
-async function runTask(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> {
-    const config = node.config || {};
-    if (config.fail === true) {
-        return {
-            success: false,
-            error: new Error(String(config.error || `Task "${node.name}" failed`)),
-            data: { nodeId: node.id, failed: true }
-        };
-    }
-    const action = config.action;
-    const actions = (context as any).actions || {};
-    if (typeof action === 'function') {
-        return { success: true, data: { nodeId: node.id, result: await action(context) } };
-    }
-    if (typeof action === 'string' && action && typeof actions[action] === 'function') {
-        return { success: true, data: { nodeId: node.id, result: await actions[action](context) } };
-    }
-    if (config.execute && typeof config.execute === 'function') {
-        return { success: true, data: { nodeId: node.id, result: await config.execute(context) } };
-    }
-    if (config.result !== undefined) {
-        const result = coerceJson(config.result);
-        if (result && typeof result === 'object' && !Array.isArray(result)) {
-            return { success: true, data: { ...result, nodeId: node.id } };
-        }
-        return { success: true, data: { nodeId: node.id, result } };
-    }
-    return { success: true, data: { nodeId: node.id, config } };
-}
-
-
-function decodeXmlEntities(text: string): string {
-    return text
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&apos;/g, "'")
-        .replace(/&amp;/g, '&');
-}
-
-function parseXmlDocument(text: string): any {
-    const root: any = {};
-    const stack: any[] = [root];
-    const tagPattern = /<([^>]+)>/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = tagPattern.exec(text))) {
-        const between = text.slice(lastIndex, match.index).trim();
-        if (between) {
-            const current = stack[stack.length - 1];
-            current['#text'] = current['#text']
-                ? `${current['#text']} ${decodeXmlEntities(between)}`
-                : decodeXmlEntities(between);
-        }
-        let tag = match[1].trim();
-        lastIndex = tagPattern.lastIndex;
-        if (tag.startsWith('?') || tag.startsWith('!')) {
-            continue;
-        }
-        if (tag.startsWith('/')) {
-            if (stack.length > 1) {
-                stack.pop();
-            }
-            continue;
-        }
-        const selfClosing = tag.endsWith('/');
-        if (selfClosing) {
-            tag = tag.slice(0, -1).trim();
-        }
-        const name = (tag.match(/^([^\s/]+)/) || [])[1] || tag;
-        const attrs: Record<string, string> = {};
-        const attrPattern = /([^\s=]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
-        let attr: RegExpExecArray | null;
-        while ((attr = attrPattern.exec(tag))) {
-            attrs[attr[1]] = decodeXmlEntities(attr[2] ?? attr[3] ?? '');
-        }
-        const node: any = Object.keys(attrs).length ? { '@attrs': attrs } : {};
-        const parent = stack[stack.length - 1];
-        if (parent[name] === undefined) {
-            parent[name] = node;
-        } else if (Array.isArray(parent[name])) {
-            parent[name].push(node);
-        } else {
-            parent[name] = [parent[name], node];
-        }
-        if (!selfClosing) {
-            stack.push(node);
-        }
-    }
-    return root;
-}
-
-function serializeXmlValue(name: string, value: any, pretty: boolean, depth = 0): string {
-    const indent = pretty ? '  '.repeat(depth) : '';
-    const newline = pretty ? '\n' : '';
-    if (Array.isArray(value)) {
-        return value.map(item => serializeXmlValue(name, item, pretty, depth)).join(newline);
-    }
-    if (value === null || value === undefined || typeof value !== 'object') {
-        return `${indent}<${name}>${String(value ?? '')}</${name}>${newline}`;
-    }
-    const attrs = value['@attrs'] as Record<string, string> | undefined;
-    const attrText = attrs
-        ? Object.entries(attrs).map(([key, val]) => ` ${key}="${String(val).replace(/"/g, '&quot;')}"`).join('')
-        : '';
-    const text = value['#text'] === undefined ? '' : String(value['#text']);
-    const children = Object.entries(value)
-        .filter(([key]) => key !== '@attrs' && key !== '#text')
-        .map(([key, child]) => serializeXmlValue(key, child, pretty, depth + 1))
-        .join('');
-    if (!text && !children) {
-        return `${indent}<${name}${attrText}/>${newline}`;
-    }
-    return `${indent}<${name}${attrText}>${newline}${children}${text ? indent + (pretty ? '  ' : '') + text + newline : ''}${indent}</${name}>${newline}`;
-}
-
-function pruneXmlValue(value: any, attributes: boolean, text: boolean): any {
-    if (Array.isArray(value)) {
-        return value.map(item => pruneXmlValue(item, attributes, text));
-    }
-    if (!value || typeof value !== 'object') {
-        return value;
-    }
-    const next: Record<string, any> = {};
-    Object.entries(value).forEach(([key, child]) => {
-        if (key === '@attrs' && !attributes) {
-            return;
-        }
-        if (key === '#text' && !text) {
-            return;
-        }
-        next[key] = pruneXmlValue(child, attributes, text);
-    });
-    return next;
-}
-
-function htmlAttributes(text: string, attribute: string): string[] {
-    const values: string[] = [];
-    const pattern = new RegExp(`\\b${attribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'gi');
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(text))) {
-        const value = decodeXmlEntities(match[1] ?? match[2] ?? '');
-        if (value && !values.includes(value)) {
-            values.push(value);
-        }
-    }
-    return values;
-}
-
-function stripHtml(text: string): string {
-    return decodeXmlEntities(
-        text
-            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-    );
-}
-
-function htmlLinks(text: string): string[] {
-    const links: string[] = [];
-    const pattern = /(?:href|src)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(text))) {
-        const value = decodeXmlEntities(match[1] ?? match[2] ?? '');
-        if (value && !links.includes(value)) {
-            links.push(value);
-        }
-    }
-    return links;
-}
 
 async function waitForWorkflowEvent(context: ActivityContext, event: string, timeoutMs: number): Promise<any> {
     const bus = (context as any).eventBus || (context as any).events;
@@ -1237,6 +904,50 @@ async function resolveSubWorkflow(
  * Execute one visual node. The runtime keeps node semantics platform-neutral so
  * the same definition runs from the browser editor, the terminal and a server.
  */
+function createActivity(node: IVisualWorkflowNode): Activity | undefined {
+    const type = node.activityType;
+    if (!type) {
+        return undefined;
+    }
+    try {
+        const activity = new (type as any)();
+        Object.assign(activity, node.config || {});
+        return activity as Activity;
+    } catch {
+        return undefined;
+    }
+}
+
+async function runTask(node: IVisualWorkflowNode, context: ActivityContext): Promise<ActivityResult> {
+    const config = node.config || {};
+    if (config.fail === true) {
+        return {
+            success: false,
+            error: new Error(String(config.error || `Task "${node.name}" failed`)),
+            data: { nodeId: node.id, failed: true }
+        };
+    }
+    const action = config.action;
+    const actions = (context as any).actions || {};
+    if (typeof action === 'function') {
+        return { success: true, data: { nodeId: node.id, result: await action(context) } };
+    }
+    if (typeof action === 'string' && action && typeof actions[action] === 'function') {
+        return { success: true, data: { nodeId: node.id, result: await actions[action](context) } };
+    }
+    if (config.execute && typeof config.execute === 'function') {
+        return { success: true, data: { nodeId: node.id, result: await config.execute(context) } };
+    }
+    if (config.result !== undefined) {
+        const result = coerceJson(config.result);
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+            return { success: true, data: { ...result, nodeId: node.id } };
+        }
+        return { success: true, data: { nodeId: node.id, result } };
+    }
+    return { success: true, data: { nodeId: node.id, config } };
+}
+
 export async function executeVisualNode(
     node: IVisualWorkflowNode,
     context: ActivityContext,
@@ -2182,74 +1893,8 @@ export async function executeVisualNode(
             const target = String(config.target || 'message');
             return { success: true, data: { nodeId: node.id, [target]: text, value: text } };
         }
-        case 'json': {
-            const source = resolveWorkflowValue(config.field || 'value', context);
-            const mode = String(config.mode || 'parse');
-            if (mode === 'stringify') {
-                const json = JSON.stringify(source, null, config.pretty ? 2 : undefined);
-                return { success: true, data: { nodeId: node.id, value: json, json } };
-            }
-            try {
-                const value = typeof source === 'string' ? JSON.parse(source) : source;
-                return {
-                    success: true,
-                    data: value && typeof value === 'object' && !Array.isArray(value)
-                        ? { ...value, nodeId: node.id, value }
-                        : { nodeId: node.id, value }
-                };
-            } catch (error) {
-                return { success: false, error: error as Error, data: { nodeId: node.id } };
-            }
-        }
-        case 'csv': {
-            const source = resolveWorkflowValue(config.field || 'value', context);
-            // Preset separator wins; legacy documents only have `delimiter`.
-            const separatorPresets: Record<string, string> = {
-                comma: ',',
-                tab: '\t',
-                space: ' ',
-                semicolon: ';'
-            };
-            const separator = String(config.separator || '');
-            const delimiter = separator && separator !== 'custom'
-                ? separatorPresets[separator] ?? ','
-                : String(config.delimiter ?? ',');
-            try {
-                const columns = String(config.columns || '').split(',').map(item => item.trim()).filter(Boolean);
-                if (String(config.mode || 'parse') === 'stringify') {
-                    const rows = columns.length && Array.isArray(source)
-                        ? source.map(item => Object.fromEntries(columns.map(column => [column, item?.[column]])))
-                        : source;
-                    const value = stringifyCsv(rows, delimiter, config.header !== false);
-                    return { success: true, data: { nodeId: node.id, value } };
-                }
-                let value = parseCsv(String(source ?? ''), delimiter, config.header !== false);
-                if (columns.length) {
-                    value = (value as any[]).map((row: any) => Object.fromEntries(columns.map(column => [column, row?.[column]])));
-                }
-                if (config.includeEmptyStrings === false) {
-                    value = (value as any[]).map((row: any) => Array.isArray(row)
-                        ? row
-                        : Object.fromEntries(Object.entries(row).filter(([, cell]) =>
-                            cell !== '' && cell !== null && cell !== undefined)));
-                }
-                if (config.parseNumbers === true) {
-                    const toNumber = (cell: any): any => {
-                        if (typeof cell !== 'string') {
-                            return cell;
-                        }
-                        const text = cell.trim();
-                        return /^-?\d+(\.\d+)?$/.test(text) ? Number(text) : cell;
-                    };
-                    value = (value as any[]).map((row: any) => Array.isArray(row)
-                        ? row.map(toNumber)
-                        : Object.fromEntries(Object.entries(row).map(([key, cell]) => [key, toNumber(cell)])));
-                }
-                return { success: true, data: { nodeId: node.id, value, items: value, count: value.length } };
-            } catch (error) {
-                return { success: false, error: error as Error, data: { nodeId: node.id } };
-            }
-        }
+
+
         case 'change': {
             try {
                 const rules = Array.isArray(config.rules) && config.rules.length
@@ -2697,70 +2342,9 @@ export async function executeVisualNode(
             const target = String(config.target || 'value');
             return { success: true, data: { nodeId: node.id, [target]: scaled, value: scaled } };
         }
-        case 'html': {
-            const source = String(resolveWorkflowValue(config.field || 'value', context) ?? '');
-            const mode = String(config.mode || 'text');
-            const tag = String(config.tag || '').trim();
-            let segments: string[] = [];
-            if (tag) {
-                const pattern = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'gi');
-                let match: RegExpExecArray | null;
-                while ((match = pattern.exec(source))) {
-                    segments.push(match[1]);
-                }
-            }
-            const content = tag ? segments : [source];
-            const values = content.map(part => {
-                if (mode === 'links') {
-                    return htmlLinks(part);
-                }
-                if (mode === 'attribute') {
-                    return htmlAttributes(part, String(config.attribute || 'href'));
-                }
-                return stripHtml(part);
-            });
-            const value = tag
-                ? (values.length <= 1 ? (values[0] || (mode === 'links' ? [] : '')) : values)
-                : values[0];
-            const target = String(config.target || 'value');
-            return { success: true, data: { nodeId: node.id, [target]: value, value } };
-        }
-        case 'yaml': {
-            const source = resolveWorkflowValue(config.field || 'value', context);
-            const target = String(config.target || 'value');
-            try {
-                const value = String(config.mode || 'parse') === 'stringify'
-                    ? stringifyYaml(source)
-                    : parseYaml(String(source ?? ''));
-                return { success: true, data: { nodeId: node.id, [target]: value, value } };
-            } catch (error) {
-                return { success: false, error: error as Error, data: { nodeId: node.id } };
-            }
-        }
-        case 'xml': {
-            const source = resolveWorkflowValue(config.field || 'value', context);
-            const mode = String(config.mode || 'parse');
-            const target = String(config.target || 'value');
-            try {
-                if (mode === 'stringify') {
-                    const value = typeof source === 'string' ? JSON.parse(source) : source;
-                    const name = Object.keys(value || {})[0] || 'root';
-                    let xml = serializeXmlValue(name, value?.[name], config.pretty === true).trim();
-                    if (config.declaration === true) {
-                        xml = `<?xml version="1.0" encoding="UTF-8"?>\n${xml}`;
-                    }
-                    return { success: true, data: { nodeId: node.id, [target]: xml, value: xml } };
-                }
-                const value = pruneXmlValue(
-                    parseXmlDocument(String(source ?? '')),
-                    config.attributes !== false,
-                    config.text !== false
-                );
-                return { success: true, data: { nodeId: node.id, [target]: value, value } };
-            } catch (error) {
-                return { success: false, error: error as Error, data: { nodeId: node.id } };
-            }
-        }
+
+
+
         case 'join': {
             const incoming = extras?.incoming || [];
             const ignoreEmpty = config.ignoreEmpty !== false;
