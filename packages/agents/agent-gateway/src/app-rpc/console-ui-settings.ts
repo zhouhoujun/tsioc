@@ -14,6 +14,8 @@ export interface ConsoleUiSettingsPatch {
     approvalTimeoutMs?: number | null;
     /** Opt-in read-only shell scanner for the shared runtime policy. */
     readOnlyShell?: boolean;
+    /** P1.1: unattended ruleset (`deny`/`allow`; null clears it). */
+    approvalUnattended?: 'deny' | 'allow' | null;
     /** Default agent profile (archetype) applied to the shared runtime options. */
     defaultArchetype?: string | null;
     /** Ordered approval rules (string patterns or category objects). */
@@ -109,6 +111,14 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
             approval: { ...((options as any).policy?.approval || {}), readOnlyShell }
         };
     }
+    const approvalUnattended = params.approvalUnattended === 'deny' || params.approvalUnattended === 'allow'
+        ? params.approvalUnattended
+        : params.approvalUnattended === null ? null : undefined;
+    if (approvalUnattended !== undefined) {
+        const approval: Record<string, any> = { ...((options as any).policy?.approval || {}) };
+        if (approvalUnattended) approval.unattended = approvalUnattended; else delete approval.unattended;
+        (options as any).policy = { ...((options as any).policy || {}), approval };
+    }
     const defaultArchetype = typeof params.defaultArchetype === 'string' && params.defaultArchetype.trim()
         ? params.defaultArchetype.trim()
         : undefined;
@@ -128,7 +138,7 @@ export function applyConsoleUiSettings(options: AgentOptions, params: ConsoleUiS
     const approvalAllowRules = Array.isArray(params.approvalAllowRules)
         ? sanitizeApprovalAllowRules(params.approvalAllowRules)
         : undefined;
-    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules, readOnlyShell, defaultArchetype, approvalRequireApproval);
+    persistConsoleUiSettings(options, ui, securityLevel, params.yoloMode, thinkingLevel, modelProfile, approvalTimeoutMs, approvalAllowRules, readOnlyShell, defaultArchetype, approvalRequireApproval, approvalUnattended);
     return {
         personality: ui.personality,
         memoryInjection: ui.memoryInjection,
@@ -180,7 +190,7 @@ function consoleStoreFile(workspace: string, name: string): string | null {
 }
 
 /** Read the persisted console preferences for a workspace (serve startup). */
-export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean; defaultArchetype?: string; approvalRequireApproval?: ApprovalRule[]; sessionApprovalRules?: Record<string, ApprovalRule[]> } {
+export function readConsoleUiSettings(workspace: string): { personality?: string; memoryInjection?: boolean; securityLevel?: string; yoloMode?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; modelProfile?: string; approvalAllowRules?: string[]; readOnlyShell?: boolean; defaultArchetype?: string; approvalRequireApproval?: ApprovalRule[]; approvalUnattended?: 'deny' | 'allow'; sessionApprovalRules?: Record<string, ApprovalRule[]> } {
     const dir = String(workspace || '').trim();
     if (!dir) {
         return {};
@@ -204,6 +214,9 @@ export function readConsoleUiSettings(workspace: string): { personality?: string
             defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined,
             approvalRequireApproval: Array.isArray(parsed?.approvalRequireApproval)
                 ? sanitizeApprovalRequireApproval(parsed.approvalRequireApproval)
+                : undefined,
+            approvalUnattended: parsed?.approvalUnattended === 'deny' || parsed?.approvalUnattended === 'allow'
+                ? parsed.approvalUnattended
                 : undefined
         };
     } catch {
@@ -222,7 +235,8 @@ function persistConsoleUiSettings(
     approvalAllowRules?: string[],
     readOnlyShell?: boolean,
     defaultArchetype?: string,
-    approvalRequireApproval?: ApprovalRule[]
+    approvalRequireApproval?: ApprovalRule[],
+    approvalUnattended?: 'deny' | 'allow' | null
 ): void {
     const workspace = String((options as any).workspace || '').trim();
     if (!workspace) {
@@ -272,6 +286,10 @@ function persistConsoleUiSettings(
     }
     if (defaultArchetype) {
         next.defaultArchetype = defaultArchetype;
+    }
+    if (approvalUnattended !== undefined) {
+        if (approvalUnattended) next.approvalUnattended = approvalUnattended;
+        else delete next.approvalUnattended;
     }
     if (Array.isArray(approvalRequireApproval)) {
         if (approvalRequireApproval.length) {

@@ -98,6 +98,21 @@ export class ApprovalPermissionRulesTest {
         expect(strategy.requires('terminal', { command: 'rm -rf build' })).toEqual(false);
     }
 
+    @Test('unattended ruleset resolves requests immediately without pending entries')
+    async unattendedRuleset() {
+        for (const [mode, expected] of [['deny', ApprovalDecision.DENIED], ['allow', ApprovalDecision.APPROVED]] as const) {
+            const manager = new ToolApprovalManager(
+                { publishEvent: async () => undefined } as any,
+                new RandomUuidGenerator(),
+                new DefaultApprovalStrategy(['shell.exec']),
+                { unattended: mode }
+            );
+            const result = await manager.checkApproval('terminal', { command: 'rm -rf build' }, 's1');
+            expect(result.decision).toEqual(expected);
+            expect(manager.getPending()).toEqual([]);
+        }
+    }
+
     @Test('manager saved allow rules feed the saved layer')
     managerSavedRules() {
         const strategy = new DefaultApprovalStrategy(['shell.exec']);

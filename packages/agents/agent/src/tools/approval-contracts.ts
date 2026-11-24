@@ -60,6 +60,8 @@ export interface ApprovalManagerOptions {
     autoReview?: boolean;
     /** G79: automatically approve all requests for this session (e.g. automation / headless mode). */
     autoApprove?: boolean;
+    /** P1.1: unattended ruleset (resolve asks immediately when no human is present). */
+    unattended?: 'deny' | 'allow';
 }
 export const AgentApprovalOptions = token<ApprovalManagerOptions>('AgentApprovalOptions');
 

@@ -19,6 +19,8 @@ export interface AgentConsoleSettingsData {
     approvalTimeoutMs?: number;
     /** Opt-in read-only shell scanner: inspection commands skip the prompt. */
     readOnlyShell?: boolean;
+    /** P1.1: unattended ruleset (`deny`/`allow`). */
+    approvalUnattended?: 'deny' | 'allow';
     /** Show release highlights after an upgrade (default on once the feature has been seen). */
     highlights?: boolean;
     /** Highest release-highlights version the user has acknowledged. */
@@ -90,7 +92,7 @@ export function cloneAgentConsoleOptions<T = any>(options: T): T {
 
 export function applyPersistedPreferences(
     options: any,
-    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean; highlights?: boolean; defaultArchetype?: string; approvalRequireApproval?: ApprovalRule[] } | null | undefined
+    persisted: { personality?: string; memoryInjection?: boolean; thinkingLevel?: 'low' | 'medium' | 'high' | 'max'; readOnlyShell?: boolean; highlights?: boolean; defaultArchetype?: string; approvalRequireApproval?: ApprovalRule[]; approvalUnattended?: 'deny' | 'allow' } | null | undefined
 ): void {
     if (!options || !persisted) {
         return;
@@ -111,6 +113,12 @@ export function applyPersistedPreferences(
         options.policy = {
             ...(options.policy || {}),
             approval: { ...(options.policy?.approval || {}), readOnlyShell: persisted.readOnlyShell }
+        };
+    }
+    if (persisted.approvalUnattended === 'deny' || persisted.approvalUnattended === 'allow') {
+        options.policy = {
+            ...(options.policy || {}),
+            approval: { ...(options.policy?.approval || {}), unattended: persisted.approvalUnattended }
         };
     }
     if (typeof persisted.highlights === 'boolean') {
@@ -228,6 +236,9 @@ export function sanitizeAgentConsoleSettings(parsed: any): AgentConsoleSettingsD
             ? Math.max(1000, Math.min(300000, Math.floor(Number(parsed.approvalTimeoutMs))))
             : undefined,
         readOnlyShell: typeof parsed?.readOnlyShell === 'boolean' ? parsed.readOnlyShell : undefined,
+        approvalUnattended: parsed?.approvalUnattended === 'deny' || parsed?.approvalUnattended === 'allow'
+            ? parsed.approvalUnattended
+            : undefined,
         highlights: typeof parsed?.highlights === 'boolean' ? parsed.highlights : undefined,
         highlightsSeenVersion: typeof parsed?.highlightsSeenVersion === 'string' && parsed.highlightsSeenVersion.trim() ? parsed.highlightsSeenVersion.trim() : undefined,
         defaultArchetype: typeof parsed?.defaultArchetype === 'string' && parsed.defaultArchetype.trim() ? parsed.defaultArchetype.trim() : undefined,
@@ -390,6 +401,7 @@ export class AgentConsoleSettingsStore {
             ...(data.transcriptWindowMessages ? { transcriptWindowMessages: data.transcriptWindowMessages } : {}),
             ...(data.approvalTimeoutMs ? { approvalTimeoutMs: data.approvalTimeoutMs } : {}),
             ...(typeof data.readOnlyShell === 'boolean' ? { readOnlyShell: data.readOnlyShell } : {}),
+            ...(data.approvalUnattended ? { approvalUnattended: data.approvalUnattended } : {}),
             ...(typeof data.highlights === 'boolean' ? { highlights: data.highlights } : {}),
             ...(data.highlightsSeenVersion ? { highlightsSeenVersion: data.highlightsSeenVersion } : {}),
             ...(data.defaultArchetype ? { defaultArchetype: data.defaultArchetype } : {}),

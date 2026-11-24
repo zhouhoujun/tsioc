@@ -15,6 +15,7 @@ export function resolveApprovalPolicyOptions(options: AgentOptions, autoReview: 
             ?? defaultAgentOptions.policy?.limits?.approvalTimeoutMs
             ?? defaultAgentOptions.tools?.approvalTimeoutMs,
         autoDeny: options.tools?.approvalAutoDeny === true,
+        unattended: options.policy?.approval?.unattended,
         autoReview
     };
 }

@@ -193,8 +193,11 @@
 - 状态：`permissions/PermissionEngine.ts` 已落地（action+resource→effect、wildcard、五层、
   deny hard floor、legacy 规则编译、live workspace/session/saved 层）；`DefaultApprovalStrategy` 接入引擎；
   durable allow 即 saved 层；reject 支持 feedback 并写入工具错误；RPC `permission.rules.list` 返回规则与命中层；
-  `/permissions inspect` 展示 V3 规则数量/命中。**剩余**：`Unattended` ruleset 与审批弹窗“拒绝并说明”输入 UI；
+  `/permissions inspect` 展示 V3 规则数量/命中。**剩余**：审批弹窗“拒绝并说明”输入 UI；
   archetype allow/deny 编译到 agent 层（当前仍由 archetype 工具闸门执行）。
+  `Unattended` ruleset 已落地：`policy.approval.unattended = 'deny' | 'allow'`，审批管理器在无人值守时
+  立即返回并发布 completed 事件（不进入 pending）；`/permissions unattended [deny|allow|off]` 写入运行
+  options 并持久化到 workspace `settings.json`（web/attach 经 `settings.ui.set`，本地 TUI 走同一设置存储）。
 
 **P1.2 Snapshot v2 + message-level revert（非 git 路径已落地 2026-11-24）**
 - 新 `ContentAddressedSnapshotStore`：

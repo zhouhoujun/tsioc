@@ -144,7 +144,6 @@ export interface AgentSandboxOptions {
         required?: boolean;
     };
 }
-
 /**
  * A7: best-effort source formatter applied to generated edits. When a write
  * tool (write_file / edit_file / apply_patch) lands a change whose file
@@ -166,7 +165,6 @@ export interface AgentFormatterOptions {
     /** Extra environment variables for the formatter process. */
     env?: Record<string, string>;
 }
-
 /**
  * P79: post-edit verification command options. After a tool round edits
  * files, the runtime runs package verification commands scoped to the edited
@@ -192,7 +190,6 @@ export interface AgentVerificationOptions {
     /** Max output chars captured per command (default 8000). */
     maxOutputChars?: number;
 }
-
 /**
  * P195: token budget for skill content injected into the system prompt.
  * When the combined character count of active skills exceeds `maxChars`,
@@ -309,7 +306,6 @@ export interface AgentPolicyVerification {
     /** Tool names treated as write operations for the declared-vs-actual diff check (falls back to `AgentOptions.verificationWriteTools`, then the B2 defaults). */
     writeTools?: string[];
 }
-
 /** A5: approval-gate settings folded into the policy source chain (default < workspace < session < request). */
 export interface AgentPolicyApproval {
     /** Tool names/patterns or category rules requiring approval (falls back to `AgentToolOptions.requireApproval`, then the schema default list). */
@@ -318,6 +314,7 @@ export interface AgentPolicyApproval {
     autoReview?: boolean;
     /** Opt-in shell scanner: read-only inspection commands (`git status`, `ls`, ...) skip approval; see `inspectShellCommand`. */
     readOnlyShell?: boolean;
+    unattended?: 'deny' | 'allow';
 }
 /** A7: OS sandbox settings folded into the policy source chain (default < workspace < session < request). */
 export interface AgentPolicySandbox {
@@ -385,6 +382,8 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         .map(item => item?.approval?.readOnlyShell)
         .filter((value): value is boolean => typeof value === 'boolean')
         .pop();
+    const approvalUnattended = overrides.map(item => item?.approval?.unattended)
+        .filter((value): value is 'deny' | 'allow' => value === 'deny' || value === 'allow').pop();
     const retryMaxRetries = overrides
         .map(item => item?.retry?.maxRetries)
         .filter((value): value is number => typeof value === 'number')
@@ -429,12 +428,13 @@ export function resolveAgentPolicy(...overrides: Array<AgentPolicyConfig | undef
         ...(defaultArchetype ? { defaultArchetype } : {}),
         ...(delegationMode ? { delegationMode } : {}),
         ...(verificationWriteTools ? { verification: { writeTools: verificationWriteTools.slice() } } : {}),
-        ...(approvalRequireApproval || approvalAutoReview !== undefined || approvalReadOnlyShell !== undefined
+        ...(approvalRequireApproval || approvalAutoReview !== undefined || approvalReadOnlyShell !== undefined || approvalUnattended
             ? {
                 approval: {
                     ...(approvalRequireApproval ? { requireApproval: approvalRequireApproval.slice() } : {}),
                     ...(approvalAutoReview !== undefined ? { autoReview: approvalAutoReview } : {}),
-                    ...(approvalReadOnlyShell !== undefined ? { readOnlyShell: approvalReadOnlyShell } : {})
+                    ...(approvalReadOnlyShell !== undefined ? { readOnlyShell: approvalReadOnlyShell } : {}),
+                    ...(approvalUnattended ? { unattended: approvalUnattended } : {})
                 }
             }
             : {}),

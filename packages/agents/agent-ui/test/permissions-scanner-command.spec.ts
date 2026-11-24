@@ -41,6 +41,25 @@ export class PermissionsScannerCommandTest {
         expect(off.notices[0]).toContain('off');
     }
 
+    @Test('sets, reports and clears the unattended ruleset')
+    async unattended() {
+        const fixture = buildHost(false);
+        await runPermissionsCommand(fixture.host, 'unattended deny');
+        expect(fixture.options.policy.approval.unattended).toEqual('deny');
+        expect(fixture.persisted).toEqual([{ approvalUnattended: 'deny' }]);
+        expect(fixture.rpc).toEqual([{ method: 'settings.ui.set', params: { approvalUnattended: 'deny' } }]);
+
+        const state = buildHost(false);
+        state.options.policy.approval.unattended = 'allow';
+        await runPermissionsCommand(state.host, 'unattended');
+        expect(state.notices[0]).toContain('allow');
+
+        await runPermissionsCommand(fixture.host, 'unattended off');
+        expect(fixture.options.policy.approval.unattended).toBeUndefined();
+        expect(fixture.persisted[1]).toEqual({ approvalUnattended: null });
+        expect(fixture.rpc[1]).toEqual({ method: 'settings.ui.set', params: { approvalUnattended: null } });
+    }
+
     @Test('enables the read-only scanner live and persists it')
     async enable() {
         const fixture = buildHost(false);

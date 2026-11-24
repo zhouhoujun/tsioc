@@ -36,6 +36,28 @@ export class ConsoleUiSettingsTest {
         }
     }
 
+    @Test('persists the unattended ruleset and clears it with null')
+    unattended() {
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));
+        const file = path.join(workspace, '.tsdi-agent', 'settings.json');
+        try {
+            const options: any = { workspace, ui: {}, policy: { approval: { autoReview: true } } };
+            applyConsoleUiSettings(options, { approvalUnattended: 'deny' });
+            expect(options.policy.approval).toMatchObject({ autoReview: true, unattended: 'deny' });
+            expect(readConsoleUiSettings(workspace).approvalUnattended).toEqual('deny');
+
+            applyConsoleUiSettings(options, { approvalUnattended: 'allow' });
+            expect(readConsoleUiSettings(workspace).approvalUnattended).toEqual('allow');
+
+            applyConsoleUiSettings(options, { approvalUnattended: null });
+            expect(options.policy.approval.unattended).toBeUndefined();
+            expect(readConsoleUiSettings(workspace).approvalUnattended).toBeUndefined();
+            expect(readConsoleUiSettings(workspace).approvalUnattended).not.toEqual('deny');
+        } finally {
+            fs.rmSync(workspace, { recursive: true, force: true });
+        }
+    }
+
     @Test('persists the security level and yolo flag and rejects unknown levels')
     securityLevel() {
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'tsdi-ui-settings-'));

@@ -179,6 +179,14 @@ export class ToolApprovalManager extends ApprovalManager {
             return { decision: ApprovalDecision.DENIED, request };
         }
 
+        if (this.options?.unattended && this.options.autoApprove !== true) {
+            const decision = this.options.unattended === 'allow' ? ApprovalDecision.APPROVED : ApprovalDecision.DENIED;
+            this.app.publishEvent(new AgentApprovalCompletedEvent(this, this.toRequestRef(request), decision === ApprovalDecision.APPROVED))
+                .catch(() => {});
+            await this.recordApprovalAudit(request, decision, `unattended ruleset (${this.options.unattended})`);
+            return { decision, request };
+        }
+
         if (this.options?.autoApprove === true) {
             // Session-wide allow (`A`): the call is resolved here, so it must
             // not surface as a pending approval (the status line used to show

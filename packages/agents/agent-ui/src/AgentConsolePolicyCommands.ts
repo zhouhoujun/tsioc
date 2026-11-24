@@ -356,6 +356,27 @@ export async function runPermissionsCommand(host: PolicyCommandHost, args: strin
         host.notify(formatAgentUiNotice(host.translator, enable ? 'approvalScannerEnabled' : 'approvalScannerDisabled'));
         return;
     }
+    if (tokens[0].toLowerCase() === 'unattended') {
+        const requested = String(tokens[1] || '').toLowerCase();
+        const mode = requested === 'deny' || requested === 'allow' ? requested : undefined;
+        const clear = ['off', 'clear', 'ask', 'none'].includes(requested);
+        const current = host.options?.policy?.approval?.unattended;
+        if (!mode && !clear) {
+            host.notify(formatAgentUiNotice(host.translator, 'permissionUnattendedState', { state: current || 'ask' }));
+            return;
+        }
+        if (host.options) {
+            const approval: Record<string, any> = { ...(host.options.policy?.approval || {}) };
+            if (mode) approval.unattended = mode; else delete approval.unattended;
+            host.options.policy = { ...(host.options.policy || {}), approval };
+        }
+        if (host.appRpc) {
+            await host.appRpc.request('settings.ui.set', { approvalUnattended: mode ?? null }, host.rpcRequestContext()).catch(() => undefined);
+        }
+        await host.persistSettings?.({ approvalUnattended: mode ?? null });
+        host.notify(formatAgentUiNotice(host.translator, mode ? 'permissionUnattendedSet' : 'permissionUnattendedCleared', { mode: mode || '' }));
+        return;
+    }
     const area = tokens[0].toLowerCase();
     if (area === 'session') {
         const requested = normalizeSecurityLevel(tokens[1]);
