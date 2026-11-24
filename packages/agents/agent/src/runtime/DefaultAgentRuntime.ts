@@ -24,6 +24,7 @@ import { TurnAssistantController } from './TurnAssistantController';
 import { VerificationController } from './VerificationController';
 import { TokenUsageController } from './TokenUsageController';
 import { MemoryRetrievalController } from './MemoryRetrievalController';
+import { SessionSnapshotController } from './SessionSnapshotController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -169,7 +170,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -926,141 +927,25 @@ export class DefaultAgentRuntime extends AgentRuntime {
         try { await this.turnHistory.record(sessionId, prompt); } catch { /* Undo falls back to per-file snapshots. */ }
     }
 
-    override async undoFileChange(sessionId: string): Promise<FileUndoRedoResult> {
-        const snapshot = this.fileSnapshotStore?.undo(sessionId);
-        if (!snapshot) return { filePath: '', restored: 'none' };
-        await this.restoreFileSnapshot(snapshot, 'before'); await this.turnHistory.afterFileChange(sessionId);
-        return { filePath: snapshot.filePath, restored: snapshot.before === null ? 'deleted' : 'content', snapshot };
-    }
+    override async undoFileChange(sessionId: string): Promise<FileUndoRedoResult> { return this.snapshots.undoFile(sessionId); }
 
-    override async redoFileChange(sessionId: string): Promise<FileUndoRedoResult> {
-        const snapshot = this.fileSnapshotStore?.redo(sessionId);
-        if (!snapshot) return { filePath: '', restored: 'none' };
-        await this.restoreFileSnapshot(snapshot, 'after'); await this.turnHistory.afterFileChange(sessionId);
-        return { filePath: snapshot.filePath, restored: snapshot.after === null ? 'deleted' : 'content', snapshot };
-    }
+    override async redoFileChange(sessionId: string): Promise<FileUndoRedoResult> { return this.snapshots.redoFile(sessionId); }
 
-    override listFileSnapshots(sessionId: string): FileSnapshot[] { return this.fileSnapshotStore?.list(sessionId) ?? []; }
+    override listFileSnapshots(sessionId: string): FileSnapshot[] { return this.snapshots.listFiles(sessionId); }
 
-    override async captureGitStepSnapshot(sessionId: string, workspace: string, messageId: string): Promise<GitStepSnapshot | null> {
-        if (!this.gitStepSnapshotStore) {
-            return null;
-        }
-        const snapshot = await this.gitStepSnapshotStore.capture(workspace, { sessionId, messageId, label: `step-${sessionId}` });
-        if (snapshot) {
-            this.bindGitStepSnapshot(sessionId, messageId);
-        }
-        return snapshot;
-    }
+    override async captureGitStepSnapshot(sessionId: string, workspace: string, messageId: string): Promise<GitStepSnapshot | null> { return this.snapshots.captureGit(sessionId, workspace, messageId); }
 
-    override async revertGitStepSnapshot(sessionId: string, messageId: string): Promise<GitRevertResult> {
-        return await this.gitStepSnapshotStore?.revert(messageId, sessionId)
-            ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
-    }
+    override async revertGitStepSnapshot(sessionId: string, messageId: string): Promise<GitRevertResult> { return this.snapshots.revertGit(sessionId, messageId); }
 
-    override async unrevertGitStepSnapshot(sessionId: string): Promise<GitRevertResult> {
-        return await this.gitStepSnapshotStore?.unrevert(sessionId)
-            ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
-    }
+    override async unrevertGitStepSnapshot(sessionId: string): Promise<GitRevertResult> { return this.snapshots.unrevertGit(sessionId); }
 
-    override async listGitStepSnapshots(sessionId: string): Promise<GitStepSnapshot[]> {
-        return this.gitStepSnapshotStore?.list(sessionId) ?? [];
-    }
+    override async listGitStepSnapshots(sessionId: string): Promise<GitStepSnapshot[]> { return this.snapshots.listGit(sessionId); }
 
-    override async diffGitStepSnapshot(sessionId: string, ref: string): Promise<GitStepDiff | null> {
-        const store = this.gitStepSnapshotStore;
-        if (!store) {
-            return null;
-        }
-        const snapshot = store.resolveByMessage(ref) ?? store.get(ref);
-        return snapshot ? store.diff(snapshot) : null;
-    }
+    override async diffGitStepSnapshot(sessionId: string, ref: string): Promise<GitStepDiff | null> { return this.snapshots.diffGit(ref); }
 
-    protected async beginGitStepSnapshot(sessionId: string, workspace?: string): Promise<void> {
-        if (!this.gitStepSnapshotStore || !workspace) {
-            return;
-        }
-        try {
-            const snapshot = await this.gitStepSnapshotStore.capture(workspace, { sessionId, label: `turn-${sessionId}` });
-            if (snapshot) {
-                this.pendingGitStepSnapshots.set(sessionId, snapshot.id);
-            }
-        } catch {
-            // a snapshot failure must not break a turn
-        }
-    }
+    protected async beginGitStepSnapshot(sessionId: string, workspace?: string): Promise<void> { return this.snapshots.beginGit(sessionId, workspace); }
 
-    protected bindGitStepSnapshot(sessionId: string, messageId: string): void {
-        const pendingId = this.pendingGitStepSnapshots.get(sessionId);
-        this.pendingGitStepSnapshots.delete(sessionId);
-        if (!pendingId || !this.gitStepSnapshotStore) {
-            return;
-        }
-        try {
-            this.gitStepSnapshotStore.bind(pendingId, messageId);
-        } catch {
-            // binding failure leaves an unbound snapshot, diff still works by id
-        }
-    }
-
-    private async pushFileSnapshot(sessionId: string, snapshot: FileSnapshot | null): Promise<void> {
-        if (!snapshot || !this.fileSnapshotStore) {
-            return;
-        }
-        try {
-            const resolved = await this.resolveFileSnapshotAfter(snapshot);
-            this.fileSnapshotStore.push(sessionId, resolved);
-            await this.turnHistory.afterFileChange(sessionId);
-        } catch {
-            // a snapshot failure must not break a successful tool call
-        }
-    }
-
-    private async readRuntimeFileText(filePath: string): Promise<string | null> {
-        if (!this.fileAdapter) {
-            return null;
-        }
-        try {
-            return await this.fileAdapter.readText(filePath);
-        } catch {
-            return null;
-        }
-    }
-
-    private async resolveFileSnapshotAfter(snapshot: FileSnapshot): Promise<FileSnapshot> {
-        const content = await this.readRuntimeFileText(snapshot.filePath);
-        let files: FileSnapshotPart[] | undefined;
-        if (snapshot.files?.length) {
-            files = [];
-            for (const part of snapshot.files) {
-                files.push({ ...part, after: await this.readRuntimeFileText(part.filePath) });
-            }
-        }
-        return { ...snapshot, after: content, files };
-    }
-
-    private async restoreFileSnapshot(snapshot: FileSnapshot, which: 'before' | 'after'): Promise<void> {
-        if (!this.fileAdapter) {
-            return;
-        }
-        if (snapshot.files?.length) {
-            for (const part of [...snapshot.files].reverse()) {
-                await this.restoreSnapshotPart(part, which);
-            }
-            return;
-        }
-        await this.restoreSnapshotPart(snapshot, which);
-    }
-
-    private async restoreSnapshotPart(part: FileSnapshotPart, which: 'before' | 'after'): Promise<void> {
-        const content = which === 'before' ? part.before : (part.after ?? null);
-        if (content === null) {
-            await this.fileAdapter!.remove(part.filePath, { force: true }).catch(() => undefined);
-            return;
-        }
-        await this.fileAdapter!.mkdir(dirnameAgentPath(part.filePath), { recursive: true });
-        await this.fileAdapter!.writeText(part.filePath, content);
-    }
+    protected bindGitStepSnapshot(sessionId: string, messageId: string): void { this.snapshots.bindGit(sessionId, messageId); }
 
     protected throwIfTurnCancelled(sessionId: string): void {
         this.turnAbortScopes.throwIfCancelled(sessionId);
@@ -1800,6 +1685,13 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
+    private get snapshots(): SessionSnapshotController {
+        return this.sessionSnapshots ??= new SessionSnapshotController({
+            fileAdapter: this.fileAdapter, fileSnapshots: this.fileSnapshotStore,
+            gitSnapshots: this.gitStepSnapshotStore, afterFileChange: id => this.turnHistory.afterFileChange(id)
+        });
+    }
+
     private get memoryRetrievalController(): MemoryRetrievalController {
         return this.memoryRetrieval ??= new MemoryRetrievalController({
             sessions: this.sessions, memory: this.memory, memoryRetriever: this.memoryRetriever,
@@ -1818,7 +1710,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.verification ??= new VerificationController({
             options: this.options, turnDiagnosticsStore: this.turnDiagnosticsStore,
             signal: id => this.turnAbortScopes.signal(id),
-            readFileText: path => this.readRuntimeFileText(path),
+            readFileText: path => this.snapshots.readText(path),
             resolveWriteTools: () => this.resolveVerificationWriteTools().value,
             hasUnfinishedPlan: (id, context) => this.hasUnfinishedPlan(id, context),
             falsificationSummary: recovery => this.recoveryController.buildFalsificationSummaryMessage(recovery)
@@ -2019,7 +1911,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             trackPlan: (id, context, name, output) => this.trackPlanProgress(id, context, name, output),
             pushCompensation: (id, name, callId, capture) => this.pushToolCompensation(id, name, callId, capture),
             captureWriteHint: (id, context, call, def, snapshot) => this.verificationController.captureWriteHint(id, context, call, def, snapshot),
-            pushFileSnapshot: (id, snapshot) => this.pushFileSnapshot(id, snapshot),
+            pushFileSnapshot: (id, snapshot) => this.snapshots.pushFile(id, snapshot),
             trackEditedFile: (context, call, def, snapshot) => this.verificationController.trackEditedFile(context, call, def, snapshot)
         }, sessionId, toolCall, loopDetector, executionMode, toolCallInput, inputSummary, definition, sandboxReceipt, turnContext);
     }
