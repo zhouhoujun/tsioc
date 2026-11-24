@@ -585,7 +585,13 @@ function startDesignerServer(port) {
         const themeMenuItems = await page.locator('.menu-bar-submenu [data-menu-id^="theme:"]').count();
         await page.evaluate(() => window.workflowDesigner.setTheme('solarized'));
         await page.waitForFunction(() => document.querySelector('.workflow-designer')?.getAttribute('data-theme') === 'solarized');
-        await page.waitForTimeout(220);
+        // The theme attribute flips before the components re-apply their CSS
+        // variables; wait for the splitter to actually pick up the palette so
+        // a loaded CI host cannot read the light value here.
+        await page.waitForFunction(() => {
+            const splitter = document.querySelector('.workspace-splitter');
+            return splitter ? getComputedStyle(splitter).backgroundColor === 'rgb(88, 110, 117)' : false;
+        }, { timeout: 4000 }).catch(() => undefined);
         const solarizedTheme = await page.evaluate(() => {
             const designer = document.querySelector('.workflow-designer');
             const splitter = document.querySelector('.workspace-splitter');
