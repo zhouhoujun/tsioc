@@ -23,6 +23,7 @@ import { OpenMeteoWeatherAdapter } from './weather-adapter';
 import { LocationAdapter, LocationTool } from '../utility/location.tool';
 import { WeatherAdapter } from '../utility/weather.tool';
 import { ReadFileTool } from '../files/read-file.tool';
+import { artifactToolProviders } from '../artifacts/providers';
 import { WriteFileTool } from '../files/write-file.tool';
 import { EditFileTool } from '../files/edit-file.tool';
 import { MkdirTool } from '../files/mkdir.tool';
@@ -129,6 +130,7 @@ function provideCodingTaskToolFactory() {
         { provide: AGENT_IO_PORT, useExisting: LocalAgentIoPort, asDefault: true },
         ReadFileTool,
         WriteFileTool,
+        ...artifactToolProviders,
         EditFileTool,
         MkdirTool,
         CopyFileTool,
@@ -280,6 +282,7 @@ function provideCodingTaskToolFactory() {
         MkdirTool,
         CopyFileTool,
         MoveFileTool,
+        ...artifactToolProviders,
         DeleteFileTool,
         ListDirTool,
         StatTool,

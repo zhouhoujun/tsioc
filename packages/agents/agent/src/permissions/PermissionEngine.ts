@@ -110,6 +110,9 @@ export function resolvePermissionActions(request: PermissionRequest): Permission
     if (tool.startsWith('provider.')) {
         actions.add('provider.use');
     }
+    if (tool.startsWith('artifact_')) {
+        actions.add('artifact');
+    }
     return Array.from(actions);
 }
 

@@ -71,6 +71,7 @@ export const AGENT_UI_NOTICE_TAIL_ZH: NestedMessages = {
   queueBatchInvalid: '无效的队列选择：{value}',
   artifactsTitle: '会话产物',
   artifactsEmpty: '本会话还没有捕获到产物。',
+  artifactsPublishedHeading: '产物 · {count}',
   artifactsFilesHeading: '文件 · {count}',
   artifactsReportsHeading: 'Worker 报告 · {count}',
   inboxTaskRetry: '重试任务',

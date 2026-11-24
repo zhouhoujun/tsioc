@@ -21,6 +21,7 @@ import { normalizeDelegationModeValue, normalizeSandboxMode } from './session-mo
 import { buildExportFileName, collectExportToolCalls, resolveExportContentType, resolveExportFormat, serializeSessionExport } from './session-export';
 import { createErrorResponse, optionalSessionId, parseTurnMessage, requireSessionId, requireString, requireTurnInput } from './request-helpers';
 import { listPermissionRules as listPermissionRulesResult } from './permission-rules';
+import { getArtifactFromRpc, listArtifactsFromRpc } from './artifacts-rpc';
 import { importSessionFromRpc } from './session-import';
 import { sendSessionMessageFromRpc } from './session-message';
 import { listCrossSessionMessages } from './session-message-list';
@@ -289,18 +290,17 @@ export class AppRpcServer {
                 return this.unrevertGitStepSnapshot(params, context);
             case 'session.compact':
                 return this.compactSession(params, context);
-            case 'session.share.create':
-                return this.createSessionShare(params, context);
-            case 'session.share.revoke':
-                return this.revokeSessionShare(params, context);
-            case 'session.share.list':
-                return this.listSessionShares(params, context);
+            case 'session.share.create': return this.createSessionShare(params, context);
+            case 'session.share.revoke': return this.revokeSessionShare(params, context);
+            case 'session.share.list': return this.listSessionShares(params, context);
             case 'goal.create': return this.createGoal(params, context);
             case 'goal.get': return this.getGoal(params, context);
             case 'goal.list': return this.runtime.listGoals(params?.status);
             case 'goal.link': return this.linkGoal(params, context);
             case 'goal.complete': return this.updateGoalStatus(params, context, 'completed');
             case 'goal.reopen': return this.updateGoalStatus(params, context, 'active');
+            case 'artifact.list': return listArtifactsFromRpc({ params, runtime: this.runtime, authorize: id => this.ensureSessionAccess(id, context) });
+            case 'artifact.get': return getArtifactFromRpc({ params, runtime: this.runtime, id: requireString(params?.id ?? params?.artifactId, 'id'), authorize: id => this.ensureSessionAccess(id, context) });
             case 'run.turn':
                 return this.runTurn(params, context);
             case 'run.cancel':

@@ -121,10 +121,10 @@ import { BACKGROUND_TASK_HISTORY_STORE, TypeOrmBackgroundTaskStore } from './bac
 import { IpWhoIsLocationAdapter } from './location-adapter';
 import { OpenMeteoWeatherAdapter } from './weather-adapter';
 import { WeatherAdapter } from '../utility/weather.tool';
-
+import { artifactToolItems, artifactToolProviders } from '../artifacts/providers';
 const toolItems = {
     read_file: ReadFileTool,
-    write_file: WriteFileTool,
+    write_file: WriteFileTool, ...artifactToolItems,
     edit_file: EditFileTool,
     apply_patch: ApplyPatchTool,
     mkdir: MkdirTool,
@@ -538,7 +538,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
     return [
         ...withAgentToolsOptions(merged),
         ReadFileTool,
-        WriteFileTool,
+        WriteFileTool, ...artifactToolProviders,
         EditFileTool,
         MkdirTool,
         CopyFileTool,

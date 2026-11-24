@@ -83,15 +83,27 @@ export async function runArtifactsCommand(host: AgentConsoleArtifactsHost): Prom
     } catch {
         snapshots = [];
     }
+    let published: Array<Record<string, any>> = [];
+    if (host.appRpc) {
+        const result = await host.appRpc.request('artifact.list', { sessionId: host.state.sessionId }, host.rpcRequestContext?.())
+            .catch(() => null);
+        published = Array.isArray(result?.artifacts) ? result.artifacts : [];
+    }
     const tasks = await host.sessionService?.listAllBackgroundTasks?.({ sessionId: host.state.sessionId }, host.rpcRequestContext?.())
         .catch(() => []) || [];
     const files = collectArtifactFiles(snapshots);
     const reports = collectArtifactReports(tasks);
-    if (!files.length && !reports.length) {
+    if (!files.length && !reports.length && !published.length) {
         host.notify(formatAgentUiNotice(host.translator, 'artifactsEmpty'));
         return;
     }
     const lines: string[] = [];
+    if (published.length) {
+        lines.push(formatAgentUiNotice(host.translator, 'artifactsPublishedHeading', { count: published.length }));
+        published.forEach(artifact => {
+            lines.push(`  ${artifact.title || artifact.id} · ${artifact.id} · ${artifact.entry}`);
+        });
+    }
     if (files.length) {
         lines.push(formatAgentUiNotice(host.translator, 'artifactsFilesHeading', { count: files.length }));
         files.forEach(file => lines.push(`  ${file.path}${file.toolName ? ` · ${file.toolName}` : ''}`));

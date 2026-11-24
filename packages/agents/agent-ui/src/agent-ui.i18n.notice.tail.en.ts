@@ -71,6 +71,7 @@ export const AGENT_UI_NOTICE_TAIL_EN: NestedMessages = {
   queueBatchInvalid: 'Invalid queue selection: {value}',
   artifactsTitle: 'Session artifacts',
   artifactsEmpty: 'No artifacts captured for this session yet.',
+  artifactsPublishedHeading: 'Artifacts · {count}',
   artifactsFilesHeading: 'Files · {count}',
   artifactsReportsHeading: 'Worker reports · {count}',
   inboxTaskRetry: 'Retry task',

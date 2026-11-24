@@ -208,7 +208,7 @@
 
 ### P2 — 产物、压缩与扩展（2–3 周）
 
-**P2.1 Artifact v1**
+**P2.1 Artifact v1（核心已落地 2026-11-24）**
 - 新 `agent/src/artifacts/`：
   - `ArtifactProvider`（local 默认，后续 web）；
   - 文件存 `.tsdi-agent/artifacts/<id>/`，`manifest.json`（title/entry/files/mime）；
@@ -216,6 +216,10 @@
   - gateway：`GET /artifacts/<id>`（鉴权/端口），RPC `artifact.list/get`；
   - Web 页面内嵌 iframe；TUI `/artifacts` 显示 URL/ID。
 - 验收：agent 生成 HTML 产物并可打开/更新；权限/租户隔离；现有 `/artifacts` 列表兼容。
+- 状态：`agent/src/artifacts/ArtifactStore.ts`（`.tsdi-agent/artifacts/<id>/manifest.json` + 文件，
+  entry/mime/路径穿越校验）；`@tsdi/agent-tools` 新增 `artifact_create/read/update/delete` 工具并注册；
+  runtime `listArtifacts/getArtifact`；RPC `artifact.list/get`（带 session 访问校验）；`/artifacts`
+  展示已发布产物 ID。**剩余**：`GET /artifacts/<id>` HTTP 文件服务与 Web iframe 内嵌、permission `artifact` 规则示例。
 
 **P2.2 Compaction v2**
 - 后台 precompute：接近阈值时启动 summary fiber，记录失败次数/有效期；下一 step 直接采用。

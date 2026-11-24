@@ -26,6 +26,7 @@ import { TokenUsageController } from './TokenUsageController';
 import { MemoryRetrievalController } from './MemoryRetrievalController';
 import { SessionSnapshotController } from './SessionSnapshotController';
 import { ContentAddressedSnapshotStore } from '../harness/ContentAddressedSnapshotStore';
+import { ArtifactManifest, ArtifactStore } from '../artifacts/ArtifactStore';
 import { HookController } from './HookController';
 import { PolicyResolutionController } from './PolicyResolutionController';
 import { TurnLoopController } from './TurnLoopController';
@@ -131,7 +132,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected turnAbortScopes = new TurnAbortScopes();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private contentSnapshotStore?: ContentAddressedSnapshotStore; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private contentSnapshotStore?: ContentAddressedSnapshotStore; private artifactProvider?: ArtifactStore; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -389,13 +390,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     override async createGoal(input: CreateGoalInput, sessionId?: string): Promise<Goal> { return this.goals.create(input, sessionId); }
-
     override async listGoals(status?: GoalStatus): Promise<Goal[]> { return this.goals.list(status); }
-
     override async getGoal(goalId: string): Promise<Goal | undefined> { return this.goals.get(goalId); }
-
     override async getSessionGoal(sessionId: string): Promise<Goal | undefined> { return this.goals.getSessionGoal(sessionId); }
-
     override async linkSessionGoal(sessionId: string, goalId?: string): Promise<void> { await this.goals.linkSession(sessionId, goalId); }
 
     override async updateGoal(goalId: string, patch: Partial<Pick<Goal, 'title' | 'objective' | 'successCriteria' | 'status'>>): Promise<Goal> {
@@ -1381,6 +1378,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
     override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> { return this.hooks.summary(); }
 
     transformTools(editor: (actor: import('../tools/ToolRegistry').ToolTransformEditor) => void): number { return this.toolRegistry.transform(editor); }
+    async listArtifacts(sessionId: string): Promise<ArtifactManifest[]> { return this.fileAdapter ? this.saveArtifacts().list(await this.resolveSessionWorkspace(sessionId)) : []; }
+    async getArtifact(sessionId: string, id: string): Promise<ArtifactManifest | undefined> { return this.fileAdapter ? this.saveArtifacts().get(await this.resolveSessionWorkspace(sessionId), id) : undefined; }
+    private saveArtifacts(): ArtifactStore { return this.artifactProvider ??= new ArtifactStore(this.fileAdapter!); }
     listPermissionRules(sessionId?: string): import('../permissions/PermissionEngine').PermissionRule[] { return this.toolApprovalManager?.listPermissionRules?.(sessionId) ?? []; }
 
     inspectPermission(toolName: string, input: any, sessionId?: string): import('../permissions/PermissionEngine').PermissionDecision | undefined { return this.toolApprovalManager?.inspectPermission?.(toolName, input, sessionId); }

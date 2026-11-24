@@ -270,6 +270,10 @@ export type AgentToolGroup =
     | 'ai_cli';
 
 export type AgentToolItem =
+    | 'artifact_create'
+    | 'artifact_read'
+    | 'artifact_update'
+    | 'artifact_delete'
     | 'read_file'
     | 'write_file'
     | 'edit_file'

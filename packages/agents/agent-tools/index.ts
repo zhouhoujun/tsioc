@@ -1,5 +1,6 @@
 export * from './src';
 export * from './skills';
+export * from './artifacts';
 export * from './mcp';
 export * from './project';
 export * from './coding';

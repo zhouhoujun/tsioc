@@ -106,7 +106,8 @@ export class LocalToolRegistry extends ToolRegistry {
             return false;
         }
         const definition = super.toDefinition(tool, sessionId);
-        return this.isAlwaysActiveDefinition(definition)
+        const activation = this.resolveActivation(definition, sessionId);
+        return this.isAlwaysActiveDefinition({ ...definition, activation })
             || this.hasActivation(sessionId, raw);
     }
 

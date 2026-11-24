@@ -90,6 +90,8 @@ export * from './harness/child-process-runner';
 export * from './harness/SandboxExecutor';
 export * from './harness/sandbox-exec';
 export * from './harness/FileSnapshotStore';
+export * from './harness/ContentAddressedSnapshotStore';
+export * from './artifacts/ArtifactStore';
 export * from './harness/GitStepSnapshotStore';
 export * from './harness/VerifyCommandRunner';
 export * from './harness/ReviewFindingsStore';
