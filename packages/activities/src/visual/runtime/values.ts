@@ -3,6 +3,7 @@ import {
     isWorkflowValueRef,
     resolveWorkflowExpressionMarkers,
     resolveWorkflowTypedValue,
+    resolveWorkflowTypedValueAsync,
     workflowExpressionMarkers
 } from '../workflow-typed-value';
 import { evaluateWorkflowExpression } from '../workflow-expression';
@@ -94,4 +95,100 @@ export async function resolveWorkflowValueAsync(source: any, context: ActivityCo
         return evaluateWorkflowExpression(source.value, context);
     }
     return resolveWorkflowValue(source, context);
+}
+
+export function coerceJson(value: any): any {
+    if (typeof value !== 'string') {
+        return value;
+    }
+    try {
+        return JSON.parse(value);
+    } catch {
+        return value;
+    }
+}
+
+export function arrayFrom(context: ActivityContext, field: string | undefined): any[] {
+    const value = field
+        ? resolveWorkflowValue(field, context)
+        : ((context as any).items ?? (context as any).value);
+    return Array.isArray(value) ? value : [];
+}
+
+export function resolveCompareValue(value: any, context: ActivityContext): any {
+    return resolveWorkflowTypedValue(value, context);
+}
+
+export async function resolveCompareValueAsync(value: any, context: ActivityContext): Promise<any> {
+    return resolveWorkflowTypedValueAsync(value, context);
+}
+
+export function compareValues(actual: any, operator: string, expected: any): boolean {
+    switch (operator) {
+        case 'equals':
+            // eslint-disable-next-line eqeqeq
+            return actual == expected;
+        case 'not-equals':
+            // eslint-disable-next-line eqeqeq
+            return actual != expected;
+        case 'gt':
+            return Number(actual) > Number(expected);
+        case 'lt':
+            return Number(actual) < Number(expected);
+        case 'gte':
+            return Number(actual) >= Number(expected);
+        case 'lte':
+            return Number(actual) <= Number(expected);
+        case 'truthy':
+        default:
+            return Boolean(actual);
+    }
+}
+
+export function pathParts(path: string | undefined): string[] {
+    return String(path || '')
+        .replace(/^\$\.?/, '')
+        .split('.')
+        .filter(Boolean);
+}
+
+export function changeContextValue(
+    context: ActivityContext,
+    path: string | undefined,
+    action: string,
+    value: any
+): any {
+    const parts = pathParts(path);
+    if (!parts.length) {
+        if (action === 'set' && value && typeof value === 'object') {
+            Object.assign(context, value);
+            return value;
+        }
+        return undefined;
+    }
+    let owner: any = context;
+    for (let index = 0; index < parts.length - 1; index++) {
+        const part = parts[index];
+        if (owner[part] === undefined || owner[part] === null) {
+            owner[part] = {};
+        }
+        owner = owner[part];
+    }
+    const key = parts[parts.length - 1];
+    if (action === 'delete') {
+        const current = owner[key];
+        delete owner[key];
+        return current;
+    }
+    if (action === 'append') {
+        const current = owner[key];
+        if (Array.isArray(current)) {
+            current.push(value);
+            return current;
+        }
+        owner[key] = current === undefined || current === null ? [value] : `${current}${value}`;
+        return owner[key];
+    }
+    owner[key] = value;
+    return value;
 }
