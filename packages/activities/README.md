@@ -1156,6 +1156,10 @@ handle.stop();
 stopped). `event` injection waits on the host event bus (`context.eventBus` or
 `context.waitEvent`) before emitting the configured payload.
 
+See [docs/node-red-parity.md](docs/node-red-parity.md) for the node-by-node
+comparison with Node-RED, the configuration model and the deliberate
+non-goals.
+
 ### Property forms
 
 Node settings are rendered by the shared dynamic form. Object-valued JSON fields
