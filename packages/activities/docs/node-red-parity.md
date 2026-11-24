@@ -14,8 +14,9 @@ in `src/visual/node-registry.ts` (definitions), `src/visual/workflow-runtime.ts`
 | Sequences | `msg.parts` streams a message per item | `split` returns the array; `map`/`filter`/`sort`/`join`/`batch` process it |
 | Replay | Not built in | Immutable execution plan + snapshots (`WorkflowExecutionSnapshot`) with deterministic replay/resume |
 | Status | `node.status({fill, shape, text})` pushed live | `ActivityResult.status = { text, level, key?, params? }`, snapshotted with the run |
+| Context | `node`/`flow`/`global` stores (pluggable) | `flow`/`global`/`env` plus **node-local** `node` state (`node.get/set/has`, typed source `node`, expression scope `node`); persists per workflow + node in the service, cleared by `clearNodeRuntimeState` |
 | Credentials | Separate `flows_cred.json`; `node.credentials` | `{{credential:name}}` references resolved by the host; writes migrate inline values into the store |
-| Node definition | Definition + runtime + editor hooks in one file | Central registry (fields/ports/palette) + runtime switch + plugin `execute` |
+| Node definition | Definition + runtime + editor hooks in one file | Central registry (fields/ports/palette) + per-type runtime handlers (`registerWorkflowNodeHandler`) + plugin `execute` |
 
 Consequences that are deliberate:
 
@@ -47,7 +48,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 
 | Node-RED | Type here | Notes |
 | --- | --- | --- |
-| function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context` plus Node-RED-style `node.status()`, `node.info/warn/debug/error()`, `node.id`/`node.name`, `node.send(msg)` (last send forwarded) and `flow.get/set` / `global.get/set` and `env.get/has`. Set **Outputs** > 1 and return an array of messages to route one message per output port; each wire gets its own branch-local message while `flow`/`global` stay shared |
+| function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context` plus Node-RED-style `node.status()`, `node.info/warn/debug/error()`, `node.id`/`node.name`, `node.send(msg)` (last send forwarded), `flow.get/set` / `global.get/set`, `env.get/has` and `node.get/set/has` (node-local state that persists per workflow + node and is cleared by `clearNodeRuntimeState`). Set **Outputs** > 1 and return an array of messages to route one message per output port; each wire gets its own branch-local message while `flow`/`global` stay shared |
 | switch | `switch`, `router` | `+` one output per rule (**dynamic ports**, no eight-output limit), all rule operators, check-all fan-out, `else`, output labels summarize the rule; compare values may be typed values or JSONata |
 | change | `change` | `+` set/delete/append/move/search-and-replace; values from literal, `msg`/`flow`/`global`/`env` or a **JSONata expression** |
 | range | `scale` | `~` maps a value between ranges with **clamp / scale / wrap / drop** (legacy `clamp: false` still scales; drop stops the branch). The `range` type here is a sequence generator |
@@ -99,7 +100,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | Feature | Where |
 | --- | --- |
 | Field schema (label/hint/unit/group/visibility/validation rules) | `WorkflowConfigField` in `types.ts`, rendered by `@tsdi/components/common/dynamic-form` on DOM and TUI |
-| Typed values | `literal`/`number`/`boolean`/`JSON`/`regex`/`expression`/`msg`/`flow`/`global`/`env`; stored as `{ type, value }` objects (legacy prefixes still resolve) |
+| Typed values | `literal`/`number`/`boolean`/`JSON`/`regex`/`expression`/`msg`/`flow`/`global`/`env`/`node`; stored as `{ type, value }` objects (legacy prefixes still resolve) |
 | Expressions | JSONata via the optional `jsonata` package, loaded on demand; typed values, Change rules, inject payload and `{{expr: ...}}` markers in URL/body/assign/log/event/http-response |
 | Cross-field validation | `WorkflowConfigField.validate(value, { values, field })` |
 | Structural validation | `WorkflowNodeDefinition.validateConfig(config)` (for example switch rules/else placement) |

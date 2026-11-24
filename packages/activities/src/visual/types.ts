@@ -586,7 +586,8 @@ export type WorkflowValueRef =
     | { type: 'msg'; path: string }
     | { type: 'flow'; path: string }
     | { type: 'global'; path: string }
-    | { type: 'env'; path: string };
+    | { type: 'env'; path: string }
+    | { type: 'node'; path: string };
 
 /**
  * 工作流执行选项

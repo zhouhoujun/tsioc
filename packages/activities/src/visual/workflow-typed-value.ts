@@ -21,10 +21,11 @@ export type WorkflowTypedSource =
     | 'msg'
     | 'flow'
     | 'global'
-    | 'env';
+    | 'env'
+    | 'node';
 
 /** Reference scopes a typed value may read from. */
-const REFERENCE_TYPES = ['msg', 'flow', 'global', 'env'] as const;
+const REFERENCE_TYPES = ['msg', 'flow', 'global', 'env', 'node'] as const;
 const LITERAL_TYPES: WorkflowLiteralType[] = ['str', 'num', 'bool', 'json', 're'];
 
 /**
@@ -127,6 +128,9 @@ export function resolveWorkflowTypedValue(value: any, context: ActivityContext):
                 return readWorkflowProperty((context as any).global || {}, value.path);
             case 'env':
                 return readWorkflowProperty((context as any).env || {}, value.path);
+            case 'node':
+                // Node-local state for the executing node (Node-RED node context).
+                return readWorkflowProperty((context as any).node || {}, value.path);
             default:
                 return value;
         }

@@ -264,7 +264,8 @@ export class WorkflowInspectorComponent implements OnDestroy {
             { value: 'msg', label: 'msg' },
             { value: 'flow', label: 'flow' },
             { value: 'global', label: 'global' },
-            { value: 'env', label: 'env' }
+            { value: 'env', label: 'env' },
+            { value: 'node', label: 'node' }
         ];
     }
 

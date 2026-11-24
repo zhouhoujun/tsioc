@@ -5,6 +5,7 @@ import './runtime/handlers/parsers';
 import './runtime/handlers/data';
 import './runtime/handlers/flow';
 import './runtime/handlers/action';
+import { parsePayloadText } from './runtime/parsers';
 import { pause } from './runtime/timing';
 import {
     coerceJson,
@@ -67,20 +68,6 @@ export interface VisualNodeRuntimeHost {
 }
 
 /** Parse a text payload as JSON when possible (file-in auto mode). */
-function parsePayloadText(text: string): any {
-    const trimmed = String(text ?? '').trim();
-    if (!trimmed) {
-        return text;
-    }
-    if (!/^[[{]/.test(trimmed)) {
-        return text;
-    }
-    try {
-        return JSON.parse(trimmed);
-    } catch {
-        return text;
-    }
-}
 
 export interface WorkflowMqttSettings {
     url: string;
@@ -662,6 +649,10 @@ export async function executeVisualNode(
     extras?: VisualNodeExecutionExtras
 ): Promise<ActivityResult> {
     const config = node.config || {};
+    // Node-RED node context: the executing node's local state.
+    if (extras?.nodeState) {
+        (context as any).node = extras.nodeState;
+    }
 
     if (host?.executeNode) {
         const pluginResult = await host.executeNode(node, context);

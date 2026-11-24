@@ -125,7 +125,8 @@ export function workflowExpressionScope(context: ActivityContext): Record<string
         msg,
         flow: anyContext.flow || {},
         global: anyContext.global || {},
-        env: anyContext.env || {}
+        env: anyContext.env || {},
+        node: anyContext.node || {}
     };
 }
 

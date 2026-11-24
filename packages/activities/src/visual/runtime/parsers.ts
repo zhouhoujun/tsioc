@@ -1,4 +1,19 @@
 /** Pure CSV/XML/HTML helpers used by the parser node handlers. */
+export function parsePayloadText(text: string): any {
+    const trimmed = String(text ?? '').trim();
+    if (!trimmed) {
+        return text;
+    }
+    if (!/^[[{]/.test(trimmed)) {
+        return text;
+    }
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        return text;
+    }
+}
+
 export function parseCsv(text: string, delimiter: string, header: boolean): any {
     const rows: string[][] = [];
     let row: string[] = [];

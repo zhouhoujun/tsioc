@@ -350,9 +350,18 @@ registerWorkflowNodeHandlers({
                     });
                     /** Messages passed to `node.send`; DAG runs forward one result. */
                     const sent: any[] = [];
+                    /** Node-RED node context: persisted per workflow + node. */
+                    const nodeState = extras?.nodeState || {};
                     const nodeApi = {
                         id: node.id,
                         name: node.name,
+                        get: (key: string, fallback?: any) =>
+                            nodeState[key] === undefined ? fallback : nodeState[key],
+                        set: (key: string, value: any) => {
+                            nodeState[key] = value;
+                            return value;
+                        },
+                        has: (key: string) => Object.prototype.hasOwnProperty.call(nodeState, key),
                         send: (value: any) => {
                             sent.push(value);
                             return nodeApi;
