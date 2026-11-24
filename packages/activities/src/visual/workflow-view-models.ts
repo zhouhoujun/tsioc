@@ -712,8 +712,11 @@ export function buildWorkflowInspectorModel(
             ? node.config[field.key]
             : field.defaultValue;
     });
-    // Documents written before `scale.action` stored a `clamp` flag instead.
-    if (node.type === 'scale' && node.config?.action === undefined && node.config?.clamp === false) {
+    // Documents written before `scale.action` stored a `clamp` flag instead;
+    // default merging may have added the new default action, so an explicit
+    // `clamp: false` still selects "scale".
+    if (node.type === 'scale' && node.config?.clamp === false
+        && (node.config.action === undefined || node.config.action === 'clamp')) {
         values.action = 'scale';
     }
     const mapField = (field: WorkflowConfigField, nested = false): WorkflowInspectorFieldView => {

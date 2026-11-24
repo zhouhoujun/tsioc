@@ -75,6 +75,21 @@ describe('Workflow config validation hooks', () => {
             .some(item => item.fieldKey === 'event' && /event this inject waits for/.test(item.message))).toBe(true);
     });
 
+    it('requires an expression for the inject expression payload', () => {
+        const empty = node('inject', {
+            payloadType: 'expression',
+            payloadExpression: '  '
+        }, 'inject_expression_empty');
+        const issues = validateWorkflowConfigs(definition([empty]), registry);
+        expect(issues.some(item => item.fieldKey === 'payloadExpression')).toBe(true);
+
+        const filled = node('inject', {
+            payloadType: 'expression',
+            payloadExpression: 'payload.total * 2'
+        }, 'inject_expression_filled');
+        expect(validateWorkflowConfigs(definition([filled]), registry)).toEqual([]);
+    });
+
     it('validates list item hooks through their own context', () => {
         registry.register({
             type: 'hook-test',

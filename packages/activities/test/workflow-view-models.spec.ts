@@ -2,6 +2,7 @@ import expect = require('expect');
 import {
     buildWorkflowCanvasModel,
     buildWorkflowCanvasViewport,
+    buildWorkflowInspectorModel,
 } from '../src/visual/workflow-view-models';
 import {
     createDefaultWorkflowDefinition,
@@ -23,6 +24,23 @@ describe('Workflow canvas incremental view model', () => {
         });
         return { designer, registry };
     }
+
+    it('derives the scale action from the legacy clamp flag', () => {
+        const { designer, registry } = createDesigner();
+        const node = designer.addNode('scale', { x: 0, y: 0 }, {
+            config: { field: 'value', inMin: 0, inMax: 100, outMin: 0, outMax: 1, clamp: false }
+        })!;
+        designer.selectNode(node.id);
+        const field = (key: string) => buildWorkflowInspectorModel(designer, registry, 'en')
+            .fields.find(item => item.key === key)!;
+        // Old documents only carry clamp: false -> the editor shows "scale".
+        expect(field('action').value).toBe('scale');
+        expect(field('clamp')).toBeUndefined();
+
+        // An explicit action wins over the legacy flag.
+        designer.updateNodeConfig(node.id, { action: 'wrap' });
+        expect(field('action').value).toBe('wrap');
+    });
 
     it('reuses every node and edge view while panning or zooming', () => {
         const { designer, registry } = createDesigner();
