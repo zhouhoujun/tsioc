@@ -1196,7 +1196,9 @@ and `env`). Condition/switch/router/filter compare values, Change rules and
 inject properties accept it, `inject` also has an `Expression` payload type, and
 string fields such as the HTTP request URL/body accept inline `{{expr: ...}}`
 markers (a value that is only one marker keeps its type, mixed text
-interpolates stringified results). `jsonata` is an **optional dependency loaded
+interpolates stringified results). The same markers work inside JSON config
+trees: `assign` values, `event-emit` payloads, `http-response` body/headers and
+the `log` message all resolve them before use. `jsonata` is an **optional dependency loaded
 on demand**
 (`await import`): the designer build emits it as a separate ~82 KB lazy chunk,
 so the initial bundle only carries the wiring, and hosts that do not install it

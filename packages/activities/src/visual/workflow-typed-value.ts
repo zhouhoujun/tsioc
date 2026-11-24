@@ -209,6 +209,30 @@ export async function resolveWorkflowTypedValueAsync(
     return resolveWorkflowTypedValue(value, context);
 }
 
+/**
+ * Resolve `{{expr: ...}}` markers inside a JSON-ish value tree (objects and
+ * arrays included). Plain strings and non-string values pass through, so this
+ * is safe for config objects that are mostly literals.
+ */
+export async function resolveWorkflowMarkersAsync(value: any, context: ActivityContext): Promise<any> {
+    if (typeof value === 'string') {
+        return workflowExpressionMarkers(value).length
+            ? resolveWorkflowExpressionMarkers(value, context)
+            : value;
+    }
+    if (Array.isArray(value)) {
+        return Promise.all(value.map(item => resolveWorkflowMarkersAsync(item, context)));
+    }
+    if (value && typeof value === 'object') {
+        const resolved: Record<string, any> = {};
+        for (const [key, item] of Object.entries(value)) {
+            resolved[key] = await resolveWorkflowMarkersAsync(item, context);
+        }
+        return resolved;
+    }
+    return value;
+}
+
 /** Stored value split into the selector source plus editable text. */
 export function decodeWorkflowTypedValue(value: any): { source: WorkflowTypedSource; text: string } {
     if (isWorkflowValueRef(value)) {

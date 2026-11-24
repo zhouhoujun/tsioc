@@ -7,7 +7,8 @@ import {
     resolveWorkflowTypedValue,
     resolveWorkflowTypedValueAsync,
     workflowExpressionMarkers,
-    resolveWorkflowExpressionMarkers
+    resolveWorkflowExpressionMarkers,
+    resolveWorkflowMarkersAsync
 } from './workflow-typed-value';
 import {
     IVisualWorkflowNode,
@@ -1377,8 +1378,8 @@ export async function executeVisualNode(
             const value = config.complete === true
                 ? { ...context }
                 : field
-                    ? resolveWorkflowValue(field, context)
-                    : resolveWorkflowValue(config.message, context);
+                    ? await resolveWorkflowValueAsync(field, context)
+                    : await resolveWorkflowValueAsync(config.message, context);
             let message: string;
             if (value !== null && typeof value === 'object') {
                 try {
@@ -1905,13 +1906,13 @@ export async function executeVisualNode(
                 };
             }
             const bodyPath = String(config.body ?? 'payload');
-            const body = bodyPath ? resolveWorkflowValue(bodyPath, context) : undefined;
+            const body = bodyPath ? await resolveWorkflowValueAsync(bodyPath, context) : undefined;
             const statusCode = Math.max(100, Math.min(599, Number(config.statusCode) || 200));
             sink.statusCode = statusCode;
             // Merge so http-in default headers survive; the response node wins.
             sink.headers = {
                 ...(sink.headers && typeof sink.headers === 'object' ? sink.headers : {}),
-                ...(coerceJson(config.headers) || {})
+                ...(await resolveWorkflowMarkersAsync(coerceJson(config.headers) || {}, context))
             };
             sink.body = body;
             return {
@@ -2220,7 +2221,7 @@ export async function executeVisualNode(
         }
         case 'event-emit': {
             const event = String(config.event || 'workflow.event');
-            const payload = coerceJson(config.payload);
+            const payload = await resolveWorkflowMarkersAsync(coerceJson(config.payload), context);
             const bus = (context as any).eventBus || (context as any).events;
             if (bus && typeof bus.emit === 'function') {
                 bus.emit(event, payload);
@@ -2437,7 +2438,10 @@ export async function executeVisualNode(
         case 'comment':
             return { success: true, data: { nodeId: node.id, comment: true } };
         case 'assign': {
-            const values = coerceJson(config.values ?? config.data ?? {});
+            const values = await resolveWorkflowMarkersAsync(
+                coerceJson(config.values ?? config.data ?? {}),
+                context
+            );
             const variables = { ...((context as any).variables || {}), ...(values && typeof values === 'object' ? values : {}) };
             (context as any).variables = variables;
             return { success: true, data: { nodeId: node.id, variables } };

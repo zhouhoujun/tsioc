@@ -233,6 +233,53 @@ describe('Workflow expressions (JSONata)', () => {
             }
         });
 
+        it('resolves markers in assign, log and http-response', async () => {
+            const events: Array<{ event: string; payload: any }> = [];
+            const assigned = await service.execute(chain([
+                { type: 'inject', config: { payload: { total: 21 } } },
+                {
+                    type: 'assign',
+                    config: { values: { doubled: '{{expr: payload.total * 2}}' } }
+                }
+            ]), {});
+            expect(assigned.data?.executionState?.nodeStates.assign_1.result?.data?.variables?.doubled).toBe(42);
+
+            const logged = await service.execute(chain([
+                { type: 'inject', config: { payload: { total: 21 } } },
+                { type: 'log', config: { message: 'total is {{expr: payload.total * 2}}' } }
+            ]), {});
+            expect(logged.data?.executionState?.nodeStates.log_1.result?.data?.message).toBe('total is 42');
+
+            const emit = await service.execute(chain([
+                { type: 'inject', config: { payload: { total: 21 } } },
+                {
+                    type: 'event-emit',
+                    config: { event: 'computed', payload: { total: '{{expr: payload.total * 2}}' } }
+                }
+            ]), {
+                eventBus: { emit: (event: string, payload: any) => events.push({ event, payload }) }
+            });
+            expect(emit.success).toBe(true);
+            expect(events).toEqual([{ event: 'computed', payload: { total: 42 } }]);
+
+            const sink: any = { headers: { existing: 'yes' } };
+            const responded = await service.execute(chain([
+                { type: 'inject', config: { payload: { total: 21 } } },
+                {
+                    type: 'http-response',
+                    config: {
+                        body: '{{expr: payload.total * 2}}',
+                        statusCode: 201,
+                        headers: { 'x-total': '{{expr: payload.total}}' }
+                    }
+                }
+            ]), { response: sink });
+            expect(responded.success).toBe(true);
+            expect(sink.body).toBe(42);
+            expect(sink.statusCode).toBe(201);
+            expect(sink.headers).toEqual({ existing: 'yes', 'x-total': 21 });
+        });
+
         it('injects a payload computed by an expression', async () => {
             const result = await service.execute(chain([
                 { type: 'inject', config: { payload: { total: 21 } } },
