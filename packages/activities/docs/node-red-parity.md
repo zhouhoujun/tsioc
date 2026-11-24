@@ -103,6 +103,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | Typed values | `literal`/`number`/`boolean`/`JSON`/`regex`/`expression`/`msg`/`flow`/`global`/`env`/`node`; stored as `{ type, value }` objects (legacy prefixes still resolve) |
 | Expressions | JSONata via the optional `jsonata` package, loaded on demand; typed values, Change rules, inject payload and `{{expr: ...}}` markers in URL/body/assign/log/event/http-response |
 | Cross-field validation | `WorkflowConfigField.validate(value, { values, field })` |
+| Inline validation | Inspector issues for the selected node (required, references, typed literals, expressions, credential names) are derived from the same `validateWorkflowConfigs` pass used on run/publish, with `nodeId` scoping so unrelated nodes never add noise |
 | Structural validation | `WorkflowNodeDefinition.validateConfig(config)` (for example switch rules/else placement) |
 | Dynamic outputs | `WorkflowNodeDefinition.outputsFor(config)` (switch/router one port per rule) |
 | Shared endpoints | Config nodes (`mqtt`, `tls`, `http`, `tcp`, `udp`, `websocket`, ...) with reference pickers and missing-reference validation |

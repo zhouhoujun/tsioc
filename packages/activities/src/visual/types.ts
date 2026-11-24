@@ -1096,8 +1096,18 @@ export interface WorkflowInspectorModel {
     statusDetail: string;
     durationLabel: string;
     fields: WorkflowInspectorFieldView[];
+    /** Inline config issues for the selected node (required, references, expressions). */
+    issues: WorkflowInspectorIssue[];
     resultText: string;
     errorText: string;
+}
+
+/** One inline validation message shown under the inspector form. */
+export interface WorkflowInspectorIssue {
+    fieldKey: string;
+    label: string;
+    message: string;
+    severity: 'error' | 'warning';
 }
 
 /**

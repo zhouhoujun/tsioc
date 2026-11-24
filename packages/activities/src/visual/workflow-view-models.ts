@@ -26,7 +26,8 @@ import { WorkflowDesigner } from './workflow-designer';
 import { Translator } from '@tsdi/i18n';
 import { resolveWorkflowText, translateWorkflow } from './i18n';
 import { decodeWorkflowTypedValue } from './workflow-typed-value';
-import { buildReferenceView, workflowSourceMode } from './workflow-config-nodes';
+import { buildReferenceView, fieldResetValue, workflowSourceMode } from './workflow-config-nodes';
+import { workflowInspectorIssues } from './workflow-config-validation';
 import {
     WORKFLOW_NODE_WIDTH,
     WORKFLOW_PORT_SPACING,
@@ -517,17 +518,6 @@ function fieldConditionMatches(actual: any, condition: WorkflowConfigFieldCondit
     return true;
 }
 
-function fieldResetValue(field: { type: string; defaultValue?: any }): any {
-    const value = field.defaultValue;
-    if (field.type === 'json') {
-        return value ?? {};
-    }
-    if (field.type === 'boolean') {
-        return value === true;
-    }
-    return value === undefined || value === null ? '' : String(value);
-}
-
 export function buildWorkflowInspectorModel(
     designer: WorkflowDesigner,
     registry: WorkflowNodeRegistry,
@@ -552,6 +542,7 @@ export function buildWorkflowInspectorModel(
             statusDetail: '',
             durationLabel: '',
             fields: [],
+            issues: [],
             resultText: '',
             errorText: ''
         };
@@ -707,6 +698,7 @@ export function buildWorkflowInspectorModel(
         statusDetail: nodeStatusDetail(execution, locale, translator),
         durationLabel: duration ? `${duration} ms` : '',
         fields,
+        issues: workflowInspectorIssues(designer.definition, registry, node.id),
         resultText,
         errorText: execution?.error || ''
     };

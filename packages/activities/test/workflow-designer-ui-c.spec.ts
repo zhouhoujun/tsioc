@@ -395,6 +395,19 @@ describe('Workflow Designer UI', () => {
             .toBe(childId);
     });
 
+    it('shows inline config issues in the inspector', async () => {
+        const node = ref.instance.designer.addNode('subprocess', { x: 40, y: 40 })!;
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+        const issue = root.querySelector('.workflow-inspector-issue') as any;
+        expect(issue).toBeTruthy();
+        expect(issue.textContent).toContain('Required');
+
+        ref.instance.designer.updateNodeConfig(node.id, { workflow: 'child' });
+        await flush();
+        expect(root.querySelector('.workflow-inspector-issue')).toBeFalsy();
+    });
+
     it('picks a stored workflow and switches the subflow source control', async () => {
         ref.instance.designer.workflowLibrary.set([
             { id: 'wf_child', name: 'Child flow', updatedAt: 'now' } as any

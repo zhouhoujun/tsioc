@@ -36,6 +36,22 @@ describe('Workflow canvas incremental view model', () => {
         expect(field.options.some(option => option.value === 'task_1')).toBe(true);
     });
 
+    it('exposes inline config issues for the selected node only', () => {
+        const { designer, registry } = createDesigner();
+        const node = designer.addNode('subprocess', { x: 0, y: 0 })!;
+        const other = designer.addNode('subprocess', { x: 0, y: 200 })!;
+        designer.selectNode(node.id);
+        const issues = buildWorkflowInspectorModel(designer, registry, 'en').issues;
+        expect(issues.some(issue => issue.fieldKey === 'workflow' && issue.message === 'Required')).toBe(true);
+        expect(issues.every(issue => issue.severity === 'error' || issue.severity === 'warning')).toBe(true);
+
+        designer.updateNodeConfig(node.id, { workflow: 'child' });
+        expect(buildWorkflowInspectorModel(designer, registry, 'en').issues).toEqual([]);
+        // The sibling node keeps its own issue instead of polluting the selection.
+        designer.selectNode(other.id);
+        expect(buildWorkflowInspectorModel(designer, registry, 'en').issues.length).toBe(1);
+    });
+
     it('renders a stored workflow picker for subflow sources', () => {
         const { designer, registry } = createDesigner();
         designer.workflowLibrary.set([

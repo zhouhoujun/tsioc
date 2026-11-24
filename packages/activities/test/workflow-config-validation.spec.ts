@@ -75,6 +75,17 @@ describe('Workflow config validation hooks', () => {
             .some(item => item.fieldKey === 'event' && /event this inject waits for/.test(item.message))).toBe(true);
     });
 
+    it('validates a single node for inline inspector issues', () => {
+        const missing = node('subprocess', {}, 'sub_missing');
+        const configured = node('subprocess', { workflow: 'child' }, 'sub_configured');
+        const all = validateWorkflowConfigs(definition([missing, configured]), registry);
+        expect(all.length).toBe(1);
+        const selected = validateWorkflowConfigs(definition([missing, configured]), registry, { nodeId: 'sub_missing' });
+        expect(selected.map(issue => issue.nodeId)).toEqual(['sub_missing']);
+        expect(validateWorkflowConfigs(definition([missing, configured]), registry, { nodeId: 'sub_configured' }))
+            .toEqual([]);
+    });
+
     it('accepts node types in catch/complete scope references', () => {
         const typed = node('catch', { scope: 'task' }, 'catch_type');
         const target = node('task', {}, 'task_1');

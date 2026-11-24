@@ -28,6 +28,7 @@ const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     statusDetail: '',
     durationLabel: '',
     fields: [],
+    issues: [],
     resultText: '',
     errorText: ''
 };
@@ -51,6 +52,7 @@ function snapshotSignature(model: WorkflowInspectorModel): string {
         model.durationLabel,
         model.resultText,
         model.errorText,
+        model.issues.map(issue => `${issue.fieldKey}:${issue.severity}:${issue.message}`),
         model.fields.map(field => [
             field.key,
             field.type,
@@ -122,6 +124,13 @@ function schemaKey(model: WorkflowInspectorModel): string {
                 :actionAction="formAction" :listItemActionAction="formListAction">
             </dynamic-form>
             <div class="workflow-no-fields" v-if="!model.fields.length">{{noPropertiesLabel}}</div>
+            <div class="workflow-inspector-issues" v-if="model.issues.length">
+                <div class="workflow-inspector-issue" v-for="issue in model.issues"
+                    data-severity="{{issue.severity}}" title="{{issue.message}}">
+                    <span class="workflow-inspector-issue-field">{{issue.label}}</span>
+                    <span class="workflow-inspector-issue-message">{{issue.message}}</span>
+                </div>
+            </div>
             <div class="workflow-result" v-if="model.resultText">
                 <div class="workflow-result-title">{{resultLabel}}</div>
                 <pre class="workflow-result-pre">{{model.resultText}}</pre>

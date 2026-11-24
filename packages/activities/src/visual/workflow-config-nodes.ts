@@ -393,3 +393,14 @@ export function buildReferenceView(
         actions
     };
 }
+
+export function fieldResetValue(field: { type: string; defaultValue?: any }): any {
+    const value = field.defaultValue;
+    if (field.type === 'json') {
+        return value ?? {};
+    }
+    if (field.type === 'boolean') {
+        return value === true;
+    }
+    return value === undefined || value === null ? '' : String(value);
+}

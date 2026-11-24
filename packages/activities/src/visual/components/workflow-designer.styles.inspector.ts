@@ -105,6 +105,39 @@ export const WORKFLOW_DESIGNER_INSPECTOR_CSS = `/* Inspector */
     line-height: 1.45;
 }
 
+.workflow-inspector-issues {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 8px 0 0;
+}
+
+.workflow-inspector-issue {
+    display: flex;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.workflow-inspector-issue[data-severity="warning"] {
+    background: #fffbeb;
+    color: #b45309;
+}
+
+.workflow-inspector-issue-field {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.workflow-inspector-issue-message {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .workflow-inspector-webhook {
     display: flex;
     flex-direction: column;

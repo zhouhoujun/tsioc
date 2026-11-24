@@ -1,6 +1,6 @@
 import type { DynamicFormField } from '@tsdi/components/common/dynamic-form';
 import { validateDynamicFormValues } from '@tsdi/components/common/dynamic-form';
-import { WorkflowConfigField, WorkflowConfigFieldCondition, VisualWorkflowDefinition } from './types';
+import { WorkflowConfigField, WorkflowConfigFieldCondition, WorkflowInspectorIssue, VisualWorkflowDefinition } from './types';
 import type { WorkflowNodeRegistry } from './node-registry';
 import { referenceIds } from './workflow-config-nodes';
 import { validateWorkflowTypedValue, workflowExpressionMarkers, WORKFLOW_TYPED_CODEC } from './workflow-typed-value';
@@ -26,6 +26,8 @@ export interface WorkflowConfigValidationOptions {
      * empty, so every reference is missing.
      */
     credentials?: string[];
+    /** Only validate this node (inspector inline validation). */
+    nodeId?: string;
 }
 
 /**
@@ -122,13 +124,30 @@ function inlineSecretWarning(field: { secret?: boolean }, value: any): string | 
  * fields, ranges, lengths, patterns and rules are enforced before a workflow
  * is saved or run, not only while the user edits a field.
  */
+/** Inline inspector issues for one selected node, shaped for the view model. */
+export function workflowInspectorIssues(
+    definition: VisualWorkflowDefinition,
+    registry: WorkflowNodeRegistry,
+    nodeId: string
+): WorkflowInspectorIssue[] {
+    return validateWorkflowConfigs(definition, registry, { nodeId }).map(issue => ({
+        fieldKey: issue.fieldKey,
+        label: issue.label,
+        message: issue.message,
+        severity: issue.severity === 'warning' ? 'warning' : 'error'
+    }));
+}
+
 export function validateWorkflowConfigs(
     definition: VisualWorkflowDefinition,
     registry: WorkflowNodeRegistry,
     options: WorkflowConfigValidationOptions = {}
 ): WorkflowConfigIssue[] {
     const issues: WorkflowConfigIssue[] = [];
-    for (const node of definition?.nodes || []) {
+    const nodes = options.nodeId
+        ? (definition?.nodes || []).filter(node => node.id === options.nodeId)
+        : definition?.nodes || [];
+    for (const node of nodes) {
         const nodeDefinition = registry.get(node.type);
         if (!nodeDefinition?.fields?.length) {
             continue;
