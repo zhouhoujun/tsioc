@@ -191,7 +191,7 @@
   `/permissions inspect` 展示 V3 规则数量/命中。**剩余**：`Unattended` ruleset 与审批弹窗“拒绝并说明”输入 UI；
   archetype allow/deny 编译到 agent 层（当前仍由 archetype 工具闸门执行）。
 
-**P1.2 Snapshot v2 + message-level revert**
+**P1.2 Snapshot v2 + message-level revert（非 git 路径已落地 2026-11-24）**
 - 新 `ContentAddressedSnapshotStore`：
   - 优先 shadow git（复用 `GitStepSnapshotStore` 思路），非 git 用 manifest + 文件 hash；
   - 目录 `.tsdi-agent/snapshots/<project|session>/<id>/manifest.json`，content-addressed blobs；
@@ -199,6 +199,12 @@
   - assistant message 记录 `snapshot.start/end`；不再把大段 before/after 内联进 DB。
 - RPC：`session.revert.stage/clear/commit`；`/undo` 映射 stage+restore prompt，`/redo` clear；保留现有 turn/file 语义作为降级。
 - 验收：非 git workspace 可恢复；只恢复选定路径；数据库体积不随编辑线性增长；PTY/JSDOM 回归。
+- 状态：新增 `ContentAddressedSnapshotStore`：内容按 hash 存于
+  `<workspace>/.tsdi-agent/snapshots/blobs/<hash>`，每轮写
+  `<snapshot session>/<message>.json` manifest（文件路径 + before/after hash，不再内联正文）；
+  `SessionSnapshotController` 在 turn 结束提交 manifest，并在无 git / git 失败时把
+  `list/diff/revert/unrevert` 回退到内容快照，复用现有 `session.git_snapshot.*` RPC 与 UI。
+  **剩余**：stage/clear/commit 三阶段 RPC 与 `/undo` 映射、跨进程记录 last-revert（当前 unrevert 依赖进程内记录）。
 
 ### P2 — 产物、压缩与扩展（2–3 周）
 

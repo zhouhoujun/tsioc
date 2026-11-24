@@ -1,6 +1,7 @@
 import type { FileAdapter } from '@tsdi/common';
 import type { FileSnapshot, FileSnapshotPart, FileSnapshotStore } from '../harness/FileSnapshotStore';
 import type { GitRevertResult, GitStepDiff, GitStepSnapshot, GitStepSnapshotStore } from '../harness/GitStepSnapshotStore';
+import type { ContentAddressedSnapshotStore } from '../harness/ContentAddressedSnapshotStore';
 import type { FileUndoRedoResult } from './AgentRuntime';
 import { dirnameAgentPath } from '../AgentWorkspacePath';
 
@@ -8,6 +9,8 @@ export interface SessionSnapshotHost {
     fileAdapter?: FileAdapter;
     fileSnapshots?: FileSnapshotStore;
     gitSnapshots?: GitStepSnapshotStore;
+    contentSnapshots?: ContentAddressedSnapshotStore;
+    workspace(sessionId: string): Promise<string | undefined>;
     afterFileChange(sessionId: string): Promise<void>;
 }
 
@@ -42,32 +45,83 @@ export class SessionSnapshotController {
         const store = this.host.gitSnapshots;
         if (!store) return null;
         const snapshot = await store.capture(workspace, { sessionId, messageId, label: `step-${sessionId}` });
-        if (snapshot) this.bindGit(sessionId, messageId);
+        if (snapshot) await this.bindGit(sessionId, messageId, workspace);
         return snapshot;
     }
 
     async revertGit(sessionId: string, messageId: string): Promise<GitRevertResult> {
-        return await this.host.gitSnapshots?.revert(messageId, sessionId)
-            ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
+        const git = await this.host.gitSnapshots?.revert(messageId, sessionId).catch(() => null);
+        if (git?.reverted) return git;
+        const workspace = await this.host.workspace(sessionId);
+        const content = workspace && this.host.contentSnapshots
+            ? await this.host.contentSnapshots.restore(sessionId, workspace, messageId, 'before')
+            : null;
+        if (content?.restored) {
+            return { reverted: true, messageId, restoredFiles: content.files };
+        }
+        return git ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
     }
 
     async unrevertGit(sessionId: string): Promise<GitRevertResult> {
-        return await this.host.gitSnapshots?.unrevert(sessionId)
-            ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
+        const git = await this.host.gitSnapshots?.unrevert(sessionId).catch(() => null);
+        if (git?.reverted) return git;
+        const workspace = await this.host.workspace(sessionId);
+        const id = this.host.contentSnapshots?.lastRevertedId(sessionId);
+        const content = workspace && this.host.contentSnapshots && id
+            ? await this.host.contentSnapshots.restore(sessionId, workspace, id, 'after')
+            : null;
+        if (content?.restored) {
+            return { reverted: true, messageId: content.messageId, restoredFiles: content.files };
+        }
+        return git ?? { reverted: false, error: 'git step snapshots not supported by this runtime' };
     }
 
-    listGit(sessionId: string): GitStepSnapshot[] {
-        return this.host.gitSnapshots?.list(sessionId) ?? [];
+    async listGit(sessionId: string): Promise<GitStepSnapshot[]> {
+        const git = this.host.gitSnapshots?.list(sessionId) ?? [];
+        const workspace = await this.host.workspace(sessionId);
+        const manifests = await this.host.contentSnapshots?.list(sessionId, workspace) ?? [];
+        const known = new Set(git.map(item => item.messageId).filter(Boolean));
+        const content = manifests
+            .filter(item => !item.messageId || !known.has(item.messageId))
+            .map(item => ({
+                id: item.id,
+                sessionId,
+                ...(item.messageId ? { messageId: item.messageId } : {}),
+                workspace: item.workspace,
+                commit: '',
+                label: `snapshot-${item.id}`,
+                timestamp: item.createdAt
+            } as GitStepSnapshot));
+        return [...git, ...content];
     }
 
-    async diffGit(ref: string): Promise<GitStepDiff | null> {
+    async diffGit(sessionId: string, ref: string): Promise<GitStepDiff | null> {
         const store = this.host.gitSnapshots;
-        if (!store) return null;
-        const snapshot = store.resolveByMessage(ref) ?? store.get(ref);
-        return snapshot ? store.diff(snapshot) : null;
+        if (store) {
+            const snapshot = store.resolveByMessage(ref) ?? store.get(ref);
+            if (snapshot) return await store.diff(snapshot);
+        }
+        const workspace = await this.host.workspace(sessionId);
+        if (!workspace || !this.host.contentSnapshots) return null;
+        const manifests = await this.host.contentSnapshots.list(sessionId, workspace);
+        const target = manifests.find(item => item.id === ref || item.messageId === ref);
+        if (!target) return null;
+        const diff = await this.host.contentSnapshots.diff(sessionId, workspace, target.id);
+        if (!diff) return null;
+        return {
+            ...(diff.messageId ? { messageId: diff.messageId } : {}),
+            snapshotId: diff.snapshotId,
+            commit: '',
+            workspace: diff.workspace,
+            files: diff.files.map(file => ({ filePath: file.filePath, status: file.status, additions: 0, deletions: 0 })),
+            totalAdditions: diff.totalAdditions,
+            totalDeletions: diff.totalDeletions,
+            rawPatch: ''
+        };
     }
 
     async beginGit(sessionId: string, workspace?: string): Promise<void> {
+        this.host.contentSnapshots?.begin(sessionId);
         if (!this.host.gitSnapshots || !workspace) return;
         try {
             const snapshot = await this.host.gitSnapshots.capture(workspace, { sessionId, label: `turn-${sessionId}` });
@@ -77,22 +131,30 @@ export class SessionSnapshotController {
         }
     }
 
-    bindGit(sessionId: string, messageId: string): void {
+    async bindGit(sessionId: string, messageId: string, workspace?: string): Promise<void> {
         const pendingId = this.pendingGit.get(sessionId);
         this.pendingGit.delete(sessionId);
-        if (!pendingId || !this.host.gitSnapshots) return;
-        try {
-            this.host.gitSnapshots.bind(pendingId, messageId);
-        } catch {
-            // binding failure leaves an unbound snapshot, diff still works by id
+        if (pendingId && this.host.gitSnapshots) {
+            try {
+                this.host.gitSnapshots.bind(pendingId, messageId);
+            } catch {
+                // binding failure leaves an unbound snapshot, diff still works by id
+            }
+        }
+        const root = workspace ?? await this.host.workspace(sessionId);
+        if (root) {
+            await this.host.contentSnapshots?.commit(sessionId, root, messageId).catch(() => null);
         }
     }
 
     async pushFile(sessionId: string, snapshot: FileSnapshot | null): Promise<void> {
-        if (!snapshot || !this.host.fileSnapshots) return;
+        if (!snapshot) return;
         try {
             const resolved = await this.resolveAfter(snapshot);
-            this.host.fileSnapshots.push(sessionId, resolved);
+            this.host.fileSnapshots?.push(sessionId, resolved);
+            this.host.contentSnapshots?.record(sessionId, resolved.files?.length
+                ? resolved.files.map(part => ({ filePath: part.filePath, before: part.before, after: part.after ?? null }))
+                : [{ filePath: resolved.filePath, before: resolved.before, after: resolved.after }]);
             await this.host.afterFileChange(sessionId);
         } catch {
             // a snapshot failure must not break a successful tool call

@@ -25,6 +25,7 @@ import { VerificationController } from './VerificationController';
 import { TokenUsageController } from './TokenUsageController';
 import { MemoryRetrievalController } from './MemoryRetrievalController';
 import { SessionSnapshotController } from './SessionSnapshotController';
+import { ContentAddressedSnapshotStore } from '../harness/ContentAddressedSnapshotStore';
 import { HookController } from './HookController';
 import { PolicyResolutionController } from './PolicyResolutionController';
 import { TurnLoopController } from './TurnLoopController';
@@ -130,7 +131,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected turnAbortScopes = new TurnAbortScopes();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private contentSnapshotStore?: ContentAddressedSnapshotStore; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -335,7 +336,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         try {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
-            this.bindGitStepSnapshot(input.sessionId, result.message.id);
+            await this.bindGitStepSnapshot(input.sessionId, result.message.id, turnContext.workspace);
             await this.sessions.append(input.sessionId, result.message);
             await this.evaluateSessionGoal(input.sessionId, result.message.content);
             await this.postTurn.maybeSummarize(input.sessionId, turnContext.evidenceLedger?.entriesFrom(0));
@@ -451,7 +452,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
             try {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
-                this.bindGitStepSnapshot(sessionId, result.message.id);
+                await this.bindGitStepSnapshot(sessionId, result.message.id, turnContext.workspace);
                 await this.sessions.append(sessionId, result.message);
                 await this.postTurn.maybeSummarize(sessionId, turnContext.evidenceLedger?.entriesFrom(0));
                 await this.refreshSessionSummary(sessionId).catch(() => undefined);
@@ -694,11 +695,11 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     override async listGitStepSnapshots(sessionId: string): Promise<GitStepSnapshot[]> { return this.snapshots.listGit(sessionId); }
 
-    override async diffGitStepSnapshot(sessionId: string, ref: string): Promise<GitStepDiff | null> { return this.snapshots.diffGit(ref); }
+    override async diffGitStepSnapshot(sessionId: string, ref: string): Promise<GitStepDiff | null> { return this.snapshots.diffGit(sessionId, ref); }
 
     protected async beginGitStepSnapshot(sessionId: string, workspace?: string): Promise<void> { return this.snapshots.beginGit(sessionId, workspace); }
 
-    protected bindGitStepSnapshot(sessionId: string, messageId: string): void { this.snapshots.bindGit(sessionId, messageId); }
+    protected async bindGitStepSnapshot(sessionId: string, messageId: string, workspace?: string): Promise<void> { await this.snapshots.bindGit(sessionId, messageId, workspace); }
 
     protected throwIfTurnCancelled(sessionId: string): void {
         this.turnAbortScopes.throwIfCancelled(sessionId);
@@ -754,14 +755,12 @@ export class DefaultAgentRuntime extends AgentRuntime {
         await this.tokenUsageController.recordUsage(sessionId, response);
         return response;
     }
-
     private async finalizeTurnResponse(sessionId: string, currentUserMessageId: string, response: ModelResponse, turnContext: TurnExecutionContext): Promise<AgentMessage> {
         const message = await this.assistant.createMessageFromResponse(sessionId, response);
         this.capturePromptCacheDiagnostics(turnContext, response);
         await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, message, turnContext);
         return message;
     }
-
     private async *completeStreamingTurn(sessionId: string, query: string, currentUserMessageId: string, turnContext: TurnExecutionContext): AsyncGenerator<StreamChunk, AgentTurnResult, void> { return yield* this.turnLoop.run(sessionId, query, currentUserMessageId, turnContext, true); }
 
     override async askSideQuestion(sessionId: string, question: string): Promise<string> {
@@ -1095,9 +1094,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     private get snapshots(): SessionSnapshotController {
+        const contentSnapshots = this.contentSnapshotStore ??= this.fileAdapter ? new ContentAddressedSnapshotStore(this.fileAdapter) : undefined;
         return this.sessionSnapshots ??= new SessionSnapshotController({
-            fileAdapter: this.fileAdapter, fileSnapshots: this.fileSnapshotStore,
-            gitSnapshots: this.gitStepSnapshotStore, afterFileChange: id => this.turnHistory.afterFileChange(id)
+            fileAdapter: this.fileAdapter, fileSnapshots: this.fileSnapshotStore, gitSnapshots: this.gitStepSnapshotStore,
+            contentSnapshots, workspace: id => this.resolveSessionWorkspace(id), afterFileChange: id => this.turnHistory.afterFileChange(id)
         });
     }
 
