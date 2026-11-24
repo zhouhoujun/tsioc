@@ -10,6 +10,8 @@ export interface TurnStreamHost {
     publish(event: any): Promise<void>;
     estimateTokens(text: string): number;
     buildCompletedEvent(sessionId: string, response: ModelResponse): any;
+    /** P3.1: complete tool calls delivered before the stream finishes. */
+    onToolCalls?(calls: AgentToolCall[]): void;
 }
 
 /** Only keep tool calls whose id was not already seen. */
@@ -102,6 +104,7 @@ export async function* collectStreamingResponse(
         }
         if (freshToolCalls.length) {
             toolCalls = toolCalls.concat(freshToolCalls);
+            host.onToolCalls?.(freshToolCalls);
         }
         if (chunk.metadata) {
             metadata = { ...metadata, ...chunk.metadata };

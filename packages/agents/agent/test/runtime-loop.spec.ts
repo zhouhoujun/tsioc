@@ -141,6 +141,41 @@ class EchoToolRegistry extends ToolRegistry {
     }
 }
 
+class LiveStreamingModelAdapter extends EchoModelAdapter {
+    release!: () => void;
+    streamFinished = false;
+    private count = 0;
+    private readonly gate = new Promise<void>(resolve => { this.release = resolve; });
+
+    async *stream(): AsyncGenerator<any> {
+        this.count++;
+        if (this.count === 1) {
+            yield { type: 'tool_call', toolCalls: [{ id: 'live-1', name: 'live_tool', input: { value: 1 } }] };
+            await this.gate;
+            this.streamFinished = true;
+            yield { type: 'done' };
+            return;
+        }
+        yield { type: 'text', content: 'live finished' };
+        yield { type: 'done' };
+    }
+}
+
+class LiveToolRegistry extends ToolRegistry {
+    invoked = false;
+
+    getTools() {
+        return [{ name: 'live_tool', description: 'live tool', execution: { readOnly: true } } as any];
+    }
+    getTool(name: string) {
+        return name === 'live_tool' ? this.getTools()[0] : undefined;
+    }
+    async invoke(_name: string, input: any): Promise<any> {
+        this.invoked = true;
+        return input;
+    }
+}
+
 class UntrustedContentToolRegistry extends ToolRegistry {
     getTools() {
         return [{
@@ -1980,6 +2015,26 @@ export class RuntimeLoopTest {
         expect(result.message.content).toEqual('finished anyway');
         expect(model.requests.length).toEqual(3);
         expect(diagnostics?.diagnostics.falsificationCount ?? 0).toEqual(0);
+    }
+
+    @Test('streaming starts read-only tools before the model stream finishes')
+    async streamingStartsLiveTools() {
+        const model = new LiveStreamingModelAdapter();
+        const registry = new LiveToolRegistry();
+        const { runtime } = await createRuntime(model, registry as any, undefined, undefined, new SimpleSessionSummarizer(), defaultAgentOptions);
+        const stream = runtime.runStreamingTurn('s1', 'hello');
+        const first = await stream.next();
+        expect(first.value?.type).toEqual('tool_call');
+        try {
+            await new Promise(resolve => setTimeout(resolve, 20));
+            expect(registry.invoked).toEqual(true);
+            expect(model.streamFinished).toEqual(false);
+        } finally {
+            model.release();
+        }
+        for await (const _chunk of stream) {
+            // drain
+        }
     }
 
     @Test('stores assistant tool call history before tool results')

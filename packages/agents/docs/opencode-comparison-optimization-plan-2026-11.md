@@ -265,13 +265,17 @@
 
 ### P3 — 实时执行与协议平台（2 周）
 
-**P3.1 流式工具执行**
+**P3.1 流式工具执行（live 启动已落地 2026-11-24）**
 - 将 `collectStreamingResponse` 产出的完整 tool-call 交给 `LiveToolScheduler`：
   - 每个 call 独立 fiber/Promise，按 `toolCallId` 归并；
   - approval/parallel-safe/read-only 规则先判定；
   - 模型继续流式输出；完成事件按原序持久化；
   - 每 call 支持 cooperative cancel（AbortSignal）。
 - 验收：长工具调用首完成时间下降；事件顺序/审批/取消无回归；PTY/SSE 测试。
+- 状态：新增 `LiveToolScheduler`：流式响应中一旦收到完整 tool_call，就提前启动 **read-only 或
+  parallel-safe** 调用（审批/取消仍走同一 preflight），批处理按原顺序 await 这些 promise 并持久化，
+  顺序/审批语义不变；测试用一个先 yield tool_call、后放行 done 的 adapter 验证工具在 stream 结束前已执行。
+  **剩余**：模型继续输出期间的完整 “fiber” 并发调度与事件乱序持久化策略（当前仍按批归并）。
 
 **P3.2 协议生成/版本化（descriptor schema 已落地 2026-11-24）**
 - 用 P0.4 descriptor 生成 JSON Schema/OpenAPI 与 typed client；加入 `protocolVersion` 与兼容性测试；

@@ -29,6 +29,7 @@ import { ContentAddressedSnapshotStore } from '../harness/ContentAddressedSnapsh
 import { ArtifactManifest, ArtifactStore } from '../artifacts/ArtifactStore';
 import { compileArchetypePermissionRules } from '../permissions/archetype-rules';
 import { PluginController, createRuntimePluginController } from '../plugins/PluginController';
+import { LiveToolScheduler } from './LiveToolScheduler';
 import { HookController } from './HookController';
 import { PolicyResolutionController } from './PolicyResolutionController';
 import { TurnLoopController } from './TurnLoopController';
@@ -134,7 +135,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected turnAbortScopes = new TurnAbortScopes();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private contentSnapshotStore?: ContentAddressedSnapshotStore; private artifactProvider?: ArtifactStore; private pluginController?: PluginController; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private contentSnapshotStore?: ContentAddressedSnapshotStore; private artifactProvider?: ArtifactStore; private pluginController?: PluginController; private liveToolScheduler?: LiveToolScheduler; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -199,6 +200,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             );
         }
         this.hookManager = new AgentHookManager(this.options.hooks, this.hookExecutor);
+        this.liveToolScheduler = new LiveToolScheduler();
         this.pluginController = createRuntimePluginController(this);
         this.contextManager.setCompactionHookRunner(async (stage, compaction) => {
             if (!compaction.sessionId || !this.hookManager?.hasHooks(stage)) {
@@ -288,11 +290,9 @@ export class DefaultAgentRuntime extends AgentRuntime {
             clearTimeout(timer);
         }
     }
-
     async executeTurn(input: AgentTurnInput, _context: RunContext): Promise<AgentTurnResult> {
         return this.processTurn(input);
     }
-
     async processTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
         await this.waitForPendingArchetypeSwitch(input.sessionId);
         await this.ensureSessionWorkspace(input.sessionId);
@@ -331,7 +331,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             stage: 'beforeTurn',
             turn: { status: 'started', message: input.input }
         });
-
         await this.beginGitStepSnapshot(input.sessionId, turnContext.workspace);
 
         try {
@@ -919,7 +918,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             stream: req => this.streamModelRequest(req),
             publish: event => this.app.publishEvent(event),
             estimateTokens: text => this.contextManager.estimateTokens(text),
-            buildCompletedEvent: (id, response) => this.tokenUsageController.buildCompletedEvent(id, response)
+            buildCompletedEvent: (id, response) => this.tokenUsageController.buildCompletedEvent(id, response),
+            onToolCalls: calls => this.liveToolScheduler!.start(calls, (id, call, detector, tools, context) => this.performToolInvocation(id, call, detector, 'parallel', tools, context))
         }, sessionId, request);
     }
 
@@ -1053,6 +1053,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             ),
             respond: (id, request) => this.respondNonStreaming(id, request),
             respondStreaming: (id, request) => this.respondStreaming(id, request),
+            beginLiveTools: (id, context, detector, tools) => this.liveToolScheduler!.begin(id, context, detector, tools, this.options.tools?.parallelSafeTools ?? []),
             createMessage: (role, content) => this.createMessage(role, content),
             shouldRetryEmptyResponse: (response) => this.assistant.shouldRetryEmptyResponse(response),
             shouldRecoverEmptyFollowUp: (request, response) => this.assistant.shouldRecoverEmptyFollowUp(request, response),

@@ -28,6 +28,12 @@ export class TurnToolBatchController {
             return this.executeParallel(sessionId, toolCalls, detector, callableTools, context);
         }
         for (const toolCall of toolCalls) {
+            const started = context.liveToolResults?.get(toolCall.id);
+            if (started) {
+                const result = await started;
+                await this.host.settle(sessionId, result, context);
+                continue;
+            }
             await this.host.runSequential(sessionId, toolCall, detector, callableTools, context);
         }
     }
@@ -37,7 +43,8 @@ export class TurnToolBatchController {
         for (let index = 0; index < toolCalls.length; index += maxParallel) {
             const batch = toolCalls.slice(index, index + maxParallel);
             const results = await Promise.allSettled(
-                batch.map(call => this.host.runParallel(sessionId, call, detector, callableTools, context))
+                batch.map(call => context.liveToolResults?.get(call.id)
+                    ?? this.host.runParallel(sessionId, call, detector, callableTools, context))
             );
             for (const result of results) {
                 if (result.status === 'fulfilled') {

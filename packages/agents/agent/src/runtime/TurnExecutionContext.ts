@@ -21,4 +21,6 @@ export interface TurnExecutionContext {
     /** G29: transient delegation quality note injected into the next model request (proactive mode). */
     delegationQualityNote?: string;
     readOnlyResults?: RepeatReadOnlyCallCache;
+    /** P3.1: tool calls started while the model was still streaming (keyed by call id). */
+    liveToolResults?: Map<string, Promise<any>>;
 }

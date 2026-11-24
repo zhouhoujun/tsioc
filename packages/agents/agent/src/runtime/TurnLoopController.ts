@@ -27,6 +27,7 @@ export interface TurnLoopHost {
     prepareRequest(sessionId: string, request: ModelRequest, turnContext: TurnExecutionContext): ModelRequest;
     respond(sessionId: string, request: ModelRequest): AsyncGenerator<StreamChunk, ModelResponse, void>;
     respondStreaming(sessionId: string, request: ModelRequest): AsyncGenerator<StreamChunk, ModelResponse, void>;
+    beginLiveTools?(sessionId: string, context: TurnExecutionContext, detector: ToolLoopDetector, tools: AgentToolDefinition[]): void;
     createMessage(role: AgentMessage['role'], content: string): AgentMessage;
     shouldRetryEmptyResponse(response: ModelResponse): boolean;
     shouldRecoverEmptyFollowUp(request: ModelRequest, response: ModelResponse): boolean;
@@ -97,7 +98,10 @@ export class TurnLoopController {
             if (recoveredRequest) {
                 request = recoveredRequest;
             }
-            let response = yield* respond(sessionId, this.host.prepareRequest(sessionId, request, turnContext));
+            if (streaming) {
+                this.host.beginLiveTools?.(sessionId, turnContext, loopDetector, request.tools ?? []);
+            }
+            let response: ModelResponse = yield* respond(sessionId, this.host.prepareRequest(sessionId, request, turnContext));
             if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.host.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
