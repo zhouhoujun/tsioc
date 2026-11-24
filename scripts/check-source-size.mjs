@@ -8,7 +8,14 @@ const SCAN_ROOTS = [
     { root: join(ROOT, 'packages', 'agents'), max: DEFAULT_MAX_LINES },
     { root: join(ROOT, 'packages', 'components', 'common'), max: COMMON_MAX_LINES },
     // Workflow designer: templates + data-heavy UI files; ratchet only downward.
-    { root: join(ROOT, 'packages', 'activities', 'src', 'visual', 'components'), max: 700 }
+    { root: join(ROOT, 'packages', 'activities', 'src', 'visual', 'components'), max: 700 },
+    // Visual engine (definitions, runtime, service): no god files. Translation
+    // bundles and the shared type module are data/type-only and exempt.
+    {
+        root: join(ROOT, 'packages', 'activities', 'src', 'visual'),
+        max: 700,
+        exclude: /(^|[\\/])i18n(\.nodes)?\.ts$|(^|[\\/])types\.ts$/
+    }
 ];
 const BASELINE_PATH = join(ROOT, 'scripts', 'source-size-baseline.json');
 const EXCLUDED = [`${sep}node_modules${sep}`, `${sep}test${sep}`, `${sep}dist${sep}`, `${sep}lib${sep}`];
@@ -36,8 +43,11 @@ function walk(dir, out = []) {
 
 function currentCounts() {
     const counts = {};
-    for (const { root, max } of SCAN_ROOTS) {
+    for (const { root, max, exclude } of SCAN_ROOTS) {
         for (const file of walk(root)) {
+            if (exclude && exclude.test(file)) {
+                continue;
+            }
             counts[relative(ROOT, file).split(sep).join('/')] = {
                 lines: readFileSync(file, 'utf8').split('\n').length,
                 max

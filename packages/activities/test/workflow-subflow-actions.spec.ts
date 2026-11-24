@@ -79,7 +79,7 @@ describe('Workflow sub-workflow actions', () => {
 
     it('creates a child document and binds the node to it', async () => {
         const parent = designer();
-        const node = parent.addNode('subprocess', { x: 40, y: 40 }, { id: 'sub_node' })!;
+        const node = parent.addNode('subprocess', { x: 40, y: 40 })!;
         const child = designer('workflow_child');
         const crumbs: Array<[string, string, string]> = [];
         const host = {
@@ -103,7 +103,7 @@ describe('Workflow sub-workflow actions', () => {
 
     it('ignores nodes that are not sub workflows and tabs that did not open', async () => {
         const parent = designer();
-        const task = parent.addNode('task', { x: 0, y: 0 }, { id: 'task_1' })!;
+        const task = parent.addNode('task', { x: 0, y: 0 })!;
         const host = {
             designer: parent,
             createWorkflowTab: async () => 'workflow_child',
@@ -112,7 +112,7 @@ describe('Workflow sub-workflow actions', () => {
         };
         expect(await createSubflowForNode(host, task.id, 'subflow')).toBeUndefined();
 
-        const sub = parent.addNode('subprocess', { x: 0, y: 0 }, { id: 'sub_2' })!;
+        const sub = parent.addNode('subprocess', { x: 0, y: 0 })!;
         const noTab = {
             ...host,
             createWorkflowTab: async () => undefined

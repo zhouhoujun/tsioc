@@ -1,6 +1,12 @@
 {
+  "packages/activities/src/visual/VisualWorkflowService.ts": 1980,
   "packages/activities/src/visual/components/workflow-designer-preview.component.ts": 2020,
   "packages/activities/src/visual/components/workflow-designer.component.ts": 1801,
+  "packages/activities/src/visual/node-registry.ts": 2438,
+  "packages/activities/src/visual/workflow-designer.ts": 2126,
+  "packages/activities/src/visual/workflow-runtime.ts": 3027,
+  "packages/activities/src/visual/workflow-store.ts": 857,
+  "packages/activities/src/visual/workflow-view-models.ts": 1033,
   "packages/agents/agent-cli/src/config.ts": 564,
   "packages/agents/agent-gateway/src/api/SessionHandler.ts": 701,
   "packages/agents/agent-gateway/src/app-rpc/AppRpcServer.ts": 3318,

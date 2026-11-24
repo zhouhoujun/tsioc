@@ -1,4 +1,6 @@
 import { parseYaml, stringifyYaml } from './workflow-yaml';
+import { getWorkflowNodeHandler } from './runtime/workflow-node-handlers';
+import './runtime/control-handlers';
 import { evaluateWorkflowExpression } from './workflow-expression';
 import { Activity, ActivityContext, ActivityNodeStatus, ActivityResult } from '../activities/Activity';
 import {
@@ -1255,11 +1257,14 @@ export async function executeVisualNode(
         return customActivity.execute(context);
     }
 
+    // Registered handlers own their node family; the inline switch below is
+    // the remaining migration surface (extracted family by family).
+    const registered = getWorkflowNodeHandler(node.type);
+    if (registered) {
+        return registered({ node, context, host, extras });
+    }
+
     switch (node.type) {
-        case 'start':
-            return { success: true, data: { nodeId: node.id, started: true } };
-        case 'end':
-            return { success: true, data: { nodeId: node.id, completed: true } };
         case 'task':
             return runTask(node, context);
         case 'condition':
@@ -2566,8 +2571,6 @@ export async function executeVisualNode(
             }
             return { success: true, data: { nodeId: node.id, items: batches, count: batches.length } };
         }
-        case 'comment':
-            return { success: true, data: { nodeId: node.id, comment: true } };
         case 'assign': {
             const values = await resolveWorkflowMarkersAsync(
                 coerceJson(config.values ?? config.data ?? {}),
@@ -2591,9 +2594,6 @@ export async function executeVisualNode(
             }
             return { success: true, data: { nodeId: node.id, result: context } };
         }
-        case 'junction':
-        case 'sequence':
-            return { success: true, data: { nodeId: node.id } };
         case 'switch':
         case 'router': {
             const actual = resolveWorkflowValue(config.field, context);
@@ -2761,8 +2761,6 @@ export async function executeVisualNode(
                 return { success: false, error: error as Error, data: { nodeId: node.id } };
             }
         }
-        case 'parallel':
-            return { success: true, data: { nodeId: node.id, parallel: true } };
         case 'join': {
             const incoming = extras?.incoming || [];
             const ignoreEmpty = config.ignoreEmpty !== false;
@@ -2816,8 +2814,6 @@ export async function executeVisualNode(
                 }
             };
         }
-        case 'trycatch':
-            return { success: true, data: { nodeId: node.id, guarded: true } };
         case 'subprocess': {
             const source = config.workflow;
             const definition = await resolveSubWorkflow(source, context, host);

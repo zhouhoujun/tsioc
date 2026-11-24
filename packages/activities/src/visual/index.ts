@@ -4,6 +4,7 @@ export * from './node-registry';
 export * from './workflow-config-nodes';
 export * from './workflow-canvas-focus';
 export * from './workflow-runtime';
+export * from './runtime/workflow-node-handlers';
 export * from './workflow-typed-value';
 export * from './workflow-expression';
 export * from './workflow-secrets';
