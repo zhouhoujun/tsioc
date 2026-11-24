@@ -75,6 +75,16 @@ describe('Workflow config validation hooks', () => {
             .some(item => item.fieldKey === 'event' && /event this inject waits for/.test(item.message))).toBe(true);
     });
 
+    it('accepts node types in catch/complete scope references', () => {
+        const typed = node('catch', { scope: 'task' }, 'catch_type');
+        const target = node('task', {}, 'task_1');
+        expect(validateWorkflowConfigs(definition([typed, target]), registry)).toEqual([]);
+        const missing = node('catch', { scope: 'ghost_1' }, 'catch_missing');
+        const issues = validateWorkflowConfigs(definition([missing]), registry);
+        expect(issues.some(item => item.fieldKey === 'scope' && /Reference not found/.test(item.message)))
+            .toBe(true);
+    });
+
     it('requires an expression for the inject expression payload', () => {
         const empty = node('inject', {
             payloadType: 'expression',

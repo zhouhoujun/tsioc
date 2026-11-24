@@ -55,13 +55,13 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         <span v-if="field.description">{{field.description}}</span>
                     </label>
                     <select v-if="isSelectInput(field)" [class]="selectClass(field)"
-                        [value]="fieldValue(field)"
+                        [value]="fieldValue(field)" [multiple]="isMultiSelect(field)"
                         [disabled]="field.disabled || field.readonly"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
                         @change="changeSelect(field, $event)">
                         <option v-for="option in field.options" [value]="option.value"
-                            [selected]="sameOptionValue(option.value, fieldValue(field))"
+                            [selected]="optionSelected(field, option.value)"
                             [disabled]="option.disabled">{{option.label}}</option>
                     </select>
                     <div v-if="isRadioInput(field)" [class]="classes.options" role="radiogroup"

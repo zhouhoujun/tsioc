@@ -473,6 +473,10 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     changeSelect(field: DynamicFormField, event: any): void {
+        if (fields.isMultiSelect(field)) {
+            this.updateValue(field, fields.multiselectChangeValue(event));
+            return;
+        }
         this.updateValue(field, this.optionValue(field, event?.target?.value));
     }
 
@@ -621,6 +625,8 @@ export class DynamicFormComponent implements OnDestroy {
     isBooleanInput(field: DynamicFormField): boolean { return fields.isBooleanInput(field); }
 
     isSelectInput(field: DynamicFormField): boolean { return fields.isSelectInput(field); }
+    isMultiSelect(field: DynamicFormField): boolean { return fields.isMultiSelect(field); }
+    optionSelected(field: DynamicFormField, value: any): boolean { return fields.optionSelected(this, field, value); }
 
     isRadioInput(field: DynamicFormField): boolean { return fields.isRadioInput(field); }
 

@@ -134,6 +134,8 @@ export interface DynamicFormField {
     group?: string;
     defaultValue?: any;
     options?: DynamicFormOption[];
+    /** Allow several select values; stored as a comma separated string. */
+    multiple?: boolean;
     rows?: number;
     min?: number;
     max?: number;

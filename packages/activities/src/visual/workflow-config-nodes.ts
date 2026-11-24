@@ -199,6 +199,32 @@ export function configNodeOptions(
 }
 
 /**
+ * Picker options for node references. Multi-select scope fields also accept a
+ * node type so one catch/complete/status node can match a whole family.
+ */
+export function nodeReferenceOptions(
+    nodes: IVisualWorkflowNode[],
+    registry: WorkflowNodeRegistry,
+    locale: any,
+    translator: any,
+    includeTypes: boolean
+): WorkflowReferenceOption[] {
+    const options = nodes.map(node => ({
+        label: node.name || node.id,
+        value: node.id,
+        description: registry.nodeLabel(node.type, locale, translator)
+    }));
+    if (includeTypes) {
+        new Set(nodes.map(node => node.type)).forEach(type => options.push({
+            label: `${type} (type)`,
+            value: type,
+            description: registry.nodeLabel(type, locale, translator)
+        }));
+    }
+    return options;
+}
+
+/**
  * Signature of the config nodes a reference field can pick.
  *
  * Inspectors cache their property model, so a rename or URL change on a broker

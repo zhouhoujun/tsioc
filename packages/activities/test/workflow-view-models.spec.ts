@@ -25,6 +25,17 @@ describe('Workflow canvas incremental view model', () => {
         return { designer, registry };
     }
 
+    it('offers node ids and node types for multi-select scope fields', () => {
+        const { designer, registry } = createDesigner();
+        const node = designer.addNode('catch', { x: 0, y: 0 })!;
+        designer.selectNode(node.id);
+        const field = buildWorkflowInspectorModel(designer, registry, 'en')
+            .fields.find(item => item.key === 'scope')!;
+        expect(field.reference?.multiple).toBe(true);
+        expect(field.options.some(option => option.value === 'task')).toBe(true);
+        expect(field.options.some(option => option.value === 'task_1')).toBe(true);
+    });
+
     it('derives the scale action from the legacy clamp flag', () => {
         const { designer, registry } = createDesigner();
         const node = designer.addNode('scale', { x: 0, y: 0 }, {

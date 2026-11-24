@@ -274,6 +274,37 @@ export function isOptionInput(field: DynamicFormField): boolean {
     return isSelectInput(field) || isRadioInput(field);
 }
 
+/** Select that accepts several values; the stored form is comma separated. */
+export function isMultiSelect(field: DynamicFormField): boolean {
+    return field.type === 'select' && field.multiple === true;
+}
+
+/** Selected values of a multi-select (or single select) field. */
+export function selectValues(host: DynamicFormFieldHost, field: DynamicFormField): string[] {
+    const value = fieldValue(host, field);
+    const list = Array.isArray(value) ? value : String(value ?? '').split(',');
+    return list.map(item => String(item).trim()).filter(Boolean);
+}
+
+export function optionSelected(host: DynamicFormFieldHost, field: DynamicFormField, value: any): boolean {
+    if (isMultiSelect(field)) {
+        return selectValues(host, field).includes(String(value));
+    }
+    const current = fieldValue(host, field);
+    return current === value || String(current) === String(value);
+}
+
+export function multiselectChangeValue(event: any): string {
+    const options = event?.target?.selectedOptions;
+    if (!options) {
+        return String(event?.target?.value ?? '');
+    }
+    return Array.from(options as ArrayLike<any>)
+        .map(option => String(option.value))
+        .filter(Boolean)
+        .join(',');
+}
+
 export function isTypedInput(field: DynamicFormField): boolean {
     return field.typed === true;
 }

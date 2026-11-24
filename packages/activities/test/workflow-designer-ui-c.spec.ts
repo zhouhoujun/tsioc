@@ -348,6 +348,22 @@ describe('Workflow Designer UI', () => {
         expect(rules?.[0]?.value).toEqual({ type: 'expression', value: 'payload.total * 2' });
     });
 
+    it('edits node scope filters with a multi-select', async () => {
+        const node = ref.instance.designer.addNode('catch', { x: 60, y: 60 })!;
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const select = root.querySelector('.workflow-field[data-field-key="scope"] select') as any;
+        expect(select).toBeTruthy();
+        expect(select.multiple).toBe(true);
+        Array.from(select.options).forEach((option: any) => {
+            option.selected = option.value === 'task';
+        });
+        select.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.scope).toBe('task');
+    });
+
     it('creates a sub workflow document and binds the node to it', async () => {
         const node = ref.instance.designer.addNode('subprocess', { x: 60, y: 60 })!;
         const parentId = ref.instance.designer.definition.id;

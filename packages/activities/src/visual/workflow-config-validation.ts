@@ -423,7 +423,8 @@ function resolveReference(
             && (!spec.resource || (target.resource || '') === spec.resource);
     }
     if (spec.kind === 'node') {
-        return nodes.some(item => item.id === id);
+        // Scope fields may name a node id or a node type.
+        return nodes.some(item => item.id === id) || nodes.some(item => item.type === id);
     }
     if (spec.kind === 'link') {
         return nodes.some(item => item.type === 'link'

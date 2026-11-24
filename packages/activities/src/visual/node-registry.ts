@@ -727,7 +727,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Only run when these comma-separated node ids or types succeeded. Leave empty for any completion.' })
+            configField({ key: 'scope', label: 'Scope', type: 'select', reference: { kind: 'node', multiple: true }, description: 'Only run when these node ids or types succeeded. Leave empty for any completion.' })
         ],
         defaultConfig: {}
     },
@@ -742,7 +742,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Only run when these comma-separated node ids or types failed. Leave empty for any failure.' })
+            configField({ key: 'scope', label: 'Scope', type: 'select', reference: { kind: 'node', multiple: true }, description: 'Only run when these node ids or types failed. Leave empty for any failure.' })
         ],
         defaultConfig: {}
     },
@@ -757,7 +757,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
         inputs: [],
         outputs: [port('out', 'out', 'output', 'Output')],
         fields: [
-            configField({ key: 'scope', label: 'Scope', type: 'text', placeholder: 'node id or type', description: 'Optional node id or type used to filter the status event.' })
+            configField({ key: 'scope', label: 'Scope', type: 'select', reference: { kind: 'node', multiple: true }, description: 'Optional node ids or types used to filter the status event.' })
         ],
         defaultConfig: {}
     },

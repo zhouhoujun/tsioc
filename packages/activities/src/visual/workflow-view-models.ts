@@ -27,6 +27,7 @@ import { decodeWorkflowTypedValue } from './workflow-typed-value';
 import {
     configNodeOptions,
     isConfigNode,
+    nodeReferenceOptions,
     referenceIds,
     referenceLabel
 } from './workflow-config-nodes';
@@ -594,13 +595,9 @@ function buildReferenceView(
     if (spec.kind === 'config-node') {
         options = configNodeOptions(definition, registry, spec.resource || '');
     } else if (spec.kind === 'node') {
-        options = (definition?.nodes || [])
-            .filter(node => node.id !== designer.selectedNode?.id && !isConfigNode(registry, node.type))
-            .map(node => ({
-                label: node.name || node.id,
-                value: node.id,
-                description: registry.nodeLabel(node.type, locale, translator)
-            }));
+        const candidates = (definition?.nodes || [])
+            .filter(node => node.id !== designer.selectedNode?.id && !isConfigNode(registry, node.type));
+        options = nodeReferenceOptions(candidates, registry, locale, translator, spec.multiple === true);
     } else if (spec.kind === 'link') {
         const names = new Set<string>();
         (definition?.nodes || []).forEach(node => {

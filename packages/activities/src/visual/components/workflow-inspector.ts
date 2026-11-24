@@ -350,6 +350,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
             description: field.description,
             group: field.group,
             options: field.options.map(option => ({ label: option.label, value: option.value })),
+            multiple: field.reference?.multiple === true,
             defaultValue: field.hasDefault ? field.resetValue : undefined,
             rows: field.rows,
             min: field.min,

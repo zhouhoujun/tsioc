@@ -365,6 +365,35 @@ export class DynamicFormTest {
         expect(literal.length).toBeGreaterThan(0);
     }
 
+    @Test('stores multi-select values as a comma separated string')
+    async multiSelectValues() {
+        const form = createForm({
+            fields: [{
+                key: 'scope',
+                type: 'select',
+                label: 'Scope',
+                multiple: true,
+                options: [
+                    { label: 'Task 1', value: 'task_1' },
+                    { label: 'Task 2', value: 'task_2' },
+                    { label: 'task (type)', value: 'task' }
+                ]
+            }]
+        }, { scope: 'task_1' });
+        await flush();
+
+        const field = form.schema.fields[0];
+        expect(form.isMultiSelect(field)).toBe(true);
+        expect(form.optionSelected(field, 'task_1')).toBe(true);
+        expect(form.optionSelected(field, 'task_2')).toBe(false);
+
+        form.changeSelect(field, { target: { selectedOptions: [{ value: 'task_1' }, { value: 'task' }] } });
+        await flush();
+        expect(form.form!.get('scope')!.value).toBe('task_1,task');
+        expect(form.getValue().scope).toBe('task_1,task');
+        expect(form.optionSelected(field, 'task')).toBe(true);
+    }
+
     @Test('reports schema-declared field actions to the host')
     async reportsFieldActions() {
         const form = createForm({
