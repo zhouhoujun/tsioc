@@ -22,6 +22,8 @@ import { runToolPreflight } from './ToolInvocationPreflight';
 import { executeToolInvocation } from './ToolExecutionRunner';
 import { TurnAssistantController } from './TurnAssistantController';
 import { VerificationController } from './VerificationController';
+import { TokenUsageController } from './TokenUsageController';
+import { MemoryRetrievalController } from './MemoryRetrievalController';
 import { EMPTY_RESPONSE_MAX_RETRIES, FALSIFICATION_ESCALATION_THRESHOLD, SCHEDULER_DEFAULT_SHUTDOWN_TIMEOUT_MS, TURN_DIAGNOSTICS_LIMIT, TURN_DIAGNOSTICS_RECENT_ATTEMPTS } from '../AgentLimits';
 import { AgentTurnInput, AgentTurnAgentConfig } from './AgentTurnInput';
 import { AgentTurnResult } from './AgentTurnResult';
@@ -167,7 +169,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected sessionCompensationStacks = new Map<string, ToolCompensationEntry[]>();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -1104,7 +1106,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         turnLoop: while (true) {
             this.throwIfTurnCancelled(sessionId);
-            if (await this.enforceTokenBudget(sessionId)) {
+            if (await this.tokenUsageController.enforceBudget(sessionId)) {
                 return {
                     sessionId,
                     message: this.createMessage('assistant', 'Token budget exhausted. The turn was stopped to prevent further cost. Provide a brief summary of completed work and remaining steps.')
@@ -1122,8 +1124,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             }
             const falsifyRate = computeTurnFalsifyRate(turnContext.evidenceLedger);
             let response = await this.completeModelRequest(this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning));
-            await this.recordTokenUsage(sessionId, response);
-            await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
+            await this.tokenUsageController.recordUsage(sessionId, response);
+            await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response));
             if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.assistant.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
@@ -1133,8 +1135,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 response = await this.completeModelRequest(
                     this.prepareModelRequest(sessionId, buildEmptyResponseRetryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
-                await this.recordTokenUsage(sessionId, response);
-                await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
+                await this.tokenUsageController.recordUsage(sessionId, response);
+                await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response));
             }
             if (this.assistant.shouldRecoverEmptyFollowUp(request, response)) {
                 if (turnContext.diagnostics) {
@@ -1143,8 +1145,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 response = await this.completeModelRequest(
                     this.prepareModelRequest(sessionId, buildFollowUpRecoveryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
-                await this.recordTokenUsage(sessionId, response);
-                await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response));
+                await this.tokenUsageController.recordUsage(sessionId, response);
+                await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response));
             }
 
             const roundStartEvidence = turnContext.evidenceLedger?.size ?? 0;
@@ -1172,8 +1174,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             const finalResponse = await this.completeModelRequest(
                 this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
-            await this.recordTokenUsage(sessionId, finalResponse);
-            await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, finalResponse));
+            await this.tokenUsageController.recordUsage(sessionId, finalResponse);
+            await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, finalResponse));
             const finalMessage = await this.assistant.createMessageFromResponse(sessionId, finalResponse);
             this.capturePromptCacheDiagnostics(turnContext, finalResponse);
             await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
@@ -1192,7 +1194,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
         turnLoop: while (true) {
             this.throwIfTurnCancelled(sessionId);
-            if (await this.enforceTokenBudget(sessionId)) {
+            if (await this.tokenUsageController.enforceBudget(sessionId)) {
                 yield { type: 'text', content: '\n\n[Token budget exhausted. Stopping turn.]\n\n' };
                 return {
                     sessionId,
@@ -1215,7 +1217,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 sessionId,
                 this.prepareModelRequest(sessionId, request, turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
             );
-            await this.recordTokenUsage(sessionId, response);
+            await this.tokenUsageController.recordUsage(sessionId, response);
             if (emptyResponseRetryCount < EMPTY_RESPONSE_MAX_RETRIES && this.assistant.shouldRetryEmptyResponse(response)) {
                 emptyResponseRetryCount++;
                 if (turnContext.diagnostics) {
@@ -1226,7 +1228,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     sessionId,
                     this.prepareModelRequest(sessionId, buildEmptyResponseRetryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
-                await this.recordTokenUsage(sessionId, response);
+                await this.tokenUsageController.recordUsage(sessionId, response);
             }
             if (this.assistant.shouldRecoverEmptyFollowUp(request, response)) {
                 if (turnContext.diagnostics) {
@@ -1236,7 +1238,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                     sessionId,
                     this.prepareModelRequest(sessionId, buildFollowUpRecoveryRequest(request, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                 );
-                await this.recordTokenUsage(sessionId, response);
+                await this.tokenUsageController.recordUsage(sessionId, response);
             }
             if (this.assistant.shouldRetryEmptyResponse(response)) {
                 const toolError = await this.assistant.findRecentToolError(sessionId);
@@ -1245,7 +1247,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                         sessionId,
                         this.prepareModelRequest(sessionId, buildToolErrorRecoveryRequest(request, toolError, (role, content) => this.createMessage(role, content)), turnContext.profile, falsifyRate, turnContext.agent?.reasoning)
                     );
-                    await this.recordTokenUsage(sessionId, response);
+                    await this.tokenUsageController.recordUsage(sessionId, response);
                 }
             }
 
@@ -1275,7 +1277,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 sessionId,
                 this.prepareModelRequest(sessionId, finalRequest, turnContext.profile, computeTurnFalsifyRate(turnContext.evidenceLedger), turnContext.agent?.reasoning)
             );
-            await this.recordTokenUsage(sessionId, finalResponse);
+            await this.tokenUsageController.recordUsage(sessionId, finalResponse);
             const finalMessage = await this.assistant.createMessageFromResponse(sessionId, finalResponse);
             this.capturePromptCacheDiagnostics(turnContext, finalResponse);
             await this.captureAssistantDiagnostics(sessionId, currentUserMessageId, finalMessage, turnContext);
@@ -1348,55 +1350,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
     }
 
     private async recordCompactionHistory(sessionId: string, report: ContextPreparationReport): Promise<void> { return this.observability.recordCompactionHistory(sessionId, report); }
-
-    private async recordTokenUsage(sessionId: string, response: ModelResponse): Promise<void> {
-        this.tokenBudgetTracker.recordUsage(sessionId, await this.resolveSessionThreadId(sessionId), response.metadata?.usage);
-    }
-
-    private buildModelCompletedEvent(sessionId: string, response: ModelResponse): AgentModelCompletedEvent {
-        const usage = response.metadata?.usage;
-        const total = this.sessionUsageTotals.get(sessionId) ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-        if (usage) {
-            const promptTokens = Number(usage.promptTokens ?? 0) || 0;
-            const completionTokens = Number(usage.completionTokens ?? 0) || 0;
-            total.promptTokens += promptTokens;
-            total.completionTokens += completionTokens;
-            total.totalTokens += Number(usage.totalTokens ?? (promptTokens + completionTokens)) || 0;
-            this.sessionUsageTotals.set(sessionId, total);
-        }
-        return new AgentModelCompletedEvent(this, sessionId, response, { ...total });
-    }
-
-    private async resolveSessionThreadId(sessionId: string): Promise<string | undefined> {
-        try {
-            const state = await this.sessions.get(sessionId);
-            return String(state.primaryThreadId || '').trim() || undefined;
-        } catch {
-            return undefined;
-        }
-    }
-
-    private async enforceTokenBudget(sessionId: string): Promise<boolean> {
-        if (!this.tokenBudgetTracker.enabled) {
-            return false;
-        }
-        const threadId = await this.resolveSessionThreadId(sessionId);
-        for (const scope of ['session', 'thread'] as const) {
-            const scopeId = scope === 'session' ? sessionId : threadId;
-            if (scope === 'thread' && !scopeId) {
-                continue;
-            }
-            const decision = this.tokenBudgetTracker.evaluate(scope, scopeId!);
-            if (decision.exceeded) {
-                await this.app.publishEvent(new AgentTokenBudgetExceededEvent(this, decision.state)).catch(() => undefined);
-                return true;
-            }
-            if (decision.reminderFired) {
-                await this.app.publishEvent(new AgentTokenBudgetReminderEvent(this, decision.state, decision.state.remaining / decision.state.budget)).catch(() => undefined);
-            }
-        }
-        return false;
-    }
 
     private capturePromptCacheDiagnostics(turnContext: TurnExecutionContext, response: ModelResponse): void {
         const diagnostics = turnContext.diagnostics;
@@ -1784,7 +1737,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             stream: req => this.streamModelRequest(req),
             publish: event => this.app.publishEvent(event),
             estimateTokens: text => this.contextManager.estimateTokens(text),
-            buildCompletedEvent: (id, response) => this.buildModelCompletedEvent(id, response)
+            buildCompletedEvent: (id, response) => this.tokenUsageController.buildCompletedEvent(id, response)
         }, sessionId, request);
     }
 
@@ -1847,6 +1800,20 @@ export class DefaultAgentRuntime extends AgentRuntime {
         return this.planContinuation.build(sessionId, turnContext, this.options.maxPlanContinuations ?? defaultAgentOptions.maxPlanContinuations ?? 3);
     }
 
+    private get memoryRetrievalController(): MemoryRetrievalController {
+        return this.memoryRetrieval ??= new MemoryRetrievalController({
+            sessions: this.sessions, memory: this.memory, memoryRetriever: this.memoryRetriever,
+            app: this.app, source: this
+        });
+    }
+
+    private get tokenUsageController(): TokenUsageController {
+        return this.tokenUsage ??= new TokenUsageController({
+            sessions: this.sessions, options: this.options, app: this.app, source: this,
+            tokenBudgetTracker: this.tokenBudgetTracker, totals: this.sessionUsageTotals
+        });
+    }
+
     private get verificationController(): VerificationController {
         return this.verification ??= new VerificationController({
             options: this.options, turnDiagnosticsStore: this.turnDiagnosticsStore,
@@ -1894,8 +1861,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
             prepareRequest: (sessionId, request, context) => this.prepareModelRequest(sessionId, request, context.profile, computeTurnFalsifyRate(context.evidenceLedger), context.agent?.reasoning),
             completeModel: request => this.completeModelRequest(request),
             collectStreaming: (sessionId, request) => this.collectStreamingResponse(sessionId, request),
-            recordUsage: (sessionId, response) => this.recordTokenUsage(sessionId, response),
-            publishCompleted: async (sessionId, response) => { await this.app.publishEvent(this.buildModelCompletedEvent(sessionId, response)); },
+            recordUsage: (sessionId, response) => this.tokenUsageController.recordUsage(sessionId, response),
+            publishCompleted: async (sessionId, response) => { await this.app.publishEvent(this.tokenUsageController.buildCompletedEvent(sessionId, response)); },
             createMessage: (role, content, metadata) => this.createMessage(role, content, undefined, undefined, metadata)
         });
     }
@@ -1906,7 +1873,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             memory: this.memory, promptBuilder: this.promptBuilder, modelAdapter: this.modelAdapter as any,
             options: this.options,
             getRecentMessages: (messages, currentId) => this.getRecentMessages(messages, currentId),
-            getRelevantMemory: (query, sessionId) => this.getRelevantMemory(query, sessionId),
+            getRelevantMemory: (query, sessionId) => this.memoryRetrievalController.getRelevantMemory(query, sessionId),
             publishContextPrepared: (sessionId, report) => this.publishContextPreparedEvent(sessionId, report),
             getToolDefinitions: sessionId => this.getToolDefinitions(sessionId),
             resolveArchetypeConfig: sessionId => this.resolveArchetypeConfig(sessionId),
@@ -2158,20 +2125,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     async refreshSessionSummary(sessionId: string): Promise<string | undefined> { return this.postTurn.refreshSessionSummary(sessionId); }
 
-    override async getTokenBudgetState(sessionId: string): Promise<TokenBudgetScopeState[]> {
-        if (!this.tokenBudgetTracker.enabled) {
-            return [];
-        }
-        const threadId = await this.resolveSessionThreadId(sessionId);
-        const states: TokenBudgetScopeState[] = [];
-        if (this.options.tokenBudget?.perSession) {
-            states.push(this.tokenBudgetTracker.evaluate('session', sessionId).state);
-        }
-        if (this.options.tokenBudget?.perThread && threadId) {
-            states.push(this.tokenBudgetTracker.evaluate('thread', threadId).state);
-        }
-        return states;
-    }
+    override async getTokenBudgetState(sessionId: string): Promise<TokenBudgetScopeState[]> { return this.tokenUsageController.getState(sessionId); }
 
     private resolveApprovalManager(approvalManager?: ApprovalManager): ApprovalManager | undefined {
         return resolveRuntimeApprovalManager({
@@ -2183,43 +2137,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             uuid: this.uuid,
             clock: this.clock
         });
-    }
-
-    private async getRelevantMemory(query: string, sessionId: string): Promise<AgentMemoryRecord[]> {
-        const normalized = query.trim();
-        if (!normalized) {
-            return [];
-        }
-        await this.publishMemoryRetrievalEvent(new AgentMemoryRetrievalStartedEvent(this, sessionId, normalized));
-        try {
-            const retriever = this.memoryRetriever;
-            const records = retriever
-                ? await retriever.retrieve({
-                    sessionId,
-                    query: normalized,
-                    projectId: await this.resolveMemoryProjectId(sessionId)
-                })
-                : await this.memory.search(normalized, sessionId);
-            await this.publishMemoryRetrievalEvent(new AgentMemoryRetrievedEvent(this, sessionId, normalized, records));
-            return records;
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            await this.publishMemoryRetrievalEvent(new AgentMemoryRetrievalFailedEvent(this, sessionId, normalized, err));
-            return [];
-        }
-    }
-
-    private async resolveMemoryProjectId(sessionId: string): Promise<string | undefined> {
-        const state = await this.sessions.get(sessionId);
-        return String(state.projectId || state.workspace || '').trim() || undefined;
-    }
-
-    private async publishMemoryRetrievalEvent(event: AgentMemoryRetrievalStartedEvent | AgentMemoryRetrievedEvent | AgentMemoryRetrievalFailedEvent): Promise<void> {
-        try {
-            await this.app.publishEvent(event);
-        } catch {
-            return;
-        }
     }
 
     private getRecentMessages(messages: AgentMessage[], currentUserMessageId: string): AgentMessage[] {
