@@ -75,14 +75,32 @@ run_npm_test() {
     local log="$LOG_DIR/$id.log"
     local started
     started=$(date +%s)
-    if (cd "$dir" && npm run test >"$log" 2>&1); then
+    local rss_file="$log.rss"
+    local status=0
+    if [ -x /usr/bin/time ]; then
+        (cd "$dir" && /usr/bin/time -f '%M' -o "$rss_file" npm run test >"$log" 2>&1) || status=$?
+    else
+        (cd "$dir" && npm run test >"$log" 2>&1) || status=$?
+    fi
+    if [ "$status" -eq 0 ]; then
         local elapsed=$(( $(date +%s) - started ))
         local budget
         budget=$(node -e "try{const b=require('./scripts/test-budget-baseline.json');process.stdout.write(String(b['$id']||0))}catch{process.stdout.write('0')}" 2>/dev/null || echo 0)
-        echo "wall clock: ${elapsed}s (budget ${budget}s)" >>"$log"
+        local rss_kb=0
+        [ -f "$rss_file" ] && rss_kb=$(tail -1 "$rss_file" | tr -dc '0-9')
+        local rss_mb=$(( ${rss_kb:-0} / 1024 ))
+        local rss_budget
+        rss_budget=$(node -e "try{const b=require('./scripts/test-rss-budget-mb.json');process.stdout.write(String(b['$id']||0))}catch{process.stdout.write('0')}" 2>/dev/null || echo 0)
+        echo "wall clock: ${elapsed}s (budget ${budget}s); max rss: ${rss_mb} MiB (budget ${rss_budget})" >>"$log"
         if [ "$budget" -gt 0 ] && [ "$elapsed" -gt "$budget" ]; then
             stage_fail "$id" "$label (${elapsed}s > ${budget}s wall-clock budget)"
             echo "--- $id exceeded the wall-clock test budget ---" >&2
+            tail -10 "$log" >&2
+            return
+        fi
+        if [ "$rss_budget" -gt 0 ] && [ "$rss_mb" -gt "$rss_budget" ]; then
+            stage_fail "$id" "$label (${rss_mb} MiB > ${rss_budget} MiB RSS budget)"
+            echo "--- $id exceeded the RSS test budget ---" >&2
             tail -10 "$log" >&2
             return
         fi

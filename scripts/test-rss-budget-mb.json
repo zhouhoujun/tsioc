@@ -1,0 +1,11 @@
+{
+  "agent": 4096,
+  "agent-ui": 6144,
+  "agent-gateway": 3072,
+  "agent-tools": 3072,
+  "agent-cli": 3072,
+  "components": 3072,
+  "components-common": 3072,
+  "components-console": 3072,
+  "components-html": 3072
+}

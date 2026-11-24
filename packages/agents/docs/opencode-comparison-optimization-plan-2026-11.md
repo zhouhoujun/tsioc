@@ -315,8 +315,9 @@
 - TUI storybook/headless frame capture；把 PTY 超时用例改为可重试/隔离。
 - 测试内存/墙钟预算写入 gate；source-size baseline 继续下降。
   - 状态：`scripts/test-budget-baseline.json` + `run_npm_test` 记录墙钟并超预算即失败
-    （agent 900s / agent-ui 1200s / gateway·tools 600s 等，实测 gateway 63s）；source-size baseline
-    已随各次拆解持续下调。内存上限尚未单独采集。
+    （agent 900s / agent-ui 1200s / gateway·tools 600s 等，实测 gateway 63s），并用
+    `/usr/bin/time -f '%M'` 采集峰值 RSS、按 `scripts/test-rss-budget-mb.json` 超限失败；
+    source-size baseline 已随各次拆解持续下调。
 
 ## 6. 快速收益（1–3 天/项）
 
