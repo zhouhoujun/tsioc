@@ -150,6 +150,8 @@ export const AGENT_UI_NOTICE_EN_PART3: NestedMessages = {
   permissionReasonDefault: 'default policy asks before running tools',
   permissionApprovalRulesLine: 'Ordered approval rules: {count}',
   permissionV3RulesLine: 'V3 permission rules: {count} (workspace {workspace} · session {session} · saved {saved})',
+  pluginEnabledNotice: 'Plugin {id} enabled (applied: {applied})',
+  pluginDisabledNotice: 'Plugin {id} disabled (applied: {applied})',
   permissionUnattendedState: 'Unattended ruleset: {state}',
   permissionUnattendedSet: 'Unattended ruleset set to {mode}',
   permissionUnattendedCleared: 'Unattended ruleset cleared (asks like before)',

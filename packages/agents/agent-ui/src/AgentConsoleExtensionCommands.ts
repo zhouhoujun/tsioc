@@ -9,6 +9,8 @@ export interface ExtensionCommandHost {
     select(title: string, options: any[], index: number, hint?: string): Promise<string | undefined>;
     pushCommandOutput(command: string, text: string, kind?: any): void;
     invokeTool(name: string, input?: any): Promise<any>;
+    appRpc?: { request(method: string, params?: any, context?: any): Promise<any> } | null;
+    rpcRequestContext?(): any;
 }
 
 export function formatSkillLine(skill: any): string {
@@ -16,6 +18,27 @@ export function formatSkillLine(skill: any): string {
     if (String(skill.category || '').trim()) parts.push(`[${skill.category}]`);
     if (String(skill.summary || '').trim()) parts.push(String(skill.summary));
     return parts.join(' ');
+}
+
+export function formatPluginManifestLine(plugin: any): string {
+    const parts = [String(plugin.id || ''), plugin.enabled === false ? 'disabled' : 'enabled'];
+    if (String(plugin.name || '').trim() && String(plugin.name) !== String(plugin.id)) parts.push(String(plugin.name));
+    if (String(plugin.version || '').trim()) parts.push(`v${plugin.version}`);
+    return parts.join(' · ');
+}
+
+export function formatPluginManifestDetail(plugin: any): string {
+    const tools = plugin.tools ?? {};
+    return [
+        `Plugin: ${String(plugin.id || '')}`,
+        String(plugin.name || '') ? `Name: ${plugin.name}` : '',
+        String(plugin.version || '') ? `Version: ${plugin.version}` : '',
+        String(plugin.description || '') ? `Description: ${plugin.description}` : '',
+        `Enabled: ${plugin.enabled === false ? 'no' : 'yes'}`,
+        Array.isArray(tools.hide) && tools.hide.length ? `Hide: ${tools.hide.join(', ')}` : '',
+        tools.rename && Object.keys(tools.rename).length ? `Rename: ${Object.entries(tools.rename).map(([from, to]) => `${from}->${to}`).join(', ')}` : '',
+        tools.namespace?.prefix ? `Namespace: ${tools.namespace.prefix}` : ''
+    ].filter(Boolean).join('\n');
 }
 
 export function formatSkillDetail(skill: any): string {
@@ -83,6 +106,32 @@ export function formatPluginDetail(plugin: any, contributions?: any): string {
 
 export async function runPluginsCommand(host: ExtensionCommandHost, args?: string): Promise<boolean> {
     const requested = String(args || '').trim();
+    if (host.appRpc) {
+        const tokens = requested.split(/\s+/).filter(Boolean);
+        const action = tokens[0]?.toLowerCase();
+        if (action === 'enable' || action === 'disable') {
+            const id = tokens.slice(1).join(' ').trim();
+            if (!id) {
+                host.notify(formatAgentUiNotice(host.translator, 'noPluginInstalledName', { name: id }));
+                return true;
+            }
+            const enabled = action === 'enable';
+            const result = await host.appRpc.request('plugin.set_enabled', { id, enabled }, host.rpcRequestContext?.()).catch(() => null);
+            host.notify(formatAgentUiNotice(host.translator, enabled ? 'pluginEnabledNotice' : 'pluginDisabledNotice', { id, applied: result?.applied === true }));
+            return true;
+        }
+        const listed = await host.appRpc.request('plugin.list', {}, host.rpcRequestContext?.()).catch(() => null);
+        const manifests = Array.isArray(listed?.plugins) ? listed.plugins : [];
+        if (manifests.length) {
+            if (requested) {
+                const found = manifests.find((plugin: any) => String(plugin.id) === requested);
+                host.pushCommandOutput(`/plugins ${requested}`, found ? formatPluginManifestDetail(found) : formatAgentUiNotice(host.translator, 'noPluginInstalledName', { name: requested }));
+            } else {
+                host.pushCommandOutput('/plugins', manifests.map((plugin: any) => formatPluginManifestLine(plugin)).join('\n'));
+            }
+            return true;
+        }
+    }
     const result = await host.invokeTool('plugins', requested
         ? { action: 'inspect', id: requested }
         : { action: 'list' }).catch(() => undefined);

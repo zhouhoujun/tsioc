@@ -28,6 +28,7 @@ import { SessionSnapshotController } from './SessionSnapshotController';
 import { ContentAddressedSnapshotStore } from '../harness/ContentAddressedSnapshotStore';
 import { ArtifactManifest, ArtifactStore } from '../artifacts/ArtifactStore';
 import { compileArchetypePermissionRules } from '../permissions/archetype-rules';
+import { PluginController, createRuntimePluginController } from '../plugins/PluginController';
 import { HookController } from './HookController';
 import { PolicyResolutionController } from './PolicyResolutionController';
 import { TurnLoopController } from './TurnLoopController';
@@ -133,7 +134,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
     protected turnAbortScopes = new TurnAbortScopes();
     protected pendingGitStepSnapshots = new Map<string, string>();
     protected planContinuation = new PlanContinuationTracker();
-    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private contentSnapshotStore?: ContentAddressedSnapshotStore; private artifactProvider?: ArtifactStore; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
+    protected sessionUsageTotals = new Map<string, { promptTokens: number; completionTokens: number; totalTokens: number }>(); protected sessionTurnCheckpoints = new SessionTurnCheckpoints(); private turnLeases?: SessionTurnLeaseManager; private turnObservability?: TurnObservabilityController; private turnToolBatch?: TurnToolBatchController; private postTurnController?: SessionPostTurnController; private turnRequestController?: TurnRequestController; private turnTerminationController?: TurnTerminationController; private toolLifecycle?: ToolInvocationLifecycle; private turnAssistant?: TurnAssistantController; private verification?: VerificationController; private tokenUsage?: TokenUsageController; private memoryRetrieval?: MemoryRetrievalController; private sessionSnapshots?: SessionSnapshotController; private contentSnapshotStore?: ContentAddressedSnapshotStore; private artifactProvider?: ArtifactStore; private pluginController?: PluginController; private hooksController?: HookController; private policyResolution?: PolicyResolutionController; private turnRecovery?: TurnRecoveryController;
     private turnHistoryController?: TurnHistoryController;
     protected tokenBudgetTracker: TokenBudgetTracker;
     protected static readonly MAX_PENDING_SESSION_TURNS = 32;
@@ -198,6 +199,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             );
         }
         this.hookManager = new AgentHookManager(this.options.hooks, this.hookExecutor);
+        this.pluginController = createRuntimePluginController(this);
         this.contextManager.setCompactionHookRunner(async (stage, compaction) => {
             if (!compaction.sessionId || !this.hookManager?.hasHooks(stage)) {
                 return;
@@ -219,7 +221,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         await new Promise<void>(resolve => setTimeout(resolve, ms));
     }
-
     updateModelOptions(model?: AgentOptions['model']): void { if (!model) return; if (this.options === defaultAgentOptions) { this.options = { ...defaultAgentOptions, model: { ...model } }; } else { this.options.model = model; } this.modelAdapter.updateOptions?.(model); void this.hooks.runConfig({ model }); }
     async runTurn(
         sessionId: string,
@@ -255,10 +256,10 @@ export class DefaultAgentRuntime extends AgentRuntime {
             release();
         }
     }
-
     @Runner()
     async start(): Promise<void> {
         this._stopped = false;
+        await this.pluginController?.load();
         const bootstrapTurn = this.options.bootstrapTurn;
         if (!bootstrapTurn?.enabled || !bootstrapTurn.input?.trim()) {
             return;
@@ -266,7 +267,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
         const result = await this.runTurn(bootstrapTurn.sessionId || 'default', bootstrapTurn.input);
         bootstrapTurn.output = result.message.content;
     }
-
     async stop(): Promise<void> {
         if (this._stopped) {
             return;
@@ -1375,7 +1375,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
 
     override getHookSummary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> { return this.hooks.summary(); }
 
-    transformTools(editor: (actor: import('../tools/ToolRegistry').ToolTransformEditor) => void): number { return this.toolRegistry.transform(editor); }
+    transformTools(editor: (actor: import('../tools/ToolRegistry').ToolTransformEditor) => void): number { return this.toolRegistry.transform(editor); } get plugins(): PluginController | undefined { return this.pluginController; }
     async listArtifacts(sessionId: string): Promise<ArtifactManifest[]> { return this.fileAdapter ? this.saveArtifacts().list(await this.resolveSessionWorkspace(sessionId)) : []; }
     async getArtifact(sessionId: string, id: string): Promise<ArtifactManifest | undefined> { return this.fileAdapter ? this.saveArtifacts().get(await this.resolveSessionWorkspace(sessionId), id) : undefined; }
     async readArtifact(sessionId: string, id: string, path?: string): Promise<import('../artifacts/ArtifactStore').ArtifactReadResult | undefined> { return this.fileAdapter ? this.saveArtifacts().read(await this.resolveSessionWorkspace(sessionId), id, path) : undefined; }

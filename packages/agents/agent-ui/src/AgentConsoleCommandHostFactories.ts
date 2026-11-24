@@ -90,7 +90,9 @@ export function extensionCommandHost(self: any): ExtensionCommandHost {
         notify: (message: string) => self.notify(message), translator: self.translator,
         select: (title: string, opts: any[], index: number, hint?: string) => self.select(title, opts, index, hint),
         pushCommandOutput: (command: string, out: string, kind?: AgentConsoleCommandOutputEntry['kind']) => self.pushCommandOutput(command, out, kind),
-        invokeTool: (name: string, input?: any) => self.invokeTool(name, input)
+        invokeTool: (name: string, input?: any) => self.invokeTool(name, input),
+        appRpc: self.appRpc,
+        rpcRequestContext: () => self.rpcRequestContext()
     };
 }
 export function policyCommandHost(self: any): PolicyCommandHost {

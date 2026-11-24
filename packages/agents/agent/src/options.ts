@@ -214,7 +214,6 @@ export interface AgentSkillTokenBudgetOptions {
      */
     truncateCatalog?: boolean;
 }
-
 /**
  * P98: rollout token budget (G25). Tracks cumulative token consumption across
  * agent threads/sessions and enforces a per-scope cap: when remaining budget
@@ -282,6 +281,7 @@ export interface AgentOptions extends AgentPromptOptions {
     /** G31: directory holding `trusted-projects.json` (default `~/.tsdi-agent`). */
     trustedProjectsRoot?: string;
     hooks?: AgentHooksOptions;
+    plugins?: import('./plugins/PluginManifest').AgentPluginManifest[];
     /** P98: rollout token budget enforcement (G25). */
     tokenBudget?: AgentTokenBudgetOptions;
     /** P195: skill content token budget for system prompt injection (default unlimited). */
@@ -289,6 +289,7 @@ export interface AgentOptions extends AgentPromptOptions {
     /** G29: per-session delegation mode (default 'explicit'). Per-turn overrides via AgentTurnInput.agent.delegationMode. */
     delegationMode?: AgentDelegationMode;
 }
+/** P2.3: plugin manifests (hooks/tools/config); per-workspace enable flags live in `.tsdi-agent/plugins.json`. */
 export interface AgentPolicyLimits {
     commandOutputHistoryCap?: number;
     commandOutputPageSize?: number;
@@ -300,7 +301,6 @@ export interface AgentPolicyLimits {
 }
 
 export type AgentPolicySource = 'default' | 'workspace' | 'session' | 'request';
-
 /** B2: verification-gate settings folded into the policy source chain (default < workspace < session < request). */
 export interface AgentPolicyVerification {
     /** Tool names treated as write operations for the declared-vs-actual diff check (falls back to `AgentOptions.verificationWriteTools`, then the B2 defaults). */

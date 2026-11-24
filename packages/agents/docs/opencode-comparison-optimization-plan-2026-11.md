@@ -255,7 +255,10 @@
 - 验收：插件可新增/隐藏工具；工具权限/审批仍生效；配置热更新不丢会话。
 - 状态：`ToolRegistry.transform(editor)` 已落地（`add`/`hide`/`rename`/`namespace`，单调 `transformRevision`
   供 prompt cache/会话快照失效）；`LocalToolRegistry` 按 expose 名称生成定义，`invoke/activateTool/isToolActive`
-  解析 expose→raw，默认无变换时行为不变。**剩余**：插件 manifest/按 workspace 启停。
+  解析 expose→raw，默认无变换时行为不变。**剩余**：插件配置热更新（config.observe 已能观察模型配置）与跨进程插件工具注册表（`toolsAdd` 目前由代码插件提供）。
+  插件 manifest 已落地：`AgentPluginManifest`（hooks/tools hide|rename|namespace/config）、`PluginRegistry`、
+  `PluginController` 读取 `<workspace>/.tsdi-agent/plugins.json`、`plugin.list` / `plugin.set_enabled` RPC
+  与 `/plugins [enable|disable <id>]`；启停会重建 hook manager 并重新应用工具变换。
   钩子域已落地：`tool.execute.before/after`、`permission.evaluate` 作为 beforeTool/afterTool/onApproval 别名，
   `model.request` / `model.response` 在每次模型调用前后触发（观察型，可写 transcript），
   `config.observe` 在运行时模型配置变更时触发；`model.retry` 仍未接入重试点。

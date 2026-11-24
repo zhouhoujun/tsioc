@@ -3,6 +3,7 @@ import { listPermissionRules } from './permission-rules';
 import { getArtifactFromRpc, listArtifactsFromRpc } from './artifacts-rpc';
 import { requireString } from './request-helpers';
 import { clearRevertFromRpc, commitRevertFromRpc, stageRevertFromRpc } from './revert-rpc';
+import { listPluginsFromRpc, setPluginEnabledFromRpc } from './plugins-rpc';
 
 /**
  * P0.4: descriptor-based RPC contracts.
@@ -42,7 +43,9 @@ export const AGENT_RPC_CONTRACT_METHOD_IDS = [
     'artifact.get',
     'session.revert.stage',
     'session.revert.clear',
-    'session.revert.commit'
+    'session.revert.commit',
+    'plugin.list',
+    'plugin.set_enabled'
 ] as const;
 
 type AgentRpcContractMethod = typeof AGENT_RPC_CONTRACT_METHOD_IDS[number];
@@ -85,6 +88,18 @@ const CONTRACT_DEFINITIONS: Record<AgentRpcContractMethod, Omit<AgentRpcContract
         paramsSchema: { type: 'object', properties: { sessionId: { type: 'string' } }, required: ['sessionId'] },
         resultSchema: { type: 'object', properties: { result: { type: 'object' } } },
         handler: ({ params, runtime, authorize }) => commitRevertFromRpc({ params, runtime, authorize })
+    },
+    'plugin.list': {
+        description: 'List plugin manifests and their enabled state for the workspace runtime.',
+        paramsSchema: { type: 'object' },
+        resultSchema: { type: 'object', properties: { plugins: { type: 'array' } }, required: ['plugins'] },
+        handler: ({ params, runtime }) => listPluginsFromRpc({ params, runtime })
+    },
+    'plugin.set_enabled': {
+        description: 'Enable or disable a plugin and re-apply hooks/tool transforms.',
+        paramsSchema: { type: 'object', properties: { id: { type: 'string' }, enabled: { type: 'boolean' } }, required: ['id', 'enabled'] },
+        resultSchema: { type: 'object', properties: { id: { type: 'string' }, enabled: { type: 'boolean' }, applied: { type: 'boolean' } } },
+        handler: ({ params, runtime }) => setPluginEnabledFromRpc({ params, runtime })
     }
 };
 

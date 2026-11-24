@@ -27,6 +27,11 @@ export abstract class ToolRegistry {
         return 0;
     }
 
+    /** Remove all transforms (plugins re-apply from scratch). */
+    clearTransforms(): number {
+        return this.transformRevision;
+    }
+
     getToolDefinitions(sessionId?: string): AgentToolDefinition[] {
         return this.getTools().map(tool => this.toDefinition(tool, sessionId));
     }

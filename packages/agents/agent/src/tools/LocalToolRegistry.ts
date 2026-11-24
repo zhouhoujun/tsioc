@@ -34,6 +34,15 @@ export class LocalToolRegistry extends ToolRegistry {
         return this.revision;
     }
 
+    clearTransforms(): number {
+        this.transformedAdded = [];
+        this.transformedHidden.clear();
+        this.transformedNames.clear();
+        this.exposedNames.clear();
+        this.revision++;
+        return this.revision;
+    }
+
     getTools(): AgentTool[] {
         return Array.from(this.getToolMap().values());
     }

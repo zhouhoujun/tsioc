@@ -150,6 +150,8 @@ export const AGENT_UI_NOTICE_ZH_PART3: NestedMessages = {
   permissionReasonDefault: '默认策略：执行工具前询问',
   permissionApprovalRulesLine: '有序审批规则：{count} 条',
   permissionV3RulesLine: 'V3 权限规则：{count} 条（workspace {workspace} · session {session} · saved {saved}）',
+  pluginEnabledNotice: '插件 {id} 已启用（生效：{applied}）',
+  pluginDisabledNotice: '插件 {id} 已停用（生效：{applied}）',
   permissionUnattendedState: '无人值守规则：{state}',
   permissionUnattendedSet: '无人值守规则已设为 {mode}',
   permissionUnattendedCleared: '已清除无人值守规则（恢复询问）',

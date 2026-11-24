@@ -14,24 +14,35 @@ export interface HookControllerHost {
 
 /** Lifecycle hook execution plus transcript entries for hook output. */
 export class HookController {
+    private overrideManager?: AgentHookManager;
+
     constructor(private readonly host: HookControllerHost) {
     }
 
+    /** Plugins rebuild the hook manager; keep the controller on the live instance. */
+    setManager(manager?: AgentHookManager): void {
+        this.overrideManager = manager;
+    }
+
+    private get manager(): AgentHookManager | undefined {
+        return this.overrideManager ?? this.host.hookManager;
+    }
+
     async run(stage: AgentHookContext['stage'], sessionId: string, context: AgentHookContext): Promise<AgentHookExecutionResult[]> {
-        if (!this.host.hookManager?.hasHooks(stage)) {
+        if (!this.manager?.hasHooks(stage)) {
             return [];
         }
-        const output = await this.host.hookManager.run(stage, context, this.host.signal(sessionId));
+        const output = await this.manager.run(stage, context, this.host.signal(sessionId));
         await this.appendOutputs(sessionId, output.entries);
         return output.results;
     }
 
     /** P2.3: model.request / model.response observation hooks (no request mutation). */
     async runModel(stage: 'model.request' | 'model.response', sessionId: string, model: Record<string, any>): Promise<void> {
-        if (!this.host.hookManager?.hasHooks(stage)) {
+        if (!this.manager?.hasHooks(stage)) {
             return;
         }
-        const output = await this.host.hookManager.run(stage, {
+        const output = await this.manager.run(stage, {
             sessionId,
             workspace: await this.host.workspace?.(sessionId),
             stage,
@@ -42,23 +53,23 @@ export class HookController {
 
     /** P2.3: config.observe hooks fire when runtime options change (not persisted to a session). */
     async runConfig(config: Record<string, any>): Promise<void> {
-        if (!this.host.hookManager?.hasHooks('config.observe')) {
+        if (!this.manager?.hasHooks('config.observe')) {
             return;
         }
-        await this.host.hookManager.run('config.observe', { sessionId: '', stage: 'config.observe', config })
+        await this.manager.run('config.observe', { sessionId: '', stage: 'config.observe', config })
             .catch(() => undefined);
     }
 
     register(stage: AgentLifecycleHookStage, hook: AgentFunctionHookDefinition): void {
-        this.host.hookManager?.registerFunction(stage, hook);
+        this.manager?.registerFunction(stage, hook);
     }
 
     unregister(stage: AgentLifecycleHookStage, name?: string): void {
-        this.host.hookManager?.unregisterFunction(stage, name);
+        this.manager?.unregisterFunction(stage, name);
     }
 
     summary(): Array<{ stage: AgentLifecycleHookStage; commands: string[]; functions: string[] }> {
-        return this.host.hookManager ? this.host.hookManager.describe() : [];
+        return this.manager ? this.manager.describe() : [];
     }
 
     private async appendOutputs(sessionId: string, entries: AgentHookTranscriptEntry[]): Promise<void> {
