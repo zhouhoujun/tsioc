@@ -46,7 +46,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 
 | Node-RED | Type here | Notes |
 | --- | --- | --- |
-| function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context`; returns one message. Multi-output `node.send([a,b])` is not supported (DAG model) |
+| function | `function` | `~` sandboxed JS with `msg`/`flow`/`global`/`env`/`context` plus Node-RED-style `node.status()`, `node.info/warn/debug/error()`, `node.id` and `node.name`; returns one message. Multi-output `node.send([a,b])` is not supported (DAG model) |
 | switch | `switch`, `router` | `+` one output per rule (**dynamic ports**, no eight-output limit), all rule operators, check-all fan-out, `else`, output labels summarize the rule; compare values may be typed values or JSONata |
 | change | `change` | `+` set/delete/append/move/search-and-replace; values from literal, `msg`/`flow`/`global`/`env` or a **JSONata expression** |
 | range | `scale` | `~` maps a value between ranges with **clamp / scale / wrap / drop** (legacy `clamp: false` still scales; drop stops the branch). The `range` type here is a sequence generator |

@@ -154,6 +154,39 @@ describe('Workflow node status lines', () => {
         expect(text.endsWith('…')).toBe(true);
     });
 
+    it('lets function nodes report status and errors through the node API', async () => {
+        const status = await service.execute(chain([
+            {
+                type: 'function',
+                config: {
+                    code: [
+                        'node.status({ text: "processed", level: "success" });',
+                        'msg.payload = { done: true };',
+                        'return msg;'
+                    ].join('\n')
+                }
+            }
+        ]), {});
+        expect(status.success).toBe(true);
+        expect(status.data?.executionState?.nodeStates.function_0.result?.status)
+            .toEqual({ text: 'processed', level: 'success' });
+
+        const warned = await service.execute(chain([
+            { type: 'function', config: { code: 'node.warn("careful"); return msg;' } }
+        ]), {});
+        expect(warned.data?.executionState?.nodeStates.function_0.result?.status)
+            .toEqual({ text: 'careful', level: 'warn' });
+
+        const failed = await service.execute(chain([
+            { type: 'function', config: { code: 'node.error("boom"); return msg;' } }
+        ]), {});
+        expect(failed.success).toBe(false);
+        const state = failed.data?.executionState?.nodeStates.function_0;
+        expect(state?.status).toBe('failed');
+        expect(state?.error).toContain('boom');
+        expect(state?.result?.status).toEqual({ text: 'boom', level: 'error' });
+    });
+
     it('shows the status line on the canvas and in the inspector', async () => {
         const designer = new WorkflowDesigner({
             definition: chain([

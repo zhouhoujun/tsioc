@@ -1,6 +1,6 @@
 import { parseYaml, stringifyYaml } from './workflow-yaml';
 import { evaluateWorkflowExpression } from './workflow-expression';
-import { Activity, ActivityContext, ActivityResult } from '../activities/Activity';
+import { Activity, ActivityContext, ActivityNodeStatus, ActivityResult } from '../activities/Activity';
 import {
     isWorkflowValueRef,
     readWorkflowProperty as resolveFrom,
@@ -1980,6 +1980,51 @@ export async function executeVisualNode(
             return { success: true, data: { nodeId: node.id, triggered: true, payload } };
         }
         case 'function': {
+            // Node-RED `node.status`/`node.warn`/... helpers captured by the
+            // sandbox and attached to the result.
+            let pendingStatus: ActivityNodeStatus | undefined;
+            const setStatus = (text: any, level: ActivityNodeStatus['level'] = 'info'): void => {
+                const value = String(text ?? '').trim();
+                if (!value) {
+                    return;
+                }
+                pendingStatus = {
+                    text: value.length > 80 ? `${value.slice(0, 77)}…` : value,
+                    level
+                };
+            };
+            const logger = (context as any).logger;
+            const nodeApi = {
+                id: node.id,
+                name: node.name,
+                status: (value: any) => {
+                    if (value && typeof value === 'object') {
+                        const level = String(value.level || 'info');
+                        setStatus(value.text, level === 'success' || level === 'warn' || level === 'error'
+                            ? level
+                            : 'info');
+                    } else {
+                        setStatus(value);
+                    }
+                    return nodeApi;
+                },
+                info: (message: any) => {
+                    logger?.info?.(String(message));
+                    setStatus(message, 'info');
+                },
+                warn: (message: any) => {
+                    logger?.warn?.(String(message));
+                    setStatus(message, 'warn');
+                },
+                debug: (message: any) => {
+                    logger?.debug?.(String(message));
+                },
+                error: (message: any) => {
+                    logger?.error?.(String(message));
+                    setStatus(message, 'error');
+                    throw new Error(String(message));
+                }
+            };
             try {
                 const source = String(config.code || 'return input;');
                 const msg = (context as any).msg || { payload: (context as any).payload };
@@ -1995,9 +2040,12 @@ export async function executeVisualNode(
                         'flow',
                         'global',
                         'env',
+                        'node',
                         `"use strict"; return (async () => { ${code}\n })();`
-                    ) as (ctx: any, input: any, msg: any, flow: any, global: any, env: any) => Promise<any>;
-                    const value = await fn(context, context, msg, flow, global, env);
+                    ) as (
+                        ctx: any, input: any, msg: any, flow: any, global: any, env: any, nodeApi: any
+                    ) => Promise<any>;
+                    const value = await fn(context, context, msg, flow, global, env, nodeApi);
                     // Function nodes may mutate msg directly; keep the branch
                     // context payload/topic in sync before the next node runs.
                     (context as any).msg = msg;
@@ -2024,12 +2072,22 @@ export async function executeVisualNode(
                         || 'meta' in value;
                     return {
                         success: true,
-                        data: { ...value, nodeId: node.id, ...(isMessage ? { msg: value } : {}) }
+                        data: { ...value, nodeId: node.id, ...(isMessage ? { msg: value } : {}) },
+                        ...(pendingStatus ? { status: pendingStatus } : {})
                     };
                 }
-                return { success: true, data: { nodeId: node.id, result: value } };
+                return {
+                    success: true,
+                    data: { nodeId: node.id, result: value },
+                    ...(pendingStatus ? { status: pendingStatus } : {})
+                };
             } catch (error) {
-                return { success: false, error: error as Error, data: { nodeId: node.id } };
+                return {
+                    success: false,
+                    error: error as Error,
+                    data: { nodeId: node.id },
+                    ...(pendingStatus ? { status: pendingStatus } : {})
+                };
             }
         }
         case 'template': {
