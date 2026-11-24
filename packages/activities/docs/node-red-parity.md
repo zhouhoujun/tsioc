@@ -34,7 +34,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 
 | Node-RED | Type here | Notes |
 | --- | --- | --- |
-| inject | `inject` | `~` payload types JSON/string/number/boolean/timestamp/env/**expression**, arbitrary properties (each can be a typed value or expression), topic, manual/interval/cron/event trigger, start delay and repeat count |
+| inject | `inject` | `~` payload types JSON/string/number/boolean/timestamp/env/**expression**, arbitrary properties that target the message, flow or global scope (each value can be a typed value or expression), topic, manual/interval/cron/event trigger, start delay and repeat count |
 | debug | `debug` | `+` value path, complete message, level, console mirror, **Show in node status** (`tostatus`) |
 | complete | `complete` | `~` `scope` filter (node ids/types) instead of a multi-select |
 | catch | `catch` | `~` same scope filter; errors carry the failed node id/message |

@@ -278,6 +278,17 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 addLabel: '+ Add property',
                 group: 'Payload',
                 itemFields: [
+                    configField({
+                        key: 'target',
+                        label: 'Target',
+                        type: 'select',
+                        defaultValue: 'msg',
+                        options: [
+                            { label: 'Message property', value: 'msg' },
+                            { label: 'Flow context', value: 'flow' },
+                            { label: 'Global context', value: 'global' }
+                        ]
+                    }),
                     configField({ key: 'key', label: 'Property', type: 'text', placeholder: 'customField' }),
                     configField({ key: 'value', label: 'Value', type: 'text', typed: true, typedValue: true })
                 ]

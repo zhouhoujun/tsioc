@@ -1476,7 +1476,16 @@ export async function executeVisualNode(
                     continue;
                 }
                 const resolved = await resolveCompareValueAsync(rule.value, propertyContext);
-                extra[key] = typeof resolved === 'string' ? coerceJson(resolved) : resolved;
+                const value = typeof resolved === 'string' ? coerceJson(resolved) : resolved;
+                const target = String(rule.target || 'msg');
+                if (target === 'flow' || target === 'global') {
+                    // Node-RED inject properties can write context stores.
+                    const scope = target === 'flow' ? 'flow' : 'global';
+                    const store = (context as any)[scope] || ((context as any)[scope] = {});
+                    store[key] = value;
+                    continue;
+                }
+                extra[key] = value;
             }
             const finalPayload = extra.payload !== undefined ? extra.payload : payload;
             const base = topic ? { topic } : {};

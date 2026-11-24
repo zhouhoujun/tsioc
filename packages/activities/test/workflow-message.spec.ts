@@ -107,6 +107,39 @@ describe('Workflow message envelope and scopes', () => {
             .toEqual({ count: 5, env: 'prod', direct: 5, stage: 'beta' });
     });
 
+    it('writes inject properties into the message, flow and global scopes', async () => {
+        const result = await service.execute(chain([
+            {
+                type: 'inject',
+                config: {
+                    payload: { total: 21 },
+                    properties: [
+                        { target: 'flow', key: 'tenant', value: 'acme' },
+                        { target: 'global', key: 'region', value: 'eu' },
+                        { key: 'local', value: 'x' }
+                    ]
+                }
+            },
+            {
+                type: 'function',
+                config: {
+                    code: [
+                        'msg.payload = {',
+                        '  tenant: flow.get("tenant"),',
+                        '  region: global.get("region"),',
+                        '  local: msg.local,',
+                        '  injected: msg.payload.total',
+                        '};',
+                        'return msg;'
+                    ].join('\n')
+                }
+            }
+        ]), {});
+        expect(result.success).toBe(true);
+        expect(result.data?.executionState?.nodeStates.function_1.result?.data?.payload)
+            .toEqual({ tenant: 'acme', region: 'eu', local: 'x', injected: 21 });
+    });
+
     it('forwards the last message passed to node.send when the code returns nothing', async () => {
         const single = await service.execute(chain([
             {
