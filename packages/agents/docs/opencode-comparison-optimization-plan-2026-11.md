@@ -320,6 +320,9 @@
     让共享 chunk 按框架优先的顺序求值，`splitting:true` 已可安全启用：主入口首屏 gzip **477.5 KiB**，
     组件渲染器/html/json/xml 与 `/voice` 共 8 个 lazy chunk（最大 116.4 KiB gzip，≤150 KiB 预算）。
     `/voice` 仍由独立 ESM chunk 按需加载；TUI/测试通过 `installVoiceHandlers()` 注入。
+    `/settings` 页面（dynamic-form/dialog，基于最新 components/common）也改为首次打开时
+    `import('./settings-page')`，生成独立 lazy chunk。当前首屏 gzip **490.6 KiB**（common 组件持续
+    扩充后仍 <500 KiB），9 个 lazy chunk，最大 116.5 KiB。
 - 状态（2026-11-24）：`PermissionEngine` 支持动态 layer provider，runtime 将当前 archetype 的
   `permissions.deny` 编译为 `agent` 层 deny 规则（hard floor，session/saved allow 不能绕过）；
   descriptor 生成 JSON Schema 文档 `buildAgentRpcJsonSchema()`，`GET /rpc-schema.json` 与

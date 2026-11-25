@@ -35,7 +35,7 @@ import { routeAgentConsoleHistoryKey } from './history-keys';
 import { bindContextMenuCopy } from './clipboard';
 import { createWebSidebar } from './sidebar';
 import { createRpcConsoleSettingsStore, createRpcConsoleStores } from './rpc-stores';
-import { mountAgentWebSettingsPage } from './settings-page';
+import type { AgentWebSettingsPageHandle } from './settings-page';
 export { createRpcConsoleSettingsStore, createRpcConsoleStores } from './rpc-stores';
 import { loadAgentConsoleAttentionCounts } from './counts';
 import { keepTranscriptSelection } from './selection-anchor';
@@ -292,11 +292,14 @@ export async function mountAgentWebConsole(
     const root = rootRef?.hostView?.rootNodes?.[0] as unknown as HTMLElement | undefined;
     // `/settings` opens the card page on the browser and mounts it lazily on
     // the themed console root, so the popup shares the active theme.
-    let settingsPage: Awaited<ReturnType<typeof mountAgentWebSettingsPage>> | null = null;
+    let settingsPage: AgentWebSettingsPageHandle | null = null;
     const ensureSettingsPage = async (): Promise<void> => {
         if (settingsPage) {
             return;
         }
+        // P4 lazy chunk: the settings page (dynamic form + dialog chrome) is
+        // loaded on first `/settings`, keeping it out of the initial bundle.
+        const { mountAgentWebSettingsPage } = await import('./settings-page');
         settingsPage = await mountAgentWebSettingsPage({ document: doc, state: rawState, mount: root });
     };
     state.settingsPageMountAction = () => { void ensureSettingsPage(); };
