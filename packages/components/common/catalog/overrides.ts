@@ -38,7 +38,7 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
         ]
     },
     'data-table': {
-        summary: 'Accessible table with sorting, pagination, selection, expandable rows, sticky/resizable columns.',
+        summary: 'Accessible table with sorting, pagination, selection, expandable rows, sticky/resizable columns and an async page source with error/retry.',
         keyboard: [
             'Tab/Shift+Tab: move between interactive headers/cells',
             'Enter/Space: sort header, select row, expand row',
@@ -49,7 +49,8 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
             console: 'Fixed header + windowed rows; horizontal overflow follows the terminal width.'
         },
         examples: [
-            { title: 'Sortable table', props: { caption: 'Runs', columns: [{ key: 'name', label: 'Name', sortable: true }], rows: [{ id: '1', name: 'build' }] } }
+            { title: 'Sortable table', props: { caption: 'Runs', columns: [{ key: 'name', label: 'Name', sortable: true }], rows: [{ id: '1', name: 'build' }] } },
+            { title: 'Server pagination', props: { caption: 'Runs', pagination: true, pageSize: 2, columns: [{ key: 'name', label: 'Name', sortable: true }], source: 'Host-provided loadPage(request, signal) → { rows, total }' } }
         ]
     },
     field: {

@@ -158,6 +158,10 @@ widget 选择器；主题切换无残留硬编码颜色。
   - 异步模式 `source({page,pageSize,sort,filters}, signal)` + `total/loading/error/retry`；
   - 列配置 `hidden/width/align/filter/sortKey/render`；固定 header/footer；
   - 行窗口化/虚拟化（DOM 与 TUI 同一窗口模型，按可见行渲染）。
+  - 状态（2026-11-25）：异步 `source(request, signal) → { rows, total, error }` 已落地；
+    `manual reload/retry`、`loading/error/retry` 行、page/sort 自动重载与过期请求丢弃；
+    AbortController/signal 标记 `noReact`，避免被代理破坏私有字段。类型拆到
+    `data-table.types.ts` 控制文件体积。**剩余**：列 filter/render、虚拟化窗口。
 - 新增 `command-palette`（基于 typeahead/search-list）：分组、最近使用、
   快捷键展示、`/` 菜单与 workflow palette 复用；menu-bar 支持溢出折叠/typeahead/
   roving tabindex。

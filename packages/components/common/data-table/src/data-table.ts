@@ -1,60 +1,17 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, noReact } from '@tsdi/components';
 import { normalizeBoolean } from '../../src/ui';
 import { PaginationComponent } from '../../pagination/src/pagination';
+import {
+    DataTableCell,
+    DataTableColumn,
+    DataTableRow,
+    DataTableSortDirection,
+    DataTableSource,
+    DataTableViewColumn,
+    DataTableViewRow
+} from './data-table.types';
 
-export type DataTableAlign = 'left' | 'center' | 'right';
-
-export type DataTableSortDirection = 'asc' | 'desc';
-
-export interface DataTableColumn {
-    key: string;
-    label?: string;
-    align?: DataTableAlign;
-    width?: number | string;
-    hidden?: boolean;
-    /** Sort this column when its header is activated. */
-    sortable?: boolean;
-    /** Value key used for sorting when it differs from `key`. */
-    sortKey?: string;
-    /** Keep the column sticky at the left/right edge (browser skin). */
-    fixed?: 'left' | 'right';
-    /** Opt this column into pointer resizing; defaults to on when enabled. */
-    resizable?: boolean;
-}
-
-export type DataTableRow = Record<string, any>;
-
-interface DataTableCell {
-    key: string;
-    columnKey?: string;
-    text: string;
-    className: string;
-    style?: Record<string, string>;
-}
-
-interface DataTableViewColumn {
-    key: string;
-    label: string;
-    className: string;
-    headerClass: string;
-    cellClass: string;
-    align: DataTableAlign;
-    style?: Record<string, string>;
-    cellStyle?: Record<string, string>;
-    sortable: boolean;
-    sortKey?: string;
-    resizable: boolean;
-    ariaSort: 'ascending' | 'descending' | 'none';
-}
-
-interface DataTableViewRow {
-    key: string;
-    index: number;
-    cells: DataTableCell[];
-    className: string;
-    selected: boolean;
-    checked: boolean;
-}
+export * from './data-table.types';
 
 /**
  * Semantic data table. Cells stay structured for DOM hosts; a visible `│`
@@ -68,7 +25,7 @@ interface DataTableViewRow {
     <div class="ui-data-table {{tableClass}}">
     <div class="ui-data-table-scroll">
     <div class="ui-data-table-content" role="table"
-        aria-label="{{ariaLabel}}" aria-busy="{{loading}}" aria-rowcount="{{rows.length}}">
+        aria-label="{{ariaLabel}}" aria-busy="{{loading}}" aria-rowcount="{{tableTotal}}">
         <div class="ui-data-table-caption" role="caption" v-if="caption">{{caption}}</div>
         <div class="ui-data-table-head {{headerClass}}" role="row">
             <span class="ui-data-table-cell ui-data-table-expand" role="columnheader" aria-hidden="true" v-if="expandable"></span>
@@ -114,12 +71,16 @@ interface DataTableViewRow {
             </span>
         </div>
         </div>
+        <div class="ui-data-table-error ui-data-table-empty" role="alert" v-if="asyncError">
+            <span>{{asyncError || errorLabel}}</span>
+            <button class="ui-data-table-retry ui-plain-button" type="button" @click="retry">{{retryLabel}}</button>
+        </div>
         <div class="ui-data-table-loading" role="row" v-if="loading">{{loadingLabel}}</div>
         <div class="ui-data-table-empty" role="row" v-if="!loading && !viewRows.length">{{emptyLabel}}</div>
     </div>
     </div>
     <div class="ui-data-table-pager" v-if="pagination">
-        <ui-pagination :total="rows.length" :pageSize="pageSizeNumber" :page="currentPage"
+        <ui-pagination :total="tableTotal" :pageSize="pageSizeNumber" :page="currentPage"
             :ariaLabel="paginationLabel" :changeAction="pageHandler"></ui-pagination>
     </div>
     </div>`
@@ -154,6 +115,10 @@ export class DataTableComponent {
     @Attribute() pageSize: number | string = 10;
     @Attribute() paginationLabel = 'Table pagination';
     @Attribute() pageChangeAction?: (page: number) => void;
+    /** Async/server data source; when set, page/sort changes reload from the host. */
+    @Attribute() source?: DataTableSource;
+    @Attribute() errorLabel = 'Failed to load table data';
+    @Attribute() retryLabel = 'Retry';
 
     private _pagination = false;
     private _expandable = false;
@@ -166,6 +131,12 @@ export class DataTableComponent {
     private _resizableColumns = false;
     private columnWidths: Record<string, number> = {};
     private cleanupResize?: () => void;
+    private _asyncRows: DataTableRow[] = [];
+    private _asyncTotal = 0;
+    private _asyncError = '';
+    private _asyncLoading = false;
+    private asyncRequest = 0;
+    private asyncAbort?: AbortController;
 
     @Attribute()
     get striped(): boolean { return this._striped; }
@@ -184,7 +155,7 @@ export class DataTableComponent {
     set stickyHeader(value: boolean | string) { this._stickyHeader = normalizeBoolean(value); }
 
     @Attribute()
-    get loading(): boolean { return this._loading; }
+    get loading(): boolean { return this._loading || this._asyncLoading; }
     set loading(value: boolean | string) { this._loading = normalizeBoolean(value); }
 
     @Attribute()
@@ -208,8 +179,7 @@ export class DataTableComponent {
     }
 
     get pageCount(): number {
-        const total = Array.isArray(this.rows) ? this.rows.length : 0;
-        return Math.max(1, Math.ceil(total / this.pageSizeNumber));
+        return Math.max(1, Math.ceil(this.tableTotal / this.pageSizeNumber));
     }
 
     get currentPage(): number {
@@ -228,6 +198,9 @@ export class DataTableComponent {
         }
         this.page = next;
         this.pageChangeAction?.(next);
+        if (this.source) {
+            void this.reload();
+        }
     }
 
     get tableClass(): string {
@@ -353,6 +326,70 @@ export class DataTableComponent {
         };
     }
 
+    onInit(): void {
+        if (this.source) {
+            void this.reload();
+        }
+    }
+
+    get tableRows(): DataTableRow[] {
+        return this.source ? this._asyncRows : (Array.isArray(this.rows) ? this.rows : []);
+    }
+
+    get tableTotal(): number {
+        return this.source && this._asyncTotal > 0 ? this._asyncTotal : this.tableRows.length;
+    }
+
+    get asyncError(): string {
+        return this._asyncError;
+    }
+
+    async reload(): Promise<void> {
+        const source = this.source;
+        if (!source) {
+            return;
+        }
+        this.asyncAbort?.abort();
+        const aborter = new AbortController();
+        // AbortController uses private fields; the reactive proxy would break
+        // `abort()`/`signal` identity if it wrapped them.
+        (aborter as any)[noReact] = true;
+        (aborter.signal as any)[noReact] = true;
+        this.asyncAbort = aborter;
+        const request = ++this.asyncRequest;
+        this._asyncLoading = true;
+        this._asyncError = '';
+        try {
+            const page = await source({
+                page: this.currentPage,
+                pageSize: this.pageSizeNumber,
+                ...(this.sortKey ? { sortKey: this.sortKey } : {}),
+                ...(this.sortDirection ? { sortDirection: this.sortDirection } : {})
+            }, aborter.signal);
+            if (request !== this.asyncRequest) {
+                return;
+            }
+            this._asyncRows = Array.isArray(page?.rows) ? page.rows : [];
+            this._asyncTotal = Number.isFinite(page?.total) ? Number(page.total) : this._asyncRows.length;
+            this._asyncError = String(page?.error ?? '');
+        } catch (error) {
+            if (request !== this.asyncRequest) {
+                return;
+            }
+            this._asyncRows = [];
+            this._asyncTotal = 0;
+            this._asyncError = error instanceof Error ? error.message : String(error);
+        } finally {
+            if (request === this.asyncRequest) {
+                this._asyncLoading = false;
+            }
+        }
+    }
+
+    retry(): void {
+        void this.reload();
+    }
+
     onDestroy(): void {
         this.cleanupResize?.();
     }
@@ -414,6 +451,9 @@ export class DataTableComponent {
         this.sortKey = key;
         this.sortDirection = direction;
         this.sortAction?.(key, direction);
+        if (this.source) {
+            void this.reload();
+        }
     }
 
     headerKeydown(event: any, column: DataTableViewColumn): void {
@@ -435,7 +475,7 @@ export class DataTableComponent {
         if (!this.detailLines) {
             return [];
         }
-        const lines = this.detailLines(this.rows[row.index], row.index);
+        const lines = this.detailLines(this.tableRows[row.index], row.index);
         return Array.isArray(lines) ? lines.map(line => String(line ?? '')) : [];
     }
 
@@ -453,7 +493,7 @@ export class DataTableComponent {
             keys.splice(index, 1);
         }
         this.expandedKeys = keys;
-        this.expandAction?.(row.key, expanded, this.rows[row.index]);
+        this.expandAction?.(row.key, expanded, this.tableRows[row.index]);
     }
 
     expandKeydown(event: any, row: DataTableViewRow): void {
@@ -465,7 +505,7 @@ export class DataTableComponent {
     }
 
     private rowKeys(): string[] {
-        return (Array.isArray(this.rows) ? this.rows : []).map((row, index) => this.rowKeyOf(row, index));
+        return this.tableRows.map((row, index) => this.rowKeyOf(row, index));
     }
 
     private rowKeyOf(row: DataTableRow, index: number): string {
@@ -549,7 +589,7 @@ export class DataTableComponent {
     private commitSelection(keys: string[]): void {
         this.selectedKeys = keys;
         const selected = new Set(keys);
-        const rows = (Array.isArray(this.rows) ? this.rows : [])
+        const rows = this.tableRows
             .filter((row, index) => selected.has(this.rowKeyOf(row, index)));
         this.selectionAction?.(keys.slice(), rows);
     }
@@ -559,7 +599,7 @@ export class DataTableComponent {
         const sortColumn = this.sortDirection
             ? columns.find(column => column.sortable && this.sortKey === (column.sortKey || column.key))
             : undefined;
-        const rows = (Array.isArray(this.rows) ? this.rows : [])
+        const rows = this.tableRows
             .map((row, index) => ({ row, index }));
         if (sortColumn) {
             const direction = this.sortDirection === 'asc' ? 1 : -1;
@@ -617,7 +657,7 @@ export class DataTableComponent {
         if (!this.rowAction) {
             return;
         }
-        this.rowAction(this.rows[row.index], row.index);
+        this.rowAction(this.tableRows[row.index], row.index);
     }
 
     private formatCell(value: any): string {
