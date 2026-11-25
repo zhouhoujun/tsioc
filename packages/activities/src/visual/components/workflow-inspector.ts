@@ -1,4 +1,4 @@
-import { Attribute, Component, NoReactive, OnDestroy, ViewChild } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, NoReactive, OnDestroy, ViewChild } from '@tsdi/components';
 import {
     DynamicFormChange,
     DynamicFormComponent,
@@ -139,7 +139,7 @@ function schemaKey(model: WorkflowInspectorModel): string {
         </div>
     </div>`
 })
-export class WorkflowInspectorComponent implements OnDestroy {
+export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
     @Attribute() locale = 'zh-CN';
     /**
      * Code edits are committed after this quiet period. Pushing every CodeMirror
@@ -167,6 +167,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
     protected destroyed = false;
     protected pendingChange?: { key: string; value: any; type: string; nodeId: string };
     protected pendingTimer?: any;
+    protected issueSyncAttempts = 0;
 
     /**
      * The form inputs are derived from the inspector model. They must keep a
@@ -195,10 +196,16 @@ export class WorkflowInspectorComponent implements OnDestroy {
     }
     set model(value: WorkflowInspectorModel) {
         const next = value || EMPTY_INSPECTOR;
+        this.issueSyncAttempts = 0;
         const signature = snapshotSignature(next);
         if (signature === this.modelSignature) {
             return;
         }
+        Promise.resolve().then(() => {
+            if (!this.destroyed) {
+                this.syncFormIssues();
+            }
+        });
         // Commit a pending code edit before the inspector shows another node;
         // the delayed callback must never write to the newly selected node.
         if (this.pendingChange && this.pendingChange.nodeId !== next.nodeId) {
@@ -265,7 +272,7 @@ export class WorkflowInspectorComponent implements OnDestroy {
     protected get typedValueSources(): DynamicFormTypedSource[] {
         return [
             { value: 'literal', label: this.t('typedLiteral', 'Literal') },
-            { value: 'num', label: this.t('typedNumber', 'Number') },
+            { value: 'num', label: this.t('typedNumber', 'Number'), input: 'number' },
             { value: 'bool', label: this.t('typedBoolean', 'Boolean') },
             { value: 'json', label: this.t('typedJson', 'JSON') },
             { value: 're', label: this.t('typedRegex', 'Regex') },
@@ -392,6 +399,53 @@ export class WorkflowInspectorComponent implements OnDestroy {
                 : field.actions,
             hidden: field.visible === false
         };
+    }
+
+    /**
+     * Mirror the inspector's host issues into the dynamic form so they appear
+     * under the owning field, not only in the issue summary.
+     */
+    protected syncFormIssues(): void {
+        const form = this.nodeForm;
+        if (!form) {
+            // The view child resolves after the model binding; retry a few
+            // frames for the first selection, never while no node is selected.
+            if (this._model.hasSelection && this.issueSyncAttempts < 5) {
+                this.issueSyncAttempts += 1;
+                setTimeout(() => {
+                    if (!this.destroyed) {
+                        this.syncFormIssues();
+                    }
+                }, 0);
+            }
+            return;
+        }
+        this.issueSyncAttempts = 0;
+        const byKey = new Map<string, { message: string; severity: 'error' | 'warning' }>();
+        (this._model.issues || []).forEach(issue => {
+            const key = String(issue.fieldKey || '').split(/[.[\]]/)[0];
+            if (!key) {
+                return;
+            }
+            // Rule errors already render through the form (localized); only
+            // mirror issues the form itself cannot see (references, expressions).
+            if (form.form?.get(key)?.invalid) {
+                return;
+            }
+            const current = byKey.get(key);
+            if (!current || (current.severity === 'warning' && issue.severity === 'error')) {
+                byKey.set(key, { message: issue.message, severity: issue.severity || 'error' });
+            }
+        });
+        form.setIssues(Array.from(byKey.entries()).map(([key, issue]) => ({
+            key,
+            message: issue.message,
+            severity: issue.severity
+        })));
+    }
+
+    onAfterViewInit(): void {
+        this.syncFormIssues();
     }
 
     get formValue(): Record<string, any> {

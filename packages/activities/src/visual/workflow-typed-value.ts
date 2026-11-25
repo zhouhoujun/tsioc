@@ -335,5 +335,7 @@ export function encodeWorkflowTypedValue(source: string, text: string): Workflow
 export const WORKFLOW_TYPED_CODEC: DynamicFormTypedCodec = {
     decode: decodeWorkflowTypedValue,
     encode: encodeWorkflowTypedValue,
-    isReference: isWorkflowTypedReference
+    isReference: isWorkflowTypedReference,
+    // Typed literals/references are validated inline by the shared form.
+    validate: (value: any) => validateWorkflowTypedValue(value)
 };

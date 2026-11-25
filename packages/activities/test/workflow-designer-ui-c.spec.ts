@@ -430,14 +430,24 @@ describe('Workflow Designer UI', () => {
         expect(issue).toBeTruthy();
         expect(issue.textContent).toContain('Required');
 
-        // Once the library knows the id, the required + missing-reference
-        // issues both clear.
+        // A host reference issue is mirrored under the owning field.
         ref.instance.designer.workflowLibrary.set([
-            { id: 'child', name: 'Child flow', updatedAt: 'now' } as any
+            { id: 'other', name: 'Other flow', updatedAt: 'now' } as any
         ]);
-        ref.instance.designer.updateNodeConfig(node.id, { workflow: 'child' });
+        ref.instance.designer.updateNodeConfig(node.id, { workflow: 'ghost' });
+        await flush();
+        const fieldError = root.querySelector('.workflow-field[data-field-key="workflow"] .workflow-field-error') as any;
+        expect(fieldError).toBeTruthy();
+        expect(fieldError.textContent).toContain('ghost');
+
+        // Once the library knows the id, the reference issue clears.
+        ref.instance.designer.workflowLibrary.set([
+            { id: 'ghost', name: 'Ghost flow', updatedAt: 'now' } as any
+        ]);
+        ref.instance.designer.selectNode(node.id);
         await flush();
         expect(root.querySelector('.workflow-inspector-issue')).toBeFalsy();
+        expect(root.querySelector('.workflow-field[data-field-key="workflow"] .workflow-field-error')).toBeFalsy();
     });
 
     it('picks a stored workflow and switches the subflow source control', async () => {

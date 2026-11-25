@@ -298,6 +298,11 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
 - **可重复列表**
   - `reorder` 提供上/下移动；`rowSummary(item, index)` 提供行摘要；
     移动保持不可变数组更新，适配响应式列表刷新。
+- **activities 接入**
+  - workflow 检查器把宿主 issue 通过 `setIssues` 映射到所属字段，规则错误仍由
+    dynamic-form 本地化显示；引用/表达式/凭据类问题直接显示在字段下。
+  - `WORKFLOW_TYPED_CODEC.validate` 复用 typed literal 校验，Change/switch 等
+    类型化值可在编辑时发现 JSON/regex/表达式错误。
 - **拆分**
   - `dynamic-form.ts` 降到 667 行；normalize / projection / widgets / validation
     状态分别落在独立模块，避免 god-object。

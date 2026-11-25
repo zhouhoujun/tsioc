@@ -67,6 +67,11 @@ describe('Workflow typed values', () => {
             expect(WORKFLOW_TYPED_CODEC.isReference!(stored[0])).toBe(true);
             expect(WORKFLOW_TYPED_CODEC.isReference!('msg.payload')).toBe(true);
             expect(WORKFLOW_TYPED_CODEC.isReference!('hello')).toBe(false);
+            expect(WORKFLOW_TYPED_CODEC.validate!({ type: 'literal', valueType: 'json', value: '{oops' }))
+                .toContain('Invalid JSON');
+            expect(WORKFLOW_TYPED_CODEC.validate!({ type: 'literal', valueType: 're', value: '(' }))
+                .toContain('Invalid regular expression');
+            expect(WORKFLOW_TYPED_CODEC.validate!({ type: 'msg', path: 'payload.total' })).toBeUndefined();
         });
     });
 
