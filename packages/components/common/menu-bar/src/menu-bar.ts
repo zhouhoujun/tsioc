@@ -1,8 +1,13 @@
 import { AfterViewInit, Attribute, Component, Computed, ElementRef, EventEmitter, OnDestroy, ViewChild, unwrapReactive } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
+import { normalizeBoolean, nextUiId } from '../../src/ui';
+import { OverlayManager } from '../../src/overlay-manager';
 import {
+    bindMenuBarDismiss,
     focusDomElement,
+    measurePopupLayout,
+    measureSubmenuLayout,
     menuButtons,
     menuLevelButtons,
     openSubmenuElement,
@@ -154,10 +159,11 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     /** Viewport budget for the scrollable popup, measured from the trigger. */
     private popupMaxHeight = 0;
     private popupAbove = false;
-    private bound = false;
+    private unbindDismiss?: () => void;
     private suppressFocusPreview = false;
-    private pointerHandler?: (event: any) => void;
-    private keyHandler?: (event: any) => void;
+    protected readonly overlayId = nextUiId('menu-bar');
+    private _overlayEnabled = false;
+    private overlayRegistered = false;
 
     /**
      * The component host's injected `ElementRef` can point at the outer host
@@ -166,8 +172,41 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
      */
     @ViewChild('menuRoot', ElementRef) menuRoot?: ElementRef;
 
-    constructor(@Optional() protected elementRef?: ElementRef) {
+    constructor(@Optional() protected elementRef?: ElementRef, @Optional() @Inject(OverlayManager) private overlays?: OverlayManager | null) {
         markElementRefRaw(elementRef);
+    }
+
+    /** Opt-in: register the open menu in the shared overlay stack. */
+    @Attribute()
+    get overlayEnabled(): boolean { return this._overlayEnabled; }
+    set overlayEnabled(value: boolean | string) {
+        const next = normalizeBoolean(value);
+        if (next === this._overlayEnabled) {
+            return;
+        }
+        this._overlayEnabled = next;
+        this.syncOverlay();
+    }
+
+    /** Return false / reject to keep the menu open (host dirty check). */
+    @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
+
+    protected syncOverlay(): void {
+        if (this._open && this._overlayEnabled) {
+            if (!this.overlayRegistered) {
+                this.overlayRegistered = this.overlays?.register({
+                    id: this.overlayId,
+                    kind: 'menu',
+                    beforeClose: () => this.beforeCloseAction?.() ?? true,
+                    close: reason => this.close(reason === 'escape')
+                }) ?? false;
+            }
+            return;
+        }
+        if (this.overlayRegistered) {
+            this.overlayRegistered = false;
+            this.overlays?.close(this.overlayId);
+        }
     }
 
     onAfterViewInit(): void {
@@ -198,6 +237,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
                 }
             });
         }
+        this.syncOverlay();
         this.openChange.emit(next);
     }
 
@@ -261,6 +301,10 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
 
     onDestroy(): void {
         this.unbindDocument();
+        if (this.overlayRegistered) {
+            this.overlayRegistered = false;
+            this.overlays?.close(this.overlayId);
+        }
     }
 
     toggle(): void {
@@ -500,41 +544,17 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     }
 
     protected anchorSubmenuElement(target: any): void {
-        target = unwrapReactive(target);
-        const rect = target?.getBoundingClientRect?.();
-        if (!rect) {
+        const layout = measureSubmenuLayout(unwrapReactive(target));
+        if (!layout) {
             return;
         }
-        const win = target?.ownerDocument?.defaultView
-            || (globalThis as { innerHeight?: number });
-        const width = 240;
-        const viewWidth = Number((win as any)?.innerWidth) || 1024;
-        const viewHeight = Number((win as any)?.innerHeight) || 768;
-        // Anchor the flyout to the item's right/left edge. Positioning by
-        // `left` with an assumed width leaves a gap whenever the actual
-        // flyout is narrower; use the opposite edge instead.
-        const openLeft = rect.right + width + 8 > viewWidth;
-        this.submenuSide = openLeft ? 'left' : 'right';
-        if (openLeft) {
-            this.submenuRight = Math.max(8, Math.round(viewWidth - rect.left + 2));
-        } else {
-            this.submenuLeft = Math.round(rect.right + 2);
-        }
-        // Align the flyout with the row it belongs to. The old clamp moved it
-        // upwards near the viewport edge, which detached it from the item.
-        const top = Math.max(8, rect.top - 6);
-        const visibleBottom = Math.min(rect.bottom, viewHeight - 8);
-        const below = viewHeight - top - 8;
-        const above = visibleBottom - 8;
-        this.submenuAbove = below < 160 && above > below;
-        if (this.submenuAbove) {
-            // Flip upwards and keep the flyout's bottom on the item's bottom.
-            this.submenuBottom = Math.max(8, Math.round(viewHeight - visibleBottom - 6));
-            this.submenuMaxHeight = Math.max(120, Math.round(above));
-        } else {
-            this.submenuTop = Math.round(top);
-            this.submenuMaxHeight = Math.max(120, Math.round(below));
-        }
+        this.submenuSide = layout.side;
+        this.submenuLeft = layout.left;
+        this.submenuRight = layout.right;
+        this.submenuTop = layout.top;
+        this.submenuBottom = layout.bottom;
+        this.submenuAbove = layout.above;
+        this.submenuMaxHeight = layout.maxHeight;
     }
 
     submenuStyle(id: string): string {
@@ -572,22 +592,9 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     protected anchorPopup(): void {
         const root = unwrapReactive(this.hostElement);
         const trigger = root?.querySelector?.('.menu-bar-trigger');
-        const rect = trigger?.getBoundingClientRect?.();
-        const win = trigger?.ownerDocument?.defaultView
-            || (globalThis as { innerHeight?: number });
-        const viewHeight = Number((win as any)?.innerHeight) || 768;
-        const margin = 12;
-        // jsdom and non-layout hosts report a zero rect; fall back to the full
-        // viewport so the CSS max-height still never creates a fixed cap.
-        if (!rect || (!rect.height && !rect.top && !rect.bottom)) {
-            this.popupAbove = false;
-            this.popupMaxHeight = Math.max(160, viewHeight - margin * 2);
-            return;
-        }
-        const below = viewHeight - rect.bottom - margin;
-        const above = rect.top - margin;
-        this.popupAbove = below < 240 && above > below;
-        this.popupMaxHeight = Math.max(160, this.popupAbove ? above : below);
+        const layout = measurePopupLayout(trigger);
+        this.popupAbove = layout.above;
+        this.popupMaxHeight = layout.maxHeight;
     }
 
     protected itemClass(item: MenuBarItem, hasChildren = false): string {
@@ -638,50 +645,36 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     }
 
     protected bindDocument(): void {
-        if (this.bound) {
+        if (this.unbindDismiss) {
             return;
         }
-        const doc = this.ownerDocument();
-        if (!doc || typeof doc.addEventListener !== 'function') {
-            return;
-        }
-        this.pointerHandler = event => {
-            if (!this._open) {
-                return;
+        this.unbindDismiss = bindMenuBarDismiss(this.ownerDocument(), {
+            isOpen: () => this._open,
+            root: () => unwrapReactive(this.hostElement),
+            outside: () => {
+                if (this.overlayRegistered) {
+                    if (this.overlays?.isTop(this.overlayId)) {
+                        void this.overlays.outside();
+                    }
+                    return;
+                }
+                this.close(false);
+            },
+            escape: () => {
+                if (this.overlayRegistered) {
+                    if (this.overlays?.isTop(this.overlayId)) {
+                        void this.overlays.escape();
+                    }
+                    return;
+                }
+                this.close();
             }
-            const root = unwrapReactive(this.hostElement);
-            const target = event?.target as any;
-            if (root && target && typeof root.contains === 'function' && root.contains(target)) {
-                return;
-            }
-            this.close(false);
-        };
-        this.keyHandler = event => {
-            if (!this._open || event?.key !== 'Escape') {
-                return;
-            }
-            event.preventDefault?.();
-            event.stopPropagation?.();
-            this.close();
-        };
-        doc.addEventListener('mousedown', this.pointerHandler, true);
-        doc.addEventListener('keydown', this.keyHandler, true);
-        this.bound = true;
+        });
     }
 
     protected unbindDocument(): void {
-        const doc = this.ownerDocument();
-        if (doc && typeof doc.removeEventListener === 'function') {
-            if (this.pointerHandler) {
-                doc.removeEventListener('mousedown', this.pointerHandler, true);
-            }
-            if (this.keyHandler) {
-                doc.removeEventListener('keydown', this.keyHandler, true);
-            }
-        }
-        this.pointerHandler = undefined;
-        this.keyHandler = undefined;
-        this.bound = false;
+        this.unbindDismiss?.();
+        this.unbindDismiss = undefined;
     }
 
     protected ownerDocument(): any {

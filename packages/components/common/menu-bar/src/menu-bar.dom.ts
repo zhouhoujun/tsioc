@@ -65,3 +65,117 @@ export function menuLevelButtons(root: any, doc: any): HTMLElement[] {
     }
     return topLevelMenuButtons(root);
 }
+
+
+export interface MenuBarDismissBinding {
+    /** Whether the menu is currently open. */
+    isOpen(): boolean;
+    /** The menu root element used for containment checks. */
+    root(): any;
+    /** Called for a pointer press outside the menu. */
+    outside(): void;
+    /** Called for the Escape key. */
+    escape(): void;
+}
+
+/**
+ * Bind document-level outside/Escape dismissal. Returns a cleanup function so
+ * the component never keeps listeners after it is destroyed.
+ */
+export function bindMenuBarDismiss(doc: any, binding: MenuBarDismissBinding): () => void {
+    if (!doc || typeof doc.addEventListener !== 'function') {
+        return () => undefined;
+    }
+    const pointer = (event: any) => {
+        if (!binding.isOpen()) {
+            return;
+        }
+        const root = binding.root();
+        const target = event?.target as any;
+        if (root && target && typeof root.contains === 'function' && root.contains(target)) {
+            return;
+        }
+        binding.outside();
+    };
+    const key = (event: any) => {
+        if (!binding.isOpen() || event?.key !== 'Escape') {
+            return;
+        }
+        event.preventDefault?.();
+        event.stopPropagation?.();
+        binding.escape();
+    };
+    doc.addEventListener('mousedown', pointer, true);
+    doc.addEventListener('keydown', key, true);
+    return () => {
+        doc.removeEventListener?.('mousedown', pointer, true);
+        doc.removeEventListener?.('keydown', key, true);
+    };
+}
+
+
+export interface SubmenuLayout {
+    side: 'left' | 'right';
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+    above: boolean;
+    maxHeight: number;
+}
+
+/**
+ * Compute fixed coordinates for a flyout anchored to its parent row. The popup
+ * is a scroll container, so flyouts must escape it with fixed coordinates.
+ */
+export function measureSubmenuLayout(target: any): SubmenuLayout | undefined {
+    const rect = target?.getBoundingClientRect?.();
+    if (!rect) {
+        return undefined;
+    }
+    const win = target?.ownerDocument?.defaultView
+        || (globalThis as { innerHeight?: number });
+    const width = 240;
+    const viewWidth = Number((win as any)?.innerWidth) || 1024;
+    const viewHeight = Number((win as any)?.innerHeight) || 768;
+    const openLeft = rect.right + width + 8 > viewWidth;
+    const side: 'left' | 'right' = openLeft ? 'left' : 'right';
+    const left = Math.round(rect.right + 2);
+    const right = Math.max(8, Math.round(viewWidth - rect.left + 2));
+    const top = Math.max(8, rect.top - 6);
+    const visibleBottom = Math.min(rect.bottom, viewHeight - 8);
+    const below = viewHeight - top - 8;
+    const above = visibleBottom - 8;
+    const flip = below < 160 && above > below;
+    return {
+        side,
+        left,
+        right,
+        top: Math.round(top),
+        bottom: Math.max(8, Math.round(viewHeight - visibleBottom - 6)),
+        above: flip,
+        maxHeight: Math.max(120, Math.round(flip ? above : below))
+    };
+}
+
+export interface PopupLayout {
+    above: boolean;
+    maxHeight: number;
+}
+
+/** Bound the popup by the space between the trigger and the viewport edge. */
+export function measurePopupLayout(trigger: any, margin = 12): PopupLayout {
+    const rect = trigger?.getBoundingClientRect?.();
+    const win = trigger?.ownerDocument?.defaultView
+        || (globalThis as { innerHeight?: number });
+    const viewHeight = Number((win as any)?.innerHeight) || 768;
+    // jsdom and non-layout hosts report a zero rect; fall back to the full
+    // viewport so CSS max-height still never becomes a fixed cap.
+    if (!rect || (!rect.height && !rect.top && !rect.bottom)) {
+        return { above: false, maxHeight: Math.max(160, viewHeight - margin * 2) };
+    }
+    const below = viewHeight - rect.bottom - margin;
+    const above = rect.top - margin;
+    const flip = below < 240 && above > below;
+    return { above: flip, maxHeight: Math.max(160, flip ? above : below) };
+}

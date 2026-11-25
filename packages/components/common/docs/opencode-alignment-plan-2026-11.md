@@ -135,7 +135,9 @@
   veto、focusInitial/restoreFocus adapter、escape/outside）；注册于 `BaseComponentsModule`。
   dialog/drawer/popover 已接线：`overlayOpen`（opt-in）注册 stack、`beforeCloseAction`
   脏检查 veto、Escape 关闭走 `closeAction`，宿主仍自管 visible；测试覆盖 blocked/closed。
-  **剩余**：menu-bar/command palette 的 stack 接入。
+  menu-bar 已接线：`overlayEnabled`（opt-in）在打开时注册 stack，Escape/外部点击经
+  `OverlayManager` 路由并由 `beforeCloseAction` veto；测试覆盖 blocked/closed 与 document 事件。
+  **剩余**：command palette 的 stack 接入。
 
 **验收**：agent-ui 审批/设置/命令/模型选择，workflow 配置弹窗全部满足；
 TUI 与浏览器 Esc/Tab/焦点恢复一致；不出现双滚动/背景滚动。
