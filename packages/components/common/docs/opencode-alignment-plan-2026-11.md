@@ -192,8 +192,10 @@ DOM/TUI 的搜索、分组、键盘选择一致；现有 agent-ui 菜单行为�
 - `common/bench/`：dynamic-form 500 字段、list/data-table 5k 行、select 2k options、
   menu/palette 搜索、catalog 渲染；沿用 calibration 缩放 + gate 预算。
   - 状态（2026-11-25）：`npm run bench` 已覆盖 data-table 5k filter/sort、100k cell
-    format 与 200k spring step；`motion`（`Spring`/`VelocityTracker`/`prefersReducedMotion`）
-    已落地；search-list/command-palette 有 console renderer 测试，DOM 与 TUI 键盘语义一致。
+    format 与 200k spring step；`npm run bench:check` 使用 calibration 缩放预算；
+    gate 通过 `RUN_COMMON_BENCH=1 bash scripts/agents-gate.sh components-common-bench`
+    执行。`motion`（`Spring`/`VelocityTracker`/`prefersReducedMotion`）已落地；
+    search-list/command-palette 有 console renderer 测试，DOM 与 TUI 键盘语义一致。
 - import-boundaries 测试：common 不得引用 html/console/node；syntax/markdown
   不得反向依赖 agent-ui；新增入口必须声明 exports。
   - 状态（2026-11-25）：`test/import-boundaries.spec.ts` 已扫描全部源码，禁止

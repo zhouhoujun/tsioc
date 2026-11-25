@@ -393,6 +393,9 @@ spec that mounts them with a real renderer instead of only calling methods.
 spring integration loop with CPU timing. Compare before/after numbers rather
 than using them as absolute budgets.
 
+`npm run bench:check` applies calibration-scaled budgets. The unified gate can
+run it with `RUN_COMMON_BENCH=1 bash scripts/agents-gate.sh components-common-bench`.
+
 `npm run catalog` writes a static HTML catalog (attributes, keyboard contract,
 surface notes and examples) to `docs/catalog.html`; pass a path as the first
 argument to write it elsewhere.

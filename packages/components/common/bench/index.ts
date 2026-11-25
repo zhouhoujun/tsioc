@@ -38,6 +38,17 @@ function rows(count: number): DataTableRow[] {
     }));
 }
 
+measure('calibration', () => {
+    const items = Array.from({ length: 256 }, (_value, index) => ({ value: index, nested: { value: index * 2 } }));
+    let acc = 0;
+    for (let round = 0; round < 200_000; round++) {
+        for (const item of items) {
+            acc += item.value + item.nested.value;
+        }
+    }
+    return acc;
+});
+
 const columns: DataTableColumn[] = [
     { key: 'name', label: 'Name', sortable: true },
     { key: 'value', label: 'Value', align: 'right' }

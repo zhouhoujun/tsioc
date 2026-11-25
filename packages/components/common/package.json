@@ -6,6 +6,7 @@
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
     "test": "ts-node -r tsconfig-paths/register unit.ts",
     "bench": "ts-node -r tsconfig-paths/register bench/index.ts",
+    "bench:check": "node ../../../scripts/check-common-bench.mjs",
     "catalog": "ts-node -r tsconfig-paths/register scripts/render-catalog.ts"
   },
   "license": "Apache-2.0"
