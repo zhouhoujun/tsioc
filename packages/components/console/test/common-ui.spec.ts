@@ -34,12 +34,14 @@ import { SegmentedComponent, SegmentedModule } from '@tsdi/components/common/seg
 import { ChipComponent, ChipModule } from '@tsdi/components/common/chip';
 import { SpinnerComponent, SpinnerModule } from '@tsdi/components/common/spinner';
 import { DescriptionsComponent, DescriptionsModule } from '@tsdi/components/common/descriptions';
+import { TooltipComponent, TooltipModule } from '@tsdi/components/common/tooltip';
+import { PopoverComponent, PopoverModule } from '@tsdi/components/common/popover';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -75,6 +77,8 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-spinner label="Booting" :interval="100"></ui-spinner>
         <ui-descriptions :items="details" ariaLabel="Details"></ui-descriptions>
         <ui-descriptions :items="verticalDetails" layout="vertical" ariaLabel="Vertical details"></ui-descriptions>
+        <ui-tooltip content="Inline help" :focusable="true"><span>Help</span></ui-tooltip>
+        <ui-popover visible title="More info" :lines="['First pop', 'Second pop']"><span>Info</span></ui-popover>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -183,7 +187,9 @@ export class CommonUiConsoleTest {
                 SegmentedModule,
                 ChipModule,
                 SpinnerModule,
-                DescriptionsModule
+                DescriptionsModule,
+                TooltipModule,
+                PopoverModule
             ]
         });
         try {
@@ -263,6 +269,30 @@ export class CommonUiConsoleTest {
                 expect(paintedLines).toContain('Vertical Name');
                 expect(paintedLines).toContain('vertical value');
                 expect(painted).not.toContain('Vertical Name: vertical value');
+                expect(painted).not.toContain('Inline help');
+                expect(painted).toContain('First pop');
+                expect(painted).toContain('Second pop');
+                expect(painted).not.toContain('[ ✕ ]');
+
+                const tooltip = (ref.hostView.rootNodes[0] as any).querySelector('.ui-tooltip');
+                tooltip.focus();
+                await Promise.resolve();
+                surface.render();
+                const tipOpen = surface.lastRenderedLines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, '')).join('\n');
+                expect(tipOpen).toContain('Inline help');
+                expect(surface.dispatchKey({ key: 'Escape' })).toEqual(true);
+                await Promise.resolve();
+                surface.render();
+                const tipClosed = surface.lastRenderedLines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, '')).join('\n');
+                expect(tipClosed).not.toContain('Inline help');
+
+                const popClose = (ref.hostView.rootNodes[0] as any).querySelector('.ui-popover-close');
+                popClose.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                await Promise.resolve();
+                surface.render();
+                const popClosed = surface.lastRenderedLines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, '')).join('\n');
+                expect(popClosed).not.toContain('First pop');
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');

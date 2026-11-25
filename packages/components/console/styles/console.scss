@@ -266,6 +266,13 @@ $idle: var(--console-idle, #6fa37a);
 .ui-descriptions-hint,
 .ui-descriptions-empty { color: $meta; }
 
+.ui-tooltip-popup { color: $meta; }
+
+.ui-popover-popup { color: $text; }
+.ui-popover-title { color: $accent; }
+.ui-popover-close,
+.ui-popover-line { color: $meta; }
+
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: $meta; }
 .ui-descriptions-value { color: $text; }
