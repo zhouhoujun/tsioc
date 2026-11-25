@@ -1,7 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
-import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
+import { AnimationClock, Component, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { ConsoleTemplateModule, TuiTerminalSurface } from '../src';
 import { TuiRenderer } from '../src/tui';
 import { ButtonComponent, ButtonModule } from '@tsdi/components/common/button';
@@ -32,12 +32,13 @@ import { ListComponent, ListModule } from '@tsdi/components/common/list';
 import { SliderComponent, SliderModule } from '@tsdi/components/common/slider';
 import { SegmentedComponent, SegmentedModule } from '@tsdi/components/common/segmented';
 import { ChipComponent, ChipModule } from '@tsdi/components/common/chip';
+import { SpinnerComponent, SpinnerModule } from '@tsdi/components/common/spinner';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -69,6 +70,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-slider label="Zoom" :value="zoom" :step="10" unit="%" :changeAction="onZoom"></ui-slider>
         <ui-segmented :options="ranges" :value="range" ariaLabel="Range" :changeAction="onRange"></ui-segmented>
         <ui-chip label="tag" :action="onChip" :removeAction="onChipRemove" :closable="true"></ui-chip>
+        <ui-spinner label="Booting" :interval="100"></ui-spinner>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -115,11 +117,23 @@ class CommonDialogConsoleHostComponent {
     onClose = () => { this.closed += 1; };
 }
 
+class FakeClock extends AnimationClock {
+    protected listeners = new Set<() => void>();
+    subscribe(listener: () => void): void { this.listeners.add(listener); }
+    unsubscribe(listener: () => void): void { this.listeners.delete(listener); }
+    tick(): void { this.listeners.forEach(listener => listener()); }
+}
+
 @Suite('common base UI console rendering')
 export class CommonUiConsoleTest {
     @Test('paints the primitive labels and text progress bar')
     async rendersPrimitives() {
+        const clock = new FakeClock();
+        const realNow = Date.now;
+        let now = 1000;
+        Date.now = () => now;
         const ctx = await Application.run(CommonUiConsoleHostComponent, {
+            providers: [{ provide: AnimationClock, useValue: clock }],
             deps: [
                 ConsoleTemplateModule,
                 ComponentsModule,
@@ -150,7 +164,8 @@ export class CommonUiConsoleTest {
                 ListModule,
                 SliderModule,
                 SegmentedModule,
-                ChipModule
+                ChipModule,
+                SpinnerModule
             ]
         });
         try {
@@ -195,6 +210,7 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Day');
             expect(output).toContain('Week');
             expect(output).toContain('│');
+            expect(output).toContain('Booting');
             expect(output).toContain('tag');
             expect(output).not.toContain('[ ✕ ]');
             expect(output).toContain('Loading');
@@ -265,6 +281,14 @@ export class CommonUiConsoleTest {
                 expect(slider.getAttribute('aria-valuenow')).toEqual('60');
                 expect(slider.getAttribute('aria-valuetext')).toEqual('60%');
 
+                const spinner = (ref.hostView.rootNodes[0] as any).querySelector('.ui-spinner');
+                const glyphNode = spinner.querySelector('.ui-spinner-glyph');
+                expect(glyphNode.textContent).toEqual('⠋');
+                now = 1100;
+                clock.tick();
+                await Promise.resolve();
+                expect(glyphNode.textContent).toEqual('⠙');
+
                 const chip = (ref.hostView.rootNodes[0] as any).querySelector('.ui-chip');
                 chip.focus();
                 expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
@@ -307,6 +331,7 @@ export class CommonUiConsoleTest {
                 surface.destroy();
             }
         } finally {
+            Date.now = realNow;
             await ctx.close();
         }
     }

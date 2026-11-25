@@ -242,6 +242,9 @@
 .ui-chip.is-danger,
 .ui-chip.is-error { color: var(--console-error, #cf9893); }
 .ui-chip-close { color: var(--console-meta, #6e7681); }
+
+.ui-spinner { color: var(--console-meta, #6e7681); }
+.ui-spinner-glyph { color: var(--console-accent, #86a9d6); }
 .tone-accent,
 .tone-link,
 .tone-syntax-type,

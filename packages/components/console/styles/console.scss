@@ -256,6 +256,9 @@ $idle: var(--console-idle, #6fa37a);
 .ui-chip.is-danger,
 .ui-chip.is-error { color: $error; }
 .ui-chip-close { color: $meta; }
+
+.ui-spinner { color: $meta; }
+.ui-spinner-glyph { color: $accent; }
 .tone-accent,
 .tone-link,
 .tone-syntax-type,
