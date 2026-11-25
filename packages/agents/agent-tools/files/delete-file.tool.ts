@@ -51,6 +51,10 @@ export class DeleteFileTool implements AgentTool {
         }
         const policy = resolveFilePolicy(this.options, _context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
+        if (_context?.environment?.kind === 'remote' && _context.environment.remove) {
+            await _context.environment.remove(absolutePath, { force: true });
+            return { path: toRelativeWorkspacePath(absolutePath, policy.rootDir), deleted: true };
+        }
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
 
         const stat = await fs.lstat(absolutePath);

@@ -37,6 +37,10 @@ export class MkdirTool implements AgentTool {
         const recursive = input?.recursive !== false;
         const policy = resolveFilePolicy(this.options, _context?.workspace);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
+        if (_context?.environment?.kind === 'remote' && _context.environment.mkdir) {
+            await _context.environment.mkdir(absolutePath, { recursive });
+            return { path: toRelativeWorkspacePath(absolutePath, policy.rootDir), created: true };
+        }
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir, { allowMissingPath: true });
 
         const existed = await this.exists(absolutePath);

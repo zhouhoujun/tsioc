@@ -296,7 +296,8 @@
   tool context，第三方/远程工具可直接使用。现有 ACP 远程 IO 仍走 `AgentIoPort`。
   内置工具：`read_file`/`write_file` 已通过 `AgentIoPort.remote` 走远程 IO；`terminal` 始终走
   `AgentIoPort.runCommand`；`list_dir` 在 `context.environment.kind === 'remote'` 时走 environment
-  `list`。**剩余**：mkdir/copy/move/delete 的 remote 分支与 gateway/SSH transport 实现。
+  `list`；`mkdir`/`delete_file` 也已在 remote environment 下走 `mkdir`/`remove`。
+  **剩余**：copy/move 的 remote 分支与 gateway/SSH transport 实现。
 
 ### P4 — 性能、UI 与门禁（1–2 周）
 

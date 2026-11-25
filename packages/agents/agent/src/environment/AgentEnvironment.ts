@@ -31,6 +31,7 @@ export interface AgentEnvironment {
     readText(path: string): Promise<string>;
     writeText(path: string, content: string): Promise<void>;
     list(path: string): Promise<AgentEnvironmentEntry[]>;
+    mkdir?(path: string, options?: { recursive?: boolean }): Promise<void>;
     remove?(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void>;
     exec?(request: AgentEnvironmentCommandRequest): Promise<AgentEnvironmentCommandResult>;
 }
@@ -55,6 +56,11 @@ export class LocalEnvironment implements AgentEnvironment {
     async list(path: string): Promise<AgentEnvironmentEntry[]> {
         this.requireAdapter();
         return this.adapter!.list(path);
+    }
+
+    async mkdir(path: string, options?: { recursive?: boolean }): Promise<void> {
+        this.requireAdapter();
+        await this.adapter!.mkdir(path, options);
     }
 
     async remove(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void> {
@@ -96,6 +102,7 @@ export interface RemoteEnvironmentTransport {
     readText(path: string): Promise<string>;
     writeText(path: string, content: string): Promise<void>;
     list(path: string): Promise<AgentEnvironmentEntry[]>;
+    mkdir?(path: string, options?: { recursive?: boolean }): Promise<void>;
     remove?(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void>;
     exec?(request: AgentEnvironmentCommandRequest): Promise<AgentEnvironmentCommandResult>;
 }
@@ -107,6 +114,7 @@ export function createRemoteEnvironment(transport: RemoteEnvironmentTransport, r
         readText: path => transport.readText(path),
         writeText: (path, content) => transport.writeText(path, content),
         list: path => transport.list(path),
+        ...(transport.mkdir ? { mkdir: (path, options) => transport.mkdir!(path, options) } : {}),
         ...(transport.remove ? { remove: (path, options) => transport.remove!(path, options) } : {}),
         ...(transport.exec ? { exec: request => transport.exec!(request) } : {})
     };
