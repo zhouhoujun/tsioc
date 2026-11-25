@@ -150,4 +150,40 @@ export class TabBarDomTest {
         await settle();
         expect(back.getAttribute('data-disabled')).toEqual('true');
     }
+
+    @Test('roving tabindex and arrow keys move selection across enabled tabs')
+    async rovingTabindex() {
+        const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;
+        const selected: string[] = [];
+        ref.instance.source = {
+            ...source,
+            items: [
+                { id: 'a', label: ' Alpha ', active: true, showClose: true },
+                { id: 'b', label: ' Beta ', active: false, disabled: true },
+                { id: 'c', label: ' Gamma ', active: false, showClose: true }
+            ],
+            select: id => selected.push(id)
+        };
+        await ref.render();
+        await Promise.resolve();
+        const root = ref.hostView.rootNodes[0] as any;
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const tabs = Array.from(root.querySelectorAll('.tab')) as any[];
+
+        expect(root.getAttribute('role')).toEqual('tablist');
+        expect(root.getAttribute('aria-orientation')).toEqual('horizontal');
+        expect(tabs.map(tab => tab.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
+
+        // ArrowRight wraps past the disabled tab.
+        tabs[0].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+        expect(selected).toEqual(['c']);
+        // Home returns to the first enabled tab, End jumps to the last.
+        tabs[0].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+        expect(selected).toEqual(['c', 'c']);
+        tabs[0].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+        expect(selected).toEqual(['c', 'c', 'a']);
+        // Enter activates the focused tab.
+        tabs[0].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(selected).toEqual(['c', 'c', 'a', 'a']);
+    }
 }

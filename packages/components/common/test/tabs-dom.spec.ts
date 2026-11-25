@@ -78,5 +78,10 @@ export class TabsDomTest {
         expect(after[1]).toBe(beta);
         expect(alpha.textContent).toContain('Alpha pane');
         expect(beta.textContent).toContain('Beta pane');
+        expect(alpha.getAttribute('role')).toEqual('tabpanel');
+        expect(alpha.getAttribute('aria-hidden')).toEqual('true');
+        expect(alpha.getAttribute('tabindex')).toEqual('-1');
+        expect(beta.getAttribute('aria-hidden')).toEqual('false');
+        expect(beta.getAttribute('tabindex')).toEqual('0');
     }
 }

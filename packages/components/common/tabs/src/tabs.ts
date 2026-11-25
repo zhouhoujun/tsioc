@@ -199,6 +199,14 @@ export class TabsComponent implements AfterViewInit {
             } else {
                 pane.setAttribute?.('style', hidden ? 'display: none' : '');
             }
+            // The pane stays mounted but is hidden from assistive technology;
+            // a visible panel is reachable with Tab even when it has no
+            // focusable content of its own.
+            if (!pane.getAttribute?.('role')) {
+                pane.setAttribute?.('role', 'tabpanel');
+            }
+            pane.setAttribute?.('aria-hidden', hidden ? 'true' : 'false');
+            pane.setAttribute?.('tabindex', hidden ? '-1' : '0');
         });
     }
 

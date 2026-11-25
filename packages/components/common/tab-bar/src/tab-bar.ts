@@ -60,9 +60,9 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
 @Component({
     selector: 'tab-bar, ui-tab-bar',
     template: `
-    <p class="tab-bar" role="tablist" v-show="visible" #strip>
+    <p class="tab-bar" role="tablist" aria-orientation="horizontal" v-show="visible" #strip>
         <span class="tab-scroll tab-scroll-back" role="button" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-show="arrowsVisible" @click="scrollBack($event)">{{scrollBackLabel}}</span>
-        <span class="tab" role="tab" aria-selected="{{tab.active}}" data-disabled="{{tab.disabled}}" data-hover-group="true" v-for="tab in items" trackBy="id" @click="select(tab.id, $event)">
+        <span class="tab" role="tab" aria-selected="{{tab.active}}" tabindex="{{tabIndexFor(tab, index)}}" data-disabled="{{tab.disabled}}" data-hover-group="true" v-for="(tab, index) in items" trackBy="id" @click="select(tab.id, $event)" @keydown="onTabKeydown($event, tab, index)">
             <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
         </span>
         <span class="tab-scroll tab-scroll-forward" role="button" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
@@ -210,6 +210,87 @@ export class TabBarComponent implements AfterViewInit {
     closeTab(id: string, event?: Event): void {
         event?.stopPropagation?.();
         this.close(id);
+    }
+
+    /**
+     * Roving tabindex: exactly one enabled tab is in the tab order. The active
+     * tab wins; when no item is active the first enabled tab holds focus.
+     */
+    tabIndexFor(tab: TabItem, index: number): number {
+        if (!tab || tab.disabled) {
+            return -1;
+        }
+        if (tab.active) {
+            return 0;
+        }
+        const items = this.items;
+        if (items.some(item => item?.active && !item.disabled)) {
+            return -1;
+        }
+        return items.findIndex(item => item && !item.disabled) === index ? 0 : -1;
+    }
+
+    /** Arrow/Home/End navigation, Enter/Space activation and Delete-to-close. */
+    onTabKeydown(event: any, tab: TabItem, index: number): void {
+        if (!tab) {
+            return;
+        }
+        const key = String(event?.key || '');
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+            event?.preventDefault?.();
+            this.select(tab.id, event);
+            return;
+        }
+        if ((key === 'Delete' || key === 'Backspace') && tab.showClose !== false) {
+            event?.preventDefault?.();
+            this.close(tab.id);
+            return;
+        }
+        let targetIndex = -1;
+        if (key === 'ArrowRight' || key === 'ArrowDown') {
+            targetIndex = this.nextEnabledTab(index, 1);
+        } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
+            targetIndex = this.nextEnabledTab(index, -1);
+        } else if (key === 'Home') {
+            targetIndex = this.nextEnabledTab(-1, 1);
+        } else if (key === 'End') {
+            targetIndex = this.nextEnabledTab(this.items.length, -1);
+        }
+        if (targetIndex < 0) {
+            return;
+        }
+        event?.preventDefault?.();
+        const target = this.items[targetIndex];
+        this.select(target.id, event);
+        // The host may replace the strip data on select; move focus after the
+        // reactive DOM update so the new node (not the stale one) is focused.
+        const focus = () => this.focusTab(targetIndex);
+        if (typeof queueMicrotask === 'function') {
+            queueMicrotask(focus);
+        } else {
+            focus();
+        }
+    }
+
+    protected nextEnabledTab(from: number, step: 1 | -1): number {
+        const items = this.items;
+        if (!items.length) {
+            return -1;
+        }
+        for (let offset = 1; offset <= items.length; offset++) {
+            const index = ((from + step * offset) % items.length + items.length) % items.length;
+            if (items[index] && !items[index].disabled) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    protected focusTab(index: number): void {
+        const strip = this.strip?.nativeElement as { querySelectorAll?: (selector: string) => ArrayLike<HTMLElement> } | undefined;
+        const tabs = strip?.querySelectorAll?.('.tab');
+        const node = tabs?.[index];
+        node?.focus?.();
     }
 
     create(): void {
