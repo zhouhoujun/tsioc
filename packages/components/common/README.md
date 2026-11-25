@@ -380,3 +380,9 @@ npm run test      # ts-node -r tsconfig-paths/register unit.ts
 Widget specs live in `test/`; they mount real components through `Application`
 and assert the rendered DOM/console output. Keep new widgets covered by a
 spec that mounts them with a real renderer instead of only calling methods.
+
+## Design plans
+
+- `docs/component-optimization.md` — Node-RED parity for dynamic-form/config.
+- `docs/opencode-alignment-plan-2026-11.md` — quality alignment with latest
+  opencode (catalog, a11y, overlays, motion, theme, bench).
