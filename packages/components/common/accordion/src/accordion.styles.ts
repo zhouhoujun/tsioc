@@ -63,15 +63,33 @@ ui-accordion {
 }
 
 .ui-accordion-caret {
+    position: relative;
+    display: inline-flex;
     flex: 0 0 auto;
-    width: var(--ui-accordion-caret-width, 9px);
-    font-size: var(--ui-accordion-caret-size, 9px);
+    align-items: center;
+    justify-content: center;
+    width: var(--ui-accordion-caret-width, 14px);
+    height: var(--ui-accordion-caret-width, 14px);
+    color: var(--ui-accordion-caret-color, currentColor);
+    /* The glyph stays in the DOM for non-CSS renderers; HTML paints the
+       larger chevron below instead of the tiny triangle character. */
+    font-size: 0;
     line-height: 1;
+}
+
+.ui-accordion-caret::before {
+    content: '';
+    box-sizing: border-box;
+    width: var(--ui-accordion-caret-mark, 8px);
+    height: var(--ui-accordion-caret-mark, 8px);
+    border-right: var(--ui-accordion-caret-stroke, 2px) solid currentColor;
+    border-bottom: var(--ui-accordion-caret-stroke, 2px) solid currentColor;
+    transform: rotate(45deg);
     transition: transform var(--ui-motion-fast, 120ms) var(--ui-ease, ease);
 }
 
-.ui-accordion[data-expanded="false"] .ui-accordion-caret {
-    transform: rotate(-90deg);
+.ui-accordion[data-expanded="false"] .ui-accordion-caret::before {
+    transform: rotate(-45deg);
 }
 
 .ui-accordion-title {
@@ -158,7 +176,7 @@ ui-accordion {
 
 @media (prefers-reduced-motion: reduce) {
     .ui-accordion-header,
-    .ui-accordion-caret {
+    .ui-accordion-caret::before {
         transition: none;
     }
 }

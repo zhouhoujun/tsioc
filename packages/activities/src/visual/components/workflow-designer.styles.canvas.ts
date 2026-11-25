@@ -48,6 +48,7 @@ export const WORKFLOW_DESIGNER_CANVAS_CSS = `/* Palette */
        its skin variables to the designer theme tokens. */
     --ui-accordion-margin: 10px 0 6px;
     --ui-accordion-title-color: var(--wf-theme-muted, #64748b);
+    --ui-accordion-caret-color: var(--wf-theme-text, #0f172a);
     --ui-accordion-hover-background: var(--wf-theme-hover, #e2e8f0);
     --ui-accordion-hover-border: var(--wf-theme-border, #e2e8f0);
     --ui-accordion-hover-color: var(--wf-theme-text, #0f172a);

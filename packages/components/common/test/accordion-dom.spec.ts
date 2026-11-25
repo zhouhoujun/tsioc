@@ -142,7 +142,8 @@ export class AccordionDomTest {
         expect(doc.querySelectorAll('#tsdi-accordion-styles').length).toEqual(1);
         const css = doc.getElementById('tsdi-accordion-styles')?.textContent || '';
         expect(css).toContain('.ui-accordion-header:hover');
-        expect(css).toContain('.ui-accordion[data-expanded="false"] .ui-accordion-caret');
+        expect(css).toContain('.ui-accordion[data-expanded="false"] .ui-accordion-caret::before');
+        expect(css).toContain('--ui-accordion-caret-mark, 8px');
         expect(css).toContain('prefers-reduced-motion');
     }
 }
