@@ -214,8 +214,8 @@ The selector column lists the legacy short name; every widget also accepts its
 | `ui-accordion` | `AccordionComponent` / `AccordionModule` | Generic collapsible section. `title`, `count`, `items` (`AccordionItem[]` with icon/label/description/badge/attrs/value), `expanded` + `expandedChange`, `toggleAction`, `selectAction`/`dragStartAction` (rows), `draggable`, `disabled`, `controlled`, `className`, `ariaLabel`; rows stay mounted while collapsed and a `<v-content>` outlet is kept for static content. Style with `installAccordionStyles(document)` / `--ui-accordion-*` variables. |
 | `list` | `ListComponent` / `ListModule` | Windowed list with paging. `items`, `cursor`, `hasMore`, `hasPrevious`, `loading`, `error`, `emptyLabel` (`empty` alias), labels (`loadingLabel`/`moreLabel`/`olderLabel`), `loadPage`/`loadPreviousPage`, `selectAction`/`selectValueAction`/`closeAction`, `visibleItems`, `windowOffset`, `showScrollbar`/`scrollbarLength` (TUI track), `maxHeight` (60vh scroll guard), detail props (`detailLines`, `contextLines`). |
 | `select-list` | `SelectComponent` / `SelectModule` | Select menu overlay. `options` (`SelectOption[]`), `selectedIndex`, `visibleCount`, `title`, `hint`, `detailLines`, `suggestion`, `fitContent`, `maxWidth`/`minWidth`, `ariaLabel` (`accessibilityLabel` alias), `selectAction`, `closeAction`, `keydownAction`, `maxHeight` (60vh scroll guard). |
-| `dialog-panel` | `DialogComponent` / `DialogModule` | Dialog chrome: `title`, `lines`, `hint`, `ariaLabel`, `closeLabel`, `closeAction`, `maxWidth`/`minWidth`, `horizontalChrome`. |
-| `alert-dialog` | `AlertDialogComponent` / `AlertDialogModule` (`AlertModule` alias) | Dialog with semantic tone and primary action: adds `tone` (`info`/`success`/`warning`/`error`), `actionLabel`, `acceptAction`. |
+| `dialog-panel` | `DialogComponent` / `DialogModule` | Dialog chrome: `title`, `lines`, `hint`, `ariaLabel`/`ariaLabelledby`/`ariaDescribedby`, `modal`, `closable` (`closeLabel`, `closeAction`), `closeOnEscape`, `maxWidth`/`minWidth`, `horizontalChrome`. |
+| `alert-dialog` | `AlertDialogComponent` / `AlertDialogModule` (`AlertModule` alias) | Dialog with semantic tone and primary action: adds `tone` (`info`/`success`/`warning`/`error`), `actionLabel`, `acceptAction`, plus the same `ariaLabelledby`/`ariaDescribedby`, `modal`, `closable`, `closeOnEscape` contract. |
 | `toast-stack` | `ToastStackComponent` / `ToastModule` | Renders `ToastEntry[]`; the host provides `ToastService` (queue: `show`, `dismiss`, `clear`, `subscribe`) and feeds `items` to the stack. Derived `rows` carry the padded display text (`entries` alias). |
 | `status-list` | `StatusListComponent` / `StatusListModule` | `title`, `hint`, `items` (`StatusListItem[]`) for compact key/value/status rows. |
 | `keymap-panel` | `KeymapPanelComponent` / `KeymapPanelModule` (`KeymapModule` alias) | Keyboard help: `items` or `groups`, `grouped`, `title`, `hint`. |
@@ -227,7 +227,7 @@ The selector column lists the legacy short name; every widget also accepts its
 | `markdown-table` / `markdown-code` | `MarkdownTableComponent` / `MarkdownModule` | Semantic table/code shells consumed by both renderers. Table cells are `MarkdownToken[]` + align; code lines are `MarkdownToken[][]` with tone classes. |
 | `dynamic-form` | `DynamicFormComponent` / `DynamicFormModule` | JSON-schema form with shared validation. See the main `@tsdi/components` README for the full schema, validation and host API. |
 | `icon` | `IconDirective` / `IconModule` | `<icon name="run" size="sm" label="…">` (or `icon` / `glyph`), registry lookups (`getIcon`, `resolveIcon`, `hasIcon`, `ICON_NAMES`), optional SVG helpers (`iconPathAttributes`, `iconGlyphText`). |
-| `ui-button` | `ButtonComponent` / `ButtonModule` | Renderer-neutral action button. `label`, `icon`, `iconGlyph`, `tone`, `size` (`xs`/`sm`/`md`/`lg`), `variant` (`solid`/`outline`/`ghost`), `disabled`, `loading`, `pressed`, `block`, `action`. |
+| `ui-button` | `ButtonComponent` / `ButtonModule` | Renderer-neutral action button. `label`, `icon`, `iconGlyph`, `tone`, `size` (`xs`/`sm`/`md`/`lg`), `variant` (`solid`/`outline`/`ghost`), `shape` (`default`/`round`/`circle`), `iconOnly`, `disabled`, `loading`, `pressed`, `block`, `action`. |
 | `ui-badge` | `BadgeComponent` / `BadgeModule` | Status/count/filter pill. `label`, `icon`, `tone`, `size`, `variant`, `dot`, `active`, `disabled`, optional `action` (turns it into `role="button"`). |
 | `ui-card` | `CardComponent` / `CardModule` | Surface card with optional title/subtitle/meta and an `actions` projection slot. `tone`, `dense`, `divider`; default projection is the body. |
 | `ui-empty` | `EmptyStateComponent` / `EmptyStateModule` | Empty/search placeholder. `icon`, `title`, `hint`, `tone`, `actionLabel`, `action`; composes `ui-button` for the action. |
@@ -242,7 +242,7 @@ The selector column lists the legacy short name; every widget also accepts its
 | `ui-search-field` | `SearchFieldComponent` / `SearchFieldModule` | Search/text field with leading icon, clear affordance and Enter submit. `value`, `label`, `placeholder`, `hint`, `clearable`, `disabled`, `readonly`, `changeAction`, `submitAction`, `clearAction`. |
 | `ui-avatar` | `AvatarComponent` / `AvatarModule` | Person/entity avatar. `label` (initials), `icon`, `src`, `size`, `tone`, `shape` (`circle`/`square`), `status` (`online`/`offline`/`away`/`busy`). |
 | `ui-pagination` | `PaginationComponent` / `PaginationModule` | Page selector. `total` (items), `pageSize`, `page`, `maxButtons`, `changeAction`; middle range collapses to an ellipsis. |
-| `ui-data-table` | `DataTableComponent` / `DataTableModule` | Semantic columns/rows table. `columns` (`DataTableColumn[]`), `rows`, `rowKey`, `selectedKey`, `striped`/`bordered`/`dense`, `rowAction`, `emptyLabel`. |
+| `ui-data-table` | `DataTableComponent` / `DataTableModule` | Semantic columns/rows table. `columns` (`DataTableColumn[]`, optional `sortable`/`sortKey`), `rows`, `rowKey` (key or function), `selectedKey`, `striped`/`bordered`/`dense`, `stickyHeader`, `loading` + `loadingLabel`, `caption`, `emptyLabel`, `ariaLabel`, `sortKey`/`sortDirection`, `sortAction`, `rowAction`. Sortable headers expose `aria-sort` and toggle on click/Enter/Space. |
 | `ui-tree` | `TreeComponent` / `TreeModule` | Flattened hierarchical tree. `items` (`TreeNode[]`), `expandedIds`, `selectedId`, `indent`, `selectAction`, `toggleAction`. |
 | `ui-text-field` | `TextFieldComponent` / `TextFieldModule` | Text/textarea field with label/hint/error, clear, Enter submit and blur. `value`, `type`, `multiline`, `rows`, `required`, `disabled`, `readonly`, `changeAction`, `submitAction`, `blurAction`. |
 | `ui-checkbox` | `CheckboxComponent` / `CheckboxModule` | Semantic checkbox with visible `✓` state in DOM/TUI. `label`, `checked`, `disabled`, `changeAction`. |
@@ -328,6 +328,13 @@ renderer resolves the same class names through the compiled console stylesheet
 classes; the host skin owns their colors. Do not hard-code colors in widget
 templates — use the theme variables documented under each widget's styles
 module.
+
+Semantic buttons that must read as inline text (the dialog `✕`, inline
+acknowledgements) add `data-plain="true"` and the `ui-plain-button` class. The
+console renderer paints those labels inline instead of the standalone `[ label ]`
+affordance, and the shared `installUiStyles` skin strips native browser button
+chrome while keeping the element a real `<button>` for focus and assistive
+technology.
 
 ## Exports
 

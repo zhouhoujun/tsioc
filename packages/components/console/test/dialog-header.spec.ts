@@ -54,6 +54,42 @@ export class ConsoleDialogLayoutTest {
         }
     }
 
+    @Test('a plain close button folds into the frame without bracketed chrome')
+    plainButtonFoldsIntoFrame() {
+        const renderer = new TuiRenderer();
+        const root = renderer.createElement('div');
+        const panel = renderer.createElement('div');
+        panel.setAttribute('class', 'console-panel dialog-panel dialog-w-40');
+        panel.setAttribute('renderRegion', 'dialog');
+        const close = renderer.createElement('button');
+        close.setAttribute('class', 'dialog-close ui-plain-button');
+        close.setAttribute('data-plain', 'true');
+        close.setAttribute('data-cell-width', '2');
+        close.addEventListener('click', () => undefined);
+        renderer.appendChild(close, renderer.createText('✕'));
+        renderer.appendChild(panel, close);
+        const title = renderer.createElement('label');
+        title.setAttribute('class', 'dialog-title');
+        renderer.appendChild(title, renderer.createText('Confirm action'));
+        renderer.appendChild(panel, title);
+        renderer.appendChild(root, panel);
+        const surface = new TuiTerminalSurface({ renderer, root, width: 70, height: 20, output: { write() { } } });
+        try {
+            surface.render();
+            const rendered = surface.lastRenderedLines.map(strip);
+            expect(rendered.some(line => line.includes('[ ✕ ]'))).toEqual(false);
+            const frameRow = rendered.findIndex(line => line.includes('╭'));
+            expect(frameRow).toBeGreaterThanOrEqual(0);
+            expect(rendered[frameRow]).toContain('✕');
+            expect(rendered.filter(line => line.includes('✕')).length).toEqual(1);
+            const target = surface.clickTargets.find((item: any) => item.node === close);
+            expect(target?.y).toEqual(frameRow);
+            expect(target?.width).toEqual(2);
+        } finally {
+            surface.destroy();
+        }
+    }
+
     @Test('native scrollback composites the dialog over the visible window and restores it on close')
     scrollbackOverlayRestoresRows() {
         const transcript = Array.from({ length: 30 }, (_value, index) => `t${index + 1}`);

@@ -28,6 +28,8 @@ import { AlertNoticeComponent, AlertNoticeModule } from '@tsdi/components/common
 import { SelectTriggerComponent, SelectTriggerModule } from '@tsdi/components/common/select-trigger';
 import { KbdComponent, KbdModule } from '@tsdi/components/common/kbd';
 import { ScrollbarComponent, ScrollbarModule } from '@tsdi/components/common/scrollbar';
+import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
+import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
@@ -69,6 +71,20 @@ class CommonUiConsoleHostComponent {
     tableRows = [{ id: 'a', name: 'Alpha', value: '1' }];
     tree = [{ id: 'root', label: 'Root', children: [{ id: 'child', label: 'Child' }] }];
     modes = [{ label: 'Basic', value: 'basic' }, { label: 'Advanced', value: 'advanced' }];
+}
+
+@Component({
+    selector: 'common-dialog-console-host',
+    imports: [DialogComponent, AlertDialogComponent],
+    template: `
+    <div>
+        <dialog-panel title="Confirm" :lines="['Proceed?']" ariaLabel="Confirm" @closeAction="onClose"></dialog-panel>
+        <alert-dialog title="Notice" :lines="['Saved']" ariaLabel="Notice" actionLabel="Accept"></alert-dialog>
+    </div>`
+})
+class CommonDialogConsoleHostComponent {
+    closed = 0;
+    onClose = () => { this.closed += 1; };
 }
 
 @Suite('common base UI console rendering')
@@ -137,6 +153,32 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Heads up');
             expect(output).toContain('Ctrl');
             expect(output).toContain('█');
+        } finally {
+            await ctx.close();
+        }
+    }
+
+    @Test('plain dialog buttons paint inline instead of bracketed actions')
+    async rendersPlainDialogButtons() {
+        const ctx = await Application.run(CommonDialogConsoleHostComponent, {
+            deps: [
+                ConsoleTemplateModule,
+                ComponentsModule,
+                DialogModule,
+                AlertDialogModule
+            ]
+        });
+        try {
+            const ref = ctx.runners.getRef(CommonDialogConsoleHostComponent) as ComponentRef<CommonDialogConsoleHostComponent>;
+            await ref.render();
+            await Promise.resolve();
+            const output = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
+
+            expect(output).toContain('Confirm');
+            expect(output).toContain('✕');
+            expect(output).not.toContain('[ ✕ ]');
+            expect(output).toContain('Accept');
+            expect(output).not.toContain('[ Accept ]');
         } finally {
             await ctx.close();
         }

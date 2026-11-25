@@ -1,5 +1,6 @@
 import { Attribute, Component } from '@tsdi/components';
 import { getDisplayWidth } from '../../src/display-width';
+import { normalizeBoolean } from '../../src/ui';
 
 /**
  * Renderer-neutral dialog shell: title, optional body lines, hint, projected
@@ -10,8 +11,12 @@ import { getDisplayWidth } from '../../src/display-width';
 @Component({
     selector: 'dialog-panel, ui-dialog-panel',
     template: `
-    <div class="console-panel dialog-panel {{widthClass}} {{className}}" role="dialog" aria-label="{{ariaLabel}}">
-        <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
+    <div class="console-panel dialog-panel {{widthClass}} {{className}}"
+        role="dialog" aria-modal="{{modal}}" aria-label="{{ariaLabel}}"
+        aria-labelledby="{{ariaLabelledby}}" aria-describedby="{{ariaDescribedby}}"
+        @keydown="handleKeydown($event)">
+        <button class="dialog-close ui-plain-button" type="button" data-plain="true" data-cell-width="2"
+            aria-label="{{closeLabel}}" v-if="closable" @click="close">{{closeLabel}}</button>
         <label class="dialog-title" v-show="title">{{title}}</label>
         <div class="dialog-body" [style]="scrollStyle">
             <label class="dialog-line" data-cell-width="0" v-for="(line, index) in lines"
@@ -45,6 +50,24 @@ export class DialogComponent {
     /** Optional option index exposed to pointer hit-testing for each line. */
     @Attribute() lineOptionIndexes: Array<number | undefined> = [];
     @Attribute() closeAction?: () => void;
+    @Attribute() ariaLabelledby = '';
+    @Attribute() ariaDescribedby = '';
+
+    private _modal = true;
+    private _closable = true;
+    private _closeOnEscape = true;
+
+    @Attribute()
+    get modal(): boolean { return this._modal; }
+    set modal(value: boolean | string) { this._modal = normalizeBoolean(value, true); }
+
+    @Attribute()
+    get closable(): boolean { return this._closable; }
+    set closable(value: boolean | string) { this._closable = normalizeBoolean(value, true); }
+
+    @Attribute()
+    get closeOnEscape(): boolean { return this._closeOnEscape; }
+    set closeOnEscape(value: boolean | string) { this._closeOnEscape = normalizeBoolean(value, true); }
 
     get scrollStyle(): Record<string, string> {
         return this.maxHeight
@@ -80,6 +103,13 @@ export class DialogComponent {
             ...(this.lines || []).map(line => getDisplayWidth(String(line || '')))
         );
         return Math.max(min, Math.min(max, longest + chrome));
+    }
+
+    handleKeydown(event: any): void {
+        if (this._closeOnEscape && (event?.key === 'Escape' || event?.key === 'Esc')) {
+            event.preventDefault?.();
+            this.close();
+        }
     }
 
     close(): void {

@@ -78,6 +78,17 @@ ${UI_MOTION_CSS}
     border-radius: 50%;
 }
 .ui-button.is-icon-only { gap: 0; }
+/* Semantic buttons rendered without button chrome (dialog ✕, inline actions). */
+.ui-plain-button {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    cursor: pointer;
+}
 .ui-button.is-block { display: flex; width: 100%; justify-content: center; }
 .ui-button.is-solid { background: var(--ui-tone-bg, var(--ui-button-bg, transparent)); color: var(--ui-tone-fg, inherit); }
 .ui-button.is-outline { background: transparent; border-color: var(--ui-tone-border, currentColor); }

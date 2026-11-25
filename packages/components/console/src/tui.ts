@@ -429,6 +429,20 @@ export class TuiRenderer extends ConsoleRenderer {
             case 'p':
             case 'label':
             case 'li':
+            case 'button':
+                // A plain button (`data-plain`) keeps button semantics for the
+                // browser while painting as inline text in the terminal: the
+                // bracketed `[ action ]` affordance is reserved for standalone
+                // actions, not dialog close glyphs or inline acknowledgements.
+                if (tag === 'button' && !this.isPlainButton(element)) {
+                    if (text().trim()) {
+                        lines.push(this.applyAnsi(`[ ${this.renderInlineText(element, styleMap)} ]`, styleMap, width));
+                    }
+                    this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
+                    finishClickTarget();
+                    finishRegion();
+                    return;
+                }
                 if (text().trim()) {
                     const labelStyle = element.getAttribute('labelStyle');
                     const merged = labelStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(labelStyle)) : styleMap;
@@ -457,14 +471,6 @@ export class TuiRenderer extends ConsoleRenderer {
                     const textStyle = element.getAttribute('textStyle');
                     const merged = textStyle ? this.mergeStyles(styleMap, this.parseInlineStyle(textStyle)) : styleMap;
                     lines.push(...this.renderInlineLines(element, merged, width));
-                }
-                this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
-                finishClickTarget();
-                finishRegion();
-                return;
-            case 'button':
-                if (text().trim()) {
-                    lines.push(this.applyAnsi(`[ ${this.renderInlineText(element, styleMap)} ]`, styleMap, width));
                 }
                 this.collectNestedClickTargets(element, clickStart >= 0 ? clickStart : contentStartRow, lines.length, lines, width, clickTargets, visited);
                 finishClickTarget();
@@ -786,6 +792,11 @@ export class TuiRenderer extends ConsoleRenderer {
 
     protected hasPointerHandler(element?: ConsoleElement): boolean {
         return !!element && ['click', 'mousedown', 'wheel'].some(type => element.hasEventListener(type));
+    }
+
+    /** `data-plain` buttons paint their label inline instead of `[ label ]`. */
+    protected isPlainButton(element: ConsoleElement): boolean {
+        return String(element.getAttribute?.('data-plain') ?? '').trim().toLowerCase() === 'true';
     }
 
     /** Whether a pointer target contains its own pointer targets (those need the shared search cursor). */

@@ -74,11 +74,20 @@ export class CommonChromeWidgetsDomTest {
 
         const dialog = ref.hostView.query(DialogComponent) as ComponentRef<DialogComponent>;
         const dialogRoot = dialog.hostView.rootNodes[0] as HTMLElement;
+        const dialogClose = dialogRoot.querySelector('.dialog-close') as HTMLButtonElement;
         expect(dialog.instance.ariaLabel).toEqual('Dialog');
+        expect(dialogRoot.getAttribute('aria-modal')).toBe('true');
+        expect(dialogClose.tagName).toBe('BUTTON');
+        expect(dialogClose.getAttribute('type')).toBe('button');
+        expect(dialogClose.getAttribute('data-plain')).toBe('true');
+        expect(dialogClose.classList.contains('ui-plain-button')).toBe(true);
+        expect(dialogClose.getAttribute('aria-label')).toBe('✕');
         expect(dialogRoot.textContent).toContain('Dialog title');
         expect(dialogRoot.textContent).toContain('dialog line');
-        (dialogRoot.querySelector('.dialog-close') as HTMLElement).click();
+        dialogClose.click();
         expect(host.closed).toEqual(1);
+        dialogRoot.dispatchEvent(new (this.ctx.get(DOCUMENT) as any).defaultView.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        expect(host.closed).toEqual(2);
 
         const custom = (ref.hostView.queryAll(DialogComponent) as ComponentRef<DialogComponent>[])
             .find(entry => entry.instance.ariaLabel === 'Custom');
@@ -90,9 +99,14 @@ export class CommonChromeWidgetsDomTest {
 
         const alert = ref.hostView.query(AlertDialogComponent) as ComponentRef<AlertDialogComponent>;
         const alertRoot = alert.hostView.rootNodes[0] as HTMLElement;
+        const alertAction = alertRoot.querySelector('.alert-action') as HTMLButtonElement;
         expect(alertRoot.getAttribute('data-tone')).toEqual('warning');
+        expect(alertRoot.getAttribute('aria-modal')).toBe('true');
+        expect(alertAction.tagName).toBe('BUTTON');
+        expect(alertAction.getAttribute('type')).toBe('button');
+        expect(alertAction.getAttribute('data-plain')).toBe('true');
         expect(alertRoot.textContent).toContain('Accept');
-        (alertRoot.querySelector('.alert-action') as HTMLElement).click();
+        alertAction.click();
         expect(host.accepted).toEqual(1);
     }
 
