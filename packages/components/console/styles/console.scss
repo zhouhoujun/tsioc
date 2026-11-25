@@ -287,6 +287,9 @@ $idle: var(--console-idle, #6fa37a);
 .ui-tree-select-value.is-placeholder,
 .ui-tree-select-caret { color: $meta; }
 
+.ui-rate-star { color: $meta; }
+.ui-rate-star.is-filled { color: $notice; }
+
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: $meta; }
 .ui-descriptions-value { color: $text; }

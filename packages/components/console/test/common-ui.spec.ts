@@ -38,12 +38,13 @@ import { TooltipComponent, TooltipModule } from '@tsdi/components/common/tooltip
 import { PopoverComponent, PopoverModule } from '@tsdi/components/common/popover';
 import { TransferComponent, TransferModule } from '@tsdi/components/common/transfer';
 import { TreeSelectComponent, TreeSelectModule } from '@tsdi/components/common/tree-select';
+import { RateComponent, RateModule } from '@tsdi/components/common/rate';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -84,6 +85,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-popover visible title="More info" :lines="['First pop', 'Second pop']"><span>Info</span></ui-popover>
         <ui-transfer :items="transferItems" :targetKeys="transferTargets" sourceTitle="Available" targetTitle="Chosen" emptyLabel="Empty" :changeAction="onTransfer"></ui-transfer>
         <ui-tree-select :items="selectTree" :expandedIds="['group']" ariaLabel="Category"></ui-tree-select>
+        <ui-rate :value="rating" ariaLabel="Score" :changeAction="onRate"></ui-rate>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -138,6 +140,8 @@ class CommonUiConsoleHostComponent {
     ];
     tree = [{ id: 'root', label: 'Root', children: [{ id: 'child', label: 'Child' }] }];
     selectTree = [{ id: 'group', label: 'Group', children: [{ id: 'leaf', label: 'Leaf' }] }];
+    rating = 3;
+    onRate = (value: number) => { this.rating = value; };
     modes = [{ label: 'Basic', value: 'basic' }, { label: 'Advanced', value: 'advanced' }];
 }
 
@@ -208,7 +212,8 @@ export class CommonUiConsoleTest {
                 TooltipModule,
                 PopoverModule,
                 TransferModule,
-                TreeSelectModule
+                TreeSelectModule,
+                RateModule
             ]
         });
         try {
@@ -344,6 +349,14 @@ export class CommonUiConsoleTest {
                 await Promise.resolve();
                 expect(selectRoot.getAttribute('aria-expanded')).toEqual('false');
                 expect(selectRoot.textContent).toContain('Leaf');
+
+                const rateRoot = (ref.hostView.rootNodes[0] as any).querySelector('.ui-rate');
+                rateRoot.focus();
+                expect(surface.dispatchKey({ key: 'ArrowRight' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.rating).toEqual(4);
+                const ratedOutput = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
+                expect(ratedOutput).toContain('★★★★☆');
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');

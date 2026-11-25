@@ -273,6 +273,9 @@
 .ui-tree-select-value.is-placeholder,
 .ui-tree-select-caret { color: var(--console-meta, #6e7681); }
 
+.ui-rate-star { color: var(--console-meta, #6e7681); }
+.ui-rate-star.is-filled { color: var(--console-notice, #c2a05e); }
+
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: var(--console-meta, #6e7681); }
 .ui-descriptions-value { color: var(--console-text, #c9d1d9); }
