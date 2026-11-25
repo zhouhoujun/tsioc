@@ -21,3 +21,4 @@ export * from './workflow-config-dialog.component';
 export * from './workflow-config-nodes.component';
 export * from './workflow-group-settings.component';
 export * from './workflow-designer.component';
+export * from './workflow-reference-widget';

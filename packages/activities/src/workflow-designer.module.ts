@@ -9,7 +9,8 @@ import { TabBarModule } from '@tsdi/components/common/tab-bar';
 import { AccordionModule } from '@tsdi/components/common/accordion';
 import { MenuBarModule } from '@tsdi/components/common/menu-bar';
 import { IconModule } from '@tsdi/components/common/icon';
-import { DynamicFormModule } from '@tsdi/components/common/dynamic-form';
+import { DYNAMIC_FORM_WIDGETS, DynamicFormModule } from '@tsdi/components/common/dynamic-form';
+import { WorkflowReferenceWidgetComponent } from './visual/components/workflow-reference-widget';
 import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
 import { EmptyStateModule } from '@tsdi/components/common/empty-state';
 import { StatModule } from '@tsdi/components/common/stat';
@@ -88,7 +89,8 @@ import {
         WorkflowNodeRegistry,
         WorkflowServiceRegistry,
         WorkflowActionBus,
-        WorkflowPluginRegistry
+        WorkflowPluginRegistry,
+        { provide: DYNAMIC_FORM_WIDGETS, useValue: [{ type: 'workflow-reference', component: WorkflowReferenceWidgetComponent }] }
     ],
     declarations: [
         WorkflowToolbarComponent,

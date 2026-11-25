@@ -483,11 +483,17 @@ describe('Workflow Designer UI', () => {
         ref.instance.designer.selectNode(node.id);
         await flush();
 
-        const select = root.querySelector('.workflow-field[data-field-key="workflow"] select') as any;
-        expect(select).toBeTruthy();
-        expect(Array.from(select.options).some((option: any) => option.value === 'wf_child')).toBe(true);
-        select.value = 'wf_child';
-        select.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        const input = root.querySelector('.workflow-field[data-field-key="workflow"] .ui-autocomplete-input') as any;
+        expect(input).toBeTruthy();
+        input.focus();
+        await flush();
+        input.value = 'Ch';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        const option = Array.from(root.querySelectorAll('.workflow-field[data-field-key="workflow"] .ui-autocomplete-option'))
+            .find((item: any) => item.textContent.includes('Child flow')) as any;
+        expect(option).toBeTruthy();
+        option.click();
         await waitFor(() => ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.workflow === 'wf_child');
 
         // The mode select swaps the same value's control to a context path.

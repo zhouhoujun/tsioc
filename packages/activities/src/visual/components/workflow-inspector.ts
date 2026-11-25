@@ -11,6 +11,7 @@ import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
 import { WORKFLOW_TYPED_CODEC } from '../workflow-typed-value';
 import { WorkflowInspectorFieldView, WorkflowInspectorModel } from '../types';
+import { WorkflowReferenceWidgetComponent } from './workflow-reference-widget';
 
 const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     hasSelection: false,
@@ -335,6 +336,7 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
         });
         return {
             fields,
+            widgets: [{ type: 'workflow-reference', component: WorkflowReferenceWidgetComponent }],
             defaultGroupLabel,
             jsonFieldsLabel: this.t('fields', 'Fields'),
             jsonTextLabel: this.t('json', 'JSON'),
@@ -352,9 +354,11 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
 
     protected toDynamicField(field: WorkflowInspectorFieldView): DynamicFormField {
         const typed = field.typed === true;
+        const searchableReference = !!field.reference && field.reference.multiple !== true;
         return {
             key: field.key,
-            type: this.dynamicType(field),
+            type: searchableReference ? 'widget' : this.dynamicType(field),
+            widget: searchableReference ? 'workflow-reference' : undefined,
             typed,
             // Value fields store references and literal classes explicitly so
             // text that looks like a reference is never misread; path fields

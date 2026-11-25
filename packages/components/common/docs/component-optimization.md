@@ -309,6 +309,11 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     `trapFocus`（Tab 循环），drawer/popover 注册面板元素后共享同一行为。
   - Escape 在 `overlayOpen` 时走 overlay 栈，`beforeCloseAction` 的异步脏检查
     不会被直接 close 绕过。
+- **引用选择器 widget**
+  - activities 注册 `workflow-reference` widget（`DYNAMIC_FORM_WIDGETS`），
+    单值引用字段改用可搜索 autocomplete：输入只过滤候选，选中后才写配置；
+    create/edit 动作仍由字段行提供；多选 scope 继续使用内置多选框。
+  - autocomplete 增加 `disabled`，供表单/宿主统一禁用。
 - **表达式预览**
   - workflow 表达式编辑器新增“求值预览”：用上次运行各节点的
     `payload`/`msg`/`variables`/`subprocess` 构建作用域，调用 JSONata 求值；

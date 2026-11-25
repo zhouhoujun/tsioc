@@ -34,8 +34,8 @@ interface AutoCompleteViewOption {
         <input class="ui-autocomplete-input" type="text" role="combobox"
             aria-autocomplete="list" aria-expanded="{{openState}}"
             aria-controls="{{listId}}" aria-activedescendant="{{activeId}}"
-            aria-label="{{ariaLabel}}" autocomplete="off"
-            [value]="value" placeholder="{{placeholder}}"
+            aria-label="{{ariaLabel}}" aria-disabled="{{disabled}}" autocomplete="off"
+            [value]="value" placeholder="{{placeholder}}" [disabled]="disabled"
             @input="onInput($event)" @focus="onFocus()" @blur="onBlur()"
             @keydown="onKeydown($event)" />
         <div class="ui-autocomplete-panel" id="{{listId}}" role="listbox" v-if="openState">
@@ -69,6 +69,11 @@ export class AutoCompleteComponent {
     @Attribute() className = '';
     @Attribute() changeAction?: (value: string) => void;
     @Attribute() selectAction?: (value: string) => void;
+
+    private _disabled = false;
+    @Attribute()
+    get disabled(): boolean { return this._disabled; }
+    set disabled(value: boolean | string) { this._disabled = normalizeBoolean(value); }
 
     protected readonly uid = nextUiId('ui-autocomplete');
     private _open = false;
@@ -140,6 +145,9 @@ export class AutoCompleteComponent {
     }
 
     onInput(event: any): void {
+        if (this._disabled) {
+            return;
+        }
         this.value = String(event?.target?.value ?? '');
         this.selectedIndex = 0;
         this._open = true;
@@ -147,6 +155,9 @@ export class AutoCompleteComponent {
     }
 
     onFocus(): void {
+        if (this._disabled) {
+            return;
+        }
         if (this.viewOptions.length) {
             this._open = true;
         }
@@ -161,7 +172,7 @@ export class AutoCompleteComponent {
     }
 
     choose(option: AutoCompleteViewOption): void {
-        if (!option || option.disabled) {
+        if (this._disabled || !option || option.disabled) {
             return;
         }
         this.value = option.value;
@@ -171,6 +182,9 @@ export class AutoCompleteComponent {
     }
 
     onKeydown(event: any): void {
+        if (this._disabled) {
+            return;
+        }
         const key = String(event?.key || '');
         if (key === 'Escape') {
             this._open = false;
