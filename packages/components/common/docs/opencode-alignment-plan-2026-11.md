@@ -182,6 +182,8 @@ DOM/TUI 的搜索、分组、键盘选择一致；现有 agent-ui 菜单行为�
   menu/palette 搜索、catalog 渲染；沿用 calibration 缩放 + gate 预算。
 - import-boundaries 测试：common 不得引用 html/console/node；syntax/markdown
   不得反向依赖 agent-ui；新增入口必须声明 exports。
+  - 状态（2026-11-25）：`test/import-boundaries.spec.ts` 已扫描全部源码，禁止
+    html/console/agent-ui 依赖、node 内置模块、Buffer 与未守卫的 process 访问。
 - Storybook/catalog 静态页（用 common 渲染）：可本地启动；Playwright 组件测试
   覆盖 dialog/select/table/palette 的关键交互。
 - 按需加载：upload/image/qr-code/code editor 等重组件由宿主动态 import，
