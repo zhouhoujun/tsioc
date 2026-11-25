@@ -21,7 +21,7 @@ import { StepsComponent, StepsModule } from '../steps';
         emptyLabel="No rows" :rowAction="onRow"></ui-data-table>
     <ui-tree :items="tree" :expandedIds="expanded"
         :selectAction="onNode" :toggleAction="onToggle"></ui-tree>
-    <ui-steps :items="stepItems" :current="0"></ui-steps>`
+    <ui-steps :items="stepItems" :current="0" :action="onStep"></ui-steps>`
 })
 class P2UiHostComponent {
     page = 5;
@@ -43,6 +43,8 @@ class P2UiHostComponent {
     ];
     expanded = ['root'];
     stepItems = [{ label: 'One' }, { label: 'Two' }, { label: 'Three' }];
+    step = '';
+    onStep = (item: { label: string }) => { this.step = item.label; };
     onPage = (page: number) => { this.page = page; };
     onRow = (row: { id: string }) => { this.selectedRow = row.id; };
     onNode = (node: TreeNode) => { this.selectedNode = String(node.id); };
@@ -154,6 +156,13 @@ export class P2UiWidgetsTest {
         const items = root.querySelectorAll('.ui-step') as NodeListOf<HTMLElement>;
 
         expect(items[0].getAttribute('data-status')).toEqual('active');
+        expect(items[0].getAttribute('role')).toEqual('button');
+        expect(items[0].getAttribute('tabindex')).toEqual('0');
+        items[1].dispatchEvent(new (this.ctx.get(DOCUMENT) as any).defaultView.KeyboardEvent('keydown', {
+            key: 'Enter',
+            bubbles: true
+        }));
+        expect((ref.instance as P2UiHostComponent).step).toEqual('Two');
         (steps.instance as any).current = 2;
         await Promise.resolve();
         expect(items[0].getAttribute('data-status')).toEqual('done');

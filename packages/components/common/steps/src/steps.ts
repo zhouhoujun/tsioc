@@ -1,4 +1,7 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
+import { focusNth } from '../../src/focus';
+import { markElementRefRaw } from '../../src/raw-element';
 
 export type StepStatus = 'pending' | 'active' | 'done' | 'error';
 export type StepsOrientation = 'horizontal' | 'vertical';
@@ -35,8 +38,12 @@ interface StepViewItem {
     <ol class="ui-steps {{stepsClass}}" aria-label="{{ariaLabel}}">
         <li class="{{stepClass(entry)}}" data-status="{{stepStatus(entry)}}"
             v-for="entry in viewItems" trackBy="key"
+            role="{{isInteractive(entry) ? 'button' : 'listitem'}}"
+            tabindex="{{isInteractive(entry) ? 0 : -1}}"
+            focusable="{{isInteractive(entry)}}"
+            aria-disabled="{{entry.disabled}}"
             aria-current="{{stepStatus(entry) === 'active' ? 'step' : ''}}"
-            @click="pick(entry)">
+            @click="pick(entry)" @keydown="onKeydown(entry, $event)">
             <span class="ui-step-marker" aria-hidden="true">{{stepMarker(entry)}}</span>
             <span class="ui-step-copy">
                 <span class="ui-step-label">{{entry.label}}</span>
@@ -47,6 +54,10 @@ interface StepViewItem {
     </ol>`
 })
 export class StepsComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
     @Attribute() items: StepItem[] = [];
     @Attribute() current: number | string = 0;
     @Attribute() orientation: StepsOrientation = 'horizontal';
@@ -104,11 +115,26 @@ export class StepsComponent {
         return this.markerFor(this.stepStatus(entry), entry.index);
     }
 
+    isInteractive(entry: StepViewItem): boolean {
+        return !!this.action && !!entry && !entry.disabled;
+    }
+
     pick(entry: StepViewItem): void {
-        if (!entry || entry.disabled) {
+        if (!entry || entry.disabled || !this.action) {
             return;
         }
-        this.action?.(this.items[entry.index], entry.index);
+        focusNth(this.elementRef?.nativeElement, '.ui-step', entry.index);
+        this.action(this.items[entry.index], entry.index);
+    }
+
+    onKeydown(entry: StepViewItem, event: any): void {
+        if (!this.isInteractive(entry)) {
+            return;
+        }
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            this.pick(entry);
+        }
     }
 
     private currentIndex(items: StepItem[]): number {

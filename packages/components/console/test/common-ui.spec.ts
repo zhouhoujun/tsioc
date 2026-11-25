@@ -57,7 +57,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-empty title="Nothing" hint="Try" actionLabel="Reset"></ui-empty>
         <ui-card title="Card" meta="v1"><span>body</span></ui-card>
         <ui-toolbar :items="tools"></ui-toolbar>
-        <ui-steps :items="steps" :current="1"></ui-steps>
+        <ui-steps :items="steps" :current="1" :action="onStep"></ui-steps>
         <ui-timeline :items="events"></ui-timeline>
         <ui-skeleton :lines="1" :width="6"></ui-skeleton>
         <ui-avatar label="Ada Lovelace"></ui-avatar>
@@ -142,6 +142,8 @@ class CommonUiConsoleHostComponent {
     selectTree = [{ id: 'group', label: 'Group', children: [{ id: 'leaf', label: 'Leaf' }] }];
     rating = 3;
     onRate = (value: number) => { this.rating = value; };
+    step = '';
+    onStep = (item: any) => { this.step = item.label; };
     modes = [{ label: 'Basic', value: 'basic' }, { label: 'Advanced', value: 'advanced' }];
 }
 
@@ -357,6 +359,13 @@ export class CommonUiConsoleTest {
                 expect(host.rating).toEqual(4);
                 const ratedOutput = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
                 expect(ratedOutput).toContain('★★★★☆');
+
+                const stepItems = (ref.hostView.rootNodes[0] as any).querySelectorAll('.ui-step');
+                expect(stepItems[0].getAttribute('role')).toEqual('button');
+                stepItems[2].focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.step).toEqual('Publish');
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');
