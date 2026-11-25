@@ -160,25 +160,45 @@ export class P2UiWidgetsTest {
         expect(items[2].getAttribute('data-status')).toEqual('active');
     }
 
-    @Test('tree flattens expanded children and toggles expansion')
+    @Test('tree flattens rows, roves selection and toggles expansion')
     async tree() {
         const ref = await this.mount();
         const host = ref.instance as P2UiHostComponent;
         const tree = ref.hostView.query(TreeComponent) as ComponentRef<TreeComponent>;
         const root = tree.hostView.rootNodes[0] as HTMLElement;
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const nodes = () => root.querySelectorAll('.ui-tree-node') as NodeListOf<HTMLElement>;
+        const key = async (node: HTMLElement, name: string) => {
+            node.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: name, bubbles: true }));
+            await Promise.resolve();
+        };
 
-        expect(root.querySelectorAll('.ui-tree-node').length).toEqual(2);
+        expect(nodes().length).toEqual(2);
         expect(root.textContent).toContain('Root');
         expect(root.textContent).toContain('Child');
-        expect(root.querySelector('.ui-tree-node.is-selected')).toBeFalsy();
+        expect(nodes()[0].getAttribute('role')).toEqual('treeitem');
+        expect(nodes()[0].getAttribute('aria-level')).toEqual('1');
+        expect(nodes()[0].getAttribute('aria-expanded')).toEqual('true');
+        expect(nodes()[1].getAttribute('aria-level')).toEqual('2');
+        expect(nodes()[0].getAttribute('tabindex')).toEqual('0');
+        expect(nodes()[1].getAttribute('tabindex')).toEqual('-1');
 
-        (root.querySelectorAll('.ui-tree-row')[1] as HTMLElement).click();
+        await key(nodes()[0], 'ArrowDown');
         expect(host.selectedNode).toEqual('child');
+        expect(nodes()[1].getAttribute('aria-selected')).toEqual('true');
+        expect(nodes()[1].getAttribute('tabindex')).toEqual('0');
+        expect(nodes()[0].getAttribute('tabindex')).toEqual('-1');
 
-        const toggle = root.querySelector('.ui-tree-toggle:not(.is-leaf)') as HTMLElement;
-        toggle.click();
+        await key(nodes()[1], 'ArrowLeft');
+        expect(host.selectedNode).toEqual('root');
+
+        await key(nodes()[0], 'ArrowLeft');
         expect(host.toggled).toEqual('root:false');
+        expect(nodes().length).toEqual(1);
+
+        (nodes()[0].querySelector('.ui-tree-toggle:not(.is-leaf)') as HTMLElement).click();
         await Promise.resolve();
-        expect(root.querySelectorAll('.ui-tree-node').length).toEqual(1);
+        expect(host.toggled).toEqual('root:true');
+        expect(nodes().length).toEqual(2);
     }
 }

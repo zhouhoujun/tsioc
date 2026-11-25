@@ -55,7 +55,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-avatar label="Ada Lovelace"></ui-avatar>
         <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
         <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']" :selectionAction="onSelection"></ui-data-table>
-        <ui-tree :items="tree" :expandedIds="['root']"></ui-tree>
+        <ui-tree :items="tree" :expandedIds="['root']" :selectAction="onTree" :toggleAction="onTreeToggle"></ui-tree>
         <ui-text-field label="Name" value="Ada"></ui-text-field>
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
         <ui-switch label="Live" :checked="true"></ui-switch>
@@ -79,6 +79,10 @@ class CommonUiConsoleHostComponent {
     onBadge = () => { this.badges += 1; };
     zoom = 50;
     onZoom = (value: number) => { this.zoom = value; };
+    selectedTree = '';
+    treeToggled = '';
+    onTree = (node: any) => { this.selectedTree = node.id; };
+    onTreeToggle = (node: any, expanded: boolean) => { this.treeToggled = `${node.id}:${expanded}`; };
     range = 'day';
     ranges = [{ label: 'Day', value: 'day' }, { label: 'Week', value: 'week' }];
     onRange = (value: string) => { this.range = value; };
@@ -251,6 +255,27 @@ export class CommonUiConsoleTest {
                 expect(host.zoom).toEqual(60);
                 expect(slider.getAttribute('aria-valuenow')).toEqual('60');
                 expect(slider.getAttribute('aria-valuetext')).toEqual('60%');
+
+                const treeRows = (ref.hostView.rootNodes[0] as any).querySelectorAll('.ui-tree-node');
+                expect(treeRows[0].getAttribute('aria-expanded')).toEqual('true');
+                expect(treeRows[0].getAttribute('tabindex')).toEqual('0');
+                treeRows[0].focus();
+                expect(surface.dispatchKey({ key: 'ArrowDown' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.selectedTree).toEqual('child');
+                expect(treeRows[1].getAttribute('aria-selected')).toEqual('true');
+                expect(surface.dispatchKey({ key: 'ArrowLeft' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.selectedTree).toEqual('root');
+                expect(surface.dispatchKey({ key: 'ArrowLeft' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.treeToggled).toEqual('root:false');
+                surface.render();
+                const collapsed = surface.lastRenderedLines
+                    .map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, ''))
+                    .join('\n');
+                expect(collapsed).toContain('Root');
+                expect(collapsed).not.toContain('Child');
 
                 const segmented = (ref.hostView.rootNodes[0] as any).querySelector('.ui-segmented-item.is-selected');
                 segmented.focus();

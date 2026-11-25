@@ -1,4 +1,7 @@
-import { Attribute, Component, Computed } from '@tsdi/components';
+import { Attribute, Component, Computed, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
+import { focusNth } from '../../src/focus';
+import { markElementRefRaw } from '../../src/raw-element';
 import { iconSizeFor } from '../../src/ui';
 
 export interface TreeNode {
@@ -15,6 +18,8 @@ export interface TreeNode {
 
 interface TreeViewItem {
     key: string;
+    index: number;
+    parentKey: string;
     item: TreeNode;
     depth: number;
     label: string;
@@ -39,10 +44,14 @@ interface TreeViewItem {
     selector: 'ui-tree',
     template: `
     <ul class="ui-tree {{treeClass}}" role="tree" aria-label="{{ariaLabel}}">
-        <li class="{{entry.className}}" role="treeitem"
+        <li class="{{nodeClass(entry)}}" role="treeitem"
             aria-level="{{entry.depth + 1}}"
-            aria-expanded="{{entry.expanded}}"
-            aria-selected="{{entry.selected}}"
+            aria-expanded="{{rowAriaExpanded(entry)}}"
+            aria-selected="{{rowSelected(entry)}}"
+            aria-disabled="{{entry.disabled}}"
+            tabindex="{{tabIndexFor(entry)}}"
+            focusable="{{!entry.disabled}}"
+            @keydown="onKeydown(entry, $event)"
             v-for="entry in viewItems" trackBy="key">
             <span class="ui-tree-row" @click="select(entry)">
                 <span class="ui-tree-indent" aria-hidden="true">{{entry.indentText}}</span>
@@ -56,6 +65,10 @@ interface TreeViewItem {
     </ul>`
 })
 export class TreeComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
     @Attribute() items: TreeNode[] = [];
     @Attribute() expandedIds: string[] = [];
     @Attribute() selectedId = '';
@@ -78,7 +91,7 @@ export class TreeComponent {
     get viewItems(): TreeViewItem[] {
         const expanded = new Set((Array.isArray(this.expandedIds) ? this.expandedIds : []).map(String));
         const rows: TreeViewItem[] = [];
-        const walk = (nodes: TreeNode[], depth: number, prefix: string): void => {
+        const walk = (nodes: TreeNode[], depth: number, prefix: string, parentKey: string): void => {
             (Array.isArray(nodes) ? nodes : []).forEach((node, index) => {
                 if (!node) {
                     return;
@@ -90,6 +103,8 @@ export class TreeComponent {
                 const disabled = node.disabled === true;
                 rows.push({
                     key,
+                    index: rows.length,
+                    parentKey,
                     item: node,
                     depth,
                     label: String(node.label ?? ''),
@@ -109,35 +124,145 @@ export class TreeComponent {
                     ].filter(Boolean).join(' ')
                 });
                 if (hasChildren && isExpanded) {
-                    walk(node.children!, depth + 1, `${key}.`);
+                    walk(node.children!, depth + 1, `${key}.`, key);
                 }
             });
         };
-        walk(this.items, 0, '');
+        walk(this.items, 0, '', '');
         return rows;
     }
 
-    select(entry: TreeViewItem): void {
+    nodeClass(entry: TreeViewItem): string {
+        return this.currentRow(entry)?.className || entry.className;
+    }
+
+    rowSelected(entry: TreeViewItem): boolean {
+        return !!this.currentRow(entry)?.selected;
+    }
+
+    /** `aria-expanded` is only meaningful for branches. */
+    rowAriaExpanded(entry: TreeViewItem): string {
+        const row = this.currentRow(entry);
+        return row?.hasChildren ? String(row.expanded) : '';
+    }
+
+    /** Selected (or first enabled) row is the only tab stop. */
+    tabIndexFor(entry: TreeViewItem): number {
         if (!entry || entry.disabled) {
+            return -1;
+        }
+        const rows = this.viewItems;
+        const selected = rows.find(row => row.selected && !row.disabled);
+        if (selected) {
+            return selected.key === entry.key ? 0 : -1;
+        }
+        const first = rows.find(row => !row.disabled);
+        return first && first.key === entry.key ? 0 : -1;
+    }
+
+    select(entry: TreeViewItem): void {
+        const row = this.currentRow(entry);
+        if (!row || row.disabled) {
             return;
         }
-        this.selectedId = entry.key;
-        this.selectAction?.(entry.item);
+        this.selectedId = row.key;
+        focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+        this.selectAction?.(row.item);
     }
 
     toggle(entry: TreeViewItem, event?: Event): void {
         event?.stopPropagation?.();
-        if (!entry || !entry.hasChildren || entry.disabled) {
+        const row = this.currentRow(entry);
+        if (!row || !row.hasChildren || row.disabled) {
             return;
         }
         const ids = new Set((Array.isArray(this.expandedIds) ? this.expandedIds : []).map(String));
-        const next = !ids.has(entry.key);
+        const next = !ids.has(row.key);
         if (next) {
-            ids.add(entry.key);
+            ids.add(row.key);
         } else {
-            ids.delete(entry.key);
+            ids.delete(row.key);
         }
         this.expandedIds = [...ids];
-        this.toggleAction?.(entry.item, next);
+        focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+        this.toggleAction?.(row.item, next);
+    }
+
+    /** MUI TreeView style keyboard model over the flattened visible rows. */
+    onKeydown(entry: TreeViewItem, event: any): void {
+        const row = this.currentRow(entry);
+        if (!row || row.disabled) {
+            return;
+        }
+        const key = String(event?.key || '');
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+            event?.preventDefault?.();
+            this.select(row);
+            return;
+        }
+        if (key === 'ArrowDown') {
+            event?.preventDefault?.();
+            this.move(row.index, 1);
+            return;
+        }
+        if (key === 'ArrowUp') {
+            event?.preventDefault?.();
+            this.move(row.index, -1);
+            return;
+        }
+        if (key === 'Home' || key === 'End') {
+            event?.preventDefault?.();
+            const rows = this.viewItems;
+            const target = key === 'Home'
+                ? rows.find(item => !item.disabled)
+                : [...rows].reverse().find(item => !item.disabled);
+            if (target) {
+                this.select(target);
+            }
+            return;
+        }
+        if (key === 'ArrowRight') {
+            event?.preventDefault?.();
+            if (!row.hasChildren) {
+                return;
+            }
+            if (!row.expanded) {
+                this.toggle(row);
+                return;
+            }
+            const child = this.viewItems[row.index + 1];
+            if (child) {
+                this.select(child);
+            }
+            return;
+        }
+        if (key === 'ArrowLeft') {
+            event?.preventDefault?.();
+            if (row.hasChildren && row.expanded) {
+                this.toggle(row);
+                return;
+            }
+            const parent = row.parentKey
+                ? this.viewItems.find(item => item.key === row.parentKey)
+                : undefined;
+            if (parent) {
+                this.select(parent);
+            }
+        }
+    }
+
+    protected currentRow(entry: TreeViewItem): TreeViewItem | undefined {
+        return entry ? this.viewItems.find(row => row.key === entry.key) : undefined;
+    }
+
+    /** Move selection to the next enabled visible row (clamped, no wrap). */
+    protected move(from: number, delta: number): void {
+        const rows = this.viewItems;
+        for (let index = from + delta; index >= 0 && index < rows.length; index += delta) {
+            if (!rows[index].disabled) {
+                this.select(rows[index]);
+                return;
+            }
+        }
     }
 }
