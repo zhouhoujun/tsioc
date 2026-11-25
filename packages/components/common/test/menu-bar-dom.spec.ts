@@ -288,8 +288,7 @@ export class MenuBarDomTest {
     }
 
     @Test('Escape and outside clicks close the popup')
-    async closesOnEscapeAndOutsideClick() {
-        const selected: string[] = [];
+    async closesOnEscapeAndOutsideClick() {        const selected: string[] = [];
         const root = await this.render(selected);
         const popup = root.querySelector('.menu-bar-popup');
 
@@ -308,5 +307,61 @@ export class MenuBarDomTest {
         this.doc.body.dispatchEvent(new (this.doc.defaultView as any).MouseEvent('mousedown', { bubbles: true }));
         await Promise.resolve();
         expect(popup.hasAttribute('hidden')).toBe(true);
+    }
+
+    @Test('keyboard opens the menu, roves focus and walks submenus')
+    async keyboardNavigation() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        const win = this.doc.defaultView;
+        this.doc.body.appendChild(root);
+        const settle = async () => { await Promise.resolve(); await Promise.resolve(); };
+        try {
+            const trigger = root.querySelector('.menu-bar-trigger') as HTMLElement;
+            const popup = root.querySelector('.menu-bar-popup') as HTMLElement;
+            const activeId = () => (this.doc.activeElement as HTMLElement | null)?.getAttribute('data-menu-id');
+
+            trigger.focus();
+            trigger.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+            await settle();
+            expect(popup.hasAttribute('hidden')).toBe(false);
+            expect(activeId()).toEqual('run');
+
+            // Disabled entries are skipped while Arrow keys wrap around.
+            const key = async (name: string) => {
+                popup.dispatchEvent(new win.KeyboardEvent('keydown', { key: name, bubbles: true }));
+                await settle();
+            };
+            await key('ArrowDown');
+            expect(activeId()).toEqual('undo');
+            await key('ArrowDown');
+            expect(activeId()).toEqual('theme');
+            await key('ArrowDown');
+            expect(activeId()).toEqual('run');
+            await key('End');
+            expect(activeId()).toEqual('theme');
+            await key('Home');
+            expect(activeId()).toEqual('run');
+
+            // Focusing a parent previews its flyout; ArrowRight enters it.
+            await key('End');
+            const theme = root.querySelector('[data-menu-id="theme"]') as HTMLElement;
+            expect(theme.getAttribute('aria-haspopup')).toEqual('menu');
+            expect(theme.getAttribute('aria-expanded')).toEqual('true');
+            await key('ArrowRight');
+            expect(theme.getAttribute('aria-expanded')).toEqual('true');
+            expect(activeId()).toEqual('theme:light');
+            await key('ArrowLeft');
+            expect(activeId()).toEqual('theme');
+            expect(theme.getAttribute('aria-expanded')).toEqual('false');
+
+            // Escape closes and hands focus back to the trigger.
+            this.doc.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            await settle();
+            expect(popup.hasAttribute('hidden')).toBe(true);
+            expect(this.doc.activeElement).toBe(trigger);
+        } finally {
+            root.remove();
+        }
     }
 }

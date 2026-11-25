@@ -1,6 +1,13 @@
 import { AfterViewInit, Attribute, Component, Computed, ElementRef, EventEmitter, OnDestroy, ViewChild, unwrapReactive } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
+import {
+    focusDomElement,
+    menuButtons,
+    menuLevelButtons,
+    openSubmenuElement,
+    scheduleDomFocus
+} from './menu-bar.dom';
 
 /** One actionable entry in a {@link MenuBarComponent} dropdown. */
 export interface MenuBarItem {
@@ -62,14 +69,16 @@ interface MenuBarEntryView {
 @Component({
     selector: 'menu-bar, ui-menu-bar',
     template: `
-    <div #menuRoot class="menu-bar menu-bar-align-{{align}}" data-open="{{openText}}" role="menubar">
+    <div #menuRoot class="menu-bar menu-bar-align-{{align}}" data-open="{{openText}}" role="menubar"
+        @keydown="onMenuKeydown($event)">
         <button class="menu-bar-trigger" type="button"
             aria-haspopup="menu"
             aria-label="{{triggerTitle || label}}"
             aria-expanded="{{openText}}"
             [title]="triggerTitle || label"
             [disabled]="disabled"
-            @click="toggle">
+            @click="toggle"
+            @keydown="onTriggerKeydown($event)">
             <span class="menu-bar-glyph" v-if="icon"><icon [name]="icon" [glyph]="icon" size="sm"></icon></span>
             <span class="menu-bar-label" v-if="label">{{label}}</span>
             <span class="menu-bar-caret" v-if="caret"><icon [name]="caret" [glyph]="caret" size="xs"></icon></span>
@@ -77,6 +86,7 @@ interface MenuBarEntryView {
         <div class="menu-bar-popup" role="menu" v-show="open" [style]="popupStyle"
             @scroll="onPopupScroll">
             <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" trackBy="key" data-menu-key="{{entry.key}}"
+                role="none"
                 @mouseleave="leaveSubmenu(entry.id)"
                 @focusout="blurSubmenu(entry.id, $event)">
                 <div class="menu-bar-separator" role="separator" v-if="entry.kind === 'separator'"></div>
@@ -86,6 +96,8 @@ interface MenuBarEntryView {
                     data-menu-id="{{entry.id}}"
                     [disabled]="entry.disabled"
                     aria-disabled="{{entry.disabled}}"
+                    aria-haspopup="{{entry.children.length ? 'menu' : 'false'}}"
+                    aria-expanded="{{entry.children.length ? submenuOpen(entry.id) : 'false'}}"
                     @click="choose(entry.id, $event)"
                     @mouseenter="hoverSubmenu(entry.id, $event)"
                     @focus="hoverSubmenu(entry.id, $event)">
@@ -143,6 +155,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     private popupMaxHeight = 0;
     private popupAbove = false;
     private bound = false;
+    private suppressFocusPreview = false;
     private pointerHandler?: (event: any) => void;
     private keyHandler?: (event: any) => void;
 
@@ -258,7 +271,124 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         if (!this._open) {
             this.activeSubmenuKey = '';
             this.hoverSubmenuKey = '';
+            return;
         }
+        // Opening moves keyboard focus into the menu, matching native menubars.
+        scheduleDomFocus(this.ownerDocument(), () => this.menuItemNode(0));
+    }
+
+    /** ArrowDown/ArrowUp on the trigger opens the menu and focuses its first item. */
+    onTriggerKeydown(event: any): void {
+        if (this.disabled) {
+            return;
+        }
+        const key = String(event?.key || '');
+        if (key !== 'ArrowDown' && key !== 'ArrowUp') {
+            return;
+        }
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        if (!this._open) {
+            this.open = true;
+        }
+        scheduleDomFocus(this.ownerDocument(), () => this.menuItemNode(key === 'ArrowUp' ? -1 : 0));
+    }
+
+    /**
+     * Roving focus inside the open menu: Arrow keys, Home/End, ArrowRight into
+     * a flyout and ArrowLeft back to its parent. Escape is handled at the
+     * document level so it works no matter which item has focus.
+     */
+    onMenuKeydown(event: any): void {
+        if (!this._open) {
+            return;
+        }
+        const key = String(event?.key || '');
+        const items = this.menuLevelItems();
+        if (!items.length) {
+            return;
+        }
+        const doc = this.ownerDocument();
+        const active = doc?.activeElement as HTMLElement | undefined;
+        const index = items.indexOf(active as HTMLElement);
+        if (key === 'ArrowDown' || key === 'ArrowUp') {
+            event?.preventDefault?.();
+            const step = key === 'ArrowDown' ? 1 : -1;
+            const next = index < 0
+                ? (step > 0 ? 0 : items.length - 1)
+                : (index + step + items.length) % items.length;
+            focusDomElement(items[next]);
+            return;
+        }
+        if (key === 'Home' || key === 'End') {
+            event?.preventDefault?.();
+            focusDomElement(key === 'Home' ? items[0] : items[items.length - 1]);
+            return;
+        }
+        if (key === 'ArrowRight') {
+            const current = (index >= 0 ? items[index] : undefined);
+            if (current?.getAttribute?.('aria-haspopup') !== 'menu') {
+                return;
+            }
+            event?.preventDefault?.();
+            const id = String(current.getAttribute('data-menu-id') || '');
+            if (!id) {
+                return;
+            }
+            this.activeSubmenuKey = id;
+            this.hoverSubmenuKey = id;
+            this.anchorSubmenu(id);
+            scheduleDomFocus(this.ownerDocument(), () => this.openSubmenuItems()[0]);
+            return;
+        }
+        if (key === 'ArrowLeft') {
+            const submenu = active?.closest?.('.menu-bar-submenu') as HTMLElement | undefined;
+            if (!submenu?.classList.contains('is-open')) {
+                return;
+            }
+            event?.preventDefault?.();
+            // The flyout is wrapped by structural containers, so walk back to
+            // the owning entry and take its first item button (the parent).
+            const entry = active?.closest?.('.menu-bar-entry') as HTMLElement | undefined;
+            const parent = entry?.querySelector?.('.menu-bar-item') as HTMLElement | undefined;
+            this.activeSubmenuKey = '';
+            this.hoverSubmenuKey = '';
+            if (parent) {
+                this.suppressFocusPreview = true;
+                focusDomElement(parent);
+                void Promise.resolve().then(() => { this.suppressFocusPreview = false; });
+            }
+            return;
+        }
+    }
+
+    /**
+     * Enabled items at the current roving level: the top-level bar, or the
+     * direct children of the open flyout when focus is already inside it.
+     * Focus-previewing a parent must not pull ArrowDown into its flyout;
+     * ArrowRight is the explicit way in.
+     */
+    protected menuLevelItems(): HTMLElement[] {
+        return menuLevelButtons(unwrapReactive(this.hostElement), this.ownerDocument());
+    }
+
+    /** Direct child buttons of the currently open flyout. */
+    protected openSubmenuItems(): HTMLElement[] {
+        const submenu = openSubmenuElement(unwrapReactive(this.hostElement));
+        return submenu ? menuButtons(submenu) : [];
+    }
+
+    protected menuItemNode(offset: number): HTMLElement | undefined {
+        const items = this.menuLevelItems();
+        if (!items.length) {
+            return undefined;
+        }
+        return items[Math.max(0, Math.min(items.length - 1, offset))];
+    }
+
+    protected focusTrigger(): void {
+        const trigger = unwrapReactive(this.hostElement)?.querySelector?.('.menu-bar-trigger') as HTMLElement | undefined;
+        focusDomElement(trigger);
     }
 
     choose(id: string, event?: Event): void {
@@ -284,10 +414,16 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         this.selectAction?.(id);
     }
 
-    close(): void {
+    close(returnFocus = true): void {
+        const wasOpen = this._open;
         this.open = false;
         this.activeSubmenuKey = '';
         this.hoverSubmenuKey = '';
+        if (wasOpen && returnFocus) {
+            // A chosen command or Escape hands focus back to the trigger; an
+            // outside click keeps focus where the pointer landed.
+            void Promise.resolve().then(() => this.focusTrigger());
+        }
     }
 
     /**
@@ -298,6 +434,12 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
      * gained a scrollbar.
      */
     hoverSubmenu(id: string, event?: Event): void {
+        // ArrowLeft closes a flyout and returns focus to its parent; that
+        // focus must not immediately preview (and reopen) the same flyout.
+        if ((event as any)?.type === 'focus' && this.suppressFocusPreview) {
+            this.suppressFocusPreview = false;
+            return;
+        }
         if (this.activeSubmenuKey && this.activeSubmenuKey !== id) {
             this.activeSubmenuKey = '';
         }
@@ -512,7 +654,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             if (root && target && typeof root.contains === 'function' && root.contains(target)) {
                 return;
             }
-            this.close();
+            this.close(false);
         };
         this.keyHandler = event => {
             if (!this._open || event?.key !== 'Escape') {
