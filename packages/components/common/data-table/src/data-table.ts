@@ -1,5 +1,6 @@
 import { Attribute, Component } from '@tsdi/components';
 import { normalizeBoolean } from '../../src/ui';
+import { PaginationComponent } from '../../pagination/src/pagination';
 
 export type DataTableAlign = 'left' | 'center' | 'right';
 
@@ -53,8 +54,10 @@ interface DataTableViewRow {
  */
 @Component({
     selector: 'ui-data-table',
+    imports: [PaginationComponent],
     template: `
-    <div class="ui-data-table {{tableClass}}" role="table"
+    <div class="ui-data-table {{tableClass}}">
+    <div class="ui-data-table-content" role="table"
         aria-label="{{ariaLabel}}" aria-busy="{{loading}}" aria-rowcount="{{rows.length}}">
         <div class="ui-data-table-caption" role="caption" v-if="caption">{{caption}}</div>
         <div class="ui-data-table-head {{headerClass}}" role="row">
@@ -86,6 +89,11 @@ interface DataTableViewRow {
         </div>
         <div class="ui-data-table-loading" role="row" v-if="loading">{{loadingLabel}}</div>
         <div class="ui-data-table-empty" role="row" v-if="!loading && !viewRows.length">{{emptyLabel}}</div>
+    </div>
+    <div class="ui-data-table-pager" v-if="pagination">
+        <ui-pagination :total="rows.length" :pageSize="pageSizeNumber" :page="currentPage"
+            :ariaLabel="paginationLabel" :changeAction="pageHandler"></ui-pagination>
+    </div>
     </div>`
 })
 export class DataTableComponent {
@@ -107,7 +115,13 @@ export class DataTableComponent {
     @Attribute() selectedKeys: Array<string | number> = [];
     @Attribute() selectAllLabel = 'Select all rows';
     @Attribute() selectRowLabel = 'Select row';
+    /** Built-in page footer (Ant Design Table pagination). */
+    @Attribute() page: number | string = 1;
+    @Attribute() pageSize: number | string = 10;
+    @Attribute() paginationLabel = 'Table pagination';
+    @Attribute() pageChangeAction?: (page: number) => void;
 
+    private _pagination = false;
     private _striped = false;
     private _bordered = false;
     private _dense = false;
@@ -138,6 +152,37 @@ export class DataTableComponent {
     @Attribute()
     get selectable(): boolean { return this._selectable; }
     set selectable(value: boolean | string) { this._selectable = normalizeBoolean(value); }
+
+    @Attribute()
+    get pagination(): boolean { return this._pagination; }
+    set pagination(value: boolean | string) { this._pagination = normalizeBoolean(value); }
+
+    get pageSizeNumber(): number {
+        return Math.max(1, Math.floor(Number(this.pageSize) || 10));
+    }
+
+    get pageCount(): number {
+        const total = Array.isArray(this.rows) ? this.rows.length : 0;
+        return Math.max(1, Math.ceil(total / this.pageSizeNumber));
+    }
+
+    get currentPage(): number {
+        const page = Math.floor(Number(this.page) || 1);
+        return Math.max(1, Math.min(this.pageCount, page));
+    }
+
+    get pageHandler(): (page: number) => void {
+        return page => this.goToPage(page);
+    }
+
+    goToPage(page: number): void {
+        const next = Math.max(1, Math.min(this.pageCount, Math.floor(Number(page) || 1)));
+        if (next === this.currentPage && Number(this.page) === next) {
+            return;
+        }
+        this.page = next;
+        this.pageChangeAction?.(next);
+    }
 
     get tableClass(): string {
         return [
@@ -336,7 +381,11 @@ export class DataTableComponent {
             });
         }
         const selectedKeys = this.selectedKeySet();
-        return rows.map(({ row, index }) => {
+        const size = this.pageSizeNumber;
+        const visible = this._pagination
+            ? rows.slice((this.currentPage - 1) * size, this.currentPage * size)
+            : rows;
+        return visible.map(({ row, index }) => {
             const key = this.rowKeyOf(row, index);
             const checked = selectedKeys.has(key);
             const selected = (!!this.selectedKey && String(this.selectedKey) === key) || checked;

@@ -446,6 +446,12 @@ ${PLAIN_BUTTON_CSS}
     border: 1px solid transparent;
     border-radius: var(--ui-radius, 4px);
 }
+.ui-data-table-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.ui-data-table > .ui-pagination { margin-top: 0.35em; }
 .ui-data-table.is-bordered { border-color: var(--ui-border, currentColor); }
 .ui-data-table-head,
 .ui-data-table-row {

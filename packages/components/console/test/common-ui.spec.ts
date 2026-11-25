@@ -58,6 +58,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-avatar label="Ada Lovelace"></ui-avatar>
         <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
         <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']" :selectionAction="onSelection"></ui-data-table>
+        <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']" :selectAction="onTree" :toggleAction="onTreeToggle"></ui-tree>
         <ui-text-field label="Name" value="Ada"></ui-text-field>
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
@@ -105,6 +106,13 @@ class CommonUiConsoleHostComponent {
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
     tableColumns = [{ key: 'name', label: 'Name' }, { key: 'value', label: 'Value' }];
     tableRows = [{ id: 'a', name: 'Alpha', value: '1' }];
+    pagedColumns = [{ key: 'name', label: 'Paged' }];
+    pagedRows = [
+        { id: 'o', name: 'Omega' },
+        { id: 's', name: 'Sigma' },
+        { id: 't', name: 'Tau' },
+        { id: 'u', name: 'Upsilon' }
+    ];
     tree = [{ id: 'root', label: 'Root', children: [{ id: 'child', label: 'Child' }] }];
     modes = [{ label: 'Basic', value: 'basic' }, { label: 'Advanced', value: 'advanced' }];
 }
@@ -200,6 +208,9 @@ export class CommonUiConsoleTest {
             expect(output).toContain('░░░░░░');
             expect(output).toContain('AL');
             expect(output).toContain('Alpha');
+            expect(output).toContain('Omega');
+            expect(output).toContain('Sigma');
+            expect(output).not.toContain('Tau');
             expect(output).toContain('✓');
             expect(output).toContain('Child');
             expect(output).toContain('Ada');
@@ -291,6 +302,16 @@ export class CommonUiConsoleTest {
                 expect(host.zoom).toEqual(60);
                 expect(slider.getAttribute('aria-valuenow')).toEqual('60');
                 expect(slider.getAttribute('aria-valuetext')).toEqual('60%');
+
+                const pager = (ref.hostView.rootNodes[0] as any).querySelector('.ui-data-table-pager');
+                expect(pager).toBeTruthy();
+                const steps = pager.querySelectorAll('.ui-pagination-step');
+                steps[1].dispatchEvent({ type: 'click', target: steps[1] });
+                await Promise.resolve();
+                const pagedOutput = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
+                expect(pagedOutput).toContain('Tau');
+                expect(pagedOutput).toContain('Upsilon');
+                expect(pagedOutput).not.toContain('Omega');
 
                 const spinner = (ref.hostView.rootNodes[0] as any).querySelector('.ui-spinner');
                 const glyphNode = spinner.querySelector('.ui-spinner-glyph');

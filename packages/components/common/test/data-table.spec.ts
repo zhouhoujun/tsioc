@@ -102,12 +102,14 @@ export class DataTableTest {
         const ref = await this.mount();
         const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
         const root = table.hostView.rootNodes[0] as HTMLElement;
+        const content = root.querySelector('.ui-data-table-content') as HTMLElement;
 
         table.instance.rows = [];
         table.instance.loading = true;
         await Promise.resolve();
 
-        expect(root.getAttribute('aria-busy')).toBe('true');
+        expect(content.getAttribute('aria-busy')).toBe('true');
+        expect(content.getAttribute('role')).toEqual('table');
         expect(root.querySelector('.ui-data-table-loading')?.textContent).toContain('Loading');
         expect(root.querySelector('.ui-data-table-empty')).toBeFalsy();
     }
