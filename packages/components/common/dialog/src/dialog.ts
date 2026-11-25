@@ -1,7 +1,7 @@
-import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Attribute, Component, ElementRef, OnDestroy } from '@tsdi/components';
 import { Inject, Optional } from '@tsdi/ioc';
 import { nextUiId } from '../../src/ui';
-import { OverlayManager } from '../../src/overlay-manager';
+import { FOCUSABLE_SELECTOR, OverlayManager } from '../../src/overlay-manager';
 import { getDisplayWidth } from '../../src/display-width';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
@@ -33,7 +33,7 @@ import { installPlainButtonStyles } from '../../src/ui.styles';
         <v-content></v-content>
     </div>`
 })
-export class DialogComponent {
+export class DialogComponent implements OnDestroy {
     constructor(@Optional() protected elementRef?: ElementRef, @Optional() @Inject(OverlayManager) private overlays?: OverlayManager | null) {
         markElementRefRaw(elementRef);
     }
@@ -60,6 +60,9 @@ export class DialogComponent {
             this.overlays?.register({
                 id: this.overlayId,
                 kind: 'dialog',
+                element: this.panelElement(),
+                initialFocus: this.initialFocus,
+                restoreFocus: this.restoreFocus,
                 beforeClose: () => this.beforeCloseAction?.() ?? true,
                 close: () => { this._overlayOpen = false; this.closeAction?.(); }
             });
@@ -70,8 +73,15 @@ export class DialogComponent {
 
     /** Host dirty-check; return false (or reject) to keep the overlay open. */
     @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
+    /** Space-separated/selector for the initial focus target. */
+    @Attribute() initialFocus = '';
+    /** Restore the previously focused element when the overlay closes. */
+    @Attribute() restoreFocus: boolean | string = true;
+    /** Keep Tab focus inside the dialog while it is open. */
+    @Attribute() trapFocus: boolean | string = true;
 
-    @Attribute() title = '';    @Attribute() lines: string[] = [];
+    @Attribute() title = '';
+    @Attribute() lines: string[] = [];
     @Attribute() hint = '';
     @Attribute() ariaLabel = '';
     @Attribute() closeLabel = '✕';
@@ -149,13 +159,58 @@ export class DialogComponent {
     handleKeydown(event: any): void {
         if (this._closeOnEscape && (event?.key === 'Escape' || event?.key === 'Esc')) {
             event.preventDefault?.();
-            this.close();
+            if (this._overlayOpen && this.overlays) {
+                void this.overlays.escape();
+            } else {
+                this.close();
+            }
+            return;
+        }
+        if (event?.key === 'Tab' && this._overlayOpen && normalizeBoolean(this.trapFocus as any, true)) {
+            this.trapTab(event);
+        }
+    }
+
+    protected panelElement(): any {
+        const element = this.elementRef?.nativeElement as any;
+        if (!element) {
+            return undefined;
+        }
+        return element.matches?.('.dialog-panel') ? element : element.querySelector?.('.dialog-panel') || element;
+    }
+
+    protected trapTab(event: any): void {
+        const root = this.panelElement();
+        const focusables = Array.from(root?.querySelectorAll?.(FOCUSABLE_SELECTOR) || [])
+            .filter((item: any) => item && item.disabled !== true);
+        if (!focusables.length) {
+            return;
+        }
+        const current = root?.ownerDocument?.activeElement;
+        const first = focusables[0] as any;
+        const last = focusables[focusables.length - 1] as any;
+        if (event.shiftKey && (current === first || !root?.contains?.(current))) {
+            event.preventDefault?.();
+            last.focus?.();
+        } else if (!event.shiftKey && (current === last || !root?.contains?.(current))) {
+            event.preventDefault?.();
+            first.focus?.();
         }
     }
 
     close(): void {
-        this.overlays?.close(this.overlayId);
+        if (this._overlayOpen) {
+            this.overlays?.close(this.overlayId);
+        } else {
+            this.closeAction?.();
+        }
         this._overlayOpen = false;
-        this.closeAction?.();
+    }
+
+    onDestroy(): void {
+        if (this._overlayOpen) {
+            this.overlays?.close(this.overlayId);
+            this._overlayOpen = false;
+        }
     }
 }

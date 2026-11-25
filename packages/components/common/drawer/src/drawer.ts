@@ -58,6 +58,7 @@ export class DrawerComponent {
             this.overlays?.register({
                 id: this.overlayId,
                 kind: 'drawer',
+                element: this.elementRef?.nativeElement,
                 beforeClose: () => this.beforeCloseAction?.() ?? true,
                 close: () => { this._overlayOpen = false; this.closeAction?.(); }
             });

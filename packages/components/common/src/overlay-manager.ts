@@ -7,6 +7,12 @@ export type OverlayCloseReason = 'escape' | 'outside' | 'programmatic';
 export interface OverlayEntry {
     id: string;
     kind: OverlayKind;
+    /** Panel element for the default DOM focus adapter (optional in TUI). */
+    element?: any;
+    /** Selector for the initial focus target; defaults to the first focusable. */
+    initialFocus?: string;
+    /** Restore the previously focused element when this overlay closes. */
+    restoreFocus?: boolean | string;
     /** Return false / reject to keep the overlay open (dirty form). */
     beforeClose?(reason: OverlayCloseReason): boolean | Promise<boolean>;
     close?(reason: OverlayCloseReason): void | Promise<void>;
@@ -29,6 +35,7 @@ export type OverlayCloseResult = 'closed' | 'blocked' | 'missing';
 export class OverlayManager {
     private readonly entries: OverlayEntry[] = [];
     private readonly closing = new Set<string>();
+    private readonly previousFocus = new Map<string, any>();
 
     constructor(@Optional() private readonly focus?: OverlayFocusAdapter | null) {
     }
@@ -54,7 +61,11 @@ export class OverlayManager {
             return false;
         }
         this.entries.push(entry);
+        this.previousFocus.set(entry.id, overlayDocument(entry.element)?.activeElement || null);
         this.focus?.focusInitial?.(entry);
+        if (!this.focus) {
+            focusOverlay(entry);
+        }
         return true;
     }
 
@@ -64,8 +75,9 @@ export class OverlayManager {
         if (index < 0) {
             return false;
         }
+        const entry = this.entries[index];
         this.entries.splice(index, 1);
-        this.focus?.restoreFocus?.(this.active);
+        this.restore(entry);
         return true;
     }
 
@@ -85,7 +97,7 @@ export class OverlayManager {
             }
             this.entries.pop();
             await entry.close?.(reason);
-            this.focus?.restoreFocus?.(this.active);
+            this.restore(entry);
             return 'closed';
         } finally {
             this.closing.delete(entry.id);
@@ -104,5 +116,58 @@ export class OverlayManager {
     clear(): void {
         this.entries.length = 0;
         this.closing.clear();
+        this.previousFocus.clear();
+    }
+
+    protected restore(entry: OverlayEntry): void {
+        const previous = this.previousFocus.get(entry.id);
+        this.previousFocus.delete(entry.id);
+        if (this.focus) {
+            this.focus.restoreFocus?.(this.active);
+            return;
+        }
+        const active = this.active;
+        if (active) {
+            // Nested overlays: focus the next panel instead of the underlying page.
+            focusOverlay(active);
+            return;
+        }
+        if (entry.restoreFocus !== false) {
+            previous?.focus?.();
+        }
     }
 }
+
+function overlayDocument(element: any): any {
+    return element?.ownerDocument || element?.defaultView?.document;
+}
+
+/** Default focus adapter: only active when the panel belongs to a DOM document. */
+function focusOverlay(entry: OverlayEntry): void {
+    const doc = overlayDocument(entry.element);
+    const root = focusRoot(entry.element);
+    if (!doc?.defaultView || !root) {
+        return;
+    }
+    const selector = entry.initialFocus || FOCUSABLE_SELECTOR;
+    let target: any;
+    try {
+        target = root.querySelector?.(selector);
+    } catch {
+        target = undefined;
+    }
+    const first = target || root.querySelector?.(FOCUSABLE_SELECTOR);
+    first?.focus?.();
+}
+
+function focusRoot(element: any): any {
+    if (!element) {
+        return null;
+    }
+    if (typeof element.matches === 'function' && element.matches('.dialog-panel')) {
+        return element;
+    }
+    return element.querySelector?.('.dialog-panel') || element;
+}
+
+export const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';

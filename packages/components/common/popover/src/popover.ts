@@ -56,6 +56,7 @@ export class PopoverComponent {
             this.overlays?.register({
                 id: this.overlayId,
                 kind: 'popover',
+                element: this.elementRef?.nativeElement,
                 beforeClose: () => this.beforeCloseAction?.() ?? true,
                 close: () => { this._overlayOpen = false; this.closeAction?.(); }
             });

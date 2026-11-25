@@ -19,7 +19,7 @@ export class DialogOverlayTest {
                 provide: DOCUMENT,
                 useFactory: () => {
                     const { JSDOM } = require('jsdom');
-                    return new JSDOM('<!DOCTYPE html><html><body></body></html>').window.document;
+                    return new JSDOM('<!DOCTYPE html><html><body></body></html>', { url: 'http://localhost/' }).window.document;
                 }
             }, OverlayManager]
         });
@@ -56,5 +56,41 @@ export class DialogOverlayTest {
         expect(await manager.escape()).toEqual('closed');
         expect(closes).toEqual(1);
         expect(manager.size).toEqual(0);
+    }
+
+    @Test('focuses the panel, traps Tab and restores the trigger')
+    async focusCycle() {
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const manager = this.ctx.get(OverlayManager) as OverlayManager;
+        const trigger = doc.createElement('button');
+        trigger.textContent = 'open';
+        doc.body.appendChild(trigger);
+        trigger.focus();
+
+        const panel = doc.createElement('div');
+        panel.className = 'dialog-panel';
+        const first = doc.createElement('button');
+        const second = doc.createElement('button');
+        panel.appendChild(first);
+        panel.appendChild(second);
+        doc.body.appendChild(panel);
+
+        manager.register({ id: 'focus-test', kind: 'dialog', element: panel });
+        expect(doc.activeElement === first).toBe(true);
+        manager.close('focus-test');
+        expect(doc.activeElement === trigger).toBe(true);
+
+        // Dialog-owned Tab trap (the overlay manager owns initial/restore focus).
+        const dialog = new DialogComponent({ nativeElement: panel } as any);
+        (dialog as any)._overlayOpen = true;
+        second.focus();
+        dialog.handleKeydown({ key: 'Tab', preventDefault() { /* asserted by focus */ } });
+        expect(doc.activeElement === first).toBe(true);
+        first.focus();
+        dialog.handleKeydown({ key: 'Tab', shiftKey: true, preventDefault() { /* wrap */ } });
+        expect(doc.activeElement === second).toBe(true);
+
+        panel.remove();
+        trigger.remove();
     }
 }
