@@ -66,6 +66,28 @@ export class TypeaheadTest {
         expect(root.querySelector('.ui-autocomplete-label')?.textContent).toEqual('ab-a');
     }
 
+    @Test('a newer query aborts the stale signal and ignores its result')
+    async staleRequests() {
+        const ref = this.ctx.get(ComponentFactory).create(TypeaheadHostComponent, { injector: this.ctx }) as ComponentRef<TypeaheadHostComponent>;
+        await ref.render();
+        await settle();
+        const typeahead = (ref.hostView.queryAll(TypeaheadComponent) as ComponentRef<TypeaheadComponent>[])[0].instance;
+        const pending: Array<{ query: string; signal: AbortSignal; resolve: (items: any[]) => void }> = [];
+        ref.instance.source = ((query: string, signal: AbortSignal) => new Promise(resolve => {
+            pending.push({ query, signal, resolve: (items: any[]) => resolve({ items } as any) });
+        })) as any;
+        typeahead.onInput('a');
+        typeahead.onInput('ab');
+        expect(pending.length).toEqual(2);
+        expect(pending[0].signal.aborted).toEqual(true);
+        expect(pending[1].signal.aborted).toEqual(false);
+        pending[1].resolve([{ label: 'ab-a', value: 'a' }]);
+        await settle();
+        pending[0].resolve([{ label: 'a-stale', value: 's' }]);
+        await settle();
+        expect(typeahead.options.map(option => option.label)).toEqual(['ab-a']);
+    }
+
     @Test('errors surface with retry and recovery')
     async errorAndRetry() {
         const ref = this.ctx.get(ComponentFactory).create(TypeaheadHostComponent, { injector: this.ctx }) as ComponentRef<TypeaheadHostComponent>;

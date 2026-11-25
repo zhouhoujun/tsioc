@@ -1,4 +1,4 @@
-import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Attribute, Component, ElementRef, noReact } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { installTypeaheadStyles } from './typeahead.styles';
@@ -119,6 +119,9 @@ export class TypeaheadComponent {
         }
         this.aborter?.abort();
         const aborter = new AbortController();
+        // AbortController/AbortSignal use private fields; proxying them breaks abort().
+        (aborter as any)[noReact] = true;
+        (aborter.signal as any)[noReact] = true;
         this.aborter = aborter;
         const request = ++this.requestId;
         this._loading = true;
