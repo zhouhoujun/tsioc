@@ -40,12 +40,14 @@ import { TransferComponent, TransferModule } from '@tsdi/components/common/trans
 import { TreeSelectComponent, TreeSelectModule } from '@tsdi/components/common/tree-select';
 import { RateComponent, RateModule } from '@tsdi/components/common/rate';
 import { SpaceComponent, SpaceModule } from '@tsdi/components/common/space';
+import { DrawerComponent, DrawerModule } from '@tsdi/components/common/drawer';
+import { ResultComponent, ResultModule } from '@tsdi/components/common/result';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent, DrawerComponent, ResultComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -88,6 +90,8 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-tree-select :items="selectTree" :expandedIds="['group']" ariaLabel="Category"></ui-tree-select>
         <ui-rate :value="rating" ariaLabel="Score" :changeAction="onRate"></ui-rate>
         <ui-space :items="['S1', 'S2']" separator="·" ariaLabel="Inline space"></ui-space>
+        <ui-drawer :visible="drawerVisible" title="Panel" :lines="['Drawer line']" placement="right" :closeAction="onDrawerClose"><span>Drawer body</span></ui-drawer>
+        <ui-result status="success" title="Complete" subTitle="Saved" actionLabel="Again" :action="onResult"></ui-result>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -142,6 +146,11 @@ class CommonUiConsoleHostComponent {
     ];
     tree = [{ id: 'root', label: 'Root', children: [{ id: 'child', label: 'Child' }] }];
     selectTree = [{ id: 'group', label: 'Group', children: [{ id: 'leaf', label: 'Leaf' }] }];
+    drawerVisible = false;
+    drawerCloses = 0;
+    onDrawerClose = () => { this.drawerCloses += 1; this.drawerVisible = false; };
+    resultActions = 0;
+    onResult = () => { this.resultActions += 1; };
     rating = 3;
     onRate = (value: number) => { this.rating = value; };
     step = '';
@@ -218,7 +227,9 @@ export class CommonUiConsoleTest {
                 TransferModule,
                 TreeSelectModule,
                 RateModule,
-                SpaceModule
+                SpaceModule,
+                DrawerModule,
+                ResultModule
             ]
         });
         try {
@@ -283,7 +294,7 @@ export class CommonUiConsoleTest {
                 renderer: new TuiRenderer(),
                 root: ref.hostView.rootNodes[0] as any,
                 width: 80,
-                height: 80,
+                height: 140,
                 output: { write() { } }
             });
             try {
@@ -369,6 +380,28 @@ export class CommonUiConsoleTest {
                 expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
                 await Promise.resolve();
                 expect(host.step).toEqual('Publish');
+
+                host.drawerVisible = true;
+                await Promise.resolve();
+                await Promise.resolve();
+                surface.render();
+                const drawerPainted = surface.lastRenderedLines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, '')).join('\n');
+                expect(drawerPainted).toContain('Panel');
+                expect(drawerPainted).toContain('Drawer line');
+                expect(drawerPainted).toContain('Drawer body');
+                expect(drawerPainted).not.toContain('[ ✕ ]');
+                const drawerClose = (ref.hostView.rootNodes[0] as any).querySelector('.ui-drawer-close');
+                drawerClose.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                await Promise.resolve();
+                surface.render();
+                const drawerClosed = surface.lastRenderedLines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, '')).join('\n');
+                expect(drawerClosed).not.toContain('Drawer line');
+
+                const resultAction = (ref.hostView.rootNodes[0] as any).querySelector('.ui-result-action');
+                resultAction.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                expect(host.resultActions).toEqual(1);
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');

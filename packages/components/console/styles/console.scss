@@ -293,6 +293,19 @@ $idle: var(--console-idle, #6fa37a);
 .ui-space-item { color: inherit; }
 .ui-space-sep { color: $meta; }
 
+.ui-drawer { color: $text; }
+.ui-drawer-header { color: $accent; }
+.ui-drawer-line { color: $meta; }
+.ui-result-icon { color: $accent; }
+.ui-result.is-success .ui-result-icon { color: $idle; }
+.ui-result.is-error .ui-result-icon,
+.ui-result.is-500 .ui-result-icon { color: $error; }
+.ui-result.is-warning .ui-result-icon,
+.ui-result.is-403 .ui-result-icon,
+.ui-result.is-404 .ui-result-icon { color: $notice; }
+.ui-result-subtitle,
+.ui-result-line { color: $meta; }
+
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: $meta; }
 .ui-descriptions-value { color: $text; }

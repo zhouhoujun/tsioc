@@ -279,6 +279,19 @@
 .ui-space-item { color: inherit; }
 .ui-space-sep { color: var(--console-meta, #6e7681); }
 
+.ui-drawer { color: var(--console-text, #c9d1d9); }
+.ui-drawer-header { color: var(--console-accent, #86a9d6); }
+.ui-drawer-line { color: var(--console-meta, #6e7681); }
+.ui-result-icon { color: var(--console-accent, #86a9d6); }
+.ui-result.is-success .ui-result-icon { color: var(--console-idle, #6fa37a); }
+.ui-result.is-error .ui-result-icon,
+.ui-result.is-500 .ui-result-icon { color: var(--console-error, #cf9893); }
+.ui-result.is-warning .ui-result-icon,
+.ui-result.is-403 .ui-result-icon,
+.ui-result.is-404 .ui-result-icon { color: var(--console-notice, #c2a05e); }
+.ui-result-subtitle,
+.ui-result-line { color: var(--console-meta, #6e7681); }
+
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: var(--console-meta, #6e7681); }
 .ui-descriptions-value { color: var(--console-text, #c9d1d9); }
