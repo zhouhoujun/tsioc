@@ -1,6 +1,7 @@
 import { FormGroup } from '@tsdi/components/forms';
 import {
     DynamicFormField,
+    DynamicFormIssue,
     DynamicFormSchema,
     DynamicFormTypedCodec,
     DynamicFormTypedDecoded,
@@ -18,6 +19,9 @@ export interface DynamicFormFieldHost {
     messages: Record<string, string>;
     submitAttempted: boolean;
     valueVersion: number;
+    /** Host/server or async issues keyed by field. */
+    externalIssues?: Record<string, DynamicFormIssue>;
+    asyncIssues?: Record<string, DynamicFormIssue>;
 }
 
 /** Host hooks the typed-value helpers need on top of the read-only state. */
@@ -204,7 +208,21 @@ export function canReset(field: DynamicFormField): boolean {
     return field.defaultValue !== undefined && !field.readonly && !field.disabled;
 }
 
+export function fieldIssue(host: DynamicFormFieldHost, field: DynamicFormField): DynamicFormIssue | undefined {
+    return host.externalIssues?.[field.key] || host.asyncIssues?.[field.key];
+}
+
 export function errorFor(host: DynamicFormFieldHost, field: DynamicFormField): string {
+    // Host/async issues are visible without touching the field; read both maps
+    // unconditionally so the binding subscribes to later injections.
+    const injected = fieldIssue(host, field);
+    if (injected) {
+        return injected.message;
+    }
+    const codecError = typedCodecError(host, field);
+    if (codecError) {
+        return codecError;
+    }
     // Read the snapshot unconditionally so the binding subscribes even while the
     // control is still valid (the first failing edit must repaint).
     const errors = host.validationErrors[field.key];
@@ -260,6 +278,10 @@ export function isNumberInput(field: DynamicFormField): boolean {
 
 export function isBooleanInput(field: DynamicFormField): boolean {
     return field.type === 'checkbox' || field.type === 'switch';
+}
+
+export function isWidgetInput(field: DynamicFormField): boolean {
+    return field.type === 'widget';
 }
 
 export function isSelectInput(field: DynamicFormField): boolean {
@@ -325,6 +347,30 @@ export function typedType(host: DynamicFormFieldHost, field: DynamicFormField): 
 }
 
 /** Typed values show the payload text only; the selector owns the source. */
+export function typedSource(host: DynamicFormFieldHost, field: DynamicFormField): DynamicFormTypedSource | undefined {
+    const type = typedType(host, field);
+    return typedSourcesFor(host._schema, field).find(source => source.value === type);
+}
+
+export function typedHtmlType(host: DynamicFormFieldHost, field: DynamicFormField): string {
+    return typedSource(host, field)?.input || htmlType(field);
+}
+
+export function typedCodecError(host: DynamicFormFieldHost, field: DynamicFormField): string | undefined {
+    if (field.typed !== true) {
+        return undefined;
+    }
+    const validate = typedCodec(field).validate;
+    if (!validate) {
+        return undefined;
+    }
+    try {
+        return validate(fieldValue(host, field), field) || undefined;
+    } catch (error) {
+        return (error as Error)?.message || String(error);
+    }
+}
+
 export function typedText(host: DynamicFormFieldHost, field: DynamicFormField): string {
     return typedCodec(field).decode(fieldValue(host, field)).text;
 }

@@ -38,6 +38,8 @@ export interface DynamicFormClasses {
     listField: string;
     listAdd: string;
     listRemove: string;
+    listMove: string;
+    listSummary: string;
 }
 
 export function createDynamicFormClasses(classPrefix: string | undefined): DynamicFormClasses {
@@ -75,6 +77,8 @@ export function createDynamicFormClasses(classPrefix: string | undefined): Dynam
         listFields: p('list-fields'),
         listField: p('list-field'),
         listAdd: p('list-add'),
-        listRemove: p('list-remove')
+        listRemove: p('list-remove'),
+        listMove: p('list-move'),
+        listSummary: p('list-summary')
     };
 }

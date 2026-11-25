@@ -337,6 +337,41 @@ export class DynamicFormTest {
         expect(form.getValue().rules[0].value).toBe('name');
     }
 
+    @Test('validates typed values through the host codec and uses source input types')
+    async typedCodecValidation() {
+        const codec = {
+            decode: (value: any) => ({ source: value?.type || 'literal', text: String(value?.value ?? '') }),
+            encode: (source: string, text: string) => ({ type: source, value: text }),
+            isReference: (value: any) => value?.type === 'msg',
+            validate: (value: any) => value?.value === 'bad' ? 'Bad literal value' : undefined
+        };
+        const form = createForm({
+            fields: [{
+                key: 'value',
+                type: 'text',
+                label: 'Value',
+                typed: true,
+                typedCodec: codec,
+                typedSources: [
+                    { value: 'literal', label: 'Literal' },
+                    { value: 'num', label: 'Number', input: 'number' }
+                ]
+            }]
+        }, { value: { type: 'literal', value: 'bad' } });
+        await flush();
+        const field = form.schema.fields[0];
+        expect(form.errorFor(field)).toBe('Bad literal value');
+        expect(form.validate().valid).toBe(false);
+        expect(form.validate().errors?.value?.typed).toBe('Bad literal value');
+        expect(form.typedHtmlType(field)).toBe('text');
+
+        form.value = { value: { type: 'num', value: '3' } };
+        await flush();
+        expect(form.typedHtmlType(field)).toBe('number');
+        expect(form.errorFor(field)).toBe('');
+        expect(form.validate().valid).toBe(true);
+    }
+
     @Test('skips literal-only rules for codec references')
     async typedCodecReferencesSkipLiteralRules() {
         const codec = {
@@ -392,6 +427,101 @@ export class DynamicFormTest {
         expect(form.form!.get('scope')!.value).toBe('task_1,task');
         expect(form.getValue().scope).toBe('task_1,task');
         expect(form.optionSelected(field, 'task')).toBe(true);
+    }
+
+    @Test('accepts host issues, keeps warnings visible but non-blocking')
+    async hostIssues() {
+        const form = createForm({
+            fields: [{ key: 'url', type: 'text', label: 'URL' }]
+        }, { url: 'https://example.com' });
+        await flush();
+        const field = form.schema.fields[0];
+
+        form.setIssues([{ key: 'url', message: 'Endpoint not found' }]);
+        await flush();
+        expect(form.errorFor(field)).toBe('Endpoint not found');
+        expect(form.validate().valid).toBe(false);
+        expect(form.validate().errors?.url?.external).toBe('Endpoint not found');
+
+        form.clearIssues(['url']);
+        await flush();
+        expect(form.errorFor(field)).toBe('');
+        expect(form.validate().valid).toBe(true);
+
+        form.setIssues([{ key: 'url', message: 'Heads up', severity: 'warning' }]);
+        await flush();
+        expect(form.errorFor(field)).toBe('Heads up');
+        expect(form.validate().valid).toBe(true);
+        expect(form.issueSeverity(field)).toBe('warning');
+    }
+
+    @Test('runs async field and schema validation and focuses the first error')
+    async asyncValidation() {
+        const focused: string[] = [];
+        const form = createForm({
+            fields: [
+                {
+                    key: 'name',
+                    type: 'text',
+                    label: 'Name',
+                    validate: async (value: string) => value === 'taken' ? 'Name is taken' : undefined
+                },
+                { key: 'url', type: 'text', label: 'URL' }
+            ],
+            validate: async (values: Record<string, any>) =>
+                values.url === 'bad' ? [{ key: 'url', message: 'URL is invalid' }] : []
+        }, { name: 'taken', url: 'bad' });
+        form.focusFieldAction = (key: string) => focused.push(key);
+        await flush();
+
+        const result = await form.submitAsync();
+        await flush();
+        expect(result.valid).toBe(false);
+        expect(form.errorFor(form.schema.fields[0])).toBe('Name is taken');
+        expect(form.errorFor(form.schema.fields[1])).toBe('URL is invalid');
+        expect(focused[0]).toBe('name');
+
+        form.changeText(form.schema.fields[0], { target: { value: 'free' } });
+        form.changeText(form.schema.fields[1], { target: { value: 'https://ok' } });
+        await flush();
+        expect((await form.validateAsync()).valid).toBe(true);
+        expect(form.errorFor(form.schema.fields[0])).toBe('');
+        expect(form.errorFor(form.schema.fields[1])).toBe('');
+    }
+
+    @Test('moves list rows and reports a row summary')
+    async listReorderAndSummary() {
+        const form = createForm({
+            fields: [{
+                key: 'rules',
+                type: 'list',
+                label: 'Rules',
+                reorder: true,
+                rowSummary: (item: any) => `${item.field || '?'} = ${item.value || '?'}`,
+                itemFields: [
+                    { key: 'field', type: 'text', label: 'Field' },
+                    { key: 'value', type: 'text', label: 'Value' }
+                ]
+            }]
+        }, {
+            rules: [
+                { field: 'a', value: '1' },
+                { field: 'b', value: '2' },
+                { field: 'c', value: '3' }
+            ]
+        });
+        await flush();
+        const field = form.schema.fields[0];
+        expect(form.listRowSummary(field, { field: 'a', value: '1' }, 0)).toBe('a = 1');
+
+        form.moveListItem(field, 2, -1);
+        await flush();
+        expect(form.getValue().rules.map((item: any) => item.field)).toEqual(['a', 'c', 'b']);
+        // Out-of-range moves are ignored.
+        form.moveListItem(field, 0, -1);
+        form.moveListItem(field, 2, 1);
+        await flush();
+        expect(form.getValue().rules.map((item: any) => item.field)).toEqual(['a', 'c', 'b']);
     }
 
     @Test('reports schema-declared field actions to the host')

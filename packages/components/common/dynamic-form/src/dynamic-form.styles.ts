@@ -273,6 +273,10 @@ export const DYNAMIC_FORM_CSS = `
     color: var(--df-text-hint);
 }
 
+.df-field-error[data-severity="warning"] {
+    color: var(--df-warning, #b45309);
+}
+
 .df-field-error {
     margin-top: 3px;
     font-size: 10px;
@@ -349,6 +353,43 @@ export const DYNAMIC_FORM_CSS = `
 
 .df-list-field {
     min-width: 0;
+}
+
+.df-list-actions {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.df-list-move {
+    border: 0;
+    background: transparent;
+    color: var(--df-text-hint);
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.1;
+    padding: 0 3px;
+}
+
+.df-list-move:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.df-list-move:not(:disabled):hover {
+    color: var(--df-primary);
+}
+
+.df-list-summary {
+    flex: 0 1 auto;
+    align-self: center;
+    max-width: 34%;
+    color: var(--df-text-hint);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .df-list-remove {

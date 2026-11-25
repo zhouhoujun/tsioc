@@ -1,10 +1,11 @@
-import { Attribute, Component, Computed, OnDestroy, noReact } from '@tsdi/components';
+import { Attribute, Component, Computed, ElementRef, OnDestroy, noReact } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
 import { FormControl, FormGroup } from '@tsdi/components/forms';
 import {
     DynamicFormChange,
-    DynamicFormCondition,
     DynamicFormField,
     DynamicFormFieldAction,
+    DynamicFormIssue,
     DynamicFormOption,
     DynamicFormResult,
     DynamicFormSchema,
@@ -14,57 +15,23 @@ import {
 import { buildDynamicValidators, dynamicFormMessage } from './dynamic-form.validation';
 import { DYNAMIC_FORM_TEMPLATE } from './dynamic-form.template';
 import { createDynamicFormClasses, DynamicFormClasses } from './dynamic-form.classes';
+import { DynamicFieldWidgetComponent } from './dynamic-field-widget';
+import { conditionMatches, normalizeSchema } from './dynamic-form.normalize';
+import { applyFormSchema, formSchemaFields, refreshFormErrors, syncFormValues } from './dynamic-form.projection';
+import { fieldWidgetComponent as resolveFieldWidgetComponent, fieldWidget } from './dynamic-form.widgets';
+import {
+    clearFormIssues,
+    focusFirstFormError,
+    formValidationResult,
+    isFormValid,
+    issueSeverityFor,
+    mergedFormErrors,
+    scheduleFormValidation,
+    setFormIssues,
+    validateFormAsync
+} from './dynamic-form.validation-state';
 import * as editor from './dynamic-form.editors';
 import * as fields from './dynamic-form.fields';
-
-function normalizeField(field: any): DynamicFormField {
-    return {
-        ...field,
-        key: String(field?.key ?? ''),
-        type: field?.type || 'text',
-        options: Array.isArray(field?.options) ? field.options : undefined,
-        rules: Array.isArray(field?.rules) ? field.rules : undefined
-    };
-}
-
-function normalizeSchema(value: any): DynamicFormSchema {
-    let raw = value;
-    if (typeof raw === 'string') {
-        raw = JSON.parse(raw);
-    }
-    if (Array.isArray(raw)) {
-        raw = { fields: raw };
-    }
-    if (!raw || typeof raw !== 'object') {
-        return { fields: [] };
-    }
-    return {
-        ...raw,
-        fields: (Array.isArray(raw.fields) ? raw.fields : [])
-            .filter((field: any) => field && field.key)
-            .map(normalizeField)
-    };
-}
-
-function conditionMatches(actual: any, condition: DynamicFormCondition): boolean {
-    if (condition.equals !== undefined) {
-        return String(actual) === String(condition.equals);
-    }
-    if (condition.notEquals !== undefined) {
-        return String(actual) !== String(condition.notEquals);
-    }
-    if (condition.in) {
-        const allowed = condition.in.map(item => String(item));
-        return allowed.includes(String(actual));
-    }
-    if (condition.truthy !== undefined) {
-        return condition.truthy ? !!actual : !actual;
-    }
-    if (condition.falsy !== undefined) {
-        return condition.falsy ? !actual : !!actual;
-    }
-    return true;
-}
 
 let dynamicFormSequence = 0;
 
@@ -78,6 +45,7 @@ let dynamicFormSequence = 0;
  */
 @Component({
     selector: 'dynamic-form, ui-dynamic-form',
+    imports: [DynamicFieldWidgetComponent],
     template: DYNAMIC_FORM_TEMPLATE
 })
 export class DynamicFormComponent implements OnDestroy {
@@ -107,6 +75,11 @@ export class DynamicFormComponent implements OnDestroy {
     @Attribute() submitAction?: (result: DynamicFormResult) => void;
     @Attribute() resetAction?: (value: Record<string, any>) => void;
     @Attribute() validityAction?: (valid: boolean, errors: Record<string, any> | null) => void;
+    /** Host focuses the field when validation fails (TUI maps this to its focus layer). */
+    @Attribute() focusFieldAction?: (key: string) => void;
+    /** Automatic async validation: none (host-driven), on change, on blur or on submit. */
+    @Attribute() validateOn: 'none' | 'change' | 'blur' | 'submit' = 'none';
+    @Attribute() validationDelay = 250;
 
     _schema: DynamicFormSchema = { fields: [] };
     /** Pending typed-source choice per field key (only while the value is empty). */
@@ -115,19 +88,29 @@ export class DynamicFormComponent implements OnDestroy {
     _value: Record<string, any> = {};
     protected _contextKey = '';
     form?: FormGroup;
-    protected formSignature = '';
-    protected schemaSignature = '';
+    formSignature = '';
+    schemaSignature = '';
     protected valueSignature = '';
     protected schemaError = '';
     validationErrors: Record<string, Record<string, any> | null> = {};
     ruleMessages: Record<string, Record<string, string>> = {};
+    /** Issues injected by the host (reference checks, server validation). */
+    externalIssues: Record<string, DynamicFormIssue> = {};
+    /** Issues produced by the last async validation run. */
+    asyncIssues: Record<string, DynamicFormIssue> = {};
+    validating = false;
+    validationSequence = 0;
+    validationTimer?: any;
+    validationAbort?: AbortController;
     submitAttempted = false;
     valueVersion = 0;
-    protected destroyed = false;
+    destroyed = false;
     protected syncQueued = false;
     protected syncMode: 'none' | 'soft' | 'force' = 'none';
     protected readonly formId = `dynamic-form-${++dynamicFormSequence}`;
     protected jsonRawFields: Record<string, boolean> = {};
+
+    constructor(@Optional() elementRef?: ElementRef) { }
 
     @Attribute()
     set schema(value: DynamicFormSchema | string | any) {
@@ -219,9 +202,11 @@ export class DynamicFormComponent implements OnDestroy {
         return this.resetLabel || this._schema?.resetLabel || 'Reset';
     }
 
-    get formValid(): boolean {
-        return !!this.form?.valid;
-    }
+    get formValid(): boolean { return this.isValid(); }
+
+    protected isValid(): boolean { return isFormValid(this); }
+
+    protected mergedErrors(): Record<string, any> | null { return mergedFormErrors(this); }
 
     get isDirty(): boolean {
         return !!this.form?.dirty;
@@ -256,74 +241,13 @@ export class DynamicFormComponent implements OnDestroy {
     // Form projection
     // -----------------------------------------------------------------
 
-    protected schemaFields(): DynamicFormField[] {
-        return this._schema?.fields || [];
-    }
+    schemaFields(): DynamicFormField[] { return formSchemaFields(this); }
 
-    protected applySchema(): void {
-        const fields = this.schemaFields();
-        const signature = fields.map(field => [
-            field.key,
-            field.type,
-            field.required ? 1 : 0,
-            field.defaultValue === undefined ? '' : JSON.stringify(field.defaultValue),
-            JSON.stringify(field.rules || ''),
-            field.min ?? '',
-            field.max ?? '',
-            field.minLength ?? '',
-            field.maxLength ?? '',
-            field.pattern || ''
-        ].join(':')).join('|');
-        if (this.form && signature === this.formSignature) {
-            this.syncValues(false);
-            return;
-        }
-        const controls: Record<string, FormControl> = {};
-        this.ruleMessages = {};
-        fields.forEach(field => {
-            const built = buildDynamicValidators(field);
-            this.ruleMessages[field.key] = built.messages;
-            controls[field.key] = new FormControl(this.initialValue(field), built.validators);
-        });
-        const form = new FormGroup(controls);
-        (form as any)[noReact] = true;
-        Object.values(controls).forEach(control => {
-            (control as any)[noReact] = true;
-        });
-        this.form = form;
-        this.formSignature = signature;
-        this.valueVersion += 1;
-        this.refreshErrors();
-    }
+    protected applySchema(): void { applyFormSchema(this); }
 
-    protected syncValues(force: boolean): void {
-        if (!this.form) {
-            this.applySchema();
-            return;
-        }
-        this.schemaFields().forEach(field => {
-            const control = this.form?.get(field.key);
-            if (!control) {
-                return;
-            }
-            const incoming = this.initialValue(field);
-            if (force) {
-                control.reset(incoming, { emitEvent: false });
-            } else if (!control.dirty && control.value !== incoming) {
-                control.setValue(incoming, { emitEvent: false });
-            }
-        });
-        this.valueVersion += 1;
-        this.refreshErrors();
-    }
+    protected syncValues(force: boolean): void { syncFormValues(this, force); }
 
-    protected refreshErrors(): void {
-        const next: Record<string, Record<string, any> | null> = {};
-        this.schemaFields().forEach(field => {
-            next[field.key] = this.form?.get(field.key)?.errors || null;
-        });
-        this.validationErrors = next;
-    }
+    refreshErrors(): void { refreshFormErrors(this); }
 
     fieldDisplayValue(field: DynamicFormField, value: any): any { return fields.fieldDisplayValue(field, value); }
 
@@ -352,7 +276,8 @@ export class DynamicFormComponent implements OnDestroy {
             errors: control.errors
         };
         this.changeAction?.(change);
-        this.validityAction?.(!!this.form?.valid, this.form?.errors || null);
+        this.validityAction?.(this.isValid(), this.mergedErrors());
+        scheduleFormValidation(this, 'change');
     }
 
     setEditorValue(field: DynamicFormField, value: any): void {
@@ -433,6 +358,8 @@ export class DynamicFormComponent implements OnDestroy {
 
 
     addListItem(field: DynamicFormField): void { editor.addListItem(this, field); }
+    moveListItem(field: DynamicFormField, index: number, delta: number): void { editor.moveListItem(this, field, index, delta); }
+    listRowSummary(field: DynamicFormField, item: any, index: number): string { return editor.listRowSummary(field, item, index); }
 
     removeListItem(field: DynamicFormField, index: number): void { editor.removeListItem(this, field, index); }
 
@@ -482,6 +409,7 @@ export class DynamicFormComponent implements OnDestroy {
 
     blurField(field: DynamicFormField): void {
         this.blurAction?.(field);
+        scheduleFormValidation(this, 'blur');
     }
 
     /** Report a schema-declared field action (`field.actions`) to the host. */
@@ -512,6 +440,7 @@ export class DynamicFormComponent implements OnDestroy {
         if (field.typed === true) {
             delete this.typedSelections[field.key];
         }
+        this.clearIssues([field.key]);
         this.valueVersion += 1;
         this.validationErrors = { ...this.validationErrors, [field.key]: control.errors };
         this.changeAction?.({
@@ -521,7 +450,7 @@ export class DynamicFormComponent implements OnDestroy {
             valid: control.valid,
             errors: control.errors
         });
-        this.validityAction?.(!!this.form?.valid, this.form?.errors || null);
+        this.validityAction?.(this.isValid(), this.mergedErrors());
     }
 
     /** Reset controls to schema defaults. Pass `false` for a silent reset. */
@@ -533,12 +462,17 @@ export class DynamicFormComponent implements OnDestroy {
             this.form?.get(field.key)?.reset(value, { emitEvent: false });
         });
         this.submitAttempted = false;
+        this.validationSequence += 1;
+        this.validationAbort?.abort();
+        this.validationAbort = undefined;
+        this.validating = false;
+        this.clearIssues();
         this.valueVersion += 1;
         this.refreshErrors();
         if (emit) {
             const value = this.getValue();
             this.resetAction?.(value);
-            this.validityAction?.(!!this.form?.valid, this.form?.errors || null);
+            this.validityAction?.(this.isValid(), this.mergedErrors());
         }
         return this.getValue();
     }
@@ -553,20 +487,47 @@ export class DynamicFormComponent implements OnDestroy {
         this.refreshErrors();
         const result: DynamicFormResult = {
             value: this.getValue(),
-            valid: !!this.form?.valid,
-            errors: this.form?.errors || null
+            valid: this.isValid(),
+            errors: this.mergedErrors()
         };
+        if (!result.valid) {
+            this.focusFirstError();
+        }
         this.submitAction?.(result);
         return result;
     }
 
     validate(): DynamicFormValidateResult {
-        return {
-            valid: !!this.form?.valid,
-            value: this.getValue(),
-            errors: this.form?.errors || null
-        };
+        return { valid: this.isValid(), value: this.getValue(), errors: this.mergedErrors() };
     }
+
+    /** Host-injected issues (reference checks, server validation). */
+    setIssues(issues: DynamicFormIssue[] = []): void {
+        setFormIssues(this, issues);
+        this.valueVersion += 1;
+    }
+
+    /** Clear external (all or selected keys) and/or async issues. */
+    clearIssues(keys?: string[], source: 'external' | 'async' | 'all' = 'all'): void {
+        clearFormIssues(this, keys, source);
+        this.valueVersion += 1;
+    }
+
+    /** Run field/schema async validation; stale runs are ignored. */
+    async validateAsync(): Promise<DynamicFormValidateResult> { return validateFormAsync(this); }
+
+    /** Async submit: validate first, then report the merged result. */
+    async submitAsync(): Promise<DynamicFormResult> {
+        const result = await this.validateAsync();
+        this.submitAction?.(result);
+        return result;
+    }
+
+    protected validationResult(): DynamicFormValidateResult { return formValidationResult(this); }
+
+    focusFirstError(): string { return focusFirstFormError(this); }
+
+    issueSeverity(field: DynamicFormField): string { return issueSeverityFor(this, field); }
 
     getValue(): Record<string, any> {
         return fields.formModelValue(this, this.schemaFields());
@@ -591,7 +552,7 @@ export class DynamicFormComponent implements OnDestroy {
         return String(a) === String(b);
     }
 
-    protected isVisible(field: DynamicFormField): boolean {
+    isVisible(field: DynamicFormField): boolean {
         if (!field.visibleWhen) {
             return true;
         }
@@ -634,6 +595,12 @@ export class DynamicFormComponent implements OnDestroy {
 
     isBooleanInput(field: DynamicFormField): boolean { return fields.isBooleanInput(field); }
 
+    isWidgetInput(field: DynamicFormField): boolean { return fields.isWidgetInput(field); }
+    widgetFor(field: DynamicFormField): any { return fieldWidget(this._schema, field); }
+    fieldWidgetComponent(field: DynamicFormField): any { return resolveFieldWidgetComponent(this._schema, field); }
+    @Computed()
+    get formValues(): Record<string, any> { return this.getValue(); }
+    changeWidgetValue = (field: DynamicFormField, value: any): void => { this.updateValue(field, value); };
     isSelectInput(field: DynamicFormField): boolean { return fields.isSelectInput(field); }
     isMultiSelect(field: DynamicFormField): boolean { return fields.isMultiSelect(field); }
     optionSelected(field: DynamicFormField, value: any): boolean { return fields.optionSelected(this, field, value); }
@@ -651,6 +618,7 @@ export class DynamicFormComponent implements OnDestroy {
 
     typedType(field: DynamicFormField): string { return fields.typedType(this, field); }
     typedText(field: DynamicFormField): string { return fields.typedText(this, field); }
+    typedHtmlType(field: DynamicFormField): string { return fields.typedHtmlType(this, field); }
     changeTypedType(field: DynamicFormField, event: any): void { fields.changeTypedType(this, field, event); }
 
     isTextareaInput(field: DynamicFormField): boolean { return fields.isTextareaInput(field); }
@@ -694,5 +662,12 @@ export class DynamicFormComponent implements OnDestroy {
 
     onDestroy(): void {
         this.destroyed = true;
+        if (this.validationTimer) {
+            clearTimeout(this.validationTimer);
+            this.validationTimer = undefined;
+        }
+        this.validationSequence += 1;
+        this.validationAbort?.abort();
+        this.validationAbort = undefined;
     }
 }

@@ -329,6 +329,28 @@ export function addListItem(host: DynamicFormEditorHost, field: DynamicFormField
     updateList(host, field, items);
 }
 
+export function moveListItem(host: DynamicFormEditorHost, field: DynamicFormField, index: number, delta: number): void {
+    const items = listItems(host, field).map(item => ({ ...item }));
+    const target = index + delta;
+    if (index < 0 || index >= items.length || target < 0 || target >= items.length) {
+        return;
+    }
+    const [item] = items.splice(index, 1);
+    items.splice(target, 0, item);
+    updateList(host, field, items);
+}
+
+export function listRowSummary(field: DynamicFormField, item: any, index: number): string {
+    if (typeof field.rowSummary !== 'function') {
+        return '';
+    }
+    try {
+        return String(field.rowSummary(item, index) ?? '');
+    } catch {
+        return '';
+    }
+}
+
 export function removeListItem(host: DynamicFormEditorHost, field: DynamicFormField, index: number): void {
     const items = listItems(host, field).map(item => ({ ...item }));
     items.splice(index, 1);

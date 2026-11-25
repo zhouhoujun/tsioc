@@ -1,10 +1,23 @@
 import expect = require('expect');
 import { After, Before, Suite, Test } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
-import { Component, ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
+import { Attribute, Component, ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DynamicFormComponent, DynamicFormModule } from '../dynamic-form';
+
+@Component({
+    selector: 'dynamic-form-test-widget',
+    template: `<textarea class="test-widget" [value]="value"
+        @input="input($event)"></textarea>`
+})
+class DynamicFormTestWidgetComponent {
+    @Attribute() value: any = '';
+    @Attribute() changeAction?: (value: any) => void;
+    input(event: any): void {
+        this.changeAction?.(event?.target?.value);
+    }
+}
 
 @Component({
     selector: 'dynamic-form-dom-host',
@@ -47,6 +60,46 @@ export class DynamicFormDomTest {
     @After()
     async clean() {
         await this.ctx.close();
+    }
+
+    @Test('renders a registered field widget and falls back for unknown types')
+    async fieldWidgets() {
+        const ref = this.ctx.get(ComponentFactory).create(DynamicFormDomHostComponent, {
+            injector: this.ctx
+        }) as ComponentRef<DynamicFormDomHostComponent>;
+        await ref.render();
+        for (let index = 0; index < 4; index++) {
+            await Promise.resolve();
+        }
+        const form = ref.hostView.query(DynamicFormComponent) as ComponentRef<DynamicFormComponent>;
+        form.instance.schema = {
+            fields: [
+                { key: 'custom', type: 'widget', widget: 'test', label: 'Custom' },
+                { key: 'unknown', type: 'widget', widget: 'missing', label: 'Unknown' }
+            ],
+            widgets: [{ type: 'test', component: DynamicFormTestWidgetComponent }]
+        };
+        form.instance.value = { custom: 'initial', unknown: 'fallback' };
+        for (let index = 0; index < 20; index++) {
+            await Promise.resolve();
+        }
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const root = form.hostView.rootNodes[0] as HTMLElement;
+        const widget = root.querySelector('.test-widget') as HTMLTextAreaElement;
+        expect(widget).toBeTruthy();
+        expect(widget.value).toBe('initial');
+        widget.value = 'typed';
+        widget.dispatchEvent(new ((this.ctx.get(DOCUMENT) as any).defaultView as any).Event('input', { bubbles: true }));
+        for (let index = 0; index < 4; index++) {
+            await Promise.resolve();
+        }
+        expect(form.instance.getValue().custom).toBe('typed');
+
+        // A missing widget degrades to a text input instead of rendering nothing.
+        const fallback = root.querySelector('[data-field-key="unknown"] input') as HTMLInputElement;
+        expect(fallback).toBeTruthy();
+        expect(fallback.value).toBe('fallback');
     }
 
     @Test('links field errors and descriptions through aria-describedby')

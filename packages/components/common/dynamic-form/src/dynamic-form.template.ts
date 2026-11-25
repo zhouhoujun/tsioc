@@ -31,8 +31,20 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                 [selected]="typedType(field) === source.value">{{source.label}}</option>
                         </select>
                     </div>
+                    <dynamic-field-widget v-if="isWidgetInput(field) && fieldWidgetComponent(field)"
+                        :component="fieldWidgetComponent(field)" :field="field"
+                        :value="fieldValue(field)" :values="formValues"
+                        :disabled="field.disabled || field.readonly"
+                        :error="errorFor(field)" :changeAction="changeWidgetValue"></dynamic-field-widget>
+                    <input v-if="isWidgetInput(field) && !fieldWidgetComponent(field)" [class]="inputClass(field)"
+                        type="text" [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
+                        [readOnly]="field.readonly" [disabled]="field.disabled"
+                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
+                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                        aria-describedby="{{describedByFor(field)}}"
+                        @input="changeText(field, $event)" @blur="blurField(field)" />
                     <div [class]="inputWrapClass(field)" v-if="isTextInput(field) || isNumberInput(field)">
-                        <input v-if="isTextInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
+                        <input v-if="isTextInput(field)" [class]="inputClass(field)" type="{{field.typed ? typedHtmlType(field) : htmlType(field)}}"
                             [value]="field.typed ? typedText(field) : fieldValue(field)" [placeholder]="field.placeholder || ''"
                             [readOnly]="field.readonly" [disabled]="field.disabled"
                             [min]="field.min" [max]="field.max" [step]="field.step"
@@ -40,7 +52,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                             aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
                             aria-describedby="{{describedByFor(field)}}"
                             @input="changeText(field, $event)" @blur="blurField(field)" />
-                        <input v-if="isNumberInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
+                        <input v-if="isNumberInput(field)" [class]="inputClass(field)" type="{{field.typed ? typedHtmlType(field) : htmlType(field)}}"
                             [value]="field.typed ? typedText(field) : fieldValue(field)" [placeholder]="field.placeholder || ''"
                             [readOnly]="field.readonly" [disabled]="field.disabled"
                             [min]="field.min" [max]="field.max" [step]="field.step || 1"
@@ -178,6 +190,15 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                     </div>
                                 </div>
                             </div>
+                            <span [class]="classes.listSummary" v-if="listRowSummary(field, item, index)">{{listRowSummary(field, item, index)}}</span>
+                            <span class="df-list-actions" v-if="field.reorder">
+                                <button [class]="classes.listMove" type="button" data-list-move="up"
+                                    aria-label="Move up" [disabled]="index === 0"
+                                    @click="moveListItem(field, index, -1)">↑</button>
+                                <button [class]="classes.listMove" type="button" data-list-move="down"
+                                    aria-label="Move down" [disabled]="index >= listItems(field).length - 1"
+                                    @click="moveListItem(field, index, 1)">↓</button>
+                            </span>
                             <button [class]="classes.listRemove" type="button" @click="removeListItem(field, listIndex(field, item))">{{field.removeLabel || '✕'}}</button>
                         </div>
                         <button [class]="classes.listAdd" type="button" @click="addListItem(field)">{{field.addLabel || '+ Add'}}</button>
@@ -202,7 +223,8 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         <button [class]="classes.listAdd" type="button" @click="addKeyValue(field)">{{field.addLabel || '+ Add'}}</button>
                     </div>
                     <input v-if="field.type === 'hidden'" type="hidden" [value]="fieldValue(field)" />
-                    <div [class]="classes.error" id="{{fieldErrorId(field)}}" role="alert" v-if="errorFor(field)">{{errorFor(field)}}</div>
+                    <div [class]="classes.error" id="{{fieldErrorId(field)}}" role="alert"
+                        data-severity="{{issueSeverity(field)}}" v-if="errorFor(field)">{{errorFor(field)}}</div>
                     <div [class]="classes.hint" id="{{fieldHintId(field)}}" v-if="field.description && !isBooleanInput(field)">{{field.description}}</div>
                 </div>
                 </div>

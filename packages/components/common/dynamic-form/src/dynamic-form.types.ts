@@ -30,7 +30,8 @@ export type DynamicFormFieldType =
     | 'color'
     | 'hidden'
     | 'list'
-    | 'keyvalue';
+    | 'keyvalue'
+    | 'widget';
 
 export interface DynamicFormOption {
     label: string;
@@ -58,10 +59,29 @@ export interface DynamicFormFieldAction {
  * `flow.var`, ...). Labels are host-supplied so the control follows the host's
  * locale; the value is what gets prefixed onto the stored string.
  */
+/** Validation issue from field/schema hooks or the host (server/reference checks). */
+export interface DynamicFormIssue {
+    key: string;
+    message: string;
+    /** Warnings are displayed but do not block submit. */
+    severity?: 'error' | 'warning';
+}
+
+export interface DynamicFormValidationContext {
+    value: any;
+    values: Record<string, any>;
+    /** The field as provided by the host schema (host extensions keep their type). */
+    field: any;
+    /** Aborted when a newer validation run supersedes this one. */
+    signal?: AbortSignal;
+}
+
 export interface DynamicFormTypedSource {
     /** Selector value; hosts may add sources (`num`, `json`, `jsonata`, ...). */
     value: string;
     label: string;
+    /** Input control used while this source is active (defaults to the field type). */
+    input?: 'text' | 'number' | 'password' | 'url';
 }
 
 /** Stored typed value split into the selector source and editable text. */
@@ -81,6 +101,8 @@ export interface DynamicFormTypedCodec {
     encode(source: string, text: string): any;
     /** A value that points at host context instead of carrying a literal. */
     isReference?(value: any): boolean;
+    /** Inline validation for the stored typed value (JSON/regex/expression). */
+    validate?(value: any, field?: DynamicFormField): string | undefined;
 }
 
 export type DynamicFormRuleType =
@@ -150,6 +172,12 @@ export interface DynamicFormField {
     removeLabel?: string;
     minItems?: number;
     maxItems?: number;
+    /** Allow moving list rows up/down (TUI-safe alternative to drag/drop). */
+    reorder?: boolean;
+    /** Summary shown on each list row (for example `field = value`). */
+    rowSummary?(item: any, index: number): string;
+    /** Registered widget type (see {@link DynamicFormWidget}); uses `type: 'widget'`. */
+    widget?: string;
     /** Value editor used by key/value fields. */
     valueType?: 'text' | 'number' | 'boolean';
     keyPlaceholder?: string;
@@ -177,10 +205,28 @@ export interface DynamicFormField {
     visibleWhen?: DynamicFormCondition;
     /** Keep the value in the form model but do not render it. */
     hidden?: boolean;
+    /**
+     * Field-level validation (sync or async). Return a message to fail.
+     * Hosts may instead inject issues with `DynamicFormComponent.setIssues`.
+     */
+    validate?(value: any, context: DynamicFormValidationContext):
+        string | undefined | Promise<string | undefined>;
+}
+
+/**
+ * Renderer-neutral field widget. Hosts register components by type; the form
+ * only forwards field/value/error/change, so DOM and TUI share the same code.
+ * Unknown types fall back to a text input.
+ */
+export interface DynamicFormWidget {
+    type: string;
+    component: any;
 }
 
 export interface DynamicFormSchema {
     fields: DynamicFormField[];
+    /** Widgets referenced by `field.widget` (`field.type` must be `widget`). */
+    widgets?: DynamicFormWidget[];
     /** Title used for fields that do not declare a group. */
     defaultGroupLabel?: string;
     /** Labels for the typed-value source selector; defaults to English. */
@@ -189,6 +235,9 @@ export interface DynamicFormSchema {
     jsonFieldsLabel?: string;
     jsonTextLabel?: string;
     messages?: Record<string, string>;
+    /** Cross-field validation run after field hooks. */
+    validate?(values: Record<string, any>, signal?: AbortSignal):
+        DynamicFormIssue[] | Promise<DynamicFormIssue[]>;
     submitLabel?: string;
     resetLabel?: string;
 }
