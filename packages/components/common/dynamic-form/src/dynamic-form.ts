@@ -1,5 +1,5 @@
 import { Attribute, Component, Computed, ElementRef, OnDestroy, noReact } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { resolveFieldAria } from '../../field/src/field-semantics';
 import { FormControl, FormGroup } from '@tsdi/components/forms';
 import {
@@ -11,6 +11,7 @@ import {
     DynamicFormResult,
     DynamicFormSchema,
     DynamicFormTypedSource,
+    DynamicFormWidget,
     DynamicFormValidateResult
 } from './dynamic-form.types';
 import { buildDynamicValidators, dynamicFormMessage } from './dynamic-form.validation';
@@ -19,7 +20,11 @@ import { createDynamicFormClasses, DynamicFormClasses } from './dynamic-form.cla
 import { DynamicFieldWidgetComponent } from './dynamic-field-widget';
 import { conditionMatches, normalizeSchema } from './dynamic-form.normalize';
 import { applyFormSchema, formSchemaFields, refreshFormErrors, syncFormValues } from './dynamic-form.projection';
-import { fieldWidgetComponent as resolveFieldWidgetComponent, fieldWidget } from './dynamic-form.widgets';
+import {
+    DYNAMIC_FORM_WIDGETS,
+    fieldWidget,
+    fieldWidgetComponent as resolveFieldWidgetComponent
+} from './dynamic-form.widgets';
 import {
     clearFormIssues,
     focusFirstFormError,
@@ -81,6 +86,8 @@ export class DynamicFormComponent implements OnDestroy {
     /** Automatic async validation: none (host-driven), on change, on blur or on submit. */
     @Attribute() validateOn: 'none' | 'change' | 'blur' | 'submit' = 'none';
     @Attribute() validationDelay = 250;
+    /** Per-form widgets; schema.widgets wins, then this list, then DI. */
+    @Attribute() widgets: DynamicFormWidget[] = [];
 
     _schema: DynamicFormSchema = { fields: [] };
     /** Pending typed-source choice per field key (only while the value is empty). */
@@ -111,7 +118,10 @@ export class DynamicFormComponent implements OnDestroy {
     protected readonly formId = `dynamic-form-${++dynamicFormSequence}`;
     protected jsonRawFields: Record<string, boolean> = {};
 
-    constructor(@Optional() elementRef?: ElementRef) { }
+    constructor(
+        @Optional() public elementRef?: ElementRef,
+        @Optional() @Inject(DYNAMIC_FORM_WIDGETS) protected injectedWidgets?: DynamicFormWidget[]
+    ) { }
 
     @Attribute()
     set schema(value: DynamicFormSchema | string | any) {
@@ -602,8 +612,13 @@ export class DynamicFormComponent implements OnDestroy {
     isBooleanInput(field: DynamicFormField): boolean { return fields.isBooleanInput(field); }
 
     isWidgetInput(field: DynamicFormField): boolean { return fields.isWidgetInput(field); }
-    widgetFor(field: DynamicFormField): any { return fieldWidget(this._schema, field); }
-    fieldWidgetComponent(field: DynamicFormField): any { return resolveFieldWidgetComponent(this._schema, field); }
+    protected extraWidgets(): DynamicFormWidget[] {
+        return [...(this.widgets || []), ...(this.injectedWidgets || [])];
+    }
+    widgetFor(field: DynamicFormField): any { return fieldWidget(this._schema, field, this.extraWidgets()); }
+    fieldWidgetComponent(field: DynamicFormField): any {
+        return resolveFieldWidgetComponent(this._schema, field, this.extraWidgets());
+    }
     @Computed()
     get formValues(): Record<string, any> { return this.getValue(); }
     changeWidgetValue = (field: DynamicFormField, value: any): void => { this.updateValue(field, value); };

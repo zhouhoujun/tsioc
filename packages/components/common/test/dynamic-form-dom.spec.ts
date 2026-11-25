@@ -4,7 +4,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Attribute, Component, ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { DynamicFormComponent, DynamicFormModule } from '../dynamic-form';
+import { DYNAMIC_FORM_WIDGETS, DynamicFormComponent, DynamicFormModule } from '../dynamic-form';
 
 @Component({
     selector: 'dynamic-form-test-widget',
@@ -48,6 +48,9 @@ export class DynamicFormDomTest {
         this.ctx = await Application.run(DynamicFormDomHostComponent, {
             deps: [HtmlTemplateModule, ComponentsModule, DynamicFormModule],
             providers: [{
+                provide: DYNAMIC_FORM_WIDGETS,
+                useValue: [{ type: 'token-widget', component: DynamicFormTestWidgetComponent }]
+            }, {
                 provide: DOCUMENT,
                 useFactory: () => {
                     const { JSDOM } = require('jsdom');
@@ -75,11 +78,12 @@ export class DynamicFormDomTest {
         form.instance.schema = {
             fields: [
                 { key: 'custom', type: 'widget', widget: 'test', label: 'Custom' },
-                { key: 'unknown', type: 'widget', widget: 'missing', label: 'Unknown' }
+                { key: 'unknown', type: 'widget', widget: 'missing', label: 'Unknown' },
+                { key: 'tokenCustom', type: 'widget', widget: 'token-widget', label: 'Token widget' }
             ],
             widgets: [{ type: 'test', component: DynamicFormTestWidgetComponent }]
         };
-        form.instance.value = { custom: 'initial', unknown: 'fallback' };
+        form.instance.value = { custom: 'initial', unknown: 'fallback', tokenCustom: 'from-token' };
         for (let index = 0; index < 20; index++) {
             await Promise.resolve();
         }
@@ -100,6 +104,11 @@ export class DynamicFormDomTest {
         const fallback = root.querySelector('[data-field-key="unknown"] input') as HTMLInputElement;
         expect(fallback).toBeTruthy();
         expect(fallback.value).toBe('fallback');
+
+        // Host-wide DI registry resolves widgets without schema.widgets.
+        const tokenWidget = root.querySelector('[data-field-key="tokenCustom"] .test-widget') as HTMLTextAreaElement;
+        expect(tokenWidget).toBeTruthy();
+        expect(tokenWidget.value).toBe('from-token');
     }
 
     @Test('links field errors and descriptions through aria-describedby')
