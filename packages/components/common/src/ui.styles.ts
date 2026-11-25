@@ -50,8 +50,33 @@ export const UI_MOTION_CSS = `
 }
 `;
 
+export const PLAIN_BUTTON_STYLE_ID = 'tsdi-plain-button-styles';
+
+/**
+ * Reset for semantic buttons that must read as inline text (dialog ✕, inline
+ * actions). The element stays a real `<button>` for focus/assistive tech, but
+ * loses the UA chrome so the DOM and terminal surfaces paint the same label.
+ *
+ * Exported separately because the dialog widgets install it themselves; every
+ * browser host then matches the terminal output without opting into the full
+ * `installUiStyles` skin.
+ */
+export const PLAIN_BUTTON_CSS = `
+.ui-plain-button {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    cursor: pointer;
+}
+`;
+
 export const UI_CSS = `
 ${UI_MOTION_CSS}
+${PLAIN_BUTTON_CSS}
 .ui-button {
     display: inline-flex;
     align-items: center;
@@ -78,17 +103,6 @@ ${UI_MOTION_CSS}
     border-radius: 50%;
 }
 .ui-button.is-icon-only { gap: 0; }
-/* Semantic buttons rendered without button chrome (dialog ✕, inline actions). */
-.ui-plain-button {
-    display: inline;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    line-height: inherit;
-    cursor: pointer;
-}
 .ui-button.is-block { display: flex; width: 100%; justify-content: center; }
 .ui-button.is-solid { background: var(--ui-tone-bg, var(--ui-button-bg, transparent)); color: var(--ui-tone-fg, inherit); }
 .ui-button.is-outline { background: transparent; border-color: var(--ui-tone-border, currentColor); }
@@ -654,4 +668,9 @@ ${UI_MOTION_CSS}
 
 export function installUiStyles(doc?: Document | null): void {
     installStyleSheet(doc, UI_STYLE_ID, UI_CSS);
+}
+
+/** Install only the bare-button reset (dialog/alert widgets call this). */
+export function installPlainButtonStyles(doc?: Document | null): void {
+    installStyleSheet(doc, PLAIN_BUTTON_STYLE_ID, PLAIN_BUTTON_CSS);
 }

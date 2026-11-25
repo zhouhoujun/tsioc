@@ -108,6 +108,13 @@ export class CommonChromeWidgetsDomTest {
         expect(alertRoot.textContent).toContain('Accept');
         alertAction.click();
         expect(host.accepted).toEqual(1);
+
+        // The bare-button reset ships with the dialog widget so a browser host
+        // matches the terminal's inline ✕/action without the full UI skin.
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const plainStyle = doc.getElementById('tsdi-plain-button-styles');
+        expect(plainStyle?.textContent).toContain('.ui-plain-button');
+        expect(doc.querySelectorAll('#tsdi-plain-button-styles').length).toEqual(1);
     }
 
     @Test('renders status rows and keyboard help')

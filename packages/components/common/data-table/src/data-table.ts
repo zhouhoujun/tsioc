@@ -60,7 +60,7 @@ interface DataTableViewRow {
         <div class="ui-data-table-head {{headerClass}}" role="row">
             <span class="ui-data-table-cell ui-data-table-select" role="columnheader" v-if="selectable">
                 <span class="ui-data-table-check" role="checkbox" aria-checked="{{selectionState}}"
-                    aria-label="{{selectAllLabel}}" tabindex="0"
+                    aria-label="{{selectAllLabel}}" tabindex="0" focusable="true"
                     @click="toggleAll($event)" @keydown="selectAllKeydown($event)">
                     <span aria-hidden="true">{{selectionGlyph}}</span>
                 </span>
@@ -76,7 +76,7 @@ interface DataTableViewRow {
             @click="pick(row)">
             <span class="ui-data-table-cell ui-data-table-select" role="cell" v-if="selectable">
                 <span class="ui-data-table-check" role="checkbox" aria-checked="{{rowChecked(row)}}"
-                    aria-label="{{selectRowLabel}} {{row.index + 1}}" tabindex="0"
+                    aria-label="{{selectRowLabel}} {{row.index + 1}}" tabindex="0" focusable="true"
                     @click="toggleRow(row, $event)" @keydown="rowKeydown($event, row)">
                     <span aria-hidden="true">{{rowChecked(row) ? '✓' : ' '}}</span>
                 </span>

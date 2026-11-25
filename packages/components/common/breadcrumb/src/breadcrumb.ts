@@ -31,9 +31,12 @@ interface BreadcrumbViewItem {
             <span class="{{entry.className}}"
                 v-if="!entry.ellipsis"
                 role="link"
+                tabindex="{{entry.disabled || entry.last ? -1 : 0}}"
+                focusable="{{!entry.disabled && !entry.last}}"
                 aria-current="{{entry.last ? 'page' : ''}}"
                 aria-disabled="{{entry.disabled}}"
-                @click="pick(entry)">
+                @click="pick(entry)"
+                @keydown="itemKeydown($event, entry)">
                 {{entry.label}}
             </span>
             <span class="ui-breadcrumb-separator" v-if="!entry.last" aria-hidden="true">{{separator}}</span>
@@ -104,5 +107,12 @@ export class BreadcrumbComponent {
             return;
         }
         this.action?.(this.items[entry.index], entry.index);
+    }
+
+    itemKeydown(event: any, entry: BreadcrumbViewItem): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            this.pick(entry);
+        }
     }
 }

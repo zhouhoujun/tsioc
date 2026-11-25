@@ -108,9 +108,31 @@ export class CommonWidgetsDomTest {
         expect(root.textContent).not.toContain('Alpha');
     }
 
-    @Test('renders a scrollbar when a list is windowed')
-    async listScrollbar() {
+    @Test('exposes list busy and error live states')
+    async listStates() {
         const ref = await this.mount();
+        const lists = ref.hostView.queryAll(ListComponent) as ComponentRef<ListComponent>[];
+        const list = lists[0];
+        const root = list.hostView.rootNodes[0] as HTMLElement;
+        const box = root.querySelector('.list') as HTMLElement;
+
+        expect(box.getAttribute('role')).toEqual('listbox');
+        expect(box.getAttribute('aria-label')).toEqual('List');
+        expect(box.getAttribute('aria-busy')).toEqual('false');
+
+        list.instance.loading = true;
+        list.instance.error = 'Failed to load';
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(box.getAttribute('aria-busy')).toEqual('true');
+        expect(root.querySelector('.list-loading')?.textContent).toContain('Loading');
+        expect(root.querySelector('.list-error')?.getAttribute('role')).toEqual('alert');
+        expect(root.querySelector('.list-error')?.textContent).toContain('Failed to load');
+    }
+
+    @Test('renders a scrollbar when a list is windowed')
+    async listScrollbar() {        const ref = await this.mount();
         const lists = ref.hostView.queryAll(ListComponent) as ComponentRef<ListComponent>[];
         const root = lists[1].hostView.rootNodes[0] as HTMLElement;
         expect(root.querySelector('.ui-scrollbar')).toBeTruthy();

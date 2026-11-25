@@ -1,6 +1,9 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
 import { getDisplayWidth } from '../../src/display-width';
+import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
+import { installPlainButtonStyles } from '../../src/ui.styles';
 
 /**
  * Renderer-neutral dialog shell: title, optional body lines, hint, projected
@@ -29,8 +32,17 @@ import { normalizeBoolean } from '../../src/ui';
     </div>`
 })
 export class DialogComponent {
-    @Attribute() title = '';
-    @Attribute() lines: string[] = [];
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
+    onInit(): void {
+        // Every browser host gets the same bare ✕/action chrome as the terminal
+        // surface without having to adopt the full UI skin.
+        installPlainButtonStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
+    }
+
+    @Attribute() title = '';    @Attribute() lines: string[] = [];
     @Attribute() hint = '';
     @Attribute() ariaLabel = '';
     @Attribute() closeLabel = '✕';

@@ -1,6 +1,9 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
 import { getDisplayWidth } from '../../src/display-width';
+import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
+import { installPlainButtonStyles } from '../../src/ui.styles';
 
 /**
  * Renderer-neutral alert dialog. Uses the shared dialog chrome classes but
@@ -26,6 +29,14 @@ import { normalizeBoolean } from '../../src/ui';
     </div>`
 })
 export class AlertDialogComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
+    onInit(): void {
+        installPlainButtonStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
+    }
+
     @Attribute() title = '';
     @Attribute() lines: string[] = [];
     @Attribute() hint = '';

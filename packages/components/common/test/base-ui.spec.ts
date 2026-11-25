@@ -199,8 +199,18 @@ export class BaseUiPrimitivesTest {
         expect(root.textContent).toContain('Step');
         expect(root.querySelectorAll('.ui-breadcrumb-node').length).toEqual(4);
         expect(root.querySelector('.ui-breadcrumb-item.is-current')?.textContent).toContain('Step');
+        const links = root.querySelectorAll('.ui-breadcrumb-item[role="link"]') as NodeListOf<HTMLElement>;
+        const current = links[links.length - 1];
+        expect(current.getAttribute('tabindex')).toEqual('-1');
+        expect(current.getAttribute('aria-current')).toEqual('page');
+        expect(links[0].getAttribute('tabindex')).toEqual('0');
 
-        (root.querySelectorAll('.ui-breadcrumb-item[role="link"]')[0] as HTMLElement).click();
+        links[0].dispatchEvent(new (root.ownerDocument.defaultView as any).KeyboardEvent('keydown', {
+            key: 'Enter',
+            bubbles: true
+        }));
+        expect(host.crumb).toEqual('Home');
+        links[0].click();
         expect(host.crumb).toEqual('Home');
     }
 }

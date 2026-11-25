@@ -2,7 +2,7 @@ import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { Application } from '@tsdi/core';
 import { Component, ComponentRef, ComponentsModule } from '@tsdi/components';
-import { ConsoleTemplateModule } from '../src';
+import { ConsoleTemplateModule, TuiTerminalSurface } from '../src';
 import { TuiRenderer } from '../src/tui';
 import { ButtonComponent, ButtonModule } from '@tsdi/components/common/button';
 import { BadgeComponent, BadgeModule } from '@tsdi/components/common/badge';
@@ -28,12 +28,13 @@ import { AlertNoticeComponent, AlertNoticeModule } from '@tsdi/components/common
 import { SelectTriggerComponent, SelectTriggerModule } from '@tsdi/components/common/select-trigger';
 import { KbdComponent, KbdModule } from '@tsdi/components/common/kbd';
 import { ScrollbarComponent, ScrollbarModule } from '@tsdi/components/common/scrollbar';
+import { ListComponent, ListModule } from '@tsdi/components/common/list';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -41,7 +42,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-progress label="Load" :value="30" :width="10"></ui-progress>
         <ui-stat label="Routes" value="2" hint="on"></ui-stat>
         <ui-divider label="Section" fill></ui-divider>
-        <ui-breadcrumb :items="trail"></ui-breadcrumb>
+        <ui-breadcrumb :items="trail" :action="onCrumb"></ui-breadcrumb>
         <ui-empty title="Nothing" hint="Try" actionLabel="Reset"></ui-empty>
         <ui-card title="Card" meta="v1"><span>body</span></ui-card>
         <ui-toolbar :items="tools"></ui-toolbar>
@@ -50,7 +51,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-skeleton :lines="1" :width="6"></ui-skeleton>
         <ui-avatar label="Ada Lovelace"></ui-avatar>
         <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
-        <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']"></ui-data-table>
+        <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']" :selectionAction="onSelection"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']"></ui-tree>
         <ui-text-field label="Name" value="Ada"></ui-text-field>
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
@@ -60,10 +61,15 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-select-trigger value="basic" label="Basic"></ui-select-trigger>
         <ui-kbd :keys="['Ctrl', 'K']"></ui-kbd>
         <ui-scrollbar :total="100" :visible="10" :offset="45" :length="10"></ui-scrollbar>
+        <list :items="[]" :loading="true" error="Load failed" ariaLabel="History" :emptyLabel="'No history'"></list>
     </div>`
 })
 class CommonUiConsoleHostComponent {
     trail = [{ label: 'Home' }, { label: 'Work' }];
+    crumb = '';
+    onCrumb = (item: any) => { this.crumb = item.label; };
+    selection: string[] = [];
+    onSelection = (keys: string[]) => { this.selection = keys.slice(); };
     tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
@@ -118,13 +124,15 @@ export class CommonUiConsoleTest {
                 AlertNoticeModule,
                 SelectTriggerModule,
                 KbdModule,
-                ScrollbarModule
+                ScrollbarModule,
+                ListModule
             ]
         });
         try {
             const ref = ctx.runners.getRef(CommonUiConsoleHostComponent) as ComponentRef<CommonUiConsoleHostComponent>;
             await ref.render();
             await Promise.resolve();
+            const host = ref.instance as CommonUiConsoleHostComponent;
             const output = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
 
             expect(output).toContain('Save');
@@ -154,6 +162,46 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Heads up');
             expect(output).toContain('Ctrl');
             expect(output).toContain('█');
+            // Same state as the DOM surface: the current crumb, the live
+            // loading row and the error alert all paint without aria noise.
+            expect(output).toContain('Work');
+            expect(output).toContain('Loading');
+            expect(output).toContain('Load failed');
+            expect(output).not.toContain('aria-');
+
+            // The real terminal painter (not the text-collector helper) hides
+            // the empty row exactly like v-show does in the browser.
+            const surface = new TuiTerminalSurface({
+                renderer: new TuiRenderer(),
+                root: ref.hostView.rootNodes[0] as any,
+                width: 80,
+                height: 40,
+                output: { write() { } }
+            });
+            try {
+                surface.render();
+                const painted = surface.lastRenderedLines
+                    .map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, ''))
+                    .join('\n');
+                expect(painted).toContain('Load failed');
+                expect(painted).toContain('Loading');
+                expect(painted).not.toContain('No history');
+                // Keyboard parity: the focused crumb handles Enter in the TUI
+                // exactly like the browser's tabindex/Enter path.
+                const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');
+                crumb.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.crumb).toEqual('Home');
+                // Checkbox focus + Space mirrors the browser roving checkbox.
+                const check = (ref.hostView.rootNodes[0] as any).querySelector('.ui-data-table-row .ui-data-table-check');
+                check.focus();
+                expect(surface.dispatchKey({ key: ' ' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.selection).toEqual([]);
+            } finally {
+                surface.destroy();
+            }
         } finally {
             await ctx.close();
         }

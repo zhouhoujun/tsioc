@@ -161,15 +161,17 @@ export class ListPager<T extends { id: string } = ListItem> {
         <label class="list-panel-meta" v-show="context">{{context}}</label>
         <label class="list-panel-meta" v-show="meta">{{meta}}</label>
         <label class="list-panel-context" v-for="line in contextLines">{{line}}</label>
-        <div class="list" role="listbox" aria-label="{{listLabel}}" [style]="scrollStyle">
+        <div class="list" role="listbox" aria-label="{{listLabel || ariaLabel}}"
+            aria-busy="{{loading}}" aria-activedescendant="{{activeOptionId}}"
+            [style]="scrollStyle">
             <label class="list-more list-previous" v-show="hasPrevious || windowStart > 0" @click="onReachStart">{{olderLabel}}</label>
             <div id="{{item.id}}" class="list-row {{item.className}}" role="option" aria-selected="{{item.selected}}" v-for="item in renderedItems" trackBy="id" @click="selectItem(item)">
                 <span class="list-label">{{item.label}}</span>
                 <span class="list-description" v-if="item.description"> {{item.description}}</span>
             </div>
             <label class="list-empty" v-show="!items.length && !loading">{{emptyLabel}}</label>
-            <label class="list-loading" v-show="loading">{{loadingLabel}}</label>
-            <label class="list-error" v-show="error">{{error}}</label>
+            <label class="list-loading" v-show="loading" aria-live="polite">{{loadingLabel}}</label>
+            <label class="list-error" role="alert" v-show="error">{{error}}</label>
             <button class="list-more" v-show="hasMore && !loading && atWindowEnd" @click="loadMore">{{moreLabel}}</button>
         </div>
         <ui-scrollbar v-if="showScrollbar && windowed" orientation="horizontal"
