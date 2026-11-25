@@ -19,6 +19,8 @@ import { BreadcrumbComponent, BreadcrumbModule, BreadcrumbItem } from '../breadc
     template: `
     <ui-button label="Save" tone="accent" size="sm" :action="onAction"></ui-button>
     <ui-button label="Disabled" disabled :action="onAction"></ui-button>
+    <ui-button label="Round" shape="round" :action="onAction"></ui-button>
+    <ui-button icon="plus" :iconOnly="true" ariaLabel="Add" shape="circle" :action="onAction"></ui-button>
     <ui-badge label="running" tone="success" dot></ui-badge>
     <ui-badge label="filter" :action="onBadge"></ui-badge>
     <ui-card title="Card title" subtitle="Sub" meta="v1" divider>
@@ -112,6 +114,13 @@ export class BaseUiPrimitivesTest {
         const disabledRoot = disabled.hostView.rootNodes[0] as HTMLButtonElement;
         disabledRoot.click();
         expect(host.clicked).toEqual(1);
+
+        const round = buttons[2].hostView.rootNodes[0] as HTMLButtonElement;
+        const iconOnly = buttons[3].hostView.rootNodes[0] as HTMLButtonElement;
+        expect(round.className).toContain('is-shape-round');
+        expect(iconOnly.className).toContain('is-shape-circle');
+        expect(iconOnly.className).toContain('is-icon-only');
+        expect(iconOnly.getAttribute('aria-label')).toEqual('Add');
     }
 
     @Test('badge is passive by default and actionable when an action exists')

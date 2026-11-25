@@ -69,6 +69,15 @@ ${UI_MOTION_CSS}
 .ui-button:hover { background: var(--ui-button-hover-bg, var(--ui-hover-bg, transparent)); }
 .ui-button:disabled,
 .ui-button.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
+.ui-button.is-shape-round { border-radius: var(--ui-radius-pill, 999px); }
+.ui-button.is-shape-circle {
+    width: 1.8em;
+    height: 1.8em;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+}
+.ui-button.is-icon-only { gap: 0; }
 .ui-button.is-block { display: flex; width: 100%; justify-content: center; }
 .ui-button.is-solid { background: var(--ui-tone-bg, var(--ui-button-bg, transparent)); color: var(--ui-tone-fg, inherit); }
 .ui-button.is-outline { background: transparent; border-color: var(--ui-tone-border, currentColor); }

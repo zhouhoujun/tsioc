@@ -2,6 +2,7 @@ import { Attribute, Component } from '@tsdi/components';
 import { iconSizeFor, normalizeBoolean, normalizeSize, normalizeTone, UiSize, UiTone } from '../../src/ui';
 
 export type ButtonVariant = 'solid' | 'outline' | 'ghost';
+export type ButtonShape = 'default' | 'round' | 'circle';
 
 /**
  * Renderer-neutral action button.
@@ -37,6 +38,7 @@ export class ButtonComponent {
     @Attribute() loadingLabel = '';
     @Attribute() className = '';
     @Attribute() action?: () => void;
+    @Attribute() iconOnly = false;
 
     private _tone: UiTone = 'default';
     private _size: UiSize = 'md';
@@ -44,6 +46,7 @@ export class ButtonComponent {
     private _loading = false;
     private _pressed = false;
     private _block = false;
+    private _shape: ButtonShape = 'default';
 
     @Attribute()
     get tone(): UiTone { return this._tone; }
@@ -71,6 +74,12 @@ export class ButtonComponent {
     get block(): boolean { return this._block; }
     set block(value: boolean | string) { this._block = normalizeBoolean(value); }
 
+    @Attribute()
+    get shape(): ButtonShape { return this._shape; }
+    set shape(value: string) {
+        this._shape = value === 'round' || value === 'circle' ? value : 'default';
+    }
+
     get iconSize(): 'xs' | 'sm' | 'md' | 'lg' {
         return iconSizeFor(this._size);
     }
@@ -80,6 +89,8 @@ export class ButtonComponent {
             `is-${this._tone}`,
             `is-${this._size}`,
             `is-${this.variant}`,
+            `is-shape-${this._shape}`,
+            this.iconOnly ? 'is-icon-only' : '',
             this._block ? 'is-block' : '',
             this._pressed ? 'is-pressed' : '',
             this.className
