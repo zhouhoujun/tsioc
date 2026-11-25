@@ -56,6 +56,18 @@ export class MoveFileTool implements AgentTool {
         if (fromPath === toPath) {
             throw new Error('Invalid move_file input: from and to must be different paths.');
         }
+        const env = _context?.environment?.kind === 'remote' ? _context.environment : undefined;
+        if (env) {
+            if (env.rename) {
+                await env.rename(fromPath, toPath);
+            } else {
+                const content = await env.readText(fromPath);
+                await env.mkdir?.(path.dirname(toPath), { recursive: true });
+                await env.writeText(toPath, content);
+                await env.remove?.(fromPath, { force: true });
+            }
+            return { from: toRelativeWorkspacePath(fromPath, policy.rootDir), to: toRelativeWorkspacePath(toPath, policy.rootDir), moved: true };
+        }
         await assertNoSymlinkInWorkspacePath(fromPath, policy.rootDir);
         await assertNoSymlinkInWorkspacePath(toPath, policy.rootDir, { allowMissingPath: true });
 

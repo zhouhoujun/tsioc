@@ -32,6 +32,7 @@ export interface AgentEnvironment {
     writeText(path: string, content: string): Promise<void>;
     list(path: string): Promise<AgentEnvironmentEntry[]>;
     mkdir?(path: string, options?: { recursive?: boolean }): Promise<void>;
+    rename?(from: string, to: string): Promise<void>;
     remove?(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void>;
     exec?(request: AgentEnvironmentCommandRequest): Promise<AgentEnvironmentCommandResult>;
 }
@@ -61,6 +62,16 @@ export class LocalEnvironment implements AgentEnvironment {
     async mkdir(path: string, options?: { recursive?: boolean }): Promise<void> {
         this.requireAdapter();
         await this.adapter!.mkdir(path, options);
+    }
+
+    async rename(from: string, to: string): Promise<void> {
+        this.requireAdapter();
+        if (this.adapter!.rename) {
+            await this.adapter!.rename(from, to);
+            return;
+        }
+        await this.adapter!.writeText(to, await this.adapter!.readText(from));
+        await this.adapter!.remove(from, { force: true });
     }
 
     async remove(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void> {
@@ -103,6 +114,7 @@ export interface RemoteEnvironmentTransport {
     writeText(path: string, content: string): Promise<void>;
     list(path: string): Promise<AgentEnvironmentEntry[]>;
     mkdir?(path: string, options?: { recursive?: boolean }): Promise<void>;
+    rename?(from: string, to: string): Promise<void>;
     remove?(path: string, options?: { recursive?: boolean; force?: boolean }): Promise<void>;
     exec?(request: AgentEnvironmentCommandRequest): Promise<AgentEnvironmentCommandResult>;
 }
@@ -115,6 +127,7 @@ export function createRemoteEnvironment(transport: RemoteEnvironmentTransport, r
         writeText: (path, content) => transport.writeText(path, content),
         list: path => transport.list(path),
         ...(transport.mkdir ? { mkdir: (path, options) => transport.mkdir!(path, options) } : {}),
+        ...(transport.rename ? { rename: (from, to) => transport.rename!(from, to) } : {}),
         ...(transport.remove ? { remove: (path, options) => transport.remove!(path, options) } : {}),
         ...(transport.exec ? { exec: request => transport.exec!(request) } : {})
     };
