@@ -120,10 +120,13 @@ export class P2UiWidgetsTest {
 
         const pages = root.querySelectorAll('.ui-pagination-page') as NodeListOf<HTMLButtonElement>;
         const six = Array.from(pages).find(button => button.textContent === '6') as HTMLButtonElement;
+        expect(six.getAttribute('aria-label')).toEqual('Go to page 6');
+        expect(six.getAttribute('aria-current')).toEqual('');
         six.click();
         await Promise.resolve();
         expect(host.page).toEqual(6);
         expect(root.querySelector('.ui-pagination-page.is-current')?.textContent).toEqual('6');
+        expect(root.querySelector('.ui-pagination-page.is-current')?.getAttribute('aria-current')).toEqual('page');
     }
 
     @Test('data table renders headers/cells and dispatches a row')

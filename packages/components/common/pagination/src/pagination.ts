@@ -23,6 +23,7 @@ interface PaginationViewItem {
             <span class="ui-pagination-node" v-for="entry in viewItems" trackBy="key">
                 <span class="ui-pagination-ellipsis" v-if="entry.ellipsis" aria-hidden="true">{{ellipsis}}</span>
                 <button class="{{pageClass(entry)}}" type="button" v-if="!entry.ellipsis"
+                    aria-label="{{pageAriaLabel(entry.page)}}"
                     aria-current="{{entry.page === currentPage ? 'page' : ''}}"
                     @click="go(entry.page)">{{entry.label}}</button>
             </span>
@@ -40,6 +41,8 @@ export class PaginationComponent {
     @Attribute() ariaLabel = 'Pagination';
     @Attribute() previousLabel = 'Previous page';
     @Attribute() nextLabel = 'Next page';
+    /** Accessible name per page button; `{page}` is replaced with the number. */
+    @Attribute() pageLabel = 'Go to page {page}';
     @Attribute() previousText = '‹';
     @Attribute() nextText = '›';
     @Attribute() ellipsis = '…';
@@ -109,6 +112,10 @@ export class PaginationComponent {
             'ui-pagination-page',
             entry.page === this.currentPage ? 'is-current' : ''
         ].filter(Boolean).join(' ');
+    }
+
+    pageAriaLabel(page: number): string {
+        return String(this.pageLabel || 'Go to page {page}').replace('{page}', String(page));
     }
 
     go(page: number): void {

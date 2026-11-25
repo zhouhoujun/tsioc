@@ -1,5 +1,5 @@
 import { Attribute, Component, EventEmitter } from '@tsdi/components';
-import { normalizeBoolean } from '../../src/ui';
+import { nextUiId, normalizeBoolean } from '../../src/ui';
 
 /** One row rendered inside an {@link AccordionComponent} section. */
 export interface AccordionItem {
@@ -46,7 +46,9 @@ interface AccordionViewItem extends AccordionItem {
     template: `
     <section class="{{accordionClass}}" data-expanded="{{expandedText}}">
         <button class="ui-accordion-header" type="button"
+            id="{{headerElementId}}"
             aria-expanded="{{expandedText}}"
+            aria-controls="{{bodyElementId}}"
             aria-label="{{ariaLabel || title}}"
             [title]="title"
             [disabled]="disabled"
@@ -55,7 +57,9 @@ interface AccordionViewItem extends AccordionItem {
             <span class="ui-accordion-title">{{title}}</span>
             <span class="ui-accordion-count" v-if="hasCount">{{count}}</span>
         </button>
-        <div class="ui-accordion-body" v-show="expanded">
+        <div class="ui-accordion-body" id="{{bodyElementId}}"
+            role="region" aria-labelledby="{{headerElementId}}"
+            aria-hidden="{{!expanded}}" v-show="expanded">
             <div class="{{item.rowClass}}" v-for="item in viewItems" trackBy="id"
                 v-bind="item.attrs"
                 [draggable]="draggable"
@@ -84,6 +88,8 @@ export class AccordionComponent {
     @Attribute() selectAction?: (item: any) => void;
     /** Row dragstart; receives `item.value` when provided. */
     @Attribute() dragStartAction?: (event: any, item: any) => void;
+
+    protected readonly uid = nextUiId('ui-accordion');
 
     private _disabled = false;
     private _controlled = false;
@@ -119,6 +125,14 @@ export class AccordionComponent {
 
     get expandedText(): string {
         return this._expanded ? 'true' : 'false';
+    }
+
+    get headerElementId(): string {
+        return `${this.uid}-header`;
+    }
+
+    get bodyElementId(): string {
+        return `${this.uid}-body`;
     }
 
     get hasCount(): boolean {

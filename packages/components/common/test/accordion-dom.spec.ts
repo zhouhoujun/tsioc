@@ -81,6 +81,11 @@ export class AccordionDomTest {
         expect(accordion).toBeTruthy();
         expect(header.getAttribute('aria-expanded')).toEqual('true');
         expect(header.getAttribute('aria-label')).toEqual('HTTP group');
+        expect(header.id).toEqual(body.getAttribute('aria-labelledby'));
+        expect(body.id).toEqual(header.getAttribute('aria-controls'));
+        expect(body.getAttribute('role')).toEqual('region');
+        expect(body.getAttribute('aria-hidden')).toEqual('false');
+        expect(body.id).toBeTruthy();
         expect(root.querySelector('.ui-accordion-title')?.textContent).toEqual('HTTP');
         expect(root.querySelector('.ui-accordion-count')?.textContent).toEqual('4');
         expect(body.hasAttribute('hidden')).toEqual(false);
@@ -93,6 +98,7 @@ export class AccordionDomTest {
 
         expect(ref.instance.states).toEqual([false]);
         expect(header.getAttribute('aria-expanded')).toEqual('false');
+        expect(body.getAttribute('aria-hidden')).toEqual('true');
         expect(accordion.getAttribute('data-expanded')).toEqual('false');
         expect(body.hasAttribute('hidden')).toEqual(true);
         // Projected content stays mounted so host widgets keep their state.
