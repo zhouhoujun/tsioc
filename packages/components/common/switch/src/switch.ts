@@ -13,6 +13,7 @@ import { normalizeBoolean } from '../../src/ui';
         aria-checked="{{checked}}"
         aria-disabled="{{disabled}}"
         tabindex="{{disabled ? -1 : 0}}"
+        focusable="{{!disabled}}"
         @click="toggle()"
         @keydown="onKeydown($event)">
         <span class="ui-switch-track" aria-hidden="true"><span class="ui-switch-thumb"></span></span>

@@ -16,7 +16,10 @@ export type BadgeVariant = 'solid' | 'subtle' | 'outline';
         role="{{role}}"
         aria-pressed="{{active}}"
         aria-disabled="{{disabled}}"
-        @click="activate">
+        tabindex="{{tabIndexValue}}"
+        focusable="{{interactive}}"
+        @click="activate"
+        @keydown="onKeydown($event)">
         <span class="ui-badge-dot" v-if="dot" aria-hidden="true"></span>
         <icon v-if="icon" [name]="icon" [glyph]="iconGlyph || icon" [size]="iconSize"></icon>
         <span class="ui-badge-label" v-if="label">{{label}}</span>
@@ -62,6 +65,14 @@ export class BadgeComponent {
         return this.action ? 'button' : 'status';
     }
 
+    get interactive(): boolean {
+        return !!this.action && !this._disabled;
+    }
+
+    get tabIndexValue(): number {
+        return this.interactive ? 0 : -1;
+    }
+
     get iconSize(): 'xs' | 'sm' | 'md' | 'lg' {
         return iconSizeFor(this._size);
     }
@@ -82,5 +93,12 @@ export class BadgeComponent {
             return;
         }
         this.action();
+    }
+
+    onKeydown(event: any): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            this.activate();
+        }
     }
 }

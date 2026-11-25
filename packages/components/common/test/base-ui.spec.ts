@@ -132,11 +132,18 @@ export class BaseUiPrimitivesTest {
         const actionable = badges[1].hostView.rootNodes[0] as HTMLElement;
 
         expect(passive.getAttribute('role')).toEqual('status');
+        expect(passive.getAttribute('tabindex')).toEqual('-1');
         expect(passive.textContent).toContain('running');
         expect(passive.querySelector('.ui-badge-dot')).toBeTruthy();
         expect(actionable.getAttribute('role')).toEqual('button');
+        expect(actionable.getAttribute('tabindex')).toEqual('0');
         actionable.click();
         expect(host.badges).toEqual(1);
+        actionable.dispatchEvent(new (actionable.ownerDocument.defaultView as any).KeyboardEvent('keydown', {
+            key: 'Enter',
+            bubbles: true
+        }));
+        expect(host.badges).toEqual(2);
     }
 
     @Test('card projects the action slot and body')

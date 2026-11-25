@@ -30,7 +30,8 @@ interface RadioViewOption {
         <span class="{{optionClass(option)}}" role="radio"
             aria-checked="{{isChecked(option)}}"
             aria-disabled="{{option.disabled}}"
-            tabindex="{{option.disabled ? -1 : 0}}"
+            tabindex="{{tabIndexFor(option)}}"
+            focusable="{{!option.disabled}}"
             v-for="option in viewOptions" trackBy="key"
             @click="choose(option)"
             @keydown="onKeydown(option, $event)">
@@ -88,6 +89,20 @@ export class RadioGroupComponent {
             this.isChecked(option) ? 'is-checked' : '',
             option.disabled ? 'is-disabled' : ''
         ].filter(Boolean).join(' ');
+    }
+
+    /** Roving tabindex: only the selected (or first enabled) radio is tabbable. */
+    tabIndexFor(option: RadioViewOption): number {
+        if (!option || option.disabled) {
+            return -1;
+        }
+        const options = this.viewOptions;
+        const selected = options.find(entry => entry.checked && !entry.disabled);
+        if (selected) {
+            return selected.key === option.key ? 0 : -1;
+        }
+        const first = options.find(entry => !entry.disabled);
+        return first && first.key === option.key ? 0 : -1;
     }
 
     choose(option: RadioViewOption): void {

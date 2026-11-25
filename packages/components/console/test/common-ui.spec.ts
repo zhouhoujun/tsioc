@@ -39,6 +39,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
         <ui-badge label="running" tone="success" dot></ui-badge>
+        <ui-badge label="Filter" :action="onBadge" active></ui-badge>
         <ui-progress label="Load" :value="30" :width="10"></ui-progress>
         <ui-stat label="Routes" value="2" hint="on"></ui-stat>
         <ui-divider label="Section" fill></ui-divider>
@@ -70,6 +71,8 @@ class CommonUiConsoleHostComponent {
     onCrumb = (item: any) => { this.crumb = item.label; };
     selection: string[] = [];
     onSelection = (keys: string[]) => { this.selection = keys.slice(); };
+    badges = 0;
+    onBadge = () => { this.badges += 1; };
     tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
@@ -199,6 +202,31 @@ export class CommonUiConsoleTest {
                 expect(surface.dispatchKey({ key: ' ' })).toEqual(true);
                 await Promise.resolve();
                 expect(host.selection).toEqual([]);
+
+                const checkbox = (ref.hostView.rootNodes[0] as any).querySelector('.ui-checkbox');
+                checkbox.focus();
+                expect(surface.dispatchKey({ key: ' ' })).toEqual(true);
+                await Promise.resolve();
+                expect(checkbox.getAttribute('aria-checked')).toEqual('false');
+
+                const switchEl = (ref.hostView.rootNodes[0] as any).querySelector('.ui-switch');
+                switchEl.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                await Promise.resolve();
+                expect(switchEl.getAttribute('aria-checked')).toEqual('false');
+
+                const radios = (ref.hostView.rootNodes[0] as any).querySelectorAll('.ui-radio-option');
+                radios[1].focus();
+                expect(surface.dispatchKey({ key: ' ' })).toEqual(true);
+                await Promise.resolve();
+                expect(radios[0].getAttribute('aria-checked')).toEqual('false');
+                expect(radios[1].getAttribute('aria-checked')).toEqual('true');
+
+                const badge = Array.from((ref.hostView.rootNodes[0] as any).querySelectorAll('.ui-badge') as ArrayLike<any>)
+                    .find((item: any) => item.getAttribute('role') === 'button');
+                badge.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                expect(host.badges).toEqual(1);
             } finally {
                 surface.destroy();
             }

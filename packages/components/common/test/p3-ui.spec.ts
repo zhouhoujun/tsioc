@@ -149,12 +149,16 @@ export class P3FormWidgetsTest {
 
         expect(root.getAttribute('role')).toEqual('radiogroup');
         expect(options[0].getAttribute('aria-checked')).toEqual('true');
+        expect(options[0].getAttribute('tabindex')).toEqual('0');
+        expect(options[1].getAttribute('tabindex')).toEqual('-1');
         expect(options[1].textContent).toContain('more options');
 
         options[1].click();
         await Promise.resolve();
         expect(host.mode).toEqual('advanced');
         expect(options[0].getAttribute('aria-checked')).toEqual('false');
+        expect(options[0].getAttribute('tabindex')).toEqual('-1');
+        expect(options[1].getAttribute('tabindex')).toEqual('0');
 
         options[2].click();
         expect(host.mode).toEqual('advanced');
