@@ -612,6 +612,16 @@ export class DynamicFormComponent implements OnDestroy {
 
     errorFor(field: DynamicFormField): string { return fields.errorFor(this, field); }
 
+    protected safeIdPart(key: unknown): string { return String(key ?? '').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'field'; }
+
+    fieldErrorId(field: DynamicFormField): string { return `${this.formId}-error-${this.safeIdPart(field?.key)}`; }
+
+    fieldHintId(field: DynamicFormField): string { return `${this.formId}-hint-${this.safeIdPart(field?.key)}`; }
+
+    describedByFor(field: DynamicFormField): string {
+        return [this.errorFor(field) ? this.fieldErrorId(field) : '', field?.description ? this.fieldHintId(field) : ''].filter(Boolean).join(' ');
+    }
+
     encodeValue(field: DynamicFormField): string { return fields.encodeValue(this, field); }
 
     suggestionData(field: DynamicFormField): string { return fields.suggestionData(field); }

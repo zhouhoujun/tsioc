@@ -38,6 +38,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                             [min]="field.min" [max]="field.max" [step]="field.step"
                             aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                             aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                            aria-describedby="{{describedByFor(field)}}"
                             @input="changeText(field, $event)" @blur="blurField(field)" />
                         <input v-if="isNumberInput(field)" [class]="inputClass(field)" type="{{htmlType(field)}}"
                             [value]="field.typed ? typedText(field) : fieldValue(field)" [placeholder]="field.placeholder || ''"
@@ -45,6 +46,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                             [min]="field.min" [max]="field.max" [step]="field.step || 1"
                             aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                             aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                            aria-describedby="{{describedByFor(field)}}"
                             @input="changeText(field, $event)" @blur="blurField(field)" />
                         <span [class]="classes.inputUnit" v-if="field.unit">{{field.unit}}</span>
                     </div>
@@ -59,13 +61,16 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [disabled]="field.disabled || field.readonly"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                        aria-describedby="{{describedByFor(field)}}"
                         @change="changeSelect(field, $event)">
                         <option v-for="option in field.options" [value]="option.value"
                             [selected]="optionSelected(field, option.value)"
                             [disabled]="option.disabled">{{option.label}}</option>
                     </select>
                     <div v-if="isRadioInput(field)" [class]="classes.options" role="radiogroup"
-                        aria-required="{{isRequired(field) ? 'true' : 'false'}}">
+                        aria-required="{{isRequired(field) ? 'true' : 'false'}}"
+                        aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                        aria-describedby="{{describedByFor(field)}}">
                         <label v-for="option in field.options" data-option-value="{{option.value}}"
                             [class]="optionClass(field, option)">
                             <input type="radio" name="{{formId}}-{{field.key}}"
@@ -82,6 +87,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [placeholder]="field.placeholder || ''" [readOnly]="field.readonly" [disabled]="field.disabled"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                        aria-describedby="{{describedByFor(field)}}"
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
                     <div v-if="isJsonObjectEditor(field)" [class]="classes.keyValue">
                         <div [class]="classes.keyValueRow" v-for="(entry, index) in jsonEntries(field)">
@@ -100,6 +106,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [placeholder]="field.placeholder || ''" [readOnly]="field.readonly" [disabled]="field.disabled"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                        aria-describedby="{{describedByFor(field)}}"
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
                     <textarea v-if="isCodeInput(field)" [class]="codeClass(field)"
                         data-dynamic-code="{{field.language || 'javascript'}}"
@@ -109,6 +116,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [readOnly]="field.readonly" [disabled]="field.disabled"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
+                        aria-describedby="{{describedByFor(field)}}"
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
                     <div v-if="isListInput(field)" [class]="classes.list">
                         <div [class]="classes.listRow" v-for="(item, index) in listItems(field)">
@@ -166,7 +174,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                                 <span>{{option.label}}</span>
                                             </label>
                                         </div>
-                                        <div [class]="classes.error" v-if="listItemError(child, item)">{{listItemError(child, item)}}</div>
+                                        <div [class]="classes.error" role="alert" v-if="listItemError(child, item)">{{listItemError(child, item)}}</div>
                                     </div>
                                 </div>
                             </div>
@@ -194,8 +202,8 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         <button [class]="classes.listAdd" type="button" @click="addKeyValue(field)">{{field.addLabel || '+ Add'}}</button>
                     </div>
                     <input v-if="field.type === 'hidden'" type="hidden" [value]="fieldValue(field)" />
-                    <div [class]="classes.error" v-if="errorFor(field)">{{errorFor(field)}}</div>
-                    <div [class]="classes.hint" v-if="field.description && !isBooleanInput(field)">{{field.description}}</div>
+                    <div [class]="classes.error" id="{{fieldErrorId(field)}}" role="alert" v-if="errorFor(field)">{{errorFor(field)}}</div>
+                    <div [class]="classes.hint" id="{{fieldHintId(field)}}" v-if="field.description && !isBooleanInput(field)">{{field.description}}</div>
                 </div>
                 </div>
             </div>
