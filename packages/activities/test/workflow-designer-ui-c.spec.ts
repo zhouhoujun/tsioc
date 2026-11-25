@@ -464,6 +464,8 @@ describe('Workflow Designer UI', () => {
         const fieldError = root.querySelector('.workflow-field[data-field-key="workflow"] .workflow-field-error') as any;
         expect(fieldError).toBeTruthy();
         expect(fieldError.textContent).toContain('ghost');
+        // The same message is not repeated in the issue summary.
+        expect(root.querySelector('.workflow-inspector-issue')).toBeFalsy();
 
         // Once the library knows the id, the reference issue clears.
         ref.instance.designer.workflowLibrary.set([

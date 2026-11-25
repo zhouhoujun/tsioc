@@ -125,8 +125,8 @@ function schemaKey(model: WorkflowInspectorModel): string {
                 :actionAction="formAction" :listItemActionAction="formListAction">
             </dynamic-form>
             <div class="workflow-no-fields" v-if="!model.fields.length">{{noPropertiesLabel}}</div>
-            <div class="workflow-inspector-issues" v-if="model.issues.length">
-                <div class="workflow-inspector-issue" v-for="issue in model.issues"
+            <div class="workflow-inspector-issues" v-if="visibleIssues.length">
+                <div class="workflow-inspector-issue" v-for="issue in visibleIssues"
                     data-severity="{{issue.severity}}" title="{{issue.message}}">
                     <span class="workflow-inspector-issue-field">{{issue.label}}</span>
                     <span class="workflow-inspector-issue-message">{{issue.message}}</span>
@@ -450,6 +450,18 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
 
     onAfterViewInit(): void {
         this.syncFormIssues();
+    }
+
+    /** Issues not already rendered under their field avoid duplicate messages. */
+    get visibleIssues(): WorkflowInspectorModel['issues'] {
+        return (this._model.issues || []).filter(issue => {
+            const key = String(issue.fieldKey || '').split(/[.[\]]/)[0];
+            const field = this.nodeForm?.schema?.fields?.find(item => item.key === key);
+            if (!field || !this.nodeForm) {
+                return true;
+            }
+            return !this.nodeForm.errorFor(field);
+        });
     }
 
     get formValue(): Record<string, any> {
