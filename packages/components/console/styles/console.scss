@@ -231,6 +231,21 @@ $idle: var(--console-idle, #6fa37a);
     font-weight: bold;
     background: var(--console-select-selected-bg, #202a36);
 }
+
+.ui-slider { color: $meta; }
+.ui-slider-filled,
+.ui-slider-thumb { color: $accent; }
+.ui-slider-rest { color: $meta; }
+.ui-slider-value { color: $text; }
+
+.ui-segmented-item { color: $meta; padding: 0 1ch; }
+.ui-segmented-item.is-selected {
+    color: $selected;
+    font-weight: bold;
+    background: var(--console-select-selected-bg, #202a36);
+}
+.ui-segmented-item.is-disabled { color: $meta; }
+.ui-segmented-sep { color: $border; }
 .tone-accent,
 .tone-link,
 .tone-syntax-type,

@@ -29,12 +29,14 @@ import { SelectTriggerComponent, SelectTriggerModule } from '@tsdi/components/co
 import { KbdComponent, KbdModule } from '@tsdi/components/common/kbd';
 import { ScrollbarComponent, ScrollbarModule } from '@tsdi/components/common/scrollbar';
 import { ListComponent, ListModule } from '@tsdi/components/common/list';
+import { SliderComponent, SliderModule } from '@tsdi/components/common/slider';
+import { SegmentedComponent, SegmentedModule } from '@tsdi/components/common/segmented';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -63,6 +65,8 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-kbd :keys="['Ctrl', 'K']"></ui-kbd>
         <ui-scrollbar :total="100" :visible="10" :offset="45" :length="10"></ui-scrollbar>
         <list :items="[]" :loading="true" error="Load failed" ariaLabel="History" :emptyLabel="'No history'"></list>
+        <ui-slider label="Zoom" :value="zoom" :step="10" unit="%" :changeAction="onZoom"></ui-slider>
+        <ui-segmented :options="ranges" :value="range" ariaLabel="Range" :changeAction="onRange"></ui-segmented>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -73,6 +77,11 @@ class CommonUiConsoleHostComponent {
     onSelection = (keys: string[]) => { this.selection = keys.slice(); };
     badges = 0;
     onBadge = () => { this.badges += 1; };
+    zoom = 50;
+    onZoom = (value: number) => { this.zoom = value; };
+    range = 'day';
+    ranges = [{ label: 'Day', value: 'day' }, { label: 'Week', value: 'week' }];
+    onRange = (value: string) => { this.range = value; };
     tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
@@ -128,7 +137,9 @@ export class CommonUiConsoleTest {
                 SelectTriggerModule,
                 KbdModule,
                 ScrollbarModule,
-                ListModule
+                ListModule,
+                SliderModule,
+                SegmentedModule
             ]
         });
         try {
@@ -168,6 +179,11 @@ export class CommonUiConsoleTest {
             // Same state as the DOM surface: the current crumb, the live
             // loading row and the error alert all paint without aria noise.
             expect(output).toContain('Work');
+            expect(output).toContain('Zoom');
+            expect(output).toContain('50%');
+            expect(output).toContain('Day');
+            expect(output).toContain('Week');
+            expect(output).toContain('│');
             expect(output).toContain('Loading');
             expect(output).toContain('Load failed');
             expect(output).not.toContain('aria-');
@@ -227,6 +243,22 @@ export class CommonUiConsoleTest {
                 badge.focus();
                 expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
                 expect(host.badges).toEqual(1);
+
+                const slider = (ref.hostView.rootNodes[0] as any).querySelector('.ui-slider');
+                slider.focus();
+                expect(surface.dispatchKey({ key: 'ArrowRight' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.zoom).toEqual(60);
+                expect(slider.getAttribute('aria-valuenow')).toEqual('60');
+                expect(slider.getAttribute('aria-valuetext')).toEqual('60%');
+
+                const segmented = (ref.hostView.rootNodes[0] as any).querySelector('.ui-segmented-item.is-selected');
+                segmented.focus();
+                expect(surface.dispatchKey({ key: 'ArrowRight' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.range).toEqual('week');
+                expect((ref.hostView.rootNodes[0] as any).querySelectorAll('.ui-segmented-item')[1]
+                    .getAttribute('aria-checked')).toEqual('true');
             } finally {
                 surface.destroy();
             }

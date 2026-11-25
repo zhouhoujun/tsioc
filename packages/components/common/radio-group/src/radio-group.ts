@@ -1,5 +1,8 @@
-import { Attribute, Component, Computed } from '@tsdi/components';
+import { Attribute, Component, Computed, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
 import { normalizeBoolean } from '../../src/ui';
+import { focusNth } from '../../src/focus';
+import { markElementRefRaw } from '../../src/raw-element';
 
 export interface RadioOption {
     id?: string;
@@ -44,6 +47,10 @@ interface RadioViewOption {
     </div>`
 })
 export class RadioGroupComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
     @Attribute() options: RadioOption[] = [];
     @Attribute() value = '';
     @Attribute() ariaLabel = 'Options';
@@ -109,7 +116,12 @@ export class RadioGroupComponent {
         if (!option || option.disabled) {
             return;
         }
-        this.value = String(this.options[option.index]?.value ?? '');
+        focusNth(this.elementRef?.nativeElement, '.ui-radio-option', option.index);
+        const value = String(this.options[option.index]?.value ?? '');
+        if (value === String(this.value)) {
+            return;
+        }
+        this.value = value;
         this.changeAction?.(this.value);
     }
 
