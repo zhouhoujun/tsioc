@@ -430,7 +430,28 @@ ${UI_MOTION_CSS}
 .ui-data-table-cell.is-center { text-align: center; }
 .ui-data-table-cell.is-right { text-align: right; }
 .ui-data-table-sep { display: none; }
-.ui-data-table-empty { padding: 0.5ch; color: var(--ui-muted-fg, inherit); }
+.ui-data-table-empty,
+.ui-data-table-loading { padding: 0.5ch; color: var(--ui-muted-fg, inherit); }
+.ui-data-table-loading { text-align: center; }
+.ui-data-table-caption {
+    padding: 0.25ch 0.5ch;
+    color: var(--ui-muted-fg, inherit);
+    font-size: 0.9em;
+}
+.ui-data-table-head.is-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--ui-data-table-head-bg, var(--ui-card-bg, var(--ui-bg, inherit)));
+}
+.ui-data-table-sortable { cursor: pointer; user-select: none; }
+.ui-data-table-sortable:hover { color: var(--ui-current-fg, inherit); }
+.ui-data-table-sortable:focus-visible {
+    outline: 2px solid var(--ui-focus-ring, currentColor);
+    outline-offset: -1px;
+}
+.ui-data-table-sortable.is-sorted-asc::after { content: ' ▲'; font-size: 0.8em; }
+.ui-data-table-sortable.is-sorted-desc::after { content: ' ▼'; font-size: 0.8em; }
 
 .ui-tree { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
 .ui-tree-node { display: block; min-width: 0; }
