@@ -66,6 +66,22 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
             { title: 'Required field', props: { label: 'Name', hint: 'Shown to teammates', required: true, controlId: 'name' } }
         ]
     },
+    typeahead: {
+        summary: 'Async combobox over the shared autocomplete input with abortable source, loading/error/retry.',
+        keyboard: [
+            'Arrow/Home/End: move the active option',
+            'Enter: accept the active option',
+            'Escape: close suggestions',
+            'Typing: calls source(query, signal); stale responses are ignored'
+        ],
+        surfaces: {
+            html: 'Suggestions render below the input; retry button is focusable.',
+            console: 'Uses the shared select overlay/window; loading/error rows stay above the input.'
+        },
+        examples: [
+            { title: 'Async search', props: { placeholder: 'Search sessions…', ariaLabel: 'Search sessions', minChars: 2 } }
+        ]
+    },
     'dynamic-form': {
         summary: 'Schema-driven form with typed values, groups, visibility, validation and custom widgets.',
         keyboard: [

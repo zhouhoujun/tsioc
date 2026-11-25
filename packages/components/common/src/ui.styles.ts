@@ -388,6 +388,19 @@ ${PLAIN_BUTTON_CSS}
 .ui-field-group-control { display: block; min-width: 0; }
 .ui-field-group-hint { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
 .ui-field-group-error { color: var(--ui-danger-fg, #cf9893); font-size: 0.85em; }
+
+.ui-typeahead { display: flex; flex-direction: column; gap: 0.2ch; min-width: 0; }
+.ui-typeahead-status { display: flex; align-items: center; gap: 0.75ch; min-height: 1.2em; }
+.ui-typeahead-loading { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+.ui-typeahead-error { color: var(--ui-danger-fg, #cf9893); font-size: 0.85em; }
+.ui-typeahead-retry {
+    border: 1px solid var(--ui-border, currentColor);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 0 0.5ch;
+    cursor: pointer;
+}
 .ui-field-group[data-invalid="true"] .ui-field-group-label { color: var(--ui-danger-fg, #cf9893); }
 .ui-search-field .ui-field-icon { color: var(--ui-muted-fg, inherit); }
 

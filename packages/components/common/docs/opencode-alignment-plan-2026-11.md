@@ -110,7 +110,9 @@
   提交聚焦第一个错误字段（common 只发 `focusFieldAction`）。
 - 状态（2026-11-25）：`field`（`ui-field-group`）已落地：label/hint/error/required、
   `aria-describedby`、`data-invalid`、可投影 control；DOM 测试与 catalog override 已补。
-  下一步：text-field/select/dynamic-form 迁移到 field，及 typeahead/search-list。
+  `typeahead`（`ui-typeahead`）已落地：`source(query, signal)`、请求序号 + AbortSignal、
+  loading/empty/error/retry 状态，内部复用 `ui-autocomplete` 的输入/listbox。
+  下一步：text-field/select/dynamic-form 迁移到 field，及 search-list/command palette。
 
 **验收**：agent-ui `/sessions`、`/model`、`/provider`、workflow 引用选择器共享
 同一搜索/异步/键盘行为；DOM/TUI 的 loading/error/empty 文案与焦点一致。
