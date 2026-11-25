@@ -10,6 +10,7 @@ import { SelectComponent, SelectModule } from '../select';
 import { DataTableComponent, DataTableModule } from '../data-table';
 import { DynamicFormComponent, DynamicFormModule } from '../dynamic-form';
 import { TypeaheadComponent, TypeaheadModule } from '../typeahead';
+import { SearchListComponent, SearchListModule } from '../search-list';
 
 @Suite('common catalog examples render')
 export class CatalogExamplesTest {
@@ -18,7 +19,7 @@ export class CatalogExamplesTest {
     @Before()
     async init() {
         this.ctx = await Application.run(DialogModule, {
-            deps: [HtmlTemplateModule, ComponentsModule, SelectModule, DataTableModule, DynamicFormModule, TypeaheadModule],
+            deps: [HtmlTemplateModule, ComponentsModule, SelectModule, DataTableModule, DynamicFormModule, TypeaheadModule, SearchListModule],
             providers: [{ provide: DOCUMENT, useFactory: () => {
                 const { JSDOM } = require('jsdom');
                 return new JSDOM('<!DOCTYPE html><html><body></body></html>').window.document;
@@ -77,6 +78,19 @@ export class CatalogExamplesTest {
         await ref.render();
         expect(root.textContent).toContain('Name');
         expect(root.textContent).toContain('Enabled');
+    }
+
+    @Test('search-list example renders grouped options and shortcuts')
+    async searchListExample() {
+        const { ref, root } = await this.render<SearchListComponent>(SearchListComponent);
+        Object.assign(ref.instance, CATALOG_OVERRIDES['search-list']?.examples?.[0]?.props ?? {});
+        await ref.render();
+        await Promise.resolve();
+        const current = ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
+        expect(current.querySelector('.ui-search-list-input')).toBeTruthy();
+        expect(current.textContent).toContain('Deploy');
+        expect(current.textContent).toContain('Ctrl+D');
+        expect(current.textContent).toContain('Recent');
     }
 
     @Test('typeahead example renders its input shell')

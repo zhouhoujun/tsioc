@@ -67,6 +67,33 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
             { title: 'Required field', props: { label: 'Name', hint: 'Shown to teammates', required: true, controlId: 'name' } }
         ]
     },
+    'search-list': {
+        summary: 'Searchable list/command palette with local filtering, grouped rows, recent items and an abortable async source.',
+        keyboard: [
+            'ArrowDown/ArrowUp: move the active option',
+            'Home/End: first/last option',
+            'Enter: choose the active option',
+            'Escape: request close',
+            'Typing: filters locally or calls source(query, signal)'
+        ],
+        surfaces: {
+            html: 'Input plus grouped listbox; active row uses aria-activedescendant.',
+            console: 'Host renders the same rows in its overlay window; input keeps focus.'
+        },
+        examples: [
+            {
+                title: 'Command list',
+                props: {
+                    placeholder: 'Search commands…',
+                    recentIds: ['deploy'],
+                    items: [
+                        { id: 'deploy', label: 'Deploy', group: 'Run', shortcut: 'Ctrl+D' },
+                        { id: 'delete', label: 'Delete session', group: 'Session' }
+                    ]
+                }
+            }
+        ]
+    },
     typeahead: {
         summary: 'Async combobox over the shared autocomplete input with abortable source, loading/error/retry.',
         keyboard: [

@@ -114,7 +114,10 @@
   `aria-describedby`、`data-invalid`、可投影 control；DOM 测试与 catalog override 已补。
   `typeahead`（`ui-typeahead`）已落地：`source(query, signal)`、请求序号 + AbortSignal、
   loading/empty/error/retry 状态，内部复用 `ui-autocomplete` 的输入/listbox。
-  下一步：text-field/select/dynamic-form 迁移到 field，及 search-list/command palette。
+  `search-list`（`ui-search-list`）已落地：本地过滤、分组、recent 优先、键盘 roving、
+  `aria-activedescendant`、异步 source（abort/loading/error/retry），作为 command palette
+  的 renderer-neutral 基座。AbortController/AbortSignal 已标记 `noReact`，避免代理破坏私有字段。
+  下一步：text-field/select/dynamic-form 迁移到 field，及基于 search-list 的 command palette。
 
 **验收**：agent-ui `/sessions`、`/model`、`/provider`、workflow 引用选择器共享
 同一搜索/异步/键盘行为；DOM/TUI 的 loading/error/empty 文案与焦点一致。
