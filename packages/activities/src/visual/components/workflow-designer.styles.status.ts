@@ -363,6 +363,30 @@ export const WORKFLOW_DESIGNER_STATUS_CSS = `/* Status and JSON panels */
     margin-top: 6px;
 }
 
+.workflow-expression-preview {
+    margin-top: 8px;
+    border: 1px solid var(--wf-theme-border, #e2e8f0);
+    border-radius: 6px;
+    padding: 6px 8px;
+    background: var(--wf-theme-surface-alt, rgba(148, 163, 184, 0.08));
+}
+
+.workflow-expression-preview-title {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.workflow-expression-preview-text {
+    margin: 0;
+    max-height: 160px;
+    overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .workflow-expression-ok {
     font-size: 12px;
     color: #047857;

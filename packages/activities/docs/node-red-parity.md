@@ -131,6 +131,7 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 - CSV `multi` (one message per row) is the streaming non-goal in another shape.
 - Binary payloads are base64 strings (`file-in`/`file-out` honour `encoding`);
   there is intentionally no `Buffer` type in the renderer-neutral runtime.
-- Expression completion now includes paths from the last run's node results, but
-  it does not evaluate a draft expression or inspect the current message before
-  a run.
+- Expression completion includes paths from the last run's node results, and
+  the editor can evaluate a draft against that data. Flow/global/env stay empty
+  in the preview (service state is not in the snapshot), and there is no live
+  message to inspect before a run.

@@ -371,6 +371,31 @@ describe('Workflow Designer UI', () => {
         expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.scope).toBe('task');
     });
 
+    it('evaluates an expression draft against the last run data', async () => {
+        const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
+        ref.instance.designer.updateNodeConfig(node.id, {
+            field: 'value',
+            rules: [{ operator: 'equals', value: 'keep' }]
+        });
+        ref.instance.designer.selectNode(node.id);
+        (ref.instance.designer as any).execution = {
+            nodeStates: { inject_0: { result: { data: { payload: { total: 21 } } } } }
+        } as any;
+        await flush();
+
+        const action = root.querySelector(
+            '.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-action="expression"]'
+        ) as any;
+        action.click();
+        await flush();
+        const input = root.querySelector('.workflow-expression-text') as any;
+        input.value = 'payload.total * 2';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        (root.querySelector('.workflow-expression-evaluate') as any).click();
+        await waitFor(() => (root.querySelector('.workflow-expression-preview-text') as any)?.textContent?.includes('42'));
+        expect(root.querySelector('.workflow-expression-preview-title')?.textContent).toContain('上次运行');
+    });
+
     it('creates a sub workflow document and binds the node to it', async () => {
         const node = ref.instance.designer.addNode('subprocess', { x: 60, y: 60 })!;
         const parentId = ref.instance.designer.definition.id;

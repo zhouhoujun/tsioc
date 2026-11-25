@@ -5,7 +5,8 @@ import { translateWorkflow } from '../i18n';
 import type { WorkflowDesigner } from '../workflow-designer';
 import { decodeWorkflowTypedValue } from '../workflow-typed-value';
 import { patchConfigPath, readConfigPath } from '../workflow-config-path';
-import { preloadWorkflowExpressions, validateWorkflowExpression } from '../workflow-expression';
+import { evaluateWorkflowExpression, preloadWorkflowExpressions, validateWorkflowExpression } from '../workflow-expression';
+import { buildWorkflowExpressionPreviewScope } from '../workflow-expression-preview';
 import { WORKFLOW_EXPRESSION_SUGGESTIONS, workflowExpressionScopeSuggestions } from '../workflow-expression-suggestions';
 
 /**
@@ -33,9 +34,16 @@ import { WORKFLOW_EXPRESSION_SUGGESTIONS, workflowExpressionScopeSuggestions } f
                 [value]="value" placeholder="payload.total * 2" @input="input"></textarea>
             <div class="workflow-expression-error" v-if="error">{{error}}</div>
             <div class="workflow-expression-ok" v-if="valid && !error">{{validLabel}}</div>
+            <div class="workflow-expression-preview" v-if="previewText || previewError">
+                <div class="workflow-expression-preview-title">{{previewLabel}}</div>
+                <pre class="workflow-expression-preview-text" v-if="previewText">{{previewText}}</pre>
+                <div class="workflow-expression-error" v-if="previewError">{{previewError}}</div>
+            </div>
             <div class="workflow-publish-actions">
                 <ui-button className="workflow-btn workflow-expression-validate"
                     :label="validateLabel" :action="validatePressed"></ui-button>
+                <ui-button className="workflow-btn workflow-expression-evaluate"
+                    :label="evaluateLabel" :action="evaluatePressed"></ui-button>
                 <ui-button className="workflow-btn" :label="cancelLabel" :action="cancelPressed"></ui-button>
                 <ui-button className="workflow-btn workflow-btn-primary workflow-expression-apply"
                     tone="accent" :label="applyLabel" :action="applyPressed"></ui-button>
@@ -56,6 +64,9 @@ export class WorkflowExpressionPanelComponent {
     value = '';
     error = '';
     valid = false;
+    previewText = '';
+    previewError = '';
+    evaluating = false;
     protected target?: { nodeId: string; path: string };
     protected selfRef?: WorkflowExpressionPanelComponent;
     @NoReactive() private suggestionCache?: { execution: any; base: string; values: string };
@@ -141,6 +152,29 @@ export class WorkflowExpressionPanelComponent {
         self.value = String(event?.target?.value ?? '');
         self.error = '';
         self.valid = false;
+        self.previewText = '';
+        self.previewError = '';
+    };
+
+    async evaluateExpression(): Promise<void> {
+        const self = (this.selfRef || this) as WorkflowExpressionPanelComponent;
+        self.previewText = '';
+        self.previewError = '';
+        self.evaluating = true;
+        try {
+            await preloadWorkflowExpressions();
+            const { scope } = buildWorkflowExpressionPreviewScope(self.designer);
+            const result = await evaluateWorkflowExpression(self.value, scope);
+            self.previewText = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+        } catch (error) {
+            self.previewError = (error as Error)?.message || String(error);
+        } finally {
+            self.evaluating = false;
+        }
+    }
+
+    readonly evaluatePressed = (): void => {
+        void ((this.selfRef || this) as WorkflowExpressionPanelComponent).evaluateExpression();
     };
 
     readonly validatePressed = (): void => {
@@ -167,6 +201,8 @@ export class WorkflowExpressionPanelComponent {
         );
     }
     get validateLabel(): string { return this.t('expressionValidate', 'Validate'); }
+    get evaluateLabel(): string { return this.t('expressionEvaluate', 'Evaluate'); }
+    get previewLabel(): string { return this.t('expressionPreview', 'Preview (last run data)'); }
     get applyLabel(): string { return this.t('apply', 'Apply'); }
     get cancelLabel(): string { return this.t('cancel', 'Cancel'); }
     get validLabel(): string { return this.t('expressionValid', 'Expression is valid.'); }
