@@ -2,6 +2,7 @@ import { Attribute, Component, ElementRef } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { installFieldStyles } from './field.styles';
+import { resolveFieldAria } from './field-semantics';
 
 /**
  * Renderer-neutral form field wrapper: label, optional hint/error, required
@@ -40,6 +41,12 @@ export class FieldComponent {
     @Attribute() className = '';
 
     get describedBy(): string {
-        return [this.hint && !this.error ? this.hintId : '', this.error ? this.errorId : ''].filter(Boolean).join(' ');
+        return resolveFieldAria({
+            controlId: this.controlId,
+            hint: this.hint,
+            error: this.error,
+            hintId: this.hintId,
+            errorId: this.errorId
+        }).describedBy;
     }
 }

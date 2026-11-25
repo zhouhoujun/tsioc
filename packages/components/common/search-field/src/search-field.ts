@@ -1,5 +1,6 @@
 import { Attribute, Component } from '@tsdi/components';
 import { nextUiId, normalizeBoolean } from '../../src/ui';
+import { resolveFieldAria } from '../../field/src/field-semantics';
 
 /**
  * Renderer-neutral search/text field with optional leading icon, clear action
@@ -76,19 +77,21 @@ export class SearchFieldComponent {
         return this.inputId || this.uid;
     }
 
+    get fieldAria() {
+        return resolveFieldAria({ controlId: this.fieldId, hint: this.hint, error: this.error });
+    }
+
     get hintId(): string {
-        return `${this.fieldId}-hint`;
+        return this.fieldAria.hintId;
     }
 
     get errorId(): string {
-        return `${this.fieldId}-error`;
+        return this.fieldAria.errorId;
     }
 
     /** Space-separated ids for the hint and error text. */
     get describedBy(): string {
-        return [this.hint ? this.hintId : '', this.error ? this.errorId : '']
-            .filter(Boolean)
-            .join(' ');
+        return this.fieldAria.describedBy;
     }
 
     get fieldClass(): string {
