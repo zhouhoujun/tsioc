@@ -67,6 +67,34 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
             { title: 'Required field', props: { label: 'Name', hint: 'Shown to teammates', required: true, controlId: 'name' } }
         ]
     },
+    'command-palette': {
+        summary: 'Overlay command palette composed from ui-search-list and the shared overlay stack.',
+        keyboard: [
+            'Type: filter commands locally or call source(query, signal)',
+            'Arrow/Home/End: move the active command',
+            'Enter: run the active command',
+            'Escape/backdrop: close unless beforeCloseAction vetoes'
+        ],
+        surfaces: {
+            html: 'Fixed backdrop + centered panel; the search list keeps aria-activedescendant.',
+            console: 'Host paints the same panel above the composer; input focus stays in the list.'
+        },
+        examples: [
+            {
+                title: 'Command palette',
+                props: {
+                    open: true,
+                    title: 'Command palette',
+                    hint: 'enter run   esc close',
+                    recentIds: ['deploy'],
+                    items: [
+                        { id: 'deploy', label: 'Deploy', group: 'Run', shortcut: 'Ctrl+D' },
+                        { id: 'delete', label: 'Delete session', group: 'Session' }
+                    ]
+                }
+            }
+        ]
+    },
     'search-list': {
         summary: 'Searchable list/command palette with local filtering, grouped rows, recent items and an abortable async source.',
         keyboard: [

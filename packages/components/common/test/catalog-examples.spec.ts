@@ -11,6 +11,7 @@ import { DataTableComponent, DataTableModule } from '../data-table';
 import { DynamicFormComponent, DynamicFormModule } from '../dynamic-form';
 import { TypeaheadComponent, TypeaheadModule } from '../typeahead';
 import { SearchListComponent, SearchListModule } from '../search-list';
+import { CommandPaletteComponent, CommandPaletteModule } from '../command-palette';
 
 @Suite('common catalog examples render')
 export class CatalogExamplesTest {
@@ -19,7 +20,7 @@ export class CatalogExamplesTest {
     @Before()
     async init() {
         this.ctx = await Application.run(DialogModule, {
-            deps: [HtmlTemplateModule, ComponentsModule, SelectModule, DataTableModule, DynamicFormModule, TypeaheadModule, SearchListModule],
+            deps: [HtmlTemplateModule, ComponentsModule, SelectModule, DataTableModule, DynamicFormModule, TypeaheadModule, SearchListModule, CommandPaletteModule],
             providers: [{ provide: DOCUMENT, useFactory: () => {
                 const { JSDOM } = require('jsdom');
                 return new JSDOM('<!DOCTYPE html><html><body></body></html>').window.document;
@@ -91,6 +92,19 @@ export class CatalogExamplesTest {
         expect(current.textContent).toContain('Deploy');
         expect(current.textContent).toContain('Ctrl+D');
         expect(current.textContent).toContain('Recent');
+    }
+
+    @Test('command palette example renders its overlay and commands')
+    async commandPaletteExample() {
+        const { ref, root } = await this.render<CommandPaletteComponent>(CommandPaletteComponent);
+        Object.assign(ref.instance, CATALOG_OVERRIDES['command-palette']?.examples?.[0]?.props ?? {});
+        await ref.render();
+        await Promise.resolve();
+        const current = ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
+        expect(current.querySelector('.ui-command-palette-panel')).toBeTruthy();
+        expect(current.textContent).toContain('Command palette');
+        expect(current.textContent).toContain('Deploy');
+        expect(root).toBeTruthy();
     }
 
     @Test('typeahead example renders its input shell')
