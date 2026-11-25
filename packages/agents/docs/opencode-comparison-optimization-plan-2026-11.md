@@ -297,7 +297,9 @@
   内置工具：`read_file`/`write_file` 已通过 `AgentIoPort.remote` 走远程 IO；`terminal` 始终走
   `AgentIoPort.runCommand`；`list_dir` 在 `context.environment.kind === 'remote'` 时走 environment
   `list`；`mkdir`/`delete_file` 走 `mkdir`/`remove`；`copy_file` 走 read/write，`move_file`
-  走 `rename`（无 rename 时 read/write/remove）。**剩余**：gateway/SSH 的具体 transport 实现。
+  走 `rename`（无 rename 时 read/write/remove）。SSH transport 已落地
+  （`createSshEnvironment`：cat/base64 写入/find/mkdir/mv/rm + exec 透传）。
+  **剩余**：gateway/ACP 的 environment transport 对接（ACP 已用 `AgentIoPort`）。
 
 ### P4 — 性能、UI 与门禁（1–2 周）
 
