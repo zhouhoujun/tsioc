@@ -34,3 +34,6 @@ export const AGENT_TELEMETRY = token<AgentTelemetry>('AGENT_TELEMETRY');
 
 /** P3.3: host-provided workspace environment (local/remote). */
 export const AGENT_ENVIRONMENT = token<import('./environment/AgentEnvironment').AgentEnvironment>('AGENT_ENVIRONMENT');
+
+/** P2.2: optional provider-native compaction implementation. */
+export const AGENT_NATIVE_COMPACTION = token<import('./context/NativeCompactionProvider').AgentNativeCompactionProvider>('AGENT_NATIVE_COMPACTION');

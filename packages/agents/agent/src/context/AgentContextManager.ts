@@ -3,6 +3,7 @@ import { AgentMessage, getAgentMessageImageParts, getAgentMessageText } from '..
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { summarizeToolDisplayText } from '../tools/ToolSummary';
 import { CompactionPrecompute } from './CompactionPrecompute';
+import type { AgentNativeCompactionProvider } from './NativeCompactionProvider';
 import { MemoryStore } from '../memory/MemoryStore';
 import { scoreSummaryQuality } from '../harness/SummaryQualityScorer';
 import { RedactionFilter } from '../harness/RedactionFilter';
@@ -203,9 +204,8 @@ export class AgentContextManager {
     private compactionThreshold = 0;
     private cumulativeTokenSavings = 0;
     private originalMessageStore = new Map<string, StashedContext>();
-    private compactionHookRunner?: CompactionHookRunner; private readonly compactionPrecompute = new CompactionPrecompute();
+    private compactionHookRunner?: CompactionHookRunner; private readonly compactionPrecompute = new CompactionPrecompute(); nativeCompaction?: AgentNativeCompactionProvider;
     private redactionFilter = new RedactionFilter();
-
     // Adaptive budget tracking
     private adaptiveEnabled = false;
     private tokenGrowthHistory: Array<{ timestamp: number; beforeTokens: number; messageCount: number }> = [];
@@ -213,11 +213,9 @@ export class AgentContextManager {
     private dynamicRecentWindow = DEFAULT_BUDGET.recentMessageWindow;
     private consecutiveHighGrowthWindows = 0;
     private consecutiveLowGrowthWindows = 0;
-
     isExperienceMemoryEnabled(): boolean {
         return !!this.budget.experienceMemory;
     }
-
     configure(budget?: Partial<ContextBudget>): this {
         this.budget = {
             ...DEFAULT_BUDGET,
@@ -230,7 +228,6 @@ export class AgentContextManager {
         this.tokenGrowthHistory = [];
         return this;
     }
-
     setSummarizer(summarizer: SessionSummarizer, compactionThreshold?: number): this {
         this.summarizer = summarizer;
         this.compactionThreshold = compactionThreshold ?? 0;
@@ -900,7 +897,7 @@ export class AgentContextManager {
             });
         };
 
-        if (!this.summarizer) {
+        if (!this.summarizer && !this.nativeCompaction) {
             return {
                 messages,
                 report: buildReport({
@@ -948,7 +945,9 @@ export class AgentContextManager {
         try {
             const minimalAnchors = level === 'deep';
             const preservedAnchors = this.resolveCompactionAnchors(oldMessages, recentMessages, minimalAnchors);
-            const summary = await this.compactionPrecompute.summary(oldMessages, this.summarizer);
+            const summary = this.nativeCompaction
+                ? (await this.nativeCompaction.compact(oldMessages, { level, maxTokens: this.budget.maxHistoryTokens })).summary
+                : await this.compactionPrecompute.summary(oldMessages, this.summarizer!);
             if (!summary?.trim()) {
                 const prepared = this.pruneHistory(messages);
                 return {

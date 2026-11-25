@@ -61,6 +61,33 @@ export class CompactionPrecomputeTest {
         expect(summary).toEqual('SUMMARY');
     }
 
+    @Test('a provider-native compaction summary takes precedence')
+    async nativeCompaction() {
+        const manager = new AgentContextManager().configure({
+            maxHistoryTokens: 600,
+            compactionMinTokens: 100,
+            recentMessageWindow: 2
+        } as any);
+        let calls = 0;
+        manager.nativeCompaction = {
+            async compact(messages: any[], options: any) {
+                calls++;
+                expect(messages.length).toBeGreaterThan(0);
+                expect(options.maxTokens).toEqual(600);
+                return { summary: 'NATIVE-SUMMARY' };
+            }
+        };
+        const messages = [
+            message('n1', 'user'), message('n2', 'assistant'),
+            message('n3', 'user'), message('n4', 'assistant'),
+            message('n5', 'user'), message('n6', 'assistant')
+        ];
+        const prepared = await manager.compactNow(messages);
+        expect(calls).toEqual(1);
+        expect(prepared.report.summaryInserted).toEqual(true);
+        expect(prepared.messages.some(item => String(item.content).includes('NATIVE-SUMMARY'))).toEqual(true);
+    }
+
     @Test('the context manager consumes the scheduled summary when compacting')
     async managerIntegration() {
         const calls: string[] = [];

@@ -246,7 +246,9 @@
   compactable prefix 的 summary（不阻塞 turn）；压缩时仅当缓存 message ids 仍是当前 oldMessages 的
   **前缀**才复用，并只对新增 suffix 追加 summary（incremental），失败/过期自动回退完整 summary。
   现有 light/medium/deep 分级与 deep `aggressivePrune` 保留（shrink 阶梯基础）。
-  **剩余**：provider-native compaction window、按比例的 keep/buffer shrink 调优。
+  provider-native compaction 已落地：`AgentNativeCompactionProvider` + `AGENT_NATIVE_COMPACTION`
+  注入后优先于 summarizer（native summary 进入现有压缩报告/anchors 流程）。**剩余**：按比例的
+  keep/buffer shrink 调优。
 
 **P2.3 工具变换与插件 hooks（工具变换已落地 2026-11-24）**
 - 扩展 `AgentHooks` 域：`tool.execute.before/after`、`permission.evaluate`、`model.request/response/retry`、`config.observe`；

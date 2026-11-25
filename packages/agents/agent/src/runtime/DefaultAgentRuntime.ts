@@ -62,7 +62,7 @@ import { AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, 
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
-import { AGENT_ENVIRONMENT, AGENT_OPTIONS, AGENT_TELEMETRY, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
+import { AGENT_ENVIRONMENT, AGENT_NATIVE_COMPACTION, AGENT_OPTIONS, AGENT_TELEMETRY, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
 import { resolveAgentSandboxPolicy, AgentOptions, AgentPolicyResolution, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions } from '../options';
 import { resolveApprovalPolicyOptions } from './approval-policy';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
@@ -169,7 +169,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() @Inject(AGENT_WORKSPACE_TRUST, { defaultValue: null }) protected workspaceTrust?: AgentWorkspaceTrustResolver | null,
         @Optional() @Inject(AGENT_TELEMETRY) protected telemetry?: import('../harness/AgentTelemetry').AgentTelemetry,
         @Optional() protected turnHistoryStore?: TurnHistoryStore,
-        @Optional() @Inject(AGENT_ENVIRONMENT) protected injectedEnvironment?: import('../environment/AgentEnvironment').AgentEnvironment
+        @Optional() @Inject(AGENT_ENVIRONMENT) protected injectedEnvironment?: import('../environment/AgentEnvironment').AgentEnvironment,
+        @Optional() @Inject(AGENT_NATIVE_COMPACTION) protected nativeCompactionProvider?: import('../context/NativeCompactionProvider').AgentNativeCompactionProvider
     ) {
         super();
         this.tokenBudgetTracker = new TokenBudgetTracker(this.options.tokenBudget);
@@ -185,6 +186,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
             this.contextManager.setSummarizer(this.summarizer, this.options.context.compactionThreshold);
         }
         this.approvalManager = this.toolApprovalManager = this.resolveApprovalManager(this.approvalManagerInput);
+        this.contextManager.nativeCompaction = this.nativeCompactionProvider;
         this.toolApprovalManager?.setPermissionRules?.(() => this.options.policy?.permissions);
         this.toolApprovalManager?.setPermissionLayer?.('agent', request => compileArchetypePermissionRules(this.modes.archetypeConfig(request.sessionId ?? '')));
         if (!this.toolExecutionCoordinator) {
@@ -441,7 +443,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 turn: { status: 'started', message: input }
             });
             await this.beginGitStepSnapshot(sessionId, turnContext.workspace);
-
             try {
                 const result = yield* this.completeStreamingTurn(sessionId, input, userMessage.id, turnContext);
                 await this.bindGitStepSnapshot(sessionId, result.message.id, turnContext.workspace);
@@ -496,7 +497,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             release();
         }
     }
-
     protected async ensureSessionWorkspace(sessionId: string): Promise<void> { await this.workspaceRoot.ensureSessionWorkspace(sessionId); }
 
     protected async resolveSessionWorkspace(sessionId: string): Promise<string | undefined> { return this.workspaceRoot.resolveSessionWorkspace(sessionId); }
