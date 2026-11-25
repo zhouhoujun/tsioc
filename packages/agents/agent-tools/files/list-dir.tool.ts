@@ -34,6 +34,22 @@ export class ListDirTool implements AgentTool {
         const policy = resolveFilePolicy(this.options, _context?.workspace);
         const limit = this.resolveLimit(input?.limit, policy.maxSearchResults);
         const absolutePath = resolveWorkspacePath(requestedPath, policy.rootDir);
+        if (_context?.environment?.kind === 'remote') {
+            const all = await _context.environment.list(absolutePath);
+            const filteredEntries = all
+                .filter(entry => includeHidden || !entry.name.startsWith('.'))
+                .sort((left, right) => left.name.localeCompare(right.name));
+            const visibleEntries = filteredEntries.slice(0, limit);
+            return {
+                path: toRelativeWorkspacePath(absolutePath, policy.rootDir),
+                entries: visibleEntries.map(entry => ({
+                    name: entry.name,
+                    path: toRelativeWorkspacePath(path.join(absolutePath, entry.name), policy.rootDir),
+                    kind: entry.kind
+                })),
+                truncated: filteredEntries.length > visibleEntries.length
+            };
+        }
         await assertNoSymlinkInWorkspacePath(absolutePath, policy.rootDir);
 
         const stat = await fs.stat(absolutePath);
