@@ -251,6 +251,9 @@
 .ui-descriptions-sep,
 .ui-descriptions-hint,
 .ui-descriptions-empty { color: var(--console-meta, #6e7681); }
+
+.ui-data-table-detail-row { padding: 0 0 0 3ch; }
+.ui-data-table-detail { color: var(--console-meta, #6e7681); }
 .ui-descriptions-value { color: var(--console-text, #c9d1d9); }
 .ui-descriptions-item[data-tone="accent"] .ui-descriptions-value { color: var(--console-accent, #86a9d6); }
 .ui-descriptions-item[data-tone="success"] .ui-descriptions-value { color: var(--console-idle, #6fa37a); }

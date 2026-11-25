@@ -497,6 +497,13 @@ ${PLAIN_BUTTON_CSS}
     width: 3ch;
     text-align: center;
 }
+.ui-data-table-row-group { display: contents; }
+.ui-data-table-expand { flex: 0 0 auto; width: 3ch; text-align: center; }
+.ui-data-table-expander { cursor: pointer; user-select: none; }
+.ui-data-table-expander:focus-visible { outline: 2px solid var(--ui-focus-ring, currentColor); outline-offset: 1px; }
+.ui-data-table-detail-row { display: flex; padding: 0 0.5ch 0.25em; }
+.ui-data-table-detail { display: flex; flex-direction: column; gap: 0.1ch; min-width: 0; color: var(--ui-muted-fg, inherit); }
+.ui-data-table-detail-line { white-space: pre-wrap; overflow-wrap: anywhere; }
 .ui-data-table-check { cursor: pointer; user-select: none; }
 .ui-data-table-check:focus-visible {
     outline: 2px solid var(--ui-focus-ring, currentColor);

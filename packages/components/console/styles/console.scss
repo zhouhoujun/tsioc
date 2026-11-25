@@ -265,6 +265,9 @@ $idle: var(--console-idle, #6fa37a);
 .ui-descriptions-sep,
 .ui-descriptions-hint,
 .ui-descriptions-empty { color: $meta; }
+
+.ui-data-table-detail-row { padding: 0 0 0 3ch; }
+.ui-data-table-detail { color: $meta; }
 .ui-descriptions-value { color: $text; }
 .ui-descriptions-item[data-tone="accent"] .ui-descriptions-value { color: $accent; }
 .ui-descriptions-item[data-tone="success"] .ui-descriptions-value { color: $idle; }

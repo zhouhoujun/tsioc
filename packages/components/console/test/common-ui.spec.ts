@@ -58,7 +58,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-avatar label="Ada Lovelace"></ui-avatar>
         <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
         <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']" :selectionAction="onSelection"></ui-data-table>
-        <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2"></ui-data-table>
+        <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2" expandable :detailLines="detailFor"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']" :selectAction="onTree" :toggleAction="onTreeToggle"></ui-tree>
         <ui-text-field label="Name" value="Ada"></ui-text-field>
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
@@ -107,6 +107,7 @@ class CommonUiConsoleHostComponent {
     tableColumns = [{ key: 'name', label: 'Name' }, { key: 'value', label: 'Value' }];
     tableRows = [{ id: 'a', name: 'Alpha', value: '1' }];
     pagedColumns = [{ key: 'name', label: 'Paged' }];
+    detailFor = (row: any) => [`more ${row.name}`];
     pagedRows = [
         { id: 'o', name: 'Omega' },
         { id: 's', name: 'Sigma' },
@@ -302,6 +303,15 @@ export class CommonUiConsoleTest {
                 expect(host.zoom).toEqual(60);
                 expect(slider.getAttribute('aria-valuenow')).toEqual('60');
                 expect(slider.getAttribute('aria-valuetext')).toEqual('60%');
+
+                const expander = (ref.hostView.rootNodes[0] as any).querySelector('.ui-data-table-expander');
+                expect(expander.getAttribute('aria-expanded')).toEqual('false');
+                expander.dispatchEvent({ type: 'click', target: expander });
+                await Promise.resolve();
+                expect(expander.getAttribute('aria-expanded')).toEqual('true');
+                const expandedOutput = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
+                expect(expandedOutput).toContain('more Omega');
+                expect(new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n')).not.toContain('more Tau');
 
                 const pager = (ref.hostView.rootNodes[0] as any).querySelector('.ui-data-table-pager');
                 expect(pager).toBeTruthy();

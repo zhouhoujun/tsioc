@@ -61,6 +61,7 @@ interface DataTableViewRow {
         aria-label="{{ariaLabel}}" aria-busy="{{loading}}" aria-rowcount="{{rows.length}}">
         <div class="ui-data-table-caption" role="caption" v-if="caption">{{caption}}</div>
         <div class="ui-data-table-head {{headerClass}}" role="row">
+            <span class="ui-data-table-cell ui-data-table-expand" role="columnheader" aria-hidden="true" v-if="expandable"></span>
             <span class="ui-data-table-cell ui-data-table-select" role="columnheader" v-if="selectable">
                 <span class="ui-data-table-check" role="checkbox" aria-checked="{{selectionState}}"
                     aria-label="{{selectAllLabel}}" tabindex="0" focusable="true"
@@ -74,9 +75,17 @@ interface DataTableViewRow {
                 v-for="column in viewColumns" trackBy="key"
                 @click="sort(column)" @keydown="headerKeydown($event, column)">{{column.label}}</span>
         </div>
+        <div class="ui-data-table-row-group" v-for="row in viewRows" trackBy="key">
         <div class="{{row.className}}" role="row" aria-selected="{{row.selected}}"
-            v-for="row in viewRows" trackBy="key"
             @click="pick(row)">
+            <span class="ui-data-table-cell ui-data-table-expand" role="cell" v-if="expandable">
+                <span class="ui-data-table-expander" role="button" tabindex="0" focusable="true"
+                    aria-expanded="{{rowExpanded(row)}}"
+                    aria-label="{{rowExpanded(row) ? collapseLabel : expandLabel}}"
+                    @click="toggleExpand(row, $event)" @keydown="expandKeydown($event, row)">
+                    <span aria-hidden="true">{{rowExpanded(row) ? '▾' : '▸'}}</span>
+                </span>
+            </span>
             <span class="ui-data-table-cell ui-data-table-select" role="cell" v-if="selectable">
                 <span class="ui-data-table-check" role="checkbox" aria-checked="{{rowChecked(row)}}"
                     aria-label="{{selectRowLabel}} {{row.index + 1}}" tabindex="0" focusable="true"
@@ -86,6 +95,12 @@ interface DataTableViewRow {
             </span>
             <span class="{{cell.className}}" role="cell"
                 v-for="cell in row.cells" trackBy="key">{{cell.text}}</span>
+        </div>
+        <div class="ui-data-table-detail-row" role="row" v-if="expandable && rowExpanded(row)">
+            <span class="ui-data-table-cell ui-data-table-detail" role="cell">
+                <span class="ui-data-table-detail-line" v-for="line in detailLinesFor(row)">{{line}}</span>
+            </span>
+        </div>
         </div>
         <div class="ui-data-table-loading" role="row" v-if="loading">{{loadingLabel}}</div>
         <div class="ui-data-table-empty" role="row" v-if="!loading && !viewRows.length">{{emptyLabel}}</div>
@@ -115,6 +130,12 @@ export class DataTableComponent {
     @Attribute() selectedKeys: Array<string | number> = [];
     @Attribute() selectAllLabel = 'Select all rows';
     @Attribute() selectRowLabel = 'Select row';
+    /** Expandable rows with host-provided detail lines. */
+    @Attribute() expandedKeys: Array<string | number> = [];
+    @Attribute() expandLabel = 'Expand row';
+    @Attribute() collapseLabel = 'Collapse row';
+    @Attribute() expandAction?: (key: string, expanded: boolean, row: DataTableRow) => void;
+    @Attribute() detailLines?: (row: DataTableRow, index: number) => string[];
     /** Built-in page footer (Ant Design Table pagination). */
     @Attribute() page: number | string = 1;
     @Attribute() pageSize: number | string = 10;
@@ -122,6 +143,7 @@ export class DataTableComponent {
     @Attribute() pageChangeAction?: (page: number) => void;
 
     private _pagination = false;
+    private _expandable = false;
     private _striped = false;
     private _bordered = false;
     private _dense = false;
@@ -156,6 +178,10 @@ export class DataTableComponent {
     @Attribute()
     get pagination(): boolean { return this._pagination; }
     set pagination(value: boolean | string) { this._pagination = normalizeBoolean(value); }
+
+    @Attribute()
+    get expandable(): boolean { return this._expandable; }
+    set expandable(value: boolean | string) { this._expandable = normalizeBoolean(value); }
 
     get pageSizeNumber(): number {
         return Math.max(1, Math.floor(Number(this.pageSize) || 10));
@@ -265,6 +291,43 @@ export class DataTableComponent {
         if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
             event.preventDefault?.();
             this.sort(column);
+        }
+    }
+
+    rowExpanded(row: DataTableViewRow): boolean {
+        return (Array.isArray(this.expandedKeys) ? this.expandedKeys : []).some(key => String(key) === row.key);
+    }
+
+    detailLinesFor(row: DataTableViewRow): string[] {
+        if (!this.detailLines) {
+            return [];
+        }
+        const lines = this.detailLines(this.rows[row.index], row.index);
+        return Array.isArray(lines) ? lines.map(line => String(line ?? '')) : [];
+    }
+
+    toggleExpand(row: DataTableViewRow, event?: Event): void {
+        event?.stopPropagation?.();
+        if (!this._expandable) {
+            return;
+        }
+        const keys = (Array.isArray(this.expandedKeys) ? this.expandedKeys : []).map(String);
+        const index = keys.indexOf(row.key);
+        const expanded = index < 0;
+        if (expanded) {
+            keys.push(row.key);
+        } else {
+            keys.splice(index, 1);
+        }
+        this.expandedKeys = keys;
+        this.expandAction?.(row.key, expanded, this.rows[row.index]);
+    }
+
+    expandKeydown(event: any, row: DataTableViewRow): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.toggleExpand(row, event);
         }
     }
 
