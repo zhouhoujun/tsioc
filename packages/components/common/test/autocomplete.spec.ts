@@ -95,6 +95,45 @@ export class AutoCompleteTest {
         expect(root.querySelector('.ui-autocomplete-panel')).toBeFalsy();
     }
 
+    @Test('loads options asynchronously and ignores stale responses')
+    async asyncOptions() {
+        const { root, component } = await this.mount();
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const input = root.querySelector('.ui-autocomplete-input') as HTMLInputElement;
+        let releaseA: ((options: any[]) => void) | undefined;
+        component.instance.loadOptions = (query: string) => {
+            if (query === 'a') {
+                return new Promise(resolve => { releaseA = resolve; });
+            }
+            if (query === 'b') {
+                return Promise.resolve([{ label: 'Bravo', value: 'b' }]);
+            }
+            return Promise.resolve([{ label: 'All', value: 'all' }]);
+        };
+
+        input.dispatchEvent(new (doc.defaultView as any).FocusEvent('focus'));
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(root.querySelectorAll('.ui-autocomplete-option').length).toEqual(1);
+        expect(root.textContent).toContain('All');
+
+        input.value = 'a';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await Promise.resolve();
+        expect(root.querySelector('.ui-autocomplete-loading')?.textContent).toContain('Loading');
+        input.value = 'b';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(root.textContent).toContain('Bravo');
+        // A late response from the superseded query must not replace Bravo.
+        releaseA?.([{ label: 'Stale A', value: 'a' }]);
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(root.textContent).toContain('Bravo');
+        expect(root.textContent).not.toContain('Stale A');
+    }
+
     @Test('Escape closes, clicks select and empty options are announced')
     async escapeClickAndEmpty() {
         const { root, host, component } = await this.mount();

@@ -314,6 +314,9 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     单值引用字段改用可搜索 autocomplete：输入只过滤候选，选中后才写配置；
     create/edit 动作仍由字段行提供；多选 scope 继续使用内置多选框。
   - autocomplete 增加 `disabled`，供表单/宿主统一禁用。
+- **combobox 异步候选**
+  - autocomplete 支持 `loadOptions(query)`：输入触发异步加载、请求序号丢弃过期
+    响应，面板显示 loading/错误行；`disabled` 与现有键盘/ARIA 行为保持一致。
 - **表达式预览**
   - workflow 表达式编辑器新增“求值预览”：用上次运行各节点的
     `payload`/`msg`/`variables`/`subprocess` 构建作用域，调用 JSONata 求值；

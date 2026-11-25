@@ -32,6 +32,10 @@ export const AUTOCOMPLETE_CSS = `
 .ui-autocomplete-description,
 .ui-autocomplete-empty { color: var(--ui-muted-fg, inherit); }
 .ui-autocomplete-empty { display: block; padding: 0.1em 0.6ch; }
+.ui-autocomplete-loading { color: var(--ui-muted-fg, inherit); }
+.ui-autocomplete-loading { display: block; padding: 0.1em 0.6ch; }
+.ui-autocomplete-error { color: var(--ui-danger-fg, #dc2626); }
+.ui-autocomplete-error { display: block; padding: 0.1em 0.6ch; }
 `;
 
 export function installAutocompleteStyles(doc?: Document | null): void {

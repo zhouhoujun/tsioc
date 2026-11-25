@@ -4,6 +4,8 @@ import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId, normalizeBoolean } from '../../src/ui';
 import { installAutocompleteStyles } from './autocomplete.styles';
 
+export type AutoCompleteOptionLoader = (query: string) => AutoCompleteOption[] | Promise<AutoCompleteOption[]>;
+
 export interface AutoCompleteOption {
     label: string;
     value: string;
@@ -38,17 +40,19 @@ interface AutoCompleteViewOption {
             [value]="value" placeholder="{{placeholder}}" [disabled]="disabled"
             @input="onInput($event)" @focus="onFocus()" @blur="onBlur()"
             @keydown="onKeydown($event)" />
-        <div class="ui-autocomplete-panel" id="{{listId}}" role="listbox" v-if="openState">
+        <div class="ui-autocomplete-panel" id="{{listId}}" role="listbox" v-if="panelVisible">
+            <span class="ui-autocomplete-loading" role="status" v-if="loading">{{loadingLabel}}</span>
+            <span class="ui-autocomplete-error" role="alert" v-else-if="loadError">{{loadError}}</span>
             <span class="{{option.className}}" role="option"
                 id="{{optionId(option.index)}}"
                 aria-selected="{{option.index === currentIndex}}"
                 aria-disabled="{{option.disabled}}"
-                v-for="option in viewOptions" trackBy="index"
+                v-for="option in viewOptions" trackBy="index" v-if="!loading"
                 @mousedown="keepFocus($event)" @click="choose(option)"
                 @keydown="onOptionKeydown(option, $event)">
                 <span class="ui-autocomplete-label">{{option.label}}</span><span class="ui-autocomplete-description" v-if="option.description"> {{option.description}}</span>
             </span>
-            <span class="ui-autocomplete-empty" v-if="!viewOptions.length">{{emptyLabel}}</span>
+            <span class="ui-autocomplete-empty" v-if="!loading && !loadError && !viewOptions.length">{{emptyLabel}}</span>
         </div>
     </div>`
 })
@@ -67,10 +71,16 @@ export class AutoCompleteComponent {
     @Attribute() emptyLabel = 'No suggestions';
     @Attribute() ariaLabel = 'Search';
     @Attribute() className = '';
+    @Attribute() loadingLabel = 'Loading…';
     @Attribute() changeAction?: (value: string) => void;
     @Attribute() selectAction?: (value: string) => void;
+    /** Host-provided async option source; replaces `options` while active. */
+    @Attribute() loadOptions?: AutoCompleteOptionLoader;
 
     private _disabled = false;
+    private _loadedOptions?: AutoCompleteOption[];
+    private loadSequence = 0;
+    loadError = '';
     @Attribute()
     get disabled(): boolean { return this._disabled; }
     set disabled(value: boolean | string) { this._disabled = normalizeBoolean(value); }
@@ -103,6 +113,10 @@ export class AutoCompleteComponent {
         return this._open && !this._loading;
     }
 
+    get panelVisible(): boolean {
+        return this._open;
+    }
+
     get autoClass(): string {
         return [this.openState ? 'is-open' : '', this.className].filter(Boolean).join(' ');
     }
@@ -126,7 +140,8 @@ export class AutoCompleteComponent {
     }
 
     get viewOptions(): AutoCompleteViewOption[] {
-        return (Array.isArray(this.options) ? this.options : []).map((option, index) => ({
+        const source = this.loadOptions ? (this._loadedOptions || []) : this.options;
+        return (Array.isArray(source) ? source : []).map((option, index) => ({
             index,
             value: String(option?.value ?? ''),
             label: String(option?.label ?? option?.value ?? ''),
@@ -152,14 +167,47 @@ export class AutoCompleteComponent {
         this.selectedIndex = 0;
         this._open = true;
         this.changeAction?.(this.value);
+        void this.reloadOptions(this.value);
     }
 
     onFocus(): void {
         if (this._disabled) {
             return;
         }
+        if (this.loadOptions && this._loadedOptions === undefined) {
+            void this.reloadOptions(this.value);
+            return;
+        }
         if (this.viewOptions.length) {
             this._open = true;
+        }
+    }
+
+    protected async reloadOptions(query: string): Promise<void> {
+        if (!this.loadOptions) {
+            return;
+        }
+        const sequence = ++this.loadSequence;
+        this._loading = true;
+        this._open = true;
+        this.loadError = '';
+        try {
+            const next = await this.loadOptions(query);
+            if (sequence !== this.loadSequence) {
+                return;
+            }
+            this._loadedOptions = Array.isArray(next) ? next : [];
+            this.selectedIndex = 0;
+        } catch (error) {
+            if (sequence !== this.loadSequence) {
+                return;
+            }
+            this._loadedOptions = [];
+            this.loadError = (error as Error)?.message || String(error);
+        } finally {
+            if (sequence === this.loadSequence) {
+                this._loading = false;
+            }
         }
     }
 
