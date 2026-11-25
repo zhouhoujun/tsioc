@@ -300,7 +300,8 @@
   走 `rename`（无 rename 时 read/write/remove）。SSH transport 已落地
   （`createSshEnvironment`：cat/base64 写入/find/mkdir/mv/rm + exec 透传）。
   gateway/ACP 通过 `createIoPortEnvironment(io)` 对接（优先 native read/write hooks，其余走 shell
-  命令）；**剩余**：为主机自动安装该 environment 的策略（目前由宿主显式传入 `options.environment`）。
+  命令）；`AGENT_ENVIRONMENT` 由 `AgentToolsModule` 根据 IO port 自动提供（remote IO → remote env），
+  runtime 在 `options.environment` 未显式设置时使用它。
 
 ### P4 — 性能、UI 与门禁（1–2 周）
 

@@ -31,3 +31,6 @@ export const AGENT_WORKSPACE_TRUST = token<AgentWorkspaceTrustResolver>('AGENT_W
 
 import type { AgentTelemetry } from './harness/AgentTelemetry';
 export const AGENT_TELEMETRY = token<AgentTelemetry>('AGENT_TELEMETRY');
+
+/** P3.3: host-provided workspace environment (local/remote). */
+export const AGENT_ENVIRONMENT = token<import('./environment/AgentEnvironment').AgentEnvironment>('AGENT_ENVIRONMENT');

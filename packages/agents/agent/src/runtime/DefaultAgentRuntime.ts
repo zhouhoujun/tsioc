@@ -62,7 +62,7 @@ import { AgentSessionProjectMetadata, SessionSearchMatch, SessionSearchOptions, 
 import { MemoryStore, AgentMemoryRecord } from '../memory/MemoryStore';
 import { SessionSummarizer } from '../memory/SessionSummarizer';
 import { AgentSummaryAgent } from '../memory/AgentSummaryAgent';
-import { AGENT_OPTIONS, AGENT_TELEMETRY, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
+import { AGENT_ENVIRONMENT, AGENT_OPTIONS, AGENT_TELEMETRY, AGENT_WORKSPACE_TRUST, AgentWorkspaceTrustResolver } from '../tokens';
 import { resolveAgentSandboxPolicy, AgentOptions, AgentPolicyResolution, DEFAULT_APPROVAL_REQUIRED_RULES, defaultAgentOptions } from '../options';
 import { resolveApprovalPolicyOptions } from './approval-policy';
 import { ExperienceDistiller } from '../memory/ExperienceDistiller';
@@ -168,7 +168,8 @@ export class DefaultAgentRuntime extends AgentRuntime {
         @Optional() @Inject(AGENT_CLOCK, { defaultValue: null }) protected clock?: AgentClock,
         @Optional() @Inject(AGENT_WORKSPACE_TRUST, { defaultValue: null }) protected workspaceTrust?: AgentWorkspaceTrustResolver | null,
         @Optional() @Inject(AGENT_TELEMETRY) protected telemetry?: import('../harness/AgentTelemetry').AgentTelemetry,
-        @Optional() protected turnHistoryStore?: TurnHistoryStore
+        @Optional() protected turnHistoryStore?: TurnHistoryStore,
+        @Optional() @Inject(AGENT_ENVIRONMENT) protected injectedEnvironment?: import('../environment/AgentEnvironment').AgentEnvironment
     ) {
         super();
         this.tokenBudgetTracker = new TokenBudgetTracker(this.options.tokenBudget);
@@ -202,7 +203,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         this.hookManager = new AgentHookManager(this.options.hooks, this.hookExecutor);
         this.liveToolScheduler = new LiveToolScheduler();
-        this.toolRegistry.useEnvironment?.(this.options.environment ?? new LocalEnvironment(this.fileAdapter, this.resolveWorkspace()));
+        this.toolRegistry.useEnvironment?.(this.options.environment ?? this.injectedEnvironment ?? new LocalEnvironment(this.fileAdapter, this.resolveWorkspace()));
         this.pluginController = createRuntimePluginController(this);
         this.contextManager.setCompactionHookRunner(async (stage, compaction) => {
             if (!compaction.sessionId || !this.hookManager?.hasHooks(stage)) {
@@ -439,7 +440,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
                 stage: 'beforeTurn',
                 turn: { status: 'started', message: input }
             });
-
             await this.beginGitStepSnapshot(sessionId, turnContext.workspace);
 
             try {
