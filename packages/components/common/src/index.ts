@@ -6,5 +6,6 @@ export * from './scrollbar';
 export * from './overlay-manager';
 export * from './styles';
 export * from './theme';
+export * from './theme-tokens';
 export * from './ui';
 export * from './ui.styles';

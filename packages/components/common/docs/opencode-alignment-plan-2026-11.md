@@ -159,6 +159,9 @@ TUI 与浏览器 Esc/Tab/焦点恢复一致；不出现双滚动/背景滚动。
 - 主题：固化 `--ui-*`（color/tone/spacing/radius/z/motion），提供
   `installUiStyles` neutral skin；agent-ui/web console/workflow 设计器只覆盖 token；
   增加 light/dark/solarized/high-contrast 的 token 完整性与对比度计算测试。
+  - 状态（2026-11-25）：`src/theme-tokens.ts` 已提供四套语义 token、WCAG
+    `contrastRatio` 与 opt-in `applyThemeTokens`；`ThemeService.tokens` /
+    `applyTo(doc, { tokens: true })` 已接线，对比度测试覆盖 fg/muted/accent。
 
 **验收**：动画无每帧分配基准；reduced-motion 全链路生效；宿主 CSS 不再复制
 widget 选择器；主题切换无残留硬编码颜色。

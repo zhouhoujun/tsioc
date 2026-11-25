@@ -44,10 +44,11 @@ Rules this layer must keep (see the root `AGENTS.md`):
 
 | Import | Contents |
 | --- | --- |
-| `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
+| `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, theme tokens/contrast, display-width, shared input helpers, raw-element marker |
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
 | `@tsdi/components/common/motion` | `Spring` (closed-form damped harmonic), `VelocityTracker`, `prefersReducedMotion`; hosts supply frame deltas. |
+| `@tsdi/components/common` theme tokens | `THEME_TOKENS` / `themeTokens` / `contrastRatio` / `applyThemeTokens`; `ThemeService.tokens` exposes the current set, `applyTo(doc, { tokens: true })` mirrors it to `--ui-*` variables. |
 | `@tsdi/components/common/<widget>` | one widget package: `accordion`, `alert`, `alert-notice`, `autocomplete`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `cascader`, `checkbox`, `chip`, `command-palette`, `data-table`, `descriptions`, `dialog`, `drawer`, `divider`, `dynamic-form`, `empty-state`, `field`, `grid`, `icon`, `image`, `kbd`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `popover`, `progress`, `qr-code`, `radio-group`, `rate`, `result`, `scrollbar`, `search-field`, `search-list`, `segmented`, `select`, `select-trigger`, `skeleton`, `slider`, `space`, `spinner`, `stat`, `status-list`, `steps`, `switch`, `tab-bar`, `tabs`, `text-field`, `timeline`, `toast`, `toolbar`, `tooltip`, `transfer`, `tree`, `tree-select`, `typeahead`, `upload` |
 
 ## Naming conventions

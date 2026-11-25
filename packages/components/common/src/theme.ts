@@ -1,4 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
+import { applyThemeTokens, themeTokens, ThemeTokens } from './theme-tokens';
 
 export type ThemeName = 'light' | 'dark' | 'solarized' | 'high-contrast' | string;
 
@@ -35,6 +36,11 @@ export class ThemeService {
         return isDarkTheme(this.theme);
     }
 
+    /** Semantic colors for the current theme (hosts may override via CSS). */
+    get tokens(): ThemeTokens {
+        return themeTokens(this.theme);
+    }
+
     setTheme(theme: ThemeName): void {
         const next = isThemeName(theme) ? theme : 'light';
         if (next === this.theme) {
@@ -57,8 +63,11 @@ export class ThemeService {
         return () => this.listeners.delete(listener);
     }
 
-    applyTo(doc?: Document | null): void {
+    applyTo(doc?: Document | null, options?: { tokens?: boolean }): void {
         applyThemeToDocument(doc, this.theme);
+        if (options?.tokens) {
+            applyThemeTokens(doc, this.theme);
+        }
     }
 
     onDestroy(): void {
