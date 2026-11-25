@@ -95,6 +95,22 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
             }
         ]
     },
+    'inline-input': {
+        summary: 'Click-to-edit inline value used by tab/session/task titles with Enter/blur commit and Escape cancel.',
+        keyboard: [
+            'Enter/Space on the value: begin editing',
+            'Enter: commit and notify changeAction/submitAction',
+            'Escape: cancel and restore the previous value',
+            'Blur: commit (submitOnBlur defaults to true)'
+        ],
+        surfaces: {
+            html: 'Real input with focus/select on edit; the host persists the value.',
+            console: 'Host renders the same editable row and routes Enter/Escape through the shared input model.'
+        },
+        examples: [
+            { title: 'Session title', props: { value: 'Fix login flow', editLabel: 'Rename session' } }
+        ]
+    },
     'search-list': {
         summary: 'Searchable list/command palette with local filtering, grouped rows, recent items and an abortable async source.',
         keyboard: [
