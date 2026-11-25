@@ -417,7 +417,7 @@ export const WORKFLOW_DESIGNER_CANVAS_CSS = `/* Palette */
     padding: 8px 10px;
     border-radius: 8px 8px 0 0;
     background: var(--wf-accent, #64748b);
-    color: #ffffff;
+    color: var(--wf-node-text, #ffffff);
     font-size: 12px;
     font-weight: 600;
     box-sizing: border-box;

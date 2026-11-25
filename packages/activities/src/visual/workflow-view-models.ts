@@ -28,6 +28,7 @@ import { resolveWorkflowText, translateWorkflow } from './i18n';
 import { decodeWorkflowTypedValue } from './workflow-typed-value';
 import { buildReferenceView, fieldResetValue, workflowSourceMode } from './workflow-config-nodes';
 import { workflowInspectorIssues } from './workflow-config-validation';
+import { workflowNodeAttrs } from './workflow-canvas-attrs';
 import {
     WORKFLOW_NODE_WIDTH,
     WORKFLOW_PORT_SPACING,
@@ -88,28 +89,6 @@ export function edgePath(
     return `M ${source.x} ${source.y} C ${source.x + dx} ${source.y}, ${target.x - dx} ${target.y}, ${target.x} ${target.y}`;
 }
 
-
-function nodeAttrs(view: Omit<WorkflowCanvasNodeView, 'attrs'>): Record<string, string> {
-    return {
-        class: [
-            'workflow-node',
-            view.selected ? 'is-selected' : '',
-            view.disabled ? 'is-disabled' : ''
-        ].filter(Boolean).join(' '),
-        'data-node-id': view.id,
-        'data-node-type': view.type,
-        'data-status': view.status,
-        role: 'button',
-        tabindex: '0',
-        'aria-label': view.name,
-        style: [
-            `left:${view.x}px`,
-            `top:${view.y}px`,
-            `width:${view.width}px`,
-            `min-height:${view.height}px`
-        ].join(';')
-    };
-}
 
 /**
  * Signature per rendered canvas view. The model is rebuilt on every designer
@@ -279,7 +258,7 @@ export function buildWorkflowCanvasModel(
             inputs: geo.inputs,
             outputs: geo.outputs
         };
-        const next = { ...view, attrs: nodeAttrs(view) };
+        const next = { ...view, attrs: workflowNodeAttrs(view) };
         markView(next, signature);
         markInputs(next, { node, status, statusStyle, detail, selected, locale, revision: registry.revision });
         nodeViews.push(next);

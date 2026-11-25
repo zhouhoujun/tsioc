@@ -249,6 +249,24 @@ describe('Workflow canvas incremental view model', () => {
         expect(viewport.connecting).toBe(false);
     });
 
+    it('paints the node accent and text color from the node style', () => {
+        const { designer, registry } = createDesigner();
+        const node = designer.addNode('task', { x: 0, y: 0 })!;
+        const first = buildWorkflowCanvasModel(designer, registry, 'en')
+            .nodes.find(view => view.id === node.id)!;
+        expect(first.attrs.style).toContain(`--wf-accent:${node.style?.backgroundColor}`);
+        expect(first.attrs.style).toContain(`--wf-node-text:${node.style?.textColor}`);
+
+        designer.updateNode(node.id, {
+            style: { ...(node.style || {}), backgroundColor: '#112233', textColor: '#ffeedd' }
+        });
+        const next = buildWorkflowCanvasModel(designer, registry, 'en')
+            .nodes.find(view => view.id === node.id)!;
+        expect(next).not.toBe(first);
+        expect(next.attrs.style).toContain('--wf-accent:#112233');
+        expect(next.attrs.style).toContain('--wf-node-text:#ffeedd');
+    });
+
     it('reprojects the wire draft from reused node ports while dragging', () => {
         const { designer, registry } = createDesigner();
         const first = buildWorkflowCanvasModel(designer, registry, 'en');

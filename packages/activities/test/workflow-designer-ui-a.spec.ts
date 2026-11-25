@@ -221,6 +221,9 @@ describe('Workflow Designer UI', () => {
         const node = ref.instance.designer.nodes.find(item => item.id === 'task_1');
         expect(node?.style?.icon).toBe('★');
         expect(node?.style?.backgroundColor).toBe('#112233');
+        // The canvas node must repaint from the same style, not only the panel.
+        const canvasNode = root.querySelector('.workflow-node[data-node-id="task_1"]') as any;
+        expect(canvasNode?.style.getPropertyValue('--wf-accent')).toBe('#112233');
     });
 
     it('inserts a quick-added node onto an existing wire', async () => {
