@@ -1,5 +1,7 @@
 import { Attribute, Component, ElementRef } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
+import { nextUiId } from '../../src/ui';
+import { OverlayManager } from '../../src/overlay-manager';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
 import { installPlainButtonStyles } from '../../src/ui.styles';
@@ -33,8 +35,35 @@ export type DrawerPlacement = 'left' | 'right' | 'bottom';
     </div>`
 })
 export class DrawerComponent {
-    constructor(@Optional() protected elementRef?: ElementRef) {
+    constructor(@Optional() protected elementRef?: ElementRef, @Optional() @Inject(OverlayManager) private overlays?: OverlayManager | null) {
         markElementRefRaw(elementRef);
+    }
+
+    protected readonly overlayId = nextUiId('ui-drawer');
+    private _overlayOpen = false;
+
+    /** Host dirty-check; return false (or reject) to keep the drawer open. */
+    @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
+
+    /** Opt-in overlay-stack registration (focus/escape/dirty-check ordering). */
+    @Attribute()
+    get overlayOpen(): boolean { return this._overlayOpen; }
+    set overlayOpen(value: boolean | string) {
+        const next = normalizeBoolean(value);
+        if (next === this._overlayOpen) {
+            return;
+        }
+        this._overlayOpen = next;
+        if (next) {
+            this.overlays?.register({
+                id: this.overlayId,
+                kind: 'drawer',
+                beforeClose: () => this.beforeCloseAction?.() ?? true,
+                close: () => { this._overlayOpen = false; this.closeAction?.(); }
+            });
+        } else {
+            this.overlays?.close(this.overlayId);
+        }
     }
 
     onInit(): void {
@@ -87,6 +116,8 @@ export class DrawerComponent {
     }
 
     close(): void {
+        this.overlays?.close(this.overlayId);
+        this._overlayOpen = false;
         this.closeAction?.();
         this._visible = false;
     }

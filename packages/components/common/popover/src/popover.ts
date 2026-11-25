@@ -1,5 +1,7 @@
 import { Attribute, Component, ElementRef } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
+import { nextUiId } from '../../src/ui';
+import { OverlayManager } from '../../src/overlay-manager';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
 import { installPlainButtonStyles } from '../../src/ui.styles';
@@ -31,8 +33,35 @@ export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
     </span>`
 })
 export class PopoverComponent {
-    constructor(@Optional() protected elementRef?: ElementRef) {
+    constructor(@Optional() protected elementRef?: ElementRef, @Optional() @Inject(OverlayManager) private overlays?: OverlayManager | null) {
         markElementRefRaw(elementRef);
+    }
+
+    protected readonly overlayId = nextUiId('ui-popover');
+    private _overlayOpen = false;
+
+    /** Host dirty-check; return false (or reject) to keep the popover open. */
+    @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
+
+    /** Opt-in overlay-stack registration (stacked Escape/focus ordering). */
+    @Attribute()
+    get overlayOpen(): boolean { return this._overlayOpen; }
+    set overlayOpen(value: boolean | string) {
+        const next = normalizeBoolean(value);
+        if (next === this._overlayOpen) {
+            return;
+        }
+        this._overlayOpen = next;
+        if (next) {
+            this.overlays?.register({
+                id: this.overlayId,
+                kind: 'popover',
+                beforeClose: () => this.beforeCloseAction?.() ?? true,
+                close: () => { this._overlayOpen = false; this.closeAction?.(); }
+            });
+        } else {
+            this.overlays?.close(this.overlayId);
+        }
     }
 
     onInit(): void {
