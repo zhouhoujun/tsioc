@@ -10,7 +10,12 @@ import {
     DataTableViewColumn,
     DataTableViewRow
 } from './data-table.types';
+import { DataTableVirtualWindow, resolveDataTableVirtualWindow } from './data-table.virtual';
 import {
+    dataTableClass,
+    dataTableColumnWidthToken,
+    dataTableFixedOffset,
+    dataTableHeaderClass,
     filterDataTableRows,
     formatDataTableCell,
     sortDataTableRows
@@ -28,7 +33,7 @@ export * from './data-table.types';
     imports: [PaginationComponent],
     template: `
     <div class="ui-data-table {{tableClass}}">
-    <div class="ui-data-table-scroll">
+    <div class="ui-data-table-scroll" @scroll="onScroll($event)">
     <div class="ui-data-table-content" role="table"
         aria-label="{{ariaLabel}}" aria-busy="{{loading}}" aria-rowcount="{{tableTotal}}">
         <div class="ui-data-table-caption" role="caption" v-if="caption">{{caption}}</div>
@@ -42,13 +47,14 @@ export * from './data-table.types';
                 </span>
             </span>
             <span class="{{column.headerClass}}"
-                role="columnheader" aria-sort="{{ariaSortFor(column)}}"
+                role="columnheader" aria-sort="{{column.sortable && sortKey === (column.sortKey || column.key) ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}}"
                 tabindex="{{column.sortable ? 0 : null}}" [style]="columnStyle(column)"
                 v-for="column in viewColumns" trackBy="key"
                 @click="sort(column)" @keydown="headerKeydown($event, column)">{{column.label}}<span
                     class="ui-data-table-resizer" v-if="column.resizable"
                     @mousedown="startResize(column, $event)" @click="stopResizeClick($event)"></span></span>
         </div>
+        <div class="ui-data-table-spacer" v-if="virtual && virtualTopHeight" [style]="spacerStyle(virtualTopHeight)"></div>
         <div class="ui-data-table-row-group" v-for="row in viewRows" trackBy="key">
         <div class="{{row.className}}" role="row" aria-selected="{{row.selected}}"
             @click="pick(row)">
@@ -76,6 +82,7 @@ export * from './data-table.types';
             </span>
         </div>
         </div>
+        <div class="ui-data-table-spacer" v-if="virtual && virtualBottomHeight" [style]="spacerStyle(virtualBottomHeight)"></div>
         <div class="ui-data-table-error ui-data-table-empty" role="alert" v-if="asyncError">
             <span>{{asyncError || errorLabel}}</span>
             <button class="ui-data-table-retry ui-plain-button" type="button" @click="retry">{{retryLabel}}</button>
@@ -127,6 +134,13 @@ export class DataTableComponent {
     /** Per-column filter strings applied to local rows or sent to an async source. */
     @Attribute() filters: Record<string, string> = {};
     @Attribute() filterAction?: (filters: Record<string, string>) => void;
+    /** Render only rows near the scroll viewport; hosts supply `scrollTop`/`viewportHeight`. */
+    @Attribute() virtual = false;
+    @Attribute() virtualRowHeight = 32;
+    @Attribute() virtualOverscan = 2;
+    @Attribute() scrollTop = 0;
+    @Attribute() viewportHeight = 0;
+    @Attribute() windowAction?: (start: number, end: number, total: number) => void;
 
     private _pagination = false;
     private _expandable = false;
@@ -212,23 +226,23 @@ export class DataTableComponent {
     }
 
     get tableClass(): string {
-        return [
-            this._striped ? 'is-striped' : '',
-            this._bordered ? 'is-bordered' : '',
-            this._dense ? 'is-dense' : '',
-            this._stickyHeader ? 'is-sticky' : '',
-            this.className
-        ].filter(Boolean).join(' ');
+        return dataTableClass({
+            striped: this._striped,
+            bordered: this._bordered,
+            dense: this._dense,
+            sticky: this._stickyHeader,
+            className: this.className
+        });
     }
 
     get headerClass(): string {
-        return this._stickyHeader ? 'is-sticky' : '';
+        return dataTableHeaderClass(this._stickyHeader);
     }
 
     get viewColumns(): DataTableViewColumn[] {
         const raw = (Array.isArray(this.columns) ? this.columns : [])
             .filter(column => column && !column.hidden);
-        const tokens = raw.map(column => this.columnWidthToken(column));
+        const tokens = raw.map(column => dataTableColumnWidthToken(this.columnWidths[String(column.key)] ?? column.width));
         return raw.map((column, index) => {
             const key = String(column.key);
             const sortable = column.sortable === true;
@@ -239,7 +253,7 @@ export class DataTableComponent {
                 ? undefined
                 : { width: typeof width === 'number' ? `${width}px` : String(width) };
             const stickyStyle = fixed
-                ? { '--ui-sticky-offset': this.fixedOffset(raw, tokens, index, fixed) }
+                ? { '--ui-sticky-offset': dataTableFixedOffset(raw, tokens, index, fixed) }
                 : undefined;
             const fixedClass = fixed ? `is-fixed-${fixed}` : '';
             const baseClass = [
@@ -263,41 +277,9 @@ export class DataTableComponent {
                 sortable,
                 sortKey: column.sortKey || key,
                 render: column.render,
-                resizable: this._resizableColumns && column.resizable !== false,
-                ariaSort: sorted && this.sortDirection === 'asc'
-                    ? 'ascending'
-                    : sorted && this.sortDirection === 'desc'
-                        ? 'descending'
-                        : 'none'
+                resizable: this._resizableColumns && column.resizable !== false
             } as DataTableViewColumn;
         });
-    }
-
-    protected columnWidthToken(column: DataTableColumn): string {
-        const width = this.columnWidths[String(column.key)] ?? column.width;
-        if (typeof width === 'number') {
-            return `${Math.max(1, width)}px`;
-        }
-        const text = String(width ?? '').trim();
-        return /^\d+(\.\d+)?(px|ch|em|rem|%)$/.test(text) ? text : '12ch';
-    }
-
-    protected fixedOffset(raw: DataTableColumn[], tokens: string[], index: number, fixed: 'left' | 'right'): string {
-        const parts: string[] = [];
-        if (fixed === 'left') {
-            for (let at = 0; at < index; at++) {
-                if (raw[at].fixed === 'left') {
-                    parts.push(tokens[at]);
-                }
-            }
-        } else {
-            for (let at = index + 1; at < raw.length; at++) {
-                if (raw[at].fixed === 'right') {
-                    parts.push(tokens[at]);
-                }
-            }
-        }
-        return parts.length ? `calc(${parts.join(' + ')})` : '0px';
     }
 
     stopResizeClick(event?: Event): void {
@@ -351,6 +333,61 @@ export class DataTableComponent {
 
     get filteredEntries() {
         return filterDataTableRows(this.tableRows, this.filters);
+    }
+
+    get sortedEntries() {
+        const columns = this.viewColumns;
+        const sortColumn = this.sortDirection
+            ? columns.find(column => column.sortable && this.sortKey === (column.sortKey || column.key))
+            : undefined;
+        return sortColumn
+            ? sortDataTableRows(this.filteredEntries, sortColumn.sortKey || sortColumn.key, this.sortDirection as DataTableSortDirection)
+            : this.filteredEntries;
+    }
+
+    get pageEntries() {
+        const rows = this.sortedEntries;
+        const size = this.pageSizeNumber;
+        return this._pagination
+            ? rows.slice((this.currentPage - 1) * size, this.currentPage * size)
+            : rows;
+    }
+
+    get virtualWindow(): DataTableVirtualWindow {
+        return resolveDataTableVirtualWindow({
+            enabled: !!this.virtual,
+            paginated: this._pagination,
+            total: this.pageEntries.length,
+            scrollTop: Number(this.scrollTop) || 0,
+            viewportHeight: Number(this.viewportHeight) || 0,
+            rowHeight: Number(this.virtualRowHeight) || 32,
+            overscan: Number(this.virtualOverscan) || 0
+        });
+    }
+
+    get windowEntries() {
+        const window = this.virtualWindow;
+        return this.pageEntries.slice(window.start, window.end);
+    }
+
+    get virtualTopHeight(): number {
+        return this.virtualWindow.topHeight;
+    }
+
+    get virtualBottomHeight(): number {
+        return this.virtualWindow.bottomHeight;
+    }
+
+    spacerStyle(height: number): Record<string, string> {
+        return { height: `${height}px` };
+    }
+
+    onScroll(event: any): void {
+        const target = event?.currentTarget;
+        this.scrollTop = Number(target?.scrollTop) || 0;
+        this.viewportHeight = Number(target?.clientHeight) || this.viewportHeight;
+        const window = this.virtualWindow;
+        this.windowAction?.(window.start, window.end, this.pageEntries.length);
     }
 
     setFilter(key: string, value: any): void {
@@ -457,24 +494,6 @@ export class DataTableComponent {
 
     protected rawColumn(key: string): DataTableColumn | undefined {
         return (Array.isArray(this.columns) ? this.columns : []).find(column => String(column?.key) === key);
-    }
-
-    ariaSortFor(column: DataTableViewColumn): string {
-        if (!column.sortable || this.sortKey !== (column.sortKey || column.key) || !this.sortDirection) {
-            return 'none';
-        }
-        return this.sortDirection === 'asc' ? 'ascending' : 'descending';
-    }
-
-    headerClassFor(column: DataTableViewColumn): string {
-        if (!column.sortable) {
-            return '';
-        }
-        const classes = ['ui-data-table-sortable'];
-        if (this.sortKey === (column.sortKey || column.key) && this.sortDirection) {
-            classes.push(`is-sorted-${this.sortDirection}`);
-        }
-        return classes.join(' ');
     }
 
     sort(column: DataTableViewColumn): void {
@@ -631,18 +650,8 @@ export class DataTableComponent {
 
     get viewRows(): DataTableViewRow[] {
         const columns = this.viewColumns;
-        const sortColumn = this.sortDirection
-            ? columns.find(column => column.sortable && this.sortKey === (column.sortKey || column.key))
-            : undefined;
-        const rows = sortColumn
-            ? sortDataTableRows(this.filteredEntries, sortColumn.sortKey || sortColumn.key, this.sortDirection as DataTableSortDirection)
-            : this.filteredEntries;
         const selectedKeys = this.selectedKeySet();
-        const size = this.pageSizeNumber;
-        const visible = this._pagination
-            ? rows.slice((this.currentPage - 1) * size, this.currentPage * size)
-            : rows;
-        return visible.map(({ row, index }) => {
+        return this.windowEntries.map(({ row, index }) => {
             const key = this.rowKeyOf(row, index);
             const checked = selectedKeys.has(key);
             const selected = (!!this.selectedKey && String(this.selectedKey) === key) || checked;

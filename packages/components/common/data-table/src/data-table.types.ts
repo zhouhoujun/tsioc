@@ -45,7 +45,6 @@ export interface DataTableViewColumn {
     sortKey?: string;
     resizable: boolean;
     render?: (value: any, row: DataTableRow, index: number) => any;
-    ariaSort: 'ascending' | 'descending' | 'none';
 }
 
 export interface DataTableViewRow {

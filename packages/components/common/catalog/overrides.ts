@@ -38,7 +38,7 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
         ]
     },
     'data-table': {
-        summary: 'Accessible table with sorting, pagination, selection, expandable rows, sticky/resizable columns and an async page source with error/retry.',
+        summary: 'Accessible table with sorting, pagination, selection, expandable rows, sticky/resizable columns, async page source and opt-in virtual windowing.',
         keyboard: [
             'Tab/Shift+Tab: move between interactive headers/cells',
             'Enter/Space: sort header, select row, expand row',

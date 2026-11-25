@@ -177,7 +177,9 @@ widget 选择器；主题切换无残留硬编码颜色。
     AbortController/signal 标记 `noReact`，避免被代理破坏私有字段。类型拆到
     `data-table.types.ts` 控制文件体积。列 `filterable` + `filters`/`setFilter`/`clearFilters`
     与 `column.render` 已落地；local 过滤驱动 total/page，async 请求携带 filters。
-    **剩余**：虚拟化窗口（需要宿主滚动视口契约）。
+    虚拟化窗口已落地：`virtual` + `virtualRowHeight`/`virtualOverscan` + 宿主
+    `scrollTop`/`viewportHeight`，并按窗口输出上下 spacer；`windowAction` 回报
+    `(start,end,total)`，分页模式自动关闭虚拟化。
 - 新增 `command-palette`（基于 typeahead/search-list）：分组、最近使用、
   快捷键展示、`/` 菜单与 workflow palette 复用；menu-bar 支持溢出折叠/typeahead/
   roving tabindex。

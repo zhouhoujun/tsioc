@@ -69,3 +69,54 @@ export function formatDataTableCell(column: DataTableColumn, row: DataTableRow, 
     }
     return String(raw);
 }
+
+
+/** Display token width, falling back to 12ch for invalid values. */
+export function dataTableColumnWidthToken(width: number | string | undefined): string {
+    if (typeof width === 'number') {
+        return `${Math.max(1, width)}px`;
+    }
+    const text = String(width ?? '').trim();
+    return /^\d+(\.\d+)?(px|ch|em|rem|%)$/.test(text) ? text : '12ch';
+}
+
+/** Sticky offset contributed by prior fixed columns. */
+export function dataTableFixedOffset(
+    columns: DataTableColumn[],
+    tokens: string[],
+    index: number,
+    fixed: 'left' | 'right'
+): string {
+    const parts: string[] = [];
+    if (fixed === 'left') {
+        for (let at = 0; at < index; at++) {
+            if (columns[at].fixed === 'left') parts.push(tokens[at]);
+        }
+    } else {
+        for (let at = index + 1; at < columns.length; at++) {
+            if (columns[at].fixed === 'right') parts.push(tokens[at]);
+        }
+    }
+    return parts.length ? `calc(${parts.join(' + ')})` : '0px';
+}
+
+/** Root class list; blank flags are dropped without allocating a Set. */
+export function dataTableClass(options: {
+    striped: boolean;
+    bordered: boolean;
+    dense: boolean;
+    sticky: boolean;
+    className: string;
+}): string {
+    return [
+        options.striped ? 'is-striped' : '',
+        options.bordered ? 'is-bordered' : '',
+        options.dense ? 'is-dense' : '',
+        options.sticky ? 'is-sticky' : '',
+        options.className
+    ].filter(Boolean).join(' ');
+}
+
+export function dataTableHeaderClass(sticky: boolean): string {
+    return sticky ? 'is-sticky' : '';
+}
