@@ -139,6 +139,9 @@ export class P1UiWidgetsTest {
         expect(items[0].getAttribute('data-status')).toEqual('done');
         expect(items[0].textContent).toContain('Started');
         expect(items[1].getAttribute('data-status')).toEqual('running');
+        expect(items[1].getAttribute('aria-current')).toEqual('true');
+        expect(items[1].getAttribute('aria-live')).toEqual('polite');
+        expect(items[0].getAttribute('aria-live')).toEqual('');
         expect(items[2].getAttribute('data-status')).toEqual('error');
         expect(items[2].textContent).toContain('timeout');
         expect(items[0].querySelector('.ui-timeline-marker')?.textContent).toEqual('✓');

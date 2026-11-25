@@ -35,6 +35,8 @@ interface TimelineViewItem {
     template: `
     <ol class="ui-timeline {{timelineClass}}" role="list" aria-label="{{ariaLabel}}">
         <li class="{{timelineItemClass(entry)}}" data-status="{{timelineStatus(entry)}}" data-tone="{{timelineTone(entry)}}"
+            aria-current="{{timelineStatus(entry) === 'running' ? 'true' : ''}}"
+            aria-live="{{timelineStatus(entry) === 'running' ? 'polite' : ''}}"
             v-for="entry in viewItems" trackBy="key">
             <span class="ui-timeline-marker" aria-hidden="true">{{timelineMarker(entry)}}</span>
             <span class="ui-timeline-connector" aria-hidden="true" v-if="!entry.last">│</span>
