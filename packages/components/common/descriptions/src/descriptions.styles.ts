@@ -15,6 +15,11 @@ export const DESCRIPTIONS_CSS = `
     gap: 0.5ch;
     min-width: 0;
 }
+.ui-descriptions.is-vertical .ui-descriptions-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1ch;
+}
 .ui-descriptions.is-bordered {
     border: 1px solid var(--ui-border, currentColor);
     border-radius: var(--ui-radius, 4px);

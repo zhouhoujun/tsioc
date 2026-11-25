@@ -11,9 +11,14 @@ import { DescriptionsComponent, DescriptionsModule } from '../descriptions';
     imports: [DescriptionsComponent],
     template: `
     <ui-descriptions :items="items" :columns="2" bordered dense ariaLabel="Build"></ui-descriptions>
+    <ui-descriptions :items="verticalItems" layout="vertical" ariaLabel="Vertical"></ui-descriptions>
     <ui-descriptions :items="[]" emptyLabel="No details"></ui-descriptions>`
 })
 class DescriptionsHostComponent {
+    verticalItems = [
+        { label: 'Name', value: 'tsioc' },
+        { label: 'Status', value: 'Ready', hint: 'stable' }
+    ];
     items = [
         { label: 'Name', value: 'tsioc' },
         { label: 'Status', value: 'Ready', hint: 'stable', tone: 'success' },
@@ -79,11 +84,26 @@ export class DescriptionsTest {
         expect(doc.getElementById('tsdi-descriptions-styles')?.textContent).toContain('.ui-descriptions');
     }
 
+    @Test('renders vertical label/value stacks')
+    async verticalLayout() {
+        const { roots } = await this.mount();
+        const root = roots[1];
+        const items = root.querySelectorAll('.ui-descriptions-item') as NodeListOf<HTMLElement>;
+
+        expect(root.className).toContain('is-vertical');
+        expect(items.length).toEqual(2);
+        expect(items[0].className).toContain('is-vertical');
+        expect(items[0].querySelector('.ui-descriptions-label')?.textContent).toEqual('Name');
+        expect(items[0].querySelector('.ui-descriptions-value')?.textContent).toEqual('tsioc');
+        expect(items[0].querySelector('.ui-descriptions-sep')).toBeFalsy();
+        expect(items[1].querySelector('.ui-descriptions-hint')?.textContent).toEqual('stable');
+    }
+
     @Test('renders the empty state')
     async emptyState() {
         const { roots } = await this.mount();
-        const empty = roots[1].querySelector('.ui-descriptions-empty') as HTMLElement;
+        const empty = roots[2].querySelector('.ui-descriptions-empty') as HTMLElement;
         expect(empty?.textContent).toEqual('No details');
-        expect(roots[1].querySelectorAll('.ui-descriptions-item').length).toEqual(0);
+        expect(roots[2].querySelectorAll('.ui-descriptions-item').length).toEqual(0);
     }
 }

@@ -37,10 +37,17 @@ interface DescriptionViewItem {
         aria-label="{{ariaLabel}}" [style]="rootStyle">
         <span class="ui-descriptions-item" role="listitem"
             data-tone="{{item.tone}}" [style]="item.style"
-            v-for="item in viewItems" trackBy="key">
+            v-for="item in horizontalItems" trackBy="key">
             <span class="ui-descriptions-label">{{item.label}}</span><span class="ui-descriptions-sep" aria-hidden="true">: </span><span class="ui-descriptions-value">{{item.value}}</span>
             <span class="ui-descriptions-hint" v-if="item.hint">{{item.hint}}</span>
         </span>
+        <div class="ui-descriptions-item is-vertical" role="listitem"
+            data-tone="{{item.tone}}" [style]="item.style"
+            v-for="item in verticalItems" trackBy="key">
+            <span class="ui-descriptions-label">{{item.label}}</span>
+            <span class="ui-descriptions-value">{{item.value}}</span>
+            <span class="ui-descriptions-hint" v-if="item.hint">{{item.hint}}</span>
+        </div>
         <div class="ui-descriptions-empty" v-if="emptyLabel && !viewItems.length">{{emptyLabel}}</div>
     </div>`
 })
@@ -59,6 +66,7 @@ export class DescriptionsComponent {
     @Attribute() className = '';
 
     private _columns = 1;
+    private _layout: 'horizontal' | 'vertical' = 'horizontal';
     private _size: UiSize = 'md';
     private _bordered = false;
     private _dense = false;
@@ -69,6 +77,10 @@ export class DescriptionsComponent {
         const next = Math.floor(Number(value));
         this._columns = Number.isFinite(next) ? Math.max(1, Math.min(6, next)) : 1;
     }
+
+    @Attribute()
+    get layout(): 'horizontal' | 'vertical' { return this._layout; }
+    set layout(value: string) { this._layout = value === 'vertical' ? 'vertical' : 'horizontal'; }
 
     @Attribute()
     get size(): UiSize { return this._size; }
@@ -85,6 +97,7 @@ export class DescriptionsComponent {
     get descriptionsClass(): string {
         return [
             `is-${this._size}`,
+            this._layout === 'vertical' ? 'is-vertical' : '',
             this._bordered ? 'is-bordered' : '',
             this._dense ? 'is-dense' : '',
             this.className
@@ -93,6 +106,14 @@ export class DescriptionsComponent {
 
     get rootStyle(): Record<string, string> {
         return { '--ui-descriptions-columns': String(this._columns) };
+    }
+
+    get horizontalItems(): DescriptionViewItem[] {
+        return this._layout === 'vertical' ? [] : this.viewItems;
+    }
+
+    get verticalItems(): DescriptionViewItem[] {
+        return this._layout === 'vertical' ? this.viewItems : [];
     }
 
     get viewItems(): DescriptionViewItem[] {

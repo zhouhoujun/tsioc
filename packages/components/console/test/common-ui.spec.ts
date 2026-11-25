@@ -74,6 +74,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-chip label="tag" :action="onChip" :removeAction="onChipRemove" :closable="true"></ui-chip>
         <ui-spinner label="Booting" :interval="100"></ui-spinner>
         <ui-descriptions :items="details" ariaLabel="Details"></ui-descriptions>
+        <ui-descriptions :items="verticalDetails" layout="vertical" ariaLabel="Vertical details"></ui-descriptions>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -101,6 +102,7 @@ class CommonUiConsoleHostComponent {
         { label: 'Name', value: 'tsioc' },
         { label: 'Status', value: 'Ready', tone: 'success' }
     ];
+    verticalDetails = [{ label: 'Vertical Name', value: 'vertical value' }];
     tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
@@ -257,6 +259,10 @@ export class CommonUiConsoleTest {
                 expect(painted).not.toContain('No history');
                 expect(painted).toContain('Name: tsioc');
                 expect(painted).toContain('Status: Ready');
+                const paintedLines = painted.split('\n').map((line: string) => line.trim()).filter(Boolean);
+                expect(paintedLines).toContain('Vertical Name');
+                expect(paintedLines).toContain('vertical value');
+                expect(painted).not.toContain('Vertical Name: vertical value');
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');
