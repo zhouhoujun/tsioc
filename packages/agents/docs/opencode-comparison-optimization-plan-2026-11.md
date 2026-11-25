@@ -317,7 +317,9 @@
   descriptor 生成 JSON Schema 文档 `buildAgentRpcJsonSchema()`，`GET /rpc-schema.json` 与
   OpenAPI 的 `x-rpc-contracts` 同步下发。
 - 减少 `as any`/ctx bag：为 host factories 定义窄接口，逐步消除 147 处 `as any`。
-- TUI storybook/headless frame capture；把 PTY 超时用例改为可重试/隔离。
+- TUI storybook/headless frame capture：
+  - 状态：新增 `test/tui-storybook.spec.ts`，用真实 TUI renderer 渲染 console，输出定宽 plain rows
+    并断言关键内容/宽度，可在无终端环境审阅界面帧。把 PTY 超时用例改为可重试/隔离。
 - 测试内存/墙钟预算写入 gate；source-size baseline 继续下降。
   - 状态：`scripts/test-budget-baseline.json` + `run_npm_test` 记录墙钟并超预算即失败
     （agent 900s / agent-ui 1200s / gateway·tools 600s 等，实测 gateway 63s），并用
