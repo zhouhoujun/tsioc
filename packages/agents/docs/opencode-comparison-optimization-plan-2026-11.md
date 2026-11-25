@@ -299,7 +299,8 @@
   `list`；`mkdir`/`delete_file` 走 `mkdir`/`remove`；`copy_file` 走 read/write，`move_file`
   走 `rename`（无 rename 时 read/write/remove）。SSH transport 已落地
   （`createSshEnvironment`：cat/base64 写入/find/mkdir/mv/rm + exec 透传）。
-  **剩余**：gateway/ACP 的 environment transport 对接（ACP 已用 `AgentIoPort`）。
+  gateway/ACP 通过 `createIoPortEnvironment(io)` 对接（优先 native read/write hooks，其余走 shell
+  命令）；**剩余**：为主机自动安装该 environment 的策略（目前由宿主显式传入 `options.environment`）。
 
 ### P4 — 性能、UI 与门禁（1–2 周）
 

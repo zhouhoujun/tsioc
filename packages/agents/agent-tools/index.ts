@@ -1,4 +1,5 @@
 export * from './src';
+export * from './src/io-environment';
 export * from './skills';
 export * from './artifacts';
 export * from './mcp';
