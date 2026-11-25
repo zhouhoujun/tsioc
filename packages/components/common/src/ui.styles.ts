@@ -446,6 +446,7 @@ ${PLAIN_BUTTON_CSS}
     border: 1px solid transparent;
     border-radius: var(--ui-radius, 4px);
 }
+.ui-data-table-scroll { overflow-x: auto; min-width: 0; }
 .ui-data-table-content {
     display: flex;
     flex-direction: column;
@@ -469,6 +470,12 @@ ${PLAIN_BUTTON_CSS}
 .ui-data-table-cell { min-width: 0; }
 .ui-data-table-cell.is-center { text-align: center; }
 .ui-data-table-cell.is-right { text-align: right; }
+.ui-data-table-cell.is-fixed-left,
+.ui-data-table-cell.is-fixed-right { position: sticky; z-index: 2; background: var(--ui-data-table-fixed-bg, var(--ui-card-bg, var(--ui-bg, inherit))); }
+.ui-data-table-cell.is-fixed-left { left: var(--ui-sticky-offset, 0px); }
+.ui-data-table-cell.is-fixed-right { right: var(--ui-sticky-offset, 0px); }
+.ui-data-table-head .ui-data-table-cell.is-fixed-left,
+.ui-data-table-head .ui-data-table-cell.is-fixed-right { z-index: 3; }
 .ui-data-table-sep { display: none; }
 .ui-data-table-empty,
 .ui-data-table-loading { padding: 0.5ch; color: var(--ui-muted-fg, inherit); }
@@ -484,6 +491,8 @@ ${PLAIN_BUTTON_CSS}
     z-index: 1;
     background: var(--ui-data-table-head-bg, var(--ui-card-bg, var(--ui-bg, inherit)));
 }
+.ui-data-table-resizer { display: inline-block; width: 0.6ch; height: 0.9em; margin-left: 0.5ch; vertical-align: middle; border-left: 1px solid var(--ui-border, currentColor); cursor: col-resize; }
+.ui-data-table-resizer:hover { border-color: var(--ui-current-fg, currentColor); }
 .ui-data-table-sortable { cursor: pointer; user-select: none; }
 .ui-data-table-sortable:hover { color: var(--ui-current-fg, inherit); }
 .ui-data-table-sortable:focus-visible {

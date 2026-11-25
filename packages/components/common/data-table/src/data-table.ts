@@ -16,14 +16,20 @@ export interface DataTableColumn {
     sortable?: boolean;
     /** Value key used for sorting when it differs from `key`. */
     sortKey?: string;
+    /** Keep the column sticky at the left/right edge (browser skin). */
+    fixed?: 'left' | 'right';
+    /** Opt this column into pointer resizing; defaults to on when enabled. */
+    resizable?: boolean;
 }
 
 export type DataTableRow = Record<string, any>;
 
 interface DataTableCell {
     key: string;
+    columnKey?: string;
     text: string;
     className: string;
+    style?: Record<string, string>;
 }
 
 interface DataTableViewColumn {
@@ -31,10 +37,13 @@ interface DataTableViewColumn {
     label: string;
     className: string;
     headerClass: string;
+    cellClass: string;
     align: DataTableAlign;
     style?: Record<string, string>;
+    cellStyle?: Record<string, string>;
     sortable: boolean;
     sortKey?: string;
+    resizable: boolean;
     ariaSort: 'ascending' | 'descending' | 'none';
 }
 
@@ -57,6 +66,7 @@ interface DataTableViewRow {
     imports: [PaginationComponent],
     template: `
     <div class="ui-data-table {{tableClass}}">
+    <div class="ui-data-table-scroll">
     <div class="ui-data-table-content" role="table"
         aria-label="{{ariaLabel}}" aria-busy="{{loading}}" aria-rowcount="{{rows.length}}">
         <div class="ui-data-table-caption" role="caption" v-if="caption">{{caption}}</div>
@@ -69,11 +79,13 @@ interface DataTableViewRow {
                     <span aria-hidden="true">{{selectionGlyph}}</span>
                 </span>
             </span>
-            <span class="ui-data-table-cell is-{{column.align || 'left'}} {{headerClassFor(column)}}"
+            <span class="{{column.headerClass}}"
                 role="columnheader" aria-sort="{{ariaSortFor(column)}}"
-                tabindex="{{column.sortable ? 0 : null}}" [style]="column.style"
+                tabindex="{{column.sortable ? 0 : null}}" [style]="columnStyle(column)"
                 v-for="column in viewColumns" trackBy="key"
-                @click="sort(column)" @keydown="headerKeydown($event, column)">{{column.label}}</span>
+                @click="sort(column)" @keydown="headerKeydown($event, column)">{{column.label}}<span
+                    class="ui-data-table-resizer" v-if="column.resizable"
+                    @mousedown="startResize(column, $event)" @click="stopResizeClick($event)"></span></span>
         </div>
         <div class="ui-data-table-row-group" v-for="row in viewRows" trackBy="key">
         <div class="{{row.className}}" role="row" aria-selected="{{row.selected}}"
@@ -94,7 +106,7 @@ interface DataTableViewRow {
                 </span>
             </span>
             <span class="{{cell.className}}" role="cell"
-                v-for="cell in row.cells" trackBy="key">{{cell.text}}</span>
+                v-for="cell in row.cells" trackBy="key" [style]="cellStyleFor(cell)">{{cell.text}}</span>
         </div>
         <div class="ui-data-table-detail-row" role="row" v-if="expandable && rowExpanded(row)">
             <span class="ui-data-table-cell ui-data-table-detail" role="cell">
@@ -104,6 +116,7 @@ interface DataTableViewRow {
         </div>
         <div class="ui-data-table-loading" role="row" v-if="loading">{{loadingLabel}}</div>
         <div class="ui-data-table-empty" role="row" v-if="!loading && !viewRows.length">{{emptyLabel}}</div>
+    </div>
     </div>
     <div class="ui-data-table-pager" v-if="pagination">
         <ui-pagination :total="rows.length" :pageSize="pageSizeNumber" :page="currentPage"
@@ -150,6 +163,9 @@ export class DataTableComponent {
     private _stickyHeader = false;
     private _loading = false;
     private _selectable = false;
+    private _resizableColumns = false;
+    private columnWidths: Record<string, number> = {};
+    private cleanupResize?: () => void;
 
     @Attribute()
     get striped(): boolean { return this._striped; }
@@ -182,6 +198,10 @@ export class DataTableComponent {
     @Attribute()
     get expandable(): boolean { return this._expandable; }
     set expandable(value: boolean | string) { this._expandable = normalizeBoolean(value); }
+
+    @Attribute()
+    get resizableColumns(): boolean { return this._resizableColumns; }
+    set resizableColumns(value: boolean | string) { this._resizableColumns = normalizeBoolean(value); }
 
     get pageSizeNumber(): number {
         return Math.max(1, Math.floor(Number(this.pageSize) || 10));
@@ -225,33 +245,146 @@ export class DataTableComponent {
     }
 
     get viewColumns(): DataTableViewColumn[] {
-        return (Array.isArray(this.columns) ? this.columns : [])
-            .filter(column => column && !column.hidden)
-            .map(column => {
-                const key = String(column.key);
-                const sortable = column.sortable === true;
-                const sorted = sortable && this.sortKey === (column.sortKey || key);
-                return {
-                    key,
-                    label: String(column.label ?? column.key),
-                    className: `ui-data-table-cell is-${column.align || 'left'}`,
-                    headerClass: [
-                        'ui-data-table-cell',
-                        `is-${column.align || 'left'}`,
-                        sortable ? 'ui-data-table-sortable' : '',
-                        sorted ? `is-sorted-${this.sortDirection || 'none'}` : ''
-                    ].filter(Boolean).join(' '),
-                    align: column.align || 'left',
-                    style: column.width == null ? undefined : { width: typeof column.width === 'number' ? `${column.width}px` : String(column.width) },
-                    sortable,
-                    sortKey: column.sortKey || key,
-                    ariaSort: sorted && this.sortDirection === 'asc'
-                        ? 'ascending'
-                        : sorted && this.sortDirection === 'desc'
-                            ? 'descending'
-                            : 'none'
-                } as DataTableViewColumn;
-            });
+        const raw = (Array.isArray(this.columns) ? this.columns : [])
+            .filter(column => column && !column.hidden);
+        const tokens = raw.map(column => this.columnWidthToken(column));
+        return raw.map((column, index) => {
+            const key = String(column.key);
+            const sortable = column.sortable === true;
+            const sorted = sortable && this.sortKey === (column.sortKey || key);
+            const fixed = column.fixed === 'left' || column.fixed === 'right' ? column.fixed : undefined;
+            const width = this.columnWidths[key] ?? column.width;
+            const widthStyle = width == null
+                ? undefined
+                : { width: typeof width === 'number' ? `${width}px` : String(width) };
+            const stickyStyle = fixed
+                ? { '--ui-sticky-offset': this.fixedOffset(raw, tokens, index, fixed) }
+                : undefined;
+            const fixedClass = fixed ? `is-fixed-${fixed}` : '';
+            const baseClass = [
+                'ui-data-table-cell',
+                `is-${column.align || 'left'}`,
+                fixedClass
+            ].filter(Boolean).join(' ');
+            return {
+                key,
+                label: String(column.label ?? column.key),
+                className: baseClass,
+                cellClass: baseClass,
+                cellStyle: stickyStyle,
+                headerClass: [
+                    baseClass,
+                    sortable ? 'ui-data-table-sortable' : '',
+                    sorted ? `is-sorted-${this.sortDirection || 'none'}` : ''
+                ].filter(Boolean).join(' '),
+                align: column.align || 'left',
+                style: { ...(widthStyle || {}), ...(stickyStyle || {}) } as Record<string, string> | undefined,
+                sortable,
+                sortKey: column.sortKey || key,
+                resizable: this._resizableColumns && column.resizable !== false,
+                ariaSort: sorted && this.sortDirection === 'asc'
+                    ? 'ascending'
+                    : sorted && this.sortDirection === 'desc'
+                        ? 'descending'
+                        : 'none'
+            } as DataTableViewColumn;
+        });
+    }
+
+    protected columnWidthToken(column: DataTableColumn): string {
+        const width = this.columnWidths[String(column.key)] ?? column.width;
+        if (typeof width === 'number') {
+            return `${Math.max(1, width)}px`;
+        }
+        const text = String(width ?? '').trim();
+        return /^\d+(\.\d+)?(px|ch|em|rem|%)$/.test(text) ? text : '12ch';
+    }
+
+    protected fixedOffset(raw: DataTableColumn[], tokens: string[], index: number, fixed: 'left' | 'right'): string {
+        const parts: string[] = [];
+        if (fixed === 'left') {
+            for (let at = 0; at < index; at++) {
+                if (raw[at].fixed === 'left') {
+                    parts.push(tokens[at]);
+                }
+            }
+        } else {
+            for (let at = index + 1; at < raw.length; at++) {
+                if (raw[at].fixed === 'right') {
+                    parts.push(tokens[at]);
+                }
+            }
+        }
+        return parts.length ? `calc(${parts.join(' + ')})` : '0px';
+    }
+
+    stopResizeClick(event?: Event): void {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+    }
+
+    startResize(column: DataTableViewColumn, event?: any): void {
+        if (!this._resizableColumns) {
+            return;
+        }
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        const doc = event?.currentTarget?.ownerDocument;
+        if (!doc?.addEventListener) {
+            return;
+        }
+        this.cleanupResize?.();
+        const startX = Number(event?.clientX ?? event?.pageX ?? 0);
+        const header = event?.currentTarget?.parentElement;
+        const measured = Number(header?.getBoundingClientRect?.().width);
+        const startWidth = measured > 0 ? measured : this.columnWidthPixels(column);
+        const move = (moveEvent: any) => {
+            const x = Number(moveEvent?.clientX ?? moveEvent?.pageX ?? 0);
+            const next = Math.max(24, Math.round(startWidth + (x - startX)));
+            this.columnWidths = { ...this.columnWidths, [column.key]: next };
+        };
+        const up = () => this.cleanupResize?.();
+        doc.addEventListener('mousemove', move);
+        doc.addEventListener('mouseup', up);
+        this.cleanupResize = () => {
+            doc.removeEventListener?.('mousemove', move);
+            doc.removeEventListener?.('mouseup', up);
+            this.cleanupResize = undefined;
+        };
+    }
+
+    onDestroy(): void {
+        this.cleanupResize?.();
+    }
+
+    protected columnWidthPixels(column: DataTableViewColumn): number {
+        const width = this.columnWidths[column.key];
+        if (Number.isFinite(width)) {
+            return width;
+        }
+        const text = String(column.style?.width ?? '');
+        const px = /^(\d+(\.\d+)?)px$/.exec(text);
+        return px ? Number(px[1]) : 96;
+    }
+
+    columnStyle(column: DataTableViewColumn): Record<string, string> | undefined {
+        const width = this.columnWidths[column.key] ?? this.rawColumn(column.key)?.width;
+        const style = { ...(column.style || {}) };
+        if (width == null) {
+            delete style.width;
+        } else {
+            style.width = typeof width === 'number' ? `${width}px` : String(width);
+        }
+        return style;
+    }
+
+    cellStyleFor(cell: DataTableCell): Record<string, string> | undefined {
+        const column = this.viewColumns.find(entry => entry.key === cell.columnKey);
+        return column ? this.columnStyle(column) : cell.style;
+    }
+
+    protected rawColumn(key: string): DataTableColumn | undefined {
+        return (Array.isArray(this.columns) ? this.columns : []).find(column => String(column?.key) === key);
     }
 
     ariaSortFor(column: DataTableViewColumn): string {
@@ -456,8 +589,10 @@ export class DataTableComponent {
             columns.forEach((column, columnIndex) => {
                 cells.push({
                     key: `${key}-${column.key}`,
+                    columnKey: column.key,
                     text: this.formatCell(row?.[column.key]),
-                    className: column.className
+                    className: column.cellClass,
+                    style: column.cellStyle
                 });
                 if (columnIndex < columns.length - 1) {
                     cells.push({

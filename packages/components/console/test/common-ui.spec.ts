@@ -62,7 +62,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-avatar label="Ada Lovelace"></ui-avatar>
         <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
         <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']" :selectionAction="onSelection"></ui-data-table>
-        <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2" expandable :detailLines="detailFor"></ui-data-table>
+        <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2" expandable resizableColumns :detailLines="detailFor"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']" :selectAction="onTree" :toggleAction="onTreeToggle"></ui-tree>
         <ui-text-field label="Name" value="Ada"></ui-text-field>
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
@@ -128,7 +128,7 @@ class CommonUiConsoleHostComponent {
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
     tableColumns = [{ key: 'name', label: 'Name' }, { key: 'value', label: 'Value' }];
     tableRows = [{ id: 'a', name: 'Alpha', value: '1' }];
-    pagedColumns = [{ key: 'name', label: 'Paged' }];
+    pagedColumns = [{ key: 'name', label: 'Paged', fixed: 'left' }];
     detailFor = (row: any) => [`more ${row.name}`];
     pagedRows = [
         { id: 'o', name: 'Omega' },
