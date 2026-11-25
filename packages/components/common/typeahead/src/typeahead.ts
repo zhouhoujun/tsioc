@@ -1,4 +1,7 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
+import { markElementRefRaw } from '../../src/raw-element';
+import { installTypeaheadStyles } from './typeahead.styles';
 import { AutoCompleteComponent, AutoCompleteOption } from '../../autocomplete/src/autocomplete';
 import { normalizeBoolean } from '../../src/ui';
 
@@ -31,6 +34,14 @@ export type TypeaheadSource = (query: string, signal: AbortSignal) => Promise<Ty
     </div>`
 })
 export class TypeaheadComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
+    onInit(): void {
+        installTypeaheadStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
+    }
+
     @Attribute() value = '';
     @Attribute() source?: TypeaheadSource;
     @Attribute() placeholder = '';

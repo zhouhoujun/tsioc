@@ -1,4 +1,7 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
+import { markElementRefRaw } from '../../src/raw-element';
+import { installFieldStyles } from './field.styles';
 
 /**
  * Renderer-neutral form field wrapper: label, optional hint/error, required
@@ -18,6 +21,14 @@ import { Attribute, Component } from '@tsdi/components';
     </div>`
 })
 export class FieldComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
+    onInit(): void {
+        installFieldStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
+    }
+
     @Attribute() label = '';
     @Attribute() hint = '';
     @Attribute() error = '';
