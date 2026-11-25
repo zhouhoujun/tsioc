@@ -1,5 +1,6 @@
 import { Attribute, Component, Computed, ElementRef, OnDestroy, noReact } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
+import { resolveFieldAria } from '../../field/src/field-semantics';
 import { FormControl, FormGroup } from '@tsdi/components/forms';
 import {
     DynamicFormChange,
@@ -580,7 +581,12 @@ export class DynamicFormComponent implements OnDestroy {
     fieldHintId(field: DynamicFormField): string { return `${this.formId}-hint-${this.safeIdPart(field?.key)}`; }
 
     describedByFor(field: DynamicFormField): string {
-        return [this.errorFor(field) ? this.fieldErrorId(field) : '', field?.description ? this.fieldHintId(field) : ''].filter(Boolean).join(' ');
+        return resolveFieldAria({
+            hint: field?.description,
+            error: this.errorFor(field),
+            hintId: this.fieldHintId(field),
+            errorId: this.fieldErrorId(field)
+        }).describedBy;
     }
 
     encodeValue(field: DynamicFormField): string { return fields.encodeValue(this, field); }

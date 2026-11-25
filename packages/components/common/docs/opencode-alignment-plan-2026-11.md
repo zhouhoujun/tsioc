@@ -122,8 +122,8 @@
   backdrop/Escape 关闭；DOM 与 console renderer 均有测试。agent-ui `/` 菜单仍使用既有
   select panel，迁移待后续提交（避免改动其键盘/焦点路由）。
   字段语义已统一到 `field/src/field-semantics.ts`：text-field / search-field /
-  `ui-field-group` 共用同一 `-hint`/`-error` id 约定与 `aria-describedby` 顺序。
-  下一步：select/dynamic-form 逐步委托同一 field 语义。
+  `ui-field-group` / dynamic-form 共用同一 `-hint`/`-error` id 约定与
+  `aria-describedby` 顺序；select 是菜单控件，不套用 field 包装。
 
 **验收**：agent-ui `/sessions`、`/model`、`/provider`、workflow 引用选择器共享
 同一搜索/异步/键盘行为；DOM/TUI 的 loading/error/empty 文案与焦点一致。

@@ -132,6 +132,6 @@ export class DynamicFormDomTest {
         expect(hint).toBeTruthy();
         expect(error.id).toContain('-error-email');
         expect(hint.id).toContain('-hint-email');
-        expect(input.getAttribute('aria-describedby')).toEqual(`${error.id} ${hint.id}`);
+        expect(input.getAttribute('aria-describedby')).toEqual(`${hint.id} ${error.id}`);
     }
 }
