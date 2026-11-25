@@ -108,6 +108,9 @@
   Escape/失焦提交语义。
 - dynamic-form 对接：字段错误来自 `setIssues`/异步校验时，统一经 field 渲染；
   提交聚焦第一个错误字段（common 只发 `focusFieldAction`）。
+- 状态（2026-11-25）：`field`（`ui-field-group`）已落地：label/hint/error/required、
+  `aria-describedby`、`data-invalid`、可投影 control；DOM 测试与 catalog override 已补。
+  下一步：text-field/select/dynamic-form 迁移到 field，及 typeahead/search-list。
 
 **验收**：agent-ui `/sessions`、`/model`、`/provider`、workflow 引用选择器共享
 同一搜索/异步/键盘行为；DOM/TUI 的 loading/error/empty 文案与焦点一致。

@@ -52,6 +52,20 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
             { title: 'Sortable table', props: { caption: 'Runs', columns: [{ key: 'name', label: 'Name', sortable: true }], rows: [{ id: '1', name: 'build' }] } }
         ]
     },
+    field: {
+        summary: 'Form-field wrapper with label, hint, error, required marker and aria linkage.',
+        keyboard: [
+            'Tab/Shift+Tab: enter/leave the projected control',
+            'Host control keeps its native keyboard semantics'
+        ],
+        surfaces: {
+            html: 'Label uses for=controlId; hint/error are referenced by aria-describedby.',
+            console: 'Renders the same label/hint/error rows above/below the projected control.'
+        },
+        examples: [
+            { title: 'Required field', props: { label: 'Name', hint: 'Shown to teammates', required: true, controlId: 'name' } }
+        ]
+    },
     'dynamic-form': {
         summary: 'Schema-driven form with typed values, groups, visibility, validation and custom widgets.',
         keyboard: [

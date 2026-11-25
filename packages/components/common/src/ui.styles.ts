@@ -381,6 +381,14 @@ ${PLAIN_BUTTON_CSS}
     padding: 0 0.2ch;
 }
 .ui-field-hint { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+
+.ui-field-group { display: flex; flex-direction: column; gap: 0.25ch; min-width: 0; }
+.ui-field-group-label { color: var(--ui-muted-fg, inherit); font-size: 0.9em; }
+.ui-field-group-required { color: var(--ui-danger-fg, inherit); }
+.ui-field-group-control { display: block; min-width: 0; }
+.ui-field-group-hint { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+.ui-field-group-error { color: var(--ui-danger-fg, #cf9893); font-size: 0.85em; }
+.ui-field-group[data-invalid="true"] .ui-field-group-label { color: var(--ui-danger-fg, #cf9893); }
 .ui-search-field .ui-field-icon { color: var(--ui-muted-fg, inherit); }
 
 .ui-avatar {
