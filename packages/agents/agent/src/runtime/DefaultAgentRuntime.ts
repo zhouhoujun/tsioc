@@ -30,6 +30,7 @@ import { ArtifactManifest, ArtifactStore } from '../artifacts/ArtifactStore';
 import { compileArchetypePermissionRules } from '../permissions/archetype-rules';
 import { PluginController, createRuntimePluginController } from '../plugins/PluginController';
 import { LiveToolScheduler } from './LiveToolScheduler';
+import { LocalEnvironment } from '../environment/AgentEnvironment';
 import { HookController } from './HookController';
 import { PolicyResolutionController } from './PolicyResolutionController';
 import { TurnLoopController } from './TurnLoopController';
@@ -201,6 +202,7 @@ export class DefaultAgentRuntime extends AgentRuntime {
         }
         this.hookManager = new AgentHookManager(this.options.hooks, this.hookExecutor);
         this.liveToolScheduler = new LiveToolScheduler();
+        this.toolRegistry.useEnvironment?.(this.options.environment ?? new LocalEnvironment(this.fileAdapter, this.resolveWorkspace()));
         this.pluginController = createRuntimePluginController(this);
         this.contextManager.setCompactionHookRunner(async (stage, compaction) => {
             if (!compaction.sessionId || !this.hookManager?.hasHooks(stage)) {
@@ -332,7 +334,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             turn: { status: 'started', message: input.input }
         });
         await this.beginGitStepSnapshot(input.sessionId, turnContext.workspace);
-
         try {
             const result = await this.completeTurn(input.sessionId, input.input, userMessage.id, turnContext);
             await this.bindGitStepSnapshot(input.sessionId, result.message.id, turnContext.workspace);
@@ -383,7 +384,6 @@ export class DefaultAgentRuntime extends AgentRuntime {
             throw err;
         }
     }
-
     synthesizeExperiences(options?: SynthesisOptions): SynthesisReport {
         return this.contextManager.synthesizeExperiences(options);
     }

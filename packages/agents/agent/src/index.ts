@@ -63,6 +63,7 @@ export * from './harness/ToolSchemaValidator';
 export * from './harness/RateLimitManager';
 export * from './harness/OutputGuard';
 export * from './harness/AuditSink';
+export * from './environment/AgentEnvironment';
 
 export * from './harness/TypeOrmAuditSink';
 export * from './harness/CompactionHistoryStore';

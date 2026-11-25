@@ -287,10 +287,15 @@
   required 字段存在、typed client 方法集合一致，并覆盖未知字段前向兼容。**剩余**：由同一 descriptor
   生成 OpenAPI/JSON Schema 文件、旧 switch 方法迁入。
 
-**P3.3 远程环境（按需）**
+**P3.3 远程环境（Environment 抽象已落地 2026-11-24）**
 - 借鉴 Environment 抽象，把 files/exec/shell 抽象为 local/remote；
 - 复用现有 gateway/attach/SSH/remote centers，不引入 Noise/iroh 全套；
 - 验收：一个会话可指定 remote workspace，工具/审批/快照语义一致。
+- 状态：新增 `AgentEnvironment`（`local`/`remote`）与 `LocalEnvironment`（FileAdapter + child process）、
+  `createRemoteEnvironment(transport)`；runtime 将 `options.environment`（默认本地 workspace）注入
+  tool context，第三方/远程工具可直接使用。现有 ACP 远程 IO 仍走 `AgentIoPort`。
+  **剩余**：把内置 files/shell 工具迁移到 environment（目前仍用本地 fs/进程），以及 gateway/SSH
+  transport 的完整实现。
 
 ### P4 — 性能、UI 与门禁（1–2 周）
 

@@ -5,6 +5,8 @@ import { SandboxMode } from '../harness/sandbox-exec';
 
 export interface AgentToolContext {
     sessionId: string;
+    /** P3.3: workspace file/shell environment (local by default, remote when hosted). */
+    environment?: import('../environment/AgentEnvironment').AgentEnvironment;
     memory: MemoryStore;
     principalId?: string;
     workspace?: string;

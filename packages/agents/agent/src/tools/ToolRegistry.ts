@@ -27,6 +27,11 @@ export abstract class ToolRegistry {
         return 0;
     }
 
+    /** P3.3: install the environment passed to tool contexts. */
+    useEnvironment(_environment?: import('../environment/AgentEnvironment').AgentEnvironment): void {
+        // default: no-op; implementations pass it to tool.invoke
+    }
+
     /** Remove all transforms (plugins re-apply from scratch). */
     clearTransforms(): number {
         return this.transformRevision;

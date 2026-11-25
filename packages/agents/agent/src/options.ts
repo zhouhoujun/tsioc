@@ -282,6 +282,7 @@ export interface AgentOptions extends AgentPromptOptions {
     trustedProjectsRoot?: string;
     hooks?: AgentHooksOptions;
     plugins?: import('./plugins/PluginManifest').AgentPluginManifest[];
+    environment?: import('./environment/AgentEnvironment').AgentEnvironment;
     /** P98: rollout token budget enforcement (G25). */
     tokenBudget?: AgentTokenBudgetOptions;
     /** P195: skill content token budget for system prompt injection (default unlimited). */
@@ -354,7 +355,6 @@ export interface AgentPolicyConfig {
     render?: AgentPolicyRender;
     source?: AgentPolicySource;
 }
-
 /** P70/G29: a resolved policy value plus the policy layer that supplied it. */
 export interface AgentPolicyResolution<T> {
     value: T;

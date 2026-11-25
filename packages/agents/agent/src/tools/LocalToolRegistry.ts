@@ -20,6 +20,7 @@ export class LocalToolRegistry extends ToolRegistry {
     private transformedNames = new Map<string, string>();
     private exposedNames = new Map<string, string>();
     private revision = 0;
+    private environment?: import('../environment/AgentEnvironment').AgentEnvironment;
 
     constructor(
         @Inject(AGENT_TOOLS, { defaultValue: [] }) private tools: AgentTool[],
@@ -32,6 +33,10 @@ export class LocalToolRegistry extends ToolRegistry {
 
     get transformRevision(): number {
         return this.revision;
+    }
+
+    useEnvironment(environment?: import('../environment/AgentEnvironment').AgentEnvironment): void {
+        this.environment = environment;
     }
 
     clearTransforms(): number {
@@ -132,6 +137,7 @@ export class LocalToolRegistry extends ToolRegistry {
         const resolvedWorkspace = String(workspace || (this.sessionStore ? (await this.sessionStore.get(sessionId)).workspace : '') || '').trim() || undefined;
         return tool.invoke(input, {
             sessionId,
+            ...(this.environment ? { environment: this.environment } : {}),
             memory: this.memory,
             principalId,
             workspace: resolvedWorkspace,
