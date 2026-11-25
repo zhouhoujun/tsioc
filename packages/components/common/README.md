@@ -387,11 +387,15 @@ Widget specs live in `test/`; they mount real components through `Application`
 and assert the rendered DOM/console output. Keep new widgets covered by a
 spec that mounts them with a real renderer instead of only calling methods.
 
-## Bench
+## Bench and catalog
 
 `npm run bench` exercises the data-table filter/sort/format hot paths and the
 spring integration loop with CPU timing. Compare before/after numbers rather
 than using them as absolute budgets.
+
+`npm run catalog` writes a static HTML catalog (attributes, keyboard contract,
+surface notes and examples) to `docs/catalog.html`; pass a path as the first
+argument to write it elsewhere.
 
 ## Design plans
 

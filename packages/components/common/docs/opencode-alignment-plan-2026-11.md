@@ -200,6 +200,9 @@ DOM/TUI 的搜索、分组、键盘选择一致；现有 agent-ui 菜单行为�
     html/console/agent-ui 依赖、node 内置模块、Buffer 与未守卫的 process 访问。
 - Storybook/catalog 静态页（用 common 渲染）：可本地启动；Playwright 组件测试
   覆盖 dialog/select/table/palette 的关键交互。
+  - 状态（2026-11-25）：`npm run catalog` 生成 `docs/catalog.html`（64 个 widget 的
+    属性/键盘/surfaces/examples），`catalog/page.ts` 有转义与排序测试；Playwright
+    交互矩阵仍由 components/html + components/console 的 DOM/TUI 测试承担。
 - 按需加载：upload/image/qr-code/code editor 等重组件由宿主动态 import，
   首屏只保留基础 token/field/overlay。
 
