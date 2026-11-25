@@ -39,12 +39,13 @@ import { PopoverComponent, PopoverModule } from '@tsdi/components/common/popover
 import { TransferComponent, TransferModule } from '@tsdi/components/common/transfer';
 import { TreeSelectComponent, TreeSelectModule } from '@tsdi/components/common/tree-select';
 import { RateComponent, RateModule } from '@tsdi/components/common/rate';
+import { SpaceComponent, SpaceModule } from '@tsdi/components/common/space';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -86,6 +87,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-transfer :items="transferItems" :targetKeys="transferTargets" sourceTitle="Available" targetTitle="Chosen" emptyLabel="Empty" :changeAction="onTransfer"></ui-transfer>
         <ui-tree-select :items="selectTree" :expandedIds="['group']" ariaLabel="Category"></ui-tree-select>
         <ui-rate :value="rating" ariaLabel="Score" :changeAction="onRate"></ui-rate>
+        <ui-space :items="['S1', 'S2']" separator="·" ariaLabel="Inline space"></ui-space>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -215,7 +217,8 @@ export class CommonUiConsoleTest {
                 PopoverModule,
                 TransferModule,
                 TreeSelectModule,
-                RateModule
+                RateModule,
+                SpaceModule
             ]
         });
         try {

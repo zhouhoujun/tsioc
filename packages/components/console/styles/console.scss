@@ -290,6 +290,9 @@ $idle: var(--console-idle, #6fa37a);
 .ui-rate-star { color: $meta; }
 .ui-rate-star.is-filled { color: $notice; }
 
+.ui-space-item { color: inherit; }
+.ui-space-sep { color: $meta; }
+
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: $meta; }
 .ui-descriptions-value { color: $text; }
