@@ -34,3 +34,15 @@ export function normalizeBoolean(value: unknown, fallback = false): boolean {
     }
     return fallback;
 }
+
+let uiIdSequence = 0;
+
+/**
+ * Allocate a stable element id for `aria-labelledby` / `aria-describedby`
+ * wiring. Hosts can still pass an explicit id through the component's
+ * `inputId` attribute; this only supplies a unique fallback.
+ */
+export function nextUiId(prefix = 'ui'): string {
+    uiIdSequence += 1;
+    return `${prefix}-${uiIdSequence}`;
+}

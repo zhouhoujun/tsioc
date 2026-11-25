@@ -16,6 +16,8 @@ import { RadioGroupComponent, RadioGroupModule } from '../radio-group';
     <ui-text-field label="Name" placeholder="Name" :value="name" clearable
         :changeAction="onName" :submitAction="onSubmit"></ui-text-field>
     <ui-text-field :multiline="true" :rows="2" :value="note" :changeAction="onNote"></ui-text-field>
+    <ui-text-field label="Email" inputId="email-field" name="email" hint="Work address"
+        error="Required field" required></ui-text-field>
     <ui-checkbox label="Enabled" :checked="enabled" :changeAction="onEnabled"></ui-checkbox>
     <ui-switch label="Live" :checked="live" :changeAction="onLive"></ui-switch>
     <ui-radio-group :options="modes" :value="mode" :changeAction="onMode"></ui-radio-group>`
@@ -98,6 +100,21 @@ export class P3FormWidgetsTest {
 
         const multiline = fields[1].hostView.rootNodes[0] as HTMLElement;
         expect(multiline.querySelector('textarea')).toBeTruthy();
+
+        const email = fields[2].hostView.rootNodes[0] as HTMLElement;
+        const emailInput = email.querySelector('input') as HTMLInputElement;
+        const hint = email.querySelector('.ui-field-hint') as HTMLElement;
+        const error = email.querySelector('.ui-field-error') as HTMLElement;
+        expect(emailInput.id).toEqual('email-field');
+        expect(emailInput.getAttribute('name')).toEqual('email');
+        expect(email.querySelector('.ui-field-label')?.getAttribute('for')).toEqual('email-field');
+        expect(emailInput.getAttribute('aria-required')).toEqual('true');
+        expect(emailInput.getAttribute('aria-invalid')).toEqual('true');
+        expect(error.getAttribute('role')).toEqual('alert');
+        expect(hint.id).toEqual('email-field-hint');
+        expect(error.id).toEqual('email-field-error');
+        expect(emailInput.getAttribute('aria-describedby')).toEqual('email-field-hint email-field-error');
+        expect(email.className).toContain('has-error');
     }
 
     @Test('checkbox and switch toggle their semantic state')

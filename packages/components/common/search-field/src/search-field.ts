@@ -1,5 +1,5 @@
 import { Attribute, Component } from '@tsdi/components';
-import { normalizeBoolean } from '../../src/ui';
+import { nextUiId, normalizeBoolean } from '../../src/ui';
 
 /**
  * Renderer-neutral search/text field with optional leading icon, clear action
@@ -10,21 +10,26 @@ import { normalizeBoolean } from '../../src/ui';
     selector: 'ui-search-field',
     template: `
     <div class="ui-field ui-search-field {{fieldClass}}">
-        <label class="ui-field-label" v-if="label">{{label}}</label>
+        <label class="ui-field-label" for="{{fieldId}}" v-if="label">{{label}}</label>
         <div class="ui-field-row">
             <icon class="ui-field-icon" v-if="icon" [name]="icon" [glyph]="iconGlyph || icon" size="sm"></icon>
             <input class="ui-field-input" type="search"
+                id="{{fieldId}}"
+                name="{{name}}"
                 [value]="value"
                 placeholder="{{placeholder}}"
                 [disabled]="disabled"
                 [readOnly]="readonly"
                 aria-label="{{ariaLabel || label || placeholder}}"
+                aria-invalid="{{!!error}}"
+                aria-describedby="{{describedBy}}"
                 @input="onInput($event)"
                 @keydown="onKeydown($event)" />
             <button class="ui-field-clear" type="button" v-if="clearable && value"
                 aria-label="{{clearLabel}}" @click="clear">{{clearGlyph}}</button>
         </div>
-        <span class="ui-field-hint" v-if="hint">{{hint}}</span>
+        <span class="ui-field-hint" id="{{hintId}}" v-if="hint">{{hint}}</span>
+        <span class="ui-field-error" id="{{errorId}}" role="alert" v-if="error">{{error}}</span>
     </div>`
 })
 export class SearchFieldComponent {
@@ -37,9 +42,15 @@ export class SearchFieldComponent {
     @Attribute() ariaLabel = '';
     @Attribute() clearLabel = 'Clear';
     @Attribute() className = '';
+    @Attribute() error = '';
+    /** Explicit id for the inner input; defaults to a generated one. */
+    @Attribute() inputId = '';
+    @Attribute() name = '';
     @Attribute() changeAction?: (value: string) => void;
     @Attribute() submitAction?: (value: string) => void;
     @Attribute() clearAction?: () => void;
+
+    protected readonly uid = nextUiId('ui-search-field');
 
     private _clearable = true;
     private _disabled = false;
@@ -61,10 +72,30 @@ export class SearchFieldComponent {
         return '✕';
     }
 
+    get fieldId(): string {
+        return this.inputId || this.uid;
+    }
+
+    get hintId(): string {
+        return `${this.fieldId}-hint`;
+    }
+
+    get errorId(): string {
+        return `${this.fieldId}-error`;
+    }
+
+    /** Space-separated ids for the hint and error text. */
+    get describedBy(): string {
+        return [this.hint ? this.hintId : '', this.error ? this.errorId : '']
+            .filter(Boolean)
+            .join(' ');
+    }
+
     get fieldClass(): string {
         return [
             this._disabled ? 'is-disabled' : '',
             this._readonly ? 'is-readonly' : '',
+            this.error ? 'has-error' : '',
             this.className
         ].filter(Boolean).join(' ');
     }

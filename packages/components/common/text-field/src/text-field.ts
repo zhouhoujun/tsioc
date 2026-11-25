@@ -1,5 +1,5 @@
 import { Attribute, Component } from '@tsdi/components';
-import { normalizeBoolean } from '../../src/ui';
+import { nextUiId, normalizeBoolean } from '../../src/ui';
 
 export type TextFieldType =
     | 'text' | 'password' | 'email' | 'url' | 'tel' | 'search'
@@ -14,9 +14,11 @@ export type TextFieldType =
     selector: 'ui-text-field',
     template: `
     <div class="ui-field ui-text-field {{fieldClass}}">
-        <label class="ui-field-label" v-if="label">{{label}}<span class="ui-field-required" v-if="required">*</span></label>
+        <label class="ui-field-label" for="{{fieldId}}" v-if="label">{{label}}<span class="ui-field-required" v-if="required">*</span></label>
         <div class="ui-field-row">
             <input class="ui-field-input" v-if="!multiline"
+                id="{{fieldId}}"
+                name="{{name}}"
                 type="{{htmlType}}"
                 [value]="value"
                 placeholder="{{placeholder}}"
@@ -25,10 +27,13 @@ export type TextFieldType =
                 aria-label="{{ariaLabel || label || placeholder}}"
                 aria-required="{{required}}"
                 aria-invalid="{{!!error}}"
+                aria-describedby="{{describedBy}}"
                 @input="onInput($event)"
                 @keydown="onKeydown($event)"
                 @blur="onBlur()" />
             <textarea class="ui-field-input ui-field-textarea" v-if="multiline"
+                id="{{fieldId}}"
+                name="{{name}}"
                 [value]="value"
                 rows="{{rows}}"
                 placeholder="{{placeholder}}"
@@ -37,14 +42,15 @@ export type TextFieldType =
                 aria-label="{{ariaLabel || label || placeholder}}"
                 aria-required="{{required}}"
                 aria-invalid="{{!!error}}"
+                aria-describedby="{{describedBy}}"
                 @input="onInput($event)"
                 @keydown="onKeydown($event)"
                 @blur="onBlur()"></textarea>
             <button class="ui-field-clear" type="button" v-if="clearable && value"
                 aria-label="{{clearLabel}}" @click="clear">{{clearGlyph}}</button>
         </div>
-        <span class="ui-field-hint" v-if="hint">{{hint}}</span>
-        <span class="ui-field-error" v-if="error">{{error}}</span>
+        <span class="ui-field-hint" id="{{hintId}}" v-if="hint">{{hint}}</span>
+        <span class="ui-field-error" id="{{errorId}}" role="alert" v-if="error">{{error}}</span>
     </div>`
 })
 export class TextFieldComponent {
@@ -58,10 +64,15 @@ export class TextFieldComponent {
     @Attribute() rows = 3;
     @Attribute() clearLabel = 'Clear';
     @Attribute() className = '';
+    /** Explicit id for the inner input; defaults to a generated one. */
+    @Attribute() inputId = '';
+    @Attribute() name = '';
     @Attribute() changeAction?: (value: string) => void;
     @Attribute() submitAction?: (value: string) => void;
     @Attribute() blurAction?: () => void;
     @Attribute() clearAction?: () => void;
+
+    protected readonly uid = nextUiId('ui-text-field');
 
     private _multiline = false;
     private _required = false;
@@ -91,6 +102,25 @@ export class TextFieldComponent {
 
     get clearGlyph(): string {
         return '✕';
+    }
+
+    get fieldId(): string {
+        return this.inputId || this.uid;
+    }
+
+    get hintId(): string {
+        return `${this.fieldId}-hint`;
+    }
+
+    get errorId(): string {
+        return `${this.fieldId}-error`;
+    }
+
+    /** Space-separated ids for the hint and error text. */
+    get describedBy(): string {
+        return [this.hint ? this.hintId : '', this.error ? this.errorId : '']
+            .filter(Boolean)
+            .join(' ');
     }
 
     get htmlType(): TextFieldType {

@@ -18,7 +18,8 @@ import { SearchFieldComponent, SearchFieldModule } from '../search-field';
     <ui-steps :items="steps" :current="1" :action="onStep"></ui-steps>
     <ui-timeline :items="events"></ui-timeline>
     <ui-skeleton :lines="2" :lineWidths="[6, 4]"></ui-skeleton>
-    <ui-search-field label="Find" placeholder="Search…" :value="query"
+    <ui-search-field label="Find" placeholder="Search…" :value="query" hint="Filter rows"
+        error="No matches" inputId="find-field" name="find"
         :changeAction="onSearch" :submitAction="onSubmit" :clearAction="onClear"></ui-search-field>`
 })
 class P1UiHostComponent {
@@ -177,5 +178,15 @@ export class P1UiWidgetsTest {
         clear.click();
         expect(host.search).toEqual('');
         expect(host.cleared).toEqual(1);
+
+        const hint = root.querySelector('.ui-field-hint') as HTMLElement;
+        const error = root.querySelector('.ui-field-error') as HTMLElement;
+        expect(input.id).toEqual('find-field');
+        expect(input.getAttribute('name')).toEqual('find');
+        expect(root.querySelector('.ui-field-label')?.getAttribute('for')).toEqual('find-field');
+        expect(input.getAttribute('aria-invalid')).toEqual('true');
+        expect(error.getAttribute('role')).toEqual('alert');
+        expect(input.getAttribute('aria-describedby')).toEqual(`${hint.id} ${error.id}`);
+        expect(root.className).toContain('has-error');
     }
 }
