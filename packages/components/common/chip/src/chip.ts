@@ -26,6 +26,8 @@ export type ChipVariant = 'solid' | 'outline' | 'ghost';
         focusable="{{interactive}}"
         @click="activate"
         @keydown="onKeydown($event)">
+        <v-content select="chip-prepend"></v-content>
+        <span class="ui-chip-avatar" v-if="avatar" aria-hidden="true">{{avatar}}</span>
         <icon v-if="icon" [name]="icon" [glyph]="iconGlyph || icon" [size]="iconSize"></icon>
         <span class="ui-chip-label" v-if="label">{{label}}</span>
         <v-content></v-content>
@@ -49,6 +51,8 @@ export class ChipComponent {
     }
 
     @Attribute() label = '';
+    /** Short initials/avatar text rendered before the label. */
+    @Attribute() avatar = '';
     @Attribute() icon = '';
     @Attribute() iconGlyph = '';
     @Attribute() ariaLabel = '';

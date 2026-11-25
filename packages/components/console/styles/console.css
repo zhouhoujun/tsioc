@@ -251,6 +251,8 @@
 .ui-descriptions-sep,
 .ui-descriptions-hint,
 .ui-descriptions-empty { color: var(--console-meta, #6e7681); }
+.ui-descriptions-header,
+.ui-descriptions-separator { color: var(--console-meta, #6e7681); }
 
 .ui-tooltip-popup { color: var(--console-meta, #6e7681); }
 
@@ -258,6 +260,18 @@
 .ui-popover-title { color: var(--console-accent, #86a9d6); }
 .ui-popover-close,
 .ui-popover-line { color: var(--console-meta, #6e7681); }
+
+.ui-transfer-header,
+.ui-transfer-description,
+.ui-transfer-empty { color: var(--console-meta, #6e7681); }
+.ui-transfer-item { color: var(--console-text, #c9d1d9); }
+.ui-transfer-item.is-selected { color: var(--console-selected, #7fa6d4); font-weight: bold; background: var(--console-select-selected-bg, #202a36); }
+.ui-transfer-action { color: var(--console-accent, #86a9d6); }
+
+.ui-tree-select { color: var(--console-text, #c9d1d9); }
+.ui-tree-select.is-open .ui-tree-select-value { color: var(--console-accent, #86a9d6); }
+.ui-tree-select-value.is-placeholder,
+.ui-tree-select-caret { color: var(--console-meta, #6e7681); }
 
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: var(--console-meta, #6e7681); }

@@ -20,6 +20,11 @@ export const DESCRIPTIONS_CSS = `
     align-items: flex-start;
     gap: 0.1ch;
 }
+.ui-descriptions-entry { display: contents; }
+.ui-descriptions-header,
+.ui-descriptions-separator { grid-column: 1 / -1; color: var(--ui-muted-fg, inherit); }
+.ui-descriptions-header { font-weight: 600; }
+.ui-descriptions-separator { letter-spacing: 0.05em; }
 .ui-descriptions.is-bordered {
     border: 1px solid var(--ui-border, currentColor);
     border-radius: var(--ui-radius, 4px);

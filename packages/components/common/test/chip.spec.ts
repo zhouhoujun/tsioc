@@ -10,8 +10,8 @@ import { ChipComponent, ChipModule } from '../chip';
     selector: 'chip-host',
     imports: [ChipComponent],
     template: `
-    <ui-chip label="feature" ariaLabel="Feature chip" selected
-        :action="onAction" :removeAction="onRemove" :closable="true"></ui-chip>
+    <ui-chip label="feature" ariaLabel="Feature chip" selected avatar="AL"
+        :action="onAction" :removeAction="onRemove" :closable="true"><chip-prepend>★</chip-prepend></ui-chip>
     <ui-chip label="locked" disabled :action="onAction" :removeAction="onRemove" :closable="true"></ui-chip>
     <ui-chip label="plain" variant="outline"></ui-chip>`
 })
@@ -71,6 +71,10 @@ export class ChipTest {
         expect(chip.getAttribute('aria-pressed')).toEqual('true');
         expect(chip.getAttribute('tabindex')).toEqual('0');
         expect(chip.textContent).toContain('feature');
+        expect(chip.querySelector('.ui-chip-avatar')?.textContent).toEqual('AL');
+        expect(chip.textContent).toContain('★');
+        const chipText = chip.textContent || '';
+        expect(chipText.indexOf('★')).toBeLessThan(chipText.indexOf('feature'));
         expect(close?.tagName).toEqual('BUTTON');
         expect(close.getAttribute('type')).toEqual('button');
         expect(close.getAttribute('data-plain')).toEqual('true');

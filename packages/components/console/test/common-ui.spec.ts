@@ -36,12 +36,14 @@ import { SpinnerComponent, SpinnerModule } from '@tsdi/components/common/spinner
 import { DescriptionsComponent, DescriptionsModule } from '@tsdi/components/common/descriptions';
 import { TooltipComponent, TooltipModule } from '@tsdi/components/common/tooltip';
 import { PopoverComponent, PopoverModule } from '@tsdi/components/common/popover';
+import { TransferComponent, TransferModule } from '@tsdi/components/common/transfer';
+import { TreeSelectComponent, TreeSelectModule } from '@tsdi/components/common/tree-select';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -73,12 +75,15 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <list :items="[]" :loading="true" error="Load failed" ariaLabel="History" :emptyLabel="'No history'"></list>
         <ui-slider label="Zoom" :value="zoom" :step="10" unit="%" :changeAction="onZoom"></ui-slider>
         <ui-segmented :options="ranges" :value="range" ariaLabel="Range" :changeAction="onRange"></ui-segmented>
-        <ui-chip label="tag" :action="onChip" :removeAction="onChipRemove" :closable="true"></ui-chip>
+        <ui-chip label="tag" avatar="AL" :action="onChip" :removeAction="onChipRemove" :closable="true"><chip-prepend>★</chip-prepend></ui-chip>
         <ui-spinner label="Booting" :interval="100"></ui-spinner>
         <ui-descriptions :items="details" ariaLabel="Details"></ui-descriptions>
         <ui-descriptions :items="verticalDetails" layout="vertical" ariaLabel="Vertical details"></ui-descriptions>
+        <ui-descriptions :groups="groupDetails" ariaLabel="Grouped details"></ui-descriptions>
         <ui-tooltip content="Inline help" :focusable="true"><span>Help</span></ui-tooltip>
         <ui-popover visible title="More info" :lines="['First pop', 'Second pop']"><span>Info</span></ui-popover>
+        <ui-transfer :items="transferItems" :targetKeys="transferTargets" sourceTitle="Available" targetTitle="Chosen" emptyLabel="Empty" :changeAction="onTransfer"></ui-transfer>
+        <ui-tree-select :items="selectTree" :expandedIds="['group']" ariaLabel="Category"></ui-tree-select>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -107,6 +112,17 @@ class CommonUiConsoleHostComponent {
         { label: 'Status', value: 'Ready', tone: 'success' }
     ];
     verticalDetails = [{ label: 'Vertical Name', value: 'vertical value' }];
+    transferTargets = ['c'];
+    transferItems = [
+        { key: 'a', label: 'Alpha' },
+        { key: 'b', label: 'Beta' },
+        { key: 'c', label: 'Gamma' }
+    ];
+    onTransfer = (next: string[]) => { this.transferTargets = next; };
+    groupDetails = [
+        { title: 'Build', extra: 'v1', items: [{ label: 'Build Name', value: 'tsioc' }] },
+        { title: 'Runtime', items: [{ label: 'Runtime Status', value: 'Ready' }] }
+    ];
     tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
@@ -121,6 +137,7 @@ class CommonUiConsoleHostComponent {
         { id: 'u', name: 'Upsilon' }
     ];
     tree = [{ id: 'root', label: 'Root', children: [{ id: 'child', label: 'Child' }] }];
+    selectTree = [{ id: 'group', label: 'Group', children: [{ id: 'leaf', label: 'Leaf' }] }];
     modes = [{ label: 'Basic', value: 'basic' }, { label: 'Advanced', value: 'advanced' }];
 }
 
@@ -189,7 +206,9 @@ export class CommonUiConsoleTest {
                 SpinnerModule,
                 DescriptionsModule,
                 TooltipModule,
-                PopoverModule
+                PopoverModule,
+                TransferModule,
+                TreeSelectModule
             ]
         });
         try {
@@ -241,6 +260,8 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Name');
             expect(output).toContain('Status');
             expect(output).toContain('tag');
+            expect(output).toContain('AL');
+            expect(output).toContain('★');
             expect(output).not.toContain('[ ✕ ]');
             expect(output).toContain('Loading');
             expect(output).toContain('Load failed');
@@ -252,7 +273,7 @@ export class CommonUiConsoleTest {
                 renderer: new TuiRenderer(),
                 root: ref.hostView.rootNodes[0] as any,
                 width: 80,
-                height: 40,
+                height: 80,
                 output: { write() { } }
             });
             try {
@@ -269,6 +290,12 @@ export class CommonUiConsoleTest {
                 expect(paintedLines).toContain('Vertical Name');
                 expect(paintedLines).toContain('vertical value');
                 expect(painted).not.toContain('Vertical Name: vertical value');
+                const groupedLines = painted.split('\n').map((line: string) => line.trim());
+                expect(groupedLines).toContain('Build · v1');
+                expect(groupedLines).toContain('Build Name: tsioc');
+                expect(groupedLines).toContain('Runtime');
+                expect(groupedLines.indexOf('Build · v1')).toBeLessThan(groupedLines.indexOf('Build Name: tsioc'));
+                expect(groupedLines.indexOf('Build Name: tsioc')).toBeLessThan(groupedLines.indexOf('Runtime'));
                 expect(painted).not.toContain('Inline help');
                 expect(painted).toContain('First pop');
                 expect(painted).toContain('Second pop');
@@ -293,6 +320,30 @@ export class CommonUiConsoleTest {
                 surface.render();
                 const popClosed = surface.lastRenderedLines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, '')).join('\n');
                 expect(popClosed).not.toContain('First pop');
+
+                const transferRoot = (ref.hostView.rootNodes[0] as any).querySelector('.ui-transfer');
+                expect(transferRoot.textContent).toContain('Available (2)');
+                expect(transferRoot.textContent).toContain('Chosen (1)');
+                const sourceItem = transferRoot.querySelector('.ui-transfer-pane.is-source .ui-transfer-item');
+                sourceItem.dispatchEvent({ type: 'click', target: sourceItem });
+                await Promise.resolve();
+                const moveRight = transferRoot.querySelector('.ui-transfer-action');
+                moveRight.dispatchEvent({ type: 'click', target: moveRight });
+                await Promise.resolve();
+                const transferOutput = new TuiRenderer().renderToLines(transferRoot).join('\n');
+                expect(transferOutput).toContain('Available (1)');
+                expect(transferOutput).toContain('Chosen (2)');
+
+                const selectRoot = (ref.hostView.rootNodes[0] as any).querySelector('.ui-tree-select');
+                expect(selectRoot.textContent).toContain('Select…');
+                (selectRoot.querySelector('.ui-tree-select-trigger') as any).dispatchEvent({ type: 'click', target: selectRoot });
+                await Promise.resolve();
+                expect(selectRoot.getAttribute('aria-expanded')).toEqual('true');
+                const panelRows = selectRoot.querySelector('.ui-tree-select-panel').querySelectorAll('.ui-tree-row');
+                panelRows[1].dispatchEvent({ type: 'click', target: panelRows[1] });
+                await Promise.resolve();
+                expect(selectRoot.getAttribute('aria-expanded')).toEqual('false');
+                expect(selectRoot.textContent).toContain('Leaf');
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');

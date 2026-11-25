@@ -12,9 +12,14 @@ import { DescriptionsComponent, DescriptionsModule } from '../descriptions';
     template: `
     <ui-descriptions :items="items" :columns="2" bordered dense ariaLabel="Build"></ui-descriptions>
     <ui-descriptions :items="verticalItems" layout="vertical" ariaLabel="Vertical"></ui-descriptions>
+    <ui-descriptions :groups="groups" ariaLabel="Grouped"></ui-descriptions>
     <ui-descriptions :items="[]" emptyLabel="No details"></ui-descriptions>`
 })
 class DescriptionsHostComponent {
+    groups = [
+        { title: 'Build', extra: 'v1', items: [{ label: 'Name', value: 'tsioc' }] },
+        { title: 'Runtime', items: [{ label: 'Status', value: 'Ready' }] }
+    ];
     verticalItems = [
         { label: 'Name', value: 'tsioc' },
         { label: 'Status', value: 'Ready', hint: 'stable' }
@@ -99,11 +104,28 @@ export class DescriptionsTest {
         expect(items[1].querySelector('.ui-descriptions-hint')?.textContent).toEqual('stable');
     }
 
+    @Test('renders titled groups with separators')
+    async groups() {
+        const { roots } = await this.mount();
+        const root = roots[2];
+        const headers = Array.from(root.querySelectorAll('.ui-descriptions-header') as NodeListOf<HTMLElement>);
+        const separators = root.querySelectorAll('.ui-descriptions-separator') as NodeListOf<HTMLElement>;
+        const items = Array.from(root.querySelectorAll('.ui-descriptions-item') as NodeListOf<HTMLElement>);
+
+        expect(headers.map(header => header.textContent)).toEqual(['Build · v1', 'Runtime']);
+        expect(separators.length).toEqual(1);
+        expect(separators[0].textContent).toEqual('────────────');
+        expect(separators[0].getAttribute('role')).toEqual('separator');
+        expect(items.length).toEqual(2);
+        expect(items[0].textContent).toContain('Name: tsioc');
+        expect(items[1].textContent).toContain('Status: Ready');
+    }
+
     @Test('renders the empty state')
     async emptyState() {
         const { roots } = await this.mount();
-        const empty = roots[2].querySelector('.ui-descriptions-empty') as HTMLElement;
+        const empty = roots[3].querySelector('.ui-descriptions-empty') as HTMLElement;
         expect(empty?.textContent).toEqual('No details');
-        expect(roots[2].querySelectorAll('.ui-descriptions-item').length).toEqual(0);
+        expect(roots[3].querySelectorAll('.ui-descriptions-item').length).toEqual(0);
     }
 }

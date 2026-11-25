@@ -34,6 +34,18 @@ export const CHIP_CSS = `
     outline: 2px solid var(--ui-focus-ring, currentColor);
     outline-offset: 1px;
 }
+.ui-chip-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6em;
+    height: 1.6em;
+    border-radius: 50%;
+    background: var(--ui-tone-bg, var(--ui-hover-bg, transparent));
+    color: var(--ui-tone-fg, inherit);
+    font-size: 0.8em;
+    line-height: 1;
+}
 .ui-chip-close {
     display: inline-flex;
     align-items: center;

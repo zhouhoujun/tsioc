@@ -14,41 +14,54 @@ export interface DescriptionItem {
     tone?: UiTone;
 }
 
-interface DescriptionViewItem {
+export interface DescriptionGroup {
+    title?: string;
+    extra?: string;
+    items: DescriptionItem[];
+}
+
+interface DescriptionEntry {
+    kind: 'header' | 'separator' | 'item';
     key: string;
+    text: string;
     label: string;
     value: string;
     hint: string;
     tone: UiTone;
+    vertical: boolean;
     style?: Record<string, string>;
 }
 
 /**
  * Read-only key/value detail list (Ant Design Descriptions / MUI DescriptionList).
  *
- * Both renderers paint `label: value` with the same item order. `columns`
- * arranges the browser grid; terminal hosts keep one item per line so the
- * content stays readable at any width.
+ * Supports a flat `items` list or titled `groups`, `horizontal`/`vertical`
+ * layouts, tones and grid spans. Both renderers paint the same headers, labels
+ * and values in the same order; `columns` is a browser grid concern and the
+ * terminal keeps one item per line.
  */
 @Component({
     selector: 'ui-descriptions',
     template: `
     <div class="ui-descriptions {{descriptionsClass}}" role="list"
         aria-label="{{ariaLabel}}" [style]="rootStyle">
-        <span class="ui-descriptions-item" role="listitem"
-            data-tone="{{item.tone}}" [style]="item.style"
-            v-for="item in horizontalItems" trackBy="key">
-            <span class="ui-descriptions-label">{{item.label}}</span><span class="ui-descriptions-sep" aria-hidden="true">: </span><span class="ui-descriptions-value">{{item.value}}</span>
-            <span class="ui-descriptions-hint" v-if="item.hint">{{item.hint}}</span>
-        </span>
-        <div class="ui-descriptions-item is-vertical" role="listitem"
-            data-tone="{{item.tone}}" [style]="item.style"
-            v-for="item in verticalItems" trackBy="key">
-            <span class="ui-descriptions-label">{{item.label}}</span>
-            <span class="ui-descriptions-value">{{item.value}}</span>
-            <span class="ui-descriptions-hint" v-if="item.hint">{{item.hint}}</span>
+        <div class="ui-descriptions-entry" role="presentation" v-for="entry in entries" trackBy="key">
+            <div class="ui-descriptions-header" role="presentation" v-if="entry.kind === 'header'">{{entry.text}}</div>
+            <div class="ui-descriptions-separator" role="separator" aria-hidden="true" v-else-if="entry.kind === 'separator'">{{entry.text}}</div>
+            <span class="ui-descriptions-item" role="listitem"
+                data-tone="{{entry.tone}}" [style]="entry.style"
+                v-else-if="!entry.vertical">
+                <span class="ui-descriptions-label">{{entry.label}}</span><span class="ui-descriptions-sep" aria-hidden="true">: </span><span class="ui-descriptions-value">{{entry.value}}</span>
+                <span class="ui-descriptions-hint" v-if="entry.hint">{{entry.hint}}</span>
+            </span>
+            <div class="ui-descriptions-item is-vertical" role="listitem"
+                data-tone="{{entry.tone}}" [style]="entry.style" v-else>
+                <span class="ui-descriptions-label">{{entry.label}}</span>
+                <span class="ui-descriptions-value">{{entry.value}}</span>
+                <span class="ui-descriptions-hint" v-if="entry.hint">{{entry.hint}}</span>
+            </div>
         </div>
-        <div class="ui-descriptions-empty" v-if="emptyLabel && !viewItems.length">{{emptyLabel}}</div>
+        <div class="ui-descriptions-empty" v-if="emptyLabel && !hasItems">{{emptyLabel}}</div>
     </div>`
 })
 export class DescriptionsComponent {
@@ -61,9 +74,14 @@ export class DescriptionsComponent {
     }
 
     @Attribute() items: DescriptionItem[] = [];
+    @Attribute() groups: DescriptionGroup[] = [];
+    @Attribute() title = '';
+    @Attribute() extra = '';
     @Attribute() ariaLabel = 'Details';
     @Attribute() emptyLabel = '';
     @Attribute() className = '';
+    @Attribute() separatorChar = '─';
+    @Attribute() separatorWidth: number | string = 12;
 
     private _columns = 1;
     private _layout: 'horizontal' | 'vertical' = 'horizontal';
@@ -108,29 +126,61 @@ export class DescriptionsComponent {
         return { '--ui-descriptions-columns': String(this._columns) };
     }
 
-    get horizontalItems(): DescriptionViewItem[] {
-        return this._layout === 'vertical' ? [] : this.viewItems;
+    get separatorText(): string {
+        const char = String(this.separatorChar || '─');
+        const width = Math.max(1, Math.min(80, Math.floor(Number(this.separatorWidth) || 12)));
+        return char.repeat(width);
     }
 
-    get verticalItems(): DescriptionViewItem[] {
-        return this._layout === 'vertical' ? this.viewItems : [];
+    get hasItems(): boolean {
+        return this.entries.some(entry => entry.kind === 'item');
     }
 
-    get viewItems(): DescriptionViewItem[] {
-        return (Array.isArray(this.items) ? this.items : [])
-            .filter(item => !!item)
-            .map((item, index) => {
+    get entries(): DescriptionEntry[] {
+        const groups: DescriptionGroup[] = Array.isArray(this.groups) && this.groups.length
+            ? this.groups
+            : [{ title: this.title, extra: this.extra, items: this.items }];
+        const vertical = this._layout === 'vertical';
+        const entries: DescriptionEntry[] = [];
+        groups.forEach((group, groupIndex) => {
+            const header = [group?.title, group?.extra].filter(Boolean).join(' · ');
+            if (header) {
+                entries.push(this.entry('header', `h-${groupIndex}`, header));
+            }
+            (Array.isArray(group?.items) ? group.items : []).forEach((item, index) => {
+                if (!item) {
+                    return;
+                }
                 const span = Math.floor(Number(item.span));
-                return {
-                    key: String(item.key ?? index),
+                entries.push({
+                    ...this.entry('item', `i-${groupIndex}-${index}`, ''),
                     label: String(item.label ?? ''),
                     value: String(item.value ?? ''),
                     hint: String(item.hint ?? ''),
                     tone: normalizeTone(item.tone),
+                    vertical,
                     style: Number.isFinite(span) && span > 1
                         ? { 'grid-column': `span ${span}` }
                         : undefined
-                } as DescriptionViewItem;
+                });
             });
+            if (groupIndex < groups.length - 1) {
+                entries.push(this.entry('separator', `s-${groupIndex}`, this.separatorText));
+            }
+        });
+        return entries;
+    }
+
+    protected entry(kind: DescriptionEntry['kind'], key: string, text: string): DescriptionEntry {
+        return {
+            kind,
+            key,
+            text,
+            label: '',
+            value: '',
+            hint: '',
+            tone: 'default',
+            vertical: false
+        };
     }
 }

@@ -265,6 +265,8 @@ $idle: var(--console-idle, #6fa37a);
 .ui-descriptions-sep,
 .ui-descriptions-hint,
 .ui-descriptions-empty { color: $meta; }
+.ui-descriptions-header,
+.ui-descriptions-separator { color: $meta; }
 
 .ui-tooltip-popup { color: $meta; }
 
@@ -272,6 +274,18 @@ $idle: var(--console-idle, #6fa37a);
 .ui-popover-title { color: $accent; }
 .ui-popover-close,
 .ui-popover-line { color: $meta; }
+
+.ui-transfer-header,
+.ui-transfer-description,
+.ui-transfer-empty { color: $meta; }
+.ui-transfer-item { color: $text; }
+.ui-transfer-item.is-selected { color: $selected; font-weight: bold; background: var(--console-select-selected-bg, #202a36); }
+.ui-transfer-action { color: $accent; }
+
+.ui-tree-select { color: $text; }
+.ui-tree-select.is-open .ui-tree-select-value { color: $accent; }
+.ui-tree-select-value.is-placeholder,
+.ui-tree-select-caret { color: $meta; }
 
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: $meta; }
