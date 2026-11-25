@@ -55,13 +55,13 @@ export class SearchListTest {
         await this.ctx.close();
     }
 
-    private async mount(): Promise<{ host: SearchListHostComponent; list: SearchListComponent; root: HTMLElement }> {
+    private async mount(): Promise<{ host: SearchListHostComponent; list: SearchListComponent; root: HTMLElement; rootNow: () => HTMLElement }> {
         const ref = this.ctx.get(ComponentFactory).create(SearchListHostComponent, { injector: this.ctx }) as ComponentRef<SearchListHostComponent>;
         await ref.render();
         await settle();
         const list = (ref.hostView.queryAll(SearchListComponent) as ComponentRef<SearchListComponent>[])[0].instance;
-        const root = ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
-        return { host: ref.instance, list, root };
+        const rootNow = () => ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
+        return { host: ref.instance, list, root: rootNow(), rootNow };
     }
 
     @Test('filters locally, keeps recent items first and moves the active row')
@@ -80,6 +80,22 @@ export class SearchListTest {
         expect(root.querySelector('.ui-search-list-input')).toBeTruthy();
         expect(root.querySelector('[data-item-id="deploy"]')).toBeTruthy();
         expect(root.textContent).toContain('Ctrl+D');
+    }
+
+    @Test('controlled mode hides the input and follows the host selection')
+    async controlledMode() {
+        const { list, rootNow } = await this.mount();
+        list.showInput = false;
+        list.selectedId = 'delete';
+        await settle();
+        expect(rootNow().querySelector('.ui-search-list-input')).toBeFalsy();
+        expect(list.activeId).toEqual('delete');
+        expect(list.rows.find(row => row.kind === 'option' && row.item?.id === 'delete')?.active).toEqual(true);
+        list.selectedId = 'missing';
+        expect(list.activeId).toEqual('deploy');
+        list.showInput = true;
+        await settle();
+        expect(rootNow().querySelector('.ui-search-list-input')).toBeTruthy();
     }
 
     @Test('Escape closes and disabled rows are skipped')

@@ -47,7 +47,7 @@ interface SearchListRow {
     selector: 'ui-search-list',
     template: `
     <div class="ui-search-list {{className}}">
-        <input class="ui-search-list-input" type="text" role="combobox"
+        <input class="ui-search-list-input" type="text" role="combobox" v-if="showInput"
             aria-label="{{ariaLabel}}" aria-autocomplete="list"
             aria-expanded="{{rows.length ? 'true' : 'false'}}"
             aria-controls="{{listId}}" aria-activedescendant="{{activeDescendant}}"
@@ -107,6 +107,12 @@ export class SearchListComponent {
     @Attribute() className = '';
     @Attribute() minChars = 0;
     @Attribute() maxVisible = 12;
+    /** Controlled mode: hide the input and let the host own the query/focus. */
+    @Attribute()
+    get showInput(): boolean { return this._showInput; }
+    set showInput(value: boolean | string) { this._showInput = normalizeBoolean(value, true); }
+    /** Controlled active row; ignored when it no longer exists. */
+    @Attribute() selectedId = '';
     @Attribute() recentIds: string[] = [];
     @Attribute() recentLabel = 'Recent';
     @Attribute() changeAction?: (query: string) => void;
@@ -116,6 +122,7 @@ export class SearchListComponent {
 
     readonly listId: string;
     private _disabled = false;
+    private _showInput = true;
     private _loading = false;
     private _error = '';
     private _asyncItems: SearchListItem[] = [];
@@ -227,6 +234,10 @@ export class SearchListComponent {
         const options = this.optionRows.filter(item => !item.disabled);
         if (!options.length) {
             return '';
+        }
+        const external = String(this.selectedId ?? '');
+        if (external && options.some(item => item.id === external)) {
+            return external;
         }
         if (this._activeId && options.some(item => item.id === this._activeId)) {
             return this._activeId;

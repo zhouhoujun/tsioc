@@ -119,8 +119,10 @@
   的 renderer-neutral 基座。AbortController/AbortSignal 已标记 `noReact`，避免代理破坏私有字段。
   `command-palette`（`ui-command-palette`）已落地：组合 search-list + OverlayManager，
   `open`/`title`/`hint`/`items`/`source`/`recentIds`/`closable`/`beforeCloseAction`，
-  backdrop/Escape 关闭；DOM 与 console renderer 均有测试。agent-ui `/` 菜单仍使用既有
-  select panel，迁移待后续提交（避免改动其键盘/焦点路由）。
+  backdrop/Escape 关闭；DOM 与 console renderer 均有测试。search-list 增加 controlled
+  模式（`showInput=false` + `selectedId`），agent-ui 的 Ctrl+P command palette 已改用
+  `ui-search-list` 渲染（窗口切片/active row/detail/hint 保持），`/` suggestion menu
+  仍使用既有 select panel 以保留 select-rows/mouse 命中与 web 回归。
   字段语义已统一到 `field/src/field-semantics.ts`：text-field / search-field /
   `ui-field-group` / dynamic-form 共用同一 `-hint`/`-error` id 约定与
   `aria-describedby` 顺序；select 是菜单控件，不套用 field 包装。
