@@ -1,5 +1,7 @@
 import { Attribute, Component, ElementRef } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
+import { nextUiId } from '../../src/ui';
+import { OverlayManager } from '../../src/overlay-manager';
 import { getDisplayWidth } from '../../src/display-width';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
@@ -32,7 +34,7 @@ import { installPlainButtonStyles } from '../../src/ui.styles';
     </div>`
 })
 export class DialogComponent {
-    constructor(@Optional() protected elementRef?: ElementRef) {
+    constructor(@Optional() protected elementRef?: ElementRef, @Optional() @Inject(OverlayManager) private overlays?: OverlayManager | null) {
         markElementRefRaw(elementRef);
     }
 
@@ -41,6 +43,33 @@ export class DialogComponent {
         // surface without having to adopt the full UI skin.
         installPlainButtonStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
     }
+
+    protected readonly overlayId = nextUiId('ui-dialog');
+    private _overlayOpen = false;
+
+    /** Opt-in: register this dialog in the shared overlay stack for Escape/focus/dirty checks. */
+    @Attribute()
+    get overlayOpen(): boolean { return this._overlayOpen; }
+    set overlayOpen(value: boolean | string) {
+        const next = normalizeBoolean(value);
+        if (next === this._overlayOpen) {
+            return;
+        }
+        this._overlayOpen = next;
+        if (next) {
+            this.overlays?.register({
+                id: this.overlayId,
+                kind: 'dialog',
+                beforeClose: () => this.beforeCloseAction?.() ?? true,
+                close: () => { this._overlayOpen = false; this.closeAction?.(); }
+            });
+        } else {
+            this.overlays?.close(this.overlayId);
+        }
+    }
+
+    /** Host dirty-check; return false (or reject) to keep the overlay open. */
+    @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
 
     @Attribute() title = '';    @Attribute() lines: string[] = [];
     @Attribute() hint = '';
@@ -125,6 +154,8 @@ export class DialogComponent {
     }
 
     close(): void {
+        this.overlays?.close(this.overlayId);
+        this._overlayOpen = false;
         this.closeAction?.();
     }
 }
