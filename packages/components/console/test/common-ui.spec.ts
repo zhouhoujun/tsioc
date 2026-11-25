@@ -50,7 +50,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-skeleton :lines="1" :width="6"></ui-skeleton>
         <ui-avatar label="Ada Lovelace"></ui-avatar>
         <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
-        <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id"></ui-data-table>
+        <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']"></ui-tree>
         <ui-text-field label="Name" value="Ada"></ui-text-field>
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
@@ -145,6 +145,7 @@ export class CommonUiConsoleTest {
             expect(output).toContain('░░░░░░');
             expect(output).toContain('AL');
             expect(output).toContain('Alpha');
+            expect(output).toContain('✓');
             expect(output).toContain('Child');
             expect(output).toContain('Ada');
             expect(output).toContain('Enabled');

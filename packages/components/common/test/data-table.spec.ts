@@ -11,8 +11,8 @@ import { DataTableComponent, DataTableModule } from '../data-table';
     imports: [DataTableComponent],
     template: `
     <ui-data-table :columns="columns" :rows="rows"
-        :sortAction="onSort" :rowAction="onRow"
-        rowKey="id" selectedKey="b" caption="Users"
+        :sortAction="onSort" :rowAction="onRow" :selectionAction="onSelection"
+        rowKey="id" selectedKey="b" caption="Users" selectable
         stickyHeader dense></ui-data-table>`
 })
 class DataTableHostComponent {
@@ -26,8 +26,10 @@ class DataTableHostComponent {
     ];
     sorted = '';
     picked = '';
+    selection: string[] = [];
     onSort = (key: string, direction: string) => { this.sorted = `${key}:${direction}`; };
     onRow = (row: any) => { this.picked = row.id; };
+    onSelection = (keys: string[]) => { this.selection = keys.slice(); };
 }
 
 @Suite('common data table')
@@ -108,5 +110,39 @@ export class DataTableTest {
         expect(root.getAttribute('aria-busy')).toBe('true');
         expect(root.querySelector('.ui-data-table-loading')?.textContent).toContain('Loading');
         expect(root.querySelector('.ui-data-table-empty')).toBeFalsy();
+    }
+
+    @Test('multi-select toggles rows and reports the tri-state select-all')
+    async multiSelect() {
+        const ref = await this.mount();
+        const host = ref.instance as DataTableHostComponent;
+        const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
+        const root = table.hostView.rootNodes[0] as HTMLElement;
+        const header = root.querySelector('.ui-data-table-head .ui-data-table-check') as HTMLElement;
+        const rowChecks = () => Array.from(root.querySelectorAll('.ui-data-table-row .ui-data-table-check')) as HTMLElement[];
+
+        expect(header.getAttribute('role')).toEqual('checkbox');
+        expect(header.getAttribute('aria-label')).toEqual('Select all rows');
+        expect(header.getAttribute('aria-checked')).toEqual('false');
+        expect(rowChecks()[0].getAttribute('aria-label')).toEqual('Select row 1');
+
+        rowChecks()[0].click();
+        await Promise.resolve();
+        expect(host.selection).toEqual(['b']);
+        // Toggling the checkbox must not also fire the row action.
+        expect(host.picked).toEqual('');
+        expect(rowChecks()[0].getAttribute('aria-checked')).toEqual('true');
+        expect(header.getAttribute('aria-checked')).toEqual('mixed');
+
+        header.click();
+        await Promise.resolve();
+        expect(host.selection.sort()).toEqual(['a', 'b']);
+        expect(header.getAttribute('aria-checked')).toEqual('true');
+        expect(rowChecks().every(check => check.getAttribute('aria-checked') === 'true')).toEqual(true);
+
+        header.click();
+        await Promise.resolve();
+        expect(host.selection).toEqual([]);
+        expect(header.getAttribute('aria-checked')).toEqual('false');
     }
 }

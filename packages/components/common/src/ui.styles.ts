@@ -472,6 +472,16 @@ ${UI_MOTION_CSS}
 }
 .ui-data-table-sortable.is-sorted-asc::after { content: ' ▲'; font-size: 0.8em; }
 .ui-data-table-sortable.is-sorted-desc::after { content: ' ▼'; font-size: 0.8em; }
+.ui-data-table-select {
+    flex: 0 0 auto;
+    width: 3ch;
+    text-align: center;
+}
+.ui-data-table-check { cursor: pointer; user-select: none; }
+.ui-data-table-check:focus-visible {
+    outline: 2px solid var(--ui-focus-ring, currentColor);
+    outline-offset: 1px;
+}
 
 .ui-tree { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
 .ui-tree-node { display: block; min-width: 0; }

@@ -43,6 +43,7 @@ interface DataTableViewRow {
     cells: DataTableCell[];
     className: string;
     selected: boolean;
+    checked: boolean;
 }
 
 /**
@@ -57,6 +58,13 @@ interface DataTableViewRow {
         aria-label="{{ariaLabel}}" aria-busy="{{loading}}" aria-rowcount="{{rows.length}}">
         <div class="ui-data-table-caption" role="caption" v-if="caption">{{caption}}</div>
         <div class="ui-data-table-head {{headerClass}}" role="row">
+            <span class="ui-data-table-cell ui-data-table-select" role="columnheader" v-if="selectable">
+                <span class="ui-data-table-check" role="checkbox" aria-checked="{{selectionState}}"
+                    aria-label="{{selectAllLabel}}" tabindex="0"
+                    @click="toggleAll($event)" @keydown="selectAllKeydown($event)">
+                    <span aria-hidden="true">{{selectionGlyph}}</span>
+                </span>
+            </span>
             <span class="ui-data-table-cell is-{{column.align || 'left'}} {{headerClassFor(column)}}"
                 role="columnheader" aria-sort="{{ariaSortFor(column)}}"
                 tabindex="{{column.sortable ? 0 : null}}" [style]="column.style"
@@ -66,6 +74,13 @@ interface DataTableViewRow {
         <div class="{{row.className}}" role="row" aria-selected="{{row.selected}}"
             v-for="row in viewRows" trackBy="key"
             @click="pick(row)">
+            <span class="ui-data-table-cell ui-data-table-select" role="cell" v-if="selectable">
+                <span class="ui-data-table-check" role="checkbox" aria-checked="{{rowChecked(row)}}"
+                    aria-label="{{selectRowLabel}} {{row.index + 1}}" tabindex="0"
+                    @click="toggleRow(row, $event)" @keydown="rowKeydown($event, row)">
+                    <span aria-hidden="true">{{rowChecked(row) ? '✓' : ' '}}</span>
+                </span>
+            </span>
             <span class="{{cell.className}}" role="cell"
                 v-for="cell in row.cells" trackBy="key">{{cell.text}}</span>
         </div>
@@ -85,14 +100,20 @@ export class DataTableComponent {
     @Attribute() className = '';
     @Attribute() sortAction?: (key: string, direction: DataTableSortDirection) => void;
     @Attribute() rowAction?: (row: DataTableRow, index: number) => void;
+    @Attribute() selectionAction?: (keys: string[], rows: DataTableRow[]) => void;
     @Attribute() sortKey = '';
     @Attribute() sortDirection: DataTableSortDirection | '' = '';
+    /** Selected row keys for multi-select (`selectable`). */
+    @Attribute() selectedKeys: Array<string | number> = [];
+    @Attribute() selectAllLabel = 'Select all rows';
+    @Attribute() selectRowLabel = 'Select row';
 
     private _striped = false;
     private _bordered = false;
     private _dense = false;
     private _stickyHeader = false;
     private _loading = false;
+    private _selectable = false;
 
     @Attribute()
     get striped(): boolean { return this._striped; }
@@ -113,6 +134,10 @@ export class DataTableComponent {
     @Attribute()
     get loading(): boolean { return this._loading; }
     set loading(value: boolean | string) { this._loading = normalizeBoolean(value); }
+
+    @Attribute()
+    get selectable(): boolean { return this._selectable; }
+    set selectable(value: boolean | string) { this._selectable = normalizeBoolean(value); }
 
     get tableClass(): string {
         return [
@@ -198,6 +223,96 @@ export class DataTableComponent {
         }
     }
 
+    private rowKeys(): string[] {
+        return (Array.isArray(this.rows) ? this.rows : []).map((row, index) => this.rowKeyOf(row, index));
+    }
+
+    private rowKeyOf(row: DataTableRow, index: number): string {
+        return String(typeof this.rowKey === 'function'
+            ? this.rowKey(row, index)
+            : ((row && row[this.rowKey as string]) ?? index));
+    }
+
+    private selectedKeySet(): Set<string> {
+        return new Set((Array.isArray(this.selectedKeys) ? this.selectedKeys : []).map(key => String(key)));
+    }
+
+    /** Tri-state header checkbox state for the current row set. */
+    get selectionState(): 'true' | 'false' | 'mixed' {
+        const keys = this.rowKeys();
+        if (!keys.length) {
+            return 'false';
+        }
+        const selected = this.selectedKeySet();
+        const count = keys.filter(key => selected.has(key)).length;
+        if (count === 0) {
+            return 'false';
+        }
+        return count === keys.length ? 'true' : 'mixed';
+    }
+
+    get selectionGlyph(): string {
+        const state = this.selectionState;
+        return state === 'true' ? '✓' : state === 'mixed' ? '-' : ' ';
+    }
+
+    rowChecked(row: DataTableViewRow): boolean {
+        return this.selectedKeySet().has(row.key);
+    }
+
+    toggleRow(row: DataTableViewRow, event?: Event): void {
+        event?.stopPropagation?.();
+        if (!this._selectable) {
+            return;
+        }
+        const keys = Array.from(this.selectedKeySet());
+        const index = keys.indexOf(row.key);
+        if (index >= 0) {
+            keys.splice(index, 1);
+        } else {
+            keys.push(row.key);
+        }
+        this.commitSelection(keys);
+    }
+
+    toggleAll(event?: Event): void {
+        event?.stopPropagation?.();
+        if (!this._selectable) {
+            return;
+        }
+        const keys = Array.from(this.selectedKeySet());
+        const allKeys = this.rowKeys();
+        const allSelected = allKeys.length > 0 && allKeys.every(key => keys.includes(key));
+        const next = allSelected
+            ? keys.filter(key => !allKeys.includes(key))
+            : Array.from(new Set([...keys, ...allKeys]));
+        this.commitSelection(next);
+    }
+
+    rowKeydown(event: any, row: DataTableViewRow): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.toggleRow(row, event);
+        }
+    }
+
+    selectAllKeydown(event: any): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.toggleAll(event);
+        }
+    }
+
+    private commitSelection(keys: string[]): void {
+        this.selectedKeys = keys;
+        const selected = new Set(keys);
+        const rows = (Array.isArray(this.rows) ? this.rows : [])
+            .filter((row, index) => selected.has(this.rowKeyOf(row, index)));
+        this.selectionAction?.(keys.slice(), rows);
+    }
+
     get viewRows(): DataTableViewRow[] {
         const columns = this.viewColumns;
         const sortColumn = this.sortDirection
@@ -220,9 +335,11 @@ export class DataTableComponent {
                 return result * direction;
             });
         }
+        const selectedKeys = this.selectedKeySet();
         return rows.map(({ row, index }) => {
-            const key = String(typeof this.rowKey === 'function' ? this.rowKey(row, index) : ((row && row[this.rowKey as string]) ?? index));
-            const selected = !!this.selectedKey && String(this.selectedKey) === key;
+            const key = this.rowKeyOf(row, index);
+            const checked = selectedKeys.has(key);
+            const selected = (!!this.selectedKey && String(this.selectedKey) === key) || checked;
             const cells: DataTableCell[] = [];
             columns.forEach((column, columnIndex) => {
                 cells.push({
@@ -243,7 +360,8 @@ export class DataTableComponent {
                 index,
                 cells,
                 className: ['ui-data-table-row', selected ? 'is-selected' : ''].filter(Boolean).join(' '),
-                selected
+                selected,
+                checked
             };
         });
     }
