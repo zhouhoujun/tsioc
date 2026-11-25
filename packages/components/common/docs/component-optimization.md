@@ -303,6 +303,12 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     dynamic-form 本地化显示；引用/表达式/凭据类问题直接显示在字段下。
   - `WORKFLOW_TYPED_CODEC.validate` 复用 typed literal 校验，Change/switch 等
     类型化值可在编辑时发现 JSON/regex/表达式错误。
+- **Overlay / 焦点**
+  - `OverlayManager` 增加默认 DOM 焦点适配：注册时聚焦面板首个可交互元素，
+    关闭/嵌套关闭时恢复或转交焦点；dialog 增加 `initialFocus`/`restoreFocus`/
+    `trapFocus`（Tab 循环），drawer/popover 注册面板元素后共享同一行为。
+  - Escape 在 `overlayOpen` 时走 overlay 栈，`beforeCloseAction` 的异步脏检查
+    不会被直接 close 绕过。
 - **拆分**
   - `dynamic-form.ts` 降到 667 行；normalize / projection / widgets / validation
     状态分别落在独立模块，避免 god-object。
