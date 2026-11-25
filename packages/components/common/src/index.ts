@@ -3,6 +3,7 @@ export * from './components';
 export * from './display-width';
 export * from './raw-element';
 export * from './scrollbar';
+export * from './overlay-manager';
 export * from './styles';
 export * from './theme';
 export * from './ui';

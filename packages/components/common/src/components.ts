@@ -1,5 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { ThemeService } from './theme';
+import { OverlayManager } from './overlay-manager';
 
 /**
  * Shared renderer-neutral services (currently the theme store).
@@ -8,6 +9,6 @@ import { ThemeService } from './theme';
  * and friends); this module only provides services used across surfaces.
  */
 @Module({
-    providers: [ThemeService]
+    providers: [ThemeService, OverlayManager]
 })
 export class BaseComponentsModule {}

@@ -126,6 +126,10 @@
 - dialog/drawer/popover/menu-bar/command-palette 全部走该服务；统一
   `.ui-dialog-header/body/footer` 与滚动预算。
 - 补键盘/ARIA 回归：打开聚焦、Tab 循环、关闭恢复、脏检查阻止关闭。
+- 状态（2026-11-25）：`OverlayManager` 已落地（stack、top-only 关闭、beforeClose 同步/异步
+  veto、focusInitial/restoreFocus adapter、escape/outside）；注册于 `BaseComponentsModule`。
+  **剩余**：dialog/drawer/popover/menu 的实际注册接线（popover 的宿主自管 visible 需配套
+  生命周期，避免与现有 closeAction 语义冲突）。
 
 **验收**：agent-ui 审批/设置/命令/模型选择，workflow 配置弹窗全部满足；
 TUI 与浏览器 Esc/Tab/焦点恢复一致；不出现双滚动/背景滚动。
