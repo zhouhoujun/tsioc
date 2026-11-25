@@ -33,12 +33,13 @@ import { SliderComponent, SliderModule } from '@tsdi/components/common/slider';
 import { SegmentedComponent, SegmentedModule } from '@tsdi/components/common/segmented';
 import { ChipComponent, ChipModule } from '@tsdi/components/common/chip';
 import { SpinnerComponent, SpinnerModule } from '@tsdi/components/common/spinner';
+import { DescriptionsComponent, DescriptionsModule } from '@tsdi/components/common/descriptions';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -71,6 +72,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-segmented :options="ranges" :value="range" ariaLabel="Range" :changeAction="onRange"></ui-segmented>
         <ui-chip label="tag" :action="onChip" :removeAction="onChipRemove" :closable="true"></ui-chip>
         <ui-spinner label="Booting" :interval="100"></ui-spinner>
+        <ui-descriptions :items="details" ariaLabel="Details"></ui-descriptions>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -94,6 +96,10 @@ class CommonUiConsoleHostComponent {
     chipRemoves = 0;
     onChip = () => { this.chipActions += 1; };
     onChipRemove = () => { this.chipRemoves += 1; };
+    details = [
+        { label: 'Name', value: 'tsioc' },
+        { label: 'Status', value: 'Ready', tone: 'success' }
+    ];
     tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
@@ -165,7 +171,8 @@ export class CommonUiConsoleTest {
                 SliderModule,
                 SegmentedModule,
                 ChipModule,
-                SpinnerModule
+                SpinnerModule,
+                DescriptionsModule
             ]
         });
         try {
@@ -211,6 +218,8 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Week');
             expect(output).toContain('│');
             expect(output).toContain('Booting');
+            expect(output).toContain('Name');
+            expect(output).toContain('Status');
             expect(output).toContain('tag');
             expect(output).not.toContain('[ ✕ ]');
             expect(output).toContain('Loading');
@@ -234,6 +243,8 @@ export class CommonUiConsoleTest {
                 expect(painted).toContain('Load failed');
                 expect(painted).toContain('Loading');
                 expect(painted).not.toContain('No history');
+                expect(painted).toContain('Name: tsioc');
+                expect(painted).toContain('Status: Ready');
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');

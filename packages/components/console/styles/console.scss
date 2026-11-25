@@ -259,6 +259,18 @@ $idle: var(--console-idle, #6fa37a);
 
 .ui-spinner { color: $meta; }
 .ui-spinner-glyph { color: $accent; }
+
+.ui-descriptions { color: $text; }
+.ui-descriptions-label,
+.ui-descriptions-sep,
+.ui-descriptions-hint,
+.ui-descriptions-empty { color: $meta; }
+.ui-descriptions-value { color: $text; }
+.ui-descriptions-item[data-tone="accent"] .ui-descriptions-value { color: $accent; }
+.ui-descriptions-item[data-tone="success"] .ui-descriptions-value { color: $idle; }
+.ui-descriptions-item[data-tone="warning"] .ui-descriptions-value { color: $notice; }
+.ui-descriptions-item[data-tone="danger"] .ui-descriptions-value,
+.ui-descriptions-item[data-tone="error"] .ui-descriptions-value { color: $error; }
 .tone-accent,
 .tone-link,
 .tone-syntax-type,

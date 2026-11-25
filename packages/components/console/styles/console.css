@@ -245,6 +245,18 @@
 
 .ui-spinner { color: var(--console-meta, #6e7681); }
 .ui-spinner-glyph { color: var(--console-accent, #86a9d6); }
+
+.ui-descriptions { color: var(--console-text, #c9d1d9); }
+.ui-descriptions-label,
+.ui-descriptions-sep,
+.ui-descriptions-hint,
+.ui-descriptions-empty { color: var(--console-meta, #6e7681); }
+.ui-descriptions-value { color: var(--console-text, #c9d1d9); }
+.ui-descriptions-item[data-tone="accent"] .ui-descriptions-value { color: var(--console-accent, #86a9d6); }
+.ui-descriptions-item[data-tone="success"] .ui-descriptions-value { color: var(--console-idle, #6fa37a); }
+.ui-descriptions-item[data-tone="warning"] .ui-descriptions-value { color: var(--console-notice, #c2a05e); }
+.ui-descriptions-item[data-tone="danger"] .ui-descriptions-value,
+.ui-descriptions-item[data-tone="error"] .ui-descriptions-value { color: var(--console-error, #cf9893); }
 .tone-accent,
 .tone-link,
 .tone-syntax-type,
