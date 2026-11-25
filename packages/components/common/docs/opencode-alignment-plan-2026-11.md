@@ -93,7 +93,9 @@
 从组件源码自动抽取 `ui-*` selector、doc 摘要与全部 `@Attribute()`，核心四件
 （dialog/select/data-table/dynamic-form）有人工 keyboard/surfaces/examples；
 `test/catalog-metadata.spec.ts` 覆盖 60 个实际 widget 入口、属性唯一性与 markdown 输出。
-**剩余**：catalog 示例的真实 DOM/TUI fixture 渲染、键盘矩阵自动执行。
+**剩余**：TUI fixture 与键盘矩阵自动执行。
+  已补 `test/catalog-examples.spec.ts`：用 catalog examples 直接挂载 dialog/select/data-table/
+  dynamic-form/typeahead，断言关键 DOM 语义可渲染。
 
 ### P1 — 表单原语与异步 options
 
