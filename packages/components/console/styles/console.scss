@@ -306,6 +306,17 @@ $idle: var(--console-idle, #6fa37a);
 .ui-result-subtitle,
 .ui-result-line { color: $meta; }
 
+.ui-autocomplete-option { color: $text; }
+.ui-autocomplete-option.is-active { color: $selected; font-weight: bold; background: var(--console-select-selected-bg, #202a36); }
+.ui-autocomplete-description,
+.ui-autocomplete-empty { color: $meta; }
+.ui-cascader-value.is-placeholder,
+.ui-cascader-caret,
+.ui-cascader-column-title,
+.ui-cascader-option-caret { color: $meta; }
+.ui-cascader-option { color: $text; }
+.ui-cascader-option.is-active { color: $selected; font-weight: bold; }
+
 .ui-data-table-detail-row { padding: 0 0 0 3ch; }
 .ui-data-table-detail { color: $meta; }
 .ui-descriptions-value { color: $text; }

@@ -1,0 +1,215 @@
+import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
+import { markElementRefRaw } from '../../src/raw-element';
+import { nextUiId, normalizeBoolean } from '../../src/ui';
+import { installAutocompleteStyles } from './autocomplete.styles';
+
+export interface AutoCompleteOption {
+    label: string;
+    value: string;
+    description?: string;
+    disabled?: boolean;
+}
+
+interface AutoCompleteViewOption {
+    index: number;
+    value: string;
+    label: string;
+    description: string;
+    disabled: boolean;
+    className: string;
+}
+
+/**
+ * Combobox with host-filtered suggestions (Ant Design AutoComplete).
+ *
+ * The host owns filtering: typing emits `changeAction(value)` and a new
+ * `options` list. Arrow keys move the active option, Enter selects, Escape
+ * closes. The same input/panel works in browsers and terminal hosts.
+ */
+@Component({
+    selector: 'ui-autocomplete',
+    template: `
+    <div class="ui-autocomplete {{autoClass}}">
+        <input class="ui-autocomplete-input" type="text" role="combobox"
+            aria-autocomplete="list" aria-expanded="{{openState}}"
+            aria-controls="{{listId}}" aria-activedescendant="{{activeId}}"
+            aria-label="{{ariaLabel}}" autocomplete="off"
+            [value]="value" placeholder="{{placeholder}}"
+            @input="onInput($event)" @focus="onFocus()" @blur="onBlur()"
+            @keydown="onKeydown($event)" />
+        <div class="ui-autocomplete-panel" id="{{listId}}" role="listbox" v-if="openState">
+            <span class="{{option.className}}" role="option"
+                id="{{optionId(option.index)}}"
+                aria-selected="{{option.index === currentIndex}}"
+                aria-disabled="{{option.disabled}}"
+                v-for="option in viewOptions" trackBy="index"
+                @mousedown="keepFocus($event)" @click="choose(option)"
+                @keydown="onOptionKeydown(option, $event)">
+                <span class="ui-autocomplete-label">{{option.label}}</span><span class="ui-autocomplete-description" v-if="option.description"> {{option.description}}</span>
+            </span>
+            <span class="ui-autocomplete-empty" v-if="!viewOptions.length">{{emptyLabel}}</span>
+        </div>
+    </div>`
+})
+export class AutoCompleteComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
+    onInit(): void {
+        installAutocompleteStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
+    }
+
+    @Attribute() value = '';
+    @Attribute() options: AutoCompleteOption[] = [];
+    @Attribute() placeholder = '';
+    @Attribute() emptyLabel = 'No suggestions';
+    @Attribute() ariaLabel = 'Search';
+    @Attribute() className = '';
+    @Attribute() changeAction?: (value: string) => void;
+    @Attribute() selectAction?: (value: string) => void;
+
+    protected readonly uid = nextUiId('ui-autocomplete');
+    private _open = false;
+    private _loading = false;
+    private selectedIndex = 0;
+
+    @Attribute()
+    get open(): boolean { return this._open; }
+    set open(value: boolean | string) { this._open = normalizeBoolean(value); }
+
+    @Attribute()
+    get loading(): boolean { return this._loading; }
+    set loading(value: boolean | string) { this._loading = normalizeBoolean(value); }
+
+    @Attribute()
+    get selected(): number { return this.selectedIndex; }
+    set selected(value: number | string) {
+        const next = Math.floor(Number(value));
+        this.selectedIndex = Number.isFinite(next) && next >= 0 ? next : 0;
+    }
+
+    get listId(): string {
+        return `${this.uid}-list`;
+    }
+
+    get openState(): boolean {
+        return this._open && !this._loading;
+    }
+
+    get autoClass(): string {
+        return [this.openState ? 'is-open' : '', this.className].filter(Boolean).join(' ');
+    }
+
+    get currentIndex(): number {
+        const options = this.viewOptions;
+        if (!options.length) {
+            return -1;
+        }
+        const enabled = options.find(option => !option.disabled);
+        if (!enabled) {
+            return -1;
+        }
+        const current = options[this.selectedIndex];
+        return current && !current.disabled ? this.selectedIndex : enabled.index;
+    }
+
+    get activeId(): string {
+        const index = this.currentIndex;
+        return this.openState && index >= 0 ? this.optionId(index) : '';
+    }
+
+    get viewOptions(): AutoCompleteViewOption[] {
+        return (Array.isArray(this.options) ? this.options : []).map((option, index) => ({
+            index,
+            value: String(option?.value ?? ''),
+            label: String(option?.label ?? option?.value ?? ''),
+            description: String(option?.description ?? ''),
+            disabled: option?.disabled === true,
+            className: [
+                'ui-autocomplete-option',
+                index === this.selectedIndex ? 'is-active' : '',
+                option?.disabled ? 'is-disabled' : ''
+            ].filter(Boolean).join(' ')
+        }));
+    }
+
+    optionId(index: number): string {
+        return `${this.uid}-option-${index}`;
+    }
+
+    onInput(event: any): void {
+        this.value = String(event?.target?.value ?? '');
+        this.selectedIndex = 0;
+        this._open = true;
+        this.changeAction?.(this.value);
+    }
+
+    onFocus(): void {
+        if (this.viewOptions.length) {
+            this._open = true;
+        }
+    }
+
+    onBlur(): void {
+        this._open = false;
+    }
+
+    keepFocus(event?: Event): void {
+        event?.preventDefault?.();
+    }
+
+    choose(option: AutoCompleteViewOption): void {
+        if (!option || option.disabled) {
+            return;
+        }
+        this.value = option.value;
+        this._open = false;
+        this.changeAction?.(option.value);
+        this.selectAction?.(option.value);
+    }
+
+    onKeydown(event: any): void {
+        const key = String(event?.key || '');
+        if (key === 'Escape') {
+            this._open = false;
+            return;
+        }
+        if (key === 'ArrowDown' || key === 'ArrowUp') {
+            event.preventDefault?.();
+            this.move(key === 'ArrowDown' ? 1 : -1);
+            return;
+        }
+        if (key === 'Enter') {
+            const option = this.viewOptions[this.currentIndex];
+            if (option) {
+                event.preventDefault?.();
+                this.choose(option);
+            }
+        }
+    }
+
+    onOptionKeydown(option: AutoCompleteViewOption, event: any): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            this.choose(option);
+        }
+    }
+
+    protected move(delta: number): void {
+        const options = this.viewOptions;
+        if (!options.length) {
+            return;
+        }
+        let index = this.currentIndex;
+        for (let step = 1; step <= options.length; step++) {
+            const next = ((index + delta * step) % options.length + options.length) % options.length;
+            if (!options[next].disabled) {
+                this.selectedIndex = next;
+                this._open = true;
+                return;
+            }
+        }
+    }
+}

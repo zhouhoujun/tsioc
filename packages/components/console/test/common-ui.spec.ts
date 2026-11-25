@@ -42,12 +42,14 @@ import { RateComponent, RateModule } from '@tsdi/components/common/rate';
 import { SpaceComponent, SpaceModule } from '@tsdi/components/common/space';
 import { DrawerComponent, DrawerModule } from '@tsdi/components/common/drawer';
 import { ResultComponent, ResultModule } from '@tsdi/components/common/result';
+import { AutoCompleteComponent, AutoCompleteModule } from '@tsdi/components/common/autocomplete';
+import { CascaderComponent, CascaderModule } from '@tsdi/components/common/cascader';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent, DrawerComponent, ResultComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent, DrawerComponent, ResultComponent, AutoCompleteComponent, CascaderComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -92,6 +94,8 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-space :items="['S1', 'S2']" separator="·" ariaLabel="Inline space"></ui-space>
         <ui-drawer :visible="drawerVisible" title="Panel" :lines="['Drawer line']" placement="right" :closeAction="onDrawerClose"><span>Drawer body</span></ui-drawer>
         <ui-result status="success" title="Complete" subTitle="Saved" actionLabel="Again" :action="onResult"></ui-result>
+        <ui-autocomplete :options="autoOptions" :value="autoQuery" ariaLabel="Auto" :selectAction="onAutoSelect"></ui-autocomplete>
+        <ui-cascader :options="cascadeOptions" :value="cascadePath" ariaLabel="Region" :changeAction="onCascade"></ui-cascader>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -151,6 +155,19 @@ class CommonUiConsoleHostComponent {
     onDrawerClose = () => { this.drawerCloses += 1; this.drawerVisible = false; };
     resultActions = 0;
     onResult = () => { this.resultActions += 1; };
+    autoQuery = '';
+    autoSelected = '';
+    autoOptions = [
+        { label: 'Alpha', value: 'a' },
+        { label: 'Beta', value: 'b' }
+    ];
+    onAutoSelect = (value: string) => { this.autoSelected = value; };
+    cascadePath: string[] = [];
+    cascadeOptions = [
+        { label: 'A', value: 'a', children: [{ label: 'A1', value: 'a1' }] },
+        { label: 'B', value: 'b' }
+    ];
+    onCascade = (path: string[]) => { this.cascadePath = path; };
     rating = 3;
     onRate = (value: number) => { this.rating = value; };
     step = '';
@@ -229,7 +246,9 @@ export class CommonUiConsoleTest {
                 RateModule,
                 SpaceModule,
                 DrawerModule,
-                ResultModule
+                ResultModule,
+                AutoCompleteModule,
+                CascaderModule
             ]
         });
         try {
@@ -402,6 +421,27 @@ export class CommonUiConsoleTest {
                 resultAction.focus();
                 expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
                 expect(host.resultActions).toEqual(1);
+
+                const autoInput = (ref.hostView.rootNodes[0] as any).querySelector('.ui-autocomplete-input');
+                autoInput.focus();
+                await Promise.resolve();
+                expect(surface.dispatchKey({ key: 'ArrowDown' })).toEqual(true);
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.autoSelected).toEqual('b');
+
+                const cascadeRoot = (ref.hostView.rootNodes[0] as any).querySelector('.ui-cascader');
+                (cascadeRoot.querySelector('.ui-cascader-trigger') as any).dispatchEvent({ type: 'click', target: cascadeRoot });
+                await Promise.resolve();
+                const firstColumn = cascadeRoot.querySelectorAll('.ui-cascader-column')[0].querySelectorAll('.ui-cascader-option');
+                firstColumn[0].dispatchEvent({ type: 'click', target: firstColumn[0] });
+                await Promise.resolve();
+                const secondColumn = cascadeRoot.querySelectorAll('.ui-cascader-column')[1].querySelectorAll('.ui-cascader-option');
+                secondColumn[0].dispatchEvent({ type: 'click', target: secondColumn[0] });
+                await Promise.resolve();
+                expect(host.cascadePath).toEqual(['a', 'a1']);
+                const cascadeOutput = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
+                expect(cascadeOutput).toContain('A / A1');
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');
