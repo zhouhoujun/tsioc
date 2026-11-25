@@ -1,0 +1,71 @@
+import type { WidgetCatalogEntry } from './types';
+
+type CatalogOverride = Partial<Pick<WidgetCatalogEntry, 'summary' | 'keyboard' | 'surfaces' | 'examples' | 'attributes'>>;
+
+/** Hand-written quality metadata for core widgets; generated data fills the rest. */
+export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
+    dialog: {
+        summary: 'Renderer-neutral dialog shell with fixed title/hint and a single scrolling body.',
+        keyboard: [
+            'Escape: close/dismiss (host may map to deny/reject)',
+            'Tab/Shift+Tab: move within projected content (host focus trap)',
+            'Enter: activate the highlighted/primary action',
+            'Arrow/PageUp/PageDown: scroll only the dialog body'
+        ],
+        surfaces: {
+            html: 'Rendered above the composer; header/footer fixed, body scrolls.',
+            console: 'Overlay panel anchored above the input; rows are windowed, title/hint stay painted.'
+        },
+        examples: [
+            { title: 'Confirm dialog', props: { title: 'Delete file?', hint: 'Enter confirm · Esc cancel', lines: ['This cannot be undone.'] } }
+        ]
+    },
+    select: {
+        summary: 'Windowed single/multi selection list with search, detail lines and a fixed title/hint.',
+        keyboard: [
+            'Arrow/Home/End: move selection',
+            'PageUp/PageDown: move by a page',
+            'Enter: accept the highlighted option',
+            'Escape: close without selection',
+            'Typing: filters/creates when the host enables search'
+        ],
+        surfaces: {
+            html: 'Anchored listbox; click selects; hover mirrors the selection.',
+            console: 'Floating overlay above the composer; only visible rows are painted.'
+        },
+        examples: [
+            { title: 'Security level', props: { title: 'Security level', options: [{ label: 'ask', value: 'ask' }, { label: 'auto', value: 'auto' }], visibleCount: 4 } }
+        ]
+    },
+    'data-table': {
+        summary: 'Accessible table with sorting, pagination, selection, expandable rows, sticky/resizable columns.',
+        keyboard: [
+            'Tab/Shift+Tab: move between interactive headers/cells',
+            'Enter/Space: sort header, select row, expand row',
+            'Home/End: first/last interactive column'
+        ],
+        surfaces: {
+            html: 'Sticky header/footer, horizontal scroll; selection via checkbox/row click.',
+            console: 'Fixed header + windowed rows; horizontal overflow follows the terminal width.'
+        },
+        examples: [
+            { title: 'Sortable table', props: { caption: 'Runs', columns: [{ key: 'name', label: 'Name', sortable: true }], rows: [{ id: '1', name: 'build' }] } }
+        ]
+    },
+    'dynamic-form': {
+        summary: 'Schema-driven form with typed values, groups, visibility, validation and custom widgets.',
+        keyboard: [
+            'Tab/Shift+Tab: move between fields',
+            'Enter: submit when the field does not consume it',
+            'Escape: cancel/close host dialog',
+            'Arrow keys: select options/segmented values'
+        ],
+        surfaces: {
+            html: 'Native inputs/selects; errors and hints are aria-described.',
+            console: 'Floating field windows; selects use the shared overlay row model.'
+        },
+        examples: [
+            { title: 'Basic settings', props: { schema: { fields: [{ key: 'name', label: 'Name', type: 'text' }, { key: 'enabled', label: 'Enabled', type: 'switch' }] } } }
+        ]
+    }
+};

@@ -89,6 +89,11 @@
 
 **验收**：catalog 测试覆盖所有 63 个入口；新增组件缺 catalog/属性表/键盘说明
 直接失败；DOM 与 TUI fixture 对同一语义断言通过。
+**状态（2026-11-25）**：已落地 `catalog/`（`types`/`collect`/`overrides`/markdown）：
+从组件源码自动抽取 `ui-*` selector、doc 摘要与全部 `@Attribute()`，核心四件
+（dialog/select/data-table/dynamic-form）有人工 keyboard/surfaces/examples；
+`test/catalog-metadata.spec.ts` 覆盖 60 个实际 widget 入口、属性唯一性与 markdown 输出。
+**剩余**：catalog 示例的真实 DOM/TUI fixture 渲染、键盘矩阵自动执行。
 
 ### P1 — 表单原语与异步 options
 
