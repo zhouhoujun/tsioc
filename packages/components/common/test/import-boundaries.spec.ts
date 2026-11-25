@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(__dirname, '..');
-const SKIP = new Set(['test', 'dist', 'lib', 'node_modules', 'docs']);
+const SKIP = new Set(['test', 'dist', 'lib', 'node_modules', 'docs', 'bench']);
 const BUILD_FILES = new Set(['taskfile.ts', 'unit.ts']);
 
 /** Every TypeScript source that ships in the package (tests excluded). */

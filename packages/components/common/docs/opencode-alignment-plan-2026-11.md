@@ -117,7 +117,13 @@
   `search-list`（`ui-search-list`）已落地：本地过滤、分组、recent 优先、键盘 roving、
   `aria-activedescendant`、异步 source（abort/loading/error/retry），作为 command palette
   的 renderer-neutral 基座。AbortController/AbortSignal 已标记 `noReact`，避免代理破坏私有字段。
-  下一步：text-field/select/dynamic-form 迁移到 field，及基于 search-list 的 command palette。
+  `command-palette`（`ui-command-palette`）已落地：组合 search-list + OverlayManager，
+  `open`/`title`/`hint`/`items`/`source`/`recentIds`/`closable`/`beforeCloseAction`，
+  backdrop/Escape 关闭；DOM 与 console renderer 均有测试。agent-ui `/` 菜单仍使用既有
+  select panel，迁移待后续提交（避免改动其键盘/焦点路由）。
+  字段语义已统一到 `field/src/field-semantics.ts`：text-field / search-field /
+  `ui-field-group` 共用同一 `-hint`/`-error` id 约定与 `aria-describedby` 顺序。
+  下一步：select/dynamic-form 逐步委托同一 field 语义。
 
 **验收**：agent-ui `/sessions`、`/model`、`/provider`、workflow 引用选择器共享
 同一搜索/异步/键盘行为；DOM/TUI 的 loading/error/empty 文案与焦点一致。
@@ -166,7 +172,9 @@ widget 选择器；主题切换无残留硬编码颜色。
   - 状态（2026-11-25）：异步 `source(request, signal) → { rows, total, error }` 已落地；
     `manual reload/retry`、`loading/error/retry` 行、page/sort 自动重载与过期请求丢弃；
     AbortController/signal 标记 `noReact`，避免被代理破坏私有字段。类型拆到
-    `data-table.types.ts` 控制文件体积。**剩余**：列 filter/render、虚拟化窗口。
+    `data-table.types.ts` 控制文件体积。列 `filterable` + `filters`/`setFilter`/`clearFilters`
+    与 `column.render` 已落地；local 过滤驱动 total/page，async 请求携带 filters。
+    **剩余**：虚拟化窗口（需要宿主滚动视口契约）。
 - 新增 `command-palette`（基于 typeahead/search-list）：分组、最近使用、
   快捷键展示、`/` 菜单与 workflow palette 复用；menu-bar 支持溢出折叠/typeahead/
   roving tabindex。
@@ -180,6 +188,9 @@ DOM/TUI 的搜索、分组、键盘选择一致；现有 agent-ui 菜单行为�
 
 - `common/bench/`：dynamic-form 500 字段、list/data-table 5k 行、select 2k options、
   menu/palette 搜索、catalog 渲染；沿用 calibration 缩放 + gate 预算。
+  - 状态（2026-11-25）：`npm run bench` 已覆盖 data-table 5k filter/sort、100k cell
+    format 与 200k spring step；`motion`（`Spring`/`VelocityTracker`/`prefersReducedMotion`）
+    已落地；search-list/command-palette 有 console renderer 测试，DOM 与 TUI 键盘语义一致。
 - import-boundaries 测试：common 不得引用 html/console/node；syntax/markdown
   不得反向依赖 agent-ui；新增入口必须声明 exports。
   - 状态（2026-11-25）：`test/import-boundaries.spec.ts` 已扫描全部源码，禁止

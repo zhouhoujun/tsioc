@@ -4,7 +4,8 @@
   "description": "Renderer-neutral components and utilities for @tsdi/components.",
   "scripts": {
     "build": "ts-node -r tsconfig-paths/register taskfile.ts",
-    "test": "ts-node -r tsconfig-paths/register unit.ts"
+    "test": "ts-node -r tsconfig-paths/register unit.ts",
+    "bench": "ts-node -r tsconfig-paths/register bench/index.ts"
   },
   "license": "Apache-2.0"
 }

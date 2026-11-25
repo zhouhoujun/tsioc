@@ -47,7 +47,8 @@ Rules this layer must keep (see the root `AGENTS.md`):
 | `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
-| `@tsdi/components/common/<widget>` | one widget package: `accordion`, `alert`, `alert-notice`, `autocomplete`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `cascader`, `checkbox`, `chip`, `data-table`, `descriptions`, `dialog`, `drawer`, `divider`, `dynamic-form`, `empty-state`, `field`, `grid`, `icon`, `image`, `kbd`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `popover`, `progress`, `qr-code`, `radio-group`, `rate`, `result`, `scrollbar`, `search-field`, `search-list`, `segmented`, `select`, `select-trigger`, `skeleton`, `slider`, `space`, `spinner`, `stat`, `status-list`, `steps`, `switch`, `tab-bar`, `tabs`, `text-field`, `timeline`, `toast`, `toolbar`, `tooltip`, `transfer`, `tree`, `tree-select`, `typeahead`, `upload` |
+| `@tsdi/components/common/motion` | `Spring` (closed-form damped harmonic), `VelocityTracker`, `prefersReducedMotion`; hosts supply frame deltas. |
+| `@tsdi/components/common/<widget>` | one widget package: `accordion`, `alert`, `alert-notice`, `autocomplete`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `cascader`, `checkbox`, `chip`, `command-palette`, `data-table`, `descriptions`, `dialog`, `drawer`, `divider`, `dynamic-form`, `empty-state`, `field`, `grid`, `icon`, `image`, `kbd`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `popover`, `progress`, `qr-code`, `radio-group`, `rate`, `result`, `scrollbar`, `search-field`, `search-list`, `segmented`, `select`, `select-trigger`, `skeleton`, `slider`, `space`, `spinner`, `stat`, `status-list`, `steps`, `switch`, `tab-bar`, `tabs`, `text-field`, `timeline`, `toast`, `toolbar`, `tooltip`, `transfer`, `tree`, `tree-select`, `typeahead`, `upload` |
 
 ## Naming conventions
 
@@ -234,6 +235,7 @@ The selector column lists the legacy short name; every widget also accepts its
 | `markdown-table` / `markdown-code` | `MarkdownTableComponent` / `MarkdownModule` | Semantic table/code shells consumed by both renderers. Table cells are `MarkdownToken[]` + align; code lines are `MarkdownToken[][]` with tone classes. |
 | `typeahead` | `TypeaheadComponent` / `TypeaheadModule` | Async combobox: `source(query, signal)` with loading/empty/error/retry; stale requests aborted. |
 | `search-list` | `SearchListComponent` / `SearchListModule` | Searchable list/command-palette base: `items` or async `source(query, signal)`, local filtering, groups, `recentIds`, roving active row (`aria-activedescendant`), loading/error/retry, `selectAction`/`closeAction`. |
+| `command-palette` | `CommandPaletteComponent` / `CommandPaletteModule` | Overlay composed from `ui-search-list` + `OverlayManager`: `open`, `title`, `hint`, `items`/`source`, `recentIds`, `closable`, `beforeCloseAction`, `selectAction`/`closeAction`, `openChange`. Default-registers as a `palette` overlay; backdrop and Escape close when allowed. |
 | `field` | `FieldComponent` / `FieldModule` | `ui-field-group` wrapper: label/hint/error/required + `aria-describedby` linkage; project the control inside. |
 | `dynamic-form` | `DynamicFormComponent` / `DynamicFormModule` | JSON-schema form with shared validation. Fields expose `aria-required`/`aria-invalid`; the live error (`role="alert"`) and description are linked through `aria-describedby` with stable per-field ids. See the main `@tsdi/components` README for the full schema, validation and host API. |
 | `icon` | `IconDirective` / `IconModule` | `<icon name="run" size="sm" label="…">` (or `icon` / `glyph`), registry lookups (`getIcon`, `resolveIcon`, `hasIcon`, `ICON_NAMES`), optional SVG helpers (`iconPathAttributes`, `iconGlyphText`). |
@@ -383,6 +385,12 @@ npm run test      # ts-node -r tsconfig-paths/register unit.ts
 Widget specs live in `test/`; they mount real components through `Application`
 and assert the rendered DOM/console output. Keep new widgets covered by a
 spec that mounts them with a real renderer instead of only calling methods.
+
+## Bench
+
+`npm run bench` exercises the data-table filter/sort/format hot paths and the
+spring integration loop with CPU timing. Compare before/after numbers rather
+than using them as absolute budgets.
 
 ## Design plans
 
