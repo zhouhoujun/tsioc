@@ -80,3 +80,6 @@ export * from './ui/AgentRpcRequestMeta';
 export * from './ui/ThreadItemProjection';
 export * from './prompt/personality-presets';
 export * from './harness/sandbox-exec';
+export { createRemoteEnvironment } from './environment/AgentEnvironment';
+export type { AgentEnvironment, AgentEnvironmentEntry, RemoteEnvironmentTransport } from './environment/AgentEnvironment';
+export type { AgentNativeCompactionProvider } from './context/NativeCompactionProvider';
