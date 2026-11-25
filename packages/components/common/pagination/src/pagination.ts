@@ -1,4 +1,5 @@
 import { Attribute, Component } from '@tsdi/components';
+import { normalizeBoolean } from '../../src/ui';
 
 interface PaginationViewItem {
     key: string;
@@ -31,6 +32,12 @@ interface PaginationViewItem {
         <button class="ui-pagination-step" type="button"
             [disabled]="currentPage >= totalPages" aria-label="{{nextLabel}}"
             @click="go(currentPage + 1)">{{nextText}}</button>
+        <span class="ui-pagination-size" role="button" tabindex="0" focusable="true"
+            aria-label="{{pageSizeLabel}}" v-if="showSizeChanger"
+            @click="cyclePageSize" @keydown="sizeKeydown($event)">{{pageSizeNumber}} / page</span>
+        <input class="ui-pagination-jump-input" type="number" min="1" max="{{totalPages}}"
+            [value]="currentPage" aria-label="{{jumpLabel}}" v-if="showQuickJumper"
+            @keydown="jumpKeydown($event)" />
     </nav>`
 })
 export class PaginationComponent {
@@ -47,7 +54,22 @@ export class PaginationComponent {
     @Attribute() nextText = '›';
     @Attribute() ellipsis = '…';
     @Attribute() className = '';
+    @Attribute() pageSizeOptions: Array<number | string> = [10, 20, 50, 100];
+    @Attribute() pageSizeLabel = 'Items per page';
+    @Attribute() jumpLabel = 'Go to page';
     @Attribute() changeAction?: (page: number) => void;
+    @Attribute() pageSizeChangeAction?: (size: number) => void;
+
+    private _showSizeChanger = false;
+    private _showQuickJumper = false;
+
+    @Attribute()
+    get showSizeChanger(): boolean { return this._showSizeChanger; }
+    set showSizeChanger(value: boolean | string) { this._showSizeChanger = normalizeBoolean(value); }
+
+    @Attribute()
+    get showQuickJumper(): boolean { return this._showQuickJumper; }
+    set showQuickJumper(value: boolean | string) { this._showQuickJumper = normalizeBoolean(value); }
 
     get totalPages(): number {
         const size = Math.max(1, Math.floor(Number(this.pageSize) || 10));
@@ -62,6 +84,42 @@ export class PaginationComponent {
 
     get paginationClass(): string {
         return this.className;
+    }
+
+    get pageSizeNumber(): number {
+        return Math.max(1, Math.floor(Number(this.pageSize) || 10));
+    }
+
+    get sizeOptions(): number[] {
+        const options = (Array.isArray(this.pageSizeOptions) ? this.pageSizeOptions : [])
+            .map(value => Math.max(1, Math.floor(Number(value) || 0)))
+            .filter(value => value > 0);
+        return options.length ? Array.from(new Set(options)) : [10, 20, 50, 100];
+    }
+
+    cyclePageSize(): void {
+        const options = this.sizeOptions;
+        const index = options.indexOf(this.pageSizeNumber);
+        const next = options[(index + 1 + options.length) % options.length];
+        this.applyPageSize(next);
+    }
+
+    sizeKeydown(event: any): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            this.cyclePageSize();
+        }
+    }
+
+    jumpKeydown(event: any): void {
+        if (event?.key !== 'Enter') {
+            return;
+        }
+        event.preventDefault?.();
+        const value = Number(event?.currentTarget?.value ?? event?.target?.value);
+        if (Number.isFinite(value)) {
+            this.go(value);
+        }
     }
 
     get viewItems(): PaginationViewItem[] {
@@ -116,6 +174,17 @@ export class PaginationComponent {
 
     pageAriaLabel(page: number): string {
         return String(this.pageLabel || 'Go to page {page}').replace('{page}', String(page));
+    }
+
+    applyPageSize(size: number): void {
+        const next = Math.max(1, Math.floor(Number(size) || 10));
+        if (next === this.pageSizeNumber) {
+            return;
+        }
+        this.pageSize = next;
+        this.page = 1;
+        this.pageSizeChangeAction?.(next);
+        this.changeAction?.(1);
     }
 
     go(page: number): void {

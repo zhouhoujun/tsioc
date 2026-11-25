@@ -16,7 +16,8 @@ import { StepsComponent, StepsModule } from '../steps';
     template: `
     <ui-avatar label="Ada Lovelace" size="lg" status="online"></ui-avatar>
     <ui-avatar label="Bob" shape="square" tone="accent"></ui-avatar>
-    <ui-pagination :total="100" :pageSize="10" :page="5" :changeAction="onPage"></ui-pagination>
+    <ui-pagination :total="100" :pageSize="pageSize" :page="page" :changeAction="onPage"
+        showSizeChanger showQuickJumper :pageSizeOptions="[10, 20]" :pageSizeChangeAction="onPageSize"></ui-pagination>
     <ui-data-table :columns="columns" :rows="rows" rowKey="id"
         emptyLabel="No rows" :rowAction="onRow"></ui-data-table>
     <ui-tree :items="tree" :expandedIds="expanded"
@@ -25,6 +26,8 @@ import { StepsComponent, StepsModule } from '../steps';
 })
 class P2UiHostComponent {
     page = 5;
+    pageSize = 10;
+    sizeChanges = 0;
     selectedRow = '';
     selectedNode = '';
     toggled = '';
@@ -46,6 +49,7 @@ class P2UiHostComponent {
     step = '';
     onStep = (item: { label: string }) => { this.step = item.label; };
     onPage = (page: number) => { this.page = page; };
+    onPageSize = (size: number) => { this.pageSize = size; this.sizeChanges += 1; this.page = 1; };
     onRow = (row: { id: string }) => { this.selectedRow = row.id; };
     onNode = (node: TreeNode) => { this.selectedNode = String(node.id); };
     onToggle = (node: TreeNode, expanded: boolean) => { this.toggled = `${node.id}:${expanded}`; };
@@ -129,6 +133,26 @@ export class P2UiWidgetsTest {
         expect(host.page).toEqual(6);
         expect(root.querySelector('.ui-pagination-page.is-current')?.textContent).toEqual('6');
         expect(root.querySelector('.ui-pagination-page.is-current')?.getAttribute('aria-current')).toEqual('page');
+
+        const size = root.querySelector('.ui-pagination-size') as HTMLElement;
+        expect(size.textContent).toContain('10 / page');
+        expect(size.getAttribute('role')).toEqual('button');
+        size.click();
+        await Promise.resolve();
+        expect(host.pageSize).toEqual(20);
+        expect(host.sizeChanges).toEqual(1);
+        expect(size.textContent).toContain('20 / page');
+        expect(pagination.instance.totalPages).toEqual(5);
+        expect(pagination.instance.currentPage).toEqual(1);
+
+        const jump = root.querySelector('.ui-pagination-jump-input') as HTMLInputElement;
+        jump.value = '3';
+        jump.dispatchEvent(new (this.ctx.get(DOCUMENT) as any).defaultView.KeyboardEvent('keydown', {
+            key: 'Enter',
+            bubbles: true
+        }));
+        await Promise.resolve();
+        expect(host.page).toEqual(3);
     }
 
     @Test('data table renders headers/cells and dispatches a row')

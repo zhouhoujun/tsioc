@@ -44,12 +44,15 @@ import { DrawerComponent, DrawerModule } from '@tsdi/components/common/drawer';
 import { ResultComponent, ResultModule } from '@tsdi/components/common/result';
 import { AutoCompleteComponent, AutoCompleteModule } from '@tsdi/components/common/autocomplete';
 import { CascaderComponent, CascaderModule } from '@tsdi/components/common/cascader';
+import { UploadComponent, UploadModule } from '@tsdi/components/common/upload';
+import { ImageComponent, ImageModule } from '@tsdi/components/common/image';
+import { QrCodeComponent, QrCodeModule } from '@tsdi/components/common/qr-code';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent, DrawerComponent, ResultComponent, AutoCompleteComponent, CascaderComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent, DrawerComponent, ResultComponent, AutoCompleteComponent, CascaderComponent, UploadComponent, ImageComponent, QrCodeComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -66,7 +69,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-timeline :items="events"></ui-timeline>
         <ui-skeleton :lines="1" :width="6"></ui-skeleton>
         <ui-avatar label="Ada Lovelace"></ui-avatar>
-        <ui-pagination :total="30" :pageSize="10" :page="2"></ui-pagination>
+        <ui-pagination :total="30" :pageSize="10" :page="2" showSizeChanger :pageSizeOptions="[5, 10, 20]" showQuickJumper></ui-pagination>
         <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']" :selectionAction="onSelection"></ui-data-table>
         <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2" expandable resizableColumns :detailLines="detailFor"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']" :selectAction="onTree" :toggleAction="onTreeToggle"></ui-tree>
@@ -96,6 +99,9 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-result status="success" title="Complete" subTitle="Saved" actionLabel="Again" :action="onResult"></ui-result>
         <ui-autocomplete :options="autoOptions" :value="autoQuery" ariaLabel="Auto" :selectAction="onAutoSelect"></ui-autocomplete>
         <ui-cascader :options="cascadeOptions" :value="cascadePath" ariaLabel="Region" :changeAction="onCascade"></ui-cascader>
+        <ui-upload label="Attach" :files="uploadFiles" :pickAction="onUploadPick" :removeAction="onUploadRemove"></ui-upload>
+        <ui-image src="a.png" alt="Chart"></ui-image>
+        <ui-qr-code :matrix="qrMatrix" ariaLabel="QR"></ui-qr-code>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -168,6 +174,12 @@ class CommonUiConsoleHostComponent {
         { label: 'B', value: 'b' }
     ];
     onCascade = (path: string[]) => { this.cascadePath = path; };
+    uploadFiles = ['one.txt', 'two.txt'];
+    uploadPicks = 0;
+    uploadRemoved = '';
+    onUploadPick = () => { this.uploadPicks += 1; };
+    onUploadRemove = (name: string) => { this.uploadRemoved = name; };
+    qrMatrix = [[1, 0, 1], [0, 1, 0]];
     rating = 3;
     onRate = (value: number) => { this.rating = value; };
     step = '';
@@ -248,7 +260,10 @@ export class CommonUiConsoleTest {
                 DrawerModule,
                 ResultModule,
                 AutoCompleteModule,
-                CascaderModule
+                CascaderModule,
+                UploadModule,
+                ImageModule,
+                QrCodeModule
             ]
         });
         try {
@@ -442,6 +457,21 @@ export class CommonUiConsoleTest {
                 expect(host.cascadePath).toEqual(['a', 'a1']);
                 const cascadeOutput = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
                 expect(cascadeOutput).toContain('A / A1');
+
+                const uploadRoot = (ref.hostView.rootNodes[0] as any).querySelector('.ui-upload');
+                expect(uploadRoot.textContent).toContain('Attach');
+                (uploadRoot.querySelector('.ui-upload-trigger') as any).dispatchEvent({ type: 'click', target: uploadRoot });
+                expect(host.uploadPicks).toEqual(1);
+                const uploadRemove = uploadRoot.querySelectorAll('.ui-upload-remove')[1];
+                uploadRemove.dispatchEvent({ type: 'click', target: uploadRemove });
+                expect(host.uploadRemoved).toEqual('two.txt');
+
+                const paginationRoot = (ref.hostView.rootNodes[0] as any).querySelector('.ui-pagination');
+                const size = paginationRoot.querySelector('.ui-pagination-size');
+                expect(size.textContent).toContain('10 / page');
+                size.dispatchEvent({ type: 'click', target: size });
+                await Promise.resolve();
+                expect(size.textContent).toContain('20 / page');
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');
