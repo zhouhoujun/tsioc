@@ -10,6 +10,11 @@ import {
     DataTableViewColumn,
     DataTableViewRow
 } from './data-table.types';
+import {
+    filterDataTableRows,
+    formatDataTableCell,
+    sortDataTableRows
+} from './data-table.view';
 
 export * from './data-table.types';
 
@@ -119,6 +124,9 @@ export class DataTableComponent {
     @Attribute() source?: DataTableSource;
     @Attribute() errorLabel = 'Failed to load table data';
     @Attribute() retryLabel = 'Retry';
+    /** Per-column filter strings applied to local rows or sent to an async source. */
+    @Attribute() filters: Record<string, string> = {};
+    @Attribute() filterAction?: (filters: Record<string, string>) => void;
 
     private _pagination = false;
     private _expandable = false;
@@ -254,6 +262,7 @@ export class DataTableComponent {
                 style: { ...(widthStyle || {}), ...(stickyStyle || {}) } as Record<string, string> | undefined,
                 sortable,
                 sortKey: column.sortKey || key,
+                render: column.render,
                 resizable: this._resizableColumns && column.resizable !== false,
                 ariaSort: sorted && this.sortDirection === 'asc'
                     ? 'ascending'
@@ -337,7 +346,32 @@ export class DataTableComponent {
     }
 
     get tableTotal(): number {
-        return this.source && this._asyncTotal > 0 ? this._asyncTotal : this.tableRows.length;
+        return this.source && this._asyncTotal > 0 ? this._asyncTotal : this.filteredEntries.length;
+    }
+
+    get filteredEntries() {
+        return filterDataTableRows(this.tableRows, this.filters);
+    }
+
+    setFilter(key: string, value: any): void {
+        this.filters = { ...(this.filters || {}), [key]: String(value ?? '') };
+        this.page = 1;
+        this.filterAction?.(this.filters);
+        if (this.source) {
+            void this.reload();
+        }
+    }
+
+    clearFilters(): void {
+        if (!Object.keys(this.filters || {}).length) {
+            return;
+        }
+        this.filters = {};
+        this.page = 1;
+        this.filterAction?.(this.filters);
+        if (this.source) {
+            void this.reload();
+        }
     }
 
     get asyncError(): string {
@@ -364,7 +398,8 @@ export class DataTableComponent {
                 page: this.currentPage,
                 pageSize: this.pageSizeNumber,
                 ...(this.sortKey ? { sortKey: this.sortKey } : {}),
-                ...(this.sortDirection ? { sortDirection: this.sortDirection } : {})
+                ...(this.sortDirection ? { sortDirection: this.sortDirection } : {}),
+                ...(Object.keys(this.filters || {}).length ? { filters: { ...this.filters } } : {})
             }, aborter.signal);
             if (request !== this.asyncRequest) {
                 return;
@@ -599,23 +634,9 @@ export class DataTableComponent {
         const sortColumn = this.sortDirection
             ? columns.find(column => column.sortable && this.sortKey === (column.sortKey || column.key))
             : undefined;
-        const rows = this.tableRows
-            .map((row, index) => ({ row, index }));
-        if (sortColumn) {
-            const direction = this.sortDirection === 'asc' ? 1 : -1;
-            rows.sort((left, right) => {
-                const sortKey = sortColumn.sortKey || sortColumn.key;
-                const a = left.row?.[sortKey];
-                const b = right.row?.[sortKey];
-                if (a === b) return left.index - right.index;
-                if (a == null) return 1;
-                if (b == null) return -1;
-                const result = typeof a === 'number' && typeof b === 'number'
-                    ? a - b
-                    : String(a).localeCompare(String(b));
-                return result * direction;
-            });
-        }
+        const rows = sortColumn
+            ? sortDataTableRows(this.filteredEntries, sortColumn.sortKey || sortColumn.key, this.sortDirection as DataTableSortDirection)
+            : this.filteredEntries;
         const selectedKeys = this.selectedKeySet();
         const size = this.pageSizeNumber;
         const visible = this._pagination
@@ -630,7 +651,7 @@ export class DataTableComponent {
                 cells.push({
                     key: `${key}-${column.key}`,
                     columnKey: column.key,
-                    text: this.formatCell(row?.[column.key]),
+                    text: formatDataTableCell(column, row, index),
                     className: column.cellClass,
                     style: column.cellStyle
                 });
@@ -658,19 +679,5 @@ export class DataTableComponent {
             return;
         }
         this.rowAction(this.tableRows[row.index], row.index);
-    }
-
-    private formatCell(value: any): string {
-        if (value == null) {
-            return '';
-        }
-        if (typeof value === 'object') {
-            try {
-                return JSON.stringify(value);
-            } catch {
-                return String(value);
-            }
-        }
-        return String(value);
     }
 }

@@ -16,6 +16,10 @@ export interface DataTableColumn {
     fixed?: 'left' | 'right';
     /** Opt this column into pointer resizing; defaults to on when enabled. */
     resizable?: boolean;
+    /** Host-driven filter row support; filtering is applied by `filters`. */
+    filterable?: boolean;
+    /** Custom cell text; receives the raw value, row and original row index. */
+    render?: (value: any, row: DataTableRow, index: number) => any;
 }
 
 export type DataTableRow = Record<string, any>;
@@ -40,6 +44,7 @@ export interface DataTableViewColumn {
     sortable: boolean;
     sortKey?: string;
     resizable: boolean;
+    render?: (value: any, row: DataTableRow, index: number) => any;
     ariaSort: 'ascending' | 'descending' | 'none';
 }
 
@@ -57,6 +62,8 @@ export interface DataTablePageRequest {
     pageSize: number;
     sortKey?: string;
     sortDirection?: DataTableSortDirection;
+    /** Active column filters; hosts that paginate server-side apply them remotely. */
+    filters?: Record<string, string>;
 }
 
 export interface DataTablePage {
