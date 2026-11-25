@@ -232,6 +232,16 @@
 }
 .ui-segmented-item.is-disabled { color: var(--console-meta, #6e7681); }
 .ui-segmented-sep { color: var(--console-border, #30363d); }
+
+.ui-chip { color: var(--console-meta, #6e7681); }
+.ui-chip.is-solid,
+.ui-chip.is-selected { color: var(--console-text, #c9d1d9); }
+.ui-chip.is-accent { color: var(--console-accent, #86a9d6); }
+.ui-chip.is-success { color: var(--console-idle, #6fa37a); }
+.ui-chip.is-warning { color: var(--console-notice, #c2a05e); }
+.ui-chip.is-danger,
+.ui-chip.is-error { color: var(--console-error, #cf9893); }
+.ui-chip-close { color: var(--console-meta, #6e7681); }
 .tone-accent,
 .tone-link,
 .tone-syntax-type,

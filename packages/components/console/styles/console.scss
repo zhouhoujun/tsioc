@@ -246,6 +246,16 @@ $idle: var(--console-idle, #6fa37a);
 }
 .ui-segmented-item.is-disabled { color: $meta; }
 .ui-segmented-sep { color: $border; }
+
+.ui-chip { color: $meta; }
+.ui-chip.is-solid,
+.ui-chip.is-selected { color: $text; }
+.ui-chip.is-accent { color: $accent; }
+.ui-chip.is-success { color: $idle; }
+.ui-chip.is-warning { color: $notice; }
+.ui-chip.is-danger,
+.ui-chip.is-error { color: $error; }
+.ui-chip-close { color: $meta; }
 .tone-accent,
 .tone-link,
 .tone-syntax-type,

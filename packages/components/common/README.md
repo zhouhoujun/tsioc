@@ -47,7 +47,7 @@ Rules this layer must keep (see the root `AGENTS.md`):
 | `@tsdi/components/common` | `BaseComponentsModule`, `ThemeService`, display-width, shared input helpers, raw-element marker |
 | `@tsdi/components/common/pager` | `ScrollBox`, `PagerBox`, `composePagerViewLines`, pager status copy |
 | `@tsdi/components/common/syntax` | `tokenizeCodeLine`, `normalizeCodeLanguage`, `SyntaxToken` and state types |
-| `@tsdi/components/common/<widget>` | one widget package: `accordion`, `alert`, `alert-notice`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `data-table`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `kbd`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `progress`, `radio-group`, `scrollbar`, `search-field`, `segmented`, `select`, `select-trigger`, `skeleton`, `slider`, `stat`, `status-list`, `steps`, `switch`, `tab-bar`, `tabs`, `text-field`, `timeline`, `toast`, `toolbar`, `tree` |
+| `@tsdi/components/common/<widget>` | one widget package: `accordion`, `alert`, `alert-notice`, `avatar`, `badge`, `breadcrumb`, `button`, `card`, `checkbox`, `chip`, `data-table`, `dialog`, `divider`, `dynamic-form`, `empty-state`, `grid`, `icon`, `kbd`, `keymap`, `layout`, `list`, `markdown`, `menu-bar`, `pagination`, `panel`, `progress`, `radio-group`, `scrollbar`, `search-field`, `segmented`, `select`, `select-trigger`, `skeleton`, `slider`, `stat`, `status-list`, `steps`, `switch`, `tab-bar`, `tabs`, `text-field`, `timeline`, `toast`, `toolbar`, `tree` |
 
 ## Naming conventions
 
@@ -229,6 +229,7 @@ The selector column lists the legacy short name; every widget also accepts its
 | `icon` | `IconDirective` / `IconModule` | `<icon name="run" size="sm" label="…">` (or `icon` / `glyph`), registry lookups (`getIcon`, `resolveIcon`, `hasIcon`, `ICON_NAMES`), optional SVG helpers (`iconPathAttributes`, `iconGlyphText`). |
 | `ui-button` | `ButtonComponent` / `ButtonModule` | Renderer-neutral action button. `label`, `icon`, `iconGlyph`, `tone`, `size` (`xs`/`sm`/`md`/`lg`), `variant` (`solid`/`outline`/`ghost`), `shape` (`default`/`round`/`circle`), `iconOnly`, `disabled`, `loading`, `pressed`, `block`, `action`. |
 | `ui-badge` | `BadgeComponent` / `BadgeModule` | Status/count/filter pill. `label`, `icon`, `tone`, `size`, `variant`, `dot`, `active`, `disabled`, optional `action` (turns it into a tabbable `role="button"`; Enter/Space activate in DOM and TUI). |
+| `ui-chip` | `ChipComponent` / `ChipModule` | Removable/actionable compact entity (Ant Design Tag / MUI Chip). `label`, `icon`, `tone`, `size`, `variant`, `selected`, `disabled`, `closable`, `action`, `removeAction`, `closeLabel`, `ariaLabel`. The close affordance is a real `<button data-plain>` (inline `✕` in TUI); Enter/Space activate and remove in both renderers. |
 | `ui-card` | `CardComponent` / `CardModule` | Surface card with optional title/subtitle/meta and an `actions` projection slot. `tone`, `dense`, `divider`; default projection is the body. |
 | `ui-empty` | `EmptyStateComponent` / `EmptyStateModule` | Empty/search placeholder. `icon`, `title`, `hint`, `tone`, `actionLabel`, `action`; composes `ui-button` for the action. |
 | `ui-divider` | `DividerComponent` / `DividerModule` | Separator with optional label; `orientation` (`horizontal`/`vertical`), `fill` renders a terminal-safe text rule. |

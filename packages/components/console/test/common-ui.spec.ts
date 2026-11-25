@@ -31,12 +31,13 @@ import { ScrollbarComponent, ScrollbarModule } from '@tsdi/components/common/scr
 import { ListComponent, ListModule } from '@tsdi/components/common/list';
 import { SliderComponent, SliderModule } from '@tsdi/components/common/slider';
 import { SegmentedComponent, SegmentedModule } from '@tsdi/components/common/segmented';
+import { ChipComponent, ChipModule } from '@tsdi/components/common/chip';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -67,6 +68,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <list :items="[]" :loading="true" error="Load failed" ariaLabel="History" :emptyLabel="'No history'"></list>
         <ui-slider label="Zoom" :value="zoom" :step="10" unit="%" :changeAction="onZoom"></ui-slider>
         <ui-segmented :options="ranges" :value="range" ariaLabel="Range" :changeAction="onRange"></ui-segmented>
+        <ui-chip label="tag" :action="onChip" :removeAction="onChipRemove" :closable="true"></ui-chip>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -86,6 +88,10 @@ class CommonUiConsoleHostComponent {
     range = 'day';
     ranges = [{ label: 'Day', value: 'day' }, { label: 'Week', value: 'week' }];
     onRange = (value: string) => { this.range = value; };
+    chipActions = 0;
+    chipRemoves = 0;
+    onChip = () => { this.chipActions += 1; };
+    onChipRemove = () => { this.chipRemoves += 1; };
     tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
@@ -143,7 +149,8 @@ export class CommonUiConsoleTest {
                 ScrollbarModule,
                 ListModule,
                 SliderModule,
-                SegmentedModule
+                SegmentedModule,
+                ChipModule
             ]
         });
         try {
@@ -188,6 +195,8 @@ export class CommonUiConsoleTest {
             expect(output).toContain('Day');
             expect(output).toContain('Week');
             expect(output).toContain('│');
+            expect(output).toContain('tag');
+            expect(output).not.toContain('[ ✕ ]');
             expect(output).toContain('Loading');
             expect(output).toContain('Load failed');
             expect(output).not.toContain('aria-');
@@ -255,6 +264,16 @@ export class CommonUiConsoleTest {
                 expect(host.zoom).toEqual(60);
                 expect(slider.getAttribute('aria-valuenow')).toEqual('60');
                 expect(slider.getAttribute('aria-valuetext')).toEqual('60%');
+
+                const chip = (ref.hostView.rootNodes[0] as any).querySelector('.ui-chip');
+                chip.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                expect(host.chipActions).toEqual(1);
+                const chipClose = chip.querySelector('.ui-chip-close');
+                chipClose.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                expect(host.chipRemoves).toEqual(1);
+                expect(host.chipActions).toEqual(1);
 
                 const treeRows = (ref.hostView.rootNodes[0] as any).querySelectorAll('.ui-tree-node');
                 expect(treeRows[0].getAttribute('aria-expanded')).toEqual('true');
