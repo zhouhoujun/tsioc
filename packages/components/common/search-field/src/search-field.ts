@@ -25,6 +25,8 @@ import { resolveFieldAria } from '../../field/src/field-semantics';
                 aria-invalid="{{!!error}}"
                 aria-describedby="{{describedBy}}"
                 @input="onInput($event)"
+                @compositionstart="onCompositionStart()"
+                @compositionend="onCompositionEnd()"
                 @keydown="onKeydown($event)" />
             <button class="ui-field-clear" type="button" data-plain="true" v-if="clearable && value"
                 aria-label="{{clearLabel}}" @click="clear">{{clearGlyph}}</button>
@@ -56,6 +58,7 @@ export class SearchFieldComponent {
     private _clearable = true;
     private _disabled = false;
     private _readonly = false;
+    private composing = false;
 
     @Attribute()
     get clearable(): boolean { return this._clearable; }
@@ -108,7 +111,18 @@ export class SearchFieldComponent {
         this.changeAction?.(this.value);
     }
 
+    onCompositionStart(): void {
+        this.composing = true;
+    }
+
+    onCompositionEnd(): void {
+        this.composing = false;
+    }
+
     onKeydown(event: any): void {
+        if (this.composing) {
+            return;
+        }
         if (event?.key === 'Enter') {
             event?.preventDefault?.();
             this.submitAction?.(this.value);

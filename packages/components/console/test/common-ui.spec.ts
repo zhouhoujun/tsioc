@@ -78,6 +78,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-text-field label="Name" value="Ada"></ui-text-field>
         <ui-text-field label="Price" prefix="$" suffix=".00" addonBefore="USD" value="12" clearable></ui-text-field>
         <ui-text-field label="Secret" type="password" revealable value="pw"></ui-text-field>
+        <ui-text-field label="Counted" value="abc" maxLength="5" showCount></ui-text-field>
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
         <ui-switch label="Live" :checked="true"></ui-switch>
         <ui-radio-group :options="modes" value="basic"></ui-radio-group>

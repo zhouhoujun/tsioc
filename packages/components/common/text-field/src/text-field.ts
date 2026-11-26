@@ -33,6 +33,8 @@ export type TextFieldType =
                 aria-describedby="{{describedBy}}"
                 v-bind="inputAttrs"
                 @input="onInput($event)"
+                @compositionstart="onCompositionStart()"
+                @compositionend="onCompositionEnd()"
                 @keydown="onKeydown($event)"
                 @blur="onBlur()" />
             <textarea class="ui-field-input ui-field-textarea" v-if="multiline"
@@ -49,6 +51,8 @@ export type TextFieldType =
                 aria-describedby="{{describedBy}}"
                 v-bind="inputAttrs"
                 @input="onInput($event)"
+                @compositionstart="onCompositionStart()"
+                @compositionend="onCompositionEnd()"
                 @keydown="onKeydown($event)"
                 @blur="onBlur()"></textarea>
             <span class="ui-field-suffix" v-if="suffix" aria-hidden="true">{{suffix}}</span>
@@ -59,6 +63,7 @@ export type TextFieldType =
                 aria-label="{{clearLabel}}" @click="clear">{{clearGlyph}}</button>
             <span class="ui-field-addon is-after" v-if="addonAfter">{{addonAfter}}</span>
         </div>
+        <span class="ui-field-count" v-if="showCount" aria-hidden="true">{{countLabel}}</span>
         <span class="ui-field-hint" id="{{hintId}}" v-if="hint">{{hint}}</span>
         <span class="ui-field-error" id="{{errorId}}" role="alert" v-if="error">{{error}}</span>
     </div>`
@@ -104,6 +109,8 @@ export class TextFieldComponent {
     private _clearable = false;
     private revealed = false;
     private _revealable = false;
+    private _showCount = false;
+    private composing = false;
 
     @Attribute()
     get multiline(): boolean { return this._multiline; }
@@ -128,6 +135,11 @@ export class TextFieldComponent {
     @Attribute()
     get revealable(): boolean { return this._revealable; }
     set revealable(value: boolean | string) { this._revealable = normalizeBoolean(value); }
+
+    /** Show a character counter (count / maxLength when limited). */
+    @Attribute()
+    get showCount(): boolean { return this._showCount; }
+    set showCount(value: boolean | string) { this._showCount = normalizeBoolean(value); }
 
     get clearGlyph(): string {
         return '✕';
@@ -163,6 +175,14 @@ export class TextFieldComponent {
         return Math.max(0, Math.floor(Number(this.maxLength) || 0));
     }
 
+    get valueLength(): number {
+        return Array.from(String(this.value ?? '')).length;
+    }
+
+    get countLabel(): string {
+        const length = this.valueLength;
+        return this.maxLengthNumber ? `${length} / ${this.maxLengthNumber}` : String(length);
+    }
 
     get inputAttrs(): Record<string, string> {
         const attrs: Record<string, string> = {};
@@ -202,7 +222,19 @@ export class TextFieldComponent {
         this.changeAction?.(this.value);
     }
 
+    onCompositionStart(): void {
+        this.composing = true;
+    }
+
+    onCompositionEnd(): void {
+        this.composing = false;
+    }
+
     onKeydown(event: any): void {
+        // Never submit/clear while an IME composition is still active.
+        if (this.composing) {
+            return;
+        }
         if ((event?.metaKey || event?.ctrlKey) && event?.key === 'Backspace' && this._clearable) {
             event.preventDefault?.();
             this.clear();

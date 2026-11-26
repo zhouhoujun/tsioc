@@ -41,6 +41,41 @@ export class FieldSemanticsTest {
         return { ref, root };
     }
 
+    @Test('counts code points and ignores shortcuts during IME composition')
+    async countAndComposition() {
+        let submits = 0;
+        const text = await this.mount<TextFieldComponent>(TextFieldComponent, field => {
+            field.maxLength = 5;
+            field.showCount = true;
+            field.value = 'a😀';
+            field.submitAction = () => { submits += 1; };
+        });
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const input = text.root.querySelector('input') as HTMLInputElement;
+        expect(input.getAttribute('maxlength')).toEqual('5');
+        expect(text.root.querySelector('.ui-field-count')?.textContent).toEqual('2 / 5');
+
+        input.dispatchEvent(new (doc.defaultView as any).Event('compositionstart', { bubbles: true }));
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(submits).toEqual(0);
+
+        input.dispatchEvent(new (doc.defaultView as any).Event('compositionend', { bubbles: true }));
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(submits).toEqual(1);
+
+        let searchSubmits = 0;
+        const search = await this.mount<SearchFieldComponent>(SearchFieldComponent, field => {
+            field.submitAction = () => { searchSubmits += 1; };
+        });
+        const searchInput = search.root.querySelector('input') as HTMLInputElement;
+        searchInput.dispatchEvent(new (doc.defaultView as any).Event('compositionstart', { bubbles: true }));
+        searchInput.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(searchSubmits).toEqual(0);
+        searchInput.dispatchEvent(new (doc.defaultView as any).Event('compositionend', { bubbles: true }));
+        searchInput.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(searchSubmits).toEqual(1);
+    }
+
     @Test('text/search fields and field groups use the same ids and describedby order')
     async sharedContract() {
         const text = await this.mount<TextFieldComponent>(TextFieldComponent, field => {

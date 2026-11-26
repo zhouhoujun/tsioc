@@ -381,8 +381,8 @@ ${PLAIN_BUTTON_CSS}
     padding: 0 0.2ch;
 }
 .ui-field-hint, .ui-field-addon, .ui-field-prefix, .ui-field-suffix { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+.ui-field-count { align-self: flex-end; color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
 .ui-search-field .ui-field-icon { color: var(--ui-muted-fg, inherit); }
-
 
 .ui-avatar {
     position: relative;
