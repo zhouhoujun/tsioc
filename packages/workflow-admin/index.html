@@ -163,15 +163,20 @@
         .wa-designer-shell > .designer-header {
             flex: 0 0 auto;
             flex-wrap: nowrap;
-            align-items: center;
+            align-items: stretch;
             gap: 10px;
+            /* Match the static brand header so route changes do not shift the
+               chrome; the tabs stretch to this row height. */
+            height: 43px;
             padding: 6px 18px 0;
         }
         .wa-designer-shell > .designer-header h1 {
+            align-self: center;
             flex: 0 0 auto;
             white-space: nowrap;
         }
         .wa-designer-shell > .designer-header .designer-lang {
+            align-self: center;
             flex: 0 0 auto;
             margin-left: 0;
         }
@@ -182,7 +187,7 @@
             min-width: 0;
             align-self: stretch;
             display: flex;
-            align-items: flex-end;
+            align-items: stretch;
             padding: 0;
             background: transparent;
             border-bottom: 0;
@@ -204,18 +209,24 @@
             --tab-danger: var(--wa-shell-danger);
         }
         .wa-designer-shell .wa-header-tabs .tab-bar {
+            flex: 1 1 auto;
+            min-width: 0;
             min-height: 0;
+            /* Fill the header row and cover its bottom border so the active tab
+               joins the header edge instead of floating above it. */
+            height: calc(100% + 1px);
+            align-items: stretch;
             padding: 0;
-            align-items: flex-end;
             border-bottom: 0;
-            /* Sit the strip on the header border; the active tab's background
-               then covers that segment so the tab joins the header edge. */
-            margin-bottom: -1px;
         }
         .wa-designer-shell .wa-header-tabs .tab {
+            height: 100%;
             border: 1px solid transparent;
             border-bottom: 0;
             border-radius: 8px 8px 0 0;
+        }
+        .wa-designer-shell .wa-header-tabs .tab-new {
+            align-self: center;
         }
         .wa-designer-shell .wa-header-tabs .tab[aria-selected="true"] {
             border-color: var(--wa-shell-border);
