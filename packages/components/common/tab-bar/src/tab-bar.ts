@@ -294,6 +294,7 @@ export class TabBarComponent implements AfterViewInit {
         if ((this.activeSource?.items || []).some(item => item.id === id && item.disabled)) {
             return;
         }
+        this.closeOverflowMenu(false);
         // The close affordance is nested inside the clickable tab. DOM events
         // bubble from ✕ to the tab, which would select a tab that is closing
         // (and reopen it). Ignore those bubbled clicks; the close handler also

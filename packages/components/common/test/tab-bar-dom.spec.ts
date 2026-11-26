@@ -218,9 +218,16 @@ export class TabBarDomTest {
         expect(menu.style.left).toEqual('70px');
         const items = Array.from(root.querySelectorAll('.tab-overflow-item')) as HTMLElement[];
         expect(items.map(item => item.textContent?.trim())).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta']);
-        items[2].click();
+        items[0].click();
         await settle();
-        expect(selected).toEqual(['c']);
+        expect(root.querySelector('.tab-overflow-menu')).toBeFalsy();
+
+        more.click();
+        await settle();
+        const reopened = Array.from(root.querySelectorAll('.tab-overflow-item')) as HTMLElement[];
+        reopened[2].click();
+        await settle();
+        expect(selected).toEqual(['a', 'c']);
         expect(root.querySelector('.tab-overflow-menu')).toBeFalsy();
         (ref.instance as any).focusedKey = '';
     }
