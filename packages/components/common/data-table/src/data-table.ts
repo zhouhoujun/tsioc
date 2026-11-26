@@ -3,13 +3,15 @@ import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { DataTableKeyboardController } from './data-table.keyboard';
 import { DataTableResizeController } from './data-table.resize';
-import { dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
+import { buildDataTableColumns, dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
+import { dataTableAriaSort, dataTableSortDirection, nextDataTableSorts, resolveDataTableSorts } from './data-table.sort';
 import { normalizeBoolean } from '../../src/ui';
 import { PaginationComponent } from '../../pagination/src/pagination';
 import {
     DataTableCell,
     DataTableColumn,
     DataTableRow,
+    DataTableSort,
     DataTableSortDirection,
     DataTableSource,
     DataTableViewColumn,
@@ -18,14 +20,12 @@ import {
 import { DataTableVirtualWindow, resolveDataTableVirtualWindow } from './data-table.virtual';
 import {
     dataTableClass,
-    dataTableColumnWidthToken,
-    dataTableFixedOffset,
     dataTableHeaderClass,
     filterDataTableRows,
     formatDataTableCell,
     hasActiveDataTableFilters,
     hasFilterableDataTableColumns,
-    sortDataTableRows
+    sortDataTableRowsBy
 } from './data-table.view';
 export * from './data-table.types';
 
@@ -53,7 +53,7 @@ export * from './data-table.types';
                 </span>
             </span>
             <span class="{{column.headerClass}}"
-                role="columnheader" aria-sort="{{column.sortable && sortKey === (column.sortKey || column.key) ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}}"
+                role="columnheader" aria-sort="{{ariaSortFor(column)}}"
                 tabindex="{{column.sortable ? 0 : null}}" [style]="columnStyle(column)"
                 v-for="column in viewColumns" trackBy="key"
                 @click="sort(column)" @keydown="headerKeydown($event, column)">{{column.label}}<span
@@ -135,6 +135,12 @@ export class DataTableComponent {
     @Attribute() selectionAction?: (keys: string[], rows: DataTableRow[]) => void;
     @Attribute() sortKey = '';
     @Attribute() sortDirection: DataTableSortDirection | '' = '';
+    /** Opt-in multi-column sorting; headers cycle asc -> desc -> none. */
+    @Attribute()
+    get multiSort(): boolean { return this._multiSort; }
+    set multiSort(value: boolean | string) { this._multiSort = normalizeBoolean(value); }
+    @Attribute() sorts: DataTableSort[] = [];
+    @Attribute() sortsAction?: (sorts: DataTableSort[]) => void;
     /** Selected row keys for multi-select (`selectable`). */
     @Attribute() selectedKeys: Array<string | number> = [];
     @Attribute() selectAllLabel = 'Select all rows';
@@ -176,6 +182,7 @@ export class DataTableComponent {
     private _selectable = false;
     private _resizableColumns = false;
     private _keyboardNavigation = false;
+    private _multiSort = false;
     private columnWidths: Record<string, number> = {};
     private keyboardController?: DataTableKeyboardController;
     private resizeController?: DataTableResizeController;
@@ -280,47 +287,12 @@ export class DataTableComponent {
     }
 
     get viewColumns(): DataTableViewColumn[] {
-        const raw = (Array.isArray(this.columns) ? this.columns : [])
-            .filter(column => column && !column.hidden);
-        const tokens = raw.map(column => dataTableColumnWidthToken(this.columnWidths[String(column.key)] ?? column.width));
-        return raw.map((column, index) => {
-            const key = String(column.key);
-            const sortable = column.sortable === true;
-            const sorted = sortable && this.sortKey === (column.sortKey || key);
-            const fixed = column.fixed === 'left' || column.fixed === 'right' ? column.fixed : undefined;
-            const width = this.columnWidths[key] ?? column.width;
-            const widthStyle = width == null
-                ? undefined
-                : { width: typeof width === 'number' ? `${width}px` : String(width) };
-            const stickyStyle = fixed
-                ? { '--ui-sticky-offset': dataTableFixedOffset(raw, tokens, index, fixed) }
-                : undefined;
-            const fixedClass = fixed ? `is-fixed-${fixed}` : '';
-            const baseClass = [
-                'ui-data-table-cell',
-                `is-${column.align || 'left'}`,
-                fixedClass
-            ].filter(Boolean).join(' ');
-            return {
-                key,
-                label: String(column.label ?? column.key),
-                className: baseClass,
-                cellClass: baseClass,
-                cellStyle: stickyStyle,
-                headerClass: [
-                    baseClass,
-                    sortable ? 'ui-data-table-sortable' : '',
-                    sorted ? `is-sorted-${this.sortDirection || 'none'}` : ''
-                ].filter(Boolean).join(' '),
-                align: column.align || 'left',
-                style: { ...(widthStyle || {}), ...(stickyStyle || {}) } as Record<string, string> | undefined,
-                sortable,
-                sortKey: column.sortKey || key,
-                filterable: column.filterable === true,
-                render: column.render,
-                resizable: this._resizableColumns && column.resizable !== false
-            } as DataTableViewColumn;
-        });
+        return buildDataTableColumns(
+            this.columns,
+            this.columnWidths,
+            this._resizableColumns,
+            column => dataTableSortDirection(this.activeSorts, column)
+        );
     }
 
     stopResizeClick(event?: Event): void { this.resizeControl.stopClick(event); }
@@ -347,14 +319,13 @@ export class DataTableComponent {
         return filterDataTableRows(this.tableRows, this.filters);
     }
 
+    get activeSorts(): DataTableSort[] {
+        return resolveDataTableSorts(this.multiSort, this.sorts, this.sortKey, this.sortDirection);
+    }
+
     get sortedEntries() {
-        const columns = this.viewColumns;
-        const sortColumn = this.sortDirection
-            ? columns.find(column => column.sortable && this.sortKey === (column.sortKey || column.key))
-            : undefined;
-        return sortColumn
-            ? sortDataTableRows(this.filteredEntries, sortColumn.sortKey || sortColumn.key, this.sortDirection as DataTableSortDirection)
-            : this.filteredEntries;
+        const sorts = this.activeSorts;
+        return sorts.length ? sortDataTableRowsBy(this.filteredEntries, sorts) : this.filteredEntries;
     }
 
     get pageEntries() {
@@ -450,6 +421,7 @@ export class DataTableComponent {
                 pageSize: this.pageSizeNumber,
                 ...(this.sortKey ? { sortKey: this.sortKey } : {}),
                 ...(this.sortDirection ? { sortDirection: this.sortDirection } : {}),
+                ...(this.multiSort && this.activeSorts.length ? { sorts: this.activeSorts } : {}),
                 ...(Object.keys(this.filters || {}).length ? { filters: { ...this.filters } } : {})
             }, aborter.signal);
             if (request !== this.asyncRequest) {
@@ -508,13 +480,24 @@ export class DataTableComponent {
             return;
         }
         const key = column.sortKey || column.key;
-        const direction: DataTableSortDirection = this.sortKey === key && this.sortDirection === 'asc' ? 'desc' : 'asc';
-        this.sortKey = key;
-        this.sortDirection = direction;
-        this.sortAction?.(key, direction);
+        if (this.multiSort) {
+            const sorts = nextDataTableSorts(this.activeSorts, key);
+            this.sorts = sorts;
+            this.sortsAction?.(sorts.map(item => ({ ...item })));
+        } else {
+            const direction: DataTableSortDirection = this.sortKey === key && this.sortDirection === 'asc' ? 'desc' : 'asc';
+            this.sortKey = key;
+            this.sortDirection = direction;
+            this.sortAction?.(key, direction);
+        }
         if (this.source) {
             void this.reload();
         }
+    }
+
+    /** `aria-sort` token for a header, honouring multi-sort priority. */
+    ariaSortFor(column: DataTableViewColumn): string {
+        return dataTableAriaSort(this.activeSorts, column);
     }
 
     headerKeydown(event: any, column: DataTableViewColumn): void {

@@ -2,6 +2,12 @@ export type DataTableAlign = 'left' | 'center' | 'right';
 
 export type DataTableSortDirection = 'asc' | 'desc';
 
+/** One sort criterion; `sorts` applies them in listed priority order. */
+export interface DataTableSort {
+    key: string;
+    direction: DataTableSortDirection;
+}
+
 export interface DataTableColumn {
     key: string;
     label?: string;
@@ -62,6 +68,8 @@ export interface DataTablePageRequest {
     pageSize: number;
     sortKey?: string;
     sortDirection?: DataTableSortDirection;
+    /** Multi-column sort criteria in priority order. */
+    sorts?: DataTableSort[];
     /** Active column filters; hosts that paginate server-side apply them remotely. */
     filters?: Record<string, string>;
 }

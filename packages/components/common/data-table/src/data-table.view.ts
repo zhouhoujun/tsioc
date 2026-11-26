@@ -1,4 +1,4 @@
-import type { DataTableColumn, DataTableRow, DataTableSortDirection } from './data-table.types';
+import type { DataTableColumn, DataTableRow, DataTableSort, DataTableSortDirection } from './data-table.types';
 
 export interface IndexedDataTableRow {
     row: DataTableRow;
@@ -32,23 +32,41 @@ export function filterDataTableRows(rows: DataTableRow[], filters: Record<string
     return indexed.filter(entry => active.every(([key, value]) => matchesDataTableFilter(entry.row?.[key], value)));
 }
 
-/** Stable sort by a column value; numbers compare numerically, others lexically. */
+/** Stable sort by one column value; numbers compare numerically, others lexically. */
 export function sortDataTableRows(
     entries: IndexedDataTableRow[],
     sortKey: string,
     direction: DataTableSortDirection
 ): IndexedDataTableRow[] {
-    const factor = direction === 'asc' ? 1 : -1;
+    return sortDataTableRowsBy(entries, [{ key: sortKey, direction }]);
+}
+
+/** Stable multi-column sort; criteria apply in priority order. */
+export function sortDataTableRowsBy(
+    entries: IndexedDataTableRow[],
+    sorts: DataTableSort[]
+): IndexedDataTableRow[] {
     return entries.slice().sort((left, right) => {
-        const a = left.row?.[sortKey];
-        const b = right.row?.[sortKey];
-        if (a === b) return left.index - right.index;
-        if (a == null) return 1;
-        if (b == null) return -1;
-        const result = typeof a === 'number' && typeof b === 'number'
-            ? a - b
-            : String(a).localeCompare(String(b));
-        return result * factor;
+        for (const sort of sorts) {
+            const a = left.row?.[sort.key];
+            const b = right.row?.[sort.key];
+            if (a === b) {
+                continue;
+            }
+            if (a == null) {
+                return 1;
+            }
+            if (b == null) {
+                return -1;
+            }
+            const result = typeof a === 'number' && typeof b === 'number'
+                ? a - b
+                : String(a).localeCompare(String(b));
+            if (result) {
+                return result * (sort.direction === 'asc' ? 1 : -1);
+            }
+        }
+        return left.index - right.index;
     });
 }
 
