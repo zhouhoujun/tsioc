@@ -37,6 +37,15 @@ interface AutoCompleteViewOption {
     selector: 'ui-autocomplete',
     template: `
     <div class="ui-autocomplete {{autoClass}}">
+        <div class="ui-autocomplete-values" role="list" v-if="multiple && selectedItems.length">
+            <span class="ui-autocomplete-value" role="listitem"
+                v-for="item in selectedItems" trackBy="value">
+                <span class="ui-autocomplete-value-label">{{item.label}}</span>
+                <button class="ui-autocomplete-value-remove" type="button" data-plain="true"
+                    aria-label="{{removeLabel}}" [disabled]="disabled"
+                    @click="removeValue(item.value)">✕</button>
+            </span>
+        </div>
         <input class="ui-autocomplete-input" type="text" role="combobox"
             aria-autocomplete="list" aria-expanded="{{openState}}"
             aria-controls="{{listId}}" aria-activedescendant="{{activeId}}"
@@ -44,7 +53,8 @@ interface AutoCompleteViewOption {
             [value]="value" placeholder="{{placeholder}}" [disabled]="disabled"
             @input="onInput($event)" @focus="onFocus()" @blur="onBlur()"
             @keydown="onKeydown($event)" />
-        <div class="ui-autocomplete-panel" id="{{listId}}" role="listbox" v-if="panelVisible">
+        <div class="ui-autocomplete-panel" id="{{listId}}" role="listbox"
+            aria-multiselectable="{{multiple}}" v-if="panelVisible">
             <span class="ui-autocomplete-loading" role="status" v-if="loading">{{loadingLabel}}</span>
             <span class="ui-autocomplete-error" role="alert" v-else-if="loadError">{{loadError}}</span>
             <div class="ui-autocomplete-row" role="presentation"
@@ -52,7 +62,7 @@ interface AutoCompleteViewOption {
                 <span class="ui-autocomplete-group" role="presentation" v-if="option.showGroup">{{option.group}}</span>
                 <span class="{{option.className}}" role="option"
                     id="{{optionId(option.index)}}"
-                    aria-selected="{{option.index === currentIndex}}"
+                    aria-selected="{{optionSelected(option)}}"
                     aria-disabled="{{option.disabled}}"
                     @mousedown="keepFocus($event)" @click="choose(option)"
                     @keydown="onOptionKeydown(option, $event)">
@@ -76,21 +86,52 @@ export class AutoCompleteComponent {
     @Attribute() options: AutoCompleteOption[] = [];
     @Attribute() placeholder = '';
     @Attribute() emptyLabel = 'No suggestions';
+    @Attribute() removeLabel = 'Remove';
     @Attribute() ariaLabel = 'Search';
     @Attribute() className = '';
     @Attribute() loadingLabel = 'Loading…';
     @Attribute() changeAction?: (value: string) => void;
     @Attribute() selectAction?: (value: string) => void;
+    @Attribute() removeAction?: (value: string) => void;
+    /** Selected values for multi mode; the host owns the array. */
+    @Attribute() values: string[] = [];
     /** Host-provided async option source; replaces `options` while active. */
     @Attribute() loadOptions?: AutoCompleteOptionLoader;
 
     private _disabled = false;
+    private _multiple = false;
     private _loadedOptions?: AutoCompleteOption[];
     private loadSequence = 0;
     loadError = '';
     @Attribute()
     get disabled(): boolean { return this._disabled; }
     set disabled(value: boolean | string) { this._disabled = normalizeBoolean(value); }
+
+    @Attribute()
+    get multiple(): boolean { return this._multiple; }
+    set multiple(value: boolean | string) { this._multiple = normalizeBoolean(value); }
+
+    get selectedItems(): Array<{ value: string; label: string }> {
+        const source = this.loadOptions ? (this._loadedOptions || []) : this.options;
+        return (this.values || []).map(value => {
+            const option = (source || []).find(item => String(item?.value) === String(value));
+            return { value: String(value), label: String(option?.label ?? value) };
+        });
+    }
+
+    optionSelected(option: AutoCompleteViewOption): boolean {
+        if (this._multiple) {
+            return (this.values || []).some(value => String(value) === option.value);
+        }
+        return option.index === this.currentIndex;
+    }
+
+    removeValue(value: string): void {
+        if (this._disabled) {
+            return;
+        }
+        this.removeAction?.(String(value));
+    }
 
     protected readonly uid = nextUiId('ui-autocomplete');
     private _open = false;
@@ -236,6 +277,16 @@ export class AutoCompleteComponent {
 
     choose(option: AutoCompleteViewOption): void {
         if (this._disabled || !option || option.disabled) {
+            return;
+        }
+        if (this._multiple) {
+            const selected = (this.values || []).some(value => String(value) === option.value);
+            if (selected) {
+                this.removeAction?.(option.value);
+            } else {
+                this.selectAction?.(option.value);
+            }
+            this.selectedIndex = option.index;
             return;
         }
         this.value = option.value;

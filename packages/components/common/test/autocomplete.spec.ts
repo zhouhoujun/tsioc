@@ -120,6 +120,41 @@ export class AutoCompleteTest {
         expect(host.selected).toBe('b');
     }
 
+    @Test('supports multi-select values with removable chips')
+    async multipleValues() {
+        const { root, component } = await this.mount();
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const input = root.querySelector('.ui-autocomplete-input') as HTMLInputElement;
+        const selected: string[] = [];
+        const removed: string[] = [];
+        component.instance.multiple = true;
+        component.instance.values = ['a'];
+        component.instance.options = [
+            { label: 'Alpha', value: 'a' },
+            { label: 'Beta', value: 'b' }
+        ];
+        component.instance.selectAction = value => selected.push(value);
+        component.instance.removeAction = value => removed.push(value);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(root.querySelector('.ui-autocomplete-value-label')?.textContent).toBe('Alpha');
+        const remove = root.querySelector('.ui-autocomplete-value-remove') as HTMLElement;
+        expect(remove).toBeTruthy();
+
+        input.dispatchEvent(new (doc.defaultView as any).FocusEvent('focus'));
+        await Promise.resolve();
+        expect(input.getAttribute('aria-expanded')).toBe('true');
+        expect(root.querySelector('.ui-autocomplete-panel')?.getAttribute('aria-multiselectable')).toBe('true');
+        const options = Array.from(root.querySelectorAll('.ui-autocomplete-option')) as HTMLElement[];
+        expect(options[0].getAttribute('aria-selected')).toBe('true');
+        (options[1] as HTMLElement).click();
+        await Promise.resolve();
+        expect(selected).toEqual(['b']);
+        remove.click();
+        expect(removed).toEqual(['a']);
+    }
+
     @Test('loads options asynchronously and ignores stale responses')
     async asyncOptions() {
         const { root, component } = await this.mount();

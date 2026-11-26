@@ -326,6 +326,8 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - autocomplete 支持 `loadOptions(query)`：输入触发异步加载、请求序号丢弃过期
     响应，面板显示 loading/错误行；`disabled` 与现有键盘/ARIA 行为保持一致。
   - `AutoCompleteOption.group` 渲染分组标题，键盘仍只在可选选项间移动。
+  - `multiple` + `values` + `removeAction` 提供多选 chip：选项 `aria-selected`
+    跟随已选值，已选项再次选择或点击 chip 触发移除，宿主持有数组。
 - **表达式预览**
   - workflow 表达式编辑器新增“求值预览”：用上次运行各节点的
     `payload`/`msg`/`variables`/`subprocess` 构建作用域，调用 JSONata 求值；
