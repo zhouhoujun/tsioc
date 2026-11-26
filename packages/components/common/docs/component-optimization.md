@@ -322,6 +322,9 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     规则值在列表内获得同样的 typed 编辑体验。
   - widget 回调统一为 `changeAction(value)`，宿主负责 field/row 绑定，
     避免 widget 自己传 field 造成列表值错位。
+- **DataTable 过滤行**
+  - `filterable` 列渲染搜索输入，事件通过 `setFilter` 写入 `filters`；本地行与
+    异步 source 共用同一过滤/分页/排序状态。
 - **combobox 异步候选 / 分组**
   - autocomplete 支持 `loadOptions(query)`：输入触发异步加载、请求序号丢弃过期
     响应，面板显示 loading/错误行；`disabled` 与现有键盘/ARIA 行为保持一致。

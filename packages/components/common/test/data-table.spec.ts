@@ -114,6 +114,39 @@ export class DataTableTest {
         expect(root.querySelector('.ui-data-table-empty')).toBeFalsy();
     }
 
+    @Test('filters rows through filterable column inputs')
+    async columnFilters() {
+        const ref = await this.mount();
+        const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
+        table.instance.columns = [
+            { key: 'name', label: 'Name', filterable: true },
+            { key: 'role', label: 'Role', filterable: true }
+        ];
+        table.instance.rows = [
+            { id: 'b', name: 'beta', role: 'writer' },
+            { id: 'a', name: 'alpha', role: 'reader' },
+            { id: 'c', name: 'alpine', role: 'writer' }
+        ];
+        await Promise.resolve();
+        await Promise.resolve();
+        const root = ref.hostView.rootNodes[0] as HTMLElement;
+        const filters = Array.from(root.querySelectorAll('.ui-data-table-filter')) as HTMLInputElement[];
+        expect(filters.length).toBe(2);
+
+        filters[0].value = 'alp';
+        filters[0].dispatchEvent(new (this.ctx.get(DOCUMENT) as any).defaultView.Event('input', { bubbles: true }));
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(root.querySelectorAll('.ui-data-table-row').length).toBe(2);
+
+        filters[1].value = 'reader';
+        filters[1].dispatchEvent(new (this.ctx.get(DOCUMENT) as any).defaultView.Event('input', { bubbles: true }));
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(root.querySelectorAll('.ui-data-table-row').length).toBe(1);
+        expect(root.textContent).toContain('alpha');
+    }
+
     @Test('multi-select toggles rows and reports the tri-state select-all')
     async multiSelect() {
         const ref = await this.mount();
