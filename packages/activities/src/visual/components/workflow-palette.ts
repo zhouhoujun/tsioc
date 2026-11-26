@@ -28,7 +28,7 @@ import { WorkflowPaletteGroup, WorkflowPaletteItem } from '../types';
         <div class="workflow-palette-empty" v-if="query && !visibleGroups.length">{{noMatchesLabel}}</div>
         <div class="{{groupClass(group)}}" v-for="group in visibleGroups"
             data-palette-group="{{group.id}}" data-protocol="{{group.protocol}}">
-            <ui-accordion controlled
+            <ui-accordion controlled size="sm" variant="plain"
                 :title="group.label"
                 :count="group.items.length"
                 :expanded="groupExpanded(group)"

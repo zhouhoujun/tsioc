@@ -79,6 +79,8 @@ export class AccordionDomTest {
         const body = root.querySelector('.ui-accordion-body') as HTMLElement;
 
         expect(accordion).toBeTruthy();
+        expect(accordion.classList.contains('is-md')).toEqual(true);
+        expect(accordion.classList.contains('is-default')).toEqual(true);
         expect(header.getAttribute('aria-expanded')).toEqual('true');
         expect(header.getAttribute('aria-label')).toEqual('HTTP group');
         expect(header.id).toEqual(body.getAttribute('aria-labelledby'));
@@ -150,6 +152,8 @@ export class AccordionDomTest {
         expect(css).toContain('.ui-accordion-header:hover');
         expect(css).toContain('.ui-accordion[data-expanded="false"] .ui-accordion-caret::before');
         expect(css).toContain('--ui-accordion-caret-mark, 8px');
+        expect(css).toContain('.ui-accordion.is-sm .ui-accordion-header');
+        expect(css).toContain('@keyframes ui-accordion-reveal');
         expect(css).toContain('prefers-reduced-motion');
     }
 }

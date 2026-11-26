@@ -97,6 +97,20 @@ export class AccordionComponent {
     private _controlled = false;
     private _draggable = false;
     private _expanded = true;
+    private _size: 'sm' | 'md' = 'md';
+    private _variant: 'default' | 'plain' | 'card' = 'default';
+
+    /** Standard (md) or compact (sm) density; workflow palettes use sm. */
+    @Attribute()
+    get size(): 'sm' | 'md' { return this._size; }
+    set size(value: string) { this._size = value === 'sm' ? 'sm' : 'md'; }
+
+    /** Visual treatment: standard section, borderless plain, or a card. */
+    @Attribute()
+    get variant(): 'default' | 'plain' | 'card' { return this._variant; }
+    set variant(value: string) {
+        this._variant = value === 'plain' || value === 'card' ? value : 'default';
+    }
 
     /** Rows are draggable and forward dragstart through `dragStartAction`. */
     @Attribute()
@@ -162,6 +176,8 @@ export class AccordionComponent {
     get accordionClass(): string {
         return [
             'ui-accordion',
+            `is-${this._size}`,
+            `is-${this._variant}`,
             this._expanded ? 'is-expanded' : 'is-collapsed',
             this._disabled ? 'is-disabled' : '',
             this.className
