@@ -1,4 +1,4 @@
-import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Attribute, Component, ElementRef, ViewChild } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
@@ -29,7 +29,7 @@ import { installTreeSelectStyles } from './tree-select.styles';
         </span>
         <div class="ui-tree-select-panel" v-if="openState">
             <ui-tree :items="items" :expandedIds="expandedKeys" :selectedId="selectedKey"
-                :ariaLabel="ariaLabel" :selectAction="treeSelectHandler"
+                :ariaLabel="ariaLabel" :selectionFollowsFocus="false" :selectAction="treeSelectHandler"
                 :toggleAction="treeToggleHandler"></ui-tree>
         </div>
     </div>`
@@ -42,6 +42,8 @@ export class TreeSelectComponent {
     onInit(): void {
         installTreeSelectStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
     }
+
+    @ViewChild(TreeComponent) tree?: TreeComponent;
 
     @Attribute() items: TreeNode[] = [];
     @Attribute() selectedId = '';
@@ -95,7 +97,22 @@ export class TreeSelectComponent {
         if (this._disabled) {
             return;
         }
-        this._open = !this._open;
+        this._open ? this.close() : this.open();
+    }
+
+    open(): void {
+        if (this._disabled || this._open) {
+            return;
+        }
+        this._open = true;
+    }
+
+    close(): void {
+        if (!this._open) {
+            return;
+        }
+        this._open = false;
+        this.focusTrigger();
     }
 
     choose(node: TreeNode): void {
@@ -104,6 +121,7 @@ export class TreeSelectComponent {
         }
         this.selected = String(node.id ?? '');
         this._open = false;
+        this.focusTrigger();
         this.changeAction?.(node);
     }
 
@@ -114,14 +132,36 @@ export class TreeSelectComponent {
         if (event?.key === 'Escape' && this._open) {
             event.preventDefault?.();
             event.stopPropagation?.();
-            this._open = false;
+            this.close();
             return;
         }
-        if ((event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar'
-            || event?.key === 'ArrowDown') && !this._open) {
-            event.preventDefault?.();
-            this._open = true;
+        if (!this._open) {
+            if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar'
+                || event?.key === 'ArrowDown') {
+                event.preventDefault?.();
+                this.open();
+            }
+            return;
         }
+        if (['ArrowDown', 'ArrowUp', 'Home', 'End', 'ArrowRight', 'ArrowLeft'].includes(String(event?.key || ''))) {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.tree?.handleKey(String(event.key), event);
+        } else if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.tree?.handleKey('Enter', event);
+        }
+    }
+
+    protected focusTrigger(): void {
+        // Closing removes the panel and can replace the trigger node; refocus the
+        // current root after the structural update settles.
+        void Promise.resolve().then(() => Promise.resolve()).then(() => {
+            const host = this.elementRef?.nativeElement as any;
+            const root = host?.matches?.('.ui-tree-select') ? host : host?.querySelector?.('.ui-tree-select');
+            root?.focus?.();
+        });
     }
 
     protected toggleNode(node: TreeNode, expanded: boolean): void {

@@ -2,7 +2,7 @@ import { Attribute, Component, Computed, ElementRef } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { focusNth } from '../../src/focus';
 import { markElementRefRaw } from '../../src/raw-element';
-import { iconSizeFor } from '../../src/ui';
+import { iconSizeFor, normalizeBoolean } from '../../src/ui';
 
 export interface TreeNode {
     id?: string;
@@ -29,6 +29,7 @@ interface TreeViewItem {
     hasChildren: boolean;
     expanded: boolean;
     selected: boolean;
+    active: boolean;
     disabled: boolean;
     indentText: string;
     toggled: string;
@@ -53,7 +54,7 @@ interface TreeViewItem {
             focusable="{{!entry.disabled}}"
             @keydown="onKeydown(entry, $event)"
             v-for="entry in viewItems" trackBy="key">
-            <span class="ui-tree-row" @click="select(entry)">
+            <span class="ui-tree-row" @click="activate(entry)">
                 <span class="ui-tree-indent" aria-hidden="true">{{entry.indentText}}</span>
                 <span class="ui-tree-toggle" v-if="entry.hasChildren" @click="toggle(entry, $event)">{{entry.toggled}}</span>
                 <span class="ui-tree-toggle is-leaf" v-if="!entry.hasChildren" aria-hidden="true"> </span>
@@ -76,8 +77,15 @@ export class TreeComponent {
     @Attribute() indentChar = ' ';
     @Attribute() ariaLabel = 'Tree';
     @Attribute() className = '';
+    /** Roving focus also selects/emits; turn off for pickers that commit on activate. */
+    @Attribute()
+    get selectionFollowsFocus(): boolean { return this._selectionFollowsFocus; }
+    set selectionFollowsFocus(value: boolean | string) { this._selectionFollowsFocus = normalizeBoolean(value, true); }
     @Attribute() selectAction?: (node: TreeNode) => void;
     @Attribute() toggleAction?: (node: TreeNode, expanded: boolean) => void;
+
+    private _activeKey = '';
+    private _selectionFollowsFocus = true;
 
     get treeClass(): string {
         return this.className;
@@ -114,6 +122,7 @@ export class TreeComponent {
                     hasChildren,
                     expanded: hasChildren && isExpanded,
                     selected,
+                    active: false,
                     disabled,
                     indentText: this.indentChar.repeat(Math.max(0, depth) * Math.max(0, Math.floor(Number(this.indent) || 2))),
                     toggled: hasChildren ? (isExpanded ? '▾' : '▸') : '',
@@ -129,6 +138,20 @@ export class TreeComponent {
             });
         };
         walk(this.items, 0, '', '');
+        // With selection-follows-focus the selected row is already the active one;
+        // a separate roving class is only needed for activate-to-commit pickers.
+        const activeKey = this._selectionFollowsFocus
+            ? ''
+            : (this._activeKey
+                || rows.find(row => row.selected && !row.disabled)?.key
+                || rows.find(row => !row.disabled)?.key
+                || '');
+        rows.forEach(row => {
+            row.active = row.key === activeKey && !row.disabled;
+            if (row.active) {
+                row.className = [row.className, 'is-active'].filter(Boolean).join(' ');
+            }
+        });
         return rows;
     }
 
@@ -146,25 +169,62 @@ export class TreeComponent {
         return row?.hasChildren ? String(row.expanded) : '';
     }
 
-    /** Selected (or first enabled) row is the only tab stop. */
+    /** The active (focused) row is the only tab stop. */
     tabIndexFor(entry: TreeViewItem): number {
         if (!entry || entry.disabled) {
             return -1;
         }
-        const rows = this.viewItems;
-        const selected = rows.find(row => row.selected && !row.disabled);
-        if (selected) {
-            return selected.key === entry.key ? 0 : -1;
-        }
-        const first = rows.find(row => !row.disabled);
-        return first && first.key === entry.key ? 0 : -1;
+        return this.activeRow()?.key === entry.key ? 0 : -1;
     }
 
+    /** Selected (or first enabled) row used by the tree's own shortcuts and pickers. */
+    activeRow(): TreeViewItem | undefined {
+        const rows = this.viewItems;
+        if (this._selectionFollowsFocus) {
+            return rows.find(entry => entry.selected && !entry.disabled)
+                ?? rows.find(entry => !entry.disabled);
+        }
+        return rows.find(entry => entry.active)
+            ?? rows.find(entry => entry.selected && !entry.disabled)
+            ?? rows.find(entry => !entry.disabled);
+    }
+
+    /** Apply a tree shortcut to the active row without requiring DOM focus. */
+    handleKey(key: string, event?: any): boolean {
+        const row = this.activeRow();
+        if (!row) {
+            return false;
+        }
+        this.onKeydown(row, {
+            key,
+            preventDefault: event?.preventDefault?.bind(event),
+            stopPropagation: event?.stopPropagation?.bind(event)
+        });
+        return true;
+    }
+
+    /** Roving move: updates focus, and selection only when focus follows selection. */
     select(entry: TreeViewItem): void {
         const row = this.currentRow(entry);
         if (!row || row.disabled) {
             return;
         }
+        if (this._selectionFollowsFocus) {
+            this.selectedId = row.key;
+            this.selectAction?.(row.item);
+        } else {
+            this._activeKey = row.key;
+        }
+        focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+    }
+
+    /** Explicit activation (click/Enter): commits the row regardless of roving mode. */
+    activate(entry: TreeViewItem): void {
+        const row = this.currentRow(entry);
+        if (!row || row.disabled) {
+            return;
+        }
+        this._activeKey = row.key;
         this.selectedId = row.key;
         focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
         this.selectAction?.(row.item);
@@ -197,7 +257,7 @@ export class TreeComponent {
         const key = String(event?.key || '');
         if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
             event?.preventDefault?.();
-            this.select(row);
+            this.activate(row);
             return;
         }
         if (key === 'ArrowDown') {

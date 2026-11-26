@@ -91,6 +91,30 @@ export class TreeSelectTest {
         expect(root.getAttribute('aria-expanded')).toEqual('false');
     }
 
+    @Test('keyboard opens into the tree and restores the trigger after selection')
+    async keyboardFlow() {
+        const { roots, host } = await this.mount();
+        const root = roots[0];
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        doc.body.appendChild(root);
+        root.focus();
+        root.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        for (let index = 0; index < 8; index++) await Promise.resolve();
+        expect(root.getAttribute('aria-expanded')).toEqual('true');
+        expect(root.textContent).toContain('Root');
+
+        root.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await Promise.resolve();
+        expect(root.textContent).toContain('Child');
+
+        root.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        expect(host.selected).toEqual('child');
+        expect(root.getAttribute('aria-expanded')).toEqual('false');
+        expect(doc.activeElement === root).toEqual(true);
+        root.remove();
+    }
+
     @Test('disabled tree selects stay closed')
     async disabled() {
         const { roots } = await this.mount();
