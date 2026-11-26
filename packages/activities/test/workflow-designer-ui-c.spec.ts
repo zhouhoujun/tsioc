@@ -360,15 +360,20 @@ describe('Workflow Designer UI', () => {
         ref.instance.designer.selectNode(node.id);
         await flush();
 
-        const select = root.querySelector('.workflow-field[data-field-key="scope"] select') as any;
-        expect(select).toBeTruthy();
-        expect(select.multiple).toBe(true);
-        Array.from(select.options).forEach((option: any) => {
-            option.selected = option.value === 'task';
-        });
-        select.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        const input = root.querySelector('.workflow-field[data-field-key="scope"] .ui-autocomplete-input') as any;
+        expect(input).toBeTruthy();
+        input.focus();
         await flush();
-        expect(ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.scope).toBe('task');
+        input.value = 'task';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        const option = Array.from(root.querySelectorAll('.workflow-field[data-field-key="scope"] .ui-autocomplete-option'))
+            .find((item: any) => item.textContent.includes('task')) as any;
+        expect(option).toBeTruthy();
+        option.click();
+        await waitFor(() => ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.scope === 'task');
+        expect(root.querySelector('.workflow-field[data-field-key="scope"] .ui-autocomplete-value-label')?.textContent)
+            .toBeTruthy();
     });
 
     it('evaluates an expression draft against the last run data', async () => {

@@ -12,6 +12,7 @@ import { translateWorkflow } from '../i18n';
 import { WORKFLOW_TYPED_CODEC } from '../workflow-typed-value';
 import { WorkflowInspectorFieldView, WorkflowInspectorModel } from '../types';
 import { WorkflowReferenceWidgetComponent } from './workflow-reference-widget';
+import { WorkflowReferenceMultiWidgetComponent } from './workflow-reference-multi-widget';
 import { WorkflowTypedValueWidgetComponent } from './workflow-typed-value-widget';
 
 const EMPTY_INSPECTOR: WorkflowInspectorModel = {
@@ -339,6 +340,7 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
             fields,
             widgets: [
                 { type: 'workflow-reference', component: WorkflowReferenceWidgetComponent },
+                { type: 'workflow-reference-multi', component: WorkflowReferenceMultiWidgetComponent },
                 { type: 'workflow-typed-value', component: WorkflowTypedValueWidgetComponent }
             ],
             defaultGroupLabel,
@@ -359,11 +361,14 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
     protected toDynamicField(field: WorkflowInspectorFieldView): DynamicFormField {
         const typed = field.typed === true;
         const typedValueWidget = typed && field.typedValue === true;
-        const searchableReference = !typedValueWidget && !!field.reference && field.reference.multiple !== true;
+        const multiReference = !typedValueWidget && field.reference?.multiple === true;
+        const searchableReference = !typedValueWidget && !multiReference && !!field.reference;
         return {
             key: field.key,
-            type: typedValueWidget || searchableReference ? 'widget' : this.dynamicType(field),
-            widget: typedValueWidget ? 'workflow-typed-value' : searchableReference ? 'workflow-reference' : undefined,
+            type: typedValueWidget || multiReference || searchableReference ? 'widget' : this.dynamicType(field),
+            widget: typedValueWidget ? 'workflow-typed-value'
+                : multiReference ? 'workflow-reference-multi'
+                    : searchableReference ? 'workflow-reference' : undefined,
             typed,
             // Value fields store references and literal classes explicitly so
             // text that looks like a reference is never misread; path fields

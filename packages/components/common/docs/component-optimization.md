@@ -314,6 +314,10 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     单值引用字段改用可搜索 autocomplete：输入只过滤候选，选中后才写配置；
     create/edit 动作仍由字段行提供；多选 scope 继续使用内置多选框。
   - autocomplete 增加 `disabled`，供表单/宿主统一禁用。
+- **多选引用 widget**
+  - catch/complete/status scope 改用 `workflow-reference-multi`：多选 autocomplete
+    chips，值仍按原有逗号字符串存储；输入只过滤，选项点击追加，chip 移除删除。
+  - widget 回调通过 selfRef 调用代理实例，保证自治状态和多选 values 会触发渲染。
 - **typed value widget / 规则行**
   - activities 注册 `workflow-typed-value` widget：按 source 渲染 number、
     boolean、JSON/expression textarea，使用宿主 codec 存储；标签行 `ƒ` 仍打开

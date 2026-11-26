@@ -28,6 +28,7 @@ export class WorkflowReferenceWidgetComponent {
     @Attribute() changeAction?: (value: any) => void;
 
     query = '';
+    protected selfRef?: any;
 
     @Attribute()
     set value(value: any) {
@@ -38,6 +39,7 @@ export class WorkflowReferenceWidgetComponent {
     protected _value: any;
 
     onInit(): void {
+        this.selfRef = this;
         this.syncQuery();
     }
 
@@ -63,15 +65,17 @@ export class WorkflowReferenceWidgetComponent {
     get placeholder(): string { return this.field?.placeholder || ''; }
     get emptyLabel(): string { return 'No matches'; }
 
-    queryChanged(value: string): void {
-        this.query = String(value ?? '');
-    }
+    readonly queryChanged = (value: string): void => {
+        const self = (this as any).selfRef || this;
+        self.query = String(value ?? '');
+    };
 
-    choose(value: string): void {
+    readonly choose = (value: string): void => {
+        const self = (this as any).selfRef || this;
         const next = String(value ?? '');
-        this.query = this.options.find(option => option.value === next)?.label || next;
-        this.changeAction?.(next);
-    }
+        self.query = self.options.find((option: any) => option.value === next)?.label || next;
+        self.changeAction?.(next);
+    };
 
     protected selectedLabel(): string {
         const current = this._value === undefined || this._value === null ? '' : String(this._value);

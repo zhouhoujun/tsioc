@@ -11,6 +11,7 @@ import { MenuBarModule } from '@tsdi/components/common/menu-bar';
 import { IconModule } from '@tsdi/components/common/icon';
 import { DYNAMIC_FORM_WIDGETS, DynamicFormModule } from '@tsdi/components/common/dynamic-form';
 import { WorkflowReferenceWidgetComponent } from './visual/components/workflow-reference-widget';
+import { WorkflowReferenceMultiWidgetComponent } from './visual/components/workflow-reference-multi-widget';
 import { WorkflowTypedValueWidgetComponent } from './visual/components/workflow-typed-value-widget';
 import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
 import { EmptyStateModule } from '@tsdi/components/common/empty-state';
@@ -93,6 +94,7 @@ import {
         WorkflowPluginRegistry,
         { provide: DYNAMIC_FORM_WIDGETS, useValue: [
             { type: 'workflow-reference', component: WorkflowReferenceWidgetComponent },
+            { type: 'workflow-reference-multi', component: WorkflowReferenceMultiWidgetComponent },
             { type: 'workflow-typed-value', component: WorkflowTypedValueWidgetComponent }
         ] }
     ],

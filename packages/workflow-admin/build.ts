@@ -69,11 +69,12 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // widget registry, async/external validation, typed source editors and
 // reorderable list rows (~13 KB gzip), and 1310 KB for the searchable
 // reference picker widget and 1320 KB for the typed-value widget/list-row
-// widgets, and 1330 KB for the DataTable filter row; it keeps ~6 KB of
-// headroom over the preview page's inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB)
+// widgets, 1330 KB for the DataTable filter row, and 1340 KB for the
+// multi-value reference picker; it keeps ~5 KB of headroom over the preview
+// page's inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB)
 // loaded on first evaluation, so the initial budget only carries the wiring;
 // the gzip budget remains the gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_330_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_340_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
@@ -95,10 +96,11 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_330_000);
 // 298 KB for protocol-grouped palette sections plus the shared accordion rows,
 // 310 KB for the dynamic form configuration widgets/validation, 314 KB for
 // the searchable reference picker, 316 KB for the typed-value/list widgets,
-// and 317 KB for the DataTable filter row. JSONata itself is a lazy chunk and
-// does not count; the gzip budget stays the
+// 317 KB for the DataTable filter row, and 318 KB for the multi-value reference
+// picker. JSONata itself is a lazy chunk and does not count; the gzip budget
+// stays the
 // transfer gate.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 317_000);
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 318_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });
