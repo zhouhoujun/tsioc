@@ -66,6 +66,28 @@ export class ToastStackComponentTest {
         expect(resumed).toEqual(['toast-1']);
     }
 
+    @Test('global stack hover pauses all counts and takes precedence over row hover')
+    globalHoverPause() {
+        const stack = new ToastStackComponent();
+        const paused: string[] = [];
+        let pausedAll = 0;
+        let resumedAll = 0;
+        stack.items = [entry('toast-1', 'Saved')];
+        stack.pauseAction = id => paused.push(id);
+        stack.pauseAllAction = () => { pausedAll += 1; };
+        stack.resumeAllAction = () => { resumedAll += 1; };
+        stack.pauseAllOnHover = true;
+        stack.pauseOnHover = true;
+
+        stack.stackHoverStart();
+        stack.hoverStart('toast-1');
+        stack.hoverEnd('toast-1');
+        stack.stackHoverEnd();
+        expect(pausedAll).toEqual(1);
+        expect(resumedAll).toEqual(1);
+        expect(paused).toEqual([]);
+    }
+
     @Test('hides itself and ignores malformed input when the queue is empty')
     hidesWhenEmpty() {
         const stack = new ToastStackComponent();

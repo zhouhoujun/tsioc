@@ -16,10 +16,10 @@ export const POPOVER_CSS = `
     color: var(--ui-popover-fg, inherit);
     box-shadow: 0 4px 14px var(--ui-shadow, rgba(0, 0, 0, 0.2));
 }
-.ui-popover-popup.is-top { bottom: calc(100% + 4px); left: 0; }
-.ui-popover-popup.is-bottom { top: calc(100% + 4px); left: 0; }
-.ui-popover-popup.is-left { right: calc(100% + 4px); top: 0; }
-.ui-popover-popup.is-right { left: calc(100% + 4px); top: 0; }
+.ui-popover-popup.is-top { bottom: calc(100% + 4px); left: var(--ui-overlay-shift-x, 0px); }
+.ui-popover-popup.is-bottom { top: calc(100% + 4px); left: var(--ui-overlay-shift-x, 0px); }
+.ui-popover-popup.is-left { right: calc(100% + 4px); top: var(--ui-overlay-shift-y, 0px); }
+.ui-popover-popup.is-right { left: calc(100% + 4px); top: var(--ui-overlay-shift-y, 0px); }
 .ui-popover-header { display: flex; align-items: center; gap: 1ch; }
 .ui-popover-title { font-weight: 600; flex: 1 1 auto; min-width: 0; }
 .ui-popover-close { color: var(--ui-muted-fg, inherit); flex: 0 0 auto; }

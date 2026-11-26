@@ -29,7 +29,7 @@ import { installTreeSelectStyles } from './tree-select.styles';
         </span>
         <div class="ui-tree-select-panel" v-if="openState">
             <ui-tree :items="items" :expandedIds="expandedKeys" :selectedId="selectedKey"
-                :ariaLabel="ariaLabel" :selectionFollowsFocus="false" :selectAction="treeSelectHandler"
+                :ariaLabel="ariaLabel" :selectionFollowsFocus="false" :wrapFocus="true" :selectAction="treeSelectHandler"
                 :toggleAction="treeToggleHandler"></ui-tree>
         </div>
     </div>`

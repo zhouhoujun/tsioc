@@ -150,6 +150,35 @@ export class ToastServiceTest {
         }
     }
 
+    @Test('pauseAll and resumeAll preserve every remaining countdown')
+    async pauseAllEntries() {
+        const clock = new FakeClock();
+        const service = new ToastService(clock);
+        const realNow = Date.now;
+        let now = 1000;
+        Date.now = () => now;
+        try {
+            service.show('first', { durationMs: 500 });
+            service.show('second', { durationMs: 900 });
+            expect(clock.listeners.size).toEqual(1);
+            now = 1200;
+            service.pauseAll();
+            expect(clock.listeners.size).toEqual(0);
+            now = 9000;
+            service.resumeAll();
+            expect(clock.listeners.size).toEqual(1);
+            now = 9300;
+            clock.tick();
+            expect(service.current.map(entry => entry.message)).toEqual(['second']);
+            now = 9700;
+            clock.tick();
+            expect(service.current).toEqual([]);
+        } finally {
+            Date.now = realNow;
+            service.onDestroy();
+        }
+    }
+
     @Test('empty messages are ignored')
     ignoresEmptyMessages() {
         const service = new ToastService();

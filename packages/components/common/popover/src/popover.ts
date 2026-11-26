@@ -7,7 +7,7 @@ import { normalizeBoolean } from '../../src/ui';
 import { installPlainButtonStyles } from '../../src/ui.styles';
 import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 import { installPopoverStyles } from './popover.styles';
-import { resolveFlippedPlacement, UiPlacement } from '../../src/overlay-placement';
+import { resolveFlippedPlacement, resolveOverlayShift, UiPlacement } from '../../src/overlay-placement';
 
 export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -23,7 +23,7 @@ export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
     template: `
     <span class="ui-popover {{popoverClass}}" @keydown="onKeydown($event)">
         <v-content></v-content>
-        <div class="ui-popover-popup is-{{popupPlacement}}" role="dialog"
+        <div class="ui-popover-popup is-{{popupPlacement}}" role="dialog" [style]="popupStyle"
             aria-label="{{ariaLabel || title}}" v-if="visibleState">
             <div class="ui-popover-header" v-if="title">
                 <span class="ui-popover-title">{{title}}</span>
@@ -87,6 +87,8 @@ export class PopoverComponent {
     private _flip = true;
     private _placement: PopoverPlacement = 'bottom';
     private resolvedPlacement: PopoverPlacement | '' = '';
+    private shiftX = 0;
+    private shiftY = 0;
 
     @Attribute()
     get visible(): boolean { return this._visible; }
@@ -123,16 +125,30 @@ export class PopoverComponent {
         return this.resolvedPlacement || this._placement;
     }
 
+    get popupStyle(): Record<string, string> {
+        return {
+            '--ui-overlay-shift-x': `${this.shiftX}px`,
+            '--ui-overlay-shift-y': `${this.shiftY}px`
+        };
+    }
+
     protected resolvePlacement(): void {
-        if (!this._flip || !this.visibleState) {
+        if (!this.visibleState) {
             this.resolvedPlacement = '';
+            this.shiftX = 0;
+            this.shiftY = 0;
             return;
         }
         const host = this.elementRef?.nativeElement as any;
         const anchor = host?.matches?.('.ui-popover') ? host : host?.querySelector?.('.ui-popover');
         const popup = anchor?.querySelector?.('.ui-popover-popup');
-        const next = resolveFlippedPlacement(anchor, popup, this._placement as UiPlacement) as PopoverPlacement;
+        const next = this._flip
+            ? resolveFlippedPlacement(anchor, popup, this._placement as UiPlacement) as PopoverPlacement
+            : this._placement;
         this.resolvedPlacement = next === this._placement ? '' : next;
+        const shift = resolveOverlayShift(anchor, popup, next as UiPlacement, 6, false);
+        this.shiftX = shift.x;
+        this.shiftY = shift.y;
     }
 
     get closeGlyph(): string {
@@ -158,6 +174,8 @@ export class PopoverComponent {
         this.closeAction?.();
         this._visible = false;
         this.resolvedPlacement = '';
+        this.shiftX = 0;
+        this.shiftY = 0;
     }
 
     closeKeydown(event: any): void {

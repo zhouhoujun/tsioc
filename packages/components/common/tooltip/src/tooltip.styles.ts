@@ -25,10 +25,10 @@ export const TOOLTIP_CSS = `
     box-shadow: 0 2px 8px var(--ui-shadow, rgba(0, 0, 0, 0.18));
     white-space: nowrap;
 }
-.ui-tooltip-popup.is-top { bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); }
-.ui-tooltip-popup.is-bottom { top: calc(100% + 4px); left: 50%; transform: translateX(-50%); }
-.ui-tooltip-popup.is-left { right: calc(100% + 4px); top: 50%; transform: translateY(-50%); }
-.ui-tooltip-popup.is-right { left: calc(100% + 4px); top: 50%; transform: translateY(-50%); }
+.ui-tooltip-popup.is-top { bottom: calc(100% + 4px); left: 50%; transform: translateX(calc(-50% + var(--ui-overlay-shift-x, 0px))); }
+.ui-tooltip-popup.is-bottom { top: calc(100% + 4px); left: 50%; transform: translateX(calc(-50% + var(--ui-overlay-shift-x, 0px))); }
+.ui-tooltip-popup.is-left { right: calc(100% + 4px); top: 50%; transform: translateY(calc(-50% + var(--ui-overlay-shift-y, 0px))); }
+.ui-tooltip-popup.is-right { left: calc(100% + 4px); top: 50%; transform: translateY(calc(-50% + var(--ui-overlay-shift-y, 0px))); }
 `;
 
 export function installTooltipStyles(doc?: Document | null): void {

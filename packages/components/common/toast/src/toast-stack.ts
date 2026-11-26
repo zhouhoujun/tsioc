@@ -24,7 +24,8 @@ export interface ToastRow {
 @Component({
     selector: 'toast-stack, ui-toast-stack',
     template: `
-    <div class="console-toast-stack" role="status" aria-live="polite" v-show="visible">
+    <div class="console-toast-stack" role="status" aria-live="polite" v-show="visible"
+        @mouseenter="stackHoverStart()" @mouseleave="stackHoverEnd()">
         <div class="console-toast-card">
         <label class="console-toast" data-tone="{{item.tone}}" v-for="item in rows" trackBy="id"
             @mouseenter="hoverStart(item.id)" @mouseleave="hoverEnd(item.id)">
@@ -43,14 +44,22 @@ export class ToastStackComponent {
     @Attribute() actionAction?: (id: string) => void;
     @Attribute() pauseAction?: (id: string) => void;
     @Attribute() resumeAction?: (id: string) => void;
+    @Attribute() pauseAllAction?: () => void;
+    @Attribute() resumeAllAction?: () => void;
     /** Inner content width for terminal cards; pads the message so ✕ sits right. */
     @Attribute() messageWidth = 0;
     private _pauseOnHover = false;
+    private _pauseAllOnHover = false;
 
     /** Opt-in: hovering a toast pauses its countdown through the host actions. */
     @Attribute()
     get pauseOnHover(): boolean { return this._pauseOnHover; }
     set pauseOnHover(value: boolean | string) { this._pauseOnHover = normalizeBoolean(value); }
+
+    /** Opt-in: hovering anywhere in the stack pauses every countdown (host wires `ToastService.pauseAll/resumeAll`). */
+    @Attribute()
+    get pauseAllOnHover(): boolean { return this._pauseAllOnHover; }
+    set pauseAllOnHover(value: boolean | string) { this._pauseAllOnHover = normalizeBoolean(value); }
 
     /** The close glyph carries a leading no-break space: terminal spans do not
      * honour padding, so the gap has to be part of the text run. */
@@ -99,14 +108,26 @@ export class ToastStackComponent {
     }
 
     hoverStart(id: string): void {
-        if (this._pauseOnHover) {
+        if (this._pauseOnHover && !this._pauseAllOnHover) {
             this.pauseAction?.(id);
         }
     }
 
     hoverEnd(id: string): void {
-        if (this._pauseOnHover) {
+        if (this._pauseOnHover && !this._pauseAllOnHover) {
             this.resumeAction?.(id);
+        }
+    }
+
+    stackHoverStart(): void {
+        if (this._pauseAllOnHover) {
+            this.pauseAllAction?.();
+        }
+    }
+
+    stackHoverEnd(): void {
+        if (this._pauseAllOnHover) {
+            this.resumeAllAction?.();
         }
     }
 

@@ -253,22 +253,16 @@ export class DataTableComponent {
     get keyboardNavigation(): boolean { return this._keyboardNavigation; }
     set keyboardNavigation(value: boolean | string) { this._keyboardNavigation = normalizeBoolean(value); }
 
-    get pageSizeNumber(): number {
-        return Math.max(1, Math.floor(Number(this.pageSize) || 10));
-    }
+    get pageSizeNumber(): number { return Math.max(1, Math.floor(Number(this.pageSize) || 10)); }
 
-    get pageCount(): number {
-        return Math.max(1, Math.ceil(this.tableTotal / this.pageSizeNumber));
-    }
+    get pageCount(): number { return Math.max(1, Math.ceil(this.tableTotal / this.pageSizeNumber)); }
 
     get currentPage(): number {
         const page = Math.floor(Number(this.page) || 1);
         return Math.max(1, Math.min(this.pageCount, page));
     }
 
-    get pageHandler(): (page: number) => void {
-        return page => this.goToPage(page);
-    }
+    get pageHandler(): (page: number) => void { return page => this.goToPage(page); }
 
     goToPage(page: number): void {
         const next = Math.max(1, Math.min(this.pageCount, Math.floor(Number(page) || 1)));
@@ -332,8 +326,12 @@ export class DataTableComponent {
         return filterDataTableRows(this.tableRows, this.filters);
     }
 
-    get columnState(): DataTableColumnState {
-        return dataTableColumnState(this.columns, this.columnOrder, this.hiddenColumns, this.columnWidths);
+    get columnState(): DataTableColumnState { return dataTableColumnState(this.columns, this.columnOrder, this.hiddenColumns, this.columnWidths); }
+
+    /** Restore the declarative column layout and persist the reset. */
+    resetColumnLayout(): DataTableColumnState {
+        this.columnOrder = []; this.hiddenColumns = []; this.columnWidths = {};
+        const state = this.columnState; this.columnChangeAction?.(state); return state;
     }
 
     get activeSorts(): DataTableSort[] {

@@ -125,4 +125,22 @@ export class DataTableColumnsTest {
         expect(host.columnState?.widths?.name).toEqual(120);
         expect(host.columnState?.order).toEqual(['name', 'team', 'role', 'status']);
     }
+
+    @Test('resetColumnLayout restores the declarative layout and emits it')
+    async resetLayout() {
+        const { root, ref } = await this.mount();
+        const host = ref.instance as DataTableColumnsHostComponent;
+        const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
+        host.columnOrder = ['status', 'name'];
+        host.hiddenColumns = ['team'];
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        expect(root.querySelectorAll('.ui-data-table-head .ui-data-table-cell').length).toEqual(3);
+
+        const state = table.instance.resetColumnLayout();
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        expect(state).toEqual({ order: ['name', 'team', 'role', 'status'], hidden: [], widths: {} });
+        expect(host.columnState).toEqual(state);
+        expect(root.querySelectorAll('.ui-data-table-head .ui-data-table-cell').length).toEqual(4);
+        expect(host.columnState?.order).toEqual(['name', 'team', 'role', 'status']);
+    }
 }

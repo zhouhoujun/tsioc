@@ -145,6 +145,20 @@ export class ToastService implements OnDestroy {
         this.stopTickIfIdle();
     }
 
+    /** Pause every counting entry (global hover container). */
+    pauseAll(): void {
+        for (const id of [...this.deadlines.keys()]) {
+            this.pause(id);
+        }
+    }
+
+    /** Resume every entry paused by `pauseAll`. */
+    resumeAll(): void {
+        for (const id of [...this.paused]) {
+            this.resume(id);
+        }
+    }
+
     /** Continue an auto-dismiss countdown after a pause. */
     resume(id: string): void {
         if (!this.paused.delete(id)) {

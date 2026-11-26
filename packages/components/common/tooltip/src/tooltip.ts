@@ -3,7 +3,7 @@ import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId, normalizeBoolean } from '../../src/ui';
 import { installTooltipStyles } from './tooltip.styles';
-import { resolveFlippedPlacement, UiPlacement } from '../../src/overlay-placement';
+import { resolveFlippedPlacement, resolveOverlayShift, UiPlacement } from '../../src/overlay-placement';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -28,7 +28,7 @@ export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
         @blur="hide()"
         @keydown="onKeydown($event)">
         <v-content></v-content>
-        <span class="ui-tooltip-popup is-{{popupPlacement}}" id="{{tooltipId}}"
+        <span class="ui-tooltip-popup is-{{popupPlacement}}" id="{{tooltipId}}" [style]="popupStyle"
             role="tooltip" v-if="openState">{{content}}</span>
     </span>`
 })
@@ -54,6 +54,8 @@ export class TooltipComponent {
     private _flip = true;
     private _placement: TooltipPlacement = 'top';
     private resolvedPlacement: TooltipPlacement | '' = '';
+    private shiftX = 0;
+    private shiftY = 0;
     private openTimer?: any;
     private closeTimer?: any;
     private destroyed = false;
@@ -98,16 +100,30 @@ export class TooltipComponent {
         return this.resolvedPlacement || this._placement;
     }
 
+    get popupStyle(): Record<string, string> {
+        return {
+            '--ui-overlay-shift-x': `${this.shiftX}px`,
+            '--ui-overlay-shift-y': `${this.shiftY}px`
+        };
+    }
+
     protected resolvePlacement(): void {
-        if (!this._flip || !this.openState) {
+        if (!this.openState) {
             this.resolvedPlacement = '';
+            this.shiftX = 0;
+            this.shiftY = 0;
             return;
         }
         const host = this.elementRef?.nativeElement as any;
         const anchor = host?.matches?.('.ui-tooltip') ? host : host?.querySelector?.('.ui-tooltip');
         const popup = anchor?.querySelector?.('.ui-tooltip-popup');
-        const next = resolveFlippedPlacement(anchor, popup, this._placement as UiPlacement) as TooltipPlacement;
+        const next = this._flip
+            ? resolveFlippedPlacement(anchor, popup, this._placement as UiPlacement) as TooltipPlacement
+            : this._placement;
         this.resolvedPlacement = next === this._placement ? '' : next;
+        const shift = resolveOverlayShift(anchor, popup, next as UiPlacement, 6, true);
+        this.shiftX = shift.x;
+        this.shiftY = shift.y;
     }
 
     get tooltipId(): string {
@@ -183,6 +199,8 @@ export class TooltipComponent {
         }
         this._open = false;
         this.resolvedPlacement = '';
+        this.shiftX = 0;
+        this.shiftY = 0;
         this.visibleChange.emit(false);
     }
 

@@ -137,6 +137,7 @@ export class TooltipTest {
         (tip as any).resolvePlacement();
         await Promise.resolve();
         expect(popup.className).toContain('is-top');
+        expect(popup.style.getPropertyValue('--ui-overlay-shift-x')).toEqual('1px');
 
         tip.flip = false;
         (tip as any).resolvePlacement();

@@ -81,11 +81,17 @@ export class TreeComponent {
     @Attribute()
     get selectionFollowsFocus(): boolean { return this._selectionFollowsFocus; }
     set selectionFollowsFocus(value: boolean | string) { this._selectionFollowsFocus = normalizeBoolean(value, true); }
+
+    /** Wrap ArrowUp/Down at the ends (pickers); trees usually stop at the edge. */
+    @Attribute()
+    get wrapFocus(): boolean { return this._wrapFocus; }
+    set wrapFocus(value: boolean | string) { this._wrapFocus = normalizeBoolean(value); }
     @Attribute() selectAction?: (node: TreeNode) => void;
     @Attribute() toggleAction?: (node: TreeNode, expanded: boolean) => void;
 
     private _activeKey = '';
     private _selectionFollowsFocus = true;
+    private _wrapFocus = false;
 
     get treeClass(): string {
         return this.className;
@@ -318,6 +324,16 @@ export class TreeComponent {
     /** Move selection to the next enabled visible row (clamped, no wrap). */
     protected move(from: number, delta: number): void {
         const rows = this.viewItems;
+        if (this._wrapFocus && rows.length) {
+            for (let step = 1; step <= rows.length; step++) {
+                const index = ((from + delta * step) % rows.length + rows.length) % rows.length;
+                if (!rows[index].disabled) {
+                    this.select(rows[index]);
+                    return;
+                }
+            }
+            return;
+        }
         for (let index = from + delta; index >= 0 && index < rows.length; index += delta) {
             if (!rows[index].disabled) {
                 this.select(rows[index]);
