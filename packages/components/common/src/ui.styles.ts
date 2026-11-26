@@ -372,7 +372,7 @@ ${PLAIN_BUTTON_CSS}
     padding: 0.25em 0;
 }
 .ui-field-input::placeholder { color: var(--ui-muted-fg, inherit); }
-.ui-field-clear {
+.ui-field-clear, .ui-field-reveal {
     border: 0;
     background: transparent;
     color: var(--ui-muted-fg, inherit);
@@ -380,7 +380,7 @@ ${PLAIN_BUTTON_CSS}
     font: inherit;
     padding: 0 0.2ch;
 }
-.ui-field-hint { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+.ui-field-hint, .ui-field-addon, .ui-field-prefix, .ui-field-suffix { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
 .ui-search-field .ui-field-icon { color: var(--ui-muted-fg, inherit); }
 
 

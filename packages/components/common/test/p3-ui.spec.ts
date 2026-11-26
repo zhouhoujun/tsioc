@@ -18,6 +18,9 @@ import { RadioGroupComponent, RadioGroupModule } from '../radio-group';
     <ui-text-field :multiline="true" :rows="2" :value="note" :changeAction="onNote"></ui-text-field>
     <ui-text-field label="Email" inputId="email-field" name="email" hint="Work address"
         error="Required field" required></ui-text-field>
+    <ui-text-field label="Amount" prefix="$" suffix=".00" addonBefore="USD" addonAfter="net"
+        maxLength="8" revealable type="password" inputMode="decimal" autocomplete="off"
+        clearable :value="secret" :changeAction="onSecret"></ui-text-field>
     <ui-checkbox label="Enabled" :checked="enabled" :changeAction="onEnabled"></ui-checkbox>
     <ui-switch label="Live" :checked="live" :changeAction="onLive"></ui-switch>
     <ui-radio-group :options="modes" :value="mode" :changeAction="onMode"></ui-radio-group>`
@@ -25,6 +28,8 @@ import { RadioGroupComponent, RadioGroupModule } from '../radio-group';
 class P3UiHostComponent {
     name = '';
     note = 'line';
+    secret = 'secret';
+    onSecret = (value: string) => { this.secret = value; };
     enabled = false;
     live = false;
     mode = 'basic';
@@ -115,6 +120,34 @@ export class P3FormWidgetsTest {
         expect(error.id).toEqual('email-field-error');
         expect(emailInput.getAttribute('aria-describedby')).toEqual('email-field-hint email-field-error');
         expect(email.className).toContain('has-error');
+
+        const amount = fields[3].hostView.rootNodes[0] as HTMLElement;
+        const amountInput = amount.querySelector('input') as HTMLInputElement;
+        expect(amount.textContent).toContain('USD');
+        expect(amount.textContent).toContain('$');
+        expect(amount.textContent).toContain('.00');
+        expect(amount.textContent).toContain('net');
+        expect(amountInput.type).toEqual('password');
+        expect(amountInput.getAttribute('maxlength')).toEqual('8');
+        expect(amountInput.getAttribute('inputmode')).toEqual('decimal');
+        expect(amountInput.getAttribute('autocomplete')).toEqual('off');
+        const reveal = amount.querySelector('.ui-field-reveal') as HTMLButtonElement;
+        expect(reveal.getAttribute('data-plain')).toEqual('true');
+        reveal.click();
+        expect(amountInput.type).toEqual('text');
+        expect(reveal.getAttribute('aria-pressed')).toEqual('true');
+        reveal.click();
+        expect(amountInput.type).toEqual('password');
+
+        const amountClear = amount.querySelector('.ui-field-clear') as HTMLButtonElement;
+        expect(amountClear.getAttribute('data-plain')).toEqual('true');
+        amountInput.dispatchEvent(new (this.win as any).KeyboardEvent('keydown', {
+            key: 'Backspace',
+            ctrlKey: true,
+            bubbles: true
+        }));
+        await Promise.resolve();
+        expect((ref.instance as P3UiHostComponent).secret).toEqual('');
     }
 
     @Test('checkbox and switch toggle their semantic state')

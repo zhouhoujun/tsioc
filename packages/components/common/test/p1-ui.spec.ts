@@ -201,6 +201,7 @@ export class P1UiWidgetsTest {
 
         const clear = root.querySelector('.ui-field-clear') as HTMLButtonElement;
         expect(clear).toBeTruthy();
+        expect(clear.getAttribute('data-plain')).toEqual('true');
         clear.click();
         expect(host.search).toEqual('');
         expect(host.cleared).toEqual(1);

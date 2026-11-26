@@ -26,7 +26,7 @@ import { resolveFieldAria } from '../../field/src/field-semantics';
                 aria-describedby="{{describedBy}}"
                 @input="onInput($event)"
                 @keydown="onKeydown($event)" />
-            <button class="ui-field-clear" type="button" v-if="clearable && value"
+            <button class="ui-field-clear" type="button" data-plain="true" v-if="clearable && value"
                 aria-label="{{clearLabel}}" @click="clear">{{clearGlyph}}</button>
         </div>
         <span class="ui-field-hint" id="{{hintId}}" v-if="hint">{{hint}}</span>

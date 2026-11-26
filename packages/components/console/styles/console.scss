@@ -1187,3 +1187,7 @@ $idle: var(--console-idle, #6fa37a);
     --agent-theme-select-detail-value-color:#ffffff;
     --agent-theme-select-detail-value-padding:0 1ch;
 }
+
+.ui-field-addon,
+.ui-field-prefix,
+.ui-field-suffix { color: $meta; }

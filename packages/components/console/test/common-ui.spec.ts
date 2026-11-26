@@ -76,6 +76,8 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2" expandable resizableColumns :detailLines="detailFor"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']" :selectAction="onTree" :toggleAction="onTreeToggle"></ui-tree>
         <ui-text-field label="Name" value="Ada"></ui-text-field>
+        <ui-text-field label="Price" prefix="$" suffix=".00" addonBefore="USD" value="12" clearable></ui-text-field>
+        <ui-text-field label="Secret" type="password" revealable value="pw"></ui-text-field>
         <ui-checkbox label="Enabled" :checked="true"></ui-checkbox>
         <ui-switch label="Live" :checked="true"></ui-switch>
         <ui-radio-group :options="modes" value="basic"></ui-radio-group>
@@ -315,6 +317,11 @@ export class CommonUiConsoleTest {
             expect(output).toContain('✓');
             expect(output).toContain('Child');
             expect(output).toContain('Ada');
+            expect(output).toContain('USD');
+            expect(output).toContain('$');
+            expect(output).toContain('.00');
+            expect(output).toContain('◉');
+            expect(output).not.toContain('[ ✕ ]');
             expect(output).toContain('Enabled');
             expect(output).toContain('Live');
             expect(output).toContain('Basic');
