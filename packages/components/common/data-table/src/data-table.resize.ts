@@ -5,6 +5,8 @@ export interface DataTableResizeHost {
     enabled(): boolean;
     getWidth(key: string): number | undefined;
     setWidth(key: string, width: number): void;
+    /** Called once when the pointer gesture ends (host persistence hook). */
+    end?(): void;
 }
 
 /**
@@ -41,7 +43,10 @@ export class DataTableResizeController {
             const next = Math.max(24, Math.round(startWidth + (x - startX)));
             this.host.setWidth(column.key, next);
         };
-        const up = () => this.destroy();
+        const up = () => {
+            this.host.end?.();
+            this.destroy();
+        };
         doc.addEventListener('mousemove', move);
         doc.addEventListener('mouseup', up);
         this.cleanup = () => {

@@ -10,7 +10,9 @@ import { DataTableComponent, DataTableModule } from '../data-table';
     selector: 'data-table-columns-host',
     imports: [DataTableComponent],
     template: `
-    <ui-data-table :columns="columns" :rows="rows" rowKey="id" resizableColumns></ui-data-table>`
+    <ui-data-table :columns="columns" :rows="rows" rowKey="id" resizableColumns
+        :columnOrder="columnOrder" :hiddenColumns="hiddenColumns"
+        :columnWidths="columnWidths" :columnChangeAction="onColumns"></ui-data-table>`
 })
 class DataTableColumnsHostComponent {
     columns = [
@@ -23,6 +25,11 @@ class DataTableColumnsHostComponent {
         { id: 'a', name: 'Alpha', team: 'Core', role: 'admin', status: 'active' },
         { id: 'b', name: 'Beta', team: 'Docs', role: 'writer', status: 'idle' }
     ];
+    columnOrder: string[] = [];
+    hiddenColumns: string[] = [];
+    columnWidths: Record<string, number> = {};
+    columnState: any;
+    onColumns = (state: any) => { this.columnState = state; };
 }
 
 @Suite('common data table columns')
@@ -77,9 +84,25 @@ export class DataTableColumnsTest {
         expect(cells[3].classList.contains('is-fixed-right')).toEqual(true);
     }
 
+    @Test('reorders and hides columns through controlled layout inputs')
+    async layoutConfig() {
+        const { root, ref } = await this.mount();
+        const host = ref.instance as DataTableColumnsHostComponent;
+        host.columnOrder = ['status', 'name'];
+        host.hiddenColumns = ['team'];
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        const labels = Array.from(root.querySelectorAll('.ui-data-table-head .ui-data-table-cell'))
+            .map(item => item.textContent?.trim())
+            .filter(Boolean);
+        expect(labels.length).toEqual(3);
+        expect(labels[0]).toContain('Status');
+        expect(labels[1]).toContain('Name');
+        expect(labels.join(' ')).not.toContain('Team');
+    }
+
     @Test('resizes a column through the header handle')
     async resizesColumn() {
-        const { root } = await this.mount();
+        const { root, ref } = await this.mount();
         const doc = this.ctx.get(DOCUMENT) as Document;
         const header = root.querySelector('.ui-data-table-head .ui-data-table-cell') as HTMLElement;
         const resizer = header.querySelector('.ui-data-table-resizer') as HTMLElement;
@@ -97,5 +120,9 @@ export class DataTableColumnsTest {
         doc.dispatchEvent(new (doc.defaultView as any).MouseEvent('mousemove', { clientX: 90 }));
         await Promise.resolve();
         expect(header.style.width).toEqual('120px');
+
+        const host = ref.instance as DataTableColumnsHostComponent;
+        expect(host.columnState?.widths?.name).toEqual(120);
+        expect(host.columnState?.order).toEqual(['name', 'team', 'role', 'status']);
     }
 }

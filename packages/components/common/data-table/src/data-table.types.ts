@@ -8,6 +8,13 @@ export interface DataTableSort {
     direction: DataTableSortDirection;
 }
 
+/** Persistable column layout emitted after pointer resizing. */
+export interface DataTableColumnState {
+    order: string[];
+    hidden: string[];
+    widths: Record<string, number>;
+}
+
 export interface DataTableColumn {
     key: string;
     label?: string;

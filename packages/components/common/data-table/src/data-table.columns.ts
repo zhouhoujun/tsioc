@@ -1,4 +1,10 @@
-import { DataTableCell, DataTableColumn, DataTableSortDirection, DataTableViewColumn } from './data-table.types';
+import {
+    DataTableCell,
+    DataTableColumn,
+    DataTableColumnState,
+    DataTableSortDirection,
+    DataTableViewColumn
+} from './data-table.types';
 import { dataTableColumnWidthToken, dataTableFixedOffset } from './data-table.view';
 
 /** Build the rendered column projection (widths, sticky offsets, sort state). */
@@ -6,9 +12,22 @@ export function buildDataTableColumns(
     columns: DataTableColumn[],
     widths: Record<string, number>,
     resizableColumns: boolean,
-    sortDirection: (column: DataTableColumn) => DataTableSortDirection | ''
+    sortDirection: (column: DataTableColumn) => DataTableSortDirection | '',
+    order: string[] = [],
+    hidden: string[] = []
 ): DataTableViewColumn[] {
-    const raw = (Array.isArray(columns) ? columns : []).filter(column => column && !column.hidden);
+    const hiddenKeys = new Set([
+        ...(Array.isArray(columns) ? columns : []).filter(column => column?.hidden).map(column => String(column.key)),
+        ...(Array.isArray(hidden) ? hidden : []).map(String)
+    ]);
+    const source = (Array.isArray(columns) ? columns : []).filter(column => column && !hiddenKeys.has(String(column.key)));
+    const orderKeys = (Array.isArray(order) ? order : []).map(String);
+    const byKey = new Map(source.map(column => [String(column.key), column]));
+    const ordered = [
+        ...orderKeys.map(key => byKey.get(key)).filter(Boolean) as DataTableColumn[],
+        ...source.filter(column => !orderKeys.includes(String(column.key)))
+    ];
+    const raw = ordered;
     const tokens = raw.map(column => dataTableColumnWidthToken(widths[String(column.key)] ?? column.width));
     return raw.map((column, index) => {
         const key = String(column.key);
@@ -48,6 +67,26 @@ export function buildDataTableColumns(
             resizable: resizableColumns && column.resizable !== false
         } as DataTableViewColumn;
     });
+}
+
+/** Persistable layout after host/pointer changes. */
+export function dataTableColumnState(
+    columns: DataTableColumn[],
+    order: string[],
+    hidden: string[],
+    widths: Record<string, number>
+): DataTableColumnState {
+    const keys = (Array.isArray(columns) ? columns : []).map(column => String(column?.key ?? ''));
+    const orderKeys = (Array.isArray(order) ? order : []).map(String);
+    const ordered = [
+        ...orderKeys.filter(key => keys.includes(key)),
+        ...keys.filter(key => !orderKeys.includes(key))
+    ];
+    const hiddenKeys = new Set([
+        ...(Array.isArray(columns) ? columns : []).filter(column => column?.hidden).map(column => String(column.key)),
+        ...(Array.isArray(hidden) ? hidden : []).map(String)
+    ]);
+    return { order: ordered, hidden: [...hiddenKeys], widths: { ...(widths || {}) } };
 }
 
 /** Effective width/style for a rendered column (header + cells). */

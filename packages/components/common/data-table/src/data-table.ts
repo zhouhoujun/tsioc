@@ -3,13 +3,14 @@ import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { DataTableKeyboardController } from './data-table.keyboard';
 import { DataTableResizeController } from './data-table.resize';
-import { buildDataTableColumns, dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
+import { buildDataTableColumns, dataTableColumnState, dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
 import { dataTableAriaSort, dataTableSortDirection, nextDataTableSorts, resolveDataTableSorts } from './data-table.sort';
 import { normalizeBoolean } from '../../src/ui';
 import { PaginationComponent } from '../../pagination/src/pagination';
 import {
     DataTableCell,
     DataTableColumn,
+    DataTableColumnState,
     DataTableRow,
     DataTableSort,
     DataTableSortDirection,
@@ -135,6 +136,14 @@ export class DataTableComponent {
     @Attribute() selectionAction?: (keys: string[], rows: DataTableRow[]) => void;
     @Attribute() sortKey = '';
     @Attribute() sortDirection: DataTableSortDirection | '' = '';
+    /** Controlled column order (keys first, remaining columns keep source order). */
+    @Attribute() columnOrder: string[] = [];
+    /** Controlled hidden column keys in addition to `DataTableColumn.hidden`. */
+    @Attribute() hiddenColumns: string[] = [];
+    /** Controlled column widths; pointer resizing updates this map. */
+    @Attribute() columnWidths: Record<string, number> = {};
+    /** Persistence hook after a resize gesture; hosts store `order/hidden/widths`. */
+    @Attribute() columnChangeAction?: (state: DataTableColumnState) => void;
     /** Opt-in multi-column sorting; headers cycle asc -> desc -> none. */
     @Attribute()
     get multiSort(): boolean { return this._multiSort; }
@@ -183,7 +192,6 @@ export class DataTableComponent {
     private _resizableColumns = false;
     private _keyboardNavigation = false;
     private _multiSort = false;
-    private columnWidths: Record<string, number> = {};
     private keyboardController?: DataTableKeyboardController;
     private resizeController?: DataTableResizeController;
     protected get keyboardNav(): DataTableKeyboardController { return this.keyboardController ??= new DataTableKeyboardController(this); }
@@ -191,7 +199,8 @@ export class DataTableComponent {
         return this.resizeController ??= new DataTableResizeController({
             enabled: () => this._resizableColumns,
             getWidth: key => this.columnWidths[key],
-            setWidth: (key, width) => { this.columnWidths = { ...this.columnWidths, [key]: width }; }
+            setWidth: (key, width) => { this.columnWidths = { ...this.columnWidths, [key]: width }; },
+            end: () => this.columnChangeAction?.(this.columnState)
         });
     }
     private _asyncRows: DataTableRow[] = [];
@@ -291,7 +300,9 @@ export class DataTableComponent {
             this.columns,
             this.columnWidths,
             this._resizableColumns,
-            column => dataTableSortDirection(this.activeSorts, column)
+            column => dataTableSortDirection(this.activeSorts, column),
+            this.columnOrder,
+            this.hiddenColumns
         );
     }
 
@@ -317,6 +328,10 @@ export class DataTableComponent {
 
     get filteredEntries() {
         return filterDataTableRows(this.tableRows, this.filters);
+    }
+
+    get columnState(): DataTableColumnState {
+        return dataTableColumnState(this.columns, this.columnOrder, this.hiddenColumns, this.columnWidths);
     }
 
     get activeSorts(): DataTableSort[] {
