@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@tsdi/ioc';
+import { focusFirstIn } from './focus';
 import { unwrapReactive } from '@tsdi/components';
 
 export type OverlayKind = 'dialog' | 'drawer' | 'popover' | 'menu' | 'palette';
@@ -146,31 +147,8 @@ function overlayDocument(element: any): any {
 
 /** Default focus adapter: only active when the panel belongs to a DOM document. */
 function focusOverlay(entry: OverlayEntry): void {
-    const doc = overlayDocument(entry.element);
-    const root = focusRoot(entry.element);
-    if (!doc?.defaultView || !root) {
+    if (!overlayDocument(entry.element)?.defaultView) {
         return;
     }
-    const selector = entry.initialFocus || FOCUSABLE_SELECTOR;
-    let target: any;
-    try {
-        target = root.querySelector?.(selector);
-    } catch {
-        target = undefined;
-    }
-    const first = target || root.querySelector?.(FOCUSABLE_SELECTOR);
-    first?.focus?.();
+    focusFirstIn(entry.element, entry.initialFocus);
 }
-
-function focusRoot(element: any): any {
-    element = unwrapReactive(element);
-    if (!element) {
-        return null;
-    }
-    if (typeof element.matches === 'function' && element.matches('.dialog-panel')) {
-        return element;
-    }
-    return element.querySelector?.('.dialog-panel') || element;
-}
-
-export const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';

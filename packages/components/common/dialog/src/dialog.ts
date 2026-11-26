@@ -1,7 +1,8 @@
 import { Attribute, Component, ElementRef, OnDestroy } from '@tsdi/components';
 import { Inject, Optional } from '@tsdi/ioc';
 import { nextUiId } from '../../src/ui';
-import { FOCUSABLE_SELECTOR, OverlayManager } from '../../src/overlay-manager';
+import { OverlayManager } from '../../src/overlay-manager';
+import { trapFocusTab } from '../../src/focus';
 import { getDisplayWidth } from '../../src/display-width';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
@@ -178,7 +179,7 @@ export class DialogComponent implements OnDestroy {
             return;
         }
         if (event?.key === 'Tab' && this._overlayOpen && normalizeBoolean(this.trapFocus as any, true)) {
-            this.trapTab(event);
+            trapFocusTab(this.panelElement(), event);
         }
     }
 
@@ -190,24 +191,6 @@ export class DialogComponent implements OnDestroy {
         return element.matches?.('.dialog-panel') ? element : element.querySelector?.('.dialog-panel') || element;
     }
 
-    protected trapTab(event: any): void {
-        const root = this.panelElement();
-        const focusables = Array.from(root?.querySelectorAll?.(FOCUSABLE_SELECTOR) || [])
-            .filter((item: any) => item && item.disabled !== true);
-        if (!focusables.length) {
-            return;
-        }
-        const current = root?.ownerDocument?.activeElement;
-        const first = focusables[0] as any;
-        const last = focusables[focusables.length - 1] as any;
-        if (event.shiftKey && (current === first || !root?.contains?.(current))) {
-            event.preventDefault?.();
-            last.focus?.();
-        } else if (!event.shiftKey && (current === last || !root?.contains?.(current))) {
-            event.preventDefault?.();
-            first.focus?.();
-        }
-    }
 
     close(): void {
         if (this._overlayOpen) {
