@@ -19,6 +19,7 @@ import { DYNAMIC_FORM_TEMPLATE } from './dynamic-form.template';
 import { createDynamicFormClasses, DynamicFormClasses } from './dynamic-form.classes';
 import { DynamicFieldWidgetComponent } from './dynamic-field-widget';
 import { conditionMatches, normalizeSchema } from './dynamic-form.normalize';
+import { cloneFormValue, formCanLeave, formIsDirty, formTouchedFields } from './dynamic-form.state';
 import { applyFormSchema, formSchemaFields, refreshFormErrors, syncFormValues } from './dynamic-form.projection';
 import {
     DYNAMIC_FORM_WIDGETS,
@@ -90,6 +91,8 @@ export class DynamicFormComponent implements OnDestroy {
     /** Automatic async validation: none (host-driven), on change, on blur or on submit. */
     @Attribute() validateOn: 'none' | 'change' | 'blur' | 'submit' = 'none';
     @Attribute() validationDelay = 250;
+    /** Async/sync leave guard; call `canLeave()` before discarding the form. */
+    @Attribute() beforeLeaveAction?: () => boolean | Promise<boolean>;
     /** Per-form widgets; schema.widgets wins, then this list, then DI. */
     @Attribute() widgets: DynamicFormWidget[] = [];
 
@@ -157,9 +160,7 @@ export class DynamicFormComponent implements OnDestroy {
             }
         });
     }
-    get schema(): DynamicFormSchema {
-        return this._schema;
-    }
+    get schema(): DynamicFormSchema { return this._schema; }
 
     @Attribute()
     set value(value: Record<string, any> | null | undefined) {
@@ -172,9 +173,7 @@ export class DynamicFormComponent implements OnDestroy {
         this._value = next;
         this.scheduleSync(false);
     }
-    get value(): Record<string, any> {
-        return this._value;
-    }
+    get value(): Record<string, any> { return this._value; }
 
     @Attribute()
     set contextKey(value: string) {
@@ -219,11 +218,13 @@ export class DynamicFormComponent implements OnDestroy {
 
     protected mergedErrors(): Record<string, any> | null { return mergedFormErrors(this); }
 
-    get isDirty(): boolean { return !!this.form?.dirty; }
-
-    get errorSummary(): Array<{ key: string; label: string; message: string }> {
-        return formErrorSummary(this);
-    }
+    initialSnapshot: Record<string, any> | null = null;
+    get isDirty(): boolean { return formIsDirty(this); }
+    get isTouched(): boolean { return !!this.form?.touched || this.touchedFields.length > 0; }
+    get touchedFields(): string[] { return formTouchedFields(this.form); }
+    get errorSummary(): Array<{ key: string; label: string; message: string }> { return formErrorSummary(this); }
+    captureInitial(value: Record<string, any> = this.getValue()): void { this.initialSnapshot = cloneFormValue(value || {}); }
+    async canLeave(): Promise<boolean> { return formCanLeave(this); }
 
     /** Visible fields grouped under their section headers. */
     @Computed()
@@ -258,7 +259,7 @@ export class DynamicFormComponent implements OnDestroy {
 
     protected applySchema(): void { applyFormSchema(this); }
 
-    protected syncValues(force: boolean): void { syncFormValues(this, force); }
+    protected syncValues(force: boolean): void { syncFormValues(this, force); if (!this.initialSnapshot) { this.captureInitial(); } }
 
     refreshErrors(): void { refreshFormErrors(this); }
 
@@ -468,12 +469,13 @@ export class DynamicFormComponent implements OnDestroy {
         this.validityAction?.(this.isValid(), this.mergedErrors());
     }
 
-    /** Reset controls to schema defaults. Pass `false` for a silent reset. */
-    reset(emit = true): Record<string, any> {
+    /** Reset controls to schema defaults (or the captured initial snapshot). */
+    reset(emit = true, useInitial = false): Record<string, any> {
+        const snapshot = useInitial ? this.initialSnapshot : null;
         this.schemaFields().forEach(field => {
-            const value = field.defaultValue !== undefined
-                ? this.resetValue(field)
-                : this.initialValue(field);
+            const value = snapshot && Object.prototype.hasOwnProperty.call(snapshot, field.key)
+                ? snapshot[field.key]
+                : field.defaultValue !== undefined ? this.resetValue(field) : this.initialValue(field);
             this.form?.get(field.key)?.reset(value, { emitEvent: false });
         });
         this.submitAttempted = false;
@@ -493,6 +495,8 @@ export class DynamicFormComponent implements OnDestroy {
     }
 
     resetForm(): void { this.reset(true); }
+
+    resetToInitial(): Record<string, any> { return this.reset(true, true); }
 
     submit(): DynamicFormResult {
         this.submitAttempted = true;

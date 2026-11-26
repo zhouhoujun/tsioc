@@ -214,6 +214,39 @@ export class DynamicFormTest {
         expect(form.errorSummary.length).toEqual(2);
     }
 
+    @Test('captures the initial snapshot, tracks dirty/touched and guards leaving')
+    async snapshotAndLeaveGuard() {
+        const form = createForm({
+            fields: [
+                { key: 'name', type: 'text', label: 'Name' },
+                { key: 'note', type: 'text', label: 'Note' }
+            ]
+        }, { name: 'Ada', note: '' });
+        await flush();
+        expect(form.isDirty).toBe(false);
+        expect(form.isTouched).toBe(false);
+        expect(form.initialSnapshot).toEqual({ name: 'Ada', note: '' });
+
+        form.changeText(form.schema.fields[0], { target: { value: 'Grace' } });
+        await flush();
+        expect(form.isDirty).toBe(true);
+        expect(form.isTouched).toBe(true);
+        expect(form.touchedFields).toContain('name');
+
+        let allow = false;
+        form.beforeLeaveAction = () => allow;
+        expect(await form.canLeave()).toBe(false);
+        allow = true;
+        expect(await form.canLeave()).toBe(true);
+
+        form.resetToInitial();
+        await flush();
+        expect(form.getValue().name).toBe('Ada');
+        expect(form.isDirty).toBe(false);
+        expect(form.isTouched).toBe(false);
+        expect(await form.canLeave()).toBe(true);
+    }
+
     @Test('reports invalid schema JSON without throwing')
     async reportsInvalidSchema() {
         const form = new DynamicFormComponent();
