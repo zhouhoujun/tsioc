@@ -4,7 +4,7 @@ import { markElementRefRaw } from '../../src/raw-element';
 import { DataTableKeyboardController } from './data-table.keyboard';
 import { DataTableResizeController } from './data-table.resize';
 import { buildDataTableColumns, dataTableColumnState, dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
-import { dataTableAriaSort, dataTableSortDirection, nextDataTableSorts, resolveDataTableSorts } from './data-table.sort';
+import { dataTableAriaSort, dataTableSortDirection, dataTableSortPriority, nextDataTableSorts, resolveDataTableSorts } from './data-table.sort';
 import { normalizeBoolean } from '../../src/ui';
 import { PaginationComponent } from '../../pagination/src/pagination';
 import {
@@ -58,6 +58,7 @@ export * from './data-table.types';
                 tabindex="{{column.sortable ? 0 : null}}" [style]="columnStyle(column)"
                 v-for="column in viewColumns" trackBy="key"
                 @click="sort(column)" @keydown="headerKeydown($event, column)">{{column.label}}<span
+                    class="ui-data-table-sort" aria-hidden="true" v-if="column.sortGlyph">{{column.sortGlyph}}</span><span
                     class="ui-data-table-resizer" v-if="column.resizable"
                     @mousedown="startResize(column, $event)" @click="stopResizeClick($event)"></span></span>
         </div>
@@ -302,7 +303,8 @@ export class DataTableComponent {
             this._resizableColumns,
             column => dataTableSortDirection(this.activeSorts, column),
             this.columnOrder,
-            this.hiddenColumns
+            this.hiddenColumns,
+            column => this.multiSort ? dataTableSortPriority(this.activeSorts, column) : 0
         );
     }
 

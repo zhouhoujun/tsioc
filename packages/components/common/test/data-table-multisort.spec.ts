@@ -79,6 +79,8 @@ export class DataTableMultiSortTest {
         expect(rows()).toEqual(['3', '2', '4', '1']);
         expect(headers()[0].getAttribute('aria-sort')).toEqual('ascending');
         expect(headers()[1].getAttribute('aria-sort')).toEqual('ascending');
+        expect(headers()[0].querySelector('.ui-data-table-sort')?.textContent).toEqual(' ▲1');
+        expect(headers()[1].querySelector('.ui-data-table-sort')?.textContent).toEqual(' ▲2');
         expect(host.sorts[1]).toEqual([
             { key: 'name', direction: 'asc' },
             { key: 'age', direction: 'asc' }
@@ -95,6 +97,8 @@ export class DataTableMultiSortTest {
         expect(rows()).toEqual(['3', '4', '1', '2']);
         expect(headers()[0].getAttribute('aria-sort')).toEqual('none');
         expect(headers()[1].getAttribute('aria-sort')).toEqual('ascending');
+        expect(headers()[0].querySelector('.ui-data-table-sort')).toBeFalsy();
+        expect(headers()[1].querySelector('.ui-data-table-sort')?.textContent).toEqual(' ▲1');
         expect(host.sorts[3]).toEqual([{ key: 'age', direction: 'asc' }]);
     }
 }

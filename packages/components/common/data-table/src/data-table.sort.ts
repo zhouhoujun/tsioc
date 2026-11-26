@@ -50,6 +50,15 @@ export function dataTableSortFor(
     return sorts.find(item => item.key === key);
 }
 
+export function dataTableSortPriority(sorts: DataTableSort[], column: DataTableSortColumn): number {
+    if (!column.sortable) {
+        return 0;
+    }
+    const key = column.sortKey || column.key;
+    const index = sorts.findIndex(item => item.key === key);
+    return index < 0 ? 0 : index + 1;
+}
+
 export function dataTableSortDirection(
     sorts: DataTableSort[],
     column: DataTableSortColumn

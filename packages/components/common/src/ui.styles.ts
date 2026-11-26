@@ -500,8 +500,7 @@ ${PLAIN_BUTTON_CSS}
     outline: 2px solid var(--ui-focus-ring, currentColor);
     outline-offset: -1px;
 }
-.ui-data-table-sortable.is-sorted-asc::after { content: ' ▲'; font-size: 0.8em; }
-.ui-data-table-sortable.is-sorted-desc::after { content: ' ▼'; font-size: 0.8em; }
+.ui-data-table-sort { font-size: 0.8em; }
 .ui-data-table-select {
     flex: 0 0 auto;
     width: 3ch;

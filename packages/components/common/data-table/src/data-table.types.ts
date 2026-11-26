@@ -56,6 +56,9 @@ export interface DataTableViewColumn {
     cellStyle?: Record<string, string>;
     sortable: boolean;
     sortKey?: string;
+    sortPriority: number;
+    /** Visible arrow + optional priority (multi-sort). */
+    sortGlyph: string;
     filterable?: boolean;
     resizable: boolean;
     render?: (value: any, row: DataTableRow, index: number) => any;

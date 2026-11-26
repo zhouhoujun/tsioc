@@ -14,7 +14,8 @@ export function buildDataTableColumns(
     resizableColumns: boolean,
     sortDirection: (column: DataTableColumn) => DataTableSortDirection | '',
     order: string[] = [],
-    hidden: string[] = []
+    hidden: string[] = [],
+    sortPriority: (column: DataTableColumn) => number = () => 0
 ): DataTableViewColumn[] {
     const hiddenKeys = new Set([
         ...(Array.isArray(columns) ? columns : []).filter(column => column?.hidden).map(column => String(column.key)),
@@ -33,6 +34,10 @@ export function buildDataTableColumns(
         const key = String(column.key);
         const sortable = column.sortable === true;
         const direction = sortable ? sortDirection(column) : '';
+        const priority = direction ? sortPriority(column) : 0;
+        const sortGlyph = direction
+            ? ` ${direction === 'asc' ? '▲' : '▼'}${priority || ''}`
+            : '';
         const fixed = column.fixed === 'left' || column.fixed === 'right' ? column.fixed : undefined;
         const width = widths[key] ?? column.width;
         const widthStyle = width == null
@@ -62,6 +67,8 @@ export function buildDataTableColumns(
             style: { ...(widthStyle || {}), ...(stickyStyle || {}) } as Record<string, string> | undefined,
             sortable,
             sortKey: column.sortKey || key,
+            sortPriority: priority,
+            sortGlyph,
             filterable: column.filterable === true,
             render: column.render,
             resizable: resizableColumns && column.resizable !== false
