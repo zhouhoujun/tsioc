@@ -73,7 +73,7 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-avatar label="Ada Lovelace"></ui-avatar>
         <ui-pagination :total="30" :pageSize="10" :page="2" showSizeChanger :pageSizeOptions="[5, 10, 20]" showQuickJumper></ui-pagination>
         <ui-data-table :columns="tableColumns" :rows="tableRows" rowKey="id" selectable :selectedKeys="['a']" :selectionAction="onSelection"></ui-data-table>
-        <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2" expandable resizableColumns :detailLines="detailFor"></ui-data-table>
+        <ui-data-table :columns="pagedColumns" :rows="pagedRows" rowKey="id" pagination :pageSize="2" expandable resizableColumns keyboardNavigation :detailLines="detailFor"></ui-data-table>
         <ui-tree :items="tree" :expandedIds="['root']" :selectAction="onTree" :toggleAction="onTreeToggle"></ui-tree>
         <ui-text-field label="Name" value="Ada"></ui-text-field>
         <ui-text-field label="Price" prefix="$" suffix=".00" addonBefore="USD" value="12" clearable></ui-text-field>
@@ -522,6 +522,14 @@ export class CommonUiConsoleTest {
                 size.dispatchEvent({ type: 'click', target: size });
                 await Promise.resolve();
                 expect(size.textContent).toContain('20 / page');
+
+                const navCells = () => (ref.hostView.rootNodes[0] as any).querySelectorAll('.is-data-cell');
+                const activeCell = Array.from(navCells()).find((cell: any) => cell.getAttribute('tabindex') === '0');
+                expect(activeCell).toBeTruthy();
+                (activeCell as any).focus();
+                expect(surface.dispatchKey({ key: 'ArrowRight' })).toEqual(true);
+                await Promise.resolve();
+                expect(Array.from(navCells()).filter((cell: any) => cell.getAttribute('tabindex') === '0').length).toEqual(1);
                 // Keyboard parity: the focused crumb handles Enter in the TUI
                 // exactly like the browser's tabindex/Enter path.
                 const crumb = (ref.hostView.rootNodes[0] as any).querySelector('.ui-breadcrumb-item[role="link"]');

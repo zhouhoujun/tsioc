@@ -1,4 +1,9 @@
-import { Attribute, Component, noReact } from '@tsdi/components';
+import { Attribute, Component, ElementRef, noReact } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
+import { markElementRefRaw } from '../../src/raw-element';
+import { DataTableKeyboardController } from './data-table.keyboard';
+import { DataTableResizeController } from './data-table.resize';
+import { dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
 import { normalizeBoolean } from '../../src/ui';
 import { PaginationComponent } from '../../pagination/src/pagination';
 import {
@@ -54,10 +59,22 @@ export * from './data-table.types';
                     class="ui-data-table-resizer" v-if="column.resizable"
                     @mousedown="startResize(column, $event)" @click="stopResizeClick($event)"></span></span>
         </div>
+        <div class="ui-data-table-filter-row" role="row" v-if="hasFilterableColumns">
+            <span class="ui-data-table-cell ui-data-table-expand" role="cell" aria-hidden="true" v-if="expandable"></span>
+            <span class="ui-data-table-cell ui-data-table-select" role="cell" aria-hidden="true" v-if="selectable"></span>
+            <span class="ui-data-table-cell ui-data-table-filter-cell" role="cell"
+                v-for="column in viewColumns" trackBy="key">
+                <input class="ui-data-table-filter" type="search" v-if="column.filterable"
+                    value="{{(filters && filters[column.key]) || ''}}"
+                    aria-label="{{column.label || column.key}}"
+                    placeholder="{{column.label || column.key}}"
+                    @input="filterColumn(column, $event)" />
+            </span>
+        </div>
         <div class="ui-data-table-spacer" v-if="virtual && virtualTopHeight" [style]="spacerStyle(virtualTopHeight)"></div>
         <div class="ui-data-table-row-group" v-for="row in viewRows" trackBy="key">
         <div class="{{row.className}}" role="row" aria-selected="{{row.selected}}"
-            @click="pick(row)">
+            data-row-key="{{row.key}}" @click="pick(row)">
             <span class="ui-data-table-cell ui-data-table-expand" role="cell" v-if="expandable">
                 <span class="ui-data-table-expander" role="button" tabindex="0" focusable="true"
                     aria-expanded="{{rowExpanded(row)}}"
@@ -73,8 +90,11 @@ export * from './data-table.types';
                     <span aria-hidden="true">{{rowChecked(row) ? '✓' : ' '}}</span>
                 </span>
             </span>
-            <span class="{{cell.className}}" role="cell"
-                v-for="cell in row.cells" trackBy="key" [style]="cellStyleFor(cell)">{{cell.text}}</span>
+            <span class="{{cell.className}}" role="cell" data-cell-key="{{cell.key}}"
+                tabindex="{{cellTabIndex(row, cell)}}" focusable="{{cellFocusable(cell)}}"
+                v-for="cell in row.cells" trackBy="key" [style]="cellStyleFor(cell)"
+                @click="focusCellOnly(row, cell)" @focus="focusCellOnly(row, cell)"
+                @keydown="onCellKeydown($event, row, cell)">{{cell.text}}</span>
         </div>
         <div class="ui-data-table-detail-row" role="row" v-if="expandable && rowExpanded(row)">
             <span class="ui-data-table-cell ui-data-table-detail" role="cell">
@@ -98,6 +118,10 @@ export * from './data-table.types';
     </div>`
 })
 export class DataTableComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
     @Attribute() columns: DataTableColumn[] = [];
     @Attribute() rows: DataTableRow[] = [];
     @Attribute() rowKey: string | ((row: DataTableRow, index: number) => string | number) = 'id';
@@ -151,14 +175,25 @@ export class DataTableComponent {
     private _loading = false;
     private _selectable = false;
     private _resizableColumns = false;
+    private _keyboardNavigation = false;
     private columnWidths: Record<string, number> = {};
-    private cleanupResize?: () => void;
+    private keyboardController?: DataTableKeyboardController;
+    private resizeController?: DataTableResizeController;
+    protected get keyboardNav(): DataTableKeyboardController { return this.keyboardController ??= new DataTableKeyboardController(this); }
+    protected get resizeControl(): DataTableResizeController {
+        return this.resizeController ??= new DataTableResizeController({
+            enabled: () => this._resizableColumns,
+            getWidth: key => this.columnWidths[key],
+            setWidth: (key, width) => { this.columnWidths = { ...this.columnWidths, [key]: width }; }
+        });
+    }
     private _asyncRows: DataTableRow[] = [];
     private _asyncTotal = 0;
     private _asyncError = '';
     private _asyncLoading = false;
     private asyncRequest = 0;
     private asyncAbort?: AbortController;
+    private activeCellKey = '';
 
     @Attribute()
     get striped(): boolean { return this._striped; }
@@ -195,6 +230,11 @@ export class DataTableComponent {
     @Attribute()
     get resizableColumns(): boolean { return this._resizableColumns; }
     set resizableColumns(value: boolean | string) { this._resizableColumns = normalizeBoolean(value); }
+
+    /** Opt-in grid keyboard navigation across data cells. */
+    @Attribute()
+    get keyboardNavigation(): boolean { return this._keyboardNavigation; }
+    set keyboardNavigation(value: boolean | string) { this._keyboardNavigation = normalizeBoolean(value); }
 
     get pageSizeNumber(): number {
         return Math.max(1, Math.floor(Number(this.pageSize) || 10));
@@ -276,55 +316,27 @@ export class DataTableComponent {
                 style: { ...(widthStyle || {}), ...(stickyStyle || {}) } as Record<string, string> | undefined,
                 sortable,
                 sortKey: column.sortKey || key,
+                filterable: column.filterable === true,
                 render: column.render,
                 resizable: this._resizableColumns && column.resizable !== false
             } as DataTableViewColumn;
         });
     }
 
-    stopResizeClick(event?: Event): void {
-        event?.preventDefault?.();
-        event?.stopPropagation?.();
-    }
-
-    startResize(column: DataTableViewColumn, event?: any): void {
-        if (!this._resizableColumns) {
-            return;
-        }
-        event?.preventDefault?.();
-        event?.stopPropagation?.();
-        const doc = event?.currentTarget?.ownerDocument;
-        if (!doc?.addEventListener) {
-            return;
-        }
-        this.cleanupResize?.();
-        const startX = Number(event?.clientX ?? event?.pageX ?? 0);
-        const header = event?.currentTarget?.parentElement;
-        const measured = Number(header?.getBoundingClientRect?.().width);
-        const startWidth = measured > 0 ? measured : this.columnWidthPixels(column);
-        const move = (moveEvent: any) => {
-            const x = Number(moveEvent?.clientX ?? moveEvent?.pageX ?? 0);
-            const next = Math.max(24, Math.round(startWidth + (x - startX)));
-            this.columnWidths = { ...this.columnWidths, [column.key]: next };
-        };
-        const up = () => this.cleanupResize?.();
-        doc.addEventListener('mousemove', move);
-        doc.addEventListener('mouseup', up);
-        this.cleanupResize = () => {
-            doc.removeEventListener?.('mousemove', move);
-            doc.removeEventListener?.('mouseup', up);
-            this.cleanupResize = undefined;
-        };
-    }
+    stopResizeClick(event?: Event): void { this.resizeControl.stopClick(event); }
+    startResize(column: DataTableViewColumn, event?: any): void { this.resizeControl.start(column, event); }
 
     onInit(): void {
         if (this.source) {
             void this.reload();
         }
     }
-
     get tableRows(): DataTableRow[] {
         return this.source ? this._asyncRows : (Array.isArray(this.rows) ? this.rows : []);
+    }
+
+    get hasFilterableColumns(): boolean {
+        return this.viewColumns.some(column => column.filterable === true);
     }
 
     get tableTotal(): number {
@@ -389,6 +401,8 @@ export class DataTableComponent {
         const window = this.virtualWindow;
         this.windowAction?.(window.start, window.end, this.pageEntries.length);
     }
+
+    filterColumn(column: DataTableViewColumn, event: any): void { this.setFilter(column.key, event?.target?.value); }
 
     setFilter(key: string, value: any): void {
         this.filters = { ...(this.filters || {}), [key]: String(value ?? '') };
@@ -463,38 +477,31 @@ export class DataTableComponent {
     }
 
     onDestroy(): void {
-        this.cleanupResize?.();
+        this.resizeController?.destroy();
+    }
+    columnStyle(column: DataTableViewColumn): Record<string, string> | undefined { return dataTableColumnStyle(this.columns, this.columnWidths, column); }
+
+    cellFocusable(cell: DataTableCell): boolean { return this.keyboardNav.cellFocusable(cell); }
+
+    cellTabIndex(row: DataTableViewRow, cell: DataTableCell): number {
+        return this.keyboardNav.cellTabIndex(row, cell, this.activeCellKey);
+    }
+    focusCellOnly(row: DataTableViewRow, cell: DataTableCell): void {
+        const key = this.keyboardNav.focusCellOnly(row, cell);
+        if (key) { this.activeCellKey = key; }
     }
 
-    protected columnWidthPixels(column: DataTableViewColumn): number {
-        const width = this.columnWidths[column.key];
-        if (Number.isFinite(width)) {
-            return width;
-        }
-        const text = String(column.style?.width ?? '');
-        const px = /^(\d+(\.\d+)?)px$/.exec(text);
-        return px ? Number(px[1]) : 96;
+    onCellKeydown(event: any, row: DataTableViewRow, cell: DataTableCell): void {
+        const target = this.keyboardNav.onKeydown(event, row, cell);
+        if (target) { this.activeCellKey = target.key; this.focusCellNode(target.rowIndex, target.cellIndex); }
     }
 
-    columnStyle(column: DataTableViewColumn): Record<string, string> | undefined {
-        const width = this.columnWidths[column.key] ?? this.rawColumn(column.key)?.width;
-        const style = { ...(column.style || {}) };
-        if (width == null) {
-            delete style.width;
-        } else {
-            style.width = typeof width === 'number' ? `${width}px` : String(width);
-        }
-        return style;
+    protected focusCellNode(rowIndex: number, cellIndex: number): void {
+        const rows = this.elementRef?.nativeElement?.querySelectorAll?.('.ui-data-table-row');
+        const cells = rows?.[rowIndex]?.querySelectorAll?.('.is-data-cell');
+        cells?.[cellIndex]?.focus?.();
     }
-
-    cellStyleFor(cell: DataTableCell): Record<string, string> | undefined {
-        const column = this.viewColumns.find(entry => entry.key === cell.columnKey);
-        return column ? this.columnStyle(column) : cell.style;
-    }
-
-    protected rawColumn(key: string): DataTableColumn | undefined {
-        return (Array.isArray(this.columns) ? this.columns : []).find(column => String(column?.key) === key);
-    }
+    cellStyleFor(cell: DataTableCell): Record<string, string> | undefined { return dataTableCellStyle(this.columns, this.columnWidths, this.viewColumns, cell); }
 
     sort(column: DataTableViewColumn): void {
         if (!column.sortable) {
@@ -661,7 +668,7 @@ export class DataTableComponent {
                     key: `${key}-${column.key}`,
                     columnKey: column.key,
                     text: formatDataTableCell(column, row, index),
-                    className: column.cellClass,
+                    className: `${column.cellClass} is-data-cell`,
                     style: column.cellStyle
                 });
                 if (columnIndex < columns.length - 1) {

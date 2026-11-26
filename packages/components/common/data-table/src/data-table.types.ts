@@ -43,6 +43,7 @@ export interface DataTableViewColumn {
     cellStyle?: Record<string, string>;
     sortable: boolean;
     sortKey?: string;
+    filterable?: boolean;
     resizable: boolean;
     render?: (value: any, row: DataTableRow, index: number) => any;
 }
