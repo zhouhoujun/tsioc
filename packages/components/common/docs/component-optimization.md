@@ -327,6 +327,8 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - widget 回调统一为 `changeAction(value)`，宿主负责 field/row 绑定，
     避免 widget 自己传 field 造成列表值错位。
 - **宿主 token 桥接**
+  - agent web console 把 `--agent-web-*` 映射到 common `--ui-*`，嵌入的
+    autocomplete/dialog/data-table 等通用 widget 跟随 web 主题。
   - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
     边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
     等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。

@@ -49,6 +49,21 @@ body {
 }
 
 #agent-console {
+    /* Bridge the shared common-widget tokens to the web console theme. */
+    --ui-bg: var(--agent-web-bg);
+    --ui-card-bg: var(--agent-web-panel);
+    --ui-card-fg: var(--agent-web-text);
+    --ui-muted-fg: var(--agent-web-muted);
+    --ui-field-bg: var(--agent-web-panel-raised);
+    --ui-select-bg: var(--agent-web-panel-raised);
+    --ui-border: var(--agent-web-border);
+    --ui-button-bg: var(--agent-web-panel-raised);
+    --ui-button-fg: var(--agent-web-text);
+    --ui-link-fg: var(--agent-web-link);
+    --ui-focus-ring: var(--agent-web-accent);
+    --ui-danger-fg: var(--agent-web-danger);
+    --ui-data-table-head-bg: var(--agent-web-table-head);
+    --ui-data-table-fixed-bg: var(--agent-web-panel);
     padding-left: max(24px, env(safe-area-inset-left));
     padding-right: max(24px, env(safe-area-inset-right));
 }
