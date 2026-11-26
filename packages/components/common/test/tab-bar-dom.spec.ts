@@ -152,6 +152,31 @@ export class TabBarDomTest {
         expect(back.getAttribute('data-disabled')).toEqual('true');
     }
 
+    @Test('close affordances are keyboard operable and hand focus back to a live tab')
+    async closeKeydown() {
+        const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;
+        const closed: string[] = [];
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        doc.body.appendChild(ref.hostView.rootNodes[0] as any);
+        ref.instance.source = {
+            ...source,
+            items: [
+                { id: 'a', label: ' Alpha ', active: true, showClose: true },
+                { id: 'b', label: ' Beta ', active: false, showClose: true }
+            ],
+            close: id => closed.push(id)
+        };
+        await ref.render();
+        await Promise.resolve();
+        const root = ref.hostView.rootNodes[0] as any;
+        const closes = Array.from(root.querySelectorAll('.tab-close')) as HTMLElement[];
+        expect(closes.every(close => close.getAttribute('tabindex') === '0')).toEqual(true);
+        closes[0].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await Promise.resolve();
+        expect(closed).toEqual(['a']);
+        root.remove();
+    }
+
     @Test('DOM overflow uses one more menu listing every tab')
     async domOverflowMenu() {
         const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;

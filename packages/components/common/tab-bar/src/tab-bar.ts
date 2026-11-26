@@ -3,6 +3,7 @@ import { Inject, Optional, token } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId } from '../../src/ui';
 import { installTabBarStyles } from './tab-bar.styles';
+import { positionTabOverflowMenu } from './tab-bar.overflow';
 
 /** A renderer-neutral tab entry: the host owns meaning, the tab bar only paints it. */
 export interface TabItem {
@@ -83,7 +84,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
             v-for="(tab, index) in items" trackBy="id"
             @click="select(tab.id, $event)" @focus="focusOnly(tab)"
             @keydown="onTabKeydown($event, tab, index)">
-            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
+            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" tabindex="0" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)" @keydown="onCloseKeydown($event, tab.id)">{{closeLabel}}</span>
         </span>
         <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
         <span class="tab-overflow" role="button" focusable="true" v-if="overflowMenuVisible"
@@ -303,6 +304,32 @@ export class TabBarComponent implements AfterViewInit {
     closeTab(id: string, event?: Event): void {
         event?.stopPropagation?.();
         this.close(id);
+        this.focusAfterClose();
+    }
+
+    /** Keyboard activation for the nested close affordance. */
+    onCloseKeydown(event: any, id: string): void {
+        const key = String(event?.key || '');
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.closeTab(id, event);
+        }
+    }
+
+    /** Keep keyboard focus inside the strip after a tab disappears. */
+    protected focusAfterClose(): void {
+        void Promise.resolve().then(() => Promise.resolve()).then(() => {
+            const items = this.items;
+            const target = items.find(item => item.active && !item.disabled)
+                ?? items.find(item => !item.disabled);
+            if (!target) {
+                this.focusedKey = '';
+                return;
+            }
+            this.focusedKey = target.id;
+            this.focusTab(items.indexOf(target));
+        });
     }
 
     /**
@@ -339,7 +366,7 @@ export class TabBarComponent implements AfterViewInit {
         }
         if ((key === 'Delete' || key === 'Backspace') && tab.showClose !== false) {
             event?.preventDefault?.();
-            this.close(tab.id);
+            this.closeTab(tab.id, event);
             return;
         }
         let targetIndex = -1;
@@ -427,38 +454,12 @@ export class TabBarComponent implements AfterViewInit {
         }
     }
 
-    /**
-     * A menu rendered inside the horizontally scrolling strip would be clipped
-     * by its overflow box. Anchor it to the viewport with fixed coordinates and
-     * clamp it to the visible screen. Terminal hosts keep the CSS fallback.
-     */
+    /** Anchor the menu outside the scrolling strip (see the helper module). */
     protected placeOverflowMenu(measure = false): void {
-        const strip = this.resolveStripElement();
-        const trigger = strip?.querySelector?.('.tab-overflow') as HTMLElement | undefined;
-        const view = (trigger?.ownerDocument as { defaultView?: Window } | undefined)?.defaultView;
-        const rect = trigger?.getBoundingClientRect?.();
-        if (!view || !rect || (!rect.width && !rect.height)) {
-            return;
+        const style = positionTabOverflowMenu(this.resolveStripElement(), measure);
+        if (style) {
+            this.overflowMenuStyle = style;
         }
-        const menu = strip?.querySelector?.('.tab-overflow-menu') as HTMLElement | undefined;
-        const menuRect = measure ? menu?.getBoundingClientRect?.() : undefined;
-        const width = Number(menuRect?.width) || 240;
-        const height = Number(menuRect?.height) || 0;
-        const margin = 8;
-        const innerWidth = Number(view.innerWidth) || width + margin * 2;
-        const innerHeight = Number(view.innerHeight) || height + margin * 2;
-        const left = Math.max(margin, Math.min(rect.right - width, innerWidth - width - margin));
-        const below = rect.bottom + 4;
-        const above = rect.top - height - 4;
-        const top = height && below + height > innerHeight - margin && above >= margin ? above : below;
-        this.overflowMenuStyle = {
-            position: 'fixed',
-            left: `${Math.round(left)}px`,
-            top: `${Math.round(top)}px`,
-            right: 'auto',
-            'max-height': `${Math.max(120, Math.round(innerHeight - top - margin))}px`,
-            'z-index': '40'
-        };
     }
 
     protected focusOverflowTrigger(): void {
