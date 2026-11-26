@@ -1,4 +1,5 @@
 import { Attribute, Component, Computed } from '@tsdi/components';
+import { normalizeBoolean } from '../../src/ui';
 import { getDisplayWidth } from '../../src/display-width';
 import type { ToastEntry, ToastTone } from './toast';
 
@@ -25,7 +26,8 @@ export interface ToastRow {
     template: `
     <div class="console-toast-stack" role="status" aria-live="polite" v-show="visible">
         <div class="console-toast-card">
-        <label class="console-toast" data-tone="{{item.tone}}" v-for="item in rows" trackBy="id">
+        <label class="console-toast" data-tone="{{item.tone}}" v-for="item in rows" trackBy="id"
+            @mouseenter="hoverStart(item.id)" @mouseleave="hoverEnd(item.id)">
             <span class="toast-message">{{item.text}}</span><span class="toast-action" role="button" tabindex="0"
                 focusable="true" v-if="item.actionLabel" @click="invoke(item.id, $event)"
                 @keydown="actionKeydown(item.id, $event)">{{item.actionText}}</span><span class="toast-close" role="button" data-cell-width="3" @click="dismiss(item.id, $event)">{{closeAffordance}}</span>
@@ -39,8 +41,16 @@ export class ToastStackComponent {
     @Attribute() closeAction?: (id: string) => void;
     /** Host runs the entry action (for example `ToastService.invoke`). */
     @Attribute() actionAction?: (id: string) => void;
+    @Attribute() pauseAction?: (id: string) => void;
+    @Attribute() resumeAction?: (id: string) => void;
     /** Inner content width for terminal cards; pads the message so ✕ sits right. */
     @Attribute() messageWidth = 0;
+    private _pauseOnHover = false;
+
+    /** Opt-in: hovering a toast pauses its countdown through the host actions. */
+    @Attribute()
+    get pauseOnHover(): boolean { return this._pauseOnHover; }
+    set pauseOnHover(value: boolean | string) { this._pauseOnHover = normalizeBoolean(value); }
 
     /** The close glyph carries a leading no-break space: terminal spans do not
      * honour padding, so the gap has to be part of the text run. */
@@ -86,6 +96,18 @@ export class ToastStackComponent {
     @Computed()
     get visible(): boolean {
         return this.rows.length > 0;
+    }
+
+    hoverStart(id: string): void {
+        if (this._pauseOnHover) {
+            this.pauseAction?.(id);
+        }
+    }
+
+    hoverEnd(id: string): void {
+        if (this._pauseOnHover) {
+            this.resumeAction?.(id);
+        }
     }
 
     invoke(id: string, event?: Event): void {

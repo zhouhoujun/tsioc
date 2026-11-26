@@ -64,6 +64,50 @@ export class ToastServiceTest {
         service.onDestroy();
     }
 
+    @Test('sorts high priority entries ahead while preserving insertion order')
+    async priorityOrder() {
+        const service = new ToastService();
+        service.show('first', { durationMs: 0 });
+        service.show('urgent', { durationMs: 0, priority: 'high' });
+        service.show('second', { durationMs: 0 });
+        expect(service.current.map(entry => entry.message)).toEqual(['urgent', 'first', 'second']);
+        service.dismiss(service.current[0].id);
+        expect(service.current.map(entry => entry.message)).toEqual(['first', 'second']);
+        service.onDestroy();
+    }
+
+    @Test('pause freezes the countdown and resume keeps the remaining time')
+    async pauseAndResume() {
+        const clock = new FakeClock();
+        const service = new ToastService(clock);
+        const realNow = Date.now;
+        let now = 1000;
+        Date.now = () => now;
+        try {
+            const id = service.show('Saved', { durationMs: 500 });
+            now = 1300;
+            service.pause(id);
+            expect(clock.listeners.size).toEqual(0);
+
+            now = 5000;
+            clock.tick();
+            expect(service.current.length).toEqual(1);
+
+            service.resume(id);
+            expect(clock.listeners.size).toEqual(1);
+            now = 5100;
+            clock.tick();
+            expect(service.current.length).toEqual(1);
+            now = 5200;
+            clock.tick();
+            expect(service.current).toEqual([]);
+            expect(clock.listeners.size).toEqual(0);
+        } finally {
+            Date.now = realNow;
+            service.onDestroy();
+        }
+    }
+
     @Test('empty messages are ignored')
     ignoresEmptyMessages() {
         const service = new ToastService();

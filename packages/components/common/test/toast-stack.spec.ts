@@ -7,7 +7,8 @@ const entry = (id: string, message: string, tone: ToastEntry['tone'] = 'info'): 
     id,
     message,
     tone,
-    createdAt: 1
+    createdAt: 1,
+    priority: 'normal'
 });
 
 @Suite('common toast stack')
@@ -42,6 +43,27 @@ export class ToastStackComponentTest {
         expect(invoked).toEqual(['toast-1', 'toast-1']);
         stack.actionKeydown('toast-1', { key: 'Tab', preventDefault() { } });
         expect(invoked).toEqual(['toast-1', 'toast-1']);
+    }
+
+    @Test('opt-in hover pause forwards pause/resume to the host')
+    hoverPause() {
+        const stack = new ToastStackComponent();
+        const paused: string[] = [];
+        const resumed: string[] = [];
+        stack.items = [entry('toast-1', 'Saved')];
+        stack.pauseAction = id => paused.push(id);
+        stack.resumeAction = id => resumed.push(id);
+
+        stack.hoverStart('toast-1');
+        stack.hoverEnd('toast-1');
+        expect(paused).toEqual([]);
+        expect(resumed).toEqual([]);
+
+        stack.pauseOnHover = true;
+        stack.hoverStart('toast-1');
+        stack.hoverEnd('toast-1');
+        expect(paused).toEqual(['toast-1']);
+        expect(resumed).toEqual(['toast-1']);
     }
 
     @Test('hides itself and ignores malformed input when the queue is empty')

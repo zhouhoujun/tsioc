@@ -2,6 +2,7 @@ import { Injectable, OnDestroy, Optional } from '@tsdi/ioc';
 import { AnimationClock } from '@tsdi/components';
 
 export type ToastTone = 'info' | 'success' | 'warning' | 'error';
+export type ToastPriority = 'normal' | 'high';
 
 export interface ToastOptions {
     tone?: ToastTone;
@@ -10,6 +11,8 @@ export interface ToastOptions {
     /** Optional inline action (for example Undo); hosts dismiss explicitly. */
     actionLabel?: string;
     action?: () => void;
+    /** High-priority entries sort ahead of normal ones in `current`. */
+    priority?: ToastPriority;
 }
 
 export interface ToastEntry {
@@ -17,6 +20,7 @@ export interface ToastEntry {
     message: string;
     tone: ToastTone;
     createdAt: number;
+    priority?: ToastPriority;
     actionLabel?: string;
     action?: () => void;
 }
@@ -38,13 +42,17 @@ export class ToastService implements OnDestroy {
     protected entries: ToastEntry[] = [];
     protected readonly listeners = new Set<ToastListener>();
     protected readonly deadlines = new Map<string, number>();
+    protected readonly paused = new Set<string>();
+    protected readonly remaining = new Map<string, number>();
     protected sequence = 0;
     protected ticking = false;
 
     constructor(@Optional() protected clock?: AnimationClock) { }
 
     get current(): readonly ToastEntry[] {
-        return this.entries;
+        // Stable priority order: high entries first, insertion order preserved.
+        return [...this.entries].sort((left, right) =>
+            (right.priority === 'high' ? 1 : 0) - (left.priority === 'high' ? 1 : 0));
     }
 
     show(message: string, options: ToastOptions = {}): string {
@@ -59,6 +67,7 @@ export class ToastService implements OnDestroy {
             message: text,
             tone: options.tone || 'info',
             createdAt: Date.now(),
+            priority: options.priority === 'high' ? 'high' : 'normal',
             ...(actionLabel ? {
                 actionLabel,
                 action: typeof options.action === 'function' ? options.action : undefined
@@ -79,8 +88,38 @@ export class ToastService implements OnDestroy {
         this.entries.find(entry => entry.id === id)?.action?.();
     }
 
+    /** Freeze auto-dismiss for one entry (hover intent); resumes on `resume`. */
+    pause(id: string): void {
+        if (this.paused.has(id)) {
+            return;
+        }
+        const deadline = this.deadlines.get(id);
+        if (deadline == null) {
+            return;
+        }
+        this.remaining.set(id, Math.max(0, deadline - Date.now()));
+        this.deadlines.delete(id);
+        this.paused.add(id);
+        this.stopTickIfIdle();
+    }
+
+    /** Continue an auto-dismiss countdown after a pause. */
+    resume(id: string): void {
+        if (!this.paused.delete(id)) {
+            return;
+        }
+        const remaining = this.remaining.get(id) ?? 0;
+        this.remaining.delete(id);
+        if (this.entries.some(entry => entry.id === id)) {
+            this.deadlines.set(id, Date.now() + remaining);
+            this.startTick();
+        }
+    }
+
     dismiss(id: string): void {
         this.deadlines.delete(id);
+        this.paused.delete(id);
+        this.remaining.delete(id);
         const next = this.entries.filter(entry => entry.id !== id);
         if (next.length === this.entries.length) {
             this.stopTickIfIdle();
@@ -93,6 +132,8 @@ export class ToastService implements OnDestroy {
 
     clear(): void {
         this.deadlines.clear();
+        this.paused.clear();
+        this.remaining.clear();
         this.stopTickIfIdle();
         if (!this.entries.length) {
             return;
@@ -103,7 +144,7 @@ export class ToastService implements OnDestroy {
 
     subscribe(listener: ToastListener): () => void {
         this.listeners.add(listener);
-        listener(this.entries);
+        listener(this.current);
         return () => this.listeners.delete(listener);
     }
 
@@ -159,8 +200,9 @@ export class ToastService implements OnDestroy {
     }
 
     protected emit(): void {
+        const snapshot = this.current;
         for (const listener of [...this.listeners]) {
-            listener(this.entries);
+            listener(snapshot);
         }
     }
 }

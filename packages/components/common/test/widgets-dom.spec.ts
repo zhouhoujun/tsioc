@@ -32,7 +32,7 @@ class CommonWidgetsHostComponent {
         { label: 'Three', value: '3' }
     ];
     toasts: ToastEntry[] = [
-        { id: 't1', message: 'Copied', tone: 'success', createdAt: 1 }
+        { id: 't1', message: 'Copied', tone: 'success', createdAt: 1, priority: 'normal' }
     ];
     selected: string[] = [];
     selectRow = (value: string) => this.selected.push(value);
