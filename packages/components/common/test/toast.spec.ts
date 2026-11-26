@@ -108,6 +108,48 @@ export class ToastServiceTest {
         }
     }
 
+    @Test('caps the queue and evicts the oldest normal entry first')
+    async capacity() {
+        const service = new ToastService();
+        service.setMaxEntries(2);
+        service.show('first', { durationMs: 0 });
+        service.show('urgent', { durationMs: 0, priority: 'high' });
+        service.show('second', { durationMs: 0 });
+        expect(service.current.map(entry => entry.message)).toEqual(['urgent', 'second']);
+
+        service.setMaxEntries(1);
+        service.show('third', { durationMs: 0 });
+        expect(service.current.map(entry => entry.message)).toEqual(['third']);
+
+        service.setMaxEntries(0);
+        expect(service.current.map(entry => entry.message)).toEqual(['third']);
+        service.onDestroy();
+    }
+
+    @Test('capacity eviction releases the evicted entry timer')
+    async capacityReleasesClock() {
+        const clock = new FakeClock();
+        const service = new ToastService(clock);
+        const realNow = Date.now;
+        let now = 1000;
+        Date.now = () => now;
+        try {
+            service.setMaxEntries(1);
+            service.show('first', { durationMs: 500 });
+            expect(clock.listeners.size).toEqual(1);
+            service.show('second', { durationMs: 0 });
+            expect(service.current.map(entry => entry.message)).toEqual(['second']);
+            // The evicted first entry no longer owns a deadline/clock tick.
+            expect(clock.listeners.size).toEqual(0);
+            now = 2000;
+            clock.tick();
+            expect(service.current.map(entry => entry.message)).toEqual(['second']);
+        } finally {
+            Date.now = realNow;
+            service.onDestroy();
+        }
+    }
+
     @Test('empty messages are ignored')
     ignoresEmptyMessages() {
         const service = new ToastService();

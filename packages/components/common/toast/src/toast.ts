@@ -45,6 +45,8 @@ export class ToastService implements OnDestroy {
     protected readonly paused = new Set<string>();
     protected readonly remaining = new Map<string, number>();
     protected sequence = 0;
+    /** Queue capacity; 0 keeps every entry (oldest normal entries evict first). */
+    maxEntries = 0;
     protected ticking = false;
 
     constructor(@Optional() protected clock?: AnimationClock) { }
@@ -60,6 +62,7 @@ export class ToastService implements OnDestroy {
         if (!text) {
             return '';
         }
+        this.enforceCapacity(true);
         const id = `toast-${++this.sequence}`;
         const actionLabel = String(options.actionLabel ?? '').trim();
         const entry: ToastEntry = {
@@ -81,6 +84,45 @@ export class ToastService implements OnDestroy {
         }
         this.emit();
         return id;
+    }
+
+    /** Update the queue capacity and trim immediately. */
+    setMaxEntries(value: number | string): void {
+        const next = Math.floor(Number(value) || 0);
+        this.maxEntries = next > 0 ? next : 0;
+        this.enforceCapacity();
+        this.stopTickIfIdle();
+        this.emit();
+    }
+
+    /**
+     * Drop the oldest normal entry (falling back to the oldest high-priority
+     * one) until the queue fits `maxEntries`. Expired/pending timers for the
+     * evicted entry are released with it.
+     */
+    protected enforceCapacity(adding = false): void {
+        const capacity = Math.max(0, Math.floor(Number(this.maxEntries) || 0));
+        if (!capacity) {
+            return;
+        }
+        let next = this.entries;
+        while (next.length > capacity - (adding ? 1 : 0)) {
+            const index = next.findIndex(entry => entry.priority !== 'high');
+            if (next === this.entries) {
+                next = [...this.entries];
+            }
+            const [dropped] = next.splice(index < 0 ? 0 : index, 1);
+            if (!dropped) {
+                break;
+            }
+            this.deadlines.delete(dropped.id);
+            this.paused.delete(dropped.id);
+            this.remaining.delete(dropped.id);
+        }
+        if (next !== this.entries) {
+            this.entries = next;
+        }
+        this.stopTickIfIdle();
     }
 
     /** Run an entry's action without dismissing; the action may call `dismiss`. */
