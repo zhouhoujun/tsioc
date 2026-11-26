@@ -1,5 +1,21 @@
 /** Dark, solarized and high-contrast skins. */
 export const WORKFLOW_DESIGNER_THEME_CSS = `/* Themes */
+/* Base widgets embedded in the designer follow its theme through --ui-* tokens. */
+.workflow-designer {
+    --ui-bg: var(--wf-theme-bg, #f8fafc);
+    --ui-card-bg: var(--wf-theme-surface, #ffffff);
+    --ui-card-fg: var(--wf-theme-text, #0f172a);
+    --ui-muted-fg: var(--wf-theme-muted, #64748b);
+    --ui-field-bg: var(--wf-theme-input, #ffffff);
+    --ui-select-bg: var(--wf-theme-input, #ffffff);
+    --ui-border: var(--wf-theme-border, #e2e8f0);
+    --ui-button-bg: var(--wf-theme-surface-alt, #f8fafc);
+    --ui-button-fg: var(--wf-theme-text, #0f172a);
+    --ui-link-fg: var(--wf-theme-primary, #2563eb);
+    --ui-focus-ring: var(--wf-theme-primary, #2563eb);
+    --ui-danger-fg: var(--wf-theme-danger, #dc2626);
+    --ui-data-table-head-bg: var(--wf-theme-surface-alt, #f8fafc);
+}
 .workflow-designer[data-theme="dark"] {
     --wf-theme-bg: #0b1220;
     --wf-theme-surface: #111827;

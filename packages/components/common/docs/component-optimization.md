@@ -326,6 +326,10 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     规则值在列表内获得同样的 typed 编辑体验。
   - widget 回调统一为 `changeAction(value)`，宿主负责 field/row 绑定，
     避免 widget 自己传 field 造成列表值错位。
+- **宿主 token 桥接**
+  - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
+    边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
+    等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。
 - **共享焦点工具**
   - `src/focus.ts` 统一 `focusNth`、可聚焦元素查询、初始聚焦、Tab/Shift+Tab
     陷阱与恢复；dialog 和 OverlayManager 删除各自重复实现，roving widgets
