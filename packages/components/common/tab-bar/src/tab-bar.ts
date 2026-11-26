@@ -4,6 +4,7 @@ import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId } from '../../src/ui';
 import { installTabBarStyles } from './tab-bar.styles';
 import { positionTabOverflowMenu } from './tab-bar.overflow';
+import { contextTab, dropTab, startTabDrag } from './tab-bar.reorder';
 
 /** A renderer-neutral tab entry: the host owns meaning, the tab bar only paints it. */
 export interface TabItem {
@@ -82,6 +83,8 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
             aria-controls="{{tab.controls || ''}}" tabindex="{{tabIndexFor(tab, index)}}"
             focusable="{{!tab.disabled}}" data-disabled="{{tab.disabled}}" data-hover-group="true"
             v-for="(tab, index) in items" trackBy="id"
+            draggable="true" @dragstart="dragStart(tab, $event)" @dragover="dragOver($event)"
+            @drop="dropOn(tab, $event)" @dragend="dragEnd()" @contextmenu="contextMenu(tab, $event)"
             @click="select(tab.id, $event)" @focus="focusOnly(tab)"
             @keydown="onTabKeydown($event, tab, index)">
             <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" tabindex="{{closeTabIndex(tab)}}" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)" @keydown="onCloseKeydown($event, tab.id)">{{closeLabel}}</span>
@@ -104,11 +107,13 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
 export class TabBarComponent implements AfterViewInit {
     /** Direct source wins over the injected one (hosts without a provider). */
     @Attribute() source?: TabBarSource;
-
     @ViewChild('strip', ElementRef) strip?: ElementRef;
     /** Manual mode focuses without activating until Enter/Space. */
     @Attribute() activationMode: 'automatic' | 'manual' = 'automatic';
-
+    /** Reorder callback: receives the new id order plus moved/target ids. */
+    @Attribute() reorderAction?: (ids: string[], id: string, targetId: string) => void;
+    /** Host-defined tab context menu (right-click/long-press); use a Popover/Menu. */
+    @Attribute() contextAction?: (id: string, event: Event) => void;
     /** DOM strips report their own overflow (terminal strips leave these false). */
     protected domOverflow = false;
     protected domBack = false;
@@ -125,14 +130,13 @@ export class TabBarComponent implements AfterViewInit {
     protected overflowMenuOpen = false;
     protected overflowMenuStyle: Record<string, string> = {};
     protected overflowDismiss?: () => void;
-
+    draggingId = '';
     constructor(
         @Optional() protected elementRef?: ElementRef,
         @Optional() @Inject(TAB_BAR_SOURCE) private injectedSource?: TabBarSource
     ) {
         markElementRefRaw(elementRef);
     }
-
     onAfterViewInit(): void {
         // The common strip owns its skin: every DOM host (workflow tabs,
         // admin, web console) gets the same look without installing it.
@@ -142,7 +146,6 @@ export class TabBarComponent implements AfterViewInit {
         markElementRefRaw(this.strip);
         this.bindDomOverflow();
     }
-
     onDestroy(): void {
         this.unbindOverflowDismiss();
         const host = this.overflowHost;
@@ -166,39 +169,30 @@ export class TabBarComponent implements AfterViewInit {
     protected get activeSource(): TabBarSource | undefined {
         return this.source || this.injectedSource;
     }
-
     get visible(): boolean {
         return this.activeSource ? this.activeSource.visible : true;
     }
-
     get items(): TabItem[] {
         return this.activeSource?.items || [];
     }
-
     get showCreate(): boolean {
         return this.activeSource ? this.activeSource.showCreate !== false : true;
     }
-
     get createLabel(): string {
         return this.activeSource?.createLabel || '+';
     }
-
     get closeLabel(): string {
         return this.activeSource?.closeLabel || '✕';
     }
-
     get closeTabTitle(): string {
         return this.activeSource?.closeTabTitle || 'Close tab';
     }
-
     get mode(): 'automatic' | 'manual' {
         return this.activeSource?.activationMode || this.activationMode;
     }
-
     tabElementId(tab: TabItem): string {
         return tab?.elementId || `${this.uid}-${String(tab?.id || 'tab').replace(/[^A-Za-z0-9_-]+/g, '-')}`;
     }
-
     closeTabLabel(tab: TabItem): string {
         return `${this.closeTabTitle} ${tab?.label || ''}`.trim();
     }
@@ -546,6 +540,12 @@ export class TabBarComponent implements AfterViewInit {
         this.overflowDismiss?.();
         this.overflowDismiss = undefined;
     }
+
+    dragStart(tab: TabItem, event?: any): void { startTabDrag(this, tab, event); }
+    dragOver(event?: any): void { if (this.draggingId) { event?.preventDefault?.(); } }
+    dropOn(tab: TabItem, event?: any): void { dropTab(this, tab, event); }
+    dragEnd(): void { this.draggingId = ''; }
+    contextMenu(tab: TabItem, event?: any): void { contextTab(this, tab, event); }
 
     create(): void {
         this.closeOverflowMenu(false);

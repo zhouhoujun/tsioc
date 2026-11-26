@@ -44,6 +44,24 @@ export class TabBarComponentTest {
         expect(bar.closeLabel).toEqual('✕');
     }
 
+    @Test('reorders dragged tabs and forwards context actions')
+    async reorderAndContext() {
+        const bar = new TabBarComponent();
+        bar.source = {
+            visible: true,
+            items: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }]
+        };
+        let order: string[] = [];
+        let contextId = '';
+        bar.reorderAction = (ids, id, targetId) => { order = ids; };
+        bar.contextAction = id => { contextId = id; };
+        bar.dragStart(bar.items[0], { dataTransfer: { setData() { } } });
+        bar.dropOn(bar.items[2], { preventDefault() { } });
+        expect(order).toEqual(['b', 'c', 'a']);
+        bar.contextMenu(bar.items[1], { preventDefault() { }, stopPropagation() { } });
+        expect(contextId).toEqual('b');
+    }
+
     @Test('host-windowed strips default to one more menu')
     overflowsWindowedSource() {
         const bar = new TabBarComponent();

@@ -895,6 +895,13 @@ body[data-agent-sidebar="open"] .agent-web-sidebar-toggle {
     margin-bottom: 6px;
 }
 
+#agent-console agent-console-select-panel .select-row { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+#agent-console agent-console-select-panel .select-group { padding: 4px 10px 2px; color: var(--agent-web-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+#agent-console agent-console-select-panel .select-values { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0 0 8px; }
+#agent-console agent-console-select-panel .select-value { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border: 1px solid var(--agent-web-border); border-radius: 999px; color: var(--agent-web-text); font-size: 11.5px; }
+#agent-console agent-console-select-panel .select-value-remove,
+#agent-console agent-console-select-panel .select-clear { cursor: pointer; color: var(--agent-web-muted); }
+#agent-console agent-console-select-panel .select-clear { margin-left: 4px; font-size: 11.5px; }
 #agent-console agent-console-select-panel .select-option {
     display: flex;
     align-items: baseline;

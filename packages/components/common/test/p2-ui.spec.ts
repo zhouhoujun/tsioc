@@ -166,7 +166,7 @@ export class P2UiWidgetsTest {
         expect(root.textContent).toContain('Alpha');
         expect(root.textContent).toContain('Beta');
         expect(root.querySelectorAll('.ui-data-table-row').length).toEqual(2);
-        expect(root.querySelector('.ui-data-table-row .ui-data-table-cell.is-right')?.textContent).toEqual('1');
+        expect(root.querySelector('.ui-data-table-row .ui-data-table-cell.is-right')?.textContent?.trim()).toEqual('1');
 
         (root.querySelectorAll('.ui-data-table-row')[1] as HTMLElement).click();
         expect(host.selectedRow).toEqual('b');

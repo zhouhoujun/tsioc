@@ -29,7 +29,9 @@ import { installTreeSelectStyles } from './tree-select.styles';
         </span>
         <div class="ui-tree-select-panel" v-if="openState">
             <ui-tree :items="items" :expandedIds="expandedKeys" :selectedId="selectedKey"
-                :ariaLabel="ariaLabel" :selectionFollowsFocus="false" :wrapFocus="true" :selectAction="treeSelectHandler"
+                :ariaLabel="ariaLabel" :checkable="checkable" :multiple="multiple"
+                :checkedIds="checkedIds" :checkAction="treeCheckHandler" :loadChildren="loadChildren"
+                :selectionFollowsFocus="false" :wrapFocus="true" :selectAction="treeSelectHandler"
                 :toggleAction="treeToggleHandler"></ui-tree>
         </div>
     </div>`
@@ -52,14 +54,27 @@ export class TreeSelectComponent {
     @Attribute() ariaLabel = 'Tree select';
     @Attribute() className = '';
     @Attribute() changeAction?: (node: TreeNode) => void;
+    @Attribute() checkAction?: (keys: string[], node: TreeNode) => void;
+    @Attribute() loadChildren?: (node: TreeNode) => TreeNode[] | Promise<TreeNode[]>;
+    @Attribute() checkedIds: Array<string | number> = [];
 
     private _open = false;
     private _disabled = false;
+    private _multiple = false;
+    private _checkable = false;
     private selected = '';
 
     @Attribute()
     get disabled(): boolean { return this._disabled; }
     set disabled(value: boolean | string) { this._disabled = normalizeBoolean(value); }
+
+    @Attribute()
+    get multiple(): boolean { return this._multiple; }
+    set multiple(value: boolean | string) { this._multiple = normalizeBoolean(value); }
+
+    @Attribute()
+    get checkable(): boolean { return this._checkable; }
+    set checkable(value: boolean | string) { this._checkable = normalizeBoolean(value); }
 
     get selectedKey(): string {
         return this.selected || String(this.selectedId || '');
@@ -82,11 +97,25 @@ export class TreeSelectComponent {
     }
 
     get displayLabel(): string {
+        if (this._multiple) {
+            return (this.checkedIds || [])
+                .map(key => this.findLabel(this.items, String(key)))
+                .filter(Boolean)
+                .join(', ');
+        }
         return this.findLabel(this.items, this.selectedKey);
     }
 
     get treeSelectHandler(): (node: TreeNode) => void {
-        return node => this.choose(node);
+        return node => {
+            if (!this._multiple) {
+                this.choose(node);
+            }
+        };
+    }
+
+    get treeCheckHandler(): (keys: string[], node: TreeNode) => void {
+        return (keys, node) => this.checkAction?.(keys, node);
     }
 
     get treeToggleHandler(): (node: TreeNode, expanded: boolean) => void {

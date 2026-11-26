@@ -1,0 +1,48 @@
+import {
+    DataTableCell,
+    DataTableRow,
+    DataTableViewColumn,
+    DataTableViewRow
+} from './data-table.types';
+import { IndexedDataTableRow, formatDataTableCell } from './data-table.view';
+
+/** Build the rendered row window: cells, separators and selection flags. */
+export function buildDataTableRows(
+    entries: IndexedDataTableRow[],
+    columns: DataTableViewColumn[],
+    selectedKeys: Set<string>,
+    selectedKey: string,
+    rows: DataTableRow[],
+    rowKeyOf: (row: DataTableRow, index: number) => string
+): DataTableViewRow[] {
+    return entries.map(({ row, index }) => {
+        const key = rowKeyOf(rows[index], index);
+        const checked = selectedKeys.has(key);
+        const selected = (!!selectedKey && String(selectedKey) === key) || checked;
+        const cells: DataTableCell[] = [];
+        columns.forEach((column, columnIndex) => {
+            cells.push({
+                key: `${key}-${column.key}`,
+                columnKey: column.key,
+                text: formatDataTableCell(column, row, index),
+                className: `${column.cellClass} is-data-cell`,
+                style: column.cellStyle
+            });
+            if (columnIndex < columns.length - 1) {
+                cells.push({
+                    key: `${key}-sep-${columnIndex}`,
+                    text: '│',
+                    className: 'ui-data-table-sep'
+                });
+            }
+        });
+        return {
+            key,
+            index,
+            cells,
+            className: ['ui-data-table-row', selected ? 'is-selected' : ''].filter(Boolean).join(' '),
+            selected,
+            checked
+        };
+    });
+}

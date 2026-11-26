@@ -52,6 +52,8 @@ export class TooltipComponent {
     private _disabled = false;
     private _focusable = false;
     private _flip = true;
+    private _portal = false;
+    private portalStyle: Record<string, string> = {};
     private _placement: TooltipPlacement = 'top';
     private resolvedPlacement: TooltipPlacement | '' = '';
     private shiftX = 0;
@@ -96,6 +98,11 @@ export class TooltipComponent {
         }
     }
 
+    /** Render with fixed viewport coordinates so scroll containers cannot clip it. */
+    @Attribute()
+    get portal(): boolean { return this._portal; }
+    set portal(value: boolean | string) { this._portal = normalizeBoolean(value); }
+
     get popupPlacement(): TooltipPlacement {
         return this.resolvedPlacement || this._placement;
     }
@@ -103,7 +110,8 @@ export class TooltipComponent {
     get popupStyle(): Record<string, string> {
         return {
             '--ui-overlay-shift-x': `${this.shiftX}px`,
-            '--ui-overlay-shift-y': `${this.shiftY}px`
+            '--ui-overlay-shift-y': `${this.shiftY}px`,
+            ...this.portalStyle
         };
     }
 
@@ -124,6 +132,40 @@ export class TooltipComponent {
         const shift = resolveOverlayShift(anchor, popup, next as UiPlacement, 6, true);
         this.shiftX = shift.x;
         this.shiftY = shift.y;
+        this.resolvePortal(anchor, popup, next as UiPlacement);
+    }
+
+    protected resolvePortal(anchor: any, popup: any, placement: TooltipPlacement): void {
+        if (!this._portal) {
+            this.portalStyle = {};
+            return;
+        }
+        const view = (anchor?.ownerDocument as { defaultView?: Window } | undefined)?.defaultView;
+        const rect = anchor?.getBoundingClientRect?.();
+        const popupRect = popup?.getBoundingClientRect?.();
+        if (!view || !rect || !popupRect || (!popupRect.width && !popupRect.height)) {
+            this.portalStyle = {};
+            return;
+        }
+        let left = rect.left + (rect.width - popupRect.width) / 2 + this.shiftX;
+        let top = rect.top - popupRect.height - 6;
+        if (placement === 'bottom') {
+            top = rect.bottom + 6;
+        } else if (placement === 'left' || placement === 'right') {
+            left = placement === 'left' ? rect.left - popupRect.width - 6 : rect.right + 6;
+            top = rect.top + (rect.height - popupRect.height) / 2 + this.shiftY;
+        }
+        const width = Number(view.innerWidth) || 0;
+        const height = Number(view.innerHeight) || 0;
+        left = Math.max(8, Math.min(left, width - popupRect.width - 8));
+        top = Math.max(8, Math.min(top, height - popupRect.height - 8));
+        this.portalStyle = {
+            position: 'fixed',
+            left: `${Math.round(left)}px`,
+            top: `${Math.round(top)}px`,
+            transform: 'none',
+            'z-index': '40'
+        };
     }
 
     get tooltipId(): string {

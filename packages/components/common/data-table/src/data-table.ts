@@ -5,6 +5,8 @@ import { DataTableKeyboardController } from './data-table.keyboard';
 import { DataTableResizeController } from './data-table.resize';
 import { buildDataTableColumns, dataTableColumnState, dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
 import { dataTableAriaSort, dataTableSortDirection, dataTableSortPriority, nextDataTableSorts, resolveDataTableSorts } from './data-table.sort';
+import { buildDataTableRows } from './data-table.rows';
+import { commitCellEdit, editCellKeydown, isEditingCell, startCellEdit } from './data-table.edit';
 import { normalizeBoolean } from '../../src/ui';
 import { PaginationComponent } from '../../pagination/src/pagination';
 import {
@@ -94,11 +96,16 @@ export * from './data-table.types';
                     <span aria-hidden="true">{{rowChecked(row) ? '✓' : ' '}}</span>
                 </span>
             </span>
-            <span class="{{cell.className}}" role="cell" data-cell-key="{{cell.key}}"
-                tabindex="{{cellTabIndex(row, cell)}}" focusable="{{cellFocusable(cell)}}"
-                v-for="cell in row.cells" trackBy="key" [style]="cellStyleFor(cell)"
-                @click="focusCellOnly(row, cell)" @focus="focusCellOnly(row, cell)"
-                @keydown="onCellKeydown($event, row, cell)">{{cell.text}}</span>
+            <span class="{{cell.className}} {{isEditing(cell) ? 'is-editing' : ''}}" role="cell"
+                data-cell-key="{{cell.key}}" tabindex="{{cellTabIndex(row, cell)}}"
+                focusable="{{cellFocusable(cell)}}" v-for="cell in row.cells" trackBy="key"
+                [style]="cellStyleFor(cell)" @click="focusCellOnly(row, cell, $event)"
+                @focus="focusCellOnly(row, cell)" @keydown="onCellKeydown($event, row, cell)">
+                <input class="ui-data-table-edit" v-if="isEditing(cell)" [value]="editDraft"
+                    @input="editInput($event)" @keydown="editKeydown($event, row, cell)"
+                    @blur="commitEdit(row, cell)" />
+                <span class="ui-data-table-cell-text" v-else>{{cell.text}}</span>
+            </span>
         </div>
         <div class="ui-data-table-detail-row" role="row" v-if="expandable && rowExpanded(row)">
             <span class="ui-data-table-cell ui-data-table-detail" role="cell">
@@ -134,6 +141,11 @@ export class DataTableComponent {
     @Attribute() className = '';
     @Attribute() sortAction?: (key: string, direction: DataTableSortDirection) => void;
     @Attribute() rowAction?: (row: DataTableRow, index: number) => void;
+    /** Opt-in cell editing; Enter/double-click starts, Enter commits, Escape cancels. */
+    @Attribute()
+    get editable(): boolean { return this._editable; }
+    set editable(value: boolean | string) { this._editable = normalizeBoolean(value); }
+    @Attribute() editAction?: (row: DataTableRow, columnKey: string, value: string) => void;
     @Attribute() selectionAction?: (keys: string[], rows: DataTableRow[]) => void;
     @Attribute() sortKey = '';
     @Attribute() sortDirection: DataTableSortDirection | '' = '';
@@ -193,6 +205,11 @@ export class DataTableComponent {
     private _resizableColumns = false;
     private _keyboardNavigation = false;
     private _multiSort = false;
+    private _editable = false;
+    editKey = '';
+    editDraft = '';
+    private lastClickKey = '';
+    private lastClickAt = 0;
     private keyboardController?: DataTableKeyboardController;
     private resizeController?: DataTableResizeController;
     protected get keyboardNav(): DataTableKeyboardController { return this.keyboardController ??= new DataTableKeyboardController(this); }
@@ -252,16 +269,12 @@ export class DataTableComponent {
     @Attribute()
     get keyboardNavigation(): boolean { return this._keyboardNavigation; }
     set keyboardNavigation(value: boolean | string) { this._keyboardNavigation = normalizeBoolean(value); }
-
     get pageSizeNumber(): number { return Math.max(1, Math.floor(Number(this.pageSize) || 10)); }
-
     get pageCount(): number { return Math.max(1, Math.ceil(this.tableTotal / this.pageSizeNumber)); }
-
     get currentPage(): number {
         const page = Math.floor(Number(this.page) || 1);
         return Math.max(1, Math.min(this.pageCount, page));
     }
-
     get pageHandler(): (page: number) => void { return page => this.goToPage(page); }
 
     goToPage(page: number): void {
@@ -275,7 +288,6 @@ export class DataTableComponent {
             void this.reload();
         }
     }
-
     get tableClass(): string {
         return dataTableClass({
             striped: this._striped,
@@ -285,11 +297,9 @@ export class DataTableComponent {
             className: this.className
         });
     }
-
     get headerClass(): string {
         return dataTableHeaderClass(this._stickyHeader);
     }
-
     get viewColumns(): DataTableViewColumn[] {
         return buildDataTableColumns(
             this.columns,
@@ -304,7 +314,6 @@ export class DataTableComponent {
 
     stopResizeClick(event?: Event): void { this.resizeControl.stopClick(event); }
     startResize(column: DataTableViewColumn, event?: any): void { this.resizeControl.start(column, event); }
-
     onInit(): void {
         if (this.source) {
             void this.reload();
@@ -313,15 +322,11 @@ export class DataTableComponent {
     get tableRows(): DataTableRow[] {
         return this.source ? this._asyncRows : (Array.isArray(this.rows) ? this.rows : []);
     }
-
     get hasFilterableColumns(): boolean { return hasFilterableDataTableColumns(this.viewColumns); }
-
     get hasActiveFilters(): boolean { return hasActiveDataTableFilters(this.filters); }
-
     get tableTotal(): number {
         return this.source && this._asyncTotal > 0 ? this._asyncTotal : this.filteredEntries.length;
     }
-
     get filteredEntries() {
         return filterDataTableRows(this.tableRows, this.filters);
     }
@@ -467,28 +472,49 @@ export class DataTableComponent {
         this.resizeController?.destroy();
     }
     columnStyle(column: DataTableViewColumn): Record<string, string> | undefined { return dataTableColumnStyle(this.columns, this.columnWidths, column); }
+    cellStyleFor(cell: DataTableCell): Record<string, string> | undefined { return dataTableCellStyle(this.columns, this.columnWidths, this.viewColumns, cell); }
 
     cellFocusable(cell: DataTableCell): boolean { return this.keyboardNav.cellFocusable(cell); }
 
     cellTabIndex(row: DataTableViewRow, cell: DataTableCell): number {
         return this.keyboardNav.cellTabIndex(row, cell, this.activeCellKey);
     }
-    focusCellOnly(row: DataTableViewRow, cell: DataTableCell): void {
+    focusCellOnly(row: DataTableViewRow, cell: DataTableCell, event?: any): void {
         const key = this.keyboardNav.focusCellOnly(row, cell);
         if (key) { this.activeCellKey = key; }
+        if (!this._editable || !cell?.columnKey || event?.type !== 'click') { return; }
+        const now = Date.now();
+        if (this.lastClickKey === cell.key && now - this.lastClickAt < 400) {
+            this.lastClickKey = '';
+            this.startEdit(row, cell);
+            return;
+        }
+        this.lastClickKey = cell.key;
+        this.lastClickAt = now;
     }
 
     onCellKeydown(event: any, row: DataTableViewRow, cell: DataTableCell): void {
+        if (this._editable && String(event?.key || '') === 'Enter') {
+            event.preventDefault?.();
+            this.startEdit(row, cell);
+            return;
+        }
         const target = this.keyboardNav.onKeydown(event, row, cell);
         if (target) { this.activeCellKey = target.key; this.focusCellNode(target.rowIndex, target.cellIndex); }
     }
+
+    isEditing(cell: DataTableCell): boolean { return isEditingCell(this, cell); }
+    startEdit(row: DataTableViewRow, cell: DataTableCell): void { startCellEdit(this, row, cell, this.elementRef?.nativeElement); }
+    editInput(event: any): void { this.editDraft = String(event?.target?.value ?? ''); }
+    commitEdit(row: DataTableViewRow, cell: DataTableCell): void { commitCellEdit(this, row, cell); }
+    cancelEdit(): void { this.editKey = ''; }
+    editKeydown(event: any, row: DataTableViewRow, cell: DataTableCell): void { editCellKeydown(this, event, row, cell); }
 
     protected focusCellNode(rowIndex: number, cellIndex: number): void {
         const rows = this.elementRef?.nativeElement?.querySelectorAll?.('.ui-data-table-row');
         const cells = rows?.[rowIndex]?.querySelectorAll?.('.is-data-cell');
         cells?.[cellIndex]?.focus?.();
     }
-    cellStyleFor(cell: DataTableCell): Record<string, string> | undefined { return dataTableCellStyle(this.columns, this.columnWidths, this.viewColumns, cell); }
 
     sort(column: DataTableViewColumn): void {
         if (!column.sortable) {
@@ -654,38 +680,14 @@ export class DataTableComponent {
     }
 
     get viewRows(): DataTableViewRow[] {
-        const columns = this.viewColumns;
-        const selectedKeys = this.selectedKeySet();
-        return this.windowEntries.map(({ row, index }) => {
-            const key = this.rowKeyOf(row, index);
-            const checked = selectedKeys.has(key);
-            const selected = (!!this.selectedKey && String(this.selectedKey) === key) || checked;
-            const cells: DataTableCell[] = [];
-            columns.forEach((column, columnIndex) => {
-                cells.push({
-                    key: `${key}-${column.key}`,
-                    columnKey: column.key,
-                    text: formatDataTableCell(column, row, index),
-                    className: `${column.cellClass} is-data-cell`,
-                    style: column.cellStyle
-                });
-                if (columnIndex < columns.length - 1) {
-                    cells.push({
-                        key: `${key}-sep-${columnIndex}`,
-                        text: '│',
-                        className: 'ui-data-table-sep'
-                    });
-                }
-            });
-            return {
-                key,
-                index,
-                cells,
-                className: ['ui-data-table-row', selected ? 'is-selected' : ''].filter(Boolean).join(' '),
-                selected,
-                checked
-            };
-        });
+        return buildDataTableRows(
+            this.windowEntries,
+            this.viewColumns,
+            this.selectedKeySet(),
+            this.selectedKey,
+            this.tableRows,
+            (row, index) => this.rowKeyOf(row, index)
+        );
     }
 
     pick(row: DataTableViewRow): void {

@@ -1,6 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { ToastService } from './toast';
 import { ToastStackComponent } from './toast-stack';
+import { ToastProviderComponent } from './toast-provider';
 
 /**
  * Complex component entry point (`@tsdi/components/common/toast`). Provides
@@ -9,7 +10,7 @@ import { ToastStackComponent } from './toast-stack';
  */
 @Module({
     providers: [ToastService],
-    declarations: [ToastStackComponent],
-    exports: [ToastStackComponent]
+    declarations: [ToastStackComponent, ToastProviderComponent],
+    exports: [ToastStackComponent, ToastProviderComponent]
 })
 export class ToastModule {}

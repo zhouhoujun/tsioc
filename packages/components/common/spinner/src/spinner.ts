@@ -1,6 +1,6 @@
 import { AnimationClock, Attribute, Component, ElementRef, OnDestroy } from '@tsdi/components';
 import { Inject, Optional } from '@tsdi/ioc';
-import { normalizeBoolean, normalizeSize, UiSize } from '../../src/ui';
+import { normalizeBoolean, normalizeSize, normalizeTone, UiSize, UiTone } from '../../src/ui';
 import { markElementRefRaw } from '../../src/raw-element';
 import { installSpinnerStyles } from './spinner.styles';
 
@@ -40,6 +40,7 @@ export class SpinnerComponent implements OnDestroy {
     @Attribute() interval: number | string = 100;
 
     private _size: UiSize = 'md';
+    private _tone: UiTone = 'accent';
     private _pause = false;
     private subscribed = false;
     private listener?: () => void;
@@ -48,6 +49,10 @@ export class SpinnerComponent implements OnDestroy {
     @Attribute()
     get size(): UiSize { return this._size; }
     set size(value: string) { this._size = normalizeSize(value); }
+
+    @Attribute()
+    get tone(): UiTone { return this._tone; }
+    set tone(value: string) { this._tone = normalizeTone(value, 'accent'); }
 
     @Attribute()
     get pause(): boolean { return this._pause; }
@@ -67,6 +72,7 @@ export class SpinnerComponent implements OnDestroy {
     get spinnerClass(): string {
         return [
             `is-${this._size}`,
+            `is-${this._tone}`,
             this._pause ? 'is-paused' : '',
             this.className
         ].filter(Boolean).join(' ');

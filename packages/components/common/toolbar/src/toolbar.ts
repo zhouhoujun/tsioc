@@ -1,4 +1,4 @@
-import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Attribute, Component, ElementRef, OnDestroy } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { focusNth } from '../../src/focus';
 import { markElementRefRaw } from '../../src/raw-element';
@@ -59,7 +59,9 @@ interface ToolbarViewItem {
                 focusable="{{!entry.disabled}}"
                 title="{{entry.title || entry.label || entry.ariaLabel}}"
                 aria-label="{{entry.ariaLabel || entry.label || entry.title}}"
-                aria-pressed="{{entry.active}}"
+                aria-pressed="{{entry.active}}" [draggable]="draggable"
+                @dragstart="dragStart(entry, $event)" @dragover="dragOver($event)"
+                @drop="dropOn(entry, $event)" @dragend="dragEnd()"
                 @click="pick(entry)"
                 @focus="focusEntry(entry)"
                 @keydown="onKeydown(entry, $event)">
@@ -78,6 +80,8 @@ interface ToolbarViewItem {
                 <button class="{{item.className}} ui-toolbar-overflow-item" type="button" role="menuitem"
                     v-for="item in overflowItems" trackBy="key"
                     [disabled]="item.disabled" tabindex="0" focusable="{{!item.disabled}}"
+                    [draggable]="draggable" @dragstart="dragStart(item, $event)"
+                    @dragover="dragOver($event)" @drop="dropOn(item, $event)" @dragend="dragEnd()"
                     aria-label="{{item.ariaLabel || item.label || item.title}}"
                     @click="pickOverflow(item)" @keydown="onOverflowItemKeydown(item, $event)">
                     <icon v-if="item.icon" [name]="item.icon" [glyph]="item.iconGlyph || item.icon" size="sm"></icon>
@@ -87,7 +91,7 @@ interface ToolbarViewItem {
         </span>
     </div>`
 })
-export class ToolbarComponent {
+export class ToolbarComponent implements OnDestroy {
     constructor(@Optional() protected elementRef?: ElementRef) {
         markElementRefRaw(elementRef);
     }
@@ -97,11 +101,25 @@ export class ToolbarComponent {
     @Attribute() ariaLabel = 'Toolbar';
     @Attribute() className = '';
     @Attribute() action?: (item: ToolbarItem, index: number) => void;
+    @Attribute() reorderAction?: (items: ToolbarItem[], id: string, targetId: string) => void;
+    /** Enable pointer drag reordering (DOM); terminal hosts use the move action API. */
+    @Attribute()
+    get draggable(): boolean { return this._draggable; }
+    set draggable(value: boolean | string) { this._draggable = normalizeBoolean(value); }
+    /** Measure the host width and derive maxVisible automatically (DOM only). */
+    @Attribute()
+    get autoOverflow(): boolean { return this._autoOverflow; }
+    set autoOverflow(value: boolean | string) { this._autoOverflow = normalizeBoolean(value); }
     /** Collapse commands beyond this count into an overflow menu; 0 keeps all. */
     @Attribute() maxVisible: number | string = 0;
     @Attribute() overflowLabel = 'More';
     @Attribute() overflowGlyph = '…';
     private _compact = false;
+    private _draggable = false;
+    private _autoOverflow = false;
+    private autoVisible = 0;
+    private draggingKey = '';
+    private resizeListener?: () => void;
     private rovingKey = '';
     private overflowOpen = false;
     protected readonly overflowKey = '__ui-toolbar-overflow__';
@@ -151,7 +169,11 @@ export class ToolbarComponent {
     }
 
     get maxVisibleCount(): number {
-        return Math.max(0, Math.floor(Number(this.maxVisible) || 0));
+        const explicit = Math.max(0, Math.floor(Number(this.maxVisible) || 0));
+        if (this._autoOverflow && this.autoVisible > 0) {
+            return explicit > 0 ? Math.min(explicit, this.autoVisible) : this.autoVisible;
+        }
+        return explicit;
     }
 
     get hasOverflow(): boolean {
@@ -348,6 +370,67 @@ export class ToolbarComponent {
         this.pick(entry);
         this.overflowOpen = false;
         this.rovingKey = this.overflowKey;
+    }
+
+
+    dragStart(entry: ToolbarViewItem, event?: any): void {
+        this.draggingKey = entry.key;
+        event?.dataTransfer?.setData?.('text/plain', entry.key);
+        event?.preventDefault?.();
+    }
+
+    dragOver(event?: any): void { event?.preventDefault?.(); }
+
+    dropOn(entry: ToolbarViewItem, event?: any): void {
+        event?.preventDefault?.();
+        const source = this.draggingKey;
+        this.draggingKey = '';
+        if (!source || source === entry.key || !this.reorderAction) { return; }
+        const items = this.commandItems.slice();
+        const from = items.findIndex(item => item.key === source);
+        const to = items.findIndex(item => item.key === entry.key);
+        if (from < 0 || to < 0) { return; }
+        const [moved] = items.splice(from, 1);
+        items.splice(to, 0, moved);
+        const ordered = items.map(item => this.items[item.index]);
+        let cursor = 0;
+        const next = this.items.map(item => item?.kind === 'separator' ? item : ordered[cursor++] || item);
+        this.reorderAction?.(next, source, entry.key);
+    }
+
+    dragEnd(): void { this.draggingKey = ''; }
+
+    onAfterViewInit(): void {
+        const host = this.elementRef?.nativeElement as any;
+        const win = host?.ownerDocument?.defaultView;
+        if (!win || !this._autoOverflow) { return; }
+        this.resizeListener = () => this.syncAutoOverflow();
+        win.addEventListener?.('resize', this.resizeListener);
+        this.syncAutoOverflow();
+    }
+
+    syncAutoOverflow(): void {
+        if (!this._autoOverflow) { return; }
+        const host = this.elementRef?.nativeElement as any;
+        const root = host?.querySelector?.('.ui-toolbar') || host;
+        const width = Number(root?.clientWidth) || 0;
+        if (!width) { this.autoVisible = 0; return; }
+        const buttons = Array.from(root?.querySelectorAll?.('.ui-toolbar-entry > .ui-toolbar-item:not(.ui-toolbar-overflow-trigger)') || []) as HTMLElement[];
+        let used = 0;
+        let count = 0;
+        for (const button of buttons) {
+            const size = Number(button.getBoundingClientRect?.().width) || 28;
+            if (used + size + 32 > width) { break; }
+            used += size;
+            count += 1;
+        }
+        this.autoVisible = count;
+    }
+
+    onDestroy(): void {
+        const win = (this.elementRef?.nativeElement as any)?.ownerDocument?.defaultView;
+        if (win && this.resizeListener) { win.removeEventListener?.('resize', this.resizeListener); }
+        this.resizeListener = undefined;
     }
 
     pick(entry: ToolbarViewItem): void {

@@ -18,6 +18,9 @@ import { ToastEntry } from '../toast';
     <select-list :options="options" :selectedIndex="1" :visibleCount="2"
         ariaLabel="Picker" title="Options" hint="Choose one"
         :fitContent="true" :emptyText="emptyLabel"></select-list>
+    <select-list :options="groupedOptions" :multiple="true" :values="values" :clearable="true"
+        ariaLabel="Multi" title="Multi" :valuesAction="onValues" :selectAction="onMultiSelect"
+        :removeAction="onMultiRemove"></select-list>
     <toast-stack :items="toasts" :messageWidth="18"></toast-stack>`
 })
 class CommonWidgetsHostComponent {
@@ -31,6 +34,18 @@ class CommonWidgetsHostComponent {
         { label: 'Two', value: '2', description: 'second' },
         { label: 'Three', value: '3' }
     ];
+    groupedOptions = [
+        { label: 'Alpha', value: 'a', group: 'Letters' },
+        { label: 'Beta', value: 'b', group: 'Letters' },
+        { label: 'One', value: '1', group: 'Numbers' }
+    ];
+    values: string[] = ['a'];
+    multiValues: string[][] = [];
+    multiSelected: string[] = [];
+    multiRemoved: string[] = [];
+    onValues = (values: string[]) => { this.multiValues.push(values.slice()); };
+    onMultiSelect = (value: string) => { this.multiSelected.push(value); };
+    onMultiRemove = (value: string) => { this.multiRemoved.push(value); };
     toasts: ToastEntry[] = [
         { id: 't1', message: 'Copied', tone: 'success', createdAt: 1, priority: 'normal' }
     ];
@@ -179,6 +194,34 @@ export class CommonWidgetsDomTest {
         expect(select.instance.selectedIndex).toEqual(0);
         rows.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         expect(closed).toEqual(1);
+    }
+
+    @Test('supports grouped multi-select, chips and type-ahead')
+    async selectMultiAndTypeahead() {
+        const ref = await this.mount();
+        const host = ref.instance as CommonWidgetsHostComponent;
+        const selects = ref.hostView.queryAll(SelectComponent) as ComponentRef<SelectComponent>[];
+        const single = selects[0].instance;
+        const multi = selects[1].instance;
+        const multiRoot = selects[1].hostView.rootNodes[0] as HTMLElement;
+
+        single.onListboxKeydown({ key: 't', preventDefault() { } });
+        expect(single.selectedIndex).toEqual(2);
+        multi.choose(1);
+        expect(multi.values).toEqual(['a', 'b']);
+        expect(host.multiSelected).toEqual(['b']);
+        expect(host.multiValues).toEqual([['a', 'b']]);
+        const groups = Array.from(multiRoot.querySelectorAll('.select-group')).map(item => item.textContent);
+        expect(groups).toEqual(['Letters', 'Numbers']);
+        const chips = Array.from(multiRoot.querySelectorAll('.select-value')).map(item => item.textContent);
+        expect(chips.length).toEqual(2);
+        expect(chips[0]).toContain('Alpha');
+
+        (multiRoot.querySelector('.select-value-remove') as HTMLElement).click();
+        expect(multi.values).toEqual(['b']);
+        expect(host.multiRemoved).toEqual(['a']);
+        multi.clearValues();
+        expect(host.multiValues[host.multiValues.length - 1]).toEqual([]);
     }
 
     @Test('renders the live-filter empty state when no rows match')

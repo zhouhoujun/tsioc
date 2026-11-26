@@ -12,8 +12,8 @@ import { DataTableComponent, DataTableModule } from '../data-table';
     template: `
     <ui-data-table :columns="columns" :rows="rows"
         :sortAction="onSort" :rowAction="onRow" :selectionAction="onSelection"
-        rowKey="id" selectedKey="b" caption="Users" selectable
-        stickyHeader dense></ui-data-table>`
+        rowKey="id" selectedKey="b" caption="Users" selectable editable
+        :editAction="onEdit" stickyHeader dense></ui-data-table>`
 })
 class DataTableHostComponent {
     columns = [
@@ -29,7 +29,9 @@ class DataTableHostComponent {
     selection: string[] = [];
     onSort = (key: string, direction: string) => { this.sorted = `${key}:${direction}`; };
     onRow = (row: any) => { this.picked = row.id; };
+    edited: any[] = [];
     onSelection = (keys: string[]) => { this.selection = keys.slice(); };
+    onEdit = (row: any, columnKey: string, value: string) => { this.edited.push([row.id, columnKey, value]); };
 }
 
 @Suite('common data table')
@@ -95,6 +97,28 @@ export class DataTableTest {
 
         (root.querySelector('.ui-data-table-row') as HTMLElement).click();
         expect(host.picked).toBe('b');
+    }
+
+    @Test('edits a cell through double-click and commits with Enter')
+    async editsCell() {
+        const ref = await this.mount();
+        const host = ref.instance as DataTableHostComponent;
+        const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
+        const root = table.hostView.rootNodes[0] as HTMLElement;
+        const cell = root.querySelector('.ui-data-table-row .is-data-cell') as HTMLElement;
+        cell.click();
+        cell.click();
+        for (let i = 0; i < 4; i++) await Promise.resolve();
+        const current = root.querySelector('.ui-data-table-row .is-data-cell') as HTMLElement;
+        const input = current.querySelector('.ui-data-table-edit') as HTMLInputElement;
+        expect(!!input).toEqual(true);
+        input.value = 'updated';
+        input.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.Event('input', { bubbles: true }));
+        input.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        expect(host.edited).toEqual([['b', 'name', 'updated']]);
+        const committed = root.querySelector('.ui-data-table-row .is-data-cell') as HTMLElement;
+        expect(committed.querySelector('.ui-data-table-edit')).toBeFalsy();
     }
 
     @Test('shows loading state instead of empty state')

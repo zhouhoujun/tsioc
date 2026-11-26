@@ -14,6 +14,8 @@ export interface TreeNode {
     expanded?: boolean;
     selected?: boolean;
     disabled?: boolean;
+    /** Lazy branch: children are fetched by `loadChildren`. */
+    lazy?: boolean;
 }
 
 interface TreeViewItem {
@@ -29,7 +31,9 @@ interface TreeViewItem {
     hasChildren: boolean;
     expanded: boolean;
     selected: boolean;
+    checked: boolean;
     active: boolean;
+    loading: boolean;
     disabled: boolean;
     indentText: string;
     toggled: string;
@@ -44,11 +48,13 @@ interface TreeViewItem {
 @Component({
     selector: 'ui-tree',
     template: `
-    <ul class="ui-tree {{treeClass}}" role="tree" aria-label="{{ariaLabel}}">
+    <ul class="ui-tree {{treeClass}}" role="tree" aria-label="{{ariaLabel}}"
+        aria-multiselectable="{{multiple || checkable}}">
         <li class="{{nodeClass(entry)}}" role="treeitem"
             aria-level="{{entry.depth + 1}}"
             aria-expanded="{{rowAriaExpanded(entry)}}"
             aria-selected="{{rowSelected(entry)}}"
+            aria-checked="{{checkable ? rowChecked(entry) : null}}"
             aria-disabled="{{entry.disabled}}"
             tabindex="{{tabIndexFor(entry)}}"
             focusable="{{!entry.disabled}}"
@@ -56,6 +62,10 @@ interface TreeViewItem {
             v-for="entry in viewItems" trackBy="key">
             <span class="ui-tree-row" @click="activate(entry)">
                 <span class="ui-tree-indent" aria-hidden="true">{{entry.indentText}}</span>
+                <span class="ui-tree-check" role="checkbox" tabindex="-1" focusable="true"
+                    aria-checked="{{entry.checked}}" aria-label="{{checkLabel}}"
+                    v-if="checkable" @click="toggleCheck(entry, $event)"
+                    @keydown="checkKeydown(entry, $event)">{{entry.checked ? '✓' : ' '}}</span>
                 <span class="ui-tree-toggle" v-if="entry.hasChildren" @click="toggle(entry, $event)">{{entry.toggled}}</span>
                 <span class="ui-tree-toggle is-leaf" v-if="!entry.hasChildren" aria-hidden="true"> </span>
                 <icon class="ui-tree-icon" v-if="entry.icon" [name]="entry.icon" [glyph]="entry.iconGlyph || entry.icon" [size]="iconSize"></icon>
@@ -77,6 +87,20 @@ export class TreeComponent {
     @Attribute() indentChar = ' ';
     @Attribute() ariaLabel = 'Tree';
     @Attribute() className = '';
+    @Attribute() checkLabel = 'Select node';
+    @Attribute() checkedIds: Array<string | number> = [];
+    @Attribute() checkAction?: (keys: string[], node: TreeNode) => void;
+    /** Lazy branch loader; return the children for an unloaded node. */
+    @Attribute() loadChildren?: (node: TreeNode) => TreeNode[] | Promise<TreeNode[]>;
+    @Attribute() loadErrorAction?: (error: any, node: TreeNode) => void;
+    @Attribute()
+    get checkable(): boolean { return this._checkable; }
+    set checkable(value: boolean | string) { this._checkable = normalizeBoolean(value); }
+
+    @Attribute()
+    get multiple(): boolean { return this._multiple; }
+    set multiple(value: boolean | string) { this._multiple = normalizeBoolean(value); }
+
     /** Roving focus also selects/emits; turn off for pickers that commit on activate. */
     @Attribute()
     get selectionFollowsFocus(): boolean { return this._selectionFollowsFocus; }
@@ -90,8 +114,12 @@ export class TreeComponent {
     @Attribute() toggleAction?: (node: TreeNode, expanded: boolean) => void;
 
     private _activeKey = '';
+    private _checkable = false;
+    private _multiple = false;
     private _selectionFollowsFocus = true;
     private _wrapFocus = false;
+    private loadedChildren = new Map<string, TreeNode[]>();
+    private loadingKeys: string[] = [];
 
     get treeClass(): string {
         return this.className;
@@ -111,9 +139,15 @@ export class TreeComponent {
                     return;
                 }
                 const key = String(node.id ?? `${prefix}${index}`);
-                const hasChildren = Array.isArray(node.children) && node.children.length > 0;
+                const children = Array.isArray(node.children) && node.children.length
+                    ? node.children
+                    : this.loadedChildren.get(key) || [];
+                const hasChildren = children.length > 0 || node.lazy === true;
                 const isExpanded = node.expanded === true || expanded.has(key);
-                const selected = node.selected === true || (!!this.selectedId && String(this.selectedId) === key);
+                const checked = (Array.isArray(this.checkedIds) ? this.checkedIds : []).some(id => String(id) === key);
+                const selected = this._multiple
+                    ? checked
+                    : node.selected === true || (!!this.selectedId && String(this.selectedId) === key);
                 const disabled = node.disabled === true;
                 rows.push({
                     key,
@@ -128,18 +162,21 @@ export class TreeComponent {
                     hasChildren,
                     expanded: hasChildren && isExpanded,
                     selected,
+                    checked,
                     active: false,
+                    loading: this.loadingKeys.includes(key),
                     disabled,
                     indentText: this.indentChar.repeat(Math.max(0, depth) * Math.max(0, Math.floor(Number(this.indent) || 2))),
                     toggled: hasChildren ? (isExpanded ? '▾' : '▸') : '',
                     className: [
                         'ui-tree-node',
                         selected ? 'is-selected' : '',
+                        checked ? 'is-checked' : '',
                         disabled ? 'is-disabled' : ''
                     ].filter(Boolean).join(' ')
                 });
-                if (hasChildren && isExpanded) {
-                    walk(node.children!, depth + 1, `${key}.`, key);
+                if (hasChildren && isExpanded && children.length) {
+                    walk(children, depth + 1, `${key}.`, key);
                 }
             });
         };
@@ -169,6 +206,10 @@ export class TreeComponent {
         return !!this.currentRow(entry)?.selected;
     }
 
+    rowChecked(entry: TreeViewItem): boolean {
+        return !!this.currentRow(entry)?.checked;
+    }
+
     /** `aria-expanded` is only meaningful for branches. */
     rowAriaExpanded(entry: TreeViewItem): string {
         const row = this.currentRow(entry);
@@ -186,6 +227,11 @@ export class TreeComponent {
     /** Selected (or first enabled) row used by the tree's own shortcuts and pickers. */
     activeRow(): TreeViewItem | undefined {
         const rows = this.viewItems;
+        if (this._multiple) {
+            return rows.find(entry => entry.active)
+                ?? rows.find(entry => entry.selected && !entry.disabled)
+                ?? rows.find(entry => !entry.disabled);
+        }
         if (this._selectionFollowsFocus) {
             return rows.find(entry => entry.selected && !entry.disabled)
                 ?? rows.find(entry => !entry.disabled);
@@ -210,9 +256,14 @@ export class TreeComponent {
     }
 
     /** Roving move: updates focus, and selection only when focus follows selection. */
-    select(entry: TreeViewItem): void {
+    select(entry: TreeViewItem, event?: Event): void {
         const row = this.currentRow(entry);
         if (!row || row.disabled) {
+            return;
+        }
+        if (this._multiple) {
+            this._activeKey = row.key;
+            focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
             return;
         }
         if (this._selectionFollowsFocus) {
@@ -224,6 +275,33 @@ export class TreeComponent {
         focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
     }
 
+    toggleCheckedKey(key: string, node: TreeNode, event?: Event): void {
+        event?.stopPropagation?.();
+        if (!key || node?.disabled) {
+            return;
+        }
+        const current = new Set((Array.isArray(this.checkedIds) ? this.checkedIds : []).map(String));
+        current.has(key) ? current.delete(key) : current.add(key);
+        this.checkedIds = [...current];
+        this.checkAction?.(this.checkedIds.map(String), node);
+    }
+
+    toggleCheck(entry: TreeViewItem, event?: any): void {
+        if (event?.type === 'keydown' && !['Enter', ' ', 'Spacebar'].includes(String(event?.key || ''))) {
+            return;
+        }
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        const row = this.currentRow(entry);
+        if (row) {
+            this.toggleCheckedKey(row.key, row.item, event);
+        }
+    }
+
+    checkKeydown(entry: TreeViewItem, event: any): void {
+        this.toggleCheck(entry, event);
+    }
+
     /** Explicit activation (click/Enter): commits the row regardless of roving mode. */
     activate(entry: TreeViewItem): void {
         const row = this.currentRow(entry);
@@ -231,6 +309,11 @@ export class TreeComponent {
             return;
         }
         this._activeKey = row.key;
+        if (this._multiple) {
+            this.toggleCheckedKey(row.key, row.item);
+            focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+            return;
+        }
         this.selectedId = row.key;
         focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
         this.selectAction?.(row.item);
@@ -244,6 +327,11 @@ export class TreeComponent {
         }
         const ids = new Set((Array.isArray(this.expandedIds) ? this.expandedIds : []).map(String));
         const next = !ids.has(row.key);
+        const loaded = (row.item.children?.length || 0) > 0 || this.loadedChildren.has(row.key);
+        if (next && row.item.lazy && !loaded && this.loadChildren) {
+            this.loadLazy(row);
+            return;
+        }
         if (next) {
             ids.add(row.key);
         } else {
@@ -252,6 +340,26 @@ export class TreeComponent {
         this.expandedIds = [...ids];
         focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
         this.toggleAction?.(row.item, next);
+    }
+
+    protected async loadLazy(row: TreeViewItem): Promise<void> {
+        if (this.loadingKeys.includes(row.key) || !this.loadChildren) {
+            return;
+        }
+        this.loadingKeys = [...this.loadingKeys, row.key];
+        try {
+            const children = await this.loadChildren(row.item);
+            const loaded = Array.isArray(children) ? children : [];
+            this.loadedChildren = new Map(this.loadedChildren).set(row.key, loaded);
+            const ids = new Set((Array.isArray(this.expandedIds) ? this.expandedIds : []).map(String));
+            ids.add(row.key);
+            this.expandedIds = [...ids];
+            this.toggleAction?.(row.item, true);
+        } catch (error) {
+            this.loadErrorAction?.(error, row.item);
+        } finally {
+            this.loadingKeys = this.loadingKeys.filter(key => key !== row.key);
+        }
     }
 
     /** MUI TreeView style keyboard model over the flattened visible rows. */

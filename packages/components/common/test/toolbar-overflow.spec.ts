@@ -101,6 +101,21 @@ export class ToolbarOverflowTest {
         root.remove();
     }
 
+    @Test('reorders dragged command items through the host callback')
+    async reorderDrag() {
+        const { toolbar } = await this.mount();
+        let received: any[] = [];
+        toolbar.reorderAction = (items, id, targetId) => { received = [items.map(item => item.id), id, targetId]; };
+        const commands = (toolbar as any).commandItems;
+        toolbar.dragStart(commands[0], { preventDefault() { } });
+        toolbar.dropOn(commands[2], { preventDefault() { } });
+        expect(received[1]).toEqual(commands[0].key);
+        expect(received[2]).toEqual(commands[2].key);
+        expect(received[0][0]).toEqual('stop');
+        expect(received[0][1]).toEqual('theme');
+        expect(received[0][2]).toEqual('run');
+    }
+
     @Test('keeps every command visible without a maxVisible limit')
     async noOverflow() {
         const { toolbar } = await this.mount();

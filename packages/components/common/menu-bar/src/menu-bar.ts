@@ -29,6 +29,8 @@ export interface MenuBarItem {
     shortcut?: string;
     disabled?: boolean;
     checked?: boolean;
+    /** Checkbox/radio menu item semantics; default is a plain menuitem. */
+    type?: 'checkbox' | 'radio';
     danger?: boolean;
     /**
      * Nested entries rendered as a flyout submenu. Hosts use this for grouped
@@ -56,6 +58,8 @@ interface MenuBarEntryView {
     shortcut: string;
     disabled: boolean;
     checked: boolean;
+    role: 'menuitem' | 'menuitemcheckbox' | 'menuitemradio';
+    ariaChecked: string;
     className: string;
     children: MenuBarEntryView[];
 }
@@ -98,8 +102,8 @@ interface MenuBarEntryView {
                 @focusout="blurSubmenu(entry.id, $event)">
                 <div class="menu-bar-separator" role="separator" v-if="entry.kind === 'separator'"></div>
                 <div class="menu-bar-group-title" v-if="entry.kind === 'title'">{{entry.label}}</div>
-                <button class="menu-bar-item {{entry.className}}" type="button" role="menuitem"
-                    v-if="entry.kind === 'item'"
+                <button class="menu-bar-item {{entry.className}}" type="button" role="{{entry.role}}"
+                    aria-checked="{{entry.ariaChecked}}" v-if="entry.kind === 'item'"
                     data-menu-id="{{entry.id}}"
                     [disabled]="entry.disabled"
                     aria-disabled="{{entry.disabled}}"
@@ -116,8 +120,8 @@ interface MenuBarEntryView {
                 </button>
                 <div [class]="'menu-bar-submenu' + (submenuOpen(entry.id) ? ' is-open' : '')"
                     [style]="submenuStyle(entry.id)" role="menu" v-if="entry.children.length">
-                    <button class="menu-bar-item" type="button" role="menuitem"
-                        v-for="child in entry.children"
+                    <button class="menu-bar-item" type="button" role="{{child.role}}"
+                        aria-checked="{{child.ariaChecked}}" v-for="child in entry.children"
                         trackBy="id"
                         data-menu-id="{{child.id}}"
                         [disabled]="child.disabled"
@@ -193,7 +197,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
 
     /** Return false / reject to keep the menu open (host dirty check). */
     @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
-
     protected syncOverlay(): void {
         if (this._open && this._overlayEnabled) {
             if (!this.overlayRegistered) {
@@ -211,7 +214,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             this.overlays?.close(this.overlayId);
         }
     }
-
     onAfterViewInit(): void {
         markElementRefRaw(this.menuRoot);
         if (this._open) {
@@ -243,7 +245,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         this.syncOverlay();
         this.openChange.emit(next);
     }
-
     get openText(): string {
         return this._open ? 'true' : 'false';
     }
@@ -280,6 +281,8 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
                         shortcut: String(child.shortcut || ''),
                         disabled: child.disabled === true,
                         checked: child.checked === true,
+                        role: this.menuRole(child),
+                        ariaChecked: this.menuAriaChecked(child),
                         className: this.itemClass(child)
                     }));
                 entries.push({
@@ -290,6 +293,8 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
                     shortcut: String(item.shortcut || ''),
                     disabled: item.disabled === true,
                     checked: item.checked === true,
+                    role: this.menuRole(item),
+                    ariaChecked: this.menuAriaChecked(item),
                     className: this.itemClass(item, children.length > 0),
                     children
                 });
@@ -297,11 +302,9 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         });
         return entries;
     }
-
     onInit(): void {
         this.bindDocument();
     }
-
     onDestroy(): void {
         this.unbindDocument();
         if (this.overlayRegistered) {
@@ -309,7 +312,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             this.overlays?.close(this.overlayId);
         }
     }
-
     toggle(): void {
         if (this.disabled) {
             return;
@@ -430,7 +432,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         const submenu = openSubmenuElement(unwrapReactive(this.hostElement));
         return submenu ? menuButtons(submenu) : [];
     }
-
     protected menuItemNode(offset: number): HTMLElement | undefined {
         const items = this.menuLevelItems();
         if (!items.length) {
@@ -438,7 +439,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         }
         return items[Math.max(0, Math.min(items.length - 1, offset))];
     }
-
     protected focusTrigger(): void {
         const trigger = unwrapReactive(this.hostElement)?.querySelector?.('.menu-bar-trigger') as HTMLElement | undefined;
         focusDomElement(trigger);
@@ -466,7 +466,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         this.close();
         this.selectAction?.(id);
     }
-
     close(returnFocus = true): void {
         const wasOpen = this._open;
         this.open = false;
@@ -551,7 +550,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         }
         this.anchorSubmenuElement(target);
     }
-
     protected anchorSubmenuElement(target: any): void {
         const layout = measureSubmenuLayout(unwrapReactive(target));
         if (!layout) {
@@ -597,7 +595,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         const maxHeight = Math.round(this.popupMaxHeight || 480);
         return `${vertical} max-height: ${maxHeight}px;`;
     }
-
     protected anchorPopup(): void {
         const root = unwrapReactive(this.hostElement);
         const trigger = root?.querySelector?.('.menu-bar-trigger');
@@ -605,7 +602,13 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         this.popupAbove = layout.above;
         this.popupMaxHeight = layout.maxHeight;
     }
-
+    protected menuRole(item: MenuBarItem): MenuBarEntryView['role'] {
+        return item?.type === 'checkbox' ? 'menuitemcheckbox'
+            : item?.type === 'radio' ? 'menuitemradio' : 'menuitem';
+    }
+    protected menuAriaChecked(item: MenuBarItem): string {
+        return this.menuRole(item) === 'menuitem' ? '' : String(item?.checked === true);
+    }
     protected itemClass(item: MenuBarItem, hasChildren = false): string {
         const classes = [];
         if (item.danger) {
@@ -619,7 +622,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         }
         return classes.join(' ');
     }
-
     protected entry(kind: MenuBarEntryView['kind'], key: string): MenuBarEntryView {
         return {
             kind,
@@ -630,11 +632,12 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             shortcut: '',
             disabled: false,
             checked: false,
+            role: 'menuitem',
+            ariaChecked: '',
             className: '',
             children: []
         };
     }
-
     protected findItem(id: string): MenuBarItem | undefined {
         for (const group of this.groups || []) {
             for (const item of group?.items || []) {
@@ -652,7 +655,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         }
         return undefined;
     }
-
     protected bindDocument(): void {
         if (this.unbindDismiss) {
             return;

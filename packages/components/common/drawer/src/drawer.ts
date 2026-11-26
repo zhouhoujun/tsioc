@@ -6,6 +6,7 @@ import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
 import { installPlainButtonStyles } from '../../src/ui.styles';
 import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
+import { attachOverlayBackdrop } from '../../src/overlay-backdrop';
 import { installDrawerStyles } from './drawer.styles';
 
 export type DrawerPlacement = 'left' | 'right' | 'bottom';
@@ -43,6 +44,9 @@ export class DrawerComponent {
     protected readonly overlayId = nextUiId('ui-drawer');
     private _overlayOpen = false;
     private releaseScrollLock?: () => void;
+    private releaseBackdrop?: () => void;
+    private _backdrop = true;
+    private _closeOnBackdrop = true;
 
     /** Host dirty-check; return false (or reject) to keep the drawer open. */
     @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
@@ -57,13 +61,14 @@ export class DrawerComponent {
         }
         this._overlayOpen = next;
         this.syncScrollLock(next);
+        this.syncBackdrop(next);
         if (next) {
             this.overlays?.register({
                 id: this.overlayId,
                 kind: 'drawer',
                 element: this.elementRef?.nativeElement,
                 beforeClose: () => this.beforeCloseAction?.() ?? true,
-                close: () => { this._overlayOpen = false; this.syncScrollLock(false); this.closeAction?.(); }
+                close: () => { this._overlayOpen = false; this.syncScrollLock(false); this.syncBackdrop(false); this.closeAction?.(); }
             });
         } else {
             this.overlays?.close(this.overlayId);
@@ -75,6 +80,15 @@ export class DrawerComponent {
         installDrawerStyles(doc);
         installPlainButtonStyles(doc);
     }
+
+    /** Browser backdrop (no-op in terminal hosts). */
+    @Attribute()
+    get backdrop(): boolean { return this._backdrop; }
+    set backdrop(value: boolean | string) { this._backdrop = normalizeBoolean(value, true); }
+
+    @Attribute()
+    get closeOnBackdrop(): boolean { return this._closeOnBackdrop; }
+    set closeOnBackdrop(value: boolean | string) { this._closeOnBackdrop = normalizeBoolean(value, true); }
 
     @Attribute() title = '';
     @Attribute() lines: string[] = [];
@@ -123,6 +137,7 @@ export class DrawerComponent {
         this.overlays?.close(this.overlayId);
         this._overlayOpen = false;
         this.syncScrollLock(false);
+        this.syncBackdrop(false);
         this.closeAction?.();
         this._visible = false;
     }
@@ -163,7 +178,31 @@ export class DrawerComponent {
         }
     }
 
+    protected syncBackdrop(active: boolean): void {
+        if (active && this._backdrop && !this.releaseBackdrop) {
+            const host = this.elementRef?.nativeElement as any;
+            const doc = host?.ownerDocument as Document | undefined;
+            const panel = host?.matches?.('.ui-drawer') ? host : host?.querySelector?.('.ui-drawer') || host;
+            this.releaseBackdrop = attachOverlayBackdrop(doc, panel, () => this.backdropClick());
+        } else if (!active && this.releaseBackdrop) {
+            this.releaseBackdrop();
+            this.releaseBackdrop = undefined;
+        }
+    }
+
+    protected backdropClick(): void {
+        if (!this._closeOnBackdrop) {
+            return;
+        }
+        if (this._overlayOpen && this.overlays) {
+            void this.overlays.outside();
+            return;
+        }
+        this.close();
+    }
+
     onDestroy(): void {
         this.syncScrollLock(false);
+        this.syncBackdrop(false);
     }
 }

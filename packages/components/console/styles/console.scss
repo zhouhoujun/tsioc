@@ -1223,3 +1223,13 @@ $idle: var(--console-idle, #6fa37a);
 .ui-field-addon,
 .ui-field-prefix,
 .ui-field-suffix { color: $meta; }
+
+/* Parity additions: grouped/multi select and tree checkboxes. */
+.select-row { display: block; }
+.select-group { color: var(--console-meta, #6e7681); font-weight: bold; padding: 0 1ch; }
+.select-values { color: var(--console-text, #c9d1d9); padding: 0 1ch; }
+.select-value { color: var(--console-selected, #7fa6d4); padding-right: 1ch; }
+.select-value-remove,
+.select-clear { color: var(--console-meta, #6e7681); }
+.ui-tree-check { color: var(--console-selected, #7fa6d4); }
+.ui-tree-node.is-loading .ui-tree-toggle { color: var(--console-meta, #6e7681); }

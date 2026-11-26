@@ -107,6 +107,51 @@ export class DialogOverlayTest {
         second.destroy();
     }
 
+    @Test('adds a clickable backdrop and restores background inert state')
+    async backdropAndInert() {
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const outside = doc.createElement('section');
+        outside.className = 'outside-content';
+        doc.body.appendChild(outside);
+        const dialogRef = this.ctx.get(ComponentFactory).create(DialogComponent, { injector: this.ctx }) as ComponentRef<DialogComponent>;
+        await dialogRef.render();
+        await Promise.resolve();
+        const dialog = dialogRef.instance;
+        let closes = 0;
+        dialog.title = 'Confirm';
+        dialog.closeAction = () => { closes += 1; };
+        dialog.overlayOpen = true;
+        await Promise.resolve();
+        const backdrop = doc.querySelector('.ui-overlay-backdrop') as HTMLElement;
+        expect(!!backdrop).toEqual(true);
+        expect(outside.hasAttribute('inert')).toEqual(true);
+        expect(outside.getAttribute('aria-hidden')).toEqual('true');
+
+        backdrop.click();
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        expect(dialog.overlayOpen).toEqual(false);
+        expect(closes).toEqual(1);
+        expect(doc.querySelector('.ui-overlay-backdrop')).toBeFalsy();
+        expect(outside.hasAttribute('inert')).toEqual(false);
+        expect(outside.hasAttribute('aria-hidden')).toEqual(false);
+        outside.remove();
+        dialogRef.destroy();
+    }
+
+    @Test('backdrop can be disabled per dialog')
+    async backdropDisabled() {
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const dialogRef = this.ctx.get(ComponentFactory).create(DialogComponent, { injector: this.ctx }) as ComponentRef<DialogComponent>;
+        await dialogRef.render();
+        await Promise.resolve();
+        dialogRef.instance.backdrop = false;
+        dialogRef.instance.overlayOpen = true;
+        await Promise.resolve();
+        expect(doc.querySelector('.ui-overlay-backdrop')).toBeFalsy();
+        dialogRef.instance.close();
+        dialogRef.destroy();
+    }
+
     @Test('focuses the panel, traps Tab and restores the trigger')
     async focusCycle() {
         const doc = this.ctx.get(DOCUMENT) as Document;

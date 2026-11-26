@@ -1,6 +1,7 @@
 import { Module } from '@tsdi/ioc';
 import { IconModule } from '../../icon';
 import { AccordionComponent } from './accordion';
+import { AccordionGroupComponent } from './accordion-group';
 
 /**
  * Generic collapsible section (`@tsdi/components/common/accordion`). Hosts opt
@@ -8,7 +9,7 @@ import { AccordionComponent } from './accordion';
  */
 @Module({
     imports: [IconModule],
-    declarations: [AccordionComponent],
-    exports: [AccordionComponent]
+    declarations: [AccordionComponent, AccordionGroupComponent],
+    exports: [AccordionComponent, AccordionGroupComponent]
 })
 export class AccordionModule {}

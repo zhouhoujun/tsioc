@@ -145,6 +145,28 @@ export class TooltipTest {
         expect(popup.className).toContain('is-bottom');
     }
 
+    @Test('portal mode positions the popup against the viewport')
+    async portals() {
+        const { roots, components } = await this.mount();
+        const root = roots[0];
+        const tip = components[0].instance;
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const win = doc.defaultView as any;
+        Object.defineProperty(win, 'innerWidth', { value: 300, configurable: true });
+        Object.defineProperty(win, 'innerHeight', { value: 200, configurable: true });
+        tip.portal = true;
+        (root as any).getBoundingClientRect = () => ({ left: 140, top: 100, right: 160, bottom: 120, width: 20, height: 20 });
+        root.dispatchEvent(new (win as any).MouseEvent('mouseenter'));
+        await Promise.resolve();
+        const popup = root.querySelector('.ui-tooltip-popup') as HTMLElement;
+        (popup as any).getBoundingClientRect = () => ({ left: 0, top: 0, right: 80, bottom: 20, width: 80, height: 20 });
+        (tip as any).resolvePlacement();
+        await Promise.resolve();
+        expect(popup.style.position).toEqual('fixed');
+        expect(popup.style.transform).toEqual('none');
+        expect(Number.parseFloat(popup.style.left)).toBeGreaterThan(0);
+    }
+
     @Test('disabled tooltips stay closed and out of the tab order')
     async disabled() {
         const { roots } = await this.mount();

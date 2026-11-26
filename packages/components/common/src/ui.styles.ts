@@ -537,6 +537,7 @@ ${PLAIN_BUTTON_CSS}
 .ui-tree-toggle.is-leaf { visibility: hidden; }
 .ui-tree-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ui-tree-badge { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+.ui-tree-check { width: 1.6ch; flex: none; cursor: pointer; text-align: center; } .ui-tree-node.is-checked > .ui-tree-row { background: var(--ui-selected-bg, transparent); } .ui-tree-node.is-loading .ui-tree-toggle { color: var(--ui-muted-fg, inherit); }
 
 .ui-field-required { color: var(--ui-danger-fg, inherit); margin-left: 0.2ch; }
 .ui-field-textarea { resize: vertical; min-height: 3em; }

@@ -12,7 +12,7 @@ const groups: MenuBarGroup[] = [
     {
         label: 'Edit',
         items: [
-            { id: 'undo', label: 'Undo', shortcut: 'Ctrl+Z', checked: true }
+            { id: 'undo', label: 'Undo', shortcut: 'Ctrl+Z', checked: true, type: 'checkbox' as const }
         ]
     }
 ];
@@ -30,6 +30,10 @@ export class MenuBarComponentTest {
         expect(entries[1].className).toContain('is-danger');
         expect(entries[4].shortcut).toEqual('Ctrl+Z');
         expect(entries[4].className).toContain('is-checked');
+        expect(entries[4].role).toEqual('menuitemcheckbox');
+        expect(entries[4].ariaChecked).toEqual('true');
+        expect(entries[0].role).toEqual('menuitem');
+        expect(entries[0].ariaChecked).toEqual('');
     }
 
     @Test('toggles open state and forwards the selected id')
