@@ -69,7 +69,7 @@
 ## autocomplete
 
 - selector: `ui-autocomplete`
-- Combobox with host-filtered suggestions (Ant Design AutoComplete).
+- Combobox with host/async filtered suggestions, grouped options, multi-select chips and full keyboard/ARIA wiring.
 
 | attribute | type | default |
 | --- | --- | --- |
@@ -93,6 +93,14 @@
 | selected | number |  |
 | value |  | '' |
 | values | string[] | [] |
+
+Keyboard:
+
+- Type: filter locally or call loadOptions(query)
+- ArrowUp/ArrowDown: move the active suggestion
+- Enter: choose the active suggestion
+- Escape: close the panel
+- Backspace in multi mode: chips are removed through their buttons
 
 ## avatar
 

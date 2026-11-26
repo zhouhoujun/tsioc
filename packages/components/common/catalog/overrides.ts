@@ -20,6 +20,24 @@ export const CATALOG_OVERRIDES: Record<string, CatalogOverride> = {
             { title: 'Confirm dialog', props: { title: 'Delete file?', hint: 'Enter confirm · Esc cancel', lines: ['This cannot be undone.'] } }
         ]
     },
+    autocomplete: {
+        summary: 'Combobox with host/async filtered suggestions, grouped options, multi-select chips and full keyboard/ARIA wiring.',
+        keyboard: [
+            'Type: filter locally or call loadOptions(query)',
+            'ArrowUp/ArrowDown: move the active suggestion',
+            'Enter: choose the active suggestion',
+            'Escape: close the panel',
+            'Backspace in multi mode: chips are removed through their buttons'
+        ],
+        surfaces: {
+            html: 'Anchored suggestion panel; multi values render as removable chips.',
+            console: 'Same input/panel/chips are painted in the terminal overlay.'
+        },
+        examples: [
+            { title: 'Searchable options', props: { value: 'be', options: [{ label: 'Beta', value: 'b' }, { label: 'Berry', value: 'r' }] } },
+            { title: 'Multi-select chips', props: { multiple: true, values: ['a'], options: [{ label: 'Alpha', value: 'a' }, { label: 'Beta', value: 'b' }] } }
+        ]
+    },
     select: {
         summary: 'Windowed single/multi selection list with search, detail lines and a fixed title/hint.',
         keyboard: [

@@ -7,6 +7,7 @@ import { HtmlTemplateModule } from '@tsdi/components/html';
 import { CATALOG_OVERRIDES } from '../catalog/overrides';
 import { DialogComponent, DialogModule } from '../dialog';
 import { SelectComponent, SelectModule } from '../select';
+import { AutoCompleteComponent, AutoCompleteModule } from '../autocomplete';
 import { DataTableComponent, DataTableModule } from '../data-table';
 import { DynamicFormComponent, DynamicFormModule } from '../dynamic-form';
 import { TypeaheadComponent, TypeaheadModule } from '../typeahead';
@@ -20,7 +21,7 @@ export class CatalogExamplesTest {
     @Before()
     async init() {
         this.ctx = await Application.run(DialogModule, {
-            deps: [HtmlTemplateModule, ComponentsModule, SelectModule, DataTableModule, DynamicFormModule, TypeaheadModule, SearchListModule, CommandPaletteModule],
+            deps: [HtmlTemplateModule, ComponentsModule, SelectModule, DataTableModule, DynamicFormModule, TypeaheadModule, SearchListModule, CommandPaletteModule, AutoCompleteModule],
             providers: [{ provide: DOCUMENT, useFactory: () => {
                 const { JSDOM } = require('jsdom');
                 return new JSDOM('<!DOCTYPE html><html><body></body></html>').window.document;
@@ -70,6 +71,23 @@ export class CatalogExamplesTest {
         await ref.render();
         expect(root.textContent).toContain('Runs');
         expect(root.textContent).toContain('build');
+    }
+
+    @Test('autocomplete examples render searchable and multi variants')
+    async autocompleteExamples() {
+        const { ref } = await this.render<AutoCompleteComponent>(AutoCompleteComponent);
+        Object.assign(ref.instance, CATALOG_OVERRIDES.autocomplete?.examples?.[0]?.props ?? {});
+        await ref.render();
+        await Promise.resolve();
+        const input = (ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement)
+            .querySelector('.ui-autocomplete-input') as HTMLInputElement;
+        expect(input).toBeTruthy();
+
+        Object.assign(ref.instance, CATALOG_OVERRIDES.autocomplete?.examples?.[1]?.props ?? {});
+        await ref.render();
+        await Promise.resolve();
+        expect(ref.instance.multiple).toBe(true);
+        expect(ref.instance.selectedItems.length).toBe(1);
     }
 
     @Test('dynamic-form example renders fields')

@@ -131,11 +131,38 @@ ul { margin: .3rem 0; padding-left: 1.2rem; }
 </section>
 <section id="widget-autocomplete">
 <h2>autocomplete <span class="muted">ui-autocomplete</span></h2>
-<p>Combobox with host-filtered suggestions (Ant Design AutoComplete).</p>
+<p>Combobox with host/async filtered suggestions, grouped options, multi-select chips and full keyboard/ARIA wiring.</p>
 <table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaDescribedby</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaInvalid</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Search&#39;</td></tr><tr><td><code>changeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;No suggestions&#39;</td></tr><tr><td><code>loading</code></td><td>boolean</td><td></td></tr><tr><td><code>loadingLabel</code></td><td></td><td>&#39;Loading…&#39;</td></tr><tr><td><code>loadOptions</code></td><td>AutoCompleteOptionLoader</td><td></td></tr><tr><td><code>multiple</code></td><td>boolean</td><td></td></tr><tr><td><code>open</code></td><td>boolean</td><td></td></tr><tr><td><code>options</code></td><td>AutoCompleteOption[]</td><td>[]</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>removeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>removeLabel</code></td><td></td><td>&#39;Remove&#39;</td></tr><tr><td><code>selectAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>selected</code></td><td>number</td><td></td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>values</code></td><td>string[]</td><td>[]</td></tr></tbody></table>
-
-
-
+<h3>Keyboard</h3><ul><li>Type: filter locally or call loadOptions(query)</li><li>ArrowUp/ArrowDown: move the active suggestion</li><li>Enter: choose the active suggestion</li><li>Escape: close the panel</li><li>Backspace in multi mode: chips are removed through their buttons</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Anchored suggestion panel; multi values render as removable chips.</li><li><strong>console</strong>: Same input/panel/chips are painted in the terminal overlay.</li></ul>
+<h3>Examples</h3><h4>Searchable options</h4><pre>{
+  &quot;value&quot;: &quot;be&quot;,
+  &quot;options&quot;: [
+    {
+      &quot;label&quot;: &quot;Beta&quot;,
+      &quot;value&quot;: &quot;b&quot;
+    },
+    {
+      &quot;label&quot;: &quot;Berry&quot;,
+      &quot;value&quot;: &quot;r&quot;
+    }
+  ]
+}</pre><h4>Multi-select chips</h4><pre>{
+  &quot;multiple&quot;: true,
+  &quot;values&quot;: [
+    &quot;a&quot;
+  ],
+  &quot;options&quot;: [
+    {
+      &quot;label&quot;: &quot;Alpha&quot;,
+      &quot;value&quot;: &quot;a&quot;
+    },
+    {
+      &quot;label&quot;: &quot;Beta&quot;,
+      &quot;value&quot;: &quot;b&quot;
+    }
+  ]
+}</pre>
 </section>
 <section id="widget-avatar">
 <h2>avatar <span class="muted">ui-avatar</span></h2>
