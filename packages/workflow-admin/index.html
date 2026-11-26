@@ -85,11 +85,6 @@
             font-size: 15px;
             color: var(--wa-shell-text);
         }
-        .designer-header p {
-            margin: 0;
-            font-size: 11px;
-            color: var(--wa-shell-muted);
-        }
         .designer-lang {
             margin-left: auto;
             margin-right: 40px;
@@ -176,13 +171,6 @@
             flex: 0 0 auto;
             white-space: nowrap;
         }
-        .wa-designer-shell > .designer-header p {
-            flex: 0 1 auto;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
         .wa-designer-shell > .designer-header .designer-lang {
             flex: 0 0 auto;
             margin-left: 0;
@@ -245,11 +233,6 @@
             padding: 3px 8px;
             border-bottom: 1px solid var(--wa-shell-border);
             gap: 8px;
-        }
-        @media (max-width: 1100px) {
-            .wa-designer-shell > .designer-header p {
-                display: none;
-            }
         }
         .wa-login {
             height: 100%;
@@ -576,7 +559,6 @@
 <body>
     <header class="designer-header">
         <h1>TSDI Workflow Admin</h1>
-        <p>Drag nodes · connect ports · run and inspect path / history / logs</p>
     </header>
     <div id="boot-status">Loading designer…</div>
     <noscript>This designer requires JavaScript.</noscript>

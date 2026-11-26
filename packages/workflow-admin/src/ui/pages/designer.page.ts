@@ -16,7 +16,6 @@ import { WORKFLOW_ADMIN_WORKFLOW_PATH, WORKFLOW_ADMIN_WORKFLOWS_PATH } from '../
     <div class="wa-designer-shell">
         <header class="designer-header wa-designer-header">
             <h1>TSDI Workflow Admin</h1>
-            <p>Drag nodes · connect ports · run and inspect path / history / logs</p>
             <tab-bar v-if="designer" class="workflow-tabs wa-header-tabs" :source="tabsSource"></tab-bar>
             <div class="designer-lang">
                 <span class="designer-auth" id="auth-user" hidden>
