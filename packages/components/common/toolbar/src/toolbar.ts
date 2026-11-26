@@ -48,7 +48,7 @@ interface ToolbarViewItem {
     selector: 'ui-toolbar',
     template: `
     <div class="ui-toolbar {{toolbarClass}}" role="toolbar" aria-label="{{ariaLabel}}" aria-orientation="{{orientation}}">
-        <span class="ui-toolbar-entry" v-for="entry in viewItems" trackBy="key">
+        <span class="ui-toolbar-entry" v-for="entry in displayItems" trackBy="key">
             <span class="ui-toolbar-separator" role="separator"
                 aria-orientation="{{orientation === 'horizontal' ? 'vertical' : 'horizontal'}}"
                 v-if="entry.kind === 'separator'"></span>
@@ -67,6 +67,24 @@ interface ToolbarViewItem {
                 <span class="ui-toolbar-label" v-if="entry.label">{{entry.label}}</span>
             </button>
         </span>
+        <span class="ui-toolbar-entry ui-toolbar-overflow" v-if="hasOverflow">
+            <button class="ui-toolbar-item ui-toolbar-overflow-trigger" type="button"
+                tabindex="{{overflowTabIndex}}" focusable="true"
+                aria-haspopup="menu" aria-expanded="{{overflowOpenState}}"
+                aria-label="{{overflowLabel}}" title="{{overflowLabel}}"
+                @click="toggleOverflow" @keydown="onOverflowKeydown($event)"
+                @focus="focusOverflow()">{{overflowGlyph}}</button>
+            <div class="ui-toolbar-overflow-menu" role="menu" v-if="overflowOpenState">
+                <button class="{{item.className}} ui-toolbar-overflow-item" type="button" role="menuitem"
+                    v-for="item in overflowItems" trackBy="key"
+                    [disabled]="item.disabled" tabindex="0" focusable="{{!item.disabled}}"
+                    aria-label="{{item.ariaLabel || item.label || item.title}}"
+                    @click="pickOverflow(item)" @keydown="onOverflowItemKeydown(item, $event)">
+                    <icon v-if="item.icon" [name]="item.icon" [glyph]="item.iconGlyph || item.icon" size="sm"></icon>
+                    <span class="ui-toolbar-label" v-if="item.label">{{item.label}}</span>
+                </button>
+            </div>
+        </span>
     </div>`
 })
 export class ToolbarComponent {
@@ -79,8 +97,14 @@ export class ToolbarComponent {
     @Attribute() ariaLabel = 'Toolbar';
     @Attribute() className = '';
     @Attribute() action?: (item: ToolbarItem, index: number) => void;
+    /** Collapse commands beyond this count into an overflow menu; 0 keeps all. */
+    @Attribute() maxVisible: number | string = 0;
+    @Attribute() overflowLabel = 'More';
+    @Attribute() overflowGlyph = '…';
     private _compact = false;
     private rovingKey = '';
+    private overflowOpen = false;
+    protected readonly overflowKey = '__ui-toolbar-overflow__';
 
     @Attribute()
     get compact(): boolean { return this._compact; }
@@ -126,14 +150,60 @@ export class ToolbarComponent {
         return this.viewItems.filter(entry => entry.kind === 'item');
     }
 
+    get maxVisibleCount(): number {
+        return Math.max(0, Math.floor(Number(this.maxVisible) || 0));
+    }
+
+    get hasOverflow(): boolean {
+        return this.maxVisibleCount > 0 && this.commandItems.length > this.maxVisibleCount;
+    }
+
+    protected get visibleCount(): number {
+        return this.hasOverflow ? Math.max(0, this.maxVisibleCount - 1) : this.commandItems.length;
+    }
+
+    get visibleCommands(): ToolbarViewItem[] {
+        return this.commandItems.slice(0, this.visibleCount);
+    }
+
+    get overflowItems(): ToolbarViewItem[] {
+        return this.hasOverflow ? this.commandItems.slice(this.visibleCount) : [];
+    }
+
+    get overflowOpenState(): boolean {
+        return this.overflowOpen && this.hasOverflow;
+    }
+
+    get displayItems(): ToolbarViewItem[] {
+        const visible = new Set(this.visibleCommands.map(entry => entry.key));
+        const items = this.viewItems.filter(entry => entry.kind === 'item' ? visible.has(entry.key) : true);
+        while (items.length && items[0].kind === 'separator') { items.shift(); }
+        while (items.length && items[items.length - 1].kind === 'separator') { items.pop(); }
+        return items.filter((entry, index) => entry.kind !== 'separator' || items[index - 1]?.kind !== 'separator');
+    }
+
+    get overflowTabIndex(): number {
+        return this.currentFocusKey === this.overflowKey ? 0 : -1;
+    }
+
+    protected get navigationItems(): ToolbarViewItem[] {
+        return this.overflowOpenState ? this.overflowItems : this.visibleCommands;
+    }
+
     protected get currentFocusKey(): string {
-        const items = this.commandItems;
-        const roving = items.find(entry => entry.key === this.rovingKey && !entry.disabled);
-        if (roving) {
-            return roving.key;
+        const items = this.navigationItems;
+        const keys = items.map(entry => entry.key);
+        if (this.hasOverflow && !this.overflowOpenState) {
+            keys.push(this.overflowKey);
+        }
+        if (keys.includes(this.rovingKey)) {
+            const roving = items.find(entry => entry.key === this.rovingKey);
+            if (!roving || !roving.disabled) {
+                return this.rovingKey;
+            }
         }
         const active = items.find(entry => entry.active && !entry.disabled);
-        return (active || items.find(entry => !entry.disabled))?.key || '';
+        return (active || items.find(entry => !entry.disabled))?.key || (this.hasOverflow ? this.overflowKey : '');
     }
 
     tabIndexFor(entry: ToolbarViewItem): number {
@@ -151,6 +221,11 @@ export class ToolbarComponent {
             return;
         }
         const key = String(event?.key || '');
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+            event.preventDefault?.();
+            this.pick(entry);
+            return;
+        }
         const horizontal = this.orientation !== 'vertical';
         const previous = horizontal ? key === 'ArrowLeft' : key === 'ArrowUp';
         const next = horizontal ? key === 'ArrowRight' : key === 'ArrowDown';
@@ -158,23 +233,121 @@ export class ToolbarComponent {
             return;
         }
         event.preventDefault?.();
-        const items = this.commandItems.filter(item => !item.disabled);
-        if (!items.length) {
+        const items = this.navigationItems.filter(item => !item.disabled);
+        const keys = items.map(item => item.key);
+        if (this.hasOverflow && !this.overflowOpenState) {
+            keys.push(this.overflowKey);
+        }
+        if (!keys.length) {
             return;
         }
-        const index = items.findIndex(item => item.key === entry.key);
+        const index = keys.indexOf(entry.key);
         let target = index;
         if (key === 'Home') {
             target = 0;
         } else if (key === 'End') {
-            target = items.length - 1;
+            target = keys.length - 1;
         } else {
-            target = ((index < 0 ? 0 : index) + (next ? 1 : -1) + items.length) % items.length;
+            target = ((index < 0 ? 0 : index) + (next ? 1 : -1) + keys.length) % keys.length;
         }
-        const item = items[target];
-        this.rovingKey = item.key;
-        const domIndex = this.commandItems.findIndex(command => command.key === item.key);
+        const targetKey = keys[target];
+        this.rovingKey = targetKey;
+        this.focusKey(targetKey);
+    }
+
+    protected focusKey(key: string): void {
+        if (key === this.overflowKey) {
+            focusNth(this.elementRef?.nativeElement, '.ui-toolbar-overflow-trigger', 0);
+            return;
+        }
+        const domIndex = this.displayItems
+            .filter(item => item.kind === 'item')
+            .findIndex(item => item.key === key);
         focusNth(this.elementRef?.nativeElement, '.ui-toolbar-item', domIndex);
+    }
+
+    focusOverflow(): void {
+        this.rovingKey = this.overflowKey;
+    }
+
+    toggleOverflow(): void {
+        this.overflowOpenState ? this.closeOverflow() : this.openOverflow();
+    }
+
+    openOverflow(): void {
+        if (!this.hasOverflow) {
+            return;
+        }
+        this.overflowOpen = true;
+        const first = this.overflowItems.find(item => !item.disabled);
+        if (first) {
+            this.rovingKey = first.key;
+        }
+        void Promise.resolve().then(() => Promise.resolve()).then(() => this.focusOverflowItem(first?.key));
+    }
+
+    closeOverflow(): void {
+        if (!this.overflowOpen) {
+            return;
+        }
+        this.overflowOpen = false;
+        this.rovingKey = this.overflowKey;
+        void Promise.resolve().then(() => Promise.resolve()).then(() => this.focusKey(this.overflowKey));
+    }
+
+    protected focusOverflowItem(key?: string): void {
+        if (!this.overflowOpenState || !key) {
+            return;
+        }
+        const index = this.overflowItems.findIndex(item => item.key === key);
+        focusNth(this.elementRef?.nativeElement, '.ui-toolbar-overflow-item', index);
+    }
+
+    onOverflowKeydown(event: any): void {
+        const key = String(event?.key || '');
+        if (key === 'Escape' && this.overflowOpenState) {
+            event.preventDefault?.();
+            this.closeOverflow();
+            return;
+        }
+        if (key === 'ArrowDown' || key === 'Enter' || key === ' ' || key === 'Spacebar') {
+            event.preventDefault?.();
+            this.openOverflow();
+        }
+    }
+
+    onOverflowItemKeydown(entry: ToolbarViewItem, event: any): void {
+        const key = String(event?.key || '');
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+            event.preventDefault?.();
+            this.pickOverflow(entry);
+            return;
+        }
+        if (key === 'Escape') {
+            event.preventDefault?.();
+            this.closeOverflow();
+            return;
+        }
+        if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'Home' && key !== 'End') {
+            return;
+        }
+        event.preventDefault?.();
+        const items = this.overflowItems.filter(item => !item.disabled);
+        if (!items.length) {
+            return;
+        }
+        const index = items.findIndex(item => item.key === entry.key);
+        const target = key === 'Home' ? 0
+            : key === 'End' ? items.length - 1
+                : ((index < 0 ? 0 : index) + (key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        this.rovingKey = items[target].key;
+        this.focusOverflowItem(items[target].key);
+    }
+
+    pickOverflow(entry: ToolbarViewItem): void {
+        this.pick(entry);
+        this.overflowOpen = false;
+        this.rovingKey = this.overflowKey;
     }
 
     pick(entry: ToolbarViewItem): void {
