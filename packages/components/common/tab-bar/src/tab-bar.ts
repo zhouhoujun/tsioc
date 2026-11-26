@@ -61,12 +61,12 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
     selector: 'tab-bar, ui-tab-bar',
     template: `
     <p class="tab-bar" role="tablist" aria-orientation="horizontal" v-show="visible" #strip>
-        <span class="tab-scroll tab-scroll-back" role="button" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-show="arrowsVisible" @click="scrollBack($event)">{{scrollBackLabel}}</span>
-        <span class="tab" role="tab" aria-selected="{{tab.active}}" tabindex="{{tabIndexFor(tab, index)}}" data-disabled="{{tab.disabled}}" data-hover-group="true" v-for="(tab, index) in items" trackBy="id" @click="select(tab.id, $event)" @keydown="onTabKeydown($event, tab, index)">
-            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
+        <span class="tab-scroll tab-scroll-back" role="button" focusable="true" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-show="arrowsVisible" @click="scrollBack($event)">{{scrollBackLabel}}</span>
+        <span class="tab" role="tab" aria-selected="{{tab.active}}" tabindex="{{tabIndexFor(tab, index)}}" focusable="{{!tab.disabled}}" data-disabled="{{tab.disabled}}" data-hover-group="true" v-for="(tab, index) in items" trackBy="id" @click="select(tab.id, $event)" @keydown="onTabKeydown($event, tab, index)">
+            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" focusable="true" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
         </span>
-        <span class="tab-scroll tab-scroll-forward" role="button" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
-        <span class="tab-new" role="button" v-show="showCreate" @click="create">{{createLabel}}</span>
+        <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
+        <span class="tab-new" role="button" focusable="true" v-show="showCreate" @click="create">{{createLabel}}</span>
     </p>
     `
 })

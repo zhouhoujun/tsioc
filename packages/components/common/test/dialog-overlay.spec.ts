@@ -58,6 +58,23 @@ export class DialogOverlayTest {
         expect(manager.size).toEqual(0);
     }
 
+    @Test('programmatic close still notifies the host once')
+    async programmaticClose() {
+        const dialogRef = this.ctx.get(ComponentFactory).create(DialogComponent, { injector: this.ctx }) as ComponentRef<DialogComponent>;
+        await dialogRef.render();
+        await Promise.resolve();
+        const dialog = dialogRef.instance;
+        const manager = this.ctx.get(OverlayManager) as OverlayManager;
+        let closes = 0;
+        dialog.closeAction = () => { closes += 1; };
+        dialog.overlayOpen = true;
+        expect(manager.size).toEqual(1);
+        dialog.close();
+        expect(closes).toEqual(1);
+        expect(manager.size).toEqual(0);
+        expect(dialog.overlayOpen).toEqual(false);
+    }
+
     @Test('focuses the panel, traps Tab and restores the trigger')
     async focusCycle() {
         const doc = this.ctx.get(DOCUMENT) as Document;

@@ -200,11 +200,14 @@ export class DialogComponent implements OnDestroy {
 
     close(): void {
         if (this._overlayOpen) {
+            // Manager.close() removes the entry without invoking entry.close,
+            // so the host callback must still run for programmatic closes.
             this.overlays?.close(this.overlayId);
-        } else {
+            this._overlayOpen = false;
             this.closeAction?.();
+            return;
         }
-        this._overlayOpen = false;
+        this.closeAction?.();
     }
 
     onDestroy(): void {

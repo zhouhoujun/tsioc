@@ -1,4 +1,7 @@
-import { Attribute, Component } from '@tsdi/components';
+import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Optional } from '@tsdi/ioc';
+import { focusNth } from '../../src/focus';
+import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean, normalizeTone, UiTone } from '../../src/ui';
 
 export type ToolbarKind = 'item' | 'separator';
@@ -52,10 +55,14 @@ interface ToolbarViewItem {
             <button class="{{entry.className}}" type="button"
                 v-if="entry.kind !== 'separator'"
                 [disabled]="entry.disabled"
+                tabindex="{{tabIndexFor(entry)}}"
+                focusable="{{!entry.disabled}}"
                 title="{{entry.title || entry.label || entry.ariaLabel}}"
                 aria-label="{{entry.ariaLabel || entry.label || entry.title}}"
                 aria-pressed="{{entry.active}}"
-                @click="pick(entry)">
+                @click="pick(entry)"
+                @focus="focusEntry(entry)"
+                @keydown="onKeydown(entry, $event)">
                 <icon v-if="entry.icon" [name]="entry.icon" [glyph]="entry.iconGlyph || entry.icon" size="sm"></icon>
                 <span class="ui-toolbar-label" v-if="entry.label">{{entry.label}}</span>
             </button>
@@ -63,12 +70,17 @@ interface ToolbarViewItem {
     </div>`
 })
 export class ToolbarComponent {
+    constructor(@Optional() protected elementRef?: ElementRef) {
+        markElementRefRaw(elementRef);
+    }
+
     @Attribute() items: ToolbarItem[] = [];
     @Attribute() orientation: ToolbarOrientation = 'horizontal';
     @Attribute() ariaLabel = 'Toolbar';
     @Attribute() className = '';
     @Attribute() action?: (item: ToolbarItem, index: number) => void;
     private _compact = false;
+    private rovingKey = '';
 
     @Attribute()
     get compact(): boolean { return this._compact; }
@@ -110,10 +122,66 @@ export class ToolbarComponent {
         });
     }
 
+    protected get commandItems(): ToolbarViewItem[] {
+        return this.viewItems.filter(entry => entry.kind === 'item');
+    }
+
+    protected get currentFocusKey(): string {
+        const items = this.commandItems;
+        const roving = items.find(entry => entry.key === this.rovingKey && !entry.disabled);
+        if (roving) {
+            return roving.key;
+        }
+        const active = items.find(entry => entry.active && !entry.disabled);
+        return (active || items.find(entry => !entry.disabled))?.key || '';
+    }
+
+    tabIndexFor(entry: ToolbarViewItem): number {
+        return entry.kind === 'item' && !entry.disabled && entry.key === this.currentFocusKey ? 0 : -1;
+    }
+
+    focusEntry(entry: ToolbarViewItem): void {
+        if (entry?.kind === 'item' && !entry.disabled) {
+            this.rovingKey = entry.key;
+        }
+    }
+
+    onKeydown(entry: ToolbarViewItem, event: any): void {
+        if (!entry || entry.kind !== 'item' || entry.disabled) {
+            return;
+        }
+        const key = String(event?.key || '');
+        const horizontal = this.orientation !== 'vertical';
+        const previous = horizontal ? key === 'ArrowLeft' : key === 'ArrowUp';
+        const next = horizontal ? key === 'ArrowRight' : key === 'ArrowDown';
+        if (!previous && !next && key !== 'Home' && key !== 'End') {
+            return;
+        }
+        event.preventDefault?.();
+        const items = this.commandItems.filter(item => !item.disabled);
+        if (!items.length) {
+            return;
+        }
+        const index = items.findIndex(item => item.key === entry.key);
+        let target = index;
+        if (key === 'Home') {
+            target = 0;
+        } else if (key === 'End') {
+            target = items.length - 1;
+        } else {
+            target = ((index < 0 ? 0 : index) + (next ? 1 : -1) + items.length) % items.length;
+        }
+        const item = items[target];
+        this.rovingKey = item.key;
+        const domIndex = this.commandItems.findIndex(command => command.key === item.key);
+        focusNth(this.elementRef?.nativeElement, '.ui-toolbar-item', domIndex);
+    }
+
     pick(entry: ToolbarViewItem): void {
         if (!entry || entry.disabled || entry.kind === 'separator') {
             return;
         }
+        this.rovingKey = entry.key;
         this.action?.(this.items[entry.index], entry.index);
     }
 }

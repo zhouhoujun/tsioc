@@ -47,12 +47,14 @@ import { CascaderComponent, CascaderModule } from '@tsdi/components/common/casca
 import { UploadComponent, UploadModule } from '@tsdi/components/common/upload';
 import { ImageComponent, ImageModule } from '@tsdi/components/common/image';
 import { QrCodeComponent, QrCodeModule } from '@tsdi/components/common/qr-code';
+import { AccordionComponent, AccordionModule } from '@tsdi/components/common/accordion';
+import { TabBarComponent, TabBarModule } from '@tsdi/components/common/tab-bar';
 import { DialogComponent, DialogModule } from '@tsdi/components/common/dialog';
 import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common/alert';
 
 @Component({
     selector: 'common-ui-console-host',
-    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent, DrawerComponent, ResultComponent, AutoCompleteComponent, CascaderComponent, UploadComponent, ImageComponent, QrCodeComponent],
+    imports: [ButtonComponent, BadgeComponent, CardComponent, EmptyStateComponent, DividerComponent, StatComponent, ProgressComponent, BreadcrumbComponent, ToolbarComponent, StepsComponent, TimelineComponent, SkeletonComponent, AvatarComponent, PaginationComponent, DataTableComponent, TreeComponent, TextFieldComponent, CheckboxComponent, SwitchComponent, RadioGroupComponent, AlertNoticeComponent, SelectTriggerComponent, KbdComponent, ScrollbarComponent, ListComponent, SliderComponent, SegmentedComponent, ChipComponent, SpinnerComponent, DescriptionsComponent, TooltipComponent, PopoverComponent, TransferComponent, TreeSelectComponent, RateComponent, SpaceComponent, DrawerComponent, ResultComponent, AutoCompleteComponent, CascaderComponent, UploadComponent, ImageComponent, QrCodeComponent, AccordionComponent, TabBarComponent],
     template: `
     <div>
         <ui-button label="Save" tone="accent"></ui-button>
@@ -102,6 +104,8 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-upload label="Attach" :files="uploadFiles" :pickAction="onUploadPick" :removeAction="onUploadRemove"></ui-upload>
         <ui-image src="a.png" alt="Chart"></ui-image>
         <ui-qr-code :matrix="qrMatrix" ariaLabel="QR"></ui-qr-code>
+        <ui-accordion title="Group" :items="accordionItems" :expanded="accordionOpen" :toggleAction="onAccordionToggle"></ui-accordion>
+        <tab-bar :source="tabSource"></tab-bar>
     </div>`
 })
 class CommonUiConsoleHostComponent {
@@ -141,7 +145,7 @@ class CommonUiConsoleHostComponent {
         { title: 'Build', extra: 'v1', items: [{ label: 'Build Name', value: 'tsioc' }] },
         { title: 'Runtime', items: [{ label: 'Runtime Status', value: 'Ready' }] }
     ];
-    tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop' }];
+    tools = [{ id: 'run', label: 'Run' }, { kind: 'separator' }, { id: 'stop', label: 'Stop', disabled: true }, { id: 'theme', label: 'Theme', active: true }];
     steps = [{ label: 'Draft' }, { label: 'Review' }, { label: 'Publish' }];
     events = [{ title: 'Started', status: 'done' }, { title: 'Failed', status: 'error' }];
     tableColumns = [{ key: 'name', label: 'Name' }, { key: 'value', label: 'Value' }];
@@ -180,6 +184,18 @@ class CommonUiConsoleHostComponent {
     onUploadPick = () => { this.uploadPicks += 1; };
     onUploadRemove = (name: string) => { this.uploadRemoved = name; };
     qrMatrix = [[1, 0, 1], [0, 1, 0]];
+    accordionOpen = true;
+    accordionItems = [{ id: 'item', label: 'Accordion item' }];
+    onAccordionToggle = (expanded: boolean) => { this.accordionOpen = expanded; };
+    tabSelected = '';
+    tabSource = {
+        visible: true,
+        items: [
+            { id: 't1', label: 'One', active: true, showClose: true },
+            { id: 't2', label: 'Two', active: false, showClose: true }
+        ],
+        select: (id: string) => { this.tabSelected = id; }
+    };
     rating = 3;
     onRate = (value: number) => { this.rating = value; };
     step = '';
@@ -263,7 +279,9 @@ export class CommonUiConsoleTest {
                 CascaderModule,
                 UploadModule,
                 ImageModule,
-                QrCodeModule
+                QrCodeModule,
+                AccordionModule,
+                TabBarModule
             ]
         });
         try {
@@ -431,6 +449,31 @@ export class CommonUiConsoleTest {
                 surface.render();
                 const drawerClosed = surface.lastRenderedLines.map((line: string) => line.replace(/\x1b\[[0-9;]*m/g, '')).join('\n');
                 expect(drawerClosed).not.toContain('Drawer line');
+
+                const toolbarButtons = (ref.hostView.rootNodes[0] as any).querySelectorAll('.ui-toolbar-item');
+                expect(toolbarButtons[2].getAttribute('tabindex')).toEqual('0');
+                toolbarButtons[2].focus();
+                expect(surface.dispatchKey({ key: 'ArrowLeft' })).toEqual(true);
+                await Promise.resolve();
+                expect(toolbarButtons[0].getAttribute('tabindex')).toEqual('0');
+                expect(toolbarButtons[2].getAttribute('tabindex')).toEqual('-1');
+
+                const accordionHeader = (ref.hostView.rootNodes[0] as any).querySelector('.ui-accordion-header');
+                expect(accordionHeader.getAttribute('data-plain')).toEqual('true');
+                accordionHeader.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.accordionOpen).toEqual(false);
+                expect(accordionHeader.getAttribute('aria-expanded')).toEqual('false');
+
+                const tabs = (ref.hostView.rootNodes[0] as any).querySelectorAll('.tab');
+                expect(tabs[0].getAttribute('focusable')).toEqual('true');
+                expect((ref.hostView.rootNodes[0] as any).querySelector('.tab-close').getAttribute('focusable')).toEqual('true');
+                expect(tabs[0].getAttribute('tabindex')).toEqual('0');
+                tabs[0].focus();
+                expect(surface.dispatchKey({ key: 'ArrowRight' })).toEqual(true);
+                await Promise.resolve();
+                expect(host.tabSelected).toEqual('t2');
 
                 const resultAction = (ref.hostView.rootNodes[0] as any).querySelector('.ui-result-action');
                 resultAction.focus();

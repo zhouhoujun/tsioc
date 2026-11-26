@@ -113,6 +113,8 @@ export class PopoverComponent {
     }
 
     close(): void {
+        this.overlays?.close(this.overlayId);
+        this._overlayOpen = false;
         this.closeAction?.();
         this._visible = false;
     }

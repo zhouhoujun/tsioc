@@ -108,6 +108,29 @@ export class P1UiWidgetsTest {
         expect(host.action).toEqual('run');
         expect(buttons[2].className).toContain('is-active');
         expect(buttons[2].className).toContain('is-danger');
+
+        // Roving tabindex follows the active command, then arrow navigation
+        // skips the disabled Stop item and wraps at the ends.
+        // Clicking Run moved the roving tab stop to it.
+        expect(buttons[0].getAttribute('tabindex')).toEqual('0');
+        expect(buttons[1].getAttribute('tabindex')).toEqual('-1');
+        expect(buttons[2].getAttribute('tabindex')).toEqual('-1');
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        buttons[0].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+        await Promise.resolve();
+        expect(buttons[2].getAttribute('tabindex')).toEqual('0');
+        buttons[2].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+        await Promise.resolve();
+        expect(buttons[0].getAttribute('tabindex')).toEqual('0');
+        buttons[0].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+        await Promise.resolve();
+        expect(buttons[2].getAttribute('tabindex')).toEqual('0');
+        buttons[2].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+        await Promise.resolve();
+        expect(buttons[0].getAttribute('tabindex')).toEqual('0');
+        buttons[0].dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+        await Promise.resolve();
+        expect(buttons[2].getAttribute('tabindex')).toEqual('0');
     }
 
     @Test('steps derive done/active/pending and keep explicit hints')

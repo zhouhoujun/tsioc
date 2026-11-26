@@ -45,14 +45,14 @@ interface AccordionViewItem extends AccordionItem {
     selector: 'ui-accordion',
     template: `
     <section class="{{accordionClass}}" data-expanded="{{expandedText}}">
-        <button class="ui-accordion-header" type="button"
+        <button class="ui-accordion-header" type="button" data-plain="true"
             id="{{headerElementId}}"
             aria-expanded="{{expandedText}}"
             aria-controls="{{bodyElementId}}"
             aria-label="{{ariaLabel || title}}"
             [title]="title"
             [disabled]="disabled"
-            @click="toggle">
+            @click="toggle" @keydown="onKeydown($event)">
             <span class="ui-accordion-caret" aria-hidden="true">▸</span>
             <span class="ui-accordion-title">{{title}}</span>
             <span class="ui-accordion-count" v-if="hasCount">{{count}}</span>
@@ -182,6 +182,13 @@ export class AccordionComponent {
             return;
         }
         this.dragStartAction?.(event, item.value ?? item);
+    }
+
+    onKeydown(event: any): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            this.toggle();
+        }
     }
 
     toggle(): void {
