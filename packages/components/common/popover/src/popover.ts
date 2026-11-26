@@ -7,6 +7,7 @@ import { normalizeBoolean } from '../../src/ui';
 import { installPlainButtonStyles } from '../../src/ui.styles';
 import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 import { installPopoverStyles } from './popover.styles';
+import { resolveFlippedPlacement, UiPlacement } from '../../src/overlay-placement';
 
 export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -22,7 +23,7 @@ export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
     template: `
     <span class="ui-popover {{popoverClass}}" @keydown="onKeydown($event)">
         <v-content></v-content>
-        <div class="ui-popover-popup is-{{placement}}" role="dialog"
+        <div class="ui-popover-popup is-{{popupPlacement}}" role="dialog"
             aria-label="{{ariaLabel || title}}" v-if="visibleState">
             <div class="ui-popover-header" v-if="title">
                 <span class="ui-popover-title">{{title}}</span>
@@ -83,11 +84,19 @@ export class PopoverComponent {
 
     private _visible = false;
     private _closable = true;
+    private _flip = true;
     private _placement: PopoverPlacement = 'bottom';
+    private resolvedPlacement: PopoverPlacement | '' = '';
 
     @Attribute()
     get visible(): boolean { return this._visible; }
-    set visible(value: boolean | string) { this._visible = normalizeBoolean(value); }
+    set visible(value: boolean | string) {
+        this._visible = normalizeBoolean(value);
+        this.resolvedPlacement = '';
+        if (this._visible) {
+            void Promise.resolve().then(() => Promise.resolve()).then(() => this.resolvePlacement());
+        }
+    }
 
     @Attribute()
     get closable(): boolean { return this._closable; }
@@ -97,6 +106,33 @@ export class PopoverComponent {
     get placement(): PopoverPlacement { return this._placement; }
     set placement(value: string) {
         this._placement = value === 'top' || value === 'left' || value === 'right' ? value : 'bottom';
+        this.resolvedPlacement = '';
+    }
+
+    /** Flip to the opposite side when the panel would overflow the viewport. */
+    @Attribute()
+    get flip(): boolean { return this._flip; }
+    set flip(value: boolean | string) {
+        this._flip = normalizeBoolean(value, true);
+        if (!this._flip) {
+            this.resolvedPlacement = '';
+        }
+    }
+
+    get popupPlacement(): PopoverPlacement {
+        return this.resolvedPlacement || this._placement;
+    }
+
+    protected resolvePlacement(): void {
+        if (!this._flip || !this.visibleState) {
+            this.resolvedPlacement = '';
+            return;
+        }
+        const host = this.elementRef?.nativeElement as any;
+        const anchor = host?.matches?.('.ui-popover') ? host : host?.querySelector?.('.ui-popover');
+        const popup = anchor?.querySelector?.('.ui-popover-popup');
+        const next = resolveFlippedPlacement(anchor, popup, this._placement as UiPlacement) as PopoverPlacement;
+        this.resolvedPlacement = next === this._placement ? '' : next;
     }
 
     get closeGlyph(): string {
@@ -121,6 +157,7 @@ export class PopoverComponent {
         this.syncScrollLock(false);
         this.closeAction?.();
         this._visible = false;
+        this.resolvedPlacement = '';
     }
 
     closeKeydown(event: any): void {

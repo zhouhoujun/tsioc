@@ -40,14 +40,17 @@ export class TooltipTest {
         await this.ctx.close();
     }
 
-    protected async mount(): Promise<{ roots: HTMLElement[] }> {
+    protected async mount(): Promise<{ roots: HTMLElement[]; components: ComponentRef<TooltipComponent>[] }> {
         const ref = this.ctx.get(ComponentFactory).create(TooltipHostComponent, {
             injector: this.ctx
         }) as ComponentRef<TooltipHostComponent>;
         await ref.render();
         await Promise.resolve();
         const components = ref.hostView.queryAll(TooltipComponent) as ComponentRef<TooltipComponent>[];
-        return { roots: components.map(component => component.hostView.rootNodes[0] as HTMLElement) };
+        return {
+            roots: components.map(component => component.hostView.rootNodes[0] as HTMLElement),
+            components
+        };
     }
 
     @Test('opens on hover/focus and links the tooltip through aria-describedby')
@@ -109,6 +112,36 @@ export class TooltipTest {
         root.dispatchEvent(new (doc.defaultView as any).MouseEvent('mouseleave'));
         await wait(40);
         expect(root.querySelector('.ui-tooltip-popup')).toBeFalsy();
+    }
+
+    @Test('flips the popup away from the viewport edge unless disabled')
+    async flipsAtEdges() {
+        const { roots, components } = await this.mount();
+        const root = roots[0];
+        const tip = components[0].instance;
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const win = doc.defaultView as any;
+        Object.defineProperty(win, 'innerHeight', { value: 200, configurable: true });
+        Object.defineProperty(win, 'innerWidth', { value: 200, configurable: true });
+        (root as any).getBoundingClientRect = () => ({
+            left: 20, top: 150, right: 40, bottom: 180, width: 20, height: 30
+        });
+
+        root.dispatchEvent(new (win as any).MouseEvent('mouseenter'));
+        await Promise.resolve();
+        const popup = root.querySelector('.ui-tooltip-popup') as HTMLElement;
+        expect(popup).toBeTruthy();
+        (popup as any).getBoundingClientRect = () => ({
+            left: 0, top: 0, right: 50, bottom: 20, width: 50, height: 20
+        });
+        (tip as any).resolvePlacement();
+        await Promise.resolve();
+        expect(popup.className).toContain('is-top');
+
+        tip.flip = false;
+        (tip as any).resolvePlacement();
+        await Promise.resolve();
+        expect(popup.className).toContain('is-bottom');
     }
 
     @Test('disabled tooltips stay closed and out of the tab order')

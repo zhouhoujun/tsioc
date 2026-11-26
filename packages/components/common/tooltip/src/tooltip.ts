@@ -3,6 +3,7 @@ import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId, normalizeBoolean } from '../../src/ui';
 import { installTooltipStyles } from './tooltip.styles';
+import { resolveFlippedPlacement, UiPlacement } from '../../src/overlay-placement';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -27,7 +28,7 @@ export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
         @blur="hide()"
         @keydown="onKeydown($event)">
         <v-content></v-content>
-        <span class="ui-tooltip-popup is-{{placement}}" id="{{tooltipId}}"
+        <span class="ui-tooltip-popup is-{{popupPlacement}}" id="{{tooltipId}}"
             role="tooltip" v-if="openState">{{content}}</span>
     </span>`
 })
@@ -50,7 +51,9 @@ export class TooltipComponent {
     private _open = false;
     private _disabled = false;
     private _focusable = false;
+    private _flip = true;
     private _placement: TooltipPlacement = 'top';
+    private resolvedPlacement: TooltipPlacement | '' = '';
     private openTimer?: any;
     private closeTimer?: any;
     private destroyed = false;
@@ -60,6 +63,10 @@ export class TooltipComponent {
     set visible(value: boolean | string) {
         this.cancelTimers();
         this._open = normalizeBoolean(value);
+        this.resolvedPlacement = '';
+        if (this._open) {
+            void Promise.resolve().then(() => Promise.resolve()).then(() => this.resolvePlacement());
+        }
     }
 
     @Attribute()
@@ -74,6 +81,33 @@ export class TooltipComponent {
     get placement(): TooltipPlacement { return this._placement; }
     set placement(value: string) {
         this._placement = value === 'bottom' || value === 'left' || value === 'right' ? value : 'top';
+        this.resolvedPlacement = '';
+    }
+
+    /** Flip to the opposite side when the popup would overflow the viewport. */
+    @Attribute()
+    get flip(): boolean { return this._flip; }
+    set flip(value: boolean | string) {
+        this._flip = normalizeBoolean(value, true);
+        if (!this._flip) {
+            this.resolvedPlacement = '';
+        }
+    }
+
+    get popupPlacement(): TooltipPlacement {
+        return this.resolvedPlacement || this._placement;
+    }
+
+    protected resolvePlacement(): void {
+        if (!this._flip || !this.openState) {
+            this.resolvedPlacement = '';
+            return;
+        }
+        const host = this.elementRef?.nativeElement as any;
+        const anchor = host?.matches?.('.ui-tooltip') ? host : host?.querySelector?.('.ui-tooltip');
+        const popup = anchor?.querySelector?.('.ui-tooltip-popup');
+        const next = resolveFlippedPlacement(anchor, popup, this._placement as UiPlacement) as TooltipPlacement;
+        this.resolvedPlacement = next === this._placement ? '' : next;
     }
 
     get tooltipId(): string {
@@ -140,6 +174,7 @@ export class TooltipComponent {
         }
         this._open = true;
         this.visibleChange.emit(true);
+        void Promise.resolve().then(() => Promise.resolve()).then(() => this.resolvePlacement());
     }
 
     protected closeNow(): void {
@@ -147,6 +182,7 @@ export class TooltipComponent {
             return;
         }
         this._open = false;
+        this.resolvedPlacement = '';
         this.visibleChange.emit(false);
     }
 
