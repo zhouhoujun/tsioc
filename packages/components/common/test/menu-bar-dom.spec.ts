@@ -122,6 +122,38 @@ export class MenuBarDomTest {
         expect(selected).toEqual([]);
     }
 
+    @Test('typing letters jumps to the next matching enabled item')
+    async typeahead() {
+        const selected: string[] = [];
+        const root = await this.render(selected);
+        this.doc.body.appendChild(root);
+        const menu = (this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>).instance;
+        menu.open = true;
+        await Promise.resolve();
+        const run = root.querySelector('[data-menu-id="run"]') as HTMLElement;
+        run.focus();
+        const key = (name: string) => run.dispatchEvent(new (this.doc.defaultView as any).KeyboardEvent('keydown', { key: name, bubbles: true }));
+        const realNow = Date.now;
+        let now = 1000;
+        Date.now = () => now;
+        try {
+            key('s');
+            await Promise.resolve();
+            expect(this.doc.activeElement?.getAttribute('data-menu-id')).toEqual('run');
+            now += 800;
+            key('u');
+            await Promise.resolve();
+            expect(this.doc.activeElement?.getAttribute('data-menu-id')).toEqual('undo');
+            now += 800;
+            key('t');
+            await Promise.resolve();
+            expect(this.doc.activeElement?.getAttribute('data-menu-id')).toEqual('theme');
+        } finally {
+            Date.now = realNow;
+            root.remove();
+        }
+    }
+
     @Test('rebuilds entries when a nested item field changes')
     async updatesNestedItems() {
         const selected: string[] = [];

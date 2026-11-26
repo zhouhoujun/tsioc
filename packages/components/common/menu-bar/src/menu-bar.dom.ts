@@ -41,6 +41,11 @@ export function menuButtons(container: any): HTMLElement[] {
         && !(node as HTMLButtonElement).disabled) as HTMLElement[];
 }
 
+/** Accessible label text for a menu button (falls back to textContent). */
+export function menuButtonLabel(button: any): string {
+    return String(button?.querySelector?.('.menu-bar-item-label')?.textContent ?? button?.textContent ?? '').trim();
+}
+
 /** Top-level (non-flyout) menu buttons in the rendered bar. */
 export function topLevelMenuButtons(root: any): HTMLElement[] {
     const popup = root?.querySelector?.('.menu-bar-popup');

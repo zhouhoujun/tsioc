@@ -6,6 +6,7 @@ import { OverlayManager } from '../../src/overlay-manager';
 import {
     bindMenuBarDismiss,
     focusDomElement,
+    menuButtonLabel,
     measurePopupLayout,
     measureSubmenuLayout,
     menuButtons,
@@ -13,6 +14,7 @@ import {
     openSubmenuElement,
     scheduleDomFocus
 } from './menu-bar.dom';
+import { MenuTypeahead, menuTypeaheadIndex } from './menu-bar.typeahead';
 
 /** One actionable entry in a {@link MenuBarComponent} dropdown. */
 export interface MenuBarItem {
@@ -148,6 +150,7 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     activeSubmenuKey = '';
     /** Id of the submenu parent currently previewed by hover/focus. */
     hoverSubmenuKey = '';
+    private readonly typeahead = new MenuTypeahead();
     /** Viewport coordinates of the open flyout (escapes the popup's clipping). */
     private submenuLeft = 0;
     private submenuRight = 0;
@@ -355,6 +358,12 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         const doc = this.ownerDocument();
         const active = doc?.activeElement as HTMLElement | undefined;
         const index = items.indexOf(active as HTMLElement);
+        if (key.length === 1 && !event?.ctrlKey && !event?.metaKey && !event?.altKey) {
+            const query = this.typeahead.push(key);
+            const next = menuTypeaheadIndex(items.map(item => ({ label: menuButtonLabel(item) })), query, index);
+            if (next >= 0) { event?.preventDefault?.(); focusDomElement(items[next]); }
+            return;
+        }
         if (key === 'ArrowDown' || key === 'ArrowUp') {
             event?.preventDefault?.();
             const step = key === 'ArrowDown' ? 1 : -1;
