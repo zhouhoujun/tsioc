@@ -17,7 +17,8 @@ class FakeClock extends AnimationClock {
     selector: 'progress-host',
     imports: [ProgressComponent],
     template: `<ui-progress label="Load" :value="40" :width="10"></ui-progress>
-    <ui-progress label="Busy" indeterminate :width="9" :interval="100"></ui-progress>`
+    <ui-progress label="Busy" indeterminate :width="9" :interval="100"></ui-progress>
+    <ui-progress label="Calm" indeterminate indeterminateLabel="Chargement" reduceMotion :width="9" :interval="100"></ui-progress>`
 })
 class ProgressHostComponent { }
 
@@ -65,6 +66,7 @@ export class ProgressTest {
         expect(root.getAttribute('aria-valuenow')).toEqual('40');
         expect(root.getAttribute('aria-valuetext')).toEqual('40%');
         expect(root.querySelector('.ui-progress-bar')?.textContent).toEqual('████░░░░░░');
+        expect(root.getAttribute('aria-busy')).toEqual('false');
     }
 
     @Test('animates the indeterminate sweep from the shared clock')
@@ -78,6 +80,7 @@ export class ProgressTest {
             const bar = root.querySelector('.ui-progress-bar') as HTMLElement;
             expect(root.getAttribute('aria-valuenow')).toEqual('');
             expect(root.getAttribute('aria-valuetext')).toEqual('Loading');
+            expect(root.getAttribute('aria-busy')).toEqual('true');
             expect(bar.textContent).toContain('█');
             const first = bar.textContent;
 
@@ -86,6 +89,27 @@ export class ProgressTest {
             await Promise.resolve();
             expect(bar.textContent).not.toEqual(first);
             expect(bar.textContent?.length).toEqual(9);
+        } finally {
+            Date.now = realNow;
+        }
+    }
+
+    @Test('honors a localized indeterminate label and reduced motion')
+    async reducedMotion() {
+        const realNow = Date.now;
+        let now = 2000;
+        Date.now = () => now;
+        try {
+            const { roots } = await this.mount();
+            const root = roots[2];
+            const bar = root.querySelector('.ui-progress-bar') as HTMLElement;
+            expect(root.getAttribute('aria-valuetext')).toEqual('Chargement');
+            expect(root.getAttribute('aria-busy')).toEqual('true');
+            const frozen = bar.textContent;
+            now = 2400;
+            this.clock.tick();
+            await Promise.resolve();
+            expect(bar.textContent).toEqual(frozen);
         } finally {
             Date.now = realNow;
         }

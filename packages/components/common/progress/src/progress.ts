@@ -20,7 +20,8 @@ import { normalizeBoolean, normalizeTone, UiTone } from '../../src/ui';
         aria-valuemin="0"
         aria-valuemax="{{max}}"
         aria-valuenow="{{indeterminate ? '' : value}}"
-        aria-valuetext="{{indeterminate ? 'Loading' : percentText}}"
+        aria-valuetext="{{indeterminate ? indeterminateLabel : percentText}}"
+        aria-busy="{{indeterminate}}"
         aria-label="{{ariaLabel || label}}">
         <span class="ui-progress-label" v-if="label">{{label}}</span>
         <span class="ui-progress-bar" aria-hidden="true">{{bar}}</span>
@@ -47,10 +48,13 @@ export class ProgressComponent implements OnDestroy {
     @Attribute() value = 0;
     @Attribute() max = 100;
     @Attribute() width = 20;
+    /** Spoken label while indeterminate (host can localize). */
+    @Attribute() indeterminateLabel = 'Loading';
 
     private _tone: UiTone = 'accent';
     private _indeterminate = false;
     private _showValue = true;
+    private _reduceMotion = false;
     private _interval = 100;
     private ready = false;
     private phase = 0;
@@ -83,6 +87,26 @@ export class ProgressComponent implements OnDestroy {
     @Attribute()
     get showValue(): boolean { return this._showValue; }
     set showValue(value: boolean | string) { this._showValue = normalizeBoolean(value, true); }
+
+    /** Freeze the indeterminate sweep for `prefers-reduced-motion` hosts. */
+    @Attribute()
+    get reduceMotion(): boolean { return this._reduceMotion; }
+    set reduceMotion(value: boolean | string) {
+        const next = normalizeBoolean(value);
+        if (next === this._reduceMotion) {
+            return;
+        }
+        this._reduceMotion = next;
+        if (!this.ready) {
+            return;
+        }
+        if (next) {
+            this.stop();
+            this.phase = 0;
+        } else if (this._indeterminate) {
+            this.start();
+        }
+    }
 
     get total(): number {
         const total = Number(this.max);
@@ -123,7 +147,7 @@ export class ProgressComponent implements OnDestroy {
 
     /** Advance the indeterminate sweep from a timestamp (shared clock/tests). */
     advance(now: number = Date.now()): void {
-        if (!this._indeterminate) {
+        if (!this._indeterminate || this._reduceMotion) {
             return;
         }
         const width = Math.max(4, Math.floor(Number(this.width) || 20));
@@ -136,7 +160,7 @@ export class ProgressComponent implements OnDestroy {
     }
 
     protected start(): void {
-        if (!this._indeterminate || this.subscribed || !this.clock) {
+        if (!this._indeterminate || this._reduceMotion || this.subscribed || !this.clock) {
             return;
         }
         this.listener ??= () => this.advance();
