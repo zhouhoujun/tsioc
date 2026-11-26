@@ -3,6 +3,7 @@ import { Inject, Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean, nextUiId } from '../../src/ui';
 import { OverlayManager } from '../../src/overlay-manager';
+import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 import {
     SearchListComponent,
     SearchListItem,
@@ -58,12 +59,14 @@ export class CommandPaletteComponent {
             this.overlayRegistered = false;
             this.overlays?.close(this.overlayId);
         }
+        this.syncScrollLock(false);
     }
 
     @ViewChild(SearchListComponent) searchList?: SearchListComponent;
 
     protected readonly overlayId = nextUiId('ui-command-palette');
     private overlayRegistered = false;
+    private releaseScrollLock?: () => void;
 
     @Attribute() title = '';
     @Attribute() hint = '';
@@ -134,16 +137,19 @@ export class CommandPaletteComponent {
                     close: () => this.closeFromOverlay()
                 }) ?? false;
             }
+            this.syncScrollLock(this.overlayRegistered);
             return;
         }
         if (this.overlayRegistered) {
             this.overlayRegistered = false;
             this.overlays?.close(this.overlayId);
         }
+        this.syncScrollLock(false);
     }
 
     protected closeFromOverlay(): void {
         this.overlayRegistered = false;
+        this.syncScrollLock(false);
         this._open = false;
         this.openChange.emit(false);
         this.closeAction?.();
@@ -161,6 +167,7 @@ export class CommandPaletteComponent {
             this.overlayRegistered = false;
             this.overlays?.close(this.overlayId);
         }
+        this.syncScrollLock(false);
         this._open = false;
         this.openChange.emit(false);
         this.closeAction?.();
@@ -201,5 +208,25 @@ export class CommandPaletteComponent {
         list.selectAction = item => this.selectAction?.(item);
         list.closeAction = () => this.close();
         list.changeAction = query => this.changeAction?.(query);
+    }
+
+    /** Lock document scrolling while this palette is registered and open. */
+    @Attribute()
+    get scrollLock(): boolean { return this._scrollLock; }
+    set scrollLock(value: boolean | string) {
+        this._scrollLock = normalizeBoolean(value, true);
+        if (!this._scrollLock) { this.syncScrollLock(false); }
+    }
+
+    private _scrollLock = true;
+
+    protected syncScrollLock(active: boolean): void {
+        if (active && this._scrollLock && !this.releaseScrollLock) {
+            const doc = (this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument;
+            this.releaseScrollLock = lockDocumentScroll(doc);
+        } else if (!active && this.releaseScrollLock) {
+            this.releaseScrollLock();
+            this.releaseScrollLock = undefined;
+        }
     }
 }

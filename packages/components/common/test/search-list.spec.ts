@@ -82,6 +82,19 @@ export class SearchListTest {
         expect(root.textContent).toContain('Ctrl+D');
     }
 
+    @Test('Home and End land on enabled rows')
+    async homeAndEnd() {
+        const { list } = await this.mount();
+        list.onKeydown({ key: 'End', preventDefault() { } });
+        expect(list.activeItem?.id).toEqual('delete');
+        list.onKeydown({ key: 'Home', preventDefault() { } });
+        expect(list.activeItem?.id).toEqual('deploy');
+        list.setQuery('sett');
+        expect(list.optionRows.map(item => item.id)).toEqual(['settings']);
+        list.onKeydown({ key: 'Enter', preventDefault() { } });
+        expect(list.activeId).toEqual('');
+    }
+
     @Test('controlled mode hides the input and follows the host selection')
     async controlledMode() {
         const { list, rootNow } = await this.mount();

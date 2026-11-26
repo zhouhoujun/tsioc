@@ -73,6 +73,13 @@ export class AutoCompleteTest {
         expect(options().length).toEqual(3);
         expect(options()[0].getAttribute('aria-selected')).toEqual('true');
 
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+        await Promise.resolve();
+        expect(options()[1].getAttribute('aria-selected')).toEqual('true');
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+        await Promise.resolve();
+        expect(options()[0].getAttribute('aria-selected')).toEqual('true');
+
         input.value = 'a';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         await Promise.resolve();

@@ -2,6 +2,7 @@ import { Attribute, Component, ElementRef } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId, normalizeBoolean } from '../../src/ui';
+import { SelectionCore } from '../../src/selection-core';
 import { installAutocompleteStyles } from './autocomplete.styles';
 
 export type AutoCompleteOptionLoader = (query: string) => AutoCompleteOption[] | Promise<AutoCompleteOption[]>;
@@ -134,6 +135,7 @@ export class AutoCompleteComponent {
     }
 
     protected readonly uid = nextUiId('ui-autocomplete');
+    private readonly selection = new SelectionCore();
     private _open = false;
     private _loading = false;
     private selectedIndex = 0;
@@ -170,16 +172,7 @@ export class AutoCompleteComponent {
     }
 
     get currentIndex(): number {
-        const options = this.viewOptions;
-        if (!options.length) {
-            return -1;
-        }
-        const enabled = options.find(option => !option.disabled);
-        if (!enabled) {
-            return -1;
-        }
-        const current = options[this.selectedIndex];
-        return current && !current.disabled ? this.selectedIndex : enabled.index;
+        return this.selection.resolve(this.viewOptions, this.selectedIndex);
     }
 
     get activeId(): string {
@@ -189,8 +182,10 @@ export class AutoCompleteComponent {
 
     get viewOptions(): AutoCompleteViewOption[] {
         const source = this.loadOptions ? (this._loadedOptions || []) : this.options;
+        const entries = Array.isArray(source) ? source : [];
+        const activeIndex = this.selection.resolve(entries, this.selectedIndex);
         let previousGroup = '';
-        return (Array.isArray(source) ? source : []).map((option, index) => {
+        return entries.map((option, index) => {
             const group = String(option?.group ?? '');
             const showGroup = !!group && group !== previousGroup;
             previousGroup = group;
@@ -204,7 +199,7 @@ export class AutoCompleteComponent {
                 showGroup,
                 className: [
                     'ui-autocomplete-option',
-                    index === this.selectedIndex ? 'is-active' : '',
+                    index === activeIndex ? 'is-active' : '',
                     option?.disabled ? 'is-disabled' : ''
                 ].filter(Boolean).join(' ')
             };
@@ -309,6 +304,16 @@ export class AutoCompleteComponent {
             this.move(key === 'ArrowDown' ? 1 : -1);
             return;
         }
+        if (key === 'Home' || key === 'End') {
+            const options = this.viewOptions;
+            const index = key === 'Home' ? this.selection.first(options) : this.selection.last(options);
+            if (index >= 0) {
+                event.preventDefault?.();
+                this.selectedIndex = index;
+                this._open = true;
+            }
+            return;
+        }
         if (key === 'Enter') {
             const option = this.viewOptions[this.currentIndex];
             if (option) {
@@ -326,18 +331,10 @@ export class AutoCompleteComponent {
     }
 
     protected move(delta: number): void {
-        const options = this.viewOptions;
-        if (!options.length) {
-            return;
-        }
-        let index = this.currentIndex;
-        for (let step = 1; step <= options.length; step++) {
-            const next = ((index + delta * step) % options.length + options.length) % options.length;
-            if (!options[next].disabled) {
-                this.selectedIndex = next;
-                this._open = true;
-                return;
-            }
+        const index = this.selection.move(this.viewOptions, this.currentIndex, delta);
+        if (index >= 0) {
+            this.selectedIndex = index;
+            this._open = true;
         }
     }
 }

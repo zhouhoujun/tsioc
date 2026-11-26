@@ -2,6 +2,7 @@ import { Attribute, Component, ElementRef, noReact } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
+import { SelectionCore } from '../../src/selection-core';
 import { installSearchListStyles } from './search-list.styles';
 
 /** One selectable row in a {@link SearchListComponent}. */
@@ -121,6 +122,7 @@ export class SearchListComponent {
     @Attribute() closeAction?: () => void;
 
     readonly listId: string;
+    private readonly selection = new SelectionCore();
     private _disabled = false;
     private _showInput = true;
     private _loading = false;
@@ -231,18 +233,11 @@ export class SearchListComponent {
     }
 
     get activeId(): string {
-        const options = this.optionRows.filter(item => !item.disabled);
-        if (!options.length) {
-            return '';
-        }
-        const external = String(this.selectedId ?? '');
-        if (external && options.some(item => item.id === external)) {
-            return external;
-        }
-        if (this._activeId && options.some(item => item.id === this._activeId)) {
-            return this._activeId;
-        }
-        return options[0].id;
+        const options = this.optionRows;
+        const preferred = String(this.selectedId ?? '') || this._activeId;
+        const index = preferred ? options.findIndex(item => String(item.id) === preferred) : -1;
+        const resolved = this.selection.resolve(options, index);
+        return resolved >= 0 ? String(options[resolved].id) : '';
     }
 
     get activeItem(): SearchListItem | null {
@@ -288,10 +283,10 @@ export class SearchListComponent {
             this.move(-1);
         } else if (key === 'Home') {
             event.preventDefault?.();
-            this.activateAt(0);
+            this.activateAt(this.selection.first(this.optionRows));
         } else if (key === 'End') {
             event.preventDefault?.();
-            this.activateAt(this.optionRows.length - 1);
+            this.activateAt(this.selection.last(this.optionRows));
         } else if (key === 'Enter') {
             const item = this.activeItem;
             if (item) {
@@ -305,15 +300,9 @@ export class SearchListComponent {
     }
 
     move(delta: number): void {
-        const options = this.optionRows.filter(item => !item.disabled);
-        if (!options.length) {
-            return;
-        }
-        const current = options.findIndex(item => item.id === this.activeId);
-        const next = current < 0
-            ? (delta > 0 ? 0 : options.length - 1)
-            : (current + delta + options.length) % options.length;
-        this.activateAt(this.optionRows.findIndex(item => item.id === options[next].id));
+        const options = this.optionRows;
+        const current = options.findIndex(item => String(item.id) === this.activeId);
+        this.activateAt(this.selection.move(options, current, delta));
     }
 
     activateAt(index: number): void {

@@ -71,6 +71,8 @@ export class CommandPaletteTest {
         expect(root.textContent).toContain('Command palette');
         expect(root.textContent).toContain('Deploy');
         expect(root.textContent).toContain('Ctrl+D');
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        expect(doc.body.style.overflow).toEqual('hidden');
 
         const list = (ref.hostView.queryAll(SearchListComponent) as ComponentRef<SearchListComponent>[])[0].instance;
         list.setQuery('de');
@@ -80,6 +82,7 @@ export class CommandPaletteTest {
         palette.close();
         expect(manager.size).toEqual(0);
         expect(closed).toEqual(1);
+        expect(doc.body.style.overflow).toEqual('');
         ref.destroy();
     }
 
