@@ -357,6 +357,21 @@ export function removeListItem(host: DynamicFormEditorHost, field: DynamicFormFi
     updateList(host, field, items);
 }
 
+export function changeListItemValue(
+    host: DynamicFormEditorHost,
+    field: DynamicFormField,
+    index: number,
+    child: DynamicFormField,
+    value: any
+): void {
+    const items = listItems(host, field).map(item => ({ ...item }));
+    if (!items[index]) {
+        return;
+    }
+    items[index][child.key] = value;
+    updateList(host, field, items);
+}
+
 export function changeListItem(
     host: DynamicFormEditorHost,
     field: DynamicFormField,

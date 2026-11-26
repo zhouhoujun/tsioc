@@ -25,13 +25,49 @@ import type { DynamicFormField } from './dynamic-form.types';
 export class DynamicFieldWidgetComponent implements AfterViewInit, OnDestroy {
     @ViewChild('anchor', ViewContainerRef) anchor?: ViewContainerRef;
 
-    @Attribute() field!: DynamicFormField;
-    @Attribute() value: any;
-    @Attribute() values: Record<string, any> = {};
-    @Attribute() disabled = false;
-    @Attribute() error = '';
+    @Attribute()
+    set field(value: DynamicFormField) {
+        this._field = value;
+    }
+    get field(): DynamicFormField { return this._field; }
+    protected _field!: DynamicFormField;
+
+    @Attribute()
+    set value(value: any) {
+        if (value === this._value) {
+            return;
+        }
+        this._value = value;
+        this.scheduleSync();
+    }
+    get value(): any { return this._value; }
+    protected _value: any;
+
+    @Attribute()
+    set values(value: Record<string, any>) {
+        this._values = value || {};
+    }
+    get values(): Record<string, any> { return this._values; }
+    protected _values: Record<string, any> = {};
+
+    @Attribute()
+    set disabled(value: boolean | string) {
+        this._disabled = !!value && value !== 'false';
+    }
+    get disabled(): boolean { return this._disabled; }
+    protected _disabled = false;
+
+    @Attribute()
+    set error(value: string) {
+        this._error = String(value || '');
+    }
+    get error(): string { return this._error; }
+    protected _error = '';
+
+    /** List-row index when hosted inside a repeatable field. */
+    @Attribute() itemIndex?: number;
     /** Value callback; the form owns encoding/validation. */
-    @Attribute() changeAction?: (field: DynamicFormField, value: any) => void;
+    @Attribute() changeAction?: (field: DynamicFormField, value: any, itemIndex?: number) => void;
 
     protected child?: ComponentRef<any>;
     protected componentType?: Type<any>;
@@ -59,7 +95,7 @@ export class DynamicFieldWidgetComponent implements AfterViewInit, OnDestroy {
             values: this.values,
             disabled: this.disabled,
             error: this.error,
-            changeAction: (next: any) => this.changeAction?.(this.field, next)
+            changeAction: (next: any) => this.changeAction?.(this.field, next, this.itemIndex)
         };
     }
 

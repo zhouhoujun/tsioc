@@ -12,6 +12,7 @@ import { translateWorkflow } from '../i18n';
 import { WORKFLOW_TYPED_CODEC } from '../workflow-typed-value';
 import { WorkflowInspectorFieldView, WorkflowInspectorModel } from '../types';
 import { WorkflowReferenceWidgetComponent } from './workflow-reference-widget';
+import { WorkflowTypedValueWidgetComponent } from './workflow-typed-value-widget';
 
 const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     hasSelection: false,
@@ -336,7 +337,10 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
         });
         return {
             fields,
-            widgets: [{ type: 'workflow-reference', component: WorkflowReferenceWidgetComponent }],
+            widgets: [
+                { type: 'workflow-reference', component: WorkflowReferenceWidgetComponent },
+                { type: 'workflow-typed-value', component: WorkflowTypedValueWidgetComponent }
+            ],
             defaultGroupLabel,
             jsonFieldsLabel: this.t('fields', 'Fields'),
             jsonTextLabel: this.t('json', 'JSON'),
@@ -354,11 +358,12 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
 
     protected toDynamicField(field: WorkflowInspectorFieldView): DynamicFormField {
         const typed = field.typed === true;
-        const searchableReference = !!field.reference && field.reference.multiple !== true;
+        const typedValueWidget = typed && field.typedValue === true;
+        const searchableReference = !typedValueWidget && !!field.reference && field.reference.multiple !== true;
         return {
             key: field.key,
-            type: searchableReference ? 'widget' : this.dynamicType(field),
-            widget: searchableReference ? 'workflow-reference' : undefined,
+            type: typedValueWidget || searchableReference ? 'widget' : this.dynamicType(field),
+            widget: typedValueWidget ? 'workflow-typed-value' : searchableReference ? 'workflow-reference' : undefined,
             typed,
             // Value fields store references and literal classes explicitly so
             // text that looks like a reference is never misread; path fields

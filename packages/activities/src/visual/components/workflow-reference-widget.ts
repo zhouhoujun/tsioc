@@ -21,7 +21,7 @@ import type { DynamicFormField } from '@tsdi/components/common/dynamic-form';
 export class WorkflowReferenceWidgetComponent {
     @Attribute() field!: DynamicFormField;
     @Attribute() disabled = false;
-    @Attribute() changeAction?: (field: DynamicFormField, value: any) => void;
+    @Attribute() changeAction?: (value: any) => void;
 
     query = '';
 
@@ -67,7 +67,7 @@ export class WorkflowReferenceWidgetComponent {
     choose(value: string): void {
         const next = String(value ?? '');
         this.query = this.options.find(option => option.value === next)?.label || next;
-        this.changeAction?.(this.field, next);
+        this.changeAction?.(next);
     }
 
     protected selectedLabel(): string {

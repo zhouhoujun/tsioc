@@ -111,6 +111,42 @@ export class DynamicFormDomTest {
         expect(tokenWidget.value).toBe('from-token');
     }
 
+    @Test('renders widgets inside repeatable list rows and updates the row value')
+    async listFieldWidgets() {
+        const ref = this.ctx.get(ComponentFactory).create(DynamicFormDomHostComponent, {
+            injector: this.ctx
+        }) as ComponentRef<DynamicFormDomHostComponent>;
+        await ref.render();
+        for (let index = 0; index < 4; index++) {
+            await Promise.resolve();
+        }
+        const form = ref.hostView.query(DynamicFormComponent) as ComponentRef<DynamicFormComponent>;
+        form.instance.schema = {
+            fields: [{
+                key: 'rules',
+                type: 'list',
+                label: 'Rules',
+                itemFields: [{ key: 'value', type: 'widget', widget: 'token-widget', label: 'Value' }]
+            }]
+        };
+        form.instance.value = { rules: [{ value: 'first' }, { value: 'second' }] };
+        for (let index = 0; index < 20; index++) {
+            await Promise.resolve();
+        }
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const root = form.hostView.rootNodes[0] as HTMLElement;
+        const widgets = Array.from(root.querySelectorAll('.test-widget')) as HTMLTextAreaElement[];
+        expect(widgets.length).toBe(2);
+        expect(widgets[0].value).toBe('first');
+        widgets[1].value = 'changed';
+        widgets[1].dispatchEvent(new ((this.ctx.get(DOCUMENT) as any).defaultView as any).Event('input', { bubbles: true }));
+        for (let index = 0; index < 4; index++) {
+            await Promise.resolve();
+        }
+        expect(form.instance.getValue().rules).toEqual([{ value: 'first' }, { value: 'changed' }]);
+    }
+
     @Test('links field errors and descriptions through aria-describedby')
     async describedByErrorAndHint() {
         const ref = this.ctx.get(ComponentFactory).create(DynamicFormDomHostComponent, {

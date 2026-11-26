@@ -68,11 +68,12 @@ const SOURCE_MAP = process.env.SOURCE_MAP === '1';
 // shared accordion and its icon rows (~7 KB raw); 1300 KB for the dynamic form
 // widget registry, async/external validation, typed source editors and
 // reorderable list rows (~13 KB gzip), and 1310 KB for the searchable
-// reference picker widget; it keeps ~14 KB of headroom over the preview page's
-// inlined bootstrap bytes. JSONata itself is a lazy chunk (~81 KB)
+// reference picker widget and 1320 KB for the typed-value widget/list-row
+// widgets; it keeps ~5 KB of headroom over the preview page's inlined
+// bootstrap bytes. JSONata itself is a lazy chunk (~81 KB)
 // loaded on first evaluation, so the initial budget only carries the wiring;
 // the gzip budget remains the gate.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_314_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_316_000);
 // Raised from 200 KB (2026-11) with the explicit save/publish workflow: version
 // history, diff, publish confirmation and run-history controls add ~5 KB gzip.
 // Raised from 233 KB (2026-11): the previous value sat within 40 bytes of the
@@ -92,11 +93,11 @@ const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_314_000);
 // cleanup, 291 KB for the sub-workflow menu actions, 292 KB for the
 // library-backed subflow source picker, 293 KB for inline inspector issues, and
 // 298 KB for protocol-grouped palette sections plus the shared accordion rows,
-// 310 KB for the dynamic form configuration widgets/validation, and 314 KB for
-// the searchable reference picker. JSONata itself is a lazy chunk and does not
-// count; the gzip budget stays the
+// 310 KB for the dynamic form configuration widgets/validation, 314 KB for
+// the searchable reference picker, and 316 KB for the typed-value/list widgets.
+// JSONata itself is a lazy chunk and does not count; the gzip budget stays the
 // transfer gate.
-const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 314_000);
+const INITIAL_GZIP_BUDGET = Number(process.env.DESIGNER_GZIP_BUDGET || 316_000);
 
 async function compile(): Promise<void> {
     fs.rmSync(TSC_OUT, { recursive: true, force: true });

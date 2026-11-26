@@ -131,7 +131,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         aria-describedby="{{describedByFor(field)}}"
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
                     <div v-if="isListInput(field)" [class]="classes.list">
-                        <div [class]="classes.listRow" v-for="(item, index) in listItems(field)">
+                        <div [class]="classes.listRow" v-for="(item, rowIndex) in listItems(field)">
                             <div [class]="classes.listFields">
                                 <div v-for="child in field.itemFields" v-if="isListItemVisible(child, item)">
                                     <div [class]="classes.listField" data-field-key="{{child.key}}">
@@ -145,7 +145,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                                     @click="runListItemAction(field, listIndex(field, item), child, action)">{{action.label}}</button>
                                             </span>
                                         </div>
-                                        <div [class]="classes.typedRow" v-if="isTypedInput(child)">
+                                        <div [class]="classes.typedRow" v-if="isTypedInput(child) && !isWidgetInput(child)">
                                             <select [class]="classes.typedType" data-value-type="true"
                                                 [disabled]="child.disabled || child.readonly"
                                                 @change="changeListItemTypedType(field, listIndex(field, item), child, $event)">
@@ -153,6 +153,17 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                                     [selected]="listItemTypedType(item, child) === source.value">{{source.label}}</option>
                                             </select>
                                         </div>
+                                        <dynamic-field-widget v-if="isWidgetInput(child) && fieldWidgetComponent(child)"
+                                            :component="fieldWidgetComponent(child)" :field="child"
+                                            :value="listItemValueAt(field, rowIndex, child)" :values="item"
+                                            :disabled="child.disabled || child.readonly"
+                                            :error="listItemErrorAt(field, rowIndex, child)"
+                                            :itemIndex="rowIndex"
+                                            :changeAction="listWidgetChange(field, rowIndex)"></dynamic-field-widget>
+                                        <input v-if="isWidgetInput(child) && !fieldWidgetComponent(child)" [class]="inputClass(child)"
+                                            type="text" [value]="listItemValueAt(field, rowIndex, child)"
+                                            [placeholder]="child.placeholder || ''"
+                                            @input="changeListItem(field, rowIndex, child, $event)" />
                                         <input v-if="isTextInput(child) || isNumberInput(child)" [class]="inputClass(child)"
                                             type="{{htmlType(child)}}"
                                             [value]="listItemValue(item, child)"
@@ -179,7 +190,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                         <div v-if="isRadioInput(child)" [class]="classes.options">
                                             <label v-for="option in child.options" data-option-value="{{option.value}}"
                                                 [class]="optionClass(child, listItemValue(item, child))">
-                                                <input type="radio" name="{{formId}}-{{field.key}}-{{index}}-{{child.key}}"
+                                                <input type="radio" name="{{formId}}-{{field.key}}-{{rowIndex}}-{{child.key}}"
                                                     [value]="option.value"
                                                     [checked]="sameOptionValue(option.value, listItemValue(item, child))"
                                                     @change="changeListItemOption(field, listIndex(field, item), child, option.value)" />
@@ -190,14 +201,14 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                     </div>
                                 </div>
                             </div>
-                            <span [class]="classes.listSummary" v-if="listRowSummary(field, item, index)">{{listRowSummary(field, item, index)}}</span>
+                            <span [class]="classes.listSummary" v-if="listRowSummary(field, item, rowIndex)">{{listRowSummary(field, item, rowIndex)}}</span>
                             <span class="df-list-actions" v-if="field.reorder">
                                 <button [class]="classes.listMove" type="button" data-list-move="up"
-                                    aria-label="Move up" [disabled]="index === 0"
-                                    @click="moveListItem(field, index, -1)">↑</button>
+                                    aria-label="Move up" [disabled]="rowIndex === 0"
+                                    @click="moveListItem(field, rowIndex, -1)">↑</button>
                                 <button [class]="classes.listMove" type="button" data-list-move="down"
-                                    aria-label="Move down" [disabled]="index >= listItems(field).length - 1"
-                                    @click="moveListItem(field, index, 1)">↓</button>
+                                    aria-label="Move down" [disabled]="rowIndex >= listItems(field).length - 1"
+                                    @click="moveListItem(field, rowIndex, 1)">↓</button>
                             </span>
                             <button [class]="classes.listRemove" type="button" @click="removeListItem(field, listIndex(field, item))">{{field.removeLabel || '✕'}}</button>
                         </div>

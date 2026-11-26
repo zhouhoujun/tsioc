@@ -314,6 +314,14 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     单值引用字段改用可搜索 autocomplete：输入只过滤候选，选中后才写配置；
     create/edit 动作仍由字段行提供；多选 scope 继续使用内置多选框。
   - autocomplete 增加 `disabled`，供表单/宿主统一禁用。
+- **typed value widget / 规则行**
+  - activities 注册 `workflow-typed-value` widget：按 source 渲染 number、
+    boolean、JSON/expression textarea，使用宿主 codec 存储；标签行 `ƒ` 仍打开
+    完整表达式编辑器。
+  - dynamic-form list 行支持 widget 子字段（值/错误/行索引回调），switch/change
+    规则值在列表内获得同样的 typed 编辑体验。
+  - widget 回调统一为 `changeAction(value)`，宿主负责 field/row 绑定，
+    避免 widget 自己传 field 造成列表值错位。
 - **combobox 异步候选**
   - autocomplete 支持 `loadOptions(query)`：输入触发异步加载、请求序号丢弃过期
     响应，面板显示 loading/错误行；`disabled` 与现有键盘/ARIA 行为保持一致。

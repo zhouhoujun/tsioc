@@ -360,6 +360,8 @@ export class DynamicFormComponent implements OnDestroy {
     listItems(field: DynamicFormField): any[] { return editor.listItems(this, field); }
 
     listItemValue(item: any, child: DynamicFormField): any { return editor.listItemValue(this, item, child); }
+    listItemValueAt(field: DynamicFormField, index: number, child: DynamicFormField): any { return editor.listItemValue(this, editor.listItems(this, field)[index] || {}, child); }
+    listItemErrorAt(field: DynamicFormField, index: number, child: DynamicFormField): string { return editor.listItemError(this, child, editor.listItems(this, field)[index] || {}); }
 
     listItemChecked(item: any, child: DynamicFormField): boolean { return editor.listItemChecked(item, child); }
 
@@ -612,16 +614,15 @@ export class DynamicFormComponent implements OnDestroy {
     isBooleanInput(field: DynamicFormField): boolean { return fields.isBooleanInput(field); }
 
     isWidgetInput(field: DynamicFormField): boolean { return fields.isWidgetInput(field); }
-    protected extraWidgets(): DynamicFormWidget[] {
-        return [...(this.widgets || []), ...(this.injectedWidgets || [])];
-    }
+    protected extraWidgets(): DynamicFormWidget[] { return [...(this.widgets || []), ...(this.injectedWidgets || [])]; }
     widgetFor(field: DynamicFormField): any { return fieldWidget(this._schema, field, this.extraWidgets()); }
-    fieldWidgetComponent(field: DynamicFormField): any {
-        return resolveFieldWidgetComponent(this._schema, field, this.extraWidgets());
-    }
+    fieldWidgetComponent(field: DynamicFormField): any { return resolveFieldWidgetComponent(this._schema, field, this.extraWidgets()); }
     @Computed()
     get formValues(): Record<string, any> { return this.getValue(); }
     changeWidgetValue = (field: DynamicFormField, value: any): void => { this.updateValue(field, value); };
+    listWidgetChange(field: DynamicFormField, index: number): (child: DynamicFormField, value: any) => void {
+        return (child, value) => editor.changeListItemValue(this, field, index, child, value);
+    }
     isSelectInput(field: DynamicFormField): boolean { return fields.isSelectInput(field); }
     isMultiSelect(field: DynamicFormField): boolean { return fields.isMultiSelect(field); }
     optionSelected(field: DynamicFormField, value: any): boolean { return fields.optionSelected(this, field, value); }
