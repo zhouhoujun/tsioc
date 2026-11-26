@@ -649,6 +649,10 @@
     background-color: var(--console-hover-bg, #303e4f);
 }
 
+.ui-button-label.is-loading-ghost { display: none; }
+.ui-button-group { display: flex; }
+.ui-button-group > .ui-button { margin-left: 0; }
+
 
 .tab-scroll {
     color: var(--console-accent, #86a9d6);

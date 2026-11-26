@@ -1,4 +1,5 @@
-import { Attribute, Component } from '@tsdi/components';
+import { AnimationClock, Attribute, Component, OnDestroy } from '@tsdi/components';
+import { Inject, Optional } from '@tsdi/ioc';
 import { iconSizeFor, normalizeBoolean, normalizeSize, normalizeTone, UiSize, UiTone } from '../../src/ui';
 
 export type ButtonVariant = 'solid' | 'outline' | 'ghost';
@@ -21,12 +22,27 @@ export type ButtonShape = 'default' | 'round' | 'circle';
         aria-busy="{{loading}}"
         aria-pressed="{{pressed}}"
         @click="activate">
-        <icon v-if="icon" [class]="iconClass" [name]="icon" [glyph]="iconGlyph || icon" [size]="iconSize"></icon>
-        <span class="ui-button-label" v-if="label">{{loading && loadingLabel ? loadingLabel : label}}</span>
+        <span class="ui-button-spinner" v-if="loading && spinner" aria-hidden="true">{{spinnerFrame}}</span>
+        <icon v-if="icon && !(loading && spinner)" [class]="iconClass" [name]="icon" [glyph]="iconGlyph || icon" [size]="iconSize"></icon>
+        <span class="ui-button-labels" v-if="label || (loading && loadingLabel)">
+            <span class="ui-button-label {{loading && loadingLabel ? 'is-loading-ghost' : ''}}" aria-hidden="{{loading && !!loadingLabel}}">{{label}}</span>
+            <span class="ui-button-label" v-if="loading && loadingLabel">{{loadingLabel}}</span>
+        </span>
         <v-content></v-content>
     </button>`
 })
-export class ButtonComponent {
+export class ButtonComponent implements OnDestroy {
+    constructor(@Optional() @Inject(AnimationClock) protected clock?: AnimationClock | null) { }
+
+    onInit(): void {
+        this.ready = true;
+        this.syncSpinner();
+    }
+
+    onDestroy(): void {
+        this.stopSpinner();
+    }
+
     @Attribute() label = '';
     @Attribute() icon = '';
     @Attribute() iconGlyph = '';
@@ -37,6 +53,12 @@ export class ButtonComponent {
     @Attribute() ariaLabel = '';
     @Attribute() loadingLabel = '';
     @Attribute() className = '';
+    /** Animate a spinner while loading (shared AnimationClock; static in bare tests). */
+    @Attribute()
+    get spinner(): boolean { return this._spinner; }
+    set spinner(value: boolean | string) { this._spinner = normalizeBoolean(value, true); this.syncSpinner(); }
+    @Attribute() spinnerFrames: string[] = ['◐', '◓', '◑', '◒'];
+    @Attribute() spinnerInterval = 100;
     @Attribute() action?: () => void;
     @Attribute() iconOnly = false;
 
@@ -47,6 +69,11 @@ export class ButtonComponent {
     private _pressed = false;
     private _block = false;
     private _shape: ButtonShape = 'default';
+    private _spinner = true;
+    private spinnerIndex = 0;
+    private spinnerTick = 0;
+    private spinnerListening = false;
+    private ready = false;
 
     @Attribute()
     get tone(): UiTone { return this._tone; }
@@ -62,7 +89,10 @@ export class ButtonComponent {
 
     @Attribute()
     get loading(): boolean { return this._loading; }
-    set loading(value: boolean | string) { this._loading = normalizeBoolean(value); }
+    set loading(value: boolean | string) {
+        this._loading = normalizeBoolean(value);
+        this.syncSpinner();
+    }
 
     /** Toggle-button state (`aria-pressed` plus the `is-pressed` class hook). */
     @Attribute()
@@ -84,6 +114,13 @@ export class ButtonComponent {
         return iconSizeFor(this._size);
     }
 
+    get spinnerFrame(): string {
+        const frames = Array.isArray(this.spinnerFrames) && this.spinnerFrames.length
+            ? this.spinnerFrames
+            : ['◐'];
+        return String(frames[this.spinnerIndex % frames.length] ?? '◐');
+    }
+
     get buttonClass(): string {
         return [
             `is-${this._tone}`,
@@ -103,4 +140,38 @@ export class ButtonComponent {
         }
         this.action?.();
     }
+
+    protected syncSpinner(): void {
+        const shouldTick = this.ready && this._loading && this._spinner && !!this.clock;
+        if (shouldTick && !this.spinnerListening) {
+            this.listener ??= () => this.tickSpinner();
+            this.clock?.subscribe(this.listener);
+            this.spinnerListening = true;
+        } else if (!shouldTick) {
+            this.stopSpinner();
+        }
+    }
+
+    protected tickSpinner(): void {
+        if (!this._loading || !this._spinner) {
+            return;
+        }
+        const now = Date.now();
+        const interval = Math.max(16, Number(this.spinnerInterval) || 100);
+        if (now - this.spinnerTick < interval) {
+            return;
+        }
+        this.spinnerTick = now;
+        this.spinnerIndex += 1;
+    }
+
+    protected stopSpinner(): void {
+        if (!this.spinnerListening || !this.clock || !this.listener) {
+            return;
+        }
+        this.clock.unsubscribe(this.listener);
+        this.spinnerListening = false;
+    }
+
+    private listener?: () => void;
 }

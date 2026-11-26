@@ -108,10 +108,11 @@ ${PLAIN_BUTTON_CSS}
 .ui-button.is-outline { background: transparent; border-color: var(--ui-tone-border, currentColor); }
 .ui-button.is-ghost { background: transparent; border-color: transparent; }
 .ui-button.is-ghost:hover { border-color: var(--ui-border, currentColor); }
-.ui-button.is-xs { font-size: 0.85em; padding: 0 0.4ch; }
-.ui-button.is-sm { font-size: 0.92em; }
-.ui-button.is-lg { font-size: 1.08em; padding: 0.25em 1ch; }
-.ui-button-label { white-space: nowrap; }
+.ui-button.is-xs { font-size: 0.85em; padding: 0 0.4ch; } .ui-button.is-sm { font-size: 0.92em; } .ui-button.is-lg { font-size: 1.08em; padding: 0.25em 1ch; }
+.ui-button-labels { display: inline-grid; align-items: center; } .ui-button-labels > .ui-button-label { grid-area: 1 / 1; }
+.ui-button-label { white-space: nowrap; } .ui-button-label.is-loading-ghost { visibility: hidden; } .ui-button-spinner { display: inline-block; min-width: 1ch; text-align: center; }
+.ui-button-group { display: inline-flex; align-items: stretch; } .ui-button-group > .ui-button { border-radius: 0; margin-left: -1px; }
+.ui-button-group > .ui-button:first-child { border-radius: var(--ui-radius, 4px) 0 0 var(--ui-radius, 4px); margin-left: 0; } .ui-button-group > .ui-button:last-child { border-radius: 0 var(--ui-radius, 4px) var(--ui-radius, 4px) 0; } .ui-button-group > .ui-button:focus-visible { position: relative; z-index: 1; }
 
 .ui-badge {
     display: inline-flex;
@@ -126,8 +127,7 @@ ${PLAIN_BUTTON_CSS}
     line-height: 1.6;
     white-space: nowrap;
 }
-.ui-badge.is-outline { border-color: var(--ui-tone-border, currentColor); background: transparent; }
-.ui-badge.is-solid { background: var(--ui-tone-bg, var(--ui-badge-bg, transparent)); color: var(--ui-tone-fg, inherit); }
+.ui-badge.is-outline { border-color: var(--ui-tone-border, currentColor); background: transparent; } .ui-badge.is-solid { background: var(--ui-tone-bg, var(--ui-badge-bg, transparent)); color: var(--ui-tone-fg, inherit); }
 .ui-badge.is-active { border-color: var(--ui-tone-border, currentColor); color: var(--ui-tone-fg, inherit); }
 .ui-badge.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); }
 .ui-badge[role="button"] { cursor: pointer; }

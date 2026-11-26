@@ -666,6 +666,10 @@ $idle: var(--console-idle, #6fa37a);
 .tab-new:hover {
     background-color: var(--console-hover-bg, #303e4f);
 }
+
+.ui-button-label.is-loading-ghost { display: none; }
+.ui-button-group { display: flex; }
+.ui-button-group > .ui-button { margin-left: 0; }
 // Overflow paging controls sit at both ends of the strip like a generic tabs
 // component; the disabled edge stays muted so the strip keeps its cells.
 .tab-scroll {
