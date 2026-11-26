@@ -487,6 +487,7 @@ describe('Workflow Designer UI', () => {
 
         const input = root.querySelector('.workflow-field[data-field-key="workflow"] .ui-autocomplete-input') as any;
         expect(input).toBeTruthy();
+        expect(input.getAttribute('aria-label')).toBeTruthy();
         input.focus();
         await flush();
         input.value = 'Ch';
@@ -561,6 +562,8 @@ describe('Workflow Designer UI', () => {
         await flush();
 
         const input = root.querySelector('.workflow-field[data-field-key="rules"] .workflow-list-row [data-field-key="value"] input') as any;
+        expect(input.getAttribute('aria-label')).toBeTruthy();
+        expect(input.getAttribute('aria-invalid')).toBe('false');
         input.value = 'payload.status';
         input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
         await flush();

@@ -322,6 +322,10 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     规则值在列表内获得同样的 typed 编辑体验。
   - widget 回调统一为 `changeAction(value)`，宿主负责 field/row 绑定，
     避免 widget 自己传 field 造成列表值错位。
+- **字段 widget 可访问性**
+  - DynamicFieldWidget 向宿主 widget 转发 label/error/hint id/required；typed
+    widget 的 source/editor 和引用 autocomplete 都设置 aria-label、
+    aria-invalid、aria-describedby，错误/提示与字段控件关联。
 - **DataTable 过滤行**
   - `filterable` 列渲染搜索输入，事件通过 `setFilter` 写入 `filters`；本地行与
     异步 source 共用同一过滤/分页/排序状态。

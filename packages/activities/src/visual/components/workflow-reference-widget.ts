@@ -15,12 +15,16 @@ import type { DynamicFormField } from '@tsdi/components/common/dynamic-form';
     template: `
     <ui-autocomplete :value="query" :options="suggestions"
         :placeholder="placeholder" :emptyLabel="emptyLabel" :ariaLabel="label"
+        :ariaInvalid="error ? 'true' : 'false'" :ariaDescribedby="describedBy"
         :disabled="disabled" :changeAction="queryChanged" :selectAction="choose">
     </ui-autocomplete>`
 })
 export class WorkflowReferenceWidgetComponent {
     @Attribute() field!: DynamicFormField;
     @Attribute() disabled = false;
+    @Attribute() label = '';
+    @Attribute() error = '';
+    @Attribute() describedBy = '';
     @Attribute() changeAction?: (value: any) => void;
 
     query = '';
@@ -56,7 +60,6 @@ export class WorkflowReferenceWidgetComponent {
             option.label.toLowerCase().includes(text) || option.value.toLowerCase().includes(text));
     }
 
-    get label(): string { return this.field?.label || ''; }
     get placeholder(): string { return this.field?.placeholder || ''; }
     get emptyLabel(): string { return 'No matches'; }
 

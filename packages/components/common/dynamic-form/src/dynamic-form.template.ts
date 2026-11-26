@@ -35,7 +35,10 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         :component="fieldWidgetComponent(field)" :field="field"
                         :value="fieldValue(field)" :values="formValues"
                         :disabled="field.disabled || field.readonly"
-                        :error="errorFor(field)" :changeAction="changeWidgetValue"></dynamic-field-widget>
+                        :error="errorFor(field)" :changeAction="changeWidgetValue"
+                        :label="fieldLabel(field)" :errorId="fieldErrorId(field)"
+                        :hintId="fieldHintId(field)" :describedBy="describedByFor(field)"
+                        :required="isRequired(field)"></dynamic-field-widget>
                     <input v-if="isWidgetInput(field) && !fieldWidgetComponent(field)" [class]="inputClass(field)"
                         type="text" [value]="fieldValue(field)" [placeholder]="field.placeholder || ''"
                         [readOnly]="field.readonly" [disabled]="field.disabled"
@@ -159,7 +162,8 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                             :disabled="child.disabled || child.readonly"
                                             :error="listItemErrorAt(field, rowIndex, child)"
                                             :itemIndex="rowIndex"
-                                            :changeAction="listWidgetChange(field, rowIndex)"></dynamic-field-widget>
+                                            :changeAction="listWidgetChange(field, rowIndex)"
+                                            :label="fieldLabel(child)" :required="isRequired(child)"></dynamic-field-widget>
                                         <input v-if="isWidgetInput(child) && !fieldWidgetComponent(child)" [class]="inputClass(child)"
                                             type="text" [value]="listItemValueAt(field, rowIndex, child)"
                                             [placeholder]="child.placeholder || ''"

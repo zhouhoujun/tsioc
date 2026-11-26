@@ -66,6 +66,12 @@ export class DynamicFieldWidgetComponent implements AfterViewInit, OnDestroy {
 
     /** List-row index when hosted inside a repeatable field. */
     @Attribute() itemIndex?: number;
+    /** Accessible label/id wiring forwarded to the widget control. */
+    @Attribute() label = '';
+    @Attribute() errorId = '';
+    @Attribute() hintId = '';
+    @Attribute() describedBy = '';
+    @Attribute() required: boolean | string = false;
     /** Value callback; the form owns encoding/validation. */
     @Attribute() changeAction?: (field: DynamicFormField, value: any, itemIndex?: number) => void;
 
@@ -95,7 +101,12 @@ export class DynamicFieldWidgetComponent implements AfterViewInit, OnDestroy {
             values: this.values,
             disabled: this.disabled,
             error: this.error,
-            changeAction: (next: any) => this.changeAction?.(this.field, next, this.itemIndex)
+            changeAction: (next: any) => this.changeAction?.(this.field, next, this.itemIndex),
+            label: this.label,
+            errorId: this.errorId,
+            hintId: this.hintId,
+            describedBy: this.describedBy,
+            required: this.required
         };
     }
 

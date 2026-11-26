@@ -50,7 +50,8 @@ interface AutoCompleteViewOption {
         <input class="ui-autocomplete-input" type="text" role="combobox"
             aria-autocomplete="list" aria-expanded="{{openState}}"
             aria-controls="{{listId}}" aria-activedescendant="{{activeId}}"
-            aria-label="{{ariaLabel}}" aria-disabled="{{disabled}}" autocomplete="off"
+            aria-label="{{ariaLabel}}" aria-disabled="{{disabled}}"
+            aria-invalid="{{ariaInvalid}}" aria-describedby="{{ariaDescribedby}}" autocomplete="off"
             [value]="value" placeholder="{{placeholder}}" [disabled]="disabled"
             @input="onInput($event)" @focus="onFocus()" @blur="onBlur()"
             @keydown="onKeydown($event)" />
@@ -89,6 +90,9 @@ export class AutoCompleteComponent {
     @Attribute() emptyLabel = 'No suggestions';
     @Attribute() removeLabel = 'Remove';
     @Attribute() ariaLabel = 'Search';
+    /** Optional ARIA wiring for form hosts (error/hint ids). */
+    @Attribute() ariaInvalid = '';
+    @Attribute() ariaDescribedby = '';
     @Attribute() className = '';
     @Attribute() loadingLabel = 'Loading…';
     @Attribute() changeAction?: (value: string) => void;

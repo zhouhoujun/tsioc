@@ -22,20 +22,26 @@ const DEFAULT_SOURCES: DynamicFormTypedSource[] = [
     template: `
     <div class="workflow-typed-widget">
         <select class="workflow-select workflow-field-value-type" data-value-type="true"
-            [disabled]="disabled" @change="changeSource($event)">
+            aria-label="{{label}} value source" [disabled]="disabled" @change="changeSource($event)">
             <option v-for="option in sources" [value]="option.value"
                 [selected]="source === option.value">{{option.label}}</option>
         </select>
         <select v-if="source === 'bool'" class="workflow-select workflow-typed-boolean"
+            aria-label="{{label}}" aria-invalid="{{error ? 'true' : 'false'}}"
+            aria-describedby="{{describedBy}}" [required]="required"
             [disabled]="disabled" @change="changeBoolean($event)">
             <option value="true" [selected]="text === 'true'">true</option>
             <option value="false" [selected]="text === 'false'">false</option>
         </select>
         <textarea v-else-if="source === 'json' || source === 'expression'"
             class="workflow-input workflow-typed-textarea" rows="3"
+            aria-label="{{label}}" aria-invalid="{{error ? 'true' : 'false'}}"
+            aria-describedby="{{describedBy}}" [required]="required"
             [value]="text" [placeholder]="placeholder" [disabled]="disabled"
             @input="inputText($event)"></textarea>
         <input v-else class="workflow-input workflow-typed-input"
+            aria-label="{{label}}" aria-invalid="{{error ? 'true' : 'false'}}"
+            aria-describedby="{{describedBy}}" [required]="required"
             type="{{inputType}}" [value]="text" [placeholder]="placeholder"
             [disabled]="disabled" @input="inputText($event)" />
     </div>`
@@ -43,6 +49,10 @@ const DEFAULT_SOURCES: DynamicFormTypedSource[] = [
 export class WorkflowTypedValueWidgetComponent {
     @Attribute() field!: DynamicFormField;
     @Attribute() disabled = false;
+    @Attribute() label = '';
+    @Attribute() error = '';
+    @Attribute() describedBy = '';
+    @Attribute() required: boolean | string = false;
     @Attribute() changeAction?: (value: any) => void;
 
     source = 'literal';
