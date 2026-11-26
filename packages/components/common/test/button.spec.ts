@@ -4,7 +4,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { AnimationClock, Component, ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { ButtonComponent, ButtonGroupComponent, ButtonModule, nextButtonGroupIndex } from '../button';
+import { ButtonComponent, ButtonGroupComponent, ButtonModule, LinkButtonComponent, nextButtonGroupIndex } from '../button';
 
 class FakeClock extends AnimationClock {
     listeners = new Set<() => void>();
@@ -18,6 +18,7 @@ class FakeClock extends AnimationClock {
     imports: [ButtonComponent, ButtonGroupComponent],
     template: `
     <ui-button label="Save" :loading="loading" loadingLabel="Saving" :action="onSave"></ui-button>
+    <ui-link-button label="Docs" href="https://example.com/docs" :action="onSave"></ui-link-button>
     <ui-button-group ariaLabel="Actions">
         <ui-button label="One" :action="onGroup"></ui-button>
         <ui-button label="Two" :action="onGroup"></ui-button>
@@ -66,6 +67,24 @@ export class ButtonTest {
         await ref.render();
         await Promise.resolve();
         return ref;
+    }
+
+    @Test('renders link semantics and only navigates while enabled')
+    async linkButton() {
+        const ref = await this.mount();
+        const host = ref.instance as ButtonHostComponent;
+        const link = ref.hostView.query(LinkButtonComponent) as ComponentRef<LinkButtonComponent>;
+        const root = link.hostView.rootNodes[0] as HTMLAnchorElement;
+        expect(root.tagName).toEqual('A');
+        expect(root.getAttribute('href')).toEqual('https://example.com/docs');
+        root.click();
+        expect(host.saved).toEqual(1);
+        link.instance.disabled = true;
+        await Promise.resolve();
+        expect(root.getAttribute('href')).toEqual('https://example.com/docs');
+        expect(root.getAttribute('aria-disabled')).toEqual('true');
+        root.click();
+        expect(host.saved).toEqual(1);
     }
 
     @Test('animates a shared-clock spinner while preserving the label slot')
