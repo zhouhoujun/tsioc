@@ -30,6 +30,16 @@ export const AUTOCOMPLETE_CSS = `
 .ui-autocomplete-option.is-active { background: var(--ui-selected-bg, transparent); color: var(--ui-current-fg, inherit); font-weight: 600; }
 .ui-autocomplete-option.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
 .ui-autocomplete-description,
+.ui-autocomplete-row { display: block; }
+.ui-autocomplete-group {
+    display: block;
+    padding: 0.2em 0.6ch 0.1em;
+    color: var(--ui-muted-fg, inherit);
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
 .ui-autocomplete-empty { color: var(--ui-muted-fg, inherit); }
 .ui-autocomplete-empty { display: block; padding: 0.1em 0.6ch; }
 .ui-autocomplete-loading { color: var(--ui-muted-fg, inherit); }

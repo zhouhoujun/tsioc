@@ -11,6 +11,8 @@ export interface AutoCompleteOption {
     value: string;
     description?: string;
     disabled?: boolean;
+    /** Optional group header shown before the first option of the group. */
+    group?: string;
 }
 
 interface AutoCompleteViewOption {
@@ -19,6 +21,8 @@ interface AutoCompleteViewOption {
     label: string;
     description: string;
     disabled: boolean;
+    group: string;
+    showGroup: boolean;
     className: string;
 }
 
@@ -43,15 +47,18 @@ interface AutoCompleteViewOption {
         <div class="ui-autocomplete-panel" id="{{listId}}" role="listbox" v-if="panelVisible">
             <span class="ui-autocomplete-loading" role="status" v-if="loading">{{loadingLabel}}</span>
             <span class="ui-autocomplete-error" role="alert" v-else-if="loadError">{{loadError}}</span>
-            <span class="{{option.className}}" role="option"
-                id="{{optionId(option.index)}}"
-                aria-selected="{{option.index === currentIndex}}"
-                aria-disabled="{{option.disabled}}"
-                v-for="option in viewOptions" trackBy="index" v-if="!loading"
-                @mousedown="keepFocus($event)" @click="choose(option)"
-                @keydown="onOptionKeydown(option, $event)">
-                <span class="ui-autocomplete-label">{{option.label}}</span><span class="ui-autocomplete-description" v-if="option.description"> {{option.description}}</span>
-            </span>
+            <div class="ui-autocomplete-row" role="presentation"
+                v-for="option in viewOptions" trackBy="index" v-if="!loading">
+                <span class="ui-autocomplete-group" role="presentation" v-if="option.showGroup">{{option.group}}</span>
+                <span class="{{option.className}}" role="option"
+                    id="{{optionId(option.index)}}"
+                    aria-selected="{{option.index === currentIndex}}"
+                    aria-disabled="{{option.disabled}}"
+                    @mousedown="keepFocus($event)" @click="choose(option)"
+                    @keydown="onOptionKeydown(option, $event)">
+                    <span class="ui-autocomplete-label">{{option.label}}</span><span class="ui-autocomplete-description" v-if="option.description"> {{option.description}}</span>
+                </span>
+            </div>
             <span class="ui-autocomplete-empty" v-if="!loading && !loadError && !viewOptions.length">{{emptyLabel}}</span>
         </div>
     </div>`
@@ -141,18 +148,26 @@ export class AutoCompleteComponent {
 
     get viewOptions(): AutoCompleteViewOption[] {
         const source = this.loadOptions ? (this._loadedOptions || []) : this.options;
-        return (Array.isArray(source) ? source : []).map((option, index) => ({
-            index,
-            value: String(option?.value ?? ''),
-            label: String(option?.label ?? option?.value ?? ''),
-            description: String(option?.description ?? ''),
-            disabled: option?.disabled === true,
-            className: [
-                'ui-autocomplete-option',
-                index === this.selectedIndex ? 'is-active' : '',
-                option?.disabled ? 'is-disabled' : ''
-            ].filter(Boolean).join(' ')
-        }));
+        let previousGroup = '';
+        return (Array.isArray(source) ? source : []).map((option, index) => {
+            const group = String(option?.group ?? '');
+            const showGroup = !!group && group !== previousGroup;
+            previousGroup = group;
+            return {
+                index,
+                value: String(option?.value ?? ''),
+                label: String(option?.label ?? option?.value ?? ''),
+                description: String(option?.description ?? ''),
+                disabled: option?.disabled === true,
+                group,
+                showGroup,
+                className: [
+                    'ui-autocomplete-option',
+                    index === this.selectedIndex ? 'is-active' : '',
+                    option?.disabled ? 'is-disabled' : ''
+                ].filter(Boolean).join(' ')
+            };
+        });
     }
 
     optionId(index: number): string {

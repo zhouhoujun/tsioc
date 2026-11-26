@@ -95,6 +95,31 @@ export class AutoCompleteTest {
         expect(root.querySelector('.ui-autocomplete-panel')).toBeFalsy();
     }
 
+    @Test('renders group headers without breaking keyboard selection')
+    async groupedOptions() {
+        const { root, host, component } = await this.mount();
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const input = root.querySelector('.ui-autocomplete-input') as HTMLInputElement;
+        component.instance.options = [
+            { label: 'Alpha', value: 'a', group: 'Letters' },
+            { label: 'Beta', value: 'b', group: 'Letters' },
+            { label: 'One', value: '1', group: 'Numbers' }
+        ];
+        await Promise.resolve();
+
+        input.dispatchEvent(new (doc.defaultView as any).FocusEvent('focus'));
+        await Promise.resolve();
+        const groups = Array.from(root.querySelectorAll('.ui-autocomplete-group'))
+            .map(item => item.textContent);
+        expect(groups).toEqual(['Letters', 'Numbers']);
+        expect(root.querySelectorAll('.ui-autocomplete-option').length).toBe(3);
+
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        input.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await Promise.resolve();
+        expect(host.selected).toBe('b');
+    }
+
     @Test('loads options asynchronously and ignores stale responses')
     async asyncOptions() {
         const { root, component } = await this.mount();
