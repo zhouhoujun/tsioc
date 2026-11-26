@@ -119,19 +119,25 @@ export class AccordionDomTest {
         const rows = Array.from(accordion.querySelectorAll('.ui-accordion-item')) as HTMLElement[];
 
         expect(rows.length).toEqual(2);
+        expect(rows[0].getAttribute('role')).toEqual('button');
+        expect(rows[0].getAttribute('tabindex')).toEqual('0');
+        expect(rows[1].getAttribute('tabindex')).toEqual('-1');
+        expect(rows[1].getAttribute('aria-disabled')).toEqual('true');
         expect(rows[0].getAttribute('data-row')).toEqual('a');
         expect(rows[0].draggable).toEqual(true);
         expect(rows[0].querySelector('.ui-accordion-item-label')?.textContent).toEqual('Alpha');
         expect(rows[0].querySelector('.ui-accordion-item-description')?.textContent).toEqual('First');
         expect(rows[0].querySelector('.ui-accordion-item-badge')?.textContent).toEqual('2');
 
-        rows[0].click();
+        rows[0].dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
         expect(ref.instance.selected).toEqual([{ id: 'a' }]);
+        rows[0].click();
+        expect(ref.instance.selected).toEqual([{ id: 'a' }, { id: 'a' }]);
         rows[0].dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.Event('dragstart', { bubbles: true }));
         expect(ref.instance.dragged).toEqual([{ id: 'a' }]);
 
         rows[1].click();
-        expect(ref.instance.selected).toEqual([{ id: 'a' }]);
+        expect(ref.instance.selected).toEqual([{ id: 'a' }, { id: 'a' }]);
     }
 
     @Test('installs the shared accordion skin once per document')

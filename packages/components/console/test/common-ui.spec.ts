@@ -107,7 +107,8 @@ import { AlertDialogComponent, AlertDialogModule } from '@tsdi/components/common
         <ui-upload label="Attach" :files="uploadFiles" :pickAction="onUploadPick" :removeAction="onUploadRemove"></ui-upload>
         <ui-image src="a.png" alt="Chart"></ui-image>
         <ui-qr-code :matrix="qrMatrix" ariaLabel="QR"></ui-qr-code>
-        <ui-accordion title="Group" :items="accordionItems" :expanded="accordionOpen" :toggleAction="onAccordionToggle"></ui-accordion>
+        <ui-accordion title="Group" :items="accordionItems" :expanded="accordionOpen"
+            :toggleAction="onAccordionToggle" :selectAction="onAccordionItem"></ui-accordion>
         <tab-bar :source="tabSource"></tab-bar>
     </div>`
 })
@@ -190,6 +191,8 @@ class CommonUiConsoleHostComponent {
     accordionOpen = true;
     accordionItems = [{ id: 'item', label: 'Accordion item' }];
     onAccordionToggle = (expanded: boolean) => { this.accordionOpen = expanded; };
+    accordionSelected = '';
+    onAccordionItem = (item: any) => { this.accordionSelected = item.id; };
     tabSelected = '';
     tabSource = {
         visible: true,
@@ -473,6 +476,11 @@ export class CommonUiConsoleTest {
                 await Promise.resolve();
                 expect(host.accordionOpen).toEqual(false);
                 expect(accordionHeader.getAttribute('aria-expanded')).toEqual('false');
+                const accordionItem = (ref.hostView.rootNodes[0] as any).querySelector('.ui-accordion-item');
+                expect(accordionItem.getAttribute('tabindex')).toEqual('0');
+                accordionItem.focus();
+                expect(surface.dispatchKey({ key: 'Enter' })).toEqual(true);
+                expect(host.accordionSelected).toEqual('item');
 
                 const tabs = (ref.hostView.rootNodes[0] as any).querySelectorAll('.tab');
                 expect(tabs[0].getAttribute('focusable')).toEqual('true');

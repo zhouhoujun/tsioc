@@ -61,9 +61,11 @@ interface AccordionViewItem extends AccordionItem {
             role="region" aria-labelledby="{{headerElementId}}"
             aria-hidden="{{!expanded}}" v-show="expanded">
             <div class="{{item.rowClass}}" v-for="item in viewItems" trackBy="id"
+                role="button" tabindex="{{item.disabled ? -1 : 0}}"
+                focusable="{{!item.disabled}}" aria-disabled="{{item.disabled ? 'true' : 'false'}}"
                 v-bind="item.attrs"
                 [draggable]="draggable"
-                @click="select(item)"
+                @click="select(item)" @keydown="onRowKeydown($event, item)"
                 @dragstart="dragStart($event, item)">
                 <span class="ui-accordion-item-icon {{item.iconClassName}}" v-if="item.icon || item.iconGlyph"
                     v-bind="item.iconAttrs">
@@ -188,6 +190,17 @@ export class AccordionComponent {
         if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
             event.preventDefault?.();
             this.toggle();
+        }
+    }
+
+    onRowKeydown(event: any, item: AccordionItem): void {
+        if (item?.disabled) {
+            return;
+        }
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.select(item);
         }
     }
 
