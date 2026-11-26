@@ -145,6 +145,14 @@ export class DataTableTest {
         await Promise.resolve();
         expect(root.querySelectorAll('.ui-data-table-row').length).toBe(1);
         expect(root.textContent).toContain('alpha');
+
+        const clear = root.querySelector('.ui-data-table-filter-clear') as HTMLElement;
+        expect(clear).toBeTruthy();
+        clear.click();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(table.instance.filters).toEqual({});
+        expect(root.querySelectorAll('.ui-data-table-row').length).toBe(3);
     }
 
     @Test('multi-select toggles rows and reports the tri-state select-all')
