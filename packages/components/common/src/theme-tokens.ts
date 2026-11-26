@@ -84,6 +84,23 @@ export function themeTokens(theme: ThemeName): ThemeTokens {
     return THEME_TOKENS[theme] ?? THEME_TOKENS.light;
 }
 
+/** Theme token fields projected onto the stable `--ui-*` widget variables. */
+export const UI_THEME_VARIABLES: Record<keyof ThemeTokens, string[]> = {
+    bg: ['--ui-bg'],
+    fg: ['--ui-card-fg', '--ui-button-fg', '--ui-alert-fg', '--ui-badge-fg', '--ui-current-fg'],
+    mutedFg: ['--ui-muted-fg', '--ui-empty-title-fg', '--ui-skeleton-fg'],
+    panelBg: ['--ui-card-bg', '--ui-button-bg', '--ui-kbd-bg', '--ui-data-table-head-bg'],
+    inputBg: ['--ui-field-bg', '--ui-select-bg', '--ui-data-table-fixed-bg'],
+    border: ['--ui-border', '--ui-badge-border', '--ui-tone-border'],
+    accent: ['--ui-link-fg', '--ui-focus-ring', '--ui-tone-fg'],
+    accentFg: [],
+    danger: ['--ui-danger-fg'],
+    success: ['--ui-success-fg'],
+    warning: ['--ui-warning-fg'],
+    selectedBg: ['--ui-selected-bg', '--ui-hover-bg', '--ui-stripe-bg'],
+    overlayBg: ['--ui-alert-bg']
+};
+
 export type Rgb = [number, number, number];
 
 /** Parse `#rgb` / `#rrggbb`; returns null for values the skins do not use. */
@@ -137,5 +154,8 @@ export function applyThemeTokens(doc: Document | null | undefined, theme: ThemeN
     const tokens = themeTokens(theme);
     Object.entries(tokens).forEach(([name, value]) => {
         root.style.setProperty(`--ui-${name.replace(/[A-Z]/g, match => `-${match.toLowerCase()}`)}`, value);
+        (UI_THEME_VARIABLES[name as keyof ThemeTokens] || []).forEach(variable => {
+            root.style.setProperty(variable, value);
+        });
     });
 }

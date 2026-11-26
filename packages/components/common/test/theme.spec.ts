@@ -46,6 +46,13 @@ export class ThemeServiceTest {
         expect(root.style.getPropertyValue('--ui-bg')).toBe('#0d1117');
         expect(root.style.getPropertyValue('--ui-muted-fg')).toBe('#9da7b3');
         expect(root.style.getPropertyValue('--ui-accent-fg')).toBe('#0d1117');
+        // Common widgets consume the stable component variables, not only the
+        // raw token names.
+        expect(root.style.getPropertyValue('--ui-card-bg')).toBe('#161b22');
+        expect(root.style.getPropertyValue('--ui-field-bg')).toBe('#0d1117');
+        expect(root.style.getPropertyValue('--ui-border')).toBe('#30363d');
+        expect(root.style.getPropertyValue('--ui-link-fg')).toBe('#4493f8');
+        expect(root.style.getPropertyValue('--ui-danger-fg')).toBe('#ff7b72');
         service.onDestroy();
     }
 

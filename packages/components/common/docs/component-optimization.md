@@ -326,6 +326,11 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     规则值在列表内获得同样的 typed 编辑体验。
   - widget 回调统一为 `changeAction(value)`，宿主负责 field/row 绑定，
     避免 widget 自己传 field 造成列表值错位。
+- **主题 token 投影**
+  - `applyThemeTokens` 除原始 token 外，把 ThemeTokens 投影到组件稳定变量
+    （`--ui-card-bg`、`--ui-field-bg`、`--ui-border`、`--ui-link-fg`、
+    `--ui-danger-fg` 等），common widget 在宿主启用 `{tokens:true}` 时自动跟随
+    主题；内置四套 token 继续通过 WCAG 对比度测试。
 - **字段 widget 可访问性**
   - DynamicFieldWidget 向宿主 widget 转发 label/error/hint id/required；typed
     widget 的 source/editor 和引用 autocomplete 都设置 aria-label、
