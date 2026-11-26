@@ -27,6 +27,23 @@ export class ToastStackComponentTest {
         expect(dismissed).toEqual(['toast-2']);
     }
 
+    @Test('paints and invokes inline toast actions')
+    paintsActions() {
+        const stack = new ToastStackComponent();
+        const invoked: string[] = [];
+        stack.items = [{ ...entry('toast-1', 'Deleted'), actionLabel: 'Undo' }];
+        stack.actionAction = id => invoked.push(id);
+
+        expect(stack.rows[0].actionLabel).toEqual('Undo');
+        expect(stack.rows[0].actionText).toEqual(' Undo');
+        stack.invoke('toast-1');
+        expect(invoked).toEqual(['toast-1']);
+        stack.actionKeydown('toast-1', { key: 'Enter', preventDefault() { } });
+        expect(invoked).toEqual(['toast-1', 'toast-1']);
+        stack.actionKeydown('toast-1', { key: 'Tab', preventDefault() { } });
+        expect(invoked).toEqual(['toast-1', 'toast-1']);
+    }
+
     @Test('hides itself and ignores malformed input when the queue is empty')
     hidesWhenEmpty() {
         const stack = new ToastStackComponent();

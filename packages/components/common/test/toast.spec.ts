@@ -43,6 +43,27 @@ export class ToastServiceTest {
         service.onDestroy();
     }
 
+    @Test('keeps an inline action and invokes it without dismissing')
+    async actionInvocation() {
+        const service = new ToastService();
+        let undone = 0;
+        const id = service.show('Deleted', {
+            durationMs: 0,
+            actionLabel: 'Undo',
+            action: () => { undone += 1; }
+        });
+        expect(service.current[0].actionLabel).toEqual('Undo');
+        service.invoke(id);
+        expect(undone).toEqual(1);
+        expect(service.current.length).toEqual(1);
+        service.invoke('missing');
+        expect(undone).toEqual(1);
+        service.dismiss(id);
+        service.invoke(id);
+        expect(undone).toEqual(1);
+        service.onDestroy();
+    }
+
     @Test('empty messages are ignored')
     ignoresEmptyMessages() {
         const service = new ToastService();

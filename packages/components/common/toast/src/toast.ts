@@ -7,6 +7,9 @@ export interface ToastOptions {
     tone?: ToastTone;
     /** Milliseconds before auto-dismiss; `0` keeps the toast until dismissed. */
     durationMs?: number;
+    /** Optional inline action (for example Undo); hosts dismiss explicitly. */
+    actionLabel?: string;
+    action?: () => void;
 }
 
 export interface ToastEntry {
@@ -14,6 +17,8 @@ export interface ToastEntry {
     message: string;
     tone: ToastTone;
     createdAt: number;
+    actionLabel?: string;
+    action?: () => void;
 }
 
 export type ToastListener = (entries: readonly ToastEntry[]) => void;
@@ -48,11 +53,16 @@ export class ToastService implements OnDestroy {
             return '';
         }
         const id = `toast-${++this.sequence}`;
+        const actionLabel = String(options.actionLabel ?? '').trim();
         const entry: ToastEntry = {
             id,
             message: text,
             tone: options.tone || 'info',
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            ...(actionLabel ? {
+                actionLabel,
+                action: typeof options.action === 'function' ? options.action : undefined
+            } : {})
         };
         this.entries = [...this.entries, entry];
         const duration = Number(options.durationMs ?? 2200);
@@ -62,6 +72,11 @@ export class ToastService implements OnDestroy {
         }
         this.emit();
         return id;
+    }
+
+    /** Run an entry's action without dismissing; the action may call `dismiss`. */
+    invoke(id: string): void {
+        this.entries.find(entry => entry.id === id)?.action?.();
     }
 
     dismiss(id: string): void {
