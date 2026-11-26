@@ -22,6 +22,7 @@ import {
     VisualNodeRuntimeHost
 } from './workflow-runtime';
 import { enterWorkflow } from './runtime/subflow-chain';
+import { buildLifecycleContext } from './runtime/lifecycle-context';
 import { compileVisualWorkflow, CompiledWorkflow } from './workflow-compiler';
 import { WorkflowScheduleHandle, WorkflowScheduleOptions, WorkflowScheduler } from './workflow-scheduler';
 import { VisualNodeActivityAdapter } from './VisualNodeActivityAdapter';
@@ -417,21 +418,13 @@ export class VisualWorkflowService {
                     continue;
                 }
                 const sourceRecord = matchedRecords[matchedRecords.length - 1];
-                const lifecycleContext = {
-                    ...runtimeContext,
-                    workflowStatus: result.success ? 'completed' : 'failed',
-                    workflowError: result.error?.message,
-                    workflowResult: result,
-                    ...(sourceRecord ? {
-                        failedNodeId: type === 'catch' ? sourceRecord.nodeId : undefined,
-                        errorMessage: type === 'catch' ? sourceRecord.error : undefined,
-                        error: type === 'catch' && sourceRecord.error ? new Error(sourceRecord.error) : undefined,
-                        completedNodeId: type === 'complete' ? sourceRecord.nodeId : undefined,
-                        completedResult: type === 'complete' ? sourceRecord.result : undefined,
-                        statusNodeId: sourceRecord.nodeId,
-                        statusResult: sourceRecord.result
-                    } : {})
-                };
+                const lifecycleContext = buildLifecycleContext(
+                    type,
+                    runtimeContext,
+                    result,
+                    sourceRecord,
+                    sourceRecord ? plan.nodes.get(sourceRecord.nodeId) : undefined
+                );
                 const lifecycleResult = await this.executeFromNode(
                     node,
                     plan,

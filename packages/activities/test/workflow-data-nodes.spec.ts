@@ -480,9 +480,9 @@ describe('Workflow data & trigger nodes', () => {
                 registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: { ok: true } } }),
                 registry.createNode('task', { x: 200, y: 0 }, { id: 'task_1', config: { result: { ok: true } } }),
                 registry.createNode('complete', { x: 0, y: 160 }, { id: 'complete_1', config: { scope: 'other, task_1' } }),
-                registry.createNode('function', { x: 200, y: 160 }, { id: 'complete_fn', config: { code: 'context.state.complete = true; context.state.completedNodeId = context.completedNodeId; return {};' } }),
+                registry.createNode('function', { x: 200, y: 160 }, { id: 'complete_fn', config: { code: 'context.state.complete = true; context.state.completedNodeId = context.completedNodeId; context.state.completeSource = context.msg.complete.source.id; context.state.completeResult = context.msg.complete.result.data.ok; return {};' } }),
                 registry.createNode('status', { x: 0, y: 320 }, { id: 'status_1' }),
-                registry.createNode('function', { x: 200, y: 320 }, { id: 'status_fn', config: { code: 'context.state.status = context.workflowStatus; return {};' } })
+                registry.createNode('function', { x: 200, y: 320 }, { id: 'status_fn', config: { code: 'context.state.status = context.workflowStatus; context.state.statusSource = context.msg.status.source.id; context.state.statusText = context.msg.status.text; return {};' } })
             ],
             connections: [
                 { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'task_1', targetPort: 'in' },
@@ -495,6 +495,10 @@ describe('Workflow data & trigger nodes', () => {
         expect(successState.complete).toBe(true);
         expect(successState.completedNodeId).toBe('task_1');
         expect(successState.status).toBe('completed');
+        expect(successState.completeSource).toBe('task_1');
+        expect(successState.completeResult).toBe(true);
+        expect(successState.statusSource).toBeTruthy();
+        expect(successState.statusText).toBe('completed');
 
         const failState: any = {};
         const failure: VisualWorkflowDefinition = {
@@ -504,7 +508,7 @@ describe('Workflow data & trigger nodes', () => {
                 registry.createNode('inject', { x: 0, y: 0 }, { id: 'inject_1', config: { payload: {} } }),
                 registry.createNode('task', { x: 200, y: 0 }, { id: 'task_1', config: { fail: true } }),
                 registry.createNode('catch', { x: 0, y: 160 }, { id: 'catch_1', config: { scope: 'other, task_1' } }),
-                registry.createNode('function', { x: 200, y: 160 }, { id: 'catch_fn', config: { code: 'context.state.caught = true; context.state.failedNodeId = context.failedNodeId; context.state.errorMessage = context.errorMessage; return {};' } })
+                registry.createNode('function', { x: 200, y: 160 }, { id: 'catch_fn', config: { code: 'context.state.caught = true; context.state.failedNodeId = context.failedNodeId; context.state.errorMessage = context.errorMessage; context.state.errorSource = context.msg.error.source.id; context.state.errorSourceFlat = context.errorSource.id; context.state.errorText = context.msg.error.message; return {};' } })
             ],
             connections: [
                 { id: 'c1', sourceNodeId: 'inject_1', sourcePort: 'out', targetNodeId: 'task_1', targetPort: 'in' },
@@ -516,6 +520,9 @@ describe('Workflow data & trigger nodes', () => {
         expect(failState.caught).toBe(true);
         expect(failState.failedNodeId).toBe('task_1');
         expect(failState.errorMessage).toBeTruthy();
+        expect(failState.errorSource).toBe('task_1');
+        expect(failState.errorSourceFlat).toBe('task_1');
+        expect(failState.errorText).toBe(failState.errorMessage);
     });
 
     it('computes cron schedules for inject triggers', () => {

@@ -38,8 +38,8 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 | inject | `inject` | `~` payload types JSON/string/number/boolean/timestamp/env/**expression**, arbitrary properties that target the message, flow or global scope (each value can be a typed value or expression), topic, manual/interval/cron/event trigger, start delay and repeat count |
 | debug | `debug` | `+` value path, complete message, level, console mirror, **Show in node status** (`tostatus`) |
 | complete | `complete` | `~` multi-select `scope` picker of node ids/types instead of Node-RED's node list |
-| catch | `catch` | `~` same multi-select scope picker; errors carry the failed node id/message |
-| status | `status` | `~` reacts to workflow status events; status lines are also painted on nodes |
+| catch | `catch` | `~` same multi-select scope picker; `msg.error` carries message + `{id,name,type}` source, plus `context.errorSource`/`failedNodeId` |
+| status | `status` | `~` reacts to workflow status events; `msg.status` carries workflow state + source node identity, and status lines are also painted on nodes |
 | link in/out/call/return | `link` | `=` mode + comma-separated names + call timeout |
 | comment | `comment` | `=` |
 | junction | `junction` | `=` |
