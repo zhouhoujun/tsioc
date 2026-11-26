@@ -39,10 +39,16 @@ export interface TabBarSource {
     canScrollForward?: boolean;
     scrollBack?(): void;
     scrollForward?(): void;
-    /** Glyphs painted by the overflow controls (defaults keep the strip's width). */
+    /** `menu` (default) shows one "more" control; `scroll` keeps paging arrows. */
+    overflowMode?: 'menu' | 'scroll';
+    /** All tabs for the overflow menu; terminal hosts that window `items` set this. */
+    overflowItems?: TabItem[];
+    overflowLabel?: string;
+    overflowTitle?: string;
+    /** Glyphs painted by the scroll-mode controls (defaults keep the strip's width). */
     scrollBackLabel?: string;
     scrollForwardLabel?: string;
-    /** Accessible names for the overflow controls. */
+    /** Accessible names for the scroll-mode controls. */
     scrollBackTitle?: string;
     scrollForwardTitle?: string;
     /** Accessible name prefix for a tab's close affordance. */
@@ -70,7 +76,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
     selector: 'tab-bar, ui-tab-bar',
     template: `
     <p class="tab-bar" role="tablist" aria-orientation="horizontal" v-show="visible" #strip>
-        <span class="tab-scroll tab-scroll-back" role="button" focusable="true" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-show="arrowsVisible" @click="scrollBack($event)">{{scrollBackLabel}}</span>
+        <span class="tab-scroll tab-scroll-back" role="button" focusable="true" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollBack($event)">{{scrollBackLabel}}</span>
         <span class="tab" role="tab" id="{{tabElementId(tab)}}" aria-selected="{{tab.active}}"
             aria-controls="{{tab.controls || ''}}" tabindex="{{tabIndexFor(tab, index)}}"
             focusable="{{!tab.disabled}}" data-disabled="{{tab.disabled}}" data-hover-group="true"
@@ -79,7 +85,17 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
             @keydown="onTabKeydown($event, tab, index)">
             <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
         </span>
-        <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
+        <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
+        <span class="tab-overflow" role="button" focusable="true" v-if="overflowMenuVisible"
+            aria-haspopup="menu" aria-expanded="{{overflowMenuOpen}}" aria-label="{{overflowTitle}}"
+            data-hover-group="true" @click="toggleOverflowMenu($event)"
+            @keydown="onOverflowKeydown($event)">{{overflowLabel}}</span>
+        <span class="tab-overflow-menu" role="menu" v-if="overflowMenuOpen">
+            <span class="tab-overflow-item" role="menuitem" tabindex="0" focusable="true"
+                aria-current="{{item.active}}" v-for="item in overflowMenuItems" trackBy="id"
+                @click="pickOverflow(item.id, $event)"
+                @keydown="onOverflowItemKeydown($event, item)">{{item.label}}</span>
+        </span>
         <span class="tab-new" role="button" focusable="true" v-show="showCreate" @click="create">{{createLabel}}</span>
     </p>
     `
@@ -105,6 +121,8 @@ export class TabBarComponent implements AfterViewInit {
     protected overflowSyncScheduled = false;
     protected readonly uid = nextUiId('ui-tab-bar');
     private focusedKey = '';
+    protected overflowMenuOpen = false;
+    protected overflowDismiss?: () => void;
 
     constructor(
         @Optional() protected elementRef?: ElementRef,
@@ -124,6 +142,7 @@ export class TabBarComponent implements AfterViewInit {
     }
 
     onDestroy(): void {
+        this.unbindOverflowDismiss();
         const host = this.overflowHost;
         if (host && this.stripScrollListener) {
             host.removeEventListener?.('scroll', this.stripScrollListener, { capture: true } as EventListenerOptions);
@@ -209,7 +228,39 @@ export class TabBarComponent implements AfterViewInit {
         return this.activeSource?.scrollForwardTitle || 'Next tabs';
     }
 
+    get overflowMode(): 'menu' | 'scroll' {
+        return this.activeSource?.overflowMode === 'scroll' ? 'scroll' : 'menu';
+    }
+
+    get overflowMenuItems(): TabItem[] {
+        const explicit = this.activeSource?.overflowItems;
+        if (Array.isArray(explicit) && explicit.length) {
+            return explicit;
+        }
+        return this.hostWindowed ? [] : this.items;
+    }
+
+    get overflowMenuVisible(): boolean {
+        if (this.overflowMode !== 'menu' || !this.overflowMenuItems.length) {
+            return false;
+        }
+        return this.hostWindowed
+            ? this.scrollBackEnabled || this.scrollForwardEnabled
+            : this.domOverflow;
+    }
+
+    get overflowLabel(): string {
+        return this.activeSource?.overflowLabel || ' … ';
+    }
+
+    get overflowTitle(): string {
+        return this.activeSource?.overflowTitle || 'More tabs';
+    }
+
     get arrowsVisible(): boolean {
+        if (this.overflowMode !== 'scroll') {
+            return false;
+        }
         return this.hostWindowed ? this.scrollBackEnabled || this.scrollForwardEnabled : this.domOverflow;
     }
 
@@ -345,7 +396,124 @@ export class TabBarComponent implements AfterViewInit {
         }
     }
 
+    toggleOverflowMenu(event?: Event): void {
+        event?.stopPropagation?.();
+        this.overflowMenuOpen ? this.closeOverflowMenu() : this.openOverflowMenu();
+    }
+
+    openOverflowMenu(): void {
+        if (!this.overflowMenuVisible || this.overflowMenuOpen) {
+            return;
+        }
+        this.overflowMenuOpen = true;
+        this.bindOverflowDismiss();
+        void Promise.resolve().then(() => this.focusOverflowItem(0));
+    }
+
+    closeOverflowMenu(restoreFocus = true): void {
+        if (!this.overflowMenuOpen) {
+            return;
+        }
+        this.overflowMenuOpen = false;
+        this.unbindOverflowDismiss();
+        if (restoreFocus) {
+            void Promise.resolve().then(() => this.focusOverflowTrigger());
+        }
+    }
+
+    protected focusOverflowTrigger(): void {
+        const strip = this.resolveStripElement();
+        (strip?.querySelector?.('.tab-overflow') as HTMLElement | null | undefined)?.focus?.();
+    }
+
+    protected focusOverflowItem(index: number): void {
+        const strip = this.resolveStripElement();
+        const items = strip?.querySelectorAll?.('.tab-overflow-item') as ArrayLike<HTMLElement> | undefined;
+        items?.[Math.max(0, index)]?.focus?.();
+    }
+
+    onOverflowKeydown(event: any): void {
+        const key = String(event?.key || '');
+        if (key === 'Escape') {
+            this.closeOverflowMenu();
+            return;
+        }
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar' || key === 'ArrowDown') {
+            event.preventDefault?.();
+            this.openOverflowMenu();
+        }
+    }
+
+    onOverflowItemKeydown(event: any, item: TabItem): void {
+        const key = String(event?.key || '');
+        if (key === 'Escape') {
+            event.preventDefault?.();
+            this.closeOverflowMenu();
+            return;
+        }
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+            event.preventDefault?.();
+            this.pickOverflow(item.id, event);
+            return;
+        }
+        if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'Home' && key !== 'End') {
+            return;
+        }
+        event.preventDefault?.();
+        const items = this.overflowMenuItems.filter(entry => !entry.disabled);
+        if (!items.length) {
+            return;
+        }
+        const current = items.findIndex(entry => entry.id === item.id);
+        const index = key === 'Home' ? 0
+            : key === 'End' ? items.length - 1
+                : ((current < 0 ? 0 : current) + (key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+        this.focusOverflowItem(this.overflowMenuItems.findIndex(entry => entry.id === items[index].id));
+    }
+
+    pickOverflow(id: string, event?: Event): void {
+        event?.stopPropagation?.();
+        const target = String(id || '');
+        if (!target) {
+            return;
+        }
+        this.closeOverflowMenu(false);
+        this.select(target, event);
+        void Promise.resolve().then(() => {
+            const index = this.items.findIndex(item => item.id === target && !item.disabled);
+            if (index >= 0) {
+                this.focusTab(index);
+            } else {
+                this.focusOverflowTrigger();
+            }
+        });
+    }
+
+    protected bindOverflowDismiss(): void {
+        this.unbindOverflowDismiss();
+        const host = this.elementRef?.nativeElement as HTMLElement | undefined;
+        const doc = host?.ownerDocument;
+        if (!host || typeof doc?.addEventListener !== 'function') {
+            return;
+        }
+        const pointer = (event: any) => {
+            const target = event?.target;
+            if (host.contains?.(target)) {
+                return;
+            }
+            this.closeOverflowMenu(false);
+        };
+        doc.addEventListener('mousedown', pointer, true);
+        this.overflowDismiss = () => doc.removeEventListener?.('mousedown', pointer, true);
+    }
+
+    protected unbindOverflowDismiss(): void {
+        this.overflowDismiss?.();
+        this.overflowDismiss = undefined;
+    }
+
     create(): void {
+        this.closeOverflowMenu(false);
         this.activeSource?.create?.();
     }
 

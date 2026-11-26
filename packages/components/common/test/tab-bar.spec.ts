@@ -44,6 +44,29 @@ export class TabBarComponentTest {
         expect(bar.closeLabel).toEqual('✕');
     }
 
+    @Test('host-windowed strips default to one more menu')
+    overflowsWindowedSource() {
+        const bar = new TabBarComponent();
+        const selected: string[] = [];
+        bar.source = {
+            visible: true,
+            items: [{ id: 'a', label: ' Alpha ', active: true }],
+            windowed: true,
+            overflowItems: [
+                { id: 'a', label: ' Alpha ', active: true },
+                { id: 'b', label: ' Beta ' }
+            ],
+            canScrollBack: false,
+            canScrollForward: true,
+            select: id => selected.push(id)
+        };
+        expect(bar.arrowsVisible).toEqual(false);
+        expect(bar.overflowMenuVisible).toEqual(true);
+        expect(bar.overflowMenuItems.map(item => item.id)).toEqual(['a', 'b']);
+        bar.pickOverflow('b');
+        expect(selected).toEqual(['b']);
+    }
+
     @Test('host-windowed strips page through the source arrows')
     pagesWindowedSource() {
         const bar = new TabBarComponent();
@@ -54,6 +77,8 @@ export class TabBarComponentTest {
             visible: true,
             items: [{ id: 'a', label: ' Alpha ', active: true }],
             windowed: true,
+            overflowMode: 'scroll',
+            overflowItems: [{ id: 'a', label: ' Alpha ', active: true }],
             get canScrollBack() { return backEnabled; },
             get canScrollForward() { return forwardEnabled; },
             scrollBack: () => { paged.push('back'); backEnabled = false; forwardEnabled = true; },

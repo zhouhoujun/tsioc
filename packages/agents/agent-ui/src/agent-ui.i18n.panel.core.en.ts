@@ -20,7 +20,8 @@ export const AGENT_UI_PANEL_CORE_EN: Record<string, any> = {
         threadsTitle: 'Threads',
         sectionsTitle: 'Sections',
         scrollBack: 'Scroll tabs left',
-        scrollForward: 'Scroll tabs right'
+        scrollForward: 'Scroll tabs right',
+        moreTabs: 'More tabs'
     },
     sidebar: {
         title: 'Agent center',

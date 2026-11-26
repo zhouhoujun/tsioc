@@ -63,6 +63,19 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
         return this.windowed && this.resolveWindow(this.allItems()).canForward;
     }
 
+    /** Every tab for the shared overflow menu (the terminal windows `items`). */
+    get overflowItems(): TabItem[] {
+        return this.visible ? this.allItems() : [];
+    }
+
+    get overflowLabel(): string {
+        return ' … ';
+    }
+
+    get overflowTitle(): string {
+        return formatAgentPanelLabel(this.translator, 'sessions', 'moreTabs', 'More tabs');
+    }
+
     get scrollBackLabel(): string {
         return ' ‹ ';
     }
@@ -139,10 +152,10 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
             this.lastWindow = { start: 0, end: items.length };
             return all;
         }
-        // The arrows keep their cells at both ends; reserve them even at a page
-        // boundary so the strip does not jump when paging.
-        const arrowBudget = getDisplayWidth(this.scrollBackLabel) + getDisplayWidth(this.scrollForwardLabel);
-        const budget = Math.max(4, plainBudget - arrowBudget);
+        // The single "more" control keeps one stable cell at the end of the
+        // strip; the menu lists every tab instead of paging with arrows.
+        const overflowBudget = getDisplayWidth(this.overflowLabel);
+        const budget = Math.max(4, plainBudget - overflowBudget);
         const sessionId = String(this.state.sessionId || '');
         const activeById = sessionId ? items.findIndex(item => item.id === sessionId) : -1;
         const active = Math.max(0, activeById >= 0 ? activeById : items.findIndex(item => item.active));

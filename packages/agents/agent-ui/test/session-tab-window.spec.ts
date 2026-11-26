@@ -72,8 +72,10 @@ export class SessionTabWindowTest {
         // The tab bar forwards the arrow clicks to the same paging actions.
         const bar = new TabBarComponent();
         bar.source = source;
-        expect(bar.arrowsVisible).toEqual(true);
-        expect(bar.scrollBackDisabled).toEqual(false);
+        expect(bar.arrowsVisible).toEqual(false);
+        expect(bar.overflowMenuVisible).toEqual(true);
+        expect(bar.overflowMenuItems.length).toEqual(12);
+        expect(bar.overflowLabel).toEqual(' … ');
         bar.scrollForward();
         expect(source.items[0].id).not.toEqual(second[0].id);
 

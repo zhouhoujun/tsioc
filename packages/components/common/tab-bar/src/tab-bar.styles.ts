@@ -142,8 +142,82 @@ tab-bar {
     transform: scale(0.96);
 }
 
-/* Overflow paging arrows: pinned to each end of the scrollable strip so the
-   tabs page beneath them instead of hiding the control off-screen. */
+/* Ant Design-style single "more" control: one compact ellipsis at the end of
+   the strip opens a menu of every tab instead of showing two paging arrows. */
+.tab-overflow {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    margin-left: 2px;
+    padding: 6px 7px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--tab-muted, #64748b);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: pre;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+.tab-overflow:hover,
+.tab-overflow[aria-expanded="true"] {
+    background: var(--tab-hover, #f1f5f9);
+    color: var(--tab-text, #0f172a);
+}
+
+.tab-overflow-menu {
+    position: absolute;
+    right: 8px;
+    top: calc(100% + 4px);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    min-width: 14ch;
+    max-width: 34ch;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--tab-border, #e2e8f0);
+    border-radius: 9px;
+    background: var(--tab-surface, #ffffff);
+    box-shadow: 0 8px 24px var(--ui-shadow, rgba(0, 0, 0, 0.16));
+}
+
+.tab-overflow-item {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin: 1px 0;
+    padding: 6px 8px;
+    border-radius: 6px;
+    color: var(--tab-muted, #64748b);
+    font-size: 12.5px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.tab-overflow-item:hover,
+.tab-overflow-item:focus-visible {
+    background: var(--tab-hover, #f1f5f9);
+    color: var(--tab-text, #0f172a);
+    outline: none;
+}
+
+.tab-overflow-item[aria-current="true"] {
+    color: var(--tab-text, #0f172a);
+    font-weight: 600;
+}
+
+/* Opt-in scroll mode retains the legacy paging arrows. */
 .tab-scroll {
     position: sticky;
     z-index: 2;

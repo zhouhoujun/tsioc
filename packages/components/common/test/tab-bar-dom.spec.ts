@@ -110,6 +110,7 @@ export class TabBarDomTest {
         const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;
         ref.instance.source = {
             ...source,
+            overflowMode: 'scroll',
             items: [
                 { id: 'a', label: ' Alpha ', active: true, showClose: true },
                 { id: 'b', label: ' Beta ', active: false, showClose: true },
@@ -149,6 +150,44 @@ export class TabBarDomTest {
         (ref.instance as any).syncDomOverflow();
         await settle();
         expect(back.getAttribute('data-disabled')).toEqual('true');
+    }
+
+    @Test('DOM overflow uses one more menu listing every tab')
+    async domOverflowMenu() {
+        const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;
+        const selected: string[] = [];
+        ref.instance.source = {
+            ...source,
+            items: [
+                { id: 'a', label: ' Alpha ', active: true, showClose: true },
+                { id: 'b', label: ' Beta ', active: false, showClose: true },
+                { id: 'c', label: ' Gamma ', active: false, showClose: true },
+                { id: 'd', label: ' Delta ', active: false, showClose: true }
+            ],
+            select: id => selected.push(id)
+        };
+        await ref.render();
+        await Promise.resolve();
+        const root = (ref.instance as any).resolveStripElement() as any;
+        Object.defineProperty(root, 'clientWidth', { configurable: true, value: 100 });
+        Object.defineProperty(root, 'scrollWidth', { configurable: true, value: 400 });
+        const settle = async () => { for (let index = 0; index < 8; index += 1) { await Promise.resolve(); } };
+        (ref.instance as any).syncDomOverflow();
+        await settle();
+        expect(root.querySelector('.tab-scroll-back')).toBeFalsy();
+        expect(root.querySelector('.tab-scroll-forward')).toBeFalsy();
+        const more = root.querySelector('.tab-overflow') as HTMLElement;
+        expect(!!more).toEqual(true);
+        expect(more.getAttribute('aria-haspopup')).toEqual('menu');
+        more.click();
+        await settle();
+        const items = Array.from(root.querySelectorAll('.tab-overflow-item')) as HTMLElement[];
+        expect(items.map(item => item.textContent?.trim())).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta']);
+        items[2].click();
+        await settle();
+        expect(selected).toEqual(['c']);
+        expect(root.querySelector('.tab-overflow-menu')).toBeFalsy();
+        (ref.instance as any).focusedKey = '';
     }
 
     @Test('roving tabindex and arrow keys move selection across enabled tabs')

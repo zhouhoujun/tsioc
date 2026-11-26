@@ -280,8 +280,8 @@ export class SessionTabsTest {
         }
     }
 
-    @Test('overflowing terminal tabs page left and right with the shared arrows')
-    async pagesOverflowingTabs() {
+    @Test('overflowing terminal tabs use one more control instead of arrows')
+    async overflowsTabs() {
         const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
         let surface: TuiTerminalSurface | undefined;
         try {
@@ -295,6 +295,11 @@ export class SessionTabsTest {
                 workspace: '/work'
             })));
             state.setOpenSessionIds(state.sessions.map((session: any) => session.id));
+            state.sessionTabsAction = {
+                select: (id: string) => { state.sessionId = id; },
+                create: () => undefined,
+                close: () => undefined
+            };
             state.tabStripColumns = 48;
             for (let index = 0; index < 32; index++) await Promise.resolve();
             surface = new TuiTerminalSurface({
@@ -311,28 +316,29 @@ export class SessionTabsTest {
             surface.render();
             const header = () => String((surface!.lastRenderedLines || [])[0] || '').replace(/\x1b\[[0-9;]*m/g, '');
             expect(header()).toContain('Tab 0');
-            expect(header()).toContain('‹');
-            expect(header()).toContain('›');
+            expect(header()).toContain('…');
+            expect(header()).not.toContain('‹');
+            expect(header()).not.toContain('›');
             expect(header()).not.toContain('Tab 7');
 
-            const target = (className: string) => surface!.clickTargets.find(entry =>
-                String((entry.node as any)?.getAttribute?.('class') || '').includes(className) && entry.y === 0);
-            const forward = target('tab-scroll-forward');
-            expect(!!forward).toEqual(true);
-            surface.dispatchMouse({ button: 0, x: forward!.x + 1, y: forward!.y + 1, release: false });
-            surface.dispatchMouse({ button: 0, x: forward!.x + 1, y: forward!.y + 1, release: true });
+            const target = (className: string, text = '') => surface!.clickTargets.find(entry =>
+                String((entry.node as any)?.getAttribute?.('class') || '').includes(className)
+                && String((entry.node as any)?.textContent || '').includes(text));
+            const more = target('tab-overflow');
+            expect(!!more).toEqual(true);
+            surface.dispatchMouse({ button: 0, x: more!.x + 1, y: more!.y + 1, release: false });
+            surface.dispatchMouse({ button: 0, x: more!.x + 1, y: more!.y + 1, release: true });
             for (let index = 0; index < 16; index++) await Promise.resolve();
             surface.render();
-            expect(header()).not.toContain('Tab 0');
-            expect(header()).toContain('Tab 3');
+            expect((more!.node as any).getAttribute('aria-expanded')).toEqual('true');
 
-            const back = target('tab-scroll-back');
-            expect(!!back).toEqual(true);
-            surface.dispatchMouse({ button: 0, x: back!.x + 1, y: back!.y + 1, release: false });
-            surface.dispatchMouse({ button: 0, x: back!.x + 1, y: back!.y + 1, release: true });
+            const hidden = target('tab-overflow-item', 'Tab 6');
+            expect(!!hidden).toEqual(true);
+            surface.dispatchMouse({ button: 0, x: hidden!.x + 1, y: hidden!.y + 1, release: false });
+            surface.dispatchMouse({ button: 0, x: hidden!.x + 1, y: hidden!.y + 1, release: true });
             for (let index = 0; index < 16; index++) await Promise.resolve();
             surface.render();
-            expect(header()).toContain('Tab 0');
+            expect(header()).toContain('Tab 6');
         } finally {
             surface?.destroy();
             await ctx.close();

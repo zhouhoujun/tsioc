@@ -678,6 +678,34 @@ $idle: var(--console-idle, #6fa37a);
 .tab-scroll:hover {
     background-color: var(--console-hover-bg, #303e4f);
 }
+
+.tab-overflow {
+    color: var(--console-meta, #6e7681);
+    padding: 0 1ch;
+}
+.tab-overflow[aria-expanded="true"],
+.tab-overflow:hover {
+    color: var(--console-text, #c9d1d9);
+    background-color: var(--console-hover-bg, #303e4f);
+}
+.tab-overflow-menu {
+    display: block;
+    color: var(--console-text, #c9d1d9);
+    background-color: var(--console-dialog-bg, #161b22);
+    border: 1px solid var(--console-border, #30363d);
+    padding: 0 1ch;
+}
+.tab-overflow-item {
+    display: block;
+    color: var(--console-meta, #6e7681);
+    padding: 0 1ch;
+    white-space: nowrap;
+}
+.tab-overflow-item[aria-current="true"],
+.tab-overflow-item:hover {
+    color: var(--console-selected, #7fa6d4);
+    background-color: var(--console-select-selected-bg, #202a36);
+}
 // Dialog section strip: the same left/right paging controls as the tab strip.
 .settings-section-scroll {
     color: $accent;

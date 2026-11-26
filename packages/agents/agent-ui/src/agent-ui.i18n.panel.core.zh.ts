@@ -20,7 +20,8 @@ export const AGENT_UI_PANEL_CORE_ZH: Record<string, any> = {
         threadsTitle: '线程',
         sectionsTitle: '分区',
         scrollBack: '向左切换标签',
-        scrollForward: '向右切换标签'
+        scrollForward: '向右切换标签',
+        moreTabs: '更多标签页'
     },
     sidebar: {
         title: '代理中心',

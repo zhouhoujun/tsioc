@@ -138,6 +138,10 @@ export class TabsComponent implements AfterViewInit {
             // Overflow navigation stays with the host: terminal strips window
             // their own items, while DOM strips scroll themselves.
             get windowed() { return source.windowed; },
+            get overflowMode() { return source.overflowMode; },
+            get overflowItems() { return source.overflowItems; },
+            get overflowLabel() { return source.overflowLabel; },
+            get overflowTitle() { return source.overflowTitle; },
             get activationMode() { return tabs.activationMode; },
             get closeTabTitle() { return source.closeTabTitle; },
             get canScrollBack() { return source.canScrollBack; },
