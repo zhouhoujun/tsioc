@@ -5,6 +5,7 @@ import { OverlayManager } from '../../src/overlay-manager';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
 import { installPlainButtonStyles } from '../../src/ui.styles';
+import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 import { installPopoverStyles } from './popover.styles';
 
 export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
@@ -39,6 +40,7 @@ export class PopoverComponent {
 
     protected readonly overlayId = nextUiId('ui-popover');
     private _overlayOpen = false;
+    private releaseScrollLock?: () => void;
 
     /** Host dirty-check; return false (or reject) to keep the popover open. */
     @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
@@ -52,13 +54,14 @@ export class PopoverComponent {
             return;
         }
         this._overlayOpen = next;
+        this.syncScrollLock(next);
         if (next) {
             this.overlays?.register({
                 id: this.overlayId,
                 kind: 'popover',
                 element: this.elementRef?.nativeElement,
                 beforeClose: () => this.beforeCloseAction?.() ?? true,
-                close: () => { this._overlayOpen = false; this.closeAction?.(); }
+                close: () => { this._overlayOpen = false; this.syncScrollLock(false); this.closeAction?.(); }
             });
         } else {
             this.overlays?.close(this.overlayId);
@@ -115,6 +118,7 @@ export class PopoverComponent {
     close(): void {
         this.overlays?.close(this.overlayId);
         this._overlayOpen = false;
+        this.syncScrollLock(false);
         this.closeAction?.();
         this._visible = false;
     }
@@ -133,5 +137,29 @@ export class PopoverComponent {
             event.stopPropagation?.();
             this.close();
         }
+    }
+
+    /** Lock document scrolling while this overlay is registered and open. */
+    @Attribute()
+    get scrollLock(): boolean { return this._scrollLock; }
+    set scrollLock(value: boolean | string) {
+        this._scrollLock = normalizeBoolean(value, true);
+        if (!this._scrollLock) { this.syncScrollLock(false); }
+    }
+
+    private _scrollLock = true;
+
+    protected syncScrollLock(active: boolean): void {
+        if (active && this._scrollLock && !this.releaseScrollLock) {
+            const doc = (this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument;
+            this.releaseScrollLock = lockDocumentScroll(doc);
+        } else if (!active && this.releaseScrollLock) {
+            this.releaseScrollLock();
+            this.releaseScrollLock = undefined;
+        }
+    }
+
+    onDestroy(): void {
+        this.syncScrollLock(false);
     }
 }

@@ -143,6 +143,8 @@
 **优化**
 - 新增 `OverlayPolicy`：`modal/backdrop/scrollLock/closeOnOutside/
   closeOnEscape/initialFocus/restoreFocus/inert`；四类浮层共用。
+- 已完成：Dialog/Drawer/Popover 接入引用计数 `scrollLock`（TUI 无
+  `defaultView` 时 no-op），嵌套浮层只在最后一个关闭时恢复 body 滚动。
 - 统一注册/注销/嵌套顺序；Escape 只由栈顶处理；关闭后焦点按栈恢复。
 - Tooltip 增加 `openDelay/closeDelay/portal/collision`；TUI 用 focus 打开。
 - Drawer/Popover 提供 `placement` + 边缘翻转工具函数（DOM 测量，TUI 忽略）。

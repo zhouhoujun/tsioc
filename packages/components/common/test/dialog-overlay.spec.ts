@@ -75,6 +75,38 @@ export class DialogOverlayTest {
         expect(dialog.overlayOpen).toEqual(false);
     }
 
+    @Test('locks document scroll while open and restores it after close')
+    async scrollLock() {
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        doc.body.style.overflow = '';
+        const first = this.ctx.get(ComponentFactory).create(DialogComponent, { injector: this.ctx }) as ComponentRef<DialogComponent>;
+        const second = this.ctx.get(ComponentFactory).create(DialogComponent, { injector: this.ctx }) as ComponentRef<DialogComponent>;
+        await first.render();
+        await second.render();
+        await Promise.resolve();
+
+        first.instance.overlayOpen = true;
+        expect(doc.body.style.overflow).toEqual('hidden');
+        second.instance.overlayOpen = true;
+        expect(doc.body.style.overflow).toEqual('hidden');
+
+        first.instance.close();
+        expect(doc.body.style.overflow).toEqual('hidden');
+        second.instance.close();
+        expect(doc.body.style.overflow).toEqual('');
+
+        first.instance.overlayOpen = true;
+        expect(doc.body.style.overflow).toEqual('hidden');
+        first.instance.scrollLock = false;
+        expect(doc.body.style.overflow).toEqual('');
+        first.instance.scrollLock = true;
+        first.instance.overlayOpen = false;
+        expect(doc.body.style.overflow).toEqual('');
+
+        first.destroy();
+        second.destroy();
+    }
+
     @Test('focuses the panel, traps Tab and restores the trigger')
     async focusCycle() {
         const doc = this.ctx.get(DOCUMENT) as Document;

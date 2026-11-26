@@ -6,6 +6,7 @@ import { getDisplayWidth } from '../../src/display-width';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
 import { installPlainButtonStyles } from '../../src/ui.styles';
+import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 
 /**
  * Renderer-neutral dialog shell: title, optional body lines, hint, projected
@@ -46,6 +47,7 @@ export class DialogComponent implements OnDestroy {
 
     protected readonly overlayId = nextUiId('ui-dialog');
     private _overlayOpen = false;
+    private releaseScrollLock?: () => void;
 
     /** Opt-in: register this dialog in the shared overlay stack for Escape/focus/dirty checks. */
     @Attribute()
@@ -56,6 +58,7 @@ export class DialogComponent implements OnDestroy {
             return;
         }
         this._overlayOpen = next;
+        this.syncScrollLock(next);
         if (next) {
             this.overlays?.register({
                 id: this.overlayId,
@@ -64,7 +67,7 @@ export class DialogComponent implements OnDestroy {
                 initialFocus: this.initialFocus,
                 restoreFocus: this.restoreFocus,
                 beforeClose: () => this.beforeCloseAction?.() ?? true,
-                close: () => { this._overlayOpen = false; this.closeAction?.(); }
+                close: () => { this._overlayOpen = false; this.syncScrollLock(false); this.closeAction?.(); }
             });
         } else {
             this.overlays?.close(this.overlayId);
@@ -79,6 +82,13 @@ export class DialogComponent implements OnDestroy {
     @Attribute() restoreFocus: boolean | string = true;
     /** Keep Tab focus inside the dialog while it is open. */
     @Attribute() trapFocus: boolean | string = true;
+    /** Lock document scrolling while this overlay is registered and open. */
+    @Attribute()
+    get scrollLock(): boolean { return this._scrollLock; }
+    set scrollLock(value: boolean | string) {
+        this._scrollLock = normalizeBoolean(value, true);
+        if (!this._scrollLock) { this.syncScrollLock(false); }
+    }
 
     @Attribute() title = '';
     @Attribute() lines: string[] = [];
@@ -107,6 +117,7 @@ export class DialogComponent implements OnDestroy {
     private _modal = true;
     private _closable = true;
     private _closeOnEscape = true;
+    private _scrollLock = true;
 
     @Attribute()
     get modal(): boolean { return this._modal; }
@@ -204,10 +215,24 @@ export class DialogComponent implements OnDestroy {
             // so the host callback must still run for programmatic closes.
             this.overlays?.close(this.overlayId);
             this._overlayOpen = false;
+            this.syncScrollLock(false);
             this.closeAction?.();
             return;
         }
         this.closeAction?.();
+    }
+
+    protected ownerDocument(): Document | undefined {
+        return (this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument;
+    }
+
+    protected syncScrollLock(active: boolean): void {
+        if (active && this._scrollLock && !this.releaseScrollLock) {
+            this.releaseScrollLock = lockDocumentScroll(this.ownerDocument());
+        } else if (!active && this.releaseScrollLock) {
+            this.releaseScrollLock();
+            this.releaseScrollLock = undefined;
+        }
     }
 
     onDestroy(): void {
@@ -215,5 +240,6 @@ export class DialogComponent implements OnDestroy {
             this.overlays?.close(this.overlayId);
             this._overlayOpen = false;
         }
+        this.syncScrollLock(false);
     }
 }

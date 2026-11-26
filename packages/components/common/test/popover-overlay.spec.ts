@@ -40,6 +40,8 @@ export class PopoverOverlayTest {
         popover.closeAction = () => { closes += 1; };
         popover.beforeCloseAction = () => allow;
         popover.overlayOpen = true;
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        expect(doc.body.style.overflow).toEqual('hidden');
         expect(manager.size).toEqual(1);
         allow = false;
         expect(await manager.escape()).toEqual('blocked');
@@ -48,6 +50,7 @@ export class PopoverOverlayTest {
         expect(await manager.escape()).toEqual('closed');
         expect(closes).toEqual(1);
         expect(manager.size).toEqual(0);
+        expect(doc.body.style.overflow).toEqual('');
         ref.destroy();
     }
 }

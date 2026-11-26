@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@tsdi/ioc';
+import { unwrapReactive } from '@tsdi/components';
 
 export type OverlayKind = 'dialog' | 'drawer' | 'popover' | 'menu' | 'palette';
 export type OverlayCloseReason = 'escape' | 'outside' | 'programmatic';
@@ -139,7 +140,8 @@ export class OverlayManager {
 }
 
 function overlayDocument(element: any): any {
-    return element?.ownerDocument || element?.defaultView?.document;
+    const raw = unwrapReactive(element);
+    return raw?.ownerDocument || raw?.defaultView?.document;
 }
 
 /** Default focus adapter: only active when the panel belongs to a DOM document. */
@@ -161,6 +163,7 @@ function focusOverlay(entry: OverlayEntry): void {
 }
 
 function focusRoot(element: any): any {
+    element = unwrapReactive(element);
     if (!element) {
         return null;
     }
