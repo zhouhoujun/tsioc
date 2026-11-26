@@ -4,7 +4,7 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Component, ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { TabBarSource } from '../tab-bar';
+import { TabBarComponent, TabBarSource } from '../tab-bar';
 import { TabsComponent, TabsModule } from '../tabs';
 
 @Component({
@@ -17,13 +17,14 @@ import { TabsComponent, TabsModule } from '../tabs';
     </tabs>`
 })
 class TabsHostComponent {
+    selected: string[] = [];
     source: TabBarSource = {
         visible: true,
         items: [
             { id: 'a', label: 'Alpha', active: true },
             { id: 'b', label: 'Beta', active: false }
         ],
-        select() { }
+        select: (id: string) => { this.selected.push(id); }
     };
 }
 
@@ -83,5 +84,43 @@ export class TabsDomTest {
         expect(alpha.getAttribute('tabindex')).toEqual('-1');
         expect(beta.getAttribute('aria-hidden')).toEqual('false');
         expect(beta.getAttribute('tabindex')).toEqual('0');
+        const tabsBar = tabs.hostView.query(TabBarComponent) as ComponentRef<TabBarComponent>;
+        const tabNodes = Array.from(root.querySelectorAll('.tab') as NodeListOf<HTMLElement>);
+        const panelA = root.querySelector('[data-tab-id="a"]') as HTMLElement;
+        const panelB = root.querySelector('[data-tab-id="b"]') as HTMLElement;
+        expect(tabNodes[0].id).toEqual(panelA.getAttribute('aria-labelledby'));
+        expect(tabNodes[1].id).toEqual(panelB.getAttribute('aria-labelledby'));
+        expect(tabNodes[0].getAttribute('aria-controls')).toEqual(panelA.id);
+        expect(tabNodes[1].getAttribute('aria-controls')).toEqual(panelB.id);
+        expect(tabsBar.instance.closeTabLabel({ id: 'b', label: 'Beta' })).toEqual('Close tab Beta');
+    }
+
+    @Test('manual activation focuses without selecting until Enter')
+    async manualActivation() {
+        const ref = this.ctx.get(ComponentFactory).create(TabsHostComponent, { injector: this.ctx }) as ComponentRef<TabsHostComponent>;
+        await ref.render();
+        await Promise.resolve();
+        const root = ref.hostView.rootNodes[0] as any;
+        const tabs = ref.hostView.query(TabsComponent) as ComponentRef<TabsComponent>;
+        tabs.instance.activationMode = 'manual';
+        await Promise.resolve();
+        const bar = tabs.hostView.query(TabBarComponent) as ComponentRef<TabBarComponent>;
+        const tabNodes = Array.from(root.querySelectorAll('.tab') as NodeListOf<HTMLElement>);
+        const host = ref.instance as TabsHostComponent;
+        host.selected = [];
+
+        tabNodes[0].dispatchEvent(new (this.ctx.get(DOCUMENT) as any).defaultView.KeyboardEvent('keydown', {
+            key: 'ArrowRight',
+            bubbles: true
+        }));
+        await Promise.resolve();
+        expect(host.selected).toEqual([]);
+        expect(tabNodes[1].getAttribute('tabindex')).toEqual('0');
+        tabNodes[1].dispatchEvent(new (this.ctx.get(DOCUMENT) as any).defaultView.KeyboardEvent('keydown', {
+            key: 'Enter',
+            bubbles: true
+        }));
+        expect(host.selected).toEqual(['b']);
+        expect(bar).toBeTruthy();
     }
 }

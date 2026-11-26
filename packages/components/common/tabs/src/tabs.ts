@@ -11,6 +11,7 @@ import {
 import { Inject, Injector, Optional } from '@tsdi/ioc';
 import { TAB_BAR_SOURCE, TabBarComponent, TabBarSource } from '../../tab-bar/src/tab-bar';
 import { markElementRefRaw } from '../../src/raw-element';
+import { nextUiId } from '../../src/ui';
 
 /** Generic tabs source: the shared strip plus the pane that is currently shown. */
 export type TabsSource = TabBarSource;
@@ -45,12 +46,14 @@ export class TabsComponent implements AfterViewInit {
     /** Render only the shared strip (the host owns the pane region). */
     @Attribute() stripOnly = false;
     @Attribute() activeId = '';
+    @Attribute() activationMode: 'automatic' | 'manual' = 'automatic';
 
     @ViewChild('panes', ElementRef) panes?: ElementRef;
     /** Projected panes, resolved through the framework content-query index. */
     @ContentChildren('[data-tab-id]') paneRefs?: QueryList<ElementRef>;
 
     protected viewReady = false;
+    protected readonly uid = nextUiId('ui-tabs');
 
     constructor(
         @Optional() protected elementRef?: ElementRef,
@@ -119,15 +122,24 @@ export class TabsComponent implements AfterViewInit {
         }
         // Keep live getters (the host source may be a class instance with
         // prototype getters); a spread would snapshot missing properties.
+        const tabs = this;
         return {
             get visible() { return source.visible; },
-            get items() { return source.items; },
+            get items() {
+                return source.items.map(item => ({
+                    ...item,
+                    elementId: item.elementId || tabs.tabId(item.id),
+                    controls: item.controls || tabs.panelId(item.id)
+                }));
+            },
             get showCreate() { return source.showCreate; },
             get createLabel() { return source.createLabel; },
             get closeLabel() { return source.closeLabel; },
             // Overflow navigation stays with the host: terminal strips window
             // their own items, while DOM strips scroll themselves.
             get windowed() { return source.windowed; },
+            get activationMode() { return tabs.activationMode; },
+            get closeTabTitle() { return source.closeTabTitle; },
             get canScrollBack() { return source.canScrollBack; },
             get canScrollForward() { return source.canScrollForward; },
             get scrollBackLabel() { return source.scrollBackLabel; },
@@ -140,6 +152,18 @@ export class TabsComponent implements AfterViewInit {
             scrollBack: () => source.scrollBack?.(),
             scrollForward: () => source.scrollForward?.()
         };
+    }
+
+    tabId(id: string): string {
+        return `${this.uid}-tab-${this.safeId(id)}`;
+    }
+
+    panelId(id: string): string {
+        return `${this.uid}-panel-${this.safeId(id)}`;
+    }
+
+    protected safeId(id: string): string {
+        return String(id || 'tab').replace(/[^A-Za-z0-9_-]+/g, '-') || 'tab';
     }
 
     /** Active pane id: explicit attribute wins, then source semantics. */
@@ -204,6 +228,10 @@ export class TabsComponent implements AfterViewInit {
             // focusable content of its own.
             if (!pane.getAttribute?.('role')) {
                 pane.setAttribute?.('role', 'tabpanel');
+            }
+            if (id) {
+                pane.setAttribute?.('id', this.panelId(id));
+                pane.setAttribute?.('aria-labelledby', this.tabId(id));
             }
             pane.setAttribute?.('aria-hidden', hidden ? 'true' : 'false');
             pane.setAttribute?.('tabindex', hidden ? '-1' : '0');

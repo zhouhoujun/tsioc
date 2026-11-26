@@ -1,6 +1,7 @@
 import { AfterViewInit, Attribute, Component, ElementRef, ViewChild, unwrapReactive } from '@tsdi/components';
 import { Inject, Optional, token } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
+import { nextUiId } from '../../src/ui';
 import { installTabBarStyles } from './tab-bar.styles';
 
 /** A renderer-neutral tab entry: the host owns meaning, the tab bar only paints it. */
@@ -15,6 +16,10 @@ export interface TabItem {
     showClose?: boolean | 'hover';
     /** Non-interactive marker (e.g. the `…` overflow indicator). */
     disabled?: boolean;
+    /** Stable tab element id (Tabs sets this for aria-controls/labelledby). */
+    elementId?: string;
+    /** Controlled tabpanel id. */
+    controls?: string;
 }
 
 /** Everything the shared strip paints plus the actions a host wants to receive. */
@@ -40,6 +45,10 @@ export interface TabBarSource {
     /** Accessible names for the overflow controls. */
     scrollBackTitle?: string;
     scrollForwardTitle?: string;
+    /** Accessible name prefix for a tab's close affordance. */
+    closeTabTitle?: string;
+    /** Automatic activates on arrow; manual focuses and waits for Enter/Space. */
+    activationMode?: 'automatic' | 'manual';
     select?(id: string): void;
     create?(): void;
     close?(id: string): void;
@@ -62,8 +71,13 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
     template: `
     <p class="tab-bar" role="tablist" aria-orientation="horizontal" v-show="visible" #strip>
         <span class="tab-scroll tab-scroll-back" role="button" focusable="true" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-show="arrowsVisible" @click="scrollBack($event)">{{scrollBackLabel}}</span>
-        <span class="tab" role="tab" aria-selected="{{tab.active}}" tabindex="{{tabIndexFor(tab, index)}}" focusable="{{!tab.disabled}}" data-disabled="{{tab.disabled}}" data-hover-group="true" v-for="(tab, index) in items" trackBy="id" @click="select(tab.id, $event)" @keydown="onTabKeydown($event, tab, index)">
-            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" focusable="true" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
+        <span class="tab" role="tab" id="{{tabElementId(tab)}}" aria-selected="{{tab.active}}"
+            aria-controls="{{tab.controls || ''}}" tabindex="{{tabIndexFor(tab, index)}}"
+            focusable="{{!tab.disabled}}" data-disabled="{{tab.disabled}}" data-hover-group="true"
+            v-for="(tab, index) in items" trackBy="id"
+            @click="select(tab.id, $event)" @focus="focusOnly(tab)"
+            @keydown="onTabKeydown($event, tab, index)">
+            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)">{{closeLabel}}</span>
         </span>
         <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
         <span class="tab-new" role="button" focusable="true" v-show="showCreate" @click="create">{{createLabel}}</span>
@@ -75,6 +89,8 @@ export class TabBarComponent implements AfterViewInit {
     @Attribute() source?: TabBarSource;
 
     @ViewChild('strip', ElementRef) strip?: ElementRef;
+    /** Manual mode focuses without activating until Enter/Space. */
+    @Attribute() activationMode: 'automatic' | 'manual' = 'automatic';
 
     /** DOM strips report their own overflow (terminal strips leave these false). */
     protected domOverflow = false;
@@ -87,6 +103,8 @@ export class TabBarComponent implements AfterViewInit {
     protected stripResizeObserver?: { disconnect(): void } | null;
     protected windowResizeListener?: () => void;
     protected overflowSyncScheduled = false;
+    protected readonly uid = nextUiId('ui-tab-bar');
+    private focusedKey = '';
 
     constructor(
         @Optional() protected elementRef?: ElementRef,
@@ -148,6 +166,28 @@ export class TabBarComponent implements AfterViewInit {
         return this.activeSource?.closeLabel || '✕';
     }
 
+    get closeTabTitle(): string {
+        return this.activeSource?.closeTabTitle || 'Close tab';
+    }
+
+    get mode(): 'automatic' | 'manual' {
+        return this.activeSource?.activationMode || this.activationMode;
+    }
+
+    tabElementId(tab: TabItem): string {
+        return tab?.elementId || `${this.uid}-${String(tab?.id || 'tab').replace(/[^A-Za-z0-9_-]+/g, '-')}`;
+    }
+
+    closeTabLabel(tab: TabItem): string {
+        return `${this.closeTabTitle} ${tab?.label || ''}`.trim();
+    }
+
+    focusOnly(tab: TabItem): void {
+        if (tab && !tab.disabled) {
+            this.focusedKey = tab.id;
+        }
+    }
+
     /** Terminal hosts window `items` themselves; DOM hosts scroll the strip. */
     get hostWindowed(): boolean {
         return !!this.activeSource?.windowed;
@@ -204,6 +244,7 @@ export class TabBarComponent implements AfterViewInit {
         if (target?.closest?.('.tab-close')) {
             return;
         }
+        this.focusedKey = id;
         this.activeSource?.select?.(id);
     }
 
@@ -220,10 +261,13 @@ export class TabBarComponent implements AfterViewInit {
         if (!tab || tab.disabled) {
             return -1;
         }
+        const items = this.items;
+        if (this.focusedKey && items.some(item => item?.id === this.focusedKey && !item.disabled)) {
+            return tab.id === this.focusedKey ? 0 : -1;
+        }
         if (tab.active) {
             return 0;
         }
-        const items = this.items;
         if (items.some(item => item?.active && !item.disabled)) {
             return -1;
         }
@@ -261,7 +305,10 @@ export class TabBarComponent implements AfterViewInit {
         }
         event?.preventDefault?.();
         const target = this.items[targetIndex];
-        this.select(target.id, event);
+        this.focusedKey = target.id;
+        if (this.mode === 'automatic') {
+            this.select(target.id, event);
+        }
         // The host may replace the strip data on select; move focus after the
         // reactive DOM update so the new node (not the stale one) is focused.
         const focus = () => this.focusTab(targetIndex);
@@ -291,6 +338,11 @@ export class TabBarComponent implements AfterViewInit {
         const tabs = strip?.querySelectorAll?.('.tab');
         const node = tabs?.[index];
         node?.focus?.();
+        try {
+            node?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        } catch {
+            // Terminal renderers do not implement scrollIntoView.
+        }
     }
 
     create(): void {
