@@ -63,7 +63,9 @@ export class TabBarDomTest {
         const closes = Array.from(root.querySelectorAll('.tab-close')) as any[];
         expect(closes.length).toEqual(2);
         expect(closes[0].getAttribute('data-close-mode')).toEqual('always');
+        expect(closes[0].getAttribute('tabindex')).toEqual('0');
         expect(closes[1].getAttribute('data-close-mode')).toEqual('hover');
+        expect(closes[1].getAttribute('tabindex')).toEqual('-1');
         // A revealed hover affordance closes its own tab.
         closes[1].click();
         await Promise.resolve();

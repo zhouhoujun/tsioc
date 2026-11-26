@@ -84,7 +84,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
             v-for="(tab, index) in items" trackBy="id"
             @click="select(tab.id, $event)" @focus="focusOnly(tab)"
             @keydown="onTabKeydown($event, tab, index)">
-            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" tabindex="0" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)" @keydown="onCloseKeydown($event, tab.id)">{{closeLabel}}</span>
+            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" tabindex="{{closeTabIndex(tab)}}" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)" @keydown="onCloseKeydown($event, tab.id)">{{closeLabel}}</span>
         </span>
         <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
         <span class="tab-overflow" role="button" focusable="true" v-if="overflowMenuVisible"
@@ -201,6 +201,11 @@ export class TabBarComponent implements AfterViewInit {
 
     closeTabLabel(tab: TabItem): string {
         return `${this.closeTabTitle} ${tab?.label || ''}`.trim();
+    }
+
+    /** Hidden hover-only close affordances stay out of the Tab order. */
+    closeTabIndex(tab: TabItem): number {
+        return tab?.showClose === 'hover' && !tab.active ? -1 : 0;
     }
 
     focusOnly(tab: TabItem): void {
