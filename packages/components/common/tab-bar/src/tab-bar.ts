@@ -90,7 +90,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
             aria-haspopup="menu" aria-expanded="{{overflowMenuOpen}}" aria-label="{{overflowTitle}}"
             data-hover-group="true" @click="toggleOverflowMenu($event)"
             @keydown="onOverflowKeydown($event)">{{overflowLabel}}</span>
-        <span class="tab-overflow-menu" role="menu" v-if="overflowMenuOpen">
+        <span class="tab-overflow-menu" role="menu" v-if="overflowMenuOpen" [style]="overflowMenuStyle">
             <span class="tab-overflow-item" role="menuitem" tabindex="0" focusable="true"
                 aria-current="{{item.active}}" v-for="item in overflowMenuItems" trackBy="id"
                 @click="pickOverflow(item.id, $event)"
@@ -122,6 +122,7 @@ export class TabBarComponent implements AfterViewInit {
     protected readonly uid = nextUiId('ui-tab-bar');
     private focusedKey = '';
     protected overflowMenuOpen = false;
+    protected overflowMenuStyle: Record<string, string> = {};
     protected overflowDismiss?: () => void;
 
     constructor(
@@ -406,8 +407,12 @@ export class TabBarComponent implements AfterViewInit {
             return;
         }
         this.overflowMenuOpen = true;
+        this.placeOverflowMenu();
         this.bindOverflowDismiss();
-        void Promise.resolve().then(() => this.focusOverflowItem(0));
+        void Promise.resolve().then(() => {
+            this.placeOverflowMenu(true);
+            this.focusOverflowItem(0);
+        });
     }
 
     closeOverflowMenu(restoreFocus = true): void {
@@ -415,10 +420,45 @@ export class TabBarComponent implements AfterViewInit {
             return;
         }
         this.overflowMenuOpen = false;
+        this.overflowMenuStyle = {};
         this.unbindOverflowDismiss();
         if (restoreFocus) {
             void Promise.resolve().then(() => this.focusOverflowTrigger());
         }
+    }
+
+    /**
+     * A menu rendered inside the horizontally scrolling strip would be clipped
+     * by its overflow box. Anchor it to the viewport with fixed coordinates and
+     * clamp it to the visible screen. Terminal hosts keep the CSS fallback.
+     */
+    protected placeOverflowMenu(measure = false): void {
+        const strip = this.resolveStripElement();
+        const trigger = strip?.querySelector?.('.tab-overflow') as HTMLElement | undefined;
+        const view = (trigger?.ownerDocument as { defaultView?: Window } | undefined)?.defaultView;
+        const rect = trigger?.getBoundingClientRect?.();
+        if (!view || !rect || (!rect.width && !rect.height)) {
+            return;
+        }
+        const menu = strip?.querySelector?.('.tab-overflow-menu') as HTMLElement | undefined;
+        const menuRect = measure ? menu?.getBoundingClientRect?.() : undefined;
+        const width = Number(menuRect?.width) || 240;
+        const height = Number(menuRect?.height) || 0;
+        const margin = 8;
+        const innerWidth = Number(view.innerWidth) || width + margin * 2;
+        const innerHeight = Number(view.innerHeight) || height + margin * 2;
+        const left = Math.max(margin, Math.min(rect.right - width, innerWidth - width - margin));
+        const below = rect.bottom + 4;
+        const above = rect.top - height - 4;
+        const top = height && below + height > innerHeight - margin && above >= margin ? above : below;
+        this.overflowMenuStyle = {
+            position: 'fixed',
+            left: `${Math.round(left)}px`,
+            top: `${Math.round(top)}px`,
+            right: 'auto',
+            'max-height': `${Math.max(120, Math.round(innerHeight - top - margin))}px`,
+            'z-index': '40'
+        };
     }
 
     protected focusOverflowTrigger(): void {

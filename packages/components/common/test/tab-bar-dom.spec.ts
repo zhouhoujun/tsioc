@@ -179,8 +179,16 @@ export class TabBarDomTest {
         const more = root.querySelector('.tab-overflow') as HTMLElement;
         expect(!!more).toEqual(true);
         expect(more.getAttribute('aria-haspopup')).toEqual('menu');
+        const win = (this.ctx.get(DOCUMENT) as Document).defaultView as any;
+        Object.defineProperty(win, 'innerWidth', { value: 320, configurable: true });
+        Object.defineProperty(win, 'innerHeight', { value: 240, configurable: true });
+        (more as any).getBoundingClientRect = () => ({ left: 280, right: 310, top: 10, bottom: 30, width: 30, height: 20 });
         more.click();
         await settle();
+        const menu = root.querySelector('.tab-overflow-menu') as HTMLElement;
+        expect(menu.style.position).toEqual('fixed');
+        expect(menu.style.top).toEqual('34px');
+        expect(menu.style.left).toEqual('70px');
         const items = Array.from(root.querySelectorAll('.tab-overflow-item')) as HTMLElement[];
         expect(items.map(item => item.textContent?.trim())).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta']);
         items[2].click();
