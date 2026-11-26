@@ -1,4 +1,5 @@
 import { installStyleSheet } from './styles';
+import { UI_DESIGN_TOKENS } from './design-tokens';
 
 /**
  * Default skin for the generic UI primitives. All colors stay themeable
@@ -35,8 +36,8 @@ export const UI_MOTION_CSS = `
 }
 .ui-button:focus-visible,
 .ui-toolbar-item:focus-visible {
-    outline: 2px solid var(--ui-focus-ring);
-    outline-offset: 1px;
+    outline: var(--ui-focus-ring-width, 2px) solid var(--ui-focus-ring);
+    outline-offset: var(--ui-focus-ring-offset, 1px);
 }
 @media (prefers-reduced-motion: reduce) {
     .ui-button,
@@ -75,6 +76,7 @@ export const PLAIN_BUTTON_CSS = `
 `;
 
 export const UI_CSS = `
+${UI_DESIGN_TOKENS}
 ${UI_MOTION_CSS}
 ${PLAIN_BUTTON_CSS}
 .ui-button {
@@ -84,7 +86,7 @@ ${PLAIN_BUTTON_CSS}
     min-height: 1.8em;
     padding: 0.15em 0.75ch;
     border: 1px solid var(--ui-border, currentColor);
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     background: var(--ui-button-bg, transparent);
     color: var(--ui-button-fg, inherit);
     font: inherit;
@@ -104,10 +106,8 @@ ${PLAIN_BUTTON_CSS}
 }
 .ui-button.is-icon-only { gap: 0; }
 .ui-button.is-block { display: flex; width: 100%; justify-content: center; }
-.ui-button.is-solid { background: var(--ui-tone-bg, var(--ui-button-bg, transparent)); color: var(--ui-tone-fg, inherit); }
-.ui-button.is-outline { background: transparent; border-color: var(--ui-tone-border, currentColor); }
-.ui-button.is-ghost { background: transparent; border-color: transparent; }
-.ui-button.is-ghost:hover { border-color: var(--ui-border, currentColor); }
+.ui-button.is-solid { background: var(--ui-tone-bg, var(--ui-button-bg, transparent)); color: var(--ui-tone-fg, inherit); } .ui-button.is-outline { background: transparent; border-color: var(--ui-tone-border, currentColor); }
+.ui-button.is-ghost { background: transparent; border-color: transparent; } .ui-button.is-ghost:hover { border-color: var(--ui-border, currentColor); }
 .ui-button.is-xs { font-size: 0.85em; padding: 0 0.4ch; } .ui-button.is-sm { font-size: 0.92em; } .ui-button.is-lg { font-size: 1.08em; padding: 0.25em 1ch; }
 .ui-button-labels { display: inline-grid; align-items: center; } .ui-button-labels > .ui-button-label { grid-area: 1 / 1; }
 .ui-button-label { white-space: nowrap; } .ui-button-label.is-loading-ghost { visibility: hidden; } .ui-button-spinner { display: inline-block; min-width: 1ch; text-align: center; }
@@ -143,7 +143,7 @@ ${PLAIN_BUTTON_CSS}
     display: block;
     padding: var(--ui-card-padding, 1ch);
     border: 1px solid var(--ui-border, currentColor);
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     background: var(--ui-card-bg, transparent);
     color: var(--ui-card-fg, inherit);
 }
@@ -252,7 +252,7 @@ ${PLAIN_BUTTON_CSS}
     gap: 0.35ch;
     padding: 0.1em 0.6ch;
     border: 1px solid transparent;
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     background: transparent;
     color: inherit;
     font: inherit;
@@ -355,7 +355,7 @@ ${PLAIN_BUTTON_CSS}
     align-items: center;
     gap: 0.5ch;
     border: 1px solid var(--ui-border, currentColor);
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     padding: 0 0.6ch;
     background: var(--ui-field-bg, transparent);
 }
@@ -424,7 +424,7 @@ ${PLAIN_BUTTON_CSS}
     min-width: 2ch;
     padding: 0 0.5ch;
     border: 1px solid transparent;
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     background: transparent;
     color: inherit;
     font: inherit;
@@ -445,7 +445,7 @@ ${PLAIN_BUTTON_CSS}
     flex-direction: column;
     min-width: 0;
     border: 1px solid transparent;
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
 }
 .ui-data-table-scroll { overflow-x: auto; min-width: 0; }
 .ui-data-table-content {
@@ -527,7 +527,7 @@ ${PLAIN_BUTTON_CSS}
     gap: 0.35ch;
     min-width: 0;
     padding: 0 0.25ch;
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     cursor: pointer;
 }
 .ui-tree-node.is-selected > .ui-tree-row { background: var(--ui-selected-bg, transparent); }
@@ -592,7 +592,7 @@ ${PLAIN_BUTTON_CSS}
     gap: 0.5ch;
     cursor: pointer;
     padding: 0 0.25ch;
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
 }
 .ui-radio-option:hover { background: var(--ui-hover-bg, transparent); }
 .ui-radio-option.is-disabled { opacity: var(--ui-disabled-opacity, 0.55); cursor: not-allowed; }
@@ -606,7 +606,7 @@ ${PLAIN_BUTTON_CSS}
     padding: 0.6ch 0.8ch;
     border: 1px solid var(--ui-border, currentColor);
     border-left-width: 3px;
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     background: var(--ui-alert-bg, transparent);
     color: var(--ui-alert-fg, inherit);
 }
@@ -622,7 +622,7 @@ ${PLAIN_BUTTON_CSS}
 .ui-alert-close {
     flex: none;
     border: 1px solid transparent;
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     background: transparent;
     color: inherit;
     font: inherit;
@@ -639,7 +639,7 @@ ${PLAIN_BUTTON_CSS}
     min-width: 0;
     padding: 0.1em 0.6ch;
     border: 1px solid var(--ui-border, currentColor);
-    border-radius: var(--ui-radius, 4px);
+    border-radius: var(--ui-radius, var(--ui-radius-md, 4px));
     background: var(--ui-select-bg, transparent);
     color: inherit;
     cursor: pointer;

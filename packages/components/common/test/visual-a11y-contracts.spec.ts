@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
 import { UI_CSS } from '../src/ui.styles';
+import { UI_DESIGN_TOKENS } from '../src/design-tokens';
 import { FieldComponent } from '../field';
 import { TextFieldComponent } from '../text-field';
 import { ToolbarComponent } from '../toolbar';
@@ -17,6 +18,10 @@ export class VisualA11yContractsTest {
         expect(UI_CSS).toContain('.ui-tree-check');
         expect(UI_CSS).toContain('--ui-motion-fast');
         expect(UI_CSS).toContain('prefers-reduced-motion');
+        expect(UI_DESIGN_TOKENS).toContain('--ui-space-2');
+        expect(UI_DESIGN_TOKENS).toContain('--ui-radius-md');
+        expect(UI_DESIGN_TOKENS).toContain('--ui-focus-ring-width');
+        expect(UI_CSS).toContain('--ui-radius-md');
     }
 
     @Test('field and text-field expose pending/valid/invalid states')
