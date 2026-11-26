@@ -151,6 +151,9 @@ export class CommonWidgetsDomTest {
         const rows = select.hostView.rootNodes[0].querySelector('.select-rows') as HTMLElement;
         expect(rows.style.maxHeight).toEqual('60vh');
         expect(rows.style.overflowY).toEqual('auto');
+        expect(rows.getAttribute('role')).toEqual('listbox');
+        expect(rows.getAttribute('tabindex')).toEqual('0');
+        expect(rows.getAttribute('aria-activedescendant')).toEqual(`${select.instance.listId}-option-1`);
         // Header/footer sit outside the scrolling rows.
         expect(rows.querySelector('.select-title')).toBeFalsy();
         expect(rows.querySelector('.select-hint')).toBeFalsy();
@@ -159,6 +162,23 @@ export class CommonWidgetsDomTest {
         expect(root.textContent).toContain('Two');
         // visibleCount=2 around index 1 still shows the selected row only once.
         expect(root.querySelectorAll('.select-option')).toHaveLength(2);
+
+        const picked: string[] = [];
+        let closed = 0;
+        select.instance.selectAction = value => picked.push(value);
+        select.instance.closeAction = () => { closed += 1; };
+        rows.focus();
+        rows.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(select.instance.selectedIndex).toEqual(2);
+        expect(rows.getAttribute('aria-activedescendant')).toEqual(`${select.instance.listId}-option-2`);
+        rows.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(picked).toEqual(['3']);
+        rows.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+        expect(select.instance.selectedIndex).toEqual(0);
+        rows.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        expect(closed).toEqual(1);
     }
 
     @Test('renders the live-filter empty state when no rows match')
