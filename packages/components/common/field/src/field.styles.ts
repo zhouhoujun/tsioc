@@ -9,6 +9,7 @@ export const FIELD_CSS = `
 .ui-field-group-control { display: block; min-width: 0; }
 .ui-field-group-hint { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
 .ui-field-group-error { color: var(--ui-danger-fg, #cf9893); font-size: 0.85em; }
+.ui-field-group-pending { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
 .ui-field-group[data-invalid="true"] .ui-field-group-label { color: var(--ui-danger-fg, #cf9893); }
 `;
 

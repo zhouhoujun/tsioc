@@ -14,7 +14,7 @@ export type TextFieldType =
 @Component({
     selector: 'ui-text-field',
     template: `
-    <div class="ui-field ui-text-field {{fieldClass}}">
+    <div class="ui-field ui-text-field {{fieldClass}}" data-status="{{status}}">
         <label class="ui-field-label" for="{{fieldId}}" v-if="label">{{label}}<span class="ui-field-required" v-if="required">*</span></label>
         <div class="ui-field-row">
             <span class="ui-field-addon is-before" v-if="addonBefore">{{addonBefore}}</span>
@@ -30,6 +30,7 @@ export type TextFieldType =
                 aria-label="{{ariaLabel || label || placeholder}}"
                 aria-required="{{required}}"
                 aria-invalid="{{!!error}}"
+                aria-busy="{{pending}}"
                 aria-describedby="{{describedBy}}"
                 v-bind="inputAttrs"
                 @input="onInput($event)"
@@ -48,6 +49,7 @@ export type TextFieldType =
                 aria-label="{{ariaLabel || label || placeholder}}"
                 aria-required="{{required}}"
                 aria-invalid="{{!!error}}"
+                aria-busy="{{pending}}"
                 aria-describedby="{{describedBy}}"
                 v-bind="inputAttrs"
                 @input="onInput($event)"
@@ -64,7 +66,8 @@ export type TextFieldType =
             <span class="ui-field-addon is-after" v-if="addonAfter">{{addonAfter}}</span>
         </div>
         <span class="ui-field-count" v-if="showCount" aria-hidden="true">{{countLabel}}</span>
-        <span class="ui-field-hint" id="{{hintId}}" v-if="hint">{{hint}}</span>
+        <span class="ui-field-pending" v-if="pending && !error" role="status">{{pendingLabel}}</span>
+        <span class="ui-field-hint" id="{{hintId}}" v-if="hint && !pending">{{hint}}</span>
         <span class="ui-field-error" id="{{errorId}}" role="alert" v-if="error">{{error}}</span>
     </div>`
 })
@@ -90,6 +93,18 @@ export class TextFieldComponent {
     @Attribute() autocomplete = '';
     @Attribute() enterKeyHint = '';
     @Attribute() maxLength: number | string = 0;
+
+    private _pending = false;
+    private _valid = false;
+    @Attribute() pendingLabel = 'Checking…';
+
+    @Attribute()
+    get pending(): boolean { return this._pending; }
+    set pending(value: boolean | string) { this._pending = normalizeBoolean(value); }
+
+    @Attribute()
+    get valid(): boolean { return this._valid; }
+    set valid(value: boolean | string) { this._valid = normalizeBoolean(value); }
 
     @Attribute() showPasswordLabel = 'Show password';
     @Attribute() hidePasswordLabel = 'Hide password';
@@ -208,11 +223,19 @@ export class TextFieldComponent {
         this.revealed = !this.revealed;
     }
 
+    get status(): 'default' | 'pending' | 'valid' | 'invalid' {
+        if (this.error) { return 'invalid'; }
+        if (this._pending) { return 'pending'; }
+        return this._valid ? 'valid' : 'default';
+    }
+
     get fieldClass(): string {
         return [
             this._disabled ? 'is-disabled' : '',
             this._readonly ? 'is-readonly' : '',
             this.error ? 'has-error' : '',
+            this._pending ? 'is-pending' : '',
+            this._valid ? 'is-valid' : '',
             this.className
         ].filter(Boolean).join(' ');
     }

@@ -296,6 +296,11 @@ export const DYNAMIC_FORM_CSS = `
     font-size: 11px;
 }
 
+.df-error-summary { display: flex; flex-direction: column; gap: 2px; margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--ui-danger-border, #cf9893); border-radius: 8px; background: var(--ui-danger-bg, transparent); }
+.df-error-summary-title { color: var(--ui-danger-fg, #cf9893); font-weight: 600; }
+.df-error-summary-item { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.df-error-summary-item:hover { text-decoration: underline; }
+
 .df-actions {
     display: flex;
     justify-content: flex-end;

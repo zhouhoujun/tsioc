@@ -14,6 +14,9 @@ export interface DynamicFormClasses {
     groupFields: string;
     groupTitle: string;
     noFields: string;
+    errorSummary: string;
+    errorSummaryTitle: string;
+    errorSummaryItem: string;
     labelRow: string;
     label: string;
     required: string;
@@ -54,6 +57,9 @@ export function createDynamicFormClasses(classPrefix: string | undefined): Dynam
         groupFields: p('fields'),
         groupTitle: p('field-group-title'),
         noFields: p('no-fields'),
+        errorSummary: p('error-summary'),
+        errorSummaryTitle: p('error-summary-title'),
+        errorSummaryItem: p('error-summary-item'),
         labelRow: p('field-label-row'),
         label: p('field-label'),
         required: p('field-required'),

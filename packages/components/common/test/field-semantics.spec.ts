@@ -41,6 +41,35 @@ export class FieldSemanticsTest {
         return { ref, root };
     }
 
+    @Test('exposes pending and valid status without hiding the control')
+    async pendingAndValid() {
+        const text = await this.mount<TextFieldComponent>(TextFieldComponent, field => {
+            field.pending = true;
+            field.pendingLabel = 'Checking…';
+        });
+        const input = text.root.querySelector('input') as HTMLInputElement;
+        expect(input.getAttribute('aria-busy')).toEqual('true');
+        expect(text.root.getAttribute('data-status')).toEqual('pending');
+        expect(text.root.querySelector('.ui-field-pending')?.textContent).toContain('Checking');
+        text.ref.instance.pending = false;
+        text.ref.instance.valid = true;
+        await text.ref.render();
+        expect(input.getAttribute('aria-busy')).toEqual('false');
+        expect(text.root.getAttribute('data-status')).toEqual('valid');
+        expect(text.root.querySelector('.ui-field-pending')).toBeFalsy();
+
+        const group = await this.mount<FieldComponent>(FieldComponent, field => {
+            field.pending = true;
+            field.pendingLabel = 'Checking…';
+        });
+        const groupRoot = group.root.matches?.('.ui-field-group')
+            ? group.root
+            : group.root.querySelector('.ui-field-group') as HTMLElement;
+        expect(groupRoot.getAttribute('aria-busy')).toEqual('true');
+        expect(groupRoot.getAttribute('data-status')).toEqual('pending');
+        expect(groupRoot.querySelector('.ui-field-group-pending')?.textContent).toContain('Checking');
+    }
+
     @Test('counts code points and ignores shortcuts during IME composition')
     async countAndComposition() {
         let submits = 0;

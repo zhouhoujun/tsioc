@@ -187,6 +187,33 @@ export class DynamicFormTest {
         expect(form.getValue().retries).toBe(3);
     }
 
+    @Test('builds an opt-in error summary and focuses the chosen field')
+    async errorSummary() {
+        const focused: string[] = [];
+        const form = createForm({
+            fields: [
+                { key: 'name', type: 'text', label: 'Name', required: true },
+                { key: 'note', type: 'text', label: 'Note' },
+                { key: 'url', type: 'url', label: 'URL' }
+            ]
+        }, { name: '', note: '', url: 'bad' });
+        form.showErrorSummary = true;
+        form.focusFieldAction = (key: string) => focused.push(key);
+        await flush();
+
+        form.submit();
+        await flush();
+        expect(form.errorSummary.map(item => item.key)).toEqual(['name', 'url']);
+        expect(form.errorSummary[0].label).toEqual('Name');
+        expect(form.errorSummary[0].message).toBeTruthy();
+        focused.length = 0;
+        form.focusError('url');
+        expect(focused).toEqual(['url']);
+
+        form.showErrorSummary = false;
+        expect(form.errorSummary.length).toEqual(2);
+    }
+
     @Test('reports invalid schema JSON without throwing')
     async reportsInvalidSchema() {
         const form = new DynamicFormComponent();

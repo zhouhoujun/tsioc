@@ -5,7 +5,7 @@ import type {
     DynamicFormSchema,
     DynamicFormValidateResult
 } from './dynamic-form.types';
-import { fieldIssue, typedCodecError } from './dynamic-form.fields';
+import { errorFor, fieldIssue, typedCodecError } from './dynamic-form.fields';
 
 /**
  * State the async/external validation helpers need from the form component.
@@ -178,6 +178,38 @@ export async function validateFormAsync(host: DynamicFormValidationHost): Promis
     return result;
 }
 
+export interface DynamicFormErrorSummaryItem {
+    key: string;
+    label: string;
+    message: string;
+}
+
+/** Visible errors in schema order for an opt-in form-level summary. */
+export function formErrorSummary(host: DynamicFormValidationHost): DynamicFormErrorSummaryItem[] {
+    return host.schemaFields()
+        .filter(field => !field.hidden && field.type !== 'hidden' && host.isVisible(field))
+        .map(field => ({
+            key: field.key,
+            label: String(field.label || field.key),
+            message: errorFor(host as any, field)
+        }))
+        .filter(item => !!item.message);
+}
+
+/** Focus one field and its first control; used by the summary and submit flow. */
+export function focusFormField(host: DynamicFormValidationHost, key: string): string {
+    const targetKey = String(key || '');
+    if (!targetKey) {
+        return '';
+    }
+    host.focusFieldAction?.(targetKey);
+    const root = host.elementRef?.nativeElement;
+    const wrapper = root?.querySelector?.(`[data-field-key="${targetKey}"]`);
+    const target = wrapper?.querySelector?.('input, textarea, select, button');
+    target?.focus?.();
+    return targetKey;
+}
+
 /** Focus the first invalid/issue field; returns its key ('' when valid). */
 export function focusFirstFormError(host: DynamicFormValidationHost): string {
     const key = host.schemaFields()
@@ -191,15 +223,7 @@ export function focusFirstFormError(host: DynamicFormValidationHost): string {
                 || !!control?.invalid
                 || (!!field && !!typedCodecError(host as any, field));
         }) || '';
-    if (!key) {
-        return '';
-    }
-    host.focusFieldAction?.(key);
-    const root = host.elementRef?.nativeElement;
-    const wrapper = root?.querySelector?.(`[data-field-key="${key}"]`);
-    const target = wrapper?.querySelector?.('input, textarea, select, button');
-    target?.focus?.();
-    return key;
+    return key ? focusFormField(host, key) : '';
 }
 
 export function scheduleFormValidation(host: DynamicFormValidationHost, mode: 'change' | 'blur'): void {

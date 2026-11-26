@@ -3,6 +3,11 @@ export const DYNAMIC_FORM_TEMPLATE = `
     <div [class]="classes.form">
         <div [class]="classes.schemaError" v-if="schemaError">{{schemaError}}</div>
         <div v-else>
+            <div [class]="classes.errorSummary" role="alert" v-if="showErrorSummary && errorSummary.length">
+                <div [class]="classes.errorSummaryTitle">{{errorSummaryLabel}}</div>
+                <button [class]="classes.errorSummaryItem" type="button" v-for="item in errorSummary"
+                    @click="focusError(item.key)">{{item.label}}: {{item.message}}</button>
+            </div>
             <div [class]="classes.noFields" v-if="!visibleGroups.length">{{emptyLabel}}</div>
             <div [class]="classes.group" v-for="group in visibleGroups">
                 <div [class]="classes.groupTitle" v-if="group.label">{{group.label}}</div>

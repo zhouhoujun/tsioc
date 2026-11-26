@@ -179,4 +179,26 @@ export class DynamicFormDomTest {
         expect(hint.id).toContain('-hint-email');
         expect(input.getAttribute('aria-describedby')).toEqual(`${hint.id} ${error.id}`);
     }
+    @Test('renders an opt-in error summary and focuses the clicked field')
+    async errorSummaryDom() {
+        const ref = this.ctx.get(ComponentFactory).create(DynamicFormDomHostComponent, {
+            injector: this.ctx
+        }) as ComponentRef<DynamicFormDomHostComponent>;
+        await ref.render();
+        for (let index = 0; index < 8; index++) await Promise.resolve();
+        const form = ref.hostView.query(DynamicFormComponent) as ComponentRef<DynamicFormComponent>;
+        form.instance.showErrorSummary = true;
+        form.instance.submit();
+        for (let index = 0; index < 8; index++) await Promise.resolve();
+        const root = ref.hostView.rootNodes[0] as HTMLElement;
+        const summary = root.querySelector('.df-error-summary') as HTMLElement;
+        expect(!!summary).toEqual(true);
+        expect(summary.textContent).toContain('Email');
+        const item = summary.querySelector('.df-error-summary-item') as HTMLElement;
+        item.click();
+        (ref.hostView.rootNodes[0] as HTMLElement).ownerDocument.body.appendChild(root);
+        expect((ref.hostView.rootNodes[0] as HTMLElement).querySelector('input')?.getAttribute('aria-invalid')).toEqual('true');
+        root.remove();
+    }
+
 }

@@ -381,7 +381,7 @@ ${PLAIN_BUTTON_CSS}
     padding: 0 0.2ch;
 }
 .ui-field-hint, .ui-field-addon, .ui-field-prefix, .ui-field-suffix { color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
-.ui-field-count { align-self: flex-end; color: var(--ui-muted-fg, inherit); font-size: 0.85em; }
+.ui-field-count { align-self: flex-end; color: var(--ui-muted-fg, inherit); font-size: 0.85em; } .ui-field-pending { color: var(--ui-muted-fg, inherit); font-size: 0.85em; } .ui-field.is-pending .ui-field-row { border-style: dashed; } .ui-field.is-valid .ui-field-row { border-color: var(--ui-success-fg, currentColor); }
 .ui-search-field .ui-field-icon { color: var(--ui-muted-fg, inherit); }
 
 .ui-avatar {

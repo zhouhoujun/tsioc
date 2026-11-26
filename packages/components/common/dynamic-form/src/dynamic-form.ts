@@ -28,6 +28,8 @@ import {
 import {
     clearFormIssues,
     focusFirstFormError,
+    focusFormField,
+    formErrorSummary,
     formValidationResult,
     isFormValid,
     issueSeverityFor,
@@ -66,6 +68,8 @@ export class DynamicFormComponent implements OnDestroy {
     @Attribute() resetLabel = '';
     @Attribute() resetFieldLabel = 'Reset to default';
     @Attribute() emptyLabel = 'No fields';
+    @Attribute() showErrorSummary = false;
+    @Attribute() errorSummaryLabel = 'Please fix the following fields';
     @Attribute() messages: Record<string, string> = {};
     @Attribute() changeAction?: (change: DynamicFormChange) => void;
     @Attribute() blurAction?: (field: DynamicFormField) => void;
@@ -205,13 +209,9 @@ export class DynamicFormComponent implements OnDestroy {
         });
     }
 
-    get submitText(): string {
-        return this.submitLabel || this._schema?.submitLabel || 'Submit';
-    }
+    get submitText(): string { return this.submitLabel || this._schema?.submitLabel || 'Submit'; }
 
-    get resetText(): string {
-        return this.resetLabel || this._schema?.resetLabel || 'Reset';
-    }
+    get resetText(): string { return this.resetLabel || this._schema?.resetLabel || 'Reset'; }
 
     get formValid(): boolean { return this.isValid(); }
 
@@ -219,8 +219,10 @@ export class DynamicFormComponent implements OnDestroy {
 
     protected mergedErrors(): Record<string, any> | null { return mergedFormErrors(this); }
 
-    get isDirty(): boolean {
-        return !!this.form?.dirty;
+    get isDirty(): boolean { return !!this.form?.dirty; }
+
+    get errorSummary(): Array<{ key: string; label: string; message: string }> {
+        return formErrorSummary(this);
     }
 
     /** Visible fields grouped under their section headers. */
@@ -490,9 +492,7 @@ export class DynamicFormComponent implements OnDestroy {
         return this.getValue();
     }
 
-    resetForm(): void {
-        this.reset(true);
-    }
+    resetForm(): void { this.reset(true); }
 
     submit(): DynamicFormResult {
         this.submitAttempted = true;
@@ -531,14 +531,14 @@ export class DynamicFormComponent implements OnDestroy {
 
     /** Async submit: validate first, then report the merged result. */
     async submitAsync(): Promise<DynamicFormResult> {
-        const result = await this.validateAsync();
-        this.submitAction?.(result);
-        return result;
+        const result = await this.validateAsync(); this.submitAction?.(result); return result;
     }
 
     protected validationResult(): DynamicFormValidateResult { return formValidationResult(this); }
 
     focusFirstError(): string { return focusFirstFormError(this); }
+
+    focusError(key: string): string { return focusFormField(this, key); }
 
     issueSeverity(field: DynamicFormField): string { return issueSeverityFor(this, field); }
 
