@@ -132,6 +132,6 @@ Legend: `+` is a superset of the Node-RED option set, `=` is equivalent,
 - Binary payloads are base64 strings (`file-in`/`file-out` honour `encoding`);
   there is intentionally no `Buffer` type in the renderer-neutral runtime.
 - Expression completion includes paths from the last run's node results, and
-  the editor can evaluate a draft against that data. Flow/global/env stay empty
-  in the preview (service state is not in the snapshot), and there is no live
-  message to inspect before a run.
+  the editor can evaluate a draft against that data. Flow/env stay empty in the preview (service state is not in the snapshot);
+  the service global context is included, and there is no live message to
+  inspect before a run.

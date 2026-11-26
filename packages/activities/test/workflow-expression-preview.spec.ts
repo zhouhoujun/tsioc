@@ -30,6 +30,15 @@ describe('Workflow expression preview scope', () => {
         expect(scope.global).toEqual({});
     });
 
+    it('includes the service global context but keeps flow/env empty', () => {
+        const { scope } = buildWorkflowExpressionPreviewScope({
+            service: { getGlobalContext: () => ({ region: 'eu', limit: 3 }) }
+        });
+        expect(scope.global).toEqual({ region: 'eu', limit: 3 });
+        expect(scope.flow).toEqual({});
+        expect(scope.env).toEqual({});
+    });
+
     it('returns an empty scope when no run has completed', () => {
         const empty = buildWorkflowExpressionPreviewScope();
         expect(empty.samples).toBe(0);

@@ -14,9 +14,20 @@ export interface WorkflowExpressionPreviewScope {
  * state, not part of the snapshot — the preview label makes that explicit.
  */
 export function buildWorkflowExpressionPreviewScope(
-    designer?: { execution?: { nodeStates?: Record<string, any> } }
+    designer?: {
+        execution?: { nodeStates?: Record<string, any> };
+        service?: { getGlobalContext?: () => Record<string, any> };
+    }
 ): WorkflowExpressionPreviewScope {
     const scope: Record<string, any> = { payload: {}, msg: {}, variables: {}, flow: {}, global: {}, env: {} };
+    try {
+        const global = designer?.service?.getGlobalContext?.();
+        if (global && typeof global === 'object') {
+            scope.global = { ...global };
+        }
+    } catch {
+        // Service context is optional; expression preview still works without it.
+    }
     let samples = 0;
     const states = designer?.execution?.nodeStates || {};
     Object.keys(states).forEach(nodeId => {
