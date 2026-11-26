@@ -88,6 +88,43 @@ export class CascaderTest {
         expect(root.querySelector('.ui-cascader-panel')).toBeFalsy();
     }
 
+    @Test('roves columns with the keyboard and commits leaves')
+    async keyboardColumns() {
+        const { host, cascader } = await this.mount();
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        const root = () => cascader.hostView.rootNodes[0] as HTMLElement;
+        const key = async (name: string) => {
+            root().dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: name, bubbles: true }));
+            for (let index = 0; index < 4; index++) await Promise.resolve();
+        };
+        const column = (index: number) => Array.from(root().querySelectorAll('.ui-cascader-column')[index]
+            .querySelectorAll('.ui-cascader-option') as NodeListOf<HTMLElement>);
+
+        await key('ArrowDown');
+        expect(root().getAttribute('aria-expanded')).toEqual('true');
+        expect(column(0)[0].classList.contains('is-active')).toEqual(true);
+        expect(column(0)[0].getAttribute('tabindex')).toEqual('0');
+        expect(column(0)[1].getAttribute('tabindex')).toEqual('-1');
+
+        await key('ArrowDown');
+        expect(column(0)[1].classList.contains('is-active')).toEqual(true);
+        await key('Enter');
+        expect(host.picked).toEqual(['b']);
+        expect(root().getAttribute('aria-expanded')).toEqual('false');
+
+        await key('ArrowDown');
+        await key('ArrowUp');
+        expect(column(0)[0].classList.contains('is-active')).toEqual(true);
+        await key('ArrowRight');
+        expect(root().querySelectorAll('.ui-cascader-column').length).toEqual(2);
+        await key('ArrowRight');
+        expect(column(1)[0].classList.contains('is-active')).toEqual(true);
+        expect(column(1)[1].getAttribute('tabindex')).toEqual('-1');
+        await key('Enter');
+        expect(host.picked).toEqual(['a', 'a1']);
+        expect(root().getAttribute('aria-expanded')).toEqual('false');
+    }
+
     @Test('keeps disabled branches inert and Escape closes')
     async disabledAndEscape() {
         const { root } = await this.mount();

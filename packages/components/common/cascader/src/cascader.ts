@@ -2,6 +2,7 @@ import { Attribute, Component, ElementRef } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
+import { SelectionCore } from '../../src/selection-core';
 import { installCascaderStyles } from './cascader.styles';
 
 export interface CascaderOption {
@@ -53,7 +54,7 @@ interface CascaderColumn {
                 <span class="ui-cascader-column-title">{{column.title}}</span>
                 <span class="{{option.className}}" role="option"
                     aria-selected="{{option.selected}}" aria-disabled="{{option.disabled}}"
-                    tabindex="0" focusable="{{!option.disabled}}"
+                    tabindex="{{optionTabIndex(column.level, option)}}" focusable="{{!option.disabled}}"
                     v-for="option in column.options" trackBy="key"
                     @click="choose(column.level, option)"
                     @keydown="onOptionKeydown($event, column, option)">
@@ -78,6 +79,7 @@ export class CascaderComponent {
     @Attribute() className = '';
     @Attribute() changeAction?: (path: string[], nodes: CascaderOption[]) => void;
 
+    private readonly selection = new SelectionCore();
     private _open = false;
     private _disabled = false;
     private _value: string[] = [];
@@ -86,8 +88,13 @@ export class CascaderComponent {
     @Attribute()
     get value(): string[] { return this._value; }
     set value(value: string[] | string) {
-        this._value = Array.isArray(value) ? value.map(String) : [];
-        this.browsing = [...this._value];
+        const next = Array.isArray(value) ? value.map(String) : [];
+        const changed = next.length !== this._value.length
+            || next.some((entry, index) => entry !== this._value[index]);
+        this._value = next;
+        if (changed) {
+            this.browsing = [...next];
+        }
     }
 
     @Attribute()
@@ -128,7 +135,7 @@ export class CascaderComponent {
                         hasChildren: Array.isArray(option.children) && option.children.length > 0,
                         className: [
                             'ui-cascader-option',
-                            this.browsing[level] === String(option.value) ? 'is-active' : '',
+                            this.activeValueAt(level) === String(option.value) ? 'is-active' : '',
                             option.disabled ? 'is-disabled' : ''
                         ].filter(Boolean).join(' ')
                     } as CascaderViewOption;
@@ -142,13 +149,23 @@ export class CascaderComponent {
     }
 
     toggle(): void {
-        if (this._disabled) {
+        this._open ? this.close() : this.open();
+    }
+
+    open(): void {
+        if (this._disabled || this._open) {
             return;
         }
+        this.browsing = [...this._value];
+        this._open = true;
+    }
+
+    close(): void {
         if (!this._open) {
-            this.browsing = [...this._value];
+            return;
         }
-        this._open = !this._open;
+        this._open = false;
+        this.focusTrigger();
     }
 
     choose(level: number, option: CascaderViewOption): void {
@@ -157,31 +174,54 @@ export class CascaderComponent {
         }
         const prefix = this.browsing.slice(0, level);
         const path = [...prefix, option.value];
-        this.browsing = path;
         if (option.hasChildren) {
+            this.browsing = path;
             return;
         }
-        this.changeAction?.(path, this.nodesFor(path));
-        this._value = path;
-        this.browsing = path;
-        this._open = false;
+        this.commit(path);
     }
 
     onKeydown(event: any): void {
         if (this._disabled) {
             return;
         }
-        if (event?.key === 'Escape' && this._open) {
+        const key = String(event?.key || '');
+        if (key === 'Escape' && this._open) {
             event.preventDefault?.();
             event.stopPropagation?.();
-            this._open = false;
+            this.close();
             return;
         }
-        if ((event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar'
-            || event?.key === 'ArrowDown') && !this._open) {
+        if (!this._open) {
+            if (key === 'Enter' || key === ' ' || key === 'Spacebar' || key === 'ArrowDown') {
+                event.preventDefault?.();
+                this.open();
+            }
+            return;
+        }
+        if (key === 'ArrowDown' || key === 'ArrowUp') {
             event.preventDefault?.();
-            this.browsing = [...this._value];
-            this._open = true;
+            this.moveActive(key === 'ArrowDown' ? 1 : -1);
+            return;
+        }
+        if (key === 'Home' || key === 'End') {
+            event.preventDefault?.();
+            this.moveToEdge(key === 'End');
+            return;
+        }
+        if (key === 'ArrowRight') {
+            event.preventDefault?.();
+            this.expandActive();
+            return;
+        }
+        if (key === 'ArrowLeft') {
+            event.preventDefault?.();
+            this.collapseActive();
+            return;
+        }
+        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+            event.preventDefault?.();
+            this.activateActive();
         }
     }
 
@@ -190,6 +230,123 @@ export class CascaderComponent {
             event.preventDefault?.();
             this.choose(column.level, option);
         }
+    }
+
+    optionTabIndex(level: number, option: CascaderViewOption): number {
+        return !option.disabled && this.activeValueAt(level) === option.value ? 0 : -1;
+    }
+
+    protected activeLevel(): number {
+        return this.browsing.length ? this.browsing.length - 1 : 0;
+    }
+
+    protected activeValueAt(level: number): string {
+        const current = this.browsing[level];
+        if (current != null) {
+            return String(current);
+        }
+        if (level === 0) {
+            const first = this.levelNodes(0).find(option => !option.disabled);
+            return first ? String(first.value) : '';
+        }
+        return '';
+    }
+
+    protected levelNodes(level: number): CascaderOption[] {
+        if (level <= 0) {
+            return Array.isArray(this.options) ? this.options : [];
+        }
+        const prefix = this.browsing.slice(0, level);
+        return this.nodesFor(prefix)[level - 1]?.children || [];
+    }
+
+    protected activeNode(): { level: number; option: CascaderOption } | undefined {
+        const level = this.activeLevel();
+        const option = this.levelNodes(level).find(entry => String(entry.value) === this.activeValueAt(level));
+        return option ? { level, option } : undefined;
+    }
+
+    protected setActive(level: number, value: string): void {
+        const path = this.browsing.slice(0, level);
+        path[level] = String(value);
+        this.browsing = path;
+    }
+
+    protected moveActive(delta: number): void {
+        const level = this.activeLevel();
+        const nodes = this.levelNodes(level);
+        const current = nodes.findIndex(option => String(option.value) === this.activeValueAt(level));
+        const next = this.selection.move(nodes, current, delta);
+        if (next >= 0) {
+            this.setActive(level, String(nodes[next].value));
+        }
+    }
+
+    protected moveToEdge(last: boolean): void {
+        const level = this.activeLevel();
+        const nodes = this.levelNodes(level);
+        const next = last ? this.selection.last(nodes) : this.selection.first(nodes);
+        if (next >= 0) {
+            this.setActive(level, String(nodes[next].value));
+        }
+    }
+
+    protected expandActive(): void {
+        const active = this.activeNode();
+        if (!active || active.option.disabled) {
+            return;
+        }
+        const { level, option } = active;
+        const children = Array.isArray(option.children) ? option.children : [];
+        if (!children.length) {
+            return;
+        }
+        if (this.browsing.length > level) {
+            const child = this.selection.first(children);
+            if (child >= 0) {
+                this.setActive(level + 1, String(children[child].value));
+            }
+            return;
+        }
+        this.setActive(level, String(option.value));
+    }
+
+    protected collapseActive(): void {
+        if (!this.browsing.length) {
+            this.close();
+            return;
+        }
+        this.browsing = this.browsing.slice(0, -1);
+    }
+
+    protected activateActive(): void {
+        const active = this.activeNode();
+        if (!active || active.option.disabled) {
+            return;
+        }
+        const { level, option } = active;
+        const path = [...this.browsing.slice(0, level), String(option.value)];
+        if (Array.isArray(option.children) && option.children.length) {
+            this.browsing = path;
+            return;
+        }
+        this.commit(path);
+    }
+
+    protected commit(path: string[]): void {
+        this.changeAction?.(path, this.nodesFor(path));
+        this._value = path;
+        this.browsing = path;
+        this._open = false;
+        this.focusTrigger();
+    }
+
+    protected focusTrigger(): void {
+        void Promise.resolve().then(() => Promise.resolve()).then(() => {
+            const host = this.elementRef?.nativeElement as any;
+            const root = host?.matches?.('.ui-cascader') ? host : host?.querySelector?.('.ui-cascader');
+            root?.focus?.();
+        });
     }
 
     protected labelAt(prefix: string[]): string {
