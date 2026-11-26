@@ -332,6 +332,10 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
     边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
     等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。
+- **Catalog 产物**
+  - `npm run catalog` 现在同时生成 `docs/catalog.html`（可浏览 demo/属性表）
+    和 `docs/catalog.md`（Markdown 属性表）；生成器从 `@Attribute` 字段/getter
+    自动收集属性，函数类型与 `|` 在表格中正确转义。
 - **A11y 角色矩阵**
   - 新增跨组件矩阵测试，锁定 button/badge/checkbox/switch/radio-group/
     autocomplete/dialog/data-table/tree/tabs/tab-bar/slider/pagination/list 的

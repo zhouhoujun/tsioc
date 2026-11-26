@@ -25,11 +25,18 @@ function pickSelector(sources: string[]): string {
 
 function pickSummary(sources: string[], name: string): string {
     for (const source of sources) {
-        const match = /\/\*\*([\s\S]*?)\*\/\s*@Component/.exec(source);
-        if (!match) {
+        const componentAt = source.indexOf('@Component');
+        if (componentAt < 0) {
             continue;
         }
-        const line = match[1]
+        // Use the last JSDoc block before @Component: files often document
+        // interfaces/helpers above the component itself.
+        const blocks = [...source.slice(0, componentAt).matchAll(/\/\*\*([\s\S]*?)\*\//g)];
+        const block = blocks[blocks.length - 1];
+        if (!block) {
+            continue;
+        }
+        const line = block[1]
             .split('\n')
             .map(item => item.replace(/^\s*\*?\s?/, '').trim())
             .find(Boolean);
@@ -42,17 +49,44 @@ function pickSummary(sources: string[], name: string): string {
 
 function collectAttributes(sources: string[]): CatalogAttribute[] {
     const attributes = new Map<string, CatalogAttribute>();
-    const pattern = /@Attribute\(\)\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)\s*[!?]?(?::\s*([^=;\n]+))?\s*(?:=\s*([^;\n]+))?;/g;
+    const fieldPattern = /@Attribute\(\)\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)\s*[!?]?\s*([^;\n]*);/g;
+    // Accessor inputs (`@Attribute() get modal(): boolean`) are common for
+    // normalized booleans; include them in the generated property table.
+    const accessorPattern = /@Attribute\(\)\s*(?:get\s+)?([A-Za-z_$][\w$]*)\s*\(\s*\)\s*:\s*([^\{\n]+)/g;
     for (const source of sources) {
-        for (const match of source.matchAll(pattern)) {
-            const name = match[1];
-            const type = match[2]?.trim();
-            const fallback = match[3]?.trim();
+        const set = (name: string, type?: string, fallback?: string) => {
             attributes.set(name, {
                 name,
-                ...(type ? { type } : {}),
-                ...(fallback !== undefined ? { default: fallback } : {})
+                ...(type ? { type: type.trim() } : {}),
+                ...(fallback !== undefined ? { default: fallback.trim() } : {})
             });
+        };
+        for (const match of source.matchAll(fieldPattern)) {
+            const name = match[1];
+            const rest = String(match[2] || '').trim();
+            if (!rest) {
+                set(name);
+                continue;
+            }
+            if (!rest.startsWith(':')) {
+                if (rest.startsWith('=')) {
+                    set(name, undefined, rest.slice(1).trim());
+                }
+                continue;
+            }
+            const body = rest.slice(1).trim();
+            const arrow = body.indexOf('=>');
+            const assign = body.lastIndexOf('=');
+            if (arrow >= 0 && assign > arrow) {
+                set(name, body.slice(0, assign).trim(), body.slice(assign + 1).trim());
+            } else if (arrow < 0 && assign >= 0) {
+                set(name, body.slice(0, assign).trim(), body.slice(assign + 1).trim());
+            } else {
+                set(name, body);
+            }
+        }
+        for (const match of source.matchAll(accessorPattern)) {
+            set(match[1], match[2]?.trim());
         }
     }
     return Array.from(attributes.values()).sort((left, right) => left.name.localeCompare(right.name));
@@ -92,7 +126,8 @@ export function renderWidgetCatalogMarkdown(entries: WidgetCatalogEntry[]): stri
         if (entry.attributes.length) {
             lines.push('| attribute | type | default |', '| --- | --- | --- |');
             for (const attribute of entry.attributes) {
-                lines.push(`| ${attribute.name} | ${attribute.type ?? ''} | ${attribute.default ?? ''} |`);
+                const cell = (value: any) => String(value ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+                lines.push(`| ${cell(attribute.name)} | ${cell(attribute.type)} | ${cell(attribute.default)} |`);
             }
             lines.push('');
         }

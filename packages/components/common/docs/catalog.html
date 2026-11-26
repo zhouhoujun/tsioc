@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>@tsdi/components/common catalog</title>
+<style>
+:root { color-scheme: light dark; --bg: #ffffff; --fg: #1f2328; --muted: #57606a; --panel: #f6f8fa; --border: #d0d7de; --accent: #0969da; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0d1117; --fg: #e6edf3; --muted: #9da7b3; --panel: #161b22; --border: #30363d; --accent: #4493f8; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.55 ui-sans-serif, system-ui, sans-serif; }
+header { padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--border); }
+header h1 { margin: 0 0 .25rem; font-size: 1.35rem; }
+header p { margin: 0; color: var(--muted); }
+.layout { display: grid; grid-template-columns: minmax(12rem, 18rem) 1fr; min-height: calc(100vh - 6rem); }
+nav { border-right: 1px solid var(--border); padding: 1rem; position: sticky; top: 0; align-self: start; max-height: 100vh; overflow: auto; }
+nav a { display: block; padding: .2rem .35rem; color: var(--fg); text-decoration: none; border-radius: .25rem; }
+nav a:hover { background: var(--panel); }
+main { padding: 1rem 1.6rem 4rem; min-width: 0; }
+section { padding: 1rem 0 1.4rem; border-bottom: 1px solid var(--border); }
+h2 { margin: 0 0 .3rem; font-size: 1.1rem; }
+code { color: var(--accent); }
+table { border-collapse: collapse; width: 100%; margin: .6rem 0; }
+th, td { text-align: left; padding: .25rem .5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+pre { margin: .4rem 0; padding: .6rem .8rem; background: var(--panel); border: 1px solid var(--border); overflow: auto; }
+ul { margin: .3rem 0; padding-left: 1.2rem; }
+.muted { color: var(--muted); }
+@media (max-width: 800px) { .layout { display: block; } nav { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--border); } }
+</style>
+</head>
+<body>
+<header>
+<h1>@tsdi/components/common catalog</h1>
+<p>65 renderer-neutral widgets · generated from catalog metadata</p>
+</header>
+<div class="layout">
+<nav>
+<a href="#widget-accordion">accordion</a>
+<a href="#widget-alert">alert</a>
+<a href="#widget-alert-notice">alert-notice</a>
+<a href="#widget-autocomplete">autocomplete</a>
+<a href="#widget-avatar">avatar</a>
+<a href="#widget-badge">badge</a>
+<a href="#widget-breadcrumb">breadcrumb</a>
+<a href="#widget-button">button</a>
+<a href="#widget-card">card</a>
+<a href="#widget-cascader">cascader</a>
+<a href="#widget-checkbox">checkbox</a>
+<a href="#widget-chip">chip</a>
+<a href="#widget-command-palette">command-palette</a>
+<a href="#widget-data-table">data-table</a>
+<a href="#widget-descriptions">descriptions</a>
+<a href="#widget-dialog">dialog</a>
+<a href="#widget-divider">divider</a>
+<a href="#widget-drawer">drawer</a>
+<a href="#widget-dynamic-form">dynamic-form</a>
+<a href="#widget-empty-state">empty-state</a>
+<a href="#widget-field">field</a>
+<a href="#widget-grid">grid</a>
+<a href="#widget-icon">icon</a>
+<a href="#widget-image">image</a>
+<a href="#widget-inline-input">inline-input</a>
+<a href="#widget-kbd">kbd</a>
+<a href="#widget-keymap">keymap</a>
+<a href="#widget-layout">layout</a>
+<a href="#widget-list">list</a>
+<a href="#widget-markdown">markdown</a>
+<a href="#widget-menu-bar">menu-bar</a>
+<a href="#widget-pagination">pagination</a>
+<a href="#widget-panel">panel</a>
+<a href="#widget-popover">popover</a>
+<a href="#widget-progress">progress</a>
+<a href="#widget-qr-code">qr-code</a>
+<a href="#widget-radio-group">radio-group</a>
+<a href="#widget-rate">rate</a>
+<a href="#widget-result">result</a>
+<a href="#widget-scrollbar">scrollbar</a>
+<a href="#widget-search-field">search-field</a>
+<a href="#widget-search-list">search-list</a>
+<a href="#widget-segmented">segmented</a>
+<a href="#widget-select">select</a>
+<a href="#widget-select-trigger">select-trigger</a>
+<a href="#widget-skeleton">skeleton</a>
+<a href="#widget-slider">slider</a>
+<a href="#widget-space">space</a>
+<a href="#widget-spinner">spinner</a>
+<a href="#widget-stat">stat</a>
+<a href="#widget-status-list">status-list</a>
+<a href="#widget-steps">steps</a>
+<a href="#widget-switch">switch</a>
+<a href="#widget-tab-bar">tab-bar</a>
+<a href="#widget-tabs">tabs</a>
+<a href="#widget-text-field">text-field</a>
+<a href="#widget-timeline">timeline</a>
+<a href="#widget-toast">toast</a>
+<a href="#widget-toolbar">toolbar</a>
+<a href="#widget-tooltip">tooltip</a>
+<a href="#widget-transfer">transfer</a>
+<a href="#widget-tree">tree</a>
+<a href="#widget-tree-select">tree-select</a>
+<a href="#widget-typeahead">typeahead</a>
+<a href="#widget-upload">upload</a>
+</nav>
+<main>
+<section id="widget-accordion">
+<h2>accordion <span class="muted">ui-accordion</span></h2>
+<p>Generic collapsible section with optional icon rows.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>controlled</code></td><td>boolean</td><td></td></tr><tr><td><code>count</code></td><td>number | string</td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>draggable</code></td><td>boolean</td><td></td></tr><tr><td><code>dragStartAction</code></td><td>(event: any, item: any) =&gt; void</td><td></td></tr><tr><td><code>expanded</code></td><td>boolean</td><td></td></tr><tr><td><code>expandedChange</code></td><td></td><td>new EventEmitter&lt;boolean&gt;()</td></tr><tr><td><code>items</code></td><td>AccordionItem[]</td><td>[]</td></tr><tr><td><code>selectAction</code></td><td>(item: any) =&gt; void</td><td></td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>toggleAction</code></td><td>(expanded: boolean) =&gt; void</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-alert">
+<h2>alert <span class="muted">ui-alert-dialog</span></h2>
+<p>Renderer-neutral alert dialog. Uses the shared dialog chrome classes but</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>acceptAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>actionLabel</code></td><td></td><td>&#39;OK&#39;</td></tr><tr><td><code>ariaDescribedby</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabelledby</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>closable</code></td><td>boolean</td><td></td></tr><tr><td><code>closeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;✕&#39;</td></tr><tr><td><code>closeOnEscape</code></td><td>boolean</td><td></td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>horizontalChrome</code></td><td></td><td>6</td></tr><tr><td><code>lines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>maxHeight</code></td><td></td><td>&#39;60vh&#39;</td></tr><tr><td><code>maxWidth</code></td><td></td><td>88</td></tr><tr><td><code>minWidth</code></td><td></td><td>24</td></tr><tr><td><code>modal</code></td><td>boolean</td><td></td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>tone</code></td><td>&#39;info&#39; | &#39;success&#39; | &#39;warning&#39; | &#39;error&#39;</td><td>&#39;info&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-alert-notice">
+<h2>alert-notice <span class="muted">ui-alert</span></h2>
+<p>Inline alert/callout (not a modal). The host decides when it is visible;</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>actionLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>closeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;Dismiss&#39;</td></tr><tr><td><code>dismissible</code></td><td>boolean</td><td></td></tr><tr><td><code>icon</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconGlyph</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>lines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-autocomplete">
+<h2>autocomplete <span class="muted">ui-autocomplete</span></h2>
+<p>Combobox with host-filtered suggestions (Ant Design AutoComplete).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaDescribedby</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaInvalid</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Search&#39;</td></tr><tr><td><code>changeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;No suggestions&#39;</td></tr><tr><td><code>loading</code></td><td>boolean</td><td></td></tr><tr><td><code>loadingLabel</code></td><td></td><td>&#39;Loading…&#39;</td></tr><tr><td><code>loadOptions</code></td><td>AutoCompleteOptionLoader</td><td></td></tr><tr><td><code>multiple</code></td><td>boolean</td><td></td></tr><tr><td><code>open</code></td><td>boolean</td><td></td></tr><tr><td><code>options</code></td><td>AutoCompleteOption[]</td><td>[]</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>removeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>removeLabel</code></td><td></td><td>&#39;Remove&#39;</td></tr><tr><td><code>selectAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>selected</code></td><td>number</td><td></td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>values</code></td><td>string[]</td><td>[]</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-avatar">
+<h2>avatar <span class="muted">ui-avatar</span></h2>
+<p>Compact person/entity avatar. Uses `src` when the renderer supports images;</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>icon</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconGlyph</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>shape</code></td><td>AvatarShape</td><td>&#39;circle&#39;</td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>src</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>status</code></td><td>AvatarStatus | &#39;&#39;</td><td>&#39;&#39;</td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-badge">
+<h2>badge <span class="muted">ui-badge</span></h2>
+<p>Compact semantic label/pill. Use it for statuses, counts and filter chips.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>active</code></td><td>boolean</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>dot</code></td><td>boolean</td><td></td></tr><tr><td><code>icon</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconGlyph</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr><tr><td><code>variant</code></td><td>BadgeVariant</td><td>&#39;subtle&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-breadcrumb">
+<h2>breadcrumb <span class="muted">ui-breadcrumb</span></h2>
+<p>Flat breadcrumb trail. `maxItems &gt; 0` collapses the middle into a single</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>(item: BreadcrumbItem, index: number) =&gt; void</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Breadcrumb&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ellipsis</code></td><td></td><td>&#39;…&#39;</td></tr><tr><td><code>items</code></td><td>BreadcrumbItem[]</td><td>[]</td></tr><tr><td><code>maxItems</code></td><td>number</td><td></td></tr><tr><td><code>separator</code></td><td></td><td>&#39;›&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-button">
+<h2>button <span class="muted">ui-button</span></h2>
+<p>Renderer-neutral action button.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>block</code></td><td>boolean</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>icon</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconClass</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconGlyph</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconOnly</code></td><td></td><td>false</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>loading</code></td><td>boolean</td><td></td></tr><tr><td><code>loadingLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>pressed</code></td><td>boolean</td><td></td></tr><tr><td><code>shape</code></td><td>ButtonShape</td><td></td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr><tr><td><code>type</code></td><td>&#39;button&#39; | &#39;submit&#39; | &#39;reset&#39;</td><td>&#39;button&#39;</td></tr><tr><td><code>variant</code></td><td>ButtonVariant</td><td>&#39;ghost&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-card">
+<h2>card <span class="muted">ui-card</span></h2>
+<p>Generic surface card with an optional heading and action slot.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>dense</code></td><td>boolean</td><td></td></tr><tr><td><code>divider</code></td><td>boolean</td><td></td></tr><tr><td><code>meta</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>subtitle</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-cascader">
+<h2>cascader <span class="muted">ui-cascader</span></h2>
+<p>Hierarchical path picker (Ant Design Cascader).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Cascader&#39;</td></tr><tr><td><code>changeAction</code></td><td>(path: string[], nodes: CascaderOption[]) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>options</code></td><td>CascaderOption[]</td><td>[]</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;Select…&#39;</td></tr><tr><td><code>value</code></td><td>string[]</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-checkbox">
+<h2>checkbox <span class="muted">ui-checkbox</span></h2>
+<p>Renderer-neutral checkbox. Uses a semantic `role=&quot;checkbox&quot;` control instead</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>changeAction</code></td><td>(checked: boolean) =&gt; void</td><td></td></tr><tr><td><code>checked</code></td><td>boolean</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-chip">
+<h2>chip <span class="muted">ui-chip</span></h2>
+<p>Removable/actionable compact entity (Ant Design Tag closable / MUI Chip).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>avatar</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>closable</code></td><td>boolean</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;Remove&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>icon</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconGlyph</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>removeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>selected</code></td><td>boolean</td><td></td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr><tr><td><code>variant</code></td><td>ChipVariant</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-command-palette">
+<h2>command-palette <span class="muted">ui-command-palette</span></h2>
+<p>Overlay command palette composed from ui-search-list and the shared overlay stack.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Command palette&#39;</td></tr><tr><td><code>beforeCloseAction</code></td><td>(() =&gt; boolean | Promise&lt;boolean&gt;) | undefined</td><td>undefined</td></tr><tr><td><code>changeAction</code></td><td>((query: string) =&gt; void) | undefined</td><td>undefined</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>closable</code></td><td>boolean</td><td></td></tr><tr><td><code>closeAction</code></td><td>(() =&gt; void) | undefined</td><td>undefined</td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;✕&#39;</td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;No matching commands&#39;</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>items</code></td><td>SearchListItem[]</td><td>[]</td></tr><tr><td><code>loadingLabel</code></td><td></td><td>&#39;Searching…&#39;</td></tr><tr><td><code>maxVisible</code></td><td></td><td>12</td></tr><tr><td><code>minChars</code></td><td></td><td>0</td></tr><tr><td><code>open</code></td><td>boolean</td><td></td></tr><tr><td><code>openChange</code></td><td></td><td>new EventEmitter&lt;boolean&gt;()</td></tr><tr><td><code>overlayEnabled</code></td><td>boolean</td><td></td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;Type a command…&#39;</td></tr><tr><td><code>recentIds</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>retryLabel</code></td><td></td><td>&#39;Retry&#39;</td></tr><tr><td><code>scrollLock</code></td><td>boolean</td><td></td></tr><tr><td><code>selectAction</code></td><td>((item: SearchListItem) =&gt; void) | undefined</td><td>undefined</td></tr><tr><td><code>source</code></td><td>SearchListSource | undefined</td><td>undefined</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>Type: filter commands locally or call source(query, signal)</li><li>Arrow/Home/End: move the active command</li><li>Enter: run the active command</li><li>Escape/backdrop: close unless beforeCloseAction vetoes</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Fixed backdrop + centered panel; the search list keeps aria-activedescendant.</li><li><strong>console</strong>: Host paints the same panel above the composer; input focus stays in the list.</li></ul>
+<h3>Examples</h3><h4>Command palette</h4><pre>{
+  &quot;open&quot;: true,
+  &quot;title&quot;: &quot;Command palette&quot;,
+  &quot;hint&quot;: &quot;enter run   esc close&quot;,
+  &quot;recentIds&quot;: [
+    &quot;deploy&quot;
+  ],
+  &quot;items&quot;: [
+    {
+      &quot;id&quot;: &quot;deploy&quot;,
+      &quot;label&quot;: &quot;Deploy&quot;,
+      &quot;group&quot;: &quot;Run&quot;,
+      &quot;shortcut&quot;: &quot;Ctrl+D&quot;
+    },
+    {
+      &quot;id&quot;: &quot;delete&quot;,
+      &quot;label&quot;: &quot;Delete session&quot;,
+      &quot;group&quot;: &quot;Session&quot;
+    }
+  ]
+}</pre>
+</section>
+<section id="widget-data-table">
+<h2>data-table <span class="muted">ui-data-table</span></h2>
+<p>Accessible table with sorting, pagination, selection, expandable rows, sticky/resizable columns, async page source and opt-in virtual windowing.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Table&#39;</td></tr><tr><td><code>bordered</code></td><td>boolean</td><td></td></tr><tr><td><code>caption</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>clearFiltersLabel</code></td><td></td><td>&#39;Clear filters&#39;</td></tr><tr><td><code>collapseLabel</code></td><td></td><td>&#39;Collapse row&#39;</td></tr><tr><td><code>columnChangeAction</code></td><td>(state: DataTableColumnState) =&gt; void</td><td></td></tr><tr><td><code>columnOrder</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>columns</code></td><td>DataTableColumn[]</td><td>[]</td></tr><tr><td><code>columnWidths</code></td><td>Record&lt;string, number&gt;</td><td>{}</td></tr><tr><td><code>dense</code></td><td>boolean</td><td></td></tr><tr><td><code>detailLines</code></td><td>(row: DataTableRow, index: number) =&gt; string[]</td><td></td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>errorLabel</code></td><td></td><td>&#39;Failed to load table data&#39;</td></tr><tr><td><code>expandable</code></td><td>boolean</td><td></td></tr><tr><td><code>expandAction</code></td><td>(key: string, expanded: boolean, row: DataTableRow) =&gt; void</td><td></td></tr><tr><td><code>expandedKeys</code></td><td>Array&lt;string | number&gt;</td><td>[]</td></tr><tr><td><code>expandLabel</code></td><td></td><td>&#39;Expand row&#39;</td></tr><tr><td><code>filterAction</code></td><td>(filters: Record&lt;string, string&gt;) =&gt; void</td><td></td></tr><tr><td><code>filters</code></td><td>Record&lt;string, string&gt;</td><td>{}</td></tr><tr><td><code>hiddenColumns</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>keyboardNavigation</code></td><td>boolean</td><td></td></tr><tr><td><code>loading</code></td><td>boolean</td><td></td></tr><tr><td><code>loadingLabel</code></td><td></td><td>&#39;Loading…&#39;</td></tr><tr><td><code>multiSort</code></td><td>boolean</td><td></td></tr><tr><td><code>page</code></td><td>number | string</td><td>1</td></tr><tr><td><code>pageChangeAction</code></td><td>(page: number) =&gt; void</td><td></td></tr><tr><td><code>pageSize</code></td><td>number | string</td><td>10</td></tr><tr><td><code>pagination</code></td><td>boolean</td><td></td></tr><tr><td><code>paginationLabel</code></td><td></td><td>&#39;Table pagination&#39;</td></tr><tr><td><code>resizableColumns</code></td><td>boolean</td><td></td></tr><tr><td><code>retryLabel</code></td><td></td><td>&#39;Retry&#39;</td></tr><tr><td><code>rowAction</code></td><td>(row: DataTableRow, index: number) =&gt; void</td><td></td></tr><tr><td><code>rowKey</code></td><td>string | ((row: DataTableRow, index: number) =&gt; string | number)</td><td>&#39;id&#39;</td></tr><tr><td><code>rows</code></td><td>DataTableRow[]</td><td>[]</td></tr><tr><td><code>scrollTop</code></td><td></td><td>0</td></tr><tr><td><code>selectable</code></td><td>boolean</td><td></td></tr><tr><td><code>selectAllLabel</code></td><td></td><td>&#39;Select all rows&#39;</td></tr><tr><td><code>selectedKey</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>selectedKeys</code></td><td>Array&lt;string | number&gt;</td><td>[]</td></tr><tr><td><code>selectionAction</code></td><td>(keys: string[], rows: DataTableRow[]) =&gt; void</td><td></td></tr><tr><td><code>selectRowLabel</code></td><td></td><td>&#39;Select row&#39;</td></tr><tr><td><code>sortAction</code></td><td>(key: string, direction: DataTableSortDirection) =&gt; void</td><td></td></tr><tr><td><code>sortDirection</code></td><td>DataTableSortDirection | &#39;&#39;</td><td>&#39;&#39;</td></tr><tr><td><code>sortKey</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>sorts</code></td><td>DataTableSort[]</td><td>[]</td></tr><tr><td><code>sortsAction</code></td><td>(sorts: DataTableSort[]) =&gt; void</td><td></td></tr><tr><td><code>source</code></td><td>DataTableSource</td><td></td></tr><tr><td><code>stickyHeader</code></td><td>boolean</td><td></td></tr><tr><td><code>striped</code></td><td>boolean</td><td></td></tr><tr><td><code>viewportHeight</code></td><td></td><td>0</td></tr><tr><td><code>virtual</code></td><td></td><td>false</td></tr><tr><td><code>virtualOverscan</code></td><td></td><td>2</td></tr><tr><td><code>virtualRowHeight</code></td><td></td><td>32</td></tr><tr><td><code>windowAction</code></td><td>(start: number, end: number, total: number) =&gt; void</td><td></td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>Tab/Shift+Tab: move between interactive headers/cells</li><li>Enter/Space: sort header, select row, expand row</li><li>Home/End: first/last interactive column</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Sticky header/footer, horizontal scroll; selection via checkbox/row click.</li><li><strong>console</strong>: Fixed header + windowed rows; horizontal overflow follows the terminal width.</li></ul>
+<h3>Examples</h3><h4>Sortable table</h4><pre>{
+  &quot;caption&quot;: &quot;Runs&quot;,
+  &quot;columns&quot;: [
+    {
+      &quot;key&quot;: &quot;name&quot;,
+      &quot;label&quot;: &quot;Name&quot;,
+      &quot;sortable&quot;: true
+    }
+  ],
+  &quot;rows&quot;: [
+    {
+      &quot;id&quot;: &quot;1&quot;,
+      &quot;name&quot;: &quot;build&quot;
+    }
+  ]
+}</pre><h4>Server pagination</h4><pre>{
+  &quot;caption&quot;: &quot;Runs&quot;,
+  &quot;pagination&quot;: true,
+  &quot;pageSize&quot;: 2,
+  &quot;columns&quot;: [
+    {
+      &quot;key&quot;: &quot;name&quot;,
+      &quot;label&quot;: &quot;Name&quot;,
+      &quot;sortable&quot;: true
+    }
+  ],
+  &quot;source&quot;: &quot;Host-provided loadPage(request, signal) → { rows, total }&quot;
+}</pre>
+</section>
+<section id="widget-descriptions">
+<h2>descriptions <span class="muted">ui-descriptions</span></h2>
+<p>Read-only key/value detail list (Ant Design Descriptions / MUI DescriptionList).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Details&#39;</td></tr><tr><td><code>bordered</code></td><td>boolean</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>columns</code></td><td>number</td><td></td></tr><tr><td><code>dense</code></td><td>boolean</td><td></td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>extra</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>groups</code></td><td>DescriptionGroup[]</td><td>[]</td></tr><tr><td><code>items</code></td><td>DescriptionItem[]</td><td>[]</td></tr><tr><td><code>layout</code></td><td>&#39;horizontal&#39; | &#39;vertical&#39;</td><td></td></tr><tr><td><code>separatorChar</code></td><td></td><td>&#39;─&#39;</td></tr><tr><td><code>separatorWidth</code></td><td>number | string</td><td>12</td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-dialog">
+<h2>dialog <span class="muted">ui-dialog-panel</span></h2>
+<p>Renderer-neutral dialog shell with fixed title/hint and a single scrolling body.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaDescribedby</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabelledby</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>beforeCloseAction</code></td><td>() =&gt; boolean | Promise&lt;boolean&gt;</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>closable</code></td><td>boolean</td><td></td></tr><tr><td><code>closeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;✕&#39;</td></tr><tr><td><code>closeOnEscape</code></td><td>boolean</td><td></td></tr><tr><td><code>fullWidth</code></td><td></td><td>false</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>horizontalChrome</code></td><td></td><td>6</td></tr><tr><td><code>initialFocus</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>lineActions</code></td><td>Array&lt;(() =&gt; void) | undefined&gt;</td><td>[]</td></tr><tr><td><code>lineOptionIndexes</code></td><td>Array&lt;number | undefined&gt;</td><td>[]</td></tr><tr><td><code>lines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>maxHeight</code></td><td></td><td>&#39;60vh&#39;</td></tr><tr><td><code>maxWidth</code></td><td></td><td>88</td></tr><tr><td><code>minWidth</code></td><td></td><td>24</td></tr><tr><td><code>modal</code></td><td>boolean</td><td></td></tr><tr><td><code>overlayOpen</code></td><td>boolean</td><td></td></tr><tr><td><code>restoreFocus</code></td><td>boolean | string</td><td>true</td></tr><tr><td><code>scrollLock</code></td><td>boolean</td><td></td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>trapFocus</code></td><td>boolean | string</td><td>true</td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>Escape: close/dismiss (host may map to deny/reject)</li><li>Tab/Shift+Tab: move within projected content (host focus trap)</li><li>Enter: activate the highlighted/primary action</li><li>Arrow/PageUp/PageDown: scroll only the dialog body</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Rendered above the composer; header/footer fixed, body scrolls.</li><li><strong>console</strong>: Overlay panel anchored above the input; rows are windowed, title/hint stay painted.</li></ul>
+<h3>Examples</h3><h4>Confirm dialog</h4><pre>{
+  &quot;title&quot;: &quot;Delete file?&quot;,
+  &quot;hint&quot;: &quot;Enter confirm · Esc cancel&quot;,
+  &quot;lines&quot;: [
+    &quot;This cannot be undone.&quot;
+  ]
+}</pre>
+</section>
+<section id="widget-divider">
+<h2>divider <span class="muted">ui-divider</span></h2>
+<p>Semantic separator with an optional inline label.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>fill</code></td><td>boolean</td><td></td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>orientation</code></td><td>DividerOrientation</td><td>&#39;horizontal&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-drawer">
+<h2>drawer <span class="muted">ui-drawer</span></h2>
+<p>Host-controlled side panel (Ant Design Drawer).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>beforeCloseAction</code></td><td>() =&gt; boolean | Promise&lt;boolean&gt;</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>closable</code></td><td>boolean</td><td></td></tr><tr><td><code>closeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;Close&#39;</td></tr><tr><td><code>lines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>overlayOpen</code></td><td>boolean</td><td></td></tr><tr><td><code>placement</code></td><td>DrawerPlacement</td><td>&#39;right&#39;</td></tr><tr><td><code>scrollLock</code></td><td>boolean</td><td></td></tr><tr><td><code>size</code></td><td>number | string</td><td>32</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>visible</code></td><td>boolean</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-dynamic-form">
+<h2>dynamic-form <span class="muted">ui-dynamic-field-widget</span></h2>
+<p>Schema-driven form with typed values, groups, visibility, validation and custom widgets.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>actionAction</code></td><td>(field: DynamicFormField, actionId: string) =&gt; void</td><td></td></tr><tr><td><code>blurAction</code></td><td>(field: DynamicFormField) =&gt; void</td><td></td></tr><tr><td><code>changeAction</code></td><td>(change: DynamicFormChange) =&gt; void</td><td></td></tr><tr><td><code>classPrefix</code></td><td></td><td>&#39;df&#39;</td></tr><tr><td><code>component</code></td><td>Type&lt;any&gt; | undefined</td><td></td></tr><tr><td><code>describedBy</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;No fields&#39;</td></tr><tr><td><code>errorId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>focusFieldAction</code></td><td>(key: string) =&gt; void</td><td></td></tr><tr><td><code>hintId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>itemIndex</code></td><td>number</td><td></td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>messages</code></td><td>Record&lt;string, string&gt;</td><td>{}</td></tr><tr><td><code>required</code></td><td>boolean | string</td><td>false</td></tr><tr><td><code>resetAction</code></td><td>(value: Record&lt;string, any&gt;) =&gt; void</td><td></td></tr><tr><td><code>resetFieldLabel</code></td><td></td><td>&#39;Reset to default&#39;</td></tr><tr><td><code>resetLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>showActions</code></td><td></td><td>false</td></tr><tr><td><code>submitAction</code></td><td>(result: DynamicFormResult) =&gt; void</td><td></td></tr><tr><td><code>submitLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>validateOn</code></td><td>&#39;none&#39; | &#39;change&#39; | &#39;blur&#39; | &#39;submit&#39;</td><td>&#39;none&#39;</td></tr><tr><td><code>validationDelay</code></td><td></td><td>250</td></tr><tr><td><code>validityAction</code></td><td>(valid: boolean, errors: Record&lt;string, any&gt; | null) =&gt; void</td><td></td></tr><tr><td><code>widgets</code></td><td>DynamicFormWidget[]</td><td>[]</td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>Tab/Shift+Tab: move between fields</li><li>Enter: submit when the field does not consume it</li><li>Escape: cancel/close host dialog</li><li>Arrow keys: select options/segmented values</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Native inputs/selects; errors and hints are aria-described.</li><li><strong>console</strong>: Floating field windows; selects use the shared overlay row model.</li></ul>
+<h3>Examples</h3><h4>Basic settings</h4><pre>{
+  &quot;schema&quot;: {
+    &quot;fields&quot;: [
+      {
+        &quot;key&quot;: &quot;name&quot;,
+        &quot;label&quot;: &quot;Name&quot;,
+        &quot;type&quot;: &quot;text&quot;
+      },
+      {
+        &quot;key&quot;: &quot;enabled&quot;,
+        &quot;label&quot;: &quot;Enabled&quot;,
+        &quot;type&quot;: &quot;switch&quot;
+      }
+    ]
+  }
+}</pre>
+</section>
+<section id="widget-empty-state">
+<h2>empty-state <span class="muted">ui-empty</span></h2>
+<p>Empty/search-result placeholder with an optional primary action.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>actionLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>icon</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconGlyph</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-field">
+<h2>field <span class="muted">ui-field-group</span></h2>
+<p>Form-field wrapper with label, hint, error, required marker and aria linkage.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>controlId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>error</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>errorId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>hintId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>invalid</code></td><td></td><td>false</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>required</code></td><td></td><td>false</td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>Tab/Shift+Tab: enter/leave the projected control</li><li>Host control keeps its native keyboard semantics</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Label uses for=controlId; hint/error are referenced by aria-describedby.</li><li><strong>console</strong>: Renders the same label/hint/error rows above/below the projected control.</li></ul>
+<h3>Examples</h3><h4>Required field</h4><pre>{
+  &quot;label&quot;: &quot;Name&quot;,
+  &quot;hint&quot;: &quot;Shown to teammates&quot;,
+  &quot;required&quot;: true,
+  &quot;controlId&quot;: &quot;name&quot;
+}</pre>
+</section>
+<section id="widget-grid">
+<h2>grid <span class="muted">ui-grid-layout</span></h2>
+<p>Generic CSS grid layout for common pages and editors.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>alignItems</code></td><td>string</td><td></td></tr><tr><td><code>area</code></td><td>string</td><td></td></tr><tr><td><code>areas</code></td><td>string | string[]</td><td></td></tr><tr><td><code>autoFit</code></td><td></td><td>false</td></tr><tr><td><code>columnGap</code></td><td>number | string</td><td></td></tr><tr><td><code>columns</code></td><td>number | string</td><td>1</td></tr><tr><td><code>end</code></td><td>number | string</td><td></td></tr><tr><td><code>fill</code></td><td></td><td>false</td></tr><tr><td><code>flow</code></td><td>&#39;row&#39; | &#39;column&#39; | &#39;dense&#39; | string</td><td></td></tr><tr><td><code>gap</code></td><td>number | string</td><td>12</td></tr><tr><td><code>justifyItems</code></td><td>string</td><td></td></tr><tr><td><code>minItemWidth</code></td><td>number | string</td><td>200</td></tr><tr><td><code>rowEnd</code></td><td>number | string</td><td></td></tr><tr><td><code>rowGap</code></td><td>number | string</td><td></td></tr><tr><td><code>rows</code></td><td>number | string</td><td></td></tr><tr><td><code>rowSpan</code></td><td>number | string</td><td></td></tr><tr><td><code>rowStart</code></td><td>number | string</td><td></td></tr><tr><td><code>span</code></td><td>number | string</td><td></td></tr><tr><td><code>start</code></td><td>number | string</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-icon">
+<h2>icon <span class="muted">ui-icon</span></h2>
+<p>icon component</p>
+<p class="muted">No attributes.</p>
+
+
+
+</section>
+<section id="widget-image">
+<h2>image <span class="muted">ui-image</span></h2>
+<p>Image with an accessible caption (Ant Design Image / MUI Image).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>alt</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>fallback</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>fit</code></td><td>&#39;cover&#39; | &#39;contain&#39; | &#39;fill&#39; | &#39;none&#39; | &#39;scale-down&#39;</td><td>&#39;cover&#39;</td></tr><tr><td><code>height</code></td><td>number | string</td><td>&#39;&#39;</td></tr><tr><td><code>src</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>width</code></td><td>number | string</td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-inline-input">
+<h2>inline-input <span class="muted">ui-inline-input</span></h2>
+<p>Click-to-edit inline value used by tab/session/task titles with Enter/blur commit and Escape cancel.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>cancelAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>changeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>editAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>editGlyph</code></td><td></td><td>&#39;✎&#39;</td></tr><tr><td><code>editing</code></td><td>boolean</td><td></td></tr><tr><td><code>editLabel</code></td><td></td><td>&#39;Edit&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>maxLength</code></td><td></td><td>200</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>selectOnFocus</code></td><td>boolean</td><td></td></tr><tr><td><code>submitAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>submitOnBlur</code></td><td>boolean</td><td></td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>Enter/Space on the value: begin editing</li><li>Enter: commit and notify changeAction/submitAction</li><li>Escape: cancel and restore the previous value</li><li>Blur: commit (submitOnBlur defaults to true)</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Real input with focus/select on edit; the host persists the value.</li><li><strong>console</strong>: Host renders the same editable row and routes Enter/Escape through the shared input model.</li></ul>
+<h3>Examples</h3><h4>Session title</h4><pre>{
+  &quot;value&quot;: &quot;Fix login flow&quot;,
+  &quot;editLabel&quot;: &quot;Rename session&quot;
+}</pre>
+</section>
+<section id="widget-kbd">
+<h2>kbd <span class="muted">ui-kbd</span></h2>
+<p>Keyboard shortcut hint (`Ctrl + K`). Renders `&lt;kbd&gt;` boxes in DOM and the</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>keys</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>separator</code></td><td></td><td>&#39;+&#39;</td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-keymap">
+<h2>keymap <span class="muted">ui-keymap-panel</span></h2>
+<p>Renderer-neutral keymap overlay. Hosts own key binding semantics, grouping</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>grouped</code></td><td></td><td>false</td></tr><tr><td><code>groups</code></td><td>KeymapGroup[]</td><td>[]</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>items</code></td><td>KeymapItem[]</td><td>[]</td></tr><tr><td><code>maxHeight</code></td><td></td><td>&#39;60vh&#39;</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-layout">
+<h2>layout <span class="muted">ui-workspace-layout</span></h2>
+<p>Generic workspace layout used by editors and consoles.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>bottomCollapsed</code></td><td></td><td>false</td></tr><tr><td><code>bottomRatio</code></td><td></td><td>0.26</td></tr><tr><td><code>collapseAction</code></td><td>(pane: WorkspacePane, collapsed: boolean) =&gt; void</td><td></td></tr><tr><td><code>leftCollapsed</code></td><td></td><td>false</td></tr><tr><td><code>leftRatio</code></td><td></td><td>0.2</td></tr><tr><td><code>minBottom</code></td><td></td><td>80</td></tr><tr><td><code>minLeft</code></td><td></td><td>160</td></tr><tr><td><code>minRight</code></td><td></td><td>180</td></tr><tr><td><code>resizable</code></td><td></td><td>true</td></tr><tr><td><code>resizeAction</code></td><td>(pane: WorkspacePane, ratio: number) =&gt; void</td><td></td></tr><tr><td><code>rightCollapsed</code></td><td></td><td>false</td></tr><tr><td><code>rightRatio</code></td><td></td><td>0.24</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-list">
+<h2>list <span class="muted">ui-list</span></h2>
+<p>Shared list surface with paged, windowed drawing. TUI and DOM renderers own</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>activeOptionId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;List&#39;</td></tr><tr><td><code>autoLoad</code></td><td></td><td>false</td></tr><tr><td><code>closeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;✕&#39;</td></tr><tr><td><code>context</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>contextLines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>cursor</code></td><td>string</td><td></td></tr><tr><td><code>detailLines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>empty</code></td><td>string</td><td></td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>error</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>hasMore</code></td><td></td><td>true</td></tr><tr><td><code>hasPrevious</code></td><td></td><td>false</td></tr><tr><td><code>header</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>items</code></td><td>ListItem[]</td><td>[]</td></tr><tr><td><code>listLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>loading</code></td><td></td><td>false</td></tr><tr><td><code>loadingLabel</code></td><td></td><td>&#39;Loading…&#39;</td></tr><tr><td><code>loadPage</code></td><td>ListLoader</td><td></td></tr><tr><td><code>loadPreviousPage</code></td><td>ListPreviousLoader</td><td></td></tr><tr><td><code>maxHeight</code></td><td></td><td>&#39;60vh&#39;</td></tr><tr><td><code>meta</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>moreLabel</code></td><td></td><td>&#39;Load more&#39;</td></tr><tr><td><code>olderLabel</code></td><td></td><td>&#39;Load older&#39;</td></tr><tr><td><code>panelClass</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>previousCursor</code></td><td>string</td><td></td></tr><tr><td><code>scrollbarLength</code></td><td></td><td>16</td></tr><tr><td><code>secondaryHint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>selectAction</code></td><td>(item: ListItem) =&gt; void</td><td></td></tr><tr><td><code>selectValueAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>showClose</code></td><td></td><td>false</td></tr><tr><td><code>showScrollbar</code></td><td>boolean</td><td></td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>visibleItems</code></td><td></td><td>0</td></tr><tr><td><code>windowOffset</code></td><td></td><td>0</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-markdown">
+<h2>markdown <span class="muted">ui-markdown-table</span></h2>
+<p>Semantic table shell shared by DOM hosts. The terminal renderer can consume</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>header</code></td><td>MarkdownTableCell[]</td><td>[]</td></tr><tr><td><code>lines</code></td><td>MarkdownToken[][]</td><td>[]</td></tr><tr><td><code>rows</code></td><td>MarkdownTableCell[][]</td><td>[]</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-menu-bar">
+<h2>menu-bar <span class="muted">ui-menu-bar</span></h2>
+<p>Renderer-neutral menu dropdown.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>align</code></td><td>&#39;left&#39; | &#39;right&#39;</td><td>&#39;right&#39;</td></tr><tr><td><code>beforeCloseAction</code></td><td>() =&gt; boolean | Promise&lt;boolean&gt;</td><td></td></tr><tr><td><code>caret</code></td><td></td><td>&#39;▾&#39;</td></tr><tr><td><code>disabled</code></td><td></td><td>false</td></tr><tr><td><code>groups</code></td><td>MenuBarGroup[]</td><td>[]</td></tr><tr><td><code>icon</code></td><td></td><td>&#39;menu&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;Menu&#39;</td></tr><tr><td><code>open</code></td><td>boolean</td><td></td></tr><tr><td><code>openChange</code></td><td></td><td>new EventEmitter&lt;boolean&gt;()</td></tr><tr><td><code>overlayEnabled</code></td><td>boolean</td><td></td></tr><tr><td><code>selectAction</code></td><td>(id: string) =&gt; void</td><td></td></tr><tr><td><code>triggerTitle</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-pagination">
+<h2>pagination <span class="muted">ui-pagination</span></h2>
+<p>Page selector bar. `total` is the number of items (not pages); the component</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Pagination&#39;</td></tr><tr><td><code>changeAction</code></td><td>(page: number) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ellipsis</code></td><td></td><td>&#39;…&#39;</td></tr><tr><td><code>jumpLabel</code></td><td></td><td>&#39;Go to page&#39;</td></tr><tr><td><code>maxButtons</code></td><td></td><td>7</td></tr><tr><td><code>nextLabel</code></td><td></td><td>&#39;Next page&#39;</td></tr><tr><td><code>nextText</code></td><td></td><td>&#39;›&#39;</td></tr><tr><td><code>page</code></td><td></td><td>1</td></tr><tr><td><code>pageLabel</code></td><td></td><td>&#39;Go to page {page}&#39;</td></tr><tr><td><code>pageSize</code></td><td></td><td>10</td></tr><tr><td><code>pageSizeChangeAction</code></td><td>(size: number) =&gt; void</td><td></td></tr><tr><td><code>pageSizeLabel</code></td><td></td><td>&#39;Items per page&#39;</td></tr><tr><td><code>pageSizeOptions</code></td><td>Array&lt;number | string&gt;</td><td>[10, 20, 50, 100]</td></tr><tr><td><code>previousLabel</code></td><td></td><td>&#39;Previous page&#39;</td></tr><tr><td><code>previousText</code></td><td></td><td>&#39;‹&#39;</td></tr><tr><td><code>showQuickJumper</code></td><td>boolean</td><td></td></tr><tr><td><code>showSizeChanger</code></td><td>boolean</td><td></td></tr><tr><td><code>total</code></td><td></td><td>0</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-panel">
+<h2>panel <span class="muted">ui-panel</span></h2>
+<p>Optional per-part inline skin, supplied by DOM/TUI hosts.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>collapseText</code></td><td>string</td><td></td></tr><tr><td><code>expanded</code></td><td>boolean</td><td></td></tr><tr><td><code>expandedChange</code></td><td></td><td>new EventEmitter&lt;boolean&gt;()</td></tr><tr><td><code>expandText</code></td><td>string</td><td></td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>items</code></td><td>PanelItem[]</td><td>[]</td></tr><tr><td><code>locale</code></td><td>&#39;zh-CN&#39; | &#39;en&#39;</td><td></td></tr><tr><td><code>meta</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>selection</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>styles</code></td><td>PanelStyles</td><td></td></tr><tr><td><code>summary</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-popover">
+<h2>popover <span class="muted">ui-popover</span></h2>
+<p>Renderer-neutral popover (Ant Design Popover / MUI Popover).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>beforeCloseAction</code></td><td>() =&gt; boolean | Promise&lt;boolean&gt;</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>closable</code></td><td>boolean</td><td></td></tr><tr><td><code>closeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;Close&#39;</td></tr><tr><td><code>lines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>overlayOpen</code></td><td>boolean</td><td></td></tr><tr><td><code>placement</code></td><td>PopoverPlacement</td><td></td></tr><tr><td><code>scrollLock</code></td><td>boolean</td><td></td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>visible</code></td><td>boolean</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-progress">
+<h2>progress <span class="muted">ui-progress</span></h2>
+<p>Renderer-neutral progress indicator.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>indeterminate</code></td><td>boolean</td><td></td></tr><tr><td><code>indeterminateLabel</code></td><td></td><td>&#39;Loading&#39;</td></tr><tr><td><code>interval</code></td><td>number</td><td></td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>max</code></td><td></td><td>100</td></tr><tr><td><code>reduceMotion</code></td><td>boolean</td><td></td></tr><tr><td><code>showValue</code></td><td>boolean</td><td></td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr><tr><td><code>value</code></td><td></td><td>0</td></tr><tr><td><code>width</code></td><td></td><td>20</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-qr-code">
+<h2>qr-code <span class="muted">ui-qr-code</span></h2>
+<p>QR matrix renderer (Ant Design QRCode display half).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;QR code&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>matrix</code></td><td>Array&lt;Array&lt;boolean | number | string&gt;&gt; | string[]</td><td>[]</td></tr><tr><td><code>off</code></td><td></td><td>&#39;  &#39;</td></tr><tr><td><code>on</code></td><td></td><td>&#39;██&#39;</td></tr><tr><td><code>quietZone</code></td><td>number | string</td><td>0</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-radio-group">
+<h2>radio-group <span class="muted">ui-radio-group</span></h2>
+<p>Renderer-neutral radio group. Uses semantic `role=&quot;radio&quot;` rows so the</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Options&#39;</td></tr><tr><td><code>changeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>options</code></td><td>RadioOption[]</td><td>[]</td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-rate">
+<h2>rate <span class="muted">ui-rate</span></h2>
+<p>Star rating (Ant Design Rate / MUI Rating).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>allowClear</code></td><td>boolean</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Rating&#39;</td></tr><tr><td><code>changeAction</code></td><td>(value: number) =&gt; void</td><td></td></tr><tr><td><code>character</code></td><td></td><td>&#39;★&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>count</code></td><td>number | string</td><td>5</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>emptyCharacter</code></td><td></td><td>&#39;☆&#39;</td></tr><tr><td><code>readonly</code></td><td>boolean</td><td></td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>value</code></td><td>number | string</td><td>0</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-result">
+<h2>result <span class="muted">ui-result</span></h2>
+<p>Full-page operation result (Ant Design Result).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>actionLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>lines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>status</code></td><td>ResultStatus</td><td>&#39;info&#39;</td></tr><tr><td><code>subTitle</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-scrollbar">
+<h2>scrollbar <span class="muted">ui-scrollbar</span></h2>
+<p>Renderer-neutral scrollbar track. Vertical mode emits one cell per line for</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Scrollbar&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>length</code></td><td></td><td>10</td></tr><tr><td><code>offset</code></td><td></td><td>0</td></tr><tr><td><code>orientation</code></td><td>ScrollbarOrientation</td><td>&#39;vertical&#39;</td></tr><tr><td><code>thumbChar</code></td><td></td><td>&#39;█&#39;</td></tr><tr><td><code>total</code></td><td></td><td>0</td></tr><tr><td><code>trackChar</code></td><td></td><td>&#39;░&#39;</td></tr><tr><td><code>visible</code></td><td></td><td>0</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-search-field">
+<h2>search-field <span class="muted">ui-search-field</span></h2>
+<p>Renderer-neutral search/text field with optional leading icon, clear action</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>changeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>clearable</code></td><td>boolean</td><td></td></tr><tr><td><code>clearAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>clearLabel</code></td><td></td><td>&#39;Clear&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>error</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>icon</code></td><td></td><td>&#39;search&#39;</td></tr><tr><td><code>iconGlyph</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>inputId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>name</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>readonly</code></td><td>boolean</td><td></td></tr><tr><td><code>submitAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-search-list">
+<h2>search-list <span class="muted">ui-search-list</span></h2>
+<p>Searchable list/command palette with local filtering, grouped rows, recent items and an abortable async source.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>activeChangeAction</code></td><td>(item: SearchListItem | null) =&gt; void</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Search&#39;</td></tr><tr><td><code>changeAction</code></td><td>(query: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>closeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;No matches&#39;</td></tr><tr><td><code>items</code></td><td>SearchListItem[]</td><td>[]</td></tr><tr><td><code>loadingLabel</code></td><td></td><td>&#39;Searching…&#39;</td></tr><tr><td><code>maxVisible</code></td><td></td><td>12</td></tr><tr><td><code>minChars</code></td><td></td><td>0</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;Search…&#39;</td></tr><tr><td><code>query</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>recentIds</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>recentLabel</code></td><td></td><td>&#39;Recent&#39;</td></tr><tr><td><code>retryLabel</code></td><td></td><td>&#39;Retry&#39;</td></tr><tr><td><code>selectAction</code></td><td>(item: SearchListItem) =&gt; void</td><td></td></tr><tr><td><code>selectedId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>showInput</code></td><td>boolean</td><td></td></tr><tr><td><code>source</code></td><td>SearchListSource</td><td></td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>ArrowDown/ArrowUp: move the active option</li><li>Home/End: first/last option</li><li>Enter: choose the active option</li><li>Escape: request close</li><li>Typing: filters locally or calls source(query, signal)</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Input plus grouped listbox; active row uses aria-activedescendant.</li><li><strong>console</strong>: Host renders the same rows in its overlay window; input keeps focus.</li></ul>
+<h3>Examples</h3><h4>Command list</h4><pre>{
+  &quot;placeholder&quot;: &quot;Search commands…&quot;,
+  &quot;recentIds&quot;: [
+    &quot;deploy&quot;
+  ],
+  &quot;items&quot;: [
+    {
+      &quot;id&quot;: &quot;deploy&quot;,
+      &quot;label&quot;: &quot;Deploy&quot;,
+      &quot;group&quot;: &quot;Run&quot;,
+      &quot;shortcut&quot;: &quot;Ctrl+D&quot;
+    },
+    {
+      &quot;id&quot;: &quot;delete&quot;,
+      &quot;label&quot;: &quot;Delete session&quot;,
+      &quot;group&quot;: &quot;Session&quot;
+    }
+  ]
+}</pre>
+</section>
+<section id="widget-segmented">
+<h2>segmented <span class="muted">ui-segmented</span></h2>
+<p>Renderer-neutral segmented control (Ant Design Segmented / MUI ToggleButtonGroup).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Segmented control&#39;</td></tr><tr><td><code>changeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>options</code></td><td>SegmentedOption[]</td><td>[]</td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-select">
+<h2>select <span class="muted">ui-select-list</span></h2>
+<p>Windowed single/multi selection list with search, detail lines and a fixed title/hint.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>accessibilityLabel</code></td><td>string</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Selection menu&#39;</td></tr><tr><td><code>closeAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;✕&#39;</td></tr><tr><td><code>detailLines</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>emptyText</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>fitContent</code></td><td></td><td>false</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>keydownAction</code></td><td>(event: KeyboardEvent) =&gt; void</td><td></td></tr><tr><td><code>maxHeight</code></td><td></td><td>&#39;60vh&#39;</td></tr><tr><td><code>maxWidth</code></td><td></td><td>88</td></tr><tr><td><code>meta</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>minWidth</code></td><td></td><td>28</td></tr><tr><td><code>options</code></td><td>SelectOption[]</td><td>[]</td></tr><tr><td><code>selectAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>selectedIndex</code></td><td></td><td>0</td></tr><tr><td><code>suggestion</code></td><td></td><td>false</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>visibleCount</code></td><td></td><td>0</td></tr><tr><td><code>widthOptions</code></td><td>SelectOption[]</td><td></td></tr><tr><td><code>widthTitle</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>Arrow/Home/End: move selection</li><li>PageUp/PageDown: move by a page</li><li>Enter: accept the highlighted option</li><li>Escape: close without selection</li><li>Typing: filters/creates when the host enables search</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Anchored listbox; click selects; hover mirrors the selection.</li><li><strong>console</strong>: Floating overlay above the composer; only visible rows are painted.</li></ul>
+<h3>Examples</h3><h4>Security level</h4><pre>{
+  &quot;title&quot;: &quot;Security level&quot;,
+  &quot;options&quot;: [
+    {
+      &quot;label&quot;: &quot;ask&quot;,
+      &quot;value&quot;: &quot;ask&quot;
+    },
+    {
+      &quot;label&quot;: &quot;auto&quot;,
+      &quot;value&quot;: &quot;auto&quot;
+    }
+  ],
+  &quot;visibleCount&quot;: 4
+}</pre>
+</section>
+<section id="widget-select-trigger">
+<h2>select-trigger <span class="muted">ui-select-trigger</span></h2>
+<p>Select/menu trigger for a host-owned dropdown (`select-list`, menu bar, ...).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>clearable</code></td><td>boolean</td><td></td></tr><tr><td><code>clearAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>clearLabel</code></td><td></td><td>&#39;Clear&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>icon</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>iconGlyph</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>open</code></td><td>boolean</td><td></td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;Select…&#39;</td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-skeleton">
+<h2>skeleton <span class="muted">ui-skeleton</span></h2>
+<p>Static loading placeholder. Renders text blocks (`░`) so terminal hosts show</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;Loading&#39;</td></tr><tr><td><code>lines</code></td><td></td><td>3</td></tr><tr><td><code>lineWidths</code></td><td>number[]</td><td></td></tr><tr><td><code>width</code></td><td></td><td>24</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-slider">
+<h2>slider <span class="muted">ui-slider</span></h2>
+<p>Renderer-neutral slider (Ant Design Slider / MUI Slider).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Slider&#39;</td></tr><tr><td><code>changeAction</code></td><td>(value: number) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>max</code></td><td>number | string</td><td>100</td></tr><tr><td><code>min</code></td><td>number | string</td><td>0</td></tr><tr><td><code>showValue</code></td><td>boolean</td><td></td></tr><tr><td><code>step</code></td><td>number | string</td><td>1</td></tr><tr><td><code>unit</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>value</code></td><td>number | string</td><td>0</td></tr><tr><td><code>width</code></td><td>number | string</td><td>10</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-space">
+<h2>space <span class="muted">ui-space</span></h2>
+<p>Inline/stack layout primitive (Ant Design Space / MUI Stack).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>(item: SpaceItem | string, index: number) =&gt; void</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Space&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>direction</code></td><td>&#39;horizontal&#39; | &#39;vertical&#39;</td><td>&#39;horizontal&#39;</td></tr><tr><td><code>items</code></td><td>Array&lt;SpaceItem | string&gt;</td><td>[]</td></tr><tr><td><code>itemsGap</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>separator</code></td><td></td><td>&#39; &#39;</td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr><tr><td><code>wrap</code></td><td>boolean</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-spinner">
+<h2>spinner <span class="muted">ui-spinner</span></h2>
+<p>Renderer-neutral loading spinner (Ant Design Spin / MUI CircularProgress).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>frames</code></td><td></td><td>&#39;⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏&#39;</td></tr><tr><td><code>interval</code></td><td>number | string</td><td>100</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>pause</code></td><td>boolean</td><td></td></tr><tr><td><code>size</code></td><td>UiSize</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-stat">
+<h2>stat <span class="muted">ui-stat</span></h2>
+<p>Compact metric tile (label + value + hint/trend), used by dashboards and</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>tone</code></td><td>UiTone</td><td></td></tr><tr><td><code>trend</code></td><td>StatTrend</td><td>&#39;flat&#39;</td></tr><tr><td><code>trendLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>value</code></td><td>string | number</td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-status-list">
+<h2>status-list <span class="muted">ui-status-list</span></h2>
+<p>Renderer-neutral status list: title, semantic state rows and a hint. Hosts</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>items</code></td><td>StatusListItem[]</td><td>[]</td></tr><tr><td><code>title</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-steps">
+<h2>steps <span class="muted">ui-steps</span></h2>
+<p>Ordered progress steps (wizard headers, task pipelines).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>(item: StepItem, index: number) =&gt; void</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Steps&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>connector</code></td><td></td><td>&#39;─&#39;</td></tr><tr><td><code>current</code></td><td>number | string</td><td>0</td></tr><tr><td><code>items</code></td><td>StepItem[]</td><td>[]</td></tr><tr><td><code>orientation</code></td><td>StepsOrientation</td><td>&#39;horizontal&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-switch">
+<h2>switch <span class="muted">ui-switch</span></h2>
+<p>Renderer-neutral on/off switch. The state label (`On`/`Off`) is part of the</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>changeAction</code></td><td>(checked: boolean) =&gt; void</td><td></td></tr><tr><td><code>checked</code></td><td>boolean</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>offLabel</code></td><td></td><td>&#39;Off&#39;</td></tr><tr><td><code>onLabel</code></td><td></td><td>&#39;On&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-tab-bar">
+<h2>tab-bar <span class="muted">ui-tab-bar</span></h2>
+<p>Shared tab strip used by console surfaces (agent-ui session tabs included).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>activationMode</code></td><td>&#39;automatic&#39; | &#39;manual&#39;</td><td>&#39;automatic&#39;</td></tr><tr><td><code>source</code></td><td>TabBarSource</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-tabs">
+<h2>tabs <span class="muted">ui-tabs</span></h2>
+<p>Generic tabs: the shared {@link TabBarComponent} strip plus a pane container</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>activationMode</code></td><td>&#39;automatic&#39; | &#39;manual&#39;</td><td>&#39;automatic&#39;</td></tr><tr><td><code>activeId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>source</code></td><td>TabsSource</td><td></td></tr><tr><td><code>stripOnly</code></td><td></td><td>false</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-text-field">
+<h2>text-field <span class="muted">ui-text-field</span></h2>
+<p>Renderer-neutral text field with optional multiline mode, clear button and</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>addonAfter</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>addonBefore</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>autocomplete</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>blurAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>changeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>clearable</code></td><td>boolean</td><td></td></tr><tr><td><code>clearAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>clearLabel</code></td><td></td><td>&#39;Clear&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>enterKeyHint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>error</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>hideGlyph</code></td><td></td><td>&#39;○&#39;</td></tr><tr><td><code>hidePasswordLabel</code></td><td></td><td>&#39;Hide password&#39;</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>inputId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>inputMode</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>maxLength</code></td><td>number | string</td><td>0</td></tr><tr><td><code>multiline</code></td><td>boolean</td><td></td></tr><tr><td><code>name</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>prefix</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>readonly</code></td><td>boolean</td><td></td></tr><tr><td><code>required</code></td><td>boolean</td><td></td></tr><tr><td><code>revealable</code></td><td>boolean</td><td></td></tr><tr><td><code>rows</code></td><td></td><td>3</td></tr><tr><td><code>showCount</code></td><td>boolean</td><td></td></tr><tr><td><code>showGlyph</code></td><td></td><td>&#39;◉&#39;</td></tr><tr><td><code>showPasswordLabel</code></td><td></td><td>&#39;Show password&#39;</td></tr><tr><td><code>submitAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>suffix</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>type</code></td><td>TextFieldType</td><td>&#39;text&#39;</td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-timeline">
+<h2>timeline <span class="muted">ui-timeline</span></h2>
+<p>Vertical activity timeline. Status drives the marker glyph and the semantic</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Timeline&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>items</code></td><td>TimelineItem[]</td><td>[]</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-toast">
+<h2>toast <span class="muted">ui-toast-stack</span></h2>
+<p>Renderer-neutral toast strip. The host owns the queue (see `ToastService`)</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>actionAction</code></td><td>(id: string) =&gt; void</td><td></td></tr><tr><td><code>closeAction</code></td><td>(id: string) =&gt; void</td><td></td></tr><tr><td><code>closeLabel</code></td><td></td><td>&#39;✕&#39;</td></tr><tr><td><code>items</code></td><td>readonly ToastEntry[]</td><td>[]</td></tr><tr><td><code>messageWidth</code></td><td></td><td>0</td></tr><tr><td><code>pauseAction</code></td><td>(id: string) =&gt; void</td><td></td></tr><tr><td><code>pauseOnHover</code></td><td>boolean</td><td></td></tr><tr><td><code>resumeAction</code></td><td>(id: string) =&gt; void</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-toolbar">
+<h2>toolbar <span class="muted">ui-toolbar</span></h2>
+<p>Renderer-neutral action strip. Items are data, not projected markup, so the</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>action</code></td><td>(item: ToolbarItem, index: number) =&gt; void</td><td></td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Toolbar&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>compact</code></td><td>boolean</td><td></td></tr><tr><td><code>items</code></td><td>ToolbarItem[]</td><td>[]</td></tr><tr><td><code>maxVisible</code></td><td>number | string</td><td>0</td></tr><tr><td><code>orientation</code></td><td>ToolbarOrientation</td><td>&#39;horizontal&#39;</td></tr><tr><td><code>overflowGlyph</code></td><td></td><td>&#39;…&#39;</td></tr><tr><td><code>overflowLabel</code></td><td></td><td>&#39;More&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-tooltip">
+<h2>tooltip <span class="muted">ui-tooltip</span></h2>
+<p>Renderer-neutral tooltip (Ant Design Tooltip / MUI Tooltip).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>closeDelay</code></td><td>number | string</td><td>0</td></tr><tr><td><code>content</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>focusable</code></td><td>boolean</td><td></td></tr><tr><td><code>openDelay</code></td><td>number | string</td><td>0</td></tr><tr><td><code>placement</code></td><td>TooltipPlacement</td><td></td></tr><tr><td><code>visible</code></td><td>boolean</td><td></td></tr><tr><td><code>visibleChange</code></td><td></td><td>new EventEmitter&lt;boolean&gt;()</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-transfer">
+<h2>transfer <span class="muted">ui-transfer</span></h2>
+<p>Two-pane transfer list (Ant Design Transfer).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Transfer&#39;</td></tr><tr><td><code>changeAction</code></td><td>(targetKeys: string[], direction: TransferDirection, movedKeys: string[]) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;No items&#39;</td></tr><tr><td><code>items</code></td><td>TransferItem[]</td><td>[]</td></tr><tr><td><code>moveAllLeftLabel</code></td><td></td><td>&#39;Move all to source&#39;</td></tr><tr><td><code>moveAllRightLabel</code></td><td></td><td>&#39;Move all to target&#39;</td></tr><tr><td><code>moveLeftLabel</code></td><td></td><td>&#39;Move to source&#39;</td></tr><tr><td><code>moveRightLabel</code></td><td></td><td>&#39;Move to target&#39;</td></tr><tr><td><code>sourceTitle</code></td><td></td><td>&#39;Source&#39;</td></tr><tr><td><code>targetKeys</code></td><td>Array&lt;string | number&gt;</td><td>[]</td></tr><tr><td><code>targetTitle</code></td><td></td><td>&#39;Target&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-tree">
+<h2>tree <span class="muted">ui-tree</span></h2>
+<p>Hierarchical tree with flattened rendering. Expansion state is owned by the</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Tree&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>expandedIds</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>indent</code></td><td></td><td>2</td></tr><tr><td><code>indentChar</code></td><td></td><td>&#39; &#39;</td></tr><tr><td><code>items</code></td><td>TreeNode[]</td><td>[]</td></tr><tr><td><code>selectAction</code></td><td>(node: TreeNode) =&gt; void</td><td></td></tr><tr><td><code>selectedId</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>selectionFollowsFocus</code></td><td>boolean</td><td></td></tr><tr><td><code>toggleAction</code></td><td>(node: TreeNode, expanded: boolean) =&gt; void</td><td></td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-tree-select">
+<h2>tree-select <span class="muted">ui-tree-select</span></h2>
+<p>Tree-backed single selection field (Ant Design TreeSelect).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Tree select&#39;</td></tr><tr><td><code>changeAction</code></td><td>(node: TreeNode) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>expandedIds</code></td><td>string[]</td><td>[]</td></tr><tr><td><code>items</code></td><td>TreeNode[]</td><td>[]</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;Select…&#39;</td></tr><tr><td><code>selectedId</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+
+
+
+</section>
+<section id="widget-typeahead">
+<h2>typeahead <span class="muted">ui-typeahead</span></h2>
+<p>Async combobox over the shared autocomplete input with abortable source, loading/error/retry.</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Search&#39;</td></tr><tr><td><code>changeAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>emptyLabel</code></td><td></td><td>&#39;No matches&#39;</td></tr><tr><td><code>loadingLabel</code></td><td></td><td>&#39;Loading…&#39;</td></tr><tr><td><code>minChars</code></td><td></td><td>1</td></tr><tr><td><code>placeholder</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>retryLabel</code></td><td></td><td>&#39;Retry&#39;</td></tr><tr><td><code>selectAction</code></td><td>(value: string) =&gt; void</td><td></td></tr><tr><td><code>source</code></td><td>TypeaheadSource</td><td></td></tr><tr><td><code>value</code></td><td></td><td>&#39;&#39;</td></tr></tbody></table>
+<h3>Keyboard</h3><ul><li>Arrow/Home/End: move the active option</li><li>Enter: accept the active option</li><li>Escape: close suggestions</li><li>Typing: calls source(query, signal); stale responses are ignored</li></ul>
+<h3>Surfaces</h3><ul><li><strong>html</strong>: Suggestions render below the input; retry button is focusable.</li><li><strong>console</strong>: Uses the shared select overlay/window; loading/error rows stay above the input.</li></ul>
+<h3>Examples</h3><h4>Async search</h4><pre>{
+  &quot;placeholder&quot;: &quot;Search sessions…&quot;,
+  &quot;ariaLabel&quot;: &quot;Search sessions&quot;,
+  &quot;minChars&quot;: 2
+}</pre>
+</section>
+<section id="widget-upload">
+<h2>upload <span class="muted">ui-upload</span></h2>
+<p>Upload surface (Ant Design Upload).</p>
+<table><thead><tr><th>attribute</th><th>type</th><th>default</th></tr></thead><tbody><tr><td><code>accept</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>ariaLabel</code></td><td></td><td>&#39;Upload&#39;</td></tr><tr><td><code>className</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>disabled</code></td><td>boolean</td><td></td></tr><tr><td><code>files</code></td><td>Array&lt;UploadFile | string&gt;</td><td>[]</td></tr><tr><td><code>hint</code></td><td></td><td>&#39;&#39;</td></tr><tr><td><code>label</code></td><td></td><td>&#39;Upload&#39;</td></tr><tr><td><code>multiple</code></td><td>boolean</td><td></td></tr><tr><td><code>pickAction</code></td><td>() =&gt; void</td><td></td></tr><tr><td><code>removeAction</code></td><td>(name: string) =&gt; void</td><td></td></tr><tr><td><code>removeLabel</code></td><td></td><td>&#39;Remove file&#39;</td></tr></tbody></table>
+
+
+
+</section>
+</main>
+</div>
+</body>
+</html>
