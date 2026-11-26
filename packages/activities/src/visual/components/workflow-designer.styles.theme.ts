@@ -309,9 +309,6 @@ export const WORKFLOW_DESIGNER_THEME_CSS = `/* Themes */
     color: var(--wf-theme-text);
 }
 
-.workflow-designer[data-theme="dark"] .workflow-toolbar-meta,
-.workflow-designer[data-theme="solarized"] .workflow-toolbar-meta,
-.workflow-designer[data-theme="high-contrast"] .workflow-toolbar-meta,
 .workflow-designer[data-theme="dark"] .workflow-inspector-id,
 .workflow-designer[data-theme="solarized"] .workflow-inspector-id,
 .workflow-designer[data-theme="high-contrast"] .workflow-inspector-id,

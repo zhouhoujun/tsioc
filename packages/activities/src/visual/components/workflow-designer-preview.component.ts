@@ -126,7 +126,7 @@ function sameModelKey(previous: any[], next: any[]): boolean {
             <span class="workflow-status-spacer"></span>
             <span class="workflow-save-state" [class]="saveStateClass">{{saveStateLabel}}</span>
             <span class="workflow-status-selected">{{statusModel.selectedLabel}}</span>
-            <span>{{statusModel.nodeCount}} {{nodeWord}}</span>
+            <span>{{statusModel.nodeCount}} {{nodeWord}} · {{designer.connections.length}} {{linkWord}}</span>
             <span>{{statusModel.executionLabel}}</span>
             <ui-progress class="workflow-status-progress" v-if="statusModel.progress > 0"
                 :value="statusModel.progress" :max="100" :width="10"
@@ -397,7 +397,7 @@ export class WorkflowDesignerPreviewComponent implements OnDestroy, AfterViewIni
     }
 
     get nodeWord(): string { return this.t('nodeWord', 'nodes'); }
-
+    get linkWord(): string { return this.t('linkWord', 'links'); }
     get jsonTitle(): string { return this.t('jsonTitle', 'Workflow JSON (generated visually)'); }
 
     get applyLabel(): string {

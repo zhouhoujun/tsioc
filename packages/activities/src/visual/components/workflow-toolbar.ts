@@ -29,8 +29,6 @@ const EMPTY_TOOLBAR: WorkflowToolbarModel = {
     template: `
     <div class="workflow-toolbar">
         <span class="workflow-toolbar-title">{{model.name}}</span>
-        <span class="workflow-toolbar-meta">{{nodeLabel}} · {{connectionLabel}}</span>
-        <span class="workflow-toolbar-status">{{model.statusLabel}}</span>
         <span class="workflow-status-spacer"></span>
         <button v-if="visible('schedule')" class="workflow-btn" [class.is-active]="model.scheduling" @click="toggleSchedule"><icon class="workflow-btn-icon" name="schedule" size="sm"></icon>{{model.scheduling ? stopScheduleLabel : scheduleLabel}}</button>
         <button v-if="visible('run')" class="workflow-btn workflow-btn-primary" [disabled]="model.running || !model.nodeCount" @click="run"><icon class="workflow-btn-icon" name="run" size="sm"></icon>{{runLabel}}</button>
@@ -118,12 +116,6 @@ export class WorkflowToolbarComponent {
     get saveLabel(): string { return this.t('save', 'Save'); }
     get libraryLabel(): string { return this.t('library', 'Workflows'); }
     get clearLabel(): string { return this.t('clear', 'Clear'); }
-    get nodeLabel(): string {
-        return this.t('nodes', `${this.model.nodeCount} nodes`, { count: this.model.nodeCount });
-    }
-    get connectionLabel(): string {
-        return this.t('links', `${this.model.connectionCount} links`, { count: this.model.connectionCount });
-    }
 
     run(): void {
         (this.runAction || (() => this.action?.('run')))();

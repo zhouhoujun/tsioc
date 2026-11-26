@@ -616,8 +616,21 @@ describe('Workflow Designer UI', () => {
     it('switches labels through the @tsdi/i18n translator', async () => {
         ref.instance.locale = 'en';
         await flush();
-        expect(root.querySelector('.workflow-toolbar').textContent).toContain('Run');
-        expect(root.querySelector('.workflow-toolbar').textContent).toContain('nodes');
+        const toolbar = root.querySelector('.workflow-toolbar');
+        expect(toolbar.textContent).toContain('Run');
+        // Counts and execution state live once, in the status bar.
+        expect(toolbar.querySelector('.workflow-toolbar-meta')).toBeFalsy();
+        expect(toolbar.querySelector('.workflow-toolbar-status')).toBeFalsy();
+        const statusbar = root.querySelector('.workflow-statusbar').textContent;
+        expect(statusbar).toContain('nodes');
+        expect(statusbar).toContain('links');
+    });
+
+    it('hides the built-in tab strip when the host owns the tab chrome', async () => {
+        expect(root.querySelector('.workflow-global-bar .workflow-tabs')).toBeTruthy();
+        ref.instance.showTabs = false;
+        await flush();
+        expect(root.querySelector('.workflow-global-bar .workflow-tabs')).toBeFalsy();
     });
 
     it('opens saved workflows as tabs and creates/closes documents from the tab bar', async () => {

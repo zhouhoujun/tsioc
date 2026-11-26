@@ -18,7 +18,7 @@ const path = require('path');
 const DESIGNER_DIR = __dirname;
 // Slightly above build.ts because the page inlines ~4.5 KB of bootstrap bytes
 // that the bundle measurement excludes.
-const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_360_000);
+const INITIAL_JS_BUDGET = Number(process.env.DESIGNER_JS_BUDGET || 1_380_000);
 const PACKAGE_DIR = DESIGNER_DIR;
 
 /** Click a management menu entry after scrolling it into the popup viewport. */
@@ -117,7 +117,7 @@ function startDesignerServer(port) {
                 edges: document.querySelectorAll('.workflow-edge').length,
                 palette: document.querySelectorAll('.workflow-palette-item').length,
                 title: document.querySelector('.workflow-toolbar-title')?.textContent,
-                status: document.querySelector('.workflow-toolbar-status')?.textContent,
+                status: document.querySelector('.workflow-statusbar')?.textContent,
                 edgeVisible: !!box && (box.width > 0 || box.height > 0),
                 edgeNamespace: edge?.namespaceURI,
                 panesScrollable: paneOverflow.every(value => value === 'auto' || value === 'scroll'),
@@ -506,7 +506,7 @@ function startDesignerServer(port) {
         );
 
         const after = await page.evaluate(() => ({
-            completed: document.querySelector('.workflow-toolbar-status')?.textContent,
+            completed: document.querySelector('.workflow-statusbar')?.textContent,
             traversed: document.querySelectorAll('.workflow-edge[data-status="traversed"]').length,
             skippedEdges: document.querySelectorAll('.workflow-edge[data-status="skipped"]').length,
             history: document.querySelectorAll('.workflow-run-chip').length,

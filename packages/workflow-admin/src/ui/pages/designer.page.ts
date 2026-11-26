@@ -1,6 +1,7 @@
-import { Component, ViewChild, AfterViewInit } from '@tsdi/components';
+import { Component, ViewChild, AfterViewInit, OnDestroy } from '@tsdi/components';
 import { HttpClient } from '@tsdi/common/http';
 import { Router } from '@tsdi/components/router';
+import { TabBarModule, TabBarSource } from '@tsdi/components/common/tab-bar';
 import { WorkflowDesignerComponent } from '@tsdi/activities/src/visual/components/workflow-designer.component';
 import { WorkflowDesignerModule } from '@tsdi/activities/src/workflow-designer.module';
 import { createDefaultWorkflowDefinition } from '@tsdi/activities/src/visual/workflow-designer';
@@ -10,16 +11,50 @@ import { WORKFLOW_ADMIN_WORKFLOW_PATH, WORKFLOW_ADMIN_WORKFLOWS_PATH } from '../
 
 @Component({
     selector: 'workflow-admin-designer',
-    imports: [WorkflowDesignerModule],
-    template: '<workflow-designer #designer></workflow-designer>'
+    imports: [WorkflowDesignerModule, TabBarModule],
+    template: `
+    <div class="wa-designer-shell">
+        <header class="designer-header wa-designer-header">
+            <h1>TSDI Workflow Admin</h1>
+            <p>Drag nodes · connect ports · run and inspect path / history / logs</p>
+            <tab-bar v-if="designer" class="workflow-tabs wa-header-tabs" :source="tabsSource"></tab-bar>
+            <div class="designer-lang">
+                <span class="designer-auth" id="auth-user" hidden>
+                    <span id="auth-name"></span>
+                    <button id="logout" type="button">Sign out</button>
+                </span>
+            </div>
+        </header>
+        <div class="wa-designer-body">
+            <workflow-designer #designer :showTabs="false"></workflow-designer>
+        </div>
+    </div>`
 })
-export class WorkflowAdminDesignerPageComponent implements AfterViewInit {
+export class WorkflowAdminDesignerPageComponent implements AfterViewInit, OnDestroy {
     @ViewChild('designer', WorkflowDesignerComponent) designer?: WorkflowDesignerComponent;
 
     constructor(
         private readonly http: HttpClient,
         private readonly router: Router
     ) { }
+
+    /** Tabs live in the app header, so the page owns the tab strip. */
+    get tabsSource(): TabBarSource | undefined {
+        return this.designer?.workflowTabSource;
+    }
+
+    onInit(): void {
+        // The static app header would otherwise stack above this page header.
+        if (typeof document !== 'undefined') {
+            document.body.classList.add('wa-designer-route');
+        }
+    }
+
+    onDestroy(): void {
+        if (typeof document !== 'undefined') {
+            document.body.classList.remove('wa-designer-route');
+        }
+    }
 
     async onAfterViewInit(): Promise<void> {
         const designer = this.designer;

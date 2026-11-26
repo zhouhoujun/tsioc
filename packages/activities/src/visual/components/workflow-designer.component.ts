@@ -62,8 +62,8 @@ interface WorkflowDocumentTab {
     selector: 'workflow-designer',
     template: `
     <div class="workflow-designer" data-theme="{{themeName}}">
-        <div class="workflow-global-bar">
-            <tab-bar class="workflow-tabs" :source="workflowTabSource"></tab-bar>
+        <div class="workflow-global-bar {{subflowTrail.length ? 'has-breadcrumb' : ''}}">
+            <tab-bar v-if="showTabs" class="workflow-tabs" :source="workflowTabSource"></tab-bar>
             <ui-breadcrumb class="workflow-breadcrumb" v-if="subflowTrail.length"
                 :items="subflowTrail" :action="openBreadcrumb"></ui-breadcrumb>
             <workflow-management-menu :model="toolbarModel" :locale="locale" :theme="themeName"
@@ -179,7 +179,7 @@ export class WorkflowDesignerComponent implements OnDestroy {
     @Attribute() tabChangeAction?: (state: { openIds: string[]; activeId?: string }) => void;
     /** Host hook for global menu actions; return true when handled. */
     @Attribute() menuAction?: (action: string) => boolean | void;
-
+    @Attribute() showTabs = true; // hosts that render tabs in their own chrome disable this
     @ViewChild('preview', WorkflowDesignerPreviewComponent) preview?: WorkflowDesignerPreviewComponent;
 
     private workflowTabs: WorkflowDocumentTab[] = [];

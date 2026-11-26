@@ -16,6 +16,7 @@
             --wa-shell-text: #0f172a;
             --wa-shell-muted: #64748b;
             --wa-shell-border: #e2e8f0;
+            --wa-shell-hover: #f1f5f9;
             --wa-shell-accent: #2563eb;
             --wa-shell-accent-text: #ffffff;
             --wa-shell-danger: #dc2626;
@@ -28,6 +29,7 @@
             --wa-shell-text: #f8fafc;
             --wa-shell-muted: #94a3b8;
             --wa-shell-border: #1e293b;
+            --wa-shell-hover: #1e293b;
             --wa-shell-accent: #60a5fa;
             --wa-shell-accent-text: #0b1220;
             --wa-shell-danger: #fca5a5;
@@ -40,6 +42,7 @@
             --wa-shell-text: #073642;
             --wa-shell-muted: #657b83;
             --wa-shell-border: #d8cfb0;
+            --wa-shell-hover: #e7e1cc;
             --wa-shell-accent: #268bd2;
             --wa-shell-accent-text: #fdf6e3;
             --wa-shell-danger: #dc322f;
@@ -52,6 +55,7 @@
             --wa-shell-text: #ffffff;
             --wa-shell-muted: #e5e5e5;
             --wa-shell-border: #ffffff;
+            --wa-shell-hover: #1a1a1a;
             --wa-shell-accent: #ffff00;
             --wa-shell-accent-text: #000000;
             --wa-shell-danger: #ff6b6b;
@@ -148,6 +152,104 @@
             display: block;
             height: 100%;
             min-height: 0;
+        }
+        /* The designer route moves the workflow tab strip into the app header,
+           so the page header replaces the static one and the designer loses a
+           chrome row. Other routes keep the static brand header. */
+        body.wa-designer-route > .designer-header {
+            display: none;
+        }
+        .wa-designer-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+        }
+        .wa-designer-shell > .designer-header {
+            flex: 0 0 auto;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 18px;
+        }
+        .wa-designer-shell > .designer-header h1 {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+        .wa-designer-shell > .designer-header p {
+            flex: 0 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .wa-designer-shell > .designer-header .designer-lang {
+            flex: 0 0 auto;
+            margin-left: 0;
+        }
+        /* The strip keeps the shared workflow-tabs skin but maps its palette
+           from the shell theme because it sits outside the designer root. */
+        .wa-designer-shell .wa-header-tabs {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding: 0;
+            background: transparent;
+            border-bottom: 0;
+            --wf-theme-surface: var(--wa-shell-surface);
+            --wf-theme-surface-alt: var(--wa-shell-surface);
+            --wf-theme-border: var(--wa-shell-border);
+            --wf-theme-text: var(--wa-shell-text);
+            --wf-theme-muted: var(--wa-shell-muted);
+            --wf-theme-hover: var(--wa-shell-hover);
+            --wf-theme-primary: var(--wa-shell-accent);
+            --wf-theme-danger: var(--wa-shell-danger);
+            --tab-strip-background: transparent;
+            --tab-surface: var(--wa-shell-surface);
+            --tab-border: var(--wa-shell-border);
+            --tab-text: var(--wa-shell-text);
+            --tab-muted: var(--wa-shell-muted);
+            --tab-hover: var(--wa-shell-hover);
+            --tab-accent: var(--wa-shell-accent);
+            --tab-danger: var(--wa-shell-danger);
+        }
+        .wa-designer-shell .wa-header-tabs .tab-bar {
+            min-height: 0;
+            padding: 0;
+            border-bottom: 0;
+        }
+        .wa-designer-shell .wa-header-tabs .tab {
+            border: 1px solid transparent;
+            border-radius: 7px;
+        }
+        .wa-designer-shell .wa-header-tabs .tab[aria-selected="true"] {
+            border-color: var(--wa-shell-border);
+        }
+        .wa-designer-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .wa-designer-body > workflow-designer {
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+        /* With tabs hosted in the header the global bar only carries the
+           subflow breadcrumb; collapse it when there is nothing to show. */
+        .wa-designer-shell .workflow-global-bar {
+            padding: 0;
+            border-bottom: 0;
+            gap: 0;
+        }
+        .wa-designer-shell .workflow-global-bar.has-breadcrumb {
+            padding: 3px 8px;
+            border-bottom: 1px solid var(--wa-shell-border);
+            gap: 8px;
+        }
+        @media (max-width: 1100px) {
+            .wa-designer-shell > .designer-header p {
+                display: none;
+            }
         }
         .wa-login {
             height: 100%;
@@ -475,12 +577,6 @@
     <header class="designer-header">
         <h1>TSDI Workflow Admin</h1>
         <p>Drag nodes · connect ports · run and inspect path / history / logs</p>
-        <div class="designer-lang">
-            <span class="designer-auth" id="auth-user" hidden>
-                <span id="auth-name"></span>
-                <button id="logout" type="button">Sign out</button>
-            </span>
-        </div>
     </header>
     <div id="boot-status">Loading designer…</div>
     <noscript>This designer requires JavaScript.</noscript>

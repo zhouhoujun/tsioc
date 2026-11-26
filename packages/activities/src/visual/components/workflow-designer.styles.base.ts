@@ -244,23 +244,11 @@ export const WORKFLOW_DESIGNER_BASE_CSS = `
     margin-right: 4px;
 }
 
-.workflow-toolbar-meta,
 .workflow-toolbar-zoom {
     font-size: 11px;
     color: #64748b;
-}
-
-.workflow-toolbar-zoom {
     min-width: 42px;
     text-align: center;
-}
-
-.workflow-toolbar-status {
-    font-size: 11px;
-    color: #2563eb;
-    background: #eff6ff;
-    border-radius: 999px;
-    padding: 2px 8px;
 }
 
 .workflow-save-state {
