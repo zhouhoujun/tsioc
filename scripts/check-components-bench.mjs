@@ -41,7 +41,11 @@ const budgets = {
     'render designer tree': 900,
     'render 200 bound rows': 3000,
     'common display width (ansi)': 60,
-    'common slice width (ansi/cjk)': 60
+    'common slice width (ansi/cjk)': 60,
+    'common data-table filter 1k': 400,
+    'common data-table sort 1k': 500,
+    'common autocomplete 1k options': 400,
+    'common dynamic-form validate 80': 500
 };
 
 const result = spawnSync('npm', ['run', 'bench'], {

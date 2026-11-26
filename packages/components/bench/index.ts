@@ -5,6 +5,9 @@ import { XmlTemplateModule } from '../xml/src';
 import { HtmlTemplateModule } from '../html/src';
 import { DOCUMENT } from '@tsdi/common';
 import { getDisplayWidth, sliceByDisplayWidth } from '../common/src/display-width';
+import { AutoCompleteComponent } from '../common/autocomplete/src/autocomplete';
+import { DynamicFormComponent } from '../common/dynamic-form/src/dynamic-form';
+import { filterDataTableRows, sortDataTableRows } from '../common/data-table/src/data-table.view';
 
 /**
  * Components performance harness.
@@ -393,6 +396,59 @@ async function benchRender(): Promise<void> {
     }
 }
 
+async function benchCommonData(): Promise<void> {
+    const rows = Array.from({ length: 1000 }, (_value, index) => ({
+        id: `r${index}`,
+        name: `node ${index}`,
+        role: index % 2 === 0 ? 'writer' : 'reader'
+    }));
+    let filtered = filterDataTableRows(rows, {});
+    let start = now();
+    for (let round = 0; round < 200; round++) {
+        filtered = filterDataTableRows(rows, { name: 'node 1', role: 'writer' });
+    }
+    report('common data-table filter 1k', ms(start), `${filtered.length} rows`);
+    const entries = filterDataTableRows(rows, {});
+    start = now();
+    for (let round = 0; round < 100; round++) {
+        sortDataTableRows(entries, 'name', 'asc');
+    }
+    report('common data-table sort 1k', ms(start), `${entries.length} rows`);
+
+    const autocomplete = new AutoCompleteComponent();
+    autocomplete.options = Array.from({ length: 1000 }, (_value, index) => ({
+        label: `option ${index}`,
+        value: `v${index}`,
+        group: index < 500 ? 'first' : 'second'
+    }));
+    start = now();
+    for (let round = 0; round < 300; round++) {
+        autocomplete.selected = round % 1000;
+        autocomplete.viewOptions;
+    }
+    report('common autocomplete 1k options', ms(start));
+
+    const form = new DynamicFormComponent();
+    form.schema = {
+        fields: Array.from({ length: 80 }, (_value, index) => ({
+            key: `f${index}`,
+            type: 'text',
+            label: `Field ${index}`,
+            required: index % 2 === 0,
+            rules: ['required', { type: 'maxLength', value: 40 }]
+        }))
+    };
+    form.value = Object.fromEntries(Array.from({ length: 80 }, (_value, index) => [`f${index}`, `value ${index}`]));
+    for (let index = 0; index < 8; index++) {
+        await Promise.resolve();
+    }
+    start = now();
+    for (let round = 0; round < 500; round++) {
+        form.validate();
+    }
+    report('common dynamic-form validate 80', ms(start));
+}
+
 const ROUNDS = Math.max(1, Math.floor(Number(process.env.COMPONENTS_BENCH_ROUNDS || '3')) || 1);
 
 async function main(): Promise<void> {
@@ -408,6 +464,7 @@ async function main(): Promise<void> {
         await benchRender();
         await benchRenderBindings();
         await benchCommonWidth();
+        await benchCommonData();
     }
     printResults();
 }
