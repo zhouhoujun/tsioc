@@ -135,6 +135,13 @@ export class TabBarDomTest {
         const forward = root.querySelector('.tab-scroll-forward') as any;
         expect(!!back).toEqual(true);
         expect(!!forward).toEqual(true);
+        expect(back.getAttribute('tabindex')).toEqual('0');
+        expect(forward.getAttribute('tabindex')).toEqual('0');
+        forward.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await settle();
+        expect(root.scrollLeft).toBeGreaterThan(0);
+        root.scrollLeft = 0;
+        (ref.instance as any).syncDomOverflow();
         expect(back.hasAttribute('hidden')).toEqual(false);
         expect(back.getAttribute('data-disabled')).toEqual('true');
         expect(forward.hasAttribute('hidden')).toEqual(false);
@@ -152,6 +159,20 @@ export class TabBarDomTest {
         (ref.instance as any).syncDomOverflow();
         await settle();
         expect(back.getAttribute('data-disabled')).toEqual('true');
+    }
+
+    @Test('the create affordance is keyboard operable')
+    async createKeydown() {
+        const ref = this.ctx.runners.getRef(TabBarComponent) as ComponentRef<TabBarComponent>;
+        let created = 0;
+        ref.instance.source = { ...source, create: () => { created += 1; } };
+        await ref.render();
+        await Promise.resolve();
+        const root = ref.hostView.rootNodes[0] as any;
+        const create = root.querySelector('.tab-new') as HTMLElement;
+        expect(create.getAttribute('tabindex')).toEqual('0');
+        create.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        expect(created).toEqual(1);
     }
 
     @Test('close affordances are keyboard operable and hand focus back to a live tab')
@@ -205,6 +226,7 @@ export class TabBarDomTest {
         expect(root.querySelector('.tab-scroll-forward')).toBeFalsy();
         const more = root.querySelector('.tab-overflow') as HTMLElement;
         expect(!!more).toEqual(true);
+        expect(more.getAttribute('tabindex')).toEqual('0');
         expect(more.getAttribute('aria-haspopup')).toEqual('menu');
         const win = (this.ctx.get(DOCUMENT) as Document).defaultView as any;
         Object.defineProperty(win, 'innerWidth', { value: 320, configurable: true });

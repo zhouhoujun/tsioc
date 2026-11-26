@@ -77,7 +77,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
     selector: 'tab-bar, ui-tab-bar',
     template: `
     <p class="tab-bar" role="tablist" aria-orientation="horizontal" v-show="visible" #strip>
-        <span class="tab-scroll tab-scroll-back" role="button" focusable="true" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollBack($event)">{{scrollBackLabel}}</span>
+        <span class="tab-scroll tab-scroll-back" role="button" focusable="true" tabindex="0" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollBack($event)" @keydown="onScrollKeydown($event, 'back')">{{scrollBackLabel}}</span>
         <span class="tab" role="tab" id="{{tabElementId(tab)}}" aria-selected="{{tab.active}}"
             aria-controls="{{tab.controls || ''}}" tabindex="{{tabIndexFor(tab, index)}}"
             focusable="{{!tab.disabled}}" data-disabled="{{tab.disabled}}" data-hover-group="true"
@@ -86,8 +86,8 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
             @keydown="onTabKeydown($event, tab, index)">
             <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" tabindex="{{closeTabIndex(tab)}}" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)" @keydown="onCloseKeydown($event, tab.id)">{{closeLabel}}</span>
         </span>
-        <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollForward($event)">{{scrollForwardLabel}}</span>
-        <span class="tab-overflow" role="button" focusable="true" v-if="overflowMenuVisible"
+        <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" tabindex="0" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollForward($event)" @keydown="onScrollKeydown($event, 'forward')">{{scrollForwardLabel}}</span>
+        <span class="tab-overflow" role="button" focusable="true" tabindex="0" v-if="overflowMenuVisible"
             aria-haspopup="menu" aria-expanded="{{overflowMenuOpen}}" aria-label="{{overflowTitle}}"
             data-hover-group="true" @click="toggleOverflowMenu($event)"
             @keydown="onOverflowKeydown($event)">{{overflowLabel}}</span>
@@ -97,7 +97,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
                 @click="pickOverflow(item.id, $event)"
                 @keydown="onOverflowItemKeydown($event, item)">{{item.label}}</span>
         </span>
-        <span class="tab-new" role="button" focusable="true" v-show="showCreate" @click="create">{{createLabel}}</span>
+        <span class="tab-new" role="button" focusable="true" tabindex="0" v-show="showCreate" @click="create" @keydown="onCreateKeydown($event)">{{createLabel}}</span>
     </p>
     `
 })
@@ -315,26 +315,17 @@ export class TabBarComponent implements AfterViewInit {
 
     /** Keyboard activation for the nested close affordance. */
     onCloseKeydown(event: any, id: string): void {
-        const key = String(event?.key || '');
-        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
-            event.preventDefault?.();
-            event.stopPropagation?.();
-            this.closeTab(id, event);
-        }
+        if (!this.isActivationKey(event)) { return; }
+        event.preventDefault?.(); event.stopPropagation?.(); this.closeTab(id, event);
     }
 
     /** Keep keyboard focus inside the strip after a tab disappears. */
     protected focusAfterClose(): void {
         void Promise.resolve().then(() => Promise.resolve()).then(() => {
             const items = this.items;
-            const target = items.find(item => item.active && !item.disabled)
-                ?? items.find(item => !item.disabled);
-            if (!target) {
-                this.focusedKey = '';
-                return;
-            }
-            this.focusedKey = target.id;
-            this.focusTab(items.indexOf(target));
+            const target = items.find(item => item.active && !item.disabled) ?? items.find(item => !item.disabled);
+            this.focusedKey = target?.id || '';
+            if (target) { this.focusTab(items.indexOf(target)); }
         });
     }
 
@@ -431,8 +422,7 @@ export class TabBarComponent implements AfterViewInit {
     }
 
     toggleOverflowMenu(event?: Event): void {
-        event?.stopPropagation?.();
-        this.overflowMenuOpen ? this.closeOverflowMenu() : this.openOverflowMenu();
+        event?.stopPropagation?.(); this.overflowMenuOpen ? this.closeOverflowMenu() : this.openOverflowMenu();
     }
 
     openOverflowMenu(): void {
@@ -469,13 +459,11 @@ export class TabBarComponent implements AfterViewInit {
     }
 
     protected focusOverflowTrigger(): void {
-        const strip = this.resolveStripElement();
-        (strip?.querySelector?.('.tab-overflow') as HTMLElement | null | undefined)?.focus?.();
+        (this.resolveStripElement()?.querySelector?.('.tab-overflow') as HTMLElement | null | undefined)?.focus?.();
     }
 
     protected focusOverflowItem(index: number): void {
-        const strip = this.resolveStripElement();
-        const items = strip?.querySelectorAll?.('.tab-overflow-item') as ArrayLike<HTMLElement> | undefined;
+        const items = this.resolveStripElement()?.querySelectorAll?.('.tab-overflow-item') as ArrayLike<HTMLElement> | undefined;
         items?.[Math.max(0, index)]?.focus?.();
     }
 
@@ -485,7 +473,7 @@ export class TabBarComponent implements AfterViewInit {
             this.closeOverflowMenu();
             return;
         }
-        if (key === 'Enter' || key === ' ' || key === 'Spacebar' || key === 'ArrowDown') {
+        if (this.isActivationKey(event) || key === 'ArrowDown') {
             event.preventDefault?.();
             this.openOverflowMenu();
         }
@@ -498,7 +486,7 @@ export class TabBarComponent implements AfterViewInit {
             this.closeOverflowMenu();
             return;
         }
-        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+        if (this.isActivationKey(event)) {
             event.preventDefault?.();
             this.pickOverflow(item.id, event);
             return;
@@ -562,6 +550,20 @@ export class TabBarComponent implements AfterViewInit {
     create(): void {
         this.closeOverflowMenu(false);
         this.activeSource?.create?.();
+    }
+
+    onCreateKeydown(event: any): void {
+        if (!this.isActivationKey(event)) { return; }
+        event.preventDefault?.(); this.create();
+    }
+
+    onScrollKeydown(event: any, direction: 'back' | 'forward'): void {
+        if (!this.isActivationKey(event)) { return; }
+        event.preventDefault?.(); direction === 'back' ? this.scrollBack(event) : this.scrollForward(event);
+    }
+
+    protected isActivationKey(event: any): boolean {
+        return ['Enter', ' ', 'Spacebar'].includes(String(event?.key || ''));
     }
 
     close(id: string): void {
