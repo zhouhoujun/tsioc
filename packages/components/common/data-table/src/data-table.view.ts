@@ -120,3 +120,13 @@ export function dataTableClass(options: {
 export function dataTableHeaderClass(sticky: boolean): string {
     return sticky ? 'is-sticky' : '';
 }
+
+/** Whether any visible column opted into the filter row. */
+export function hasFilterableDataTableColumns(columns: Array<{ filterable?: boolean }>): boolean {
+    return columns.some(column => column.filterable === true);
+}
+
+/** Whether any filter currently contains a non-empty value. */
+export function hasActiveDataTableFilters(filters: Record<string, string> | undefined): boolean {
+    return Object.values(filters ?? {}).some(value => String(value ?? '').trim().length > 0);
+}

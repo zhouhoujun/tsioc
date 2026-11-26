@@ -23,9 +23,10 @@ import {
     dataTableHeaderClass,
     filterDataTableRows,
     formatDataTableCell,
+    hasActiveDataTableFilters,
+    hasFilterableDataTableColumns,
     sortDataTableRows
 } from './data-table.view';
-
 export * from './data-table.types';
 
 /**
@@ -70,6 +71,7 @@ export * from './data-table.types';
                     placeholder="{{column.label || column.key}}"
                     @input="filterColumn(column, $event)" />
             </span>
+            <span class="ui-data-table-filter-clear-cell" role="cell" v-if="hasActiveFilters"><button class="ui-data-table-filter-clear" type="button" @click="clearFilters">{{clearFiltersLabel}}</button></span>
         </div>
         <div class="ui-data-table-spacer" v-if="virtual && virtualTopHeight" [style]="spacerStyle(virtualTopHeight)"></div>
         <div class="ui-data-table-row-group" v-for="row in viewRows" trackBy="key">
@@ -118,10 +120,7 @@ export * from './data-table.types';
     </div>`
 })
 export class DataTableComponent {
-    constructor(@Optional() protected elementRef?: ElementRef) {
-        markElementRefRaw(elementRef);
-    }
-
+    constructor(@Optional() protected elementRef?: ElementRef) { markElementRefRaw(elementRef); }
     @Attribute() columns: DataTableColumn[] = [];
     @Attribute() rows: DataTableRow[] = [];
     @Attribute() rowKey: string | ((row: DataTableRow, index: number) => string | number) = 'id';
@@ -158,6 +157,7 @@ export class DataTableComponent {
     /** Per-column filter strings applied to local rows or sent to an async source. */
     @Attribute() filters: Record<string, string> = {};
     @Attribute() filterAction?: (filters: Record<string, string>) => void;
+    @Attribute() clearFiltersLabel = 'Clear filters';
     /** Render only rows near the scroll viewport; hosts supply `scrollTop`/`viewportHeight`. */
     @Attribute() virtual = false;
     @Attribute() virtualRowHeight = 32;
@@ -335,9 +335,9 @@ export class DataTableComponent {
         return this.source ? this._asyncRows : (Array.isArray(this.rows) ? this.rows : []);
     }
 
-    get hasFilterableColumns(): boolean {
-        return this.viewColumns.some(column => column.filterable === true);
-    }
+    get hasFilterableColumns(): boolean { return hasFilterableDataTableColumns(this.viewColumns); }
+
+    get hasActiveFilters(): boolean { return hasActiveDataTableFilters(this.filters); }
 
     get tableTotal(): number {
         return this.source && this._asyncTotal > 0 ? this._asyncTotal : this.filteredEntries.length;
