@@ -4880,3 +4880,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 结果：单进程基线 209s（低负载）；5 组 **120.2s**（6.5GB 可用）/ gate 当次 144.3s；2 组 141.6s。
 - 采用“原序连续切片”而非耗时均衡：随机组合会让 DOM 文件以新顺序相遇，触发 teardown 绑定重跑
   （`line is not defined`），这是本轮分片唯一可靠且已验证的切法。
+
+- 微服务框架第九十三批（2026-11-16）：
+  - Gateway excludePaths；admin API/UI 不再被 /api 路由转发（修复假 401/403）。
+  - 回归：gateway/admin 通过；ms-tsc 因 amqp 依赖类型漂移失败（非本批改动）。

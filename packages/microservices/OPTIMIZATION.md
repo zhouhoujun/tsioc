@@ -525,6 +525,13 @@
 - 规则设计器改为首次打开时懒创建（registry/默认 workflow 不再在 dashboard/routes 启动时构建）。
 - 回归：admin 87 passing。bundle 待并发 activities 稳定后重建。
 
+第九十三批（Admin API 被 /api 路由吞掉导致 401/403）：
+
+- 根因：网关 segment 前缀路由 `/api` 会匹配 `/api/gateway-admin/*`，把本地 admin API 转发到上游；上游未认证时返回 401/403，看起来像 admin 认证失败。
+- 新增 `GatewayOptions.excludePaths`，在规则/路由匹配前直接 `next.handle`；按路径段边界匹配。
+- standalone `startGatewayAdminServer()` 自动排除 `/api/gateway-admin` 与 UI prefix；README 集成示例补充 excludePaths。
+- 新增 gateway `exclude-paths.spec.ts` 2 个测试、admin `server.spec.ts` 真实上游 401 回归；gateway/admin 套件通过。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

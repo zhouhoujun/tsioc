@@ -105,7 +105,11 @@ import {
                     service: 'backend-service',
                     targetUrl: 'http://127.0.0.1:3001',
                     stripPrefix: true
-                }]
+                }],
+                // Keep the co-hosted admin API/UI local: otherwise `/api`
+                // forwards `/api/gateway-admin/*` upstream and its 401/403
+                // leaks to the console.
+                excludePaths: ['/api/gateway-admin', '/admin']
             }),
             useGatewayAdminUi({
                 root: path.join(__dirname, 'admin-ui'),
@@ -123,6 +127,13 @@ export class AppModule {}
 
 `admin-ui` is the output of `npm run build:web` (`web/index.html`,
 `web/main.js`, `web/chunks/**`).
+
+> If a gateway route is a broad prefix (for example `/api`), add the admin API
+> and UI prefixes to `excludePaths` as shown above. Otherwise the gateway
+> forwards `/api/gateway-admin/*` to the upstream service, so a backend `401`
+> or `403` can look like an admin authentication failure even when admin auth
+> is disabled. The standalone `startGatewayAdminServer()` entry does this
+> automatically.
 
 ## Authentication (OIDC)
 

@@ -959,6 +959,14 @@ export interface GatewayOptions {
      */
     routes: GatewayRouteOptions[];
     /**
+     * Local application paths that must bypass gateway rules/routes.
+     *
+     * Use this for co-hosted endpoints such as the admin API/UI
+     * (`/api/gateway-admin`, `/admin`) so a broad route like `/api` does not
+     * forward them upstream.
+     */
+    excludePaths?: string[];
+    /**
      * ordered gateway rules evaluated before the route table.
      */
     rules?: GatewayRuleOptions[];

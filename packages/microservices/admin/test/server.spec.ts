@@ -1,4 +1,5 @@
 import expect = require('expect');
+import * as http from 'node:http';
 import * as net from 'node:net';
 import * as path from 'node:path';
 import { ApplicationContext } from '@tsdi/core';
@@ -34,6 +35,41 @@ describe('gateway admin standalone server', () => {
 
     after(async () => {
         await ctx?.close();
+    });
+
+    it('keeps the admin API local when a broad /api gateway route is configured', async () => {
+        const upstream = http.createServer((_req, res) => {
+            res.statusCode = 401;
+            res.setHeader('content-type', 'application/json');
+            res.end(JSON.stringify({ error: 'Unauthorized' }));
+        });
+        await new Promise<void>(resolve => upstream.listen(0, '127.0.0.1', () => resolve()));
+        const upstreamPort = (upstream.address() as net.AddressInfo).port;
+        const port = await freePort();
+        const scoped = await startGatewayAdminServer({
+            host: '127.0.0.1',
+            port,
+            prefix: '/admin',
+            routes: [{
+                path: '/api',
+                service: 'upstream-service',
+                targetUrl: `http://127.0.0.1:${upstreamPort}`,
+                stripPrefix: true
+            }]
+        });
+        try {
+            const admin = await fetch(`http://127.0.0.1:${port}/api/gateway-admin/state`);
+            expect(admin.status).toBe(200);
+            const state = await admin.json() as any;
+            expect(state.auth.mode).toBe('none');
+
+            // The broad `/api` route still forwards non-admin traffic upstream.
+            const proxied = await fetch(`http://127.0.0.1:${port}/api/demo`);
+            expect(proxied.status).toBe(401);
+        } finally {
+            await scoped.close();
+            await new Promise<void>(resolve => upstream.close(() => resolve()));
+        }
     });
 
     it('serves the admin state API', async () => {

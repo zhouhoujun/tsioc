@@ -82,11 +82,17 @@ export function createGatewayAdminServerModule(options: GatewayAdminServerOption
     const port = options.port ?? DEFAULT_GATEWAY_ADMIN_PORT;
     const prefix = options.prefix ?? DEFAULT_GATEWAY_ADMIN_PREFIX;
     const uiRoot = resolveGatewayAdminUiRoot(options.uiRoot);
+    const adminApiPrefix = options.auth && options.auth.apiPrefix ? options.auth.apiPrefix : '/api/gateway-admin';
     const features: any[] = [
         useRouter(),
         useJson(),
         useCookie(),
-        useGateway({ routes: options.routes ?? [] })
+        useGateway({
+            routes: options.routes ?? [],
+            // A broad user route such as `/api` must not swallow the admin
+            // API/UI; otherwise the upstream's auth (401/403) is returned.
+            excludePaths: [adminApiPrefix, prefix]
+        })
     ];
     const auth = options.auth && options.auth.mode && options.auth.mode !== 'none'
         ? options.auth

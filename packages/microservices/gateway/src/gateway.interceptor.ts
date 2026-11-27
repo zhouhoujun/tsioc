@@ -130,6 +130,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
 
     intercept(input: Incoming, next: RequestHandler<any, any, RequestContext>, context: RequestContext): Observable<any> {
         const request = input as HttpRequestMessage;
+        if (this.isExcludedPath(request)) {
+            return next.handle(input, context);
+        }
         const rule = this.matchRule(request);
         if (rule) {
             if (rule.action.type === 'deny') {
@@ -200,6 +203,26 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             };
         }
         return { matchedBy: 'none', request: { method, path } };
+    }
+
+    /**
+     * Paths like the co-hosted admin API must stay local even when a broad
+     * gateway route (`/api`) would otherwise prefix-match them.
+     */
+    private isExcludedPath(request: HttpRequestMessage): boolean {
+        const excluded = this.runtime.getOption('excludePaths', this.options.excludePaths);
+        if (!excluded?.length) {
+            return false;
+        }
+        const defaults = this.runtime.getOption('defaults', this.options.defaults);
+        const path = this.normalizeRequestUrl(request.url ?? '/');
+        return excluded.some(entry => {
+            const value = normalizeGatewayUrl(String(entry || '/'), defaults?.prefix);
+            if (!value || value === '/') {
+                return path === value;
+            }
+            return path === value || path.startsWith(`${value}/`);
+        });
     }
 
     private matchRule(request: HttpRequestMessage): GatewayRuleOptions | null {
