@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { prefersReducedMotion, Spring, VelocityTracker } from '../motion';
+import { observeReducedMotion, prefersReducedMotion, Spring, VelocityTracker, VelocityTracker2D } from '../motion';
 
 @Suite('common motion primitives')
 export class MotionTest {
@@ -49,6 +49,36 @@ export class MotionTest {
         expect(spring.resting).toEqual(true);
         expect(() => Spring.fromDuration(0, { duration: 0, bounce: 0 })).toThrow();
         expect(() => Spring.fromDuration(0, { duration: 1, bounce: 1 })).toThrow();
+    }
+
+    @Test('2D velocity uses a time window and follows reduced-motion changes')
+    async velocity2dAndReduced() {
+        const tracker = new VelocityTracker2D(90);
+        tracker.record(0, 0, 0);
+        tracker.record(10, 20, 50);
+        expect(tracker.velocity(60)).toEqual({ x: 200, y: 400 });
+        expect(tracker.velocity(200)).toEqual({ x: 0, y: 0 });
+        tracker.record(5, 5, 10);
+        expect(tracker.velocity()).toEqual({ x: 0, y: 0 });
+
+        let listener: (() => void) | undefined;
+        let matches = false;
+        const query = {
+            get matches() { return matches; },
+            addEventListener(_type: 'change', next: () => void) { listener = next; },
+            removeEventListener() { listener = undefined; }
+        };
+        const host = { matchMedia: () => query };
+        let changes = 0;
+        const stop = observeReducedMotion(host, () => { changes += 1; });
+        expect(prefersReducedMotion(host)).toEqual(false);
+        matches = true;
+        listener?.();
+        expect(prefersReducedMotion(host)).toEqual(true);
+        expect(changes).toEqual(1);
+        stop();
+        expect(listener).toBeUndefined();
+        expect(observeReducedMotion(undefined, () => undefined)()).toBeUndefined();
     }
 
     @Test('velocity tracker reports units per millisecond and the host motion preference')

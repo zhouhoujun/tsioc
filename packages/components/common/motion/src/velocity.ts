@@ -47,3 +47,61 @@ export function prefersReducedMotion(host?: { matchMedia?: (query: string) => { 
         return false;
     }
 }
+
+
+/** Two-dimensional pointer velocity with a fixed ring buffer (no per-sample allocation). */
+export class VelocityTracker2D {
+    private xs = new Float64Array(128);
+    private ys = new Float64Array(128);
+    private ts = new Float64Array(128);
+    private start = 0;
+    private count = 0;
+
+    constructor(private readonly windowMs = 90) {
+    }
+
+    reset(): void {
+        this.start = 0;
+        this.count = 0;
+    }
+
+    record(x: number, y: number, time: number): void {
+        if (![x, y, time].every(Number.isFinite)) {
+            return;
+        }
+        if (this.count && time < this.ts[(this.start + this.count - 1) % 128]!) {
+            this.reset();
+        }
+        while (this.count > 0 && time - this.ts[this.start]! > this.windowMs) {
+            this.start = (this.start + 1) % 128;
+            this.count -= 1;
+        }
+        if (this.count === 128) {
+            this.start = (this.start + 1) % 128;
+            this.count -= 1;
+        }
+        const index = (this.start + this.count) % 128;
+        this.xs[index] = x;
+        this.ys[index] = y;
+        this.ts[index] = time;
+        this.count += 1;
+    }
+
+    velocity(now?: number): { x: number; y: number } {
+        if (this.count < 2) {
+            return { x: 0, y: 0 };
+        }
+        const last = (this.start + this.count - 1) % 128;
+        if (now != null && now - this.ts[last]! > this.windowMs) {
+            return { x: 0, y: 0 };
+        }
+        const seconds = (this.ts[last]! - this.ts[this.start]!) / 1000;
+        if (seconds <= 0) {
+            return { x: 0, y: 0 };
+        }
+        return {
+            x: (this.xs[last]! - this.xs[this.start]!) / seconds,
+            y: (this.ys[last]! - this.ys[this.start]!) / seconds
+        };
+    }
+}
