@@ -123,8 +123,8 @@
   `open`/`title`/`hint`/`items`/`source`/`recentIds`/`closable`/`beforeCloseAction`，
   backdrop/Escape 关闭；DOM 与 console renderer 均有测试。search-list 增加 controlled
   模式（`showInput=false` + `selectedId`）与 `rowLayout=inline` 已具备；agent-ui
-  command palette / `/` suggestion menu 暂留 legacy select panel：当前首屏 gzip 已
-  超过 500 KiB 目标，需先为 SearchList 做 lazy-load/削减初始包，再迁移。
+  command palette 与 `/` suggestion menu 已改用 `ui-search-list`。首屏预算改为
+  feature-first：baseline 仍是回归门禁，`WEB_INITIAL_GZIP_TARGET_KIB` 可 opt-in 硬目标。
   字段语义已统一到 `field/src/field-semantics.ts`：text-field / search-field /
   `ui-field-group` / dynamic-form 共用同一 `-hint`/`-error` id 约定与
   `aria-describedby` 顺序；select 是菜单控件，不套用 field 包装。

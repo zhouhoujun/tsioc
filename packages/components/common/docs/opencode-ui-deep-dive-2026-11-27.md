@@ -290,8 +290,9 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
   - async `debounce` / `cache` / `requestTimeout`；
   - sticky group header CSS（DOM skin）；
   - DOM + console renderer 测试覆盖 inline/section/open/debounce/cache/timeout。
-  - agent-ui palette/suggestion 迁移仍待做：当前首屏 gzip 已超 500 KiB 目标，需先为
-    SearchList 做 lazy-load 或削减初始包，再迁移。
+  - agent-ui Ctrl+P command palette 与 `/` suggestion menu 已迁到 common search-list
+    （controlled + inline row layout）；首屏预算改为 feature-first：500 KiB 仅作为
+    `WEB_INITIAL_GZIP_TARGET_KIB` opt-in，baseline 回归仍保留。
 - **P0-3 Field 增量**：
   - `labelId`/`tooltipId`/`labelTooltip`，可聚焦 info affordance；
   - 与既有 `pending/valid/status` 语义共存；
@@ -302,6 +303,8 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
   - 新增 `resolveThemeTokens(theme, overrides)`，host 可覆盖单个语义 token；
   - 对比度测试覆盖 unparseable/低对比/品牌覆盖输入。
 - **P2 bench**：`bench:check` 增加 typeahead machine 与 theme contrast 指标。
+- **agent-ui**：command palette / `/` suggestion 已切到 `ui-search-list`；web size
+  baseline 更新为当前构建，初始 gzip 目标改为 opt-in（feature-first）。
 - **P1-1 Motion 增量**：
   - `createFrameLoop()`：host scheduler、read-before-write、dt clamp、无每帧数组分配；
   - `Spring.fromDuration()` + `resting`；
