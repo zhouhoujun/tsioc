@@ -2,6 +2,7 @@ export * from './discovery';
 export * from './registry';
 export * from './selector';
 export * from './memory.discovery';
+export * from './etcd.discovery';
 export * from './consul.discovery';
 export * from './kubernetes.discovery';
 export * from './nacos.discovery';

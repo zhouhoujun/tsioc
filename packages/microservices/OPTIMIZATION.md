@@ -672,6 +672,11 @@
 - 新增 `discovery/test/nacos-live.spec.ts`（`TSIO_TEST_NACOS=1`）：真实注册/发现/query/注销。
 - `ms-nightly` 增加 Nacos standalone 容器与 readiness 等待；普通套件仍跳过。
 
+第一百一十九批（etcd 服务发现）：
+
+- 新增 `EtcdServiceDiscovery`（v3 JSON gateway，lease grant/keepalive refresh、prefix range、watch polling、update/health/shutdown）。
+- 新增 fake API 单测 + `TSIO_TEST_ETCD=1` live test；nightly 增加 bitnami/etcd 容器；discovery 89 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

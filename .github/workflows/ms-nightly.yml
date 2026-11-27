@@ -43,6 +43,12 @@ jobs:
           NACOS_AUTH_ENABLE: 'false'
           JVM_XMS: 256m
           JVM_XMX: 512m
+      etcd:
+        image: bitnami/etcd:3.5
+        ports: ['2379:2379']
+        env:
+          ALLOW_NONE_AUTHENTICATION: 'yes'
+          ETCD_ADVERTISE_CLIENT_URLS: http://localhost:2379
       rabbitmq:
         image: rabbitmq:3-management
         ports: ['5672:5672', '15672:15672']
@@ -108,6 +114,15 @@ jobs:
         run: |
           for i in $(seq 1 60); do
             curl -fsS http://127.0.0.1:8848/nacos/v1/console/health/readiness && break
+            sleep 2
+          done
+          cd packages/microservices/discovery && npm test
+      - name: etcd live discovery
+        env:
+          TSIO_TEST_ETCD: '1'
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:2379/health && break
             sleep 2
           done
           cd packages/microservices/discovery && npm test
