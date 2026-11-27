@@ -147,10 +147,10 @@ run_components_bench() {
     run_npm_script components-bench 'components performance budgets' packages/components bench:check
 }
 
-# run_common_bench — opt-in common widget benchmark budget (machine dependent)
+# run_common_bench — calibration-scaled common widget budget (opt-out with SKIP_COMMON_BENCH=1)
 run_common_bench() {
-    if [ "${RUN_COMMON_BENCH:-}" != "1" ]; then
-        stage_skip components-common-bench 'common widget budgets (opt-in; set RUN_COMMON_BENCH=1)'
+    if [ "${SKIP_COMMON_BENCH:-}" = "1" ]; then
+        stage_skip components-common-bench 'common widget budgets (skipped; unset SKIP_COMMON_BENCH to run)'
         return
     fi
     run_npm_script components-common-bench 'common widget budgets' packages/components/common bench:check

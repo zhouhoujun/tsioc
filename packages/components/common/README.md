@@ -402,8 +402,8 @@ spec that mounts them with a real renderer instead of only calling methods.
 paths, menu ancestor-path lookup and the spring integration loop with CPU
 timing. Compare before/after numbers rather than using them as absolute budgets.
 
-`npm run bench:check` applies calibration-scaled budgets. The unified gate can
-run it with `RUN_COMMON_BENCH=1 bash scripts/agents-gate.sh components-common-bench`.
+`npm run bench:check` applies calibration-scaled budgets. The unified gate runs
+it by default (`SKIP_COMMON_BENCH=1` opts out).
 
 `test/token-color-gate.spec.ts` enforces the color ratchet: existing component
 skins are recorded in `scripts/color-baseline.json` and may only decrease; new
