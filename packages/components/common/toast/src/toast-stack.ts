@@ -11,6 +11,8 @@ export interface ToastRow {
     actionLabel: string;
     /** Action text including its leading gap (terminal spans do not pad). */
     actionText: string;
+    actionPending: boolean;
+    actionError: string;
 }
 
 /**
@@ -30,8 +32,9 @@ export interface ToastRow {
         <label class="console-toast" data-tone="{{item.tone}}" v-for="item in rows" trackBy="id"
             @mouseenter="hoverStart(item.id)" @mouseleave="hoverEnd(item.id)">
             <span class="toast-message">{{item.text}}</span><span class="toast-action" role="button" tabindex="0"
-                focusable="true" v-if="item.actionLabel" @click="invoke(item.id, $event)"
-                @keydown="actionKeydown(item.id, $event)">{{item.actionText}}</span><span class="toast-close" role="button" data-cell-width="3" @click="dismiss(item.id, $event)">{{closeAffordance}}</span>
+                focusable="true" v-if="item.actionLabel" aria-disabled="{{item.actionPending}}"
+                @click="invoke(item.id, $event)" @keydown="actionKeydown(item.id, $event)">{{item.actionPending ? ' …' : item.actionText}}</span>
+            <span class="toast-action-error" role="alert" v-if="item.actionError">{{item.actionError}}</span><span class="toast-close" role="button" data-cell-width="3" @click="dismiss(item.id, $event)">{{closeAffordance}}</span>
         </label>
         </div>
     </div>`
@@ -78,7 +81,9 @@ export class ToastStackComponent {
                 tone: item?.tone || 'info',
                 text: String(item?.message ?? ''),
                 actionLabel: String(item?.actionLabel ?? ''),
-                actionText: item?.actionLabel ? ` ${item.actionLabel}` : ''
+                actionText: item?.actionLabel ? ` ${item.actionLabel}` : '',
+                actionPending: item?.actionPending === true,
+                actionError: String(item?.actionError ?? '')
             }));
         }
         const closeWidth = getDisplayWidth(this.closeAffordance);
@@ -92,7 +97,9 @@ export class ToastStackComponent {
                 tone: item?.tone || 'info',
                 text: `${message}${' '.repeat(pad)}`,
                 actionLabel,
-                actionText
+                actionText,
+                actionPending: false,
+                actionError: ''
             };
         });
     }

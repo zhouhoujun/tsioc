@@ -44,7 +44,7 @@ export class ToastProviderComponent implements OnDestroy {
     show(message: string, options?: ToastOptions): string { return this.service.show(message, options); }
     dismiss(id: string): void { this.service.dismiss(id); }
     clear(): void { this.service.clear(); }
-    invoke(id: string): void { this.service.invoke(id); }
+    invoke(id: string): Promise<void> { return this.service.invoke(id); }
     pause(id: string): void { this.service.pause(id); }
     resume(id: string): void { this.service.resume(id); }
     pauseAll(): void { this.service.pauseAll(); }

@@ -22,7 +22,10 @@ export interface ToastEntry {
     createdAt: number;
     priority?: ToastPriority;
     actionLabel?: string;
-    action?: () => void;
+    action?: () => void | Promise<any>;
+    /** Async action state for the rendered action button. */
+    actionPending?: boolean;
+    actionError?: string;
 }
 
 export type ToastListener = (entries: readonly ToastEntry[]) => void;
@@ -125,9 +128,29 @@ export class ToastService implements OnDestroy {
         this.stopTickIfIdle();
     }
 
-    /** Run an entry's action without dismissing; the action may call `dismiss`. */
-    invoke(id: string): void {
-        this.entries.find(entry => entry.id === id)?.action?.();
+    /** Run an entry's action without dismissing; async actions expose pending/error. */
+    async invoke(id: string): Promise<void> {
+        const entry = this.entries.find(item => item.id === id);
+        if (!entry?.action || entry.actionPending) {
+            return;
+        }
+        this.entries = this.entries.map(item => item.id === id
+            ? { ...item, actionPending: true, actionError: '' }
+            : item);
+        this.emit();
+        try {
+            await entry.action();
+        } catch (error) {
+            this.entries = this.entries.map(item => item.id === id
+                ? { ...item, actionError: error instanceof Error ? error.message : String(error) }
+                : item);
+            this.emit();
+        } finally {
+            this.entries = this.entries.map(item => item.id === id
+                ? { ...item, actionPending: false }
+                : item);
+            this.emit();
+        }
     }
 
     /** Freeze auto-dismiss for one entry (hover intent); resumes on `resume`. */
