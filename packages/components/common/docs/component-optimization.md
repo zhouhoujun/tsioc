@@ -339,6 +339,10 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     a11y audit 测试，chips 删除按钮具备可访问名称。
   - 新增组件继续使用 `--ui-*` token；P2 的 overlay/placement 仍复用既有
     `overlay-placement`/`overlay-outside`/`OverlayManager`。
+- **TUI 关键帧基线（2026-11-27）**
+  - agent-ui storybook 帧测试从“包含文本”升级为固定 plain-row 基线：
+    `test/fixtures/tui-storybook-basic.txt`，仅归一化时间、模型名与状态行，
+    其余布局/空白/行序逐字符比较，真实 TUI 视觉回归可复现。
 - **质量矩阵扩展（2026-11-27）**
   - shared a11y audit 新增 `aria-expanded` 取值校验与 `aria-activedescendant`
     引用存在性校验；command-palette/search-list/tree-select 矩阵保持通过。

@@ -1,0 +1,14 @@
+ New session ✕  +
+
+› storybook-user
+
+HH:MM     storybook-answer
+model: <model>
+tokens: 0
+session: storybook
+workspace: none
+agent: tsdi-agent
+│
+│ >  Ask code or files
+│
+status: <model> · 0 tokens · agent build ·

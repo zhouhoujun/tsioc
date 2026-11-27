@@ -1,4 +1,6 @@
 import expect = require('expect');
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Suite, Test } from '@tsdi/unit';
 import { Application, ApplicationContext } from '@tsdi/core';
 import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
@@ -43,8 +45,15 @@ export class TuiStorybookTest {
             const buffer = createAnsiScreenBuffer(20, 60);
             feedAnsiScreen(buffer, surface.lastRenderedLines.join('\n'));
             const rows = ansiScreenLines(buffer);
-            expect(rows.join('\n')).toContain('storybook-user');
-            expect(rows.join('\n')).toContain('storybook-answer');
+            const frame = rows
+                .map(row => row.replace(/\s+$/, ''))
+                .join('\n')
+                .replace(/^\d{2}:\d{2}/m, 'HH:MM')
+                .replace(/^model: .+$/m, 'model: <model>')
+                .replace(/^.*· 0 tokens · agent build ·$/m, 'status: <model> · 0 tokens · agent build ·')
+                .trimEnd();
+            const expected = readFileSync(join(__dirname, 'fixtures', 'tui-storybook-basic.txt'), 'utf8').trimEnd();
+            expect(frame).toEqual(expected);
             expect(rows.every(row => row.length <= 60)).toEqual(true);
         } finally {
             surface?.destroy();
