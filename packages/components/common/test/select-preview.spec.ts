@@ -55,11 +55,11 @@ export class SelectPreviewTest {
             previews.push(value);
             return () => undos.push(value);
         };
-        select.selectedIndex = 1;
+        select.setSelectedIndex(1);
         await settle();
         expect(previews).toEqual(['b']);
 
-        select.selectedIndex = 2;
+        select.setSelectedIndex(2);
         await settle();
         expect(undos).toEqual(['b']);
         expect(previews).toEqual(['b', 'c']);
@@ -77,13 +77,13 @@ export class SelectPreviewTest {
         const { ref, select } = await this.mount();
         const undos: string[] = [];
         select.highlightAction = value => () => undos.push(value);
-        select.selectedIndex = 1;
+        select.setSelectedIndex(1);
         await settle();
         select.close();
         expect(undos).toEqual(['b']);
 
         select.open = true;
-        select.selectedIndex = 2;
+        select.setSelectedIndex(2);
         await settle();
         select.onDestroy();
         expect(undos).toEqual(['b', 'c']);
@@ -95,7 +95,7 @@ export class SelectPreviewTest {
         const { ref, select } = await this.mount();
         let selected = '';
         select.selectAction = value => { selected = value; };
-        select.selectedIndex = 2;
+        select.setSelectedIndex(2);
         select.choose(2);
         expect(select.selectedIndex).toEqual(2);
         expect(selected).toEqual('c');

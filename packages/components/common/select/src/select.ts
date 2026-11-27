@@ -87,21 +87,9 @@ export class SelectComponent implements OnDestroy {
     @Attribute() options: SelectOption[] = [];
     /** Host preview hook; return an undo function to revert the preview. */
     @Attribute() highlightAction?: (value: string) => void | (() => void);
-    private _selectedIndex = 0;
+    @Attribute() selectedIndex = 0;
     private _open = true;
     private preview: SelectPreviewState = createSelectPreviewState(true);
-    private previewUndo?: () => void;
-
-    @Attribute()
-    get selectedIndex(): number { return this._selectedIndex; }
-    set selectedIndex(value: number | string) {
-        const next = Math.floor(Number(value) || 0);
-        const previous = this._selectedIndex;
-        this._selectedIndex = next;
-        if (next !== previous && this.highlightAction) {
-            this.previewAt(next);
-        }
-    }
 
     @Attribute()
     get open(): boolean { return this._open; }
@@ -113,6 +101,16 @@ export class SelectComponent implements OnDestroy {
         this._open = next;
         this.dispatchPreview({ type: 'open.changed', open: next });
     }
+    private previewUndo?: () => void;
+
+    /** Update the active row and preview it when a highlight hook exists. */
+    setSelectedIndex(index: number, preview = true): void {
+        this.selectedIndex = index;
+        if (preview && this.highlightAction) {
+            this.previewAt(index);
+        }
+    }
+
     @Attribute() visibleCount = 0;
     @Attribute() title = '';
     @Attribute() hint = '';
@@ -221,7 +219,7 @@ export class SelectComponent implements OnDestroy {
         const next = String(value ?? '');
         if (next === this.query) { return; }
         this.query = next;
-        this.selectedIndex = 0;
+        this.setSelectedIndex(0);
         this.error = '';
         void this.loadSource(next);
     }
@@ -273,7 +271,7 @@ export class SelectComponent implements OnDestroy {
             event.preventDefault?.();
             const next = this.selection.move(this.displayOptions, this.activeIndex, key === 'ArrowDown' ? 1 : -1);
             if (next >= 0) {
-                this.selectedIndex = next;
+                this.setSelectedIndex(next);
             }
             return;
         }
@@ -283,7 +281,7 @@ export class SelectComponent implements OnDestroy {
                 ? this.selection.first(this.displayOptions)
                 : this.selection.last(this.displayOptions);
             if (next >= 0) {
-                this.selectedIndex = next;
+                this.setSelectedIndex(next);
             }
             return;
         }
@@ -309,7 +307,7 @@ export class SelectComponent implements OnDestroy {
             const option = options[index];
             if (option && !option.disabled
                 && String(option.label ?? '').toLocaleLowerCase().startsWith(query)) {
-                this.selectedIndex = index;
+                this.setSelectedIndex(index);
                 return;
             }
         }
@@ -439,7 +437,7 @@ export class SelectComponent implements OnDestroy {
             this.values = [...values];
             existed ? this.removeAction?.(value) : this.selectAction?.(value);
             this.valuesAction?.(this.values);
-            this.selectedIndex = index;
+            this.setSelectedIndex(index, false);
             return;
         }
         this.selectAction?.(option.value);
@@ -480,8 +478,7 @@ export class SelectComponent implements OnDestroy {
     }
 
     close(): void {
-        this._open = false;
-        this.dispatchPreview({ type: 'open.changed', open: false });
+        this.open = false;
         this.closeAction?.();
     }
 
