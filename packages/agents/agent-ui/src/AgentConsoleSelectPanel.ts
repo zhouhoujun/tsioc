@@ -1,8 +1,9 @@
-import { Attribute, Component } from '@tsdi/components';
+import { AfterViewInit, Attribute, Component, OnDestroy, QueryList, ViewChildren } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { TranslatorService } from '@tsdi/i18n';
 import { resolveSelectWindow as resolveConsoleSelectWindow } from '@tsdi/components/common';
 import { SelectComponent } from '@tsdi/components/common/select';
+import { SearchListComponent, SearchListItem } from '@tsdi/components/common/search-list';
 import { formatAgentPanelLabel as panelLabel } from './agent-ui.i18n';
 import { AgentConsoleSelectMenu, AgentConsoleSessionState } from './AgentConsoleSessionState';
 import { AgentConsoleTheme, defaultAgentConsoleTheme } from './AgentConsoleTheme';
@@ -10,9 +11,22 @@ import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
 
 @Component({
     selector: 'agent-console-select-panel',
-    imports: [SelectComponent],
+    imports: [SelectComponent, SearchListComponent],
     template: `
-        <select-list
+        <div class="select-panel-root">
+        <div v-if="menuIsSearchList" class="console-panel select-list select-palette"
+            role="dialog" aria-label="{{accessibilityLabel}}">
+            <div class="select-shell {{menuIsSuggestion ? 'select-suggestions' : 'select-card'}}">
+                <label class="dialog-close" data-cell-width="2" @click="closeMenu">✕</label>
+                <label class="select-title" v-if="menuTitleText">{{menuTitleText}}</label>
+                <label class="select-meta" v-if="paletteMeta">{{paletteMeta}}</label>
+                <ui-search-list :items="paletteItems" :selectedId="paletteSelectedId" :showInput="false"
+                    rowLayout="inline" :ariaLabel="accessibilityLabel" :maxVisible="0"></ui-search-list>
+                <label class="select-detail" v-for="line in menuDetailLines">{{line}}</label>
+                <label class="select-hint" v-if="menuHintText">{{menuHintText}}</label>
+            </div>
+        </div>
+        <select-list v-else
             :options="menuOptions"
             :widthTitle="menuWidthTitle"
             :widthOptions="menuWidthOptions"
@@ -29,9 +43,10 @@ import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
             @selectAction="selectOption"
             @closeAction="closeMenu"
             @keydownAction="onKeydown"></select-list>
+        </div>
     `
 })
-export class AgentConsoleSelectPanelComponent {
+export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestroy {
     constructor(
         private state: AgentConsoleSessionState,
         @Optional() private translator?: TranslatorService
@@ -40,6 +55,68 @@ export class AgentConsoleSelectPanelComponent {
 
     @Attribute() theme: AgentConsoleTheme = defaultAgentConsoleTheme;
     @Attribute() selectAction?: (value: string) => Promise<void>;
+
+    @ViewChildren(SearchListComponent) paletteLists?: QueryList<SearchListComponent>;
+    private paletteSubscription?: { unsubscribe(): void };
+
+    onAfterViewInit(): void {
+        this.paletteSubscription = this.paletteLists?.changes.subscribe(() => this.wirePaletteList());
+        this.wirePaletteList();
+    }
+
+    onDestroy(): void {
+        this.paletteSubscription?.unsubscribe();
+        this.paletteSubscription = undefined;
+    }
+
+    protected wirePaletteList(): void {
+        const list = this.paletteLists?.first;
+        if (!list) {
+            return;
+        }
+        list.selectAction = item => { void this.selectOption(item.id); };
+        list.activeChangeAction = item => {
+            const menu = this.menu;
+            if (!menu || !item) {
+                return;
+            }
+            const index = menu.options.findIndex(option => option.value === item.id);
+            if (index >= 0) {
+                menu.selectedIndex = index;
+            }
+        };
+    }
+
+    get menuIsPalette(): boolean {
+        return this.menu?.kind === 'palette';
+    }
+
+    /** Palette and inline slash/mention suggestions share the search-list rows. */
+    get menuIsSearchList(): boolean {
+        return this.menuIsPalette || this.menuIsSuggestion;
+    }
+
+    get paletteItems(): SearchListItem[] {
+        const menu = this.menu;
+        if (!menu) {
+            return [];
+        }
+        const window = resolveConsoleSelectWindow(menu.options.length, menu.selectedIndex, this.visibleOptionCount);
+        return menu.options.slice(window.start, window.start + window.count).map(option => ({
+            id: option.value,
+            label: option.label,
+            description: option.description
+        }));
+    }
+
+    get paletteSelectedId(): string {
+        const menu = this.menu;
+        return menu?.options?.[menu.selectedIndex]?.value || '';
+    }
+
+    get paletteMeta(): string {
+        return this.menuMetaText;
+    }
 
     protected get activeTheme(): AgentConsoleTheme {
         return this.state?.theme || this.theme || defaultAgentConsoleTheme;

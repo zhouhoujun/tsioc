@@ -13,7 +13,7 @@ import { installImageStyles } from './image.styles';
     selector: 'ui-image',
     template: `
     <figure class="ui-image {{imageClass}}">
-        <img class="ui-image-el" src="{{src}}" alt="{{alt}}" width="{{width}}" height="{{height}}"
+        <img class="ui-image-el" src="{{src}}" alt="{{alt || fallback}}" width="{{width}}" height="{{height}}"
             [style]="imageStyle" v-if="src" />
         <figcaption class="ui-image-caption">{{caption}}</figcaption>
         <v-content></v-content>

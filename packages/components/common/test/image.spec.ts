@@ -11,7 +11,8 @@ import { ImageComponent, ImageModule } from '../image';
     imports: [ImageComponent],
     template: `
     <ui-image src="a.png" alt="Chart" width="120" height="80" fit="contain"></ui-image>
-    <ui-image fallback="Placeholder"></ui-image>`
+    <ui-image fallback="Placeholder"></ui-image>
+    <ui-image src="b.png" fallback="Fallback alt"></ui-image>`
 })
 class ImageHostComponent { }
 
@@ -66,5 +67,9 @@ export class ImageTest {
         const fallback = roots[1];
         expect(fallback.querySelector('img')).toBeFalsy();
         expect(fallback.querySelector('.ui-image-caption')?.textContent).toEqual('Placeholder');
+
+        const fallbackAlt = roots[2].querySelector('img') as HTMLImageElement;
+        expect(fallbackAlt.getAttribute('alt')).toEqual('Fallback alt');
+        expect(roots[2].querySelector('.ui-image-caption')?.textContent).toEqual('Fallback alt');
     }
 }
