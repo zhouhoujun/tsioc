@@ -637,6 +637,11 @@
 - 新增 `service/src/saga.ts`：顺序执行、失败逆序补偿、补偿错误聚合、步骤 hook。
 - 新增 `examples/saga.ts` 并接入 `ms-examples`（reserve → charge 失败 → release）；service 121 passing。
 
+第一百一十二批（Nightly CI）：
+
+- 新增 `.github/workflows/ms-nightly.yml`：Redis/NATS/MQTT/RabbitMQ/Kafka 容器 + `ms-brokers`、`ms-examples-broker`、30 分钟 `ms-soak`、`ms-bench`。
+- 覆盖 30 分钟 soak、真实 broker 与性能回归，不阻塞日常 gate。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

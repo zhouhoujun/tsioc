@@ -1,0 +1,79 @@
+name: ms-nightly
+
+on:
+  schedule:
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ms-nightly
+  cancel-in-progress: false
+
+jobs:
+  brokers-soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      nats:
+        image: nats:2.10
+        ports: ['4222:4222', '8222:8222']
+      mqtt:
+        image: eclipse-mosquitto:2
+        ports: ['1883:1883']
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports: ['5672:5672', '15672:15672']
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s --health-timeout 5s --health-retries 20
+      zookeeper:
+        image: confluentinc/cp-zookeeper:7.3.2
+        ports: ['2181:2181']
+        env:
+          ZOOKEEPER_CLIENT_PORT: 2181
+          ZOOKEEPER_TICK_TIME: 2000
+      kafka:
+        image: confluentinc/cp-kafka:7.3.2
+        ports: ['9092:9092']
+        env:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+        options: >-
+          --health-cmd "kafka-broker-api-versions --bootstrap-server localhost:9092"
+          --health-interval 10s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Real broker suites
+        env:
+          MS_BROKER_PROFILE: '1'
+          TSIO_TEST_KAFKA_BROKERS: localhost:9092
+        run: bash scripts/agents-gate.sh ms-brokers
+      - name: Gateway → Redis broker smoke
+        env:
+          MS_BROKER_PROFILE: '1'
+        run: bash scripts/agents-gate.sh ms-examples-broker
+      - name: 30 minute soak
+        env:
+          MS_SOAK_PROFILE: '1'
+          MS_SOAK_MS: '1800000'
+        run: bash scripts/agents-gate.sh ms-soak
+      - name: Performance regression
+        run: bash scripts/agents-gate.sh ms-bench

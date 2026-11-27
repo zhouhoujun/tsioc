@@ -4952,3 +4952,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百一十一批（2026-11-16）：
   - Saga 原语 + example + ms-examples smoke。
   - 回归：service 121。
+
+- 微服务框架第一百一十二批（2026-11-16）：
+  - ms-nightly CI（brokers + 30m soak + bench）。
