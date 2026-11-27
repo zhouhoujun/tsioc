@@ -703,6 +703,11 @@
 - `GatewayConfigService` 校验 canary.percentage（0–100）、header.name/value、version、tags 类型；无效配置在 apply 前失败。
 - 新增 canary 配置测试；gateway 164 passing。
 
+第一百二十五批（1MB 流式响应）：
+
+- Gateway E2E 新增 1MB 分块流式响应测试：首块在结束前到达、16 个 64KB chunk、总字节精确 1MB。
+- 验证现有 `stream:true` 路径未缓冲整个响应；gateway 165 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

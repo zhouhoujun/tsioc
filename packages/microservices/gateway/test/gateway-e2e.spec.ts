@@ -52,6 +52,31 @@ class UpstreamController {
         return new Promise(resolve => setTimeout(() => resolve({ slow: true }), 200));
     }
 
+    @Get('/large')
+    large(@Inject(RestfulRequestAdapter) adapter: RestfulRequestAdapter) {
+        adapter.setHeader('content-type', 'application/octet-stream');
+        const chunk = Buffer.alloc(64 * 1024, 65);
+        let sent = 0;
+        let pending = false;
+        return new Readable({
+            read() {
+                if (sent >= 16) {
+                    this.push(null);
+                    return;
+                }
+                if (pending) {
+                    return;
+                }
+                pending = true;
+                setTimeout(() => {
+                    pending = false;
+                    sent += 1;
+                    this.push(chunk);
+                }, 3);
+            }
+        });
+    }
+
     @Get('/fail')
     fail() {
         throw new Error('upstream boom');
@@ -159,6 +184,13 @@ describe('Gateway E2E', () => {
                         stripPrefix: true,
                         targetPath: '/users/profile',
                         rateLimit: { limit: 1, windowMs: 10_000 }
+                    }, {
+                        path: '/gateway/stream-large',
+                        service: 'users-service',
+                        targetUrl: `http://127.0.0.1:${UPSTREAM_PORT}`,
+                        targetPath: '/users',
+                        rewrite: { path: () => '/large' },
+                        stream: true
                     }, {
                         path: '/gateway/discovered',
                         service: 'users-service',
@@ -379,6 +411,44 @@ describe('Gateway E2E', () => {
         expect(result.status).toBe(200);
         expect(result.body).toContain('data: 1');
         expect(result.body).toContain('data: 2');
+        expect(result.firstChunkAt - startedAt).toBeLessThan(result.endAt - startedAt);
+    });
+
+    it('streams a 1MB response in chunks before the upstream finishes', async () => {
+        const startedAt = Date.now();
+        const result = await new Promise<{ status: number; bytes: number; chunks: number; firstChunkAt: number; endAt: number }>((resolve, reject) => {
+            const req = http.request({
+                host: '127.0.0.1',
+                port: GATEWAY_PORT,
+                path: '/gateway/stream-large',
+                method: 'GET'
+            }, res => {
+                let bytes = 0;
+                let chunks = 0;
+                let firstChunkAt = 0;
+                res.on('data', chunk => {
+                    if (!firstChunkAt) {
+                        firstChunkAt = Date.now();
+                    }
+                    chunks += 1;
+                    bytes += chunk.length;
+                });
+                res.on('end', () => resolve({
+                    status: res.statusCode ?? 0,
+                    bytes,
+                    chunks,
+                    firstChunkAt,
+                    endAt: Date.now()
+                }));
+            });
+            req.on('error', reject);
+            req.end();
+            setTimeout(() => req.destroy(new Error('stream timeout')), 5000);
+        });
+
+        expect(result.status).toBe(200);
+        expect(result.bytes).toBe(1024 * 1024);
+        expect(result.chunks).toBeGreaterThan(4);
         expect(result.firstChunkAt - startedAt).toBeLessThan(result.endAt - startedAt);
     });
 
