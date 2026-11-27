@@ -61,6 +61,32 @@ export class DataTableAsyncTest {
         expect(calls.some(call => call.sortKey === 'name')).toEqual(true);
     }
 
+    @Test('keeps filters, sorts and selection while paging server rows')
+    async serverState() {
+        const calls: any[] = [];
+        const table = await this.mount();
+        table.columns = [{ key: 'name', label: 'Name', sortable: true }];
+        table.pageSize = 2;
+        table.pagination = true;
+        table.selectable = true;
+        table.multiSort = true;
+        table.filters = { name: 'a' };
+        table.selectedKeys = ['1'];
+        table.sorts = [{ key: 'name', direction: 'asc' }];
+        table.source = async request => {
+            calls.push(request);
+            return { rows: [{ id: String(request.page), name: 'a' }], total: 6 };
+        };
+        await table.reload();
+        table.goToPage(3);
+        await settle();
+        const last = calls[calls.length - 1];
+        expect(last.page).toEqual(3);
+        expect(last.filters).toEqual({ name: 'a' });
+        expect(last.sorts).toEqual([{ key: 'name', direction: 'asc' }]);
+        expect(table.selectedKeys).toEqual(['1']);
+    }
+
     @Test('surfaces source errors and retries')
     async errors() {
         const table = await this.mount();
