@@ -487,7 +487,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
                 keepAliveTimeout: pool.keepAliveTimeout,
                 keepAliveMaxTimeout: pool.keepAliveMaxTimeout,
                 headersTimeout: pool.headersTimeout,
-                bodyTimeout: pool.bodyTimeout
+                bodyTimeout: pool.bodyTimeout,
+                ...(pool.allowH2 !== undefined ? { allowH2: pool.allowH2 } : {}),
+                ...(pool.connect ? { connect: pool.connect } : {})
             });
             this.httpFetch = ((url: any, init: any = {}) => undici.fetch(url, {
                 ...init,

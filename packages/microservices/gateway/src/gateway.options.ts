@@ -862,6 +862,10 @@ export interface GatewayHttpPoolOptions {
      * response body timeout in milliseconds.
      */
     bodyTimeout?: number;
+    /** negotiate HTTP/2 with HTTPS upstreams (undici `allowH2`). */
+    allowH2?: boolean;
+    /** undici connect options, e.g. `{ rejectUnauthorized: false }` for tests. */
+    connect?: Record<string, any>;
 }
 
 /**

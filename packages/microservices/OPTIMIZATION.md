@@ -662,6 +662,11 @@
 - 新增 `discovery/test/consul-live.spec.ts`（`TSIO_TEST_CONSUL=1`）：真实注册/发现/query/注销。
 - `ms-nightly` 增加 Consul 容器与 live 步骤；普通套件仍跳过，不依赖 Consul。
 
+第一百一十七批（Gateway HTTP/2 上游）：
+
+- `httpPool` 新增 `allowH2` 与 `connect`（undici Agent 选项），HTTPS 上游可协商 h2。
+- 新增真实 h2 secure server 测试（自签证书，openssl 不可用时 skip）；gateway 161 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

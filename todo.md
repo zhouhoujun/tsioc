@@ -4969,3 +4969,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百一十六批（2026-11-16）：
   - Consul live discovery test + nightly Consul service。
+
+- 微服务框架第一百一十七批（2026-11-16）：
+  - Gateway HTTP/2 upstream（allowH2/connect）+ 真实 h2 测试。
+  - 回归：gateway 161。
