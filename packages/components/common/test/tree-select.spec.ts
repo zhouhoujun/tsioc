@@ -12,16 +12,20 @@ import { TreeSelectComponent, TreeSelectModule } from '../tree-select';
     template: `
     <ui-tree-select :items="tree" :expandedIds="['root']" ariaLabel="Category"
         :changeAction="onSelect"></ui-tree-select>
-    <ui-tree-select :items="tree" disabled ariaLabel="Locked"></ui-tree-select>`
+    <ui-tree-select :items="tree" disabled ariaLabel="Locked"></ui-tree-select>
+    <ui-tree-select :items="tree" :multiple="true" :checkable="true" ariaLabel="Tags"
+        :checkedIds="checked" :checkAction="onCheck" removeLabel="删除"></ui-tree-select>`
 })
 class TreeSelectHostComponent {
     selected = '';
+    checked: string[] = ['child', 'root'];
     tree = [
         { id: 'root', label: 'Root', children: [
             { id: 'child', label: 'Child' }
         ] }
     ];
     onSelect = (node: any) => { this.selected = node.id; };
+    onCheck = (keys: string[]) => { this.checked = keys; };
 }
 
 @Suite('common tree select')
@@ -47,7 +51,11 @@ export class TreeSelectTest {
         await this.ctx.close();
     }
 
-    protected async mount(): Promise<{ roots: HTMLElement[]; host: TreeSelectHostComponent }> {
+    protected async mount(): Promise<{
+        roots: HTMLElement[];
+        host: TreeSelectHostComponent;
+        rootNow: (index?: number) => HTMLElement;
+    }> {
         const ref = this.ctx.get(ComponentFactory).create(TreeSelectHostComponent, {
             injector: this.ctx
         }) as ComponentRef<TreeSelectHostComponent>;
@@ -56,13 +64,17 @@ export class TreeSelectTest {
         const components = ref.hostView.queryAll(TreeSelectComponent) as ComponentRef<TreeSelectComponent>[];
         return {
             roots: components.map(component => component.hostView.rootNodes[0] as HTMLElement),
-            host: ref.instance as TreeSelectHostComponent
+            host: ref.instance as TreeSelectHostComponent,
+            rootNow: (index = 0) => {
+            const current = ref.hostView.queryAll(TreeSelectComponent) as ComponentRef<TreeSelectComponent>[];
+            return current[index].hostView.rootNodes[0] as HTMLElement;
+        }
         };
     }
 
     @Test('opens the tree, selects a node and closes the panel')
     async selectsNode() {
-        const { roots, host } = await this.mount();
+        const { roots, host, rootNow } = await this.mount();
         const root = roots[0];
         const doc = this.ctx.get(DOCUMENT) as Document;
 
@@ -81,14 +93,15 @@ export class TreeSelectTest {
         (panel.querySelectorAll('.ui-tree-row')[1] as HTMLElement).click();
         await Promise.resolve();
         expect(host.selected).toEqual('child');
-        expect(root.textContent).toContain('Child');
-        expect(root.getAttribute('aria-expanded')).toEqual('false');
-        expect(root.querySelector('.ui-tree-select-panel')).toBeFalsy();
+        const live = (root.ownerDocument.querySelector('[aria-label="Category"]') as HTMLElement) || rootNow();
+        expect(live.textContent).toContain('Child');
+        expect(live.getAttribute('aria-expanded')).toEqual('false');
+        expect(live.querySelector('.ui-tree-select-panel')).toBeFalsy();
 
-        (root.querySelector('.ui-tree-select-trigger') as HTMLElement).click();
+        (live.querySelector('.ui-tree-select-trigger') as HTMLElement).click();
         await Promise.resolve();
-        root.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        expect(root.getAttribute('aria-expanded')).toEqual('false');
+        live.dispatchEvent(new (doc.defaultView as any).KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        expect(live.getAttribute('aria-expanded')).toEqual('false');
     }
 
     @Test('keyboard opens into the tree and restores the trigger after selection')
@@ -113,6 +126,24 @@ export class TreeSelectTest {
         expect(root.getAttribute('aria-expanded')).toEqual('false');
         expect(doc.activeElement === root).toEqual(true);
         root.remove();
+    }
+
+    @Test('renders multi-select chips and removes a checked value')
+    async multiChips() {
+        const { roots, host, rootNow } = await this.mount();
+        const root = roots[2];
+        const chips = root.querySelectorAll('.ui-tree-select-chip');
+        expect(chips.length).toBe(2);
+        expect(root.textContent).toContain('Child');
+        const remove = root.querySelector('.ui-tree-select-chip-remove') as any;
+        expect(remove.getAttribute('aria-label')).toBe('删除');
+        remove.click();
+        await Promise.resolve();
+        expect(host.checked).toEqual(['root']);
+        const liveRoot = (root.ownerDocument.querySelector('[aria-label="Tags"]') as HTMLElement) || rootNow(2);
+        const live = liveRoot.querySelectorAll('.ui-tree-select-chip');
+        expect(live.length).toBe(1);
+        expect(liveRoot.textContent).not.toContain('Child');
     }
 
     @Test('disabled tree selects stay closed')

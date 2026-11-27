@@ -332,6 +332,13 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
     边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
     等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。
+- **TreeSelect 多选 chips（2026-11-27）**
+  - `multiple` 模式在 trigger 内渲染可删除 chips（含 `removeLabel`），不再把
+    多选值拼成逗号字符串；删除会本地更新 `checkedIds` 并回调 `removeAction`/
+    `checkAction`，保持受控与即时反馈。
+  - Tree 既有的 filter（保留祖先）、visible window、拖拽/Alt+Arrow 重排、
+    DataTable 的 groupBy/tree rows/edit validation/列选择器/server source
+    在本轮复核中保持可用。
 - **运行日志过滤（2026-11-27）**
   - Logs 模式支持按级别 + 关键字过滤；Messages 模式支持按节点 + 关键字过滤。
   - 过滤状态与空态、行 `data-level`/节点 identity 保持稳定，TUI 与 DOM 共用同一

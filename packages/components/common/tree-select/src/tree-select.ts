@@ -23,8 +23,16 @@ import { installTreeSelectStyles } from './tree-select.styles';
         tabindex="{{disabled ? -1 : 0}}" focusable="{{!disabled}}"
         @keydown="onKeydown($event)">
         <span class="ui-tree-select-trigger" @click="toggle()">
-            <span class="ui-tree-select-value" v-if="displayLabel">{{displayLabel}}</span>
-            <span class="ui-tree-select-value is-placeholder" v-else>{{placeholder}}</span>
+            <span class="ui-tree-select-values" role="list" v-if="multiple && checkedItems.length">
+                <span class="ui-tree-select-chip" role="listitem" v-for="item in checkedItems" trackBy="key">
+                    <span class="ui-tree-select-chip-label">{{item.label}}</span>
+                    <button class="ui-tree-select-chip-remove" type="button" aria-label="{{removeLabel}}"
+                        @click="remove(item.key, $event)">✕</button>
+                </span>
+            </span>
+            <span class="ui-tree-select-value" v-if="!multiple && displayLabel">{{displayLabel}}</span>
+            <span class="ui-tree-select-value is-placeholder" v-if="!multiple && !displayLabel">{{placeholder}}</span>
+            <span class="ui-tree-select-value is-placeholder" v-if="multiple && !checkedItems.length">{{placeholder}}</span>
             <span class="ui-tree-select-caret" aria-hidden="true">{{openState ? '▾' : '▸'}}</span>
         </span>
         <div class="ui-tree-select-panel" v-if="openState">
@@ -55,10 +63,12 @@ export class TreeSelectComponent {
     @Attribute() className = '';
     @Attribute() changeAction?: (node: TreeNode) => void;
     @Attribute() checkAction?: (keys: string[], node: TreeNode) => void;
-    @Attribute() loadChildren?: (node: TreeNode) => TreeNode[] | Promise<TreeNode[]>;
+    @Attribute() loadChildren?: (node: TreeNode) => TreeNode[] | Promise<TreeNode[]> = undefined;
     @Attribute() checkedIds: Array<string | number> = [];
     @Attribute() cascade: boolean | string = true;
     @Attribute() filter = '';
+    @Attribute() removeLabel = 'Remove';
+    @Attribute() removeAction?: (key: string, node?: TreeNode) => void;
 
     private _open = false;
     private _disabled = false;
@@ -98,6 +108,13 @@ export class TreeSelectComponent {
         ].filter(Boolean).join(' ');
     }
 
+    get checkedItems(): Array<{ key: string; label: string }> {
+        return (this.checkedIds || []).map(key => ({
+            key: String(key),
+            label: this.findLabel(this.items, String(key)) || String(key)
+        }));
+    }
+
     get displayLabel(): string {
         if (this._multiple) {
             return (this.checkedIds || [])
@@ -117,7 +134,10 @@ export class TreeSelectComponent {
     }
 
     get treeCheckHandler(): (keys: string[], node: TreeNode) => void {
-        return (keys, node) => this.checkAction?.(keys, node);
+        return (keys, node) => {
+            this.checkedIds = [...keys];
+            this.checkAction?.(keys, node);
+        };
     }
 
     get treeToggleHandler(): (node: TreeNode, expanded: boolean) => void {
@@ -144,6 +164,22 @@ export class TreeSelectComponent {
         }
         this._open = false;
         this.focusTrigger();
+    }
+
+    remove(key: string, event?: any): void {
+        event?.stopPropagation?.();
+        if (this._disabled) {
+            return;
+        }
+        const target = String(key || '');
+        if (!target) {
+            return;
+        }
+        const node = this.findNode(this.items, target);
+        const keys = (this.checkedIds || []).map(String).filter(item => item !== target);
+        this.checkedIds = keys;
+        this.removeAction?.(target, node);
+        this.checkAction?.(keys, node as TreeNode);
     }
 
     choose(node: TreeNode): void {
@@ -203,6 +239,22 @@ export class TreeSelectComponent {
         const keys = new Set(this.expandedKeys.map(String));
         expanded ? keys.add(key) : keys.delete(key);
         this.expandedIds = [...keys];
+    }
+
+    protected findNode(nodes: TreeNode[], key: string): TreeNode | undefined {
+        for (const node of Array.isArray(nodes) ? nodes : []) {
+            if (!node) {
+                continue;
+            }
+            if (String(node.id ?? '') === key) {
+                return node;
+            }
+            const child = this.findNode(node.children || [], key);
+            if (child) {
+                return child;
+            }
+        }
+        return undefined;
     }
 
     protected findLabel(nodes: TreeNode[], key: string): string {

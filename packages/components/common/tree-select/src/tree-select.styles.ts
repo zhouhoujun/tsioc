@@ -21,6 +21,34 @@ export const TREE_SELECT_CSS = `
     padding: 0.15em 0.75ch;
     cursor: pointer;
 }
+.ui-tree-select-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3em;
+    min-width: 0;
+}
+.ui-tree-select-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    max-width: 18ch;
+    padding: 0.05em 0.4em;
+    border: 1px solid var(--ui-border, #cbd5e1);
+    border-radius: 0.8em;
+    color: var(--ui-fg, inherit);
+}
+.ui-tree-select-chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ui-tree-select-chip-remove {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--ui-muted-fg, inherit);
+    cursor: pointer;
+}
 .ui-tree-select-value.is-placeholder { color: var(--ui-muted-fg, inherit); }
 .ui-tree-select-caret { color: var(--ui-muted-fg, inherit); }
 .ui-tree-select-panel {
