@@ -20,5 +20,15 @@ export class CatalogStateMatrixTest {
         const ids = Array.from(html.matchAll(/\sid="([^"]+)"/g)).map(match => match[1]);
         expect(ids.length).toBeGreaterThan(0);
         expect(new Set(ids).size).toEqual(ids.length);
+        const idSet = new Set(ids);
+        const missing: string[] = [];
+        for (const ref of html.matchAll(/aria-(?:labelledby|describedby|controls|activedescendant|owns)="([^"]*)"/g)) {
+            for (const id of ref[1].split(/\s+/).filter(Boolean)) {
+                if (!idSet.has(id)) {
+                    missing.push(id);
+                }
+            }
+        }
+        expect(missing).toEqual([]);
     }
 }
