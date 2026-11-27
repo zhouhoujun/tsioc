@@ -311,7 +311,8 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
   undo；切换/关闭/销毁时正确 revert，选择后进入 committed。
 - **P1 i18n defaults**：新增 `UI_I18N` token，SearchList/Typeahead/CommandPalette 的
   placeholder/empty/loading/retry/recent/aria 默认文案可由 host translator 本地化；
-  agent-ui 注册 `UI_I18N` 并提供中文 `ui.common.*` 文案。
+  agent-ui 注册 `UI_I18N` 并提供中文 `ui.common.*` 文案；Field pending 与
+  InlineInput 编辑文案同样走 `UI_I18N`。
 - **P1 inline rename**：`tab-bar` 支持 `rename` + `ui-inline-input`（DOM 双击/F2），
   agent-ui session tabs 通过 `sessionTabsAction.rename` 持久化标题；键盘/重命名逻辑
   拆到 `tab-bar.keys.ts` / `tab-bar.rename.ts` 控制体积。
