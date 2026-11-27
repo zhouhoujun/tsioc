@@ -273,3 +273,40 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
 | P2 | catalog 交互示例；视觉/文本快照；bench/gate；source-size |
 
 完成标准：不删除功能、不改变默认行为、DOM/TUI 语义一致、所有新增热路径有 bench、所有新增交互有真实 renderer 测试。
+
+
+## 11. 实施进度（2026-11-27）
+
+### 已完成
+
+- **P0-1 typeahead 状态机**：`typeahead/src/typeahead.machine.ts`
+  - debounce、cache、stale rows、15s timeout、retry、attempt 丢弃过期响应；
+  - 组件保留原有 `source(query, signal)` / `value` / `selectAction` API；
+  - `test/typeahead-machine.spec.ts` + 原 typeahead 测试通过。
+- **P0-2 SearchList 增量**：
+  - controlled 模式 `showInput=false` + `selectedId`；
+  - `rowLayout: inline`（TUI label/description 同行，agent-ui palette 已使用）；
+  - `open`、`scrollTop`/`scrollAction`、`Ctrl/Alt+↑↓` section 跳转；
+  - async `debounce` / `cache` / `requestTimeout`；
+  - sticky group header CSS（DOM skin）；
+  - DOM + console renderer 测试覆盖 inline/section/open/debounce/cache/timeout。
+- **P0-3 Field 增量**：
+  - `labelId`/`tooltipId`/`labelTooltip`，可聚焦 info affordance；
+  - 与既有 `pending/valid/status` 语义共存；
+  - `ui-field-group` 兼容入口保持不变。
+- **P0-4 Theme 增量**：
+  - `ensureContrast()`：按 WCAG 目标把前景色推向黑/白；
+  - `themeTokens()` 对 fg/muted/accentFg 做最终对比度保障；
+  - 对比度测试覆盖 unparseable/低对比输入。
+- **P1-1 Motion 增量**：
+  - `createFrameLoop()`：host scheduler、read-before-write、dt clamp、无每帧数组分配；
+  - `Spring.fromDuration()` + `resting`；
+  - 测试覆盖 frame loop、异常任务、duration/bounce spring。
+
+### 待办
+
+- typeahead/search-list 仍缺 section sticky/fade 的 DOM 测量与 TUI 窗口适配（当前 sticky 仅 CSS）。
+- Field v2 仍缺 context + prefix/suffix 组合与 dynamic-form 全量委托。
+- Theme v2 仍缺 OKLCH ramp/light-dark 生成器与多主题 JSON。
+- Motion 仍缺 reduced-motion 实时订阅、2D ring VelocityTracker、WAAPI adapter。
+- Select preview/undo、overlay focus 审计、交互式 catalog/bench 扩展仍在 P1/P2。
