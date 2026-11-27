@@ -101,3 +101,12 @@ NODE_OPTIONS=--expose-gc MS_SOAK_MS=30000 \
 - `MS_SOAK_HANDLE_LIMIT` — handles above the pre-boot baseline (default 4).
 
 Run it through the gate with `MS_SOAK_PROFILE=1 bash scripts/agents-gate.sh ms-soak`.
+
+## Multi-process chaos
+
+`scripts/ms-chaos.mjs` starts two gateway processes sharing Redis, kills one
+replica with `SIGKILL`, and verifies the survivor still serves a cached route.
+
+```bash
+MS_CHAOS_PROFILE=1 bash scripts/agents-gate.sh ms-chaos
+```

@@ -96,6 +96,10 @@ jobs:
         env:
           MS_BROKER_PROFILE: '1'
         run: bash scripts/agents-gate.sh ms-examples-broker
+      - name: Multi-process gateway chaos
+        env:
+          MS_CHAOS_PROFILE: '1'
+        run: bash scripts/agents-gate.sh ms-chaos
       - name: 30 minute soak
         env:
           MS_SOAK_PROFILE: '1'

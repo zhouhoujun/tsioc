@@ -713,6 +713,11 @@
 - 新增 500 条消息突发 E2E：concurrency 16、全部消费、最终 pending=0。
 - 验证流式消费在突发下不丢消息；Redis 82 passing。
 
+第一百二十七批（多进程 Gateway chaos）：
+
+- 新增 `examples/chaos-gateway.ts` 与 `scripts/ms-chaos.mjs`：两个真实进程共享 Redis，SIGKILL 一个后存活进程继续命中共享 cache。
+- gate 新增 opt-in `ms-chaos`（`MS_CHAOS_PROFILE=1`），nightly 已接入；实测 PASS。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

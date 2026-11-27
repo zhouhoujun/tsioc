@@ -31,7 +31,7 @@
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
 #            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
-#            ms-brokers ms-tsc ms-bench ms-examples ms-examples-broker ms-soak ms-soak
+#            ms-brokers ms-tsc ms-bench ms-examples ms-examples-broker ms-chaos ms-soak ms-soak
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -331,6 +331,23 @@ run_ms_group() {
     fi
 }
 
+# run_ms_chaos — opt-in multi-process gateway kill/recovery chaos.
+run_ms_chaos() {
+    local id="ms-chaos" label="microservice multi-process gateway chaos"
+    if [ "${MS_CHAOS_PROFILE:-0}" != "1" ]; then
+        stage_skip "$id" "$label (opt-in; set MS_CHAOS_PROFILE=1 with Redis running)"
+        return
+    fi
+    local log="$LOG_DIR/ms-chaos.log"
+    if (cd "$ROOT_DIR" && timeout 300 node scripts/ms-chaos.mjs >"$log" 2>&1); then
+        stage_pass "$id" "$label"
+    else
+        echo "--- ms-chaos tail (last 30 lines) ---" >&2
+        tail -30 "$log" >&2
+        stage_fail "$id" "$label"
+    fi
+}
+
 # run_ms_examples_broker — opt-in gateway→Redis full-stack smoke.
 run_ms_examples_broker() {
     local id="ms-examples-broker" label="microservice gateway→broker smoke"
@@ -529,6 +546,7 @@ run_stage() {
         ms-examples)      run_ms_examples ;;
         ms-soak)          run_ms_soak ;;
         ms-examples-broker) run_ms_examples_broker ;;
+        ms-chaos)         run_ms_chaos ;;
         ms-bench)         run_ms_bench ;;
         diff-check)       run_diff_check ;;
         *)
