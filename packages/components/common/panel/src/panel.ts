@@ -45,8 +45,10 @@ export interface PanelStyles {
     selector: 'panel, ui-panel',
     template: `
     <div class="console-panel console-base-panel" [style]="shellStyle">
-        <label class="panel-header" [style]="headerStyle" @click="toggle" v-for="index in headerIndexes">{{headerLineAt(index)}}</label>
-        <label class="panel-summary" [style]="summaryStyle" @click="toggle" v-show="!expanded" v-for="index in summaryIndexes">{{summaryLineAt(index)}}</label>
+        <label class="panel-header" [style]="headerStyle" role="button" tabindex="0" focusable="true"
+            aria-expanded="{{expanded}}" @click="toggle" @keydown="onToggleKeydown($event)" v-for="index in headerIndexes">{{headerLineAt(index)}}</label>
+        <label class="panel-summary" [style]="summaryStyle" role="button" tabindex="0" focusable="true"
+            aria-expanded="{{expanded}}" @click="toggle" @keydown="onToggleKeydown($event)" v-show="!expanded" v-for="index in summaryIndexes">{{summaryLineAt(index)}}</label>
         <label class="panel-body" [style]="bodyStyle" v-show="bodyVisible" v-for="index in bodyIndexes">{{bodyLineAt(index)}}</label>
         <label class="detail-summary" [style]="summaryStyle" v-show="summary">{{summary}}</label>
         <label class="detail-meta" [style]="metaStyle" v-show="meta">{{meta}}</label>
@@ -55,7 +57,8 @@ export interface PanelStyles {
         <label class="detail-line {{item.className}}" [style]="lineStyle" v-for="item in items">
             <span class="detail-line-number {{item.numberClass}}" [style]="numberStyle" v-show="item.lineNumber">{{item.lineNumber}}</span><span class="detail-line-prefix {{item.prefixClass}}" [style]="prefixStyle" v-show="item.prefix">{{item.prefix}}</span><span class="detail-line-content {{item.contentClass}}" [style]="contentStyle">{{item.text}}</span>
         </label>
-        <label class="panel-toggle" [style]="toggleStyle" @click="toggle" v-show="hasSummary">{{toggleLabel}}</label>
+        <label class="panel-toggle" [style]="toggleStyle" role="button" tabindex="0" focusable="true"
+            aria-expanded="{{expanded}}" @click="toggle" @keydown="onToggleKeydown($event)" v-show="hasSummary">{{toggleLabel}}</label>
     </div>`
 })
 export class PanelComponent {
@@ -142,6 +145,14 @@ export class PanelComponent {
     }
     summaryLineAt(index: number): string { return this.summaryLines[index] || ''; }
     bodyLineAt(index: number): string { return this.bodyLines[index] || ''; }
+    onToggleKeydown(event: any): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.toggle();
+        }
+    }
+
     toggle(): void {
         if (!this.hasSummary) return;
         this.expanded = !this._expanded;
