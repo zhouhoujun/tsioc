@@ -375,8 +375,9 @@ run_ms_examples() {
         packages/microservices/examples/smoke.ts >"$log" 2>&1); then
         if (cd "$ROOT_DIR" && timeout 180 npx ts-node -r tsconfig-paths/register \
             packages/microservices/examples/full-stack-smoke.ts >>"$log" 2>&1 \
-            && timeout 60 npx ts-node -r tsconfig-paths/register packages/microservices/examples/outbox.ts >>"$log" 2>&1); then
-            stage_pass ms-examples 'microservice quickstart + full-stack + outbox smoke'
+            && timeout 60 npx ts-node -r tsconfig-paths/register packages/microservices/examples/outbox.ts >>"$log" 2>&1 \
+            && timeout 60 npx ts-node -r tsconfig-paths/register packages/microservices/examples/saga.ts >>"$log" 2>&1); then
+            stage_pass ms-examples 'microservice quickstart + full-stack + outbox + saga smoke'
         else
             echo "--- ms-examples tail (last 30 lines) ---" >&2
             tail -30 "$log" >&2

@@ -134,7 +134,7 @@ S4 复跑后的关键数字：gateway route-match 10k p99 ≈ **0.0023 ms**（32
 | Gateway 边缘增强 | retry budget 已落地；上游 WS/HTTP2、流式背压、canary 配置待补 | 长连接/1MB 流式/故障注入测试通过 |
 | Admin 运维 | 持久化规则/配置 store、HA 共享状态、RBAC/审计 | 多副本一致；越权请求可审计 |
 | 契约 registry | 契约版本库 + breaking gate + client 生成漂移检查 | 非兼容变更 CI 失败 |
-| Outbox/inbox + saga | outbox 原语 + Redis 分布式 inbox 已落地；saga/事务集成待补 | 至少一次送达 + 去重 + 可恢复流程 |
+| Outbox/inbox + saga | outbox + Redis inbox + saga 原语已落地；持久化事务/恢复待补 | 至少一次送达 + 去重 + 可恢复流程 |
 
 ### P2：季度内（分布式一致性与规模化）
 

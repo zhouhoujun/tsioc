@@ -49,6 +49,14 @@ npx ts-node -r tsconfig-paths/register \
 
 The `ms-examples` gate stage runs this smoke test.
 
+## Saga
+
+`saga.ts` demonstrates compensating actions when a later step fails.
+
+```bash
+npx ts-node -r tsconfig-paths/register packages/microservices/examples/saga.ts
+```
+
 ## Outbox
 
 `outbox.ts` demonstrates the outbox primitive: records are removed only after

@@ -632,6 +632,11 @@
 - 新增 `RedisIdempotencyStore`（SET NX PX/DEL），Redis Stream 开启 `idempotency` 且未显式提供 store 时自动使用。
 - 跨副本 dedupe 不再依赖进程内存；新增 expiry/release/prefix 测试；Redis 79 passing。
 
+第一百一十一批（Saga 原语）：
+
+- 新增 `service/src/saga.ts`：顺序执行、失败逆序补偿、补偿错误聚合、步骤 hook。
+- 新增 `examples/saga.ts` 并接入 `ms-examples`（reserve → charge 失败 → release）；service 121 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
