@@ -42,6 +42,29 @@ export class Spring {
         return Math.abs(this.target - this.value) < epsilon && Math.abs(this.velocity) < epsilon;
     }
 
+    get resting(): boolean {
+        return this.atRest(0.005);
+    }
+
+    /** SwiftUI-style duration/bounce mapping; mass is 1 and omega = 2π/duration. */
+    static fromDuration(value: number, options: { duration: number; bounce?: number; target?: number }): Spring {
+        const duration = Number(options?.duration);
+        const bounce = Number(options?.bounce ?? 0);
+        if (!Number.isFinite(duration) || duration <= 0) {
+            throw new RangeError('spring duration must be > 0 seconds');
+        }
+        if (!Number.isFinite(bounce) || bounce < 0 || bounce >= 1) {
+            throw new RangeError('spring bounce must be in [0, 1)');
+        }
+        const omega = (2 * Math.PI) / duration;
+        return new Spring({
+            value: Number(value) || 0,
+            target: Number(options?.target ?? value) || 0,
+            stiffness: omega * omega,
+            damping: 2 * (1 - bounce) * omega
+        });
+    }
+
     /** Advance by `dtMs`; large deltas are clamped so tab restores stay stable. */
     step(dtMs: number): number {
         const dt = Math.min(64, Math.max(0, Number(dtMs) || 0)) / 1000;
