@@ -275,7 +275,8 @@ contracts、catalog examples、bench。
   Accordion headingLevel、Toast 异步 action 与 Provider 容量、Spinner tone。
 - P0-1（颜色 ratchet）：`test/token-color-gate.spec.ts` + `scripts/color-baseline.json`
   锁定现有组件皮肤中的硬编码颜色计数，只允许下降；新增皮肤文件必须使用 `--ui-*`
-  token，主题 token 文件自身豁免。
+  token，主题 token 文件自身豁免。`var(--ui-border, #cbd5e1)` 这类 token fallback
+  允许保留，只统计脱离 `var(...)` 的裸颜色。
 - P2-1：`test/interaction-contracts.spec.ts` 与各组件 DOM/TUI 键盘用例组成统一矩阵。
 - P2-2/P2-3（确定性门禁）：`test/visual-a11y-matrix.spec.ts` 对 6 种状态 × 3 个主题
   运行真实组件 DOM 审计；`test/support/a11y-audit.ts` 检查可访问名称、ARIA 状态配对、

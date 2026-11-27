@@ -76,7 +76,7 @@ interface ToolbarViewItem {
                 aria-label="{{overflowLabel}}" title="{{overflowLabel}}"
                 @click="toggleOverflow" @keydown="onOverflowKeydown($event)"
                 @focus="focusOverflow()">{{overflowGlyph}}</button>
-            <div class="ui-toolbar-overflow-menu" role="menu" v-if="overflowOpenState">
+            <div class="ui-toolbar-overflow-menu" role="menu" aria-label="{{overflowLabel}}" v-if="overflowOpenState">
                 <button class="{{item.className}} ui-toolbar-overflow-item" type="button" role="menuitem"
                     v-for="item in overflowItems" trackBy="key"
                     [disabled]="item.disabled" tabindex="0" focusable="{{!item.disabled}}"

@@ -132,6 +132,12 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         }
     });
 
+    (Array.from(scope?.querySelectorAll?.('[role="menubar"], [role="menu"]') || []) as any[]).forEach(node => {
+        if (!node.hasAttribute?.('aria-label') && !node.hasAttribute?.('aria-labelledby')) {
+            violations.push({ rule: 'menu-name', element: describe(node), detail: 'menu container has no accessible name' });
+        }
+    });
+
     (Array.from(scope?.querySelectorAll?.('[role="dialog"], [role="alertdialog"]') || []) as any[]).forEach(node => {
         const labelled = node.getAttribute?.('aria-label')
             || node.getAttribute?.('aria-labelledby')

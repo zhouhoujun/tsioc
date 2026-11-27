@@ -8,6 +8,17 @@ const SKIP = new Set(['test', 'dist', 'lib', 'node_modules', 'docs', 'bench', 's
 const TOKEN_FILES = new Set(['src/theme-tokens.ts', 'src/design-tokens.ts']);
 const COLOR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/g;
 
+/** Token fallbacks (`var(--ui-border, #cbd5e1)`) are allowed; count only bare colors. */
+function countColors(source: string): number {
+    let stripped = source;
+    let previous = '';
+    while (stripped !== previous) {
+        previous = stripped;
+        stripped = stripped.replace(/var\([^()]*\)/g, '');
+    }
+    return (stripped.match(COLOR) || []).length;
+}
+
 function sourceFiles(dir: string, files: string[] = []): string[] {
     for (const entry of readdirSync(dir)) {
         if (SKIP.has(entry)) {
@@ -39,14 +50,14 @@ export class TokenColorGateTest {
             if (TOKEN_FILES.has(relative)) {
                 continue;
             }
-            const matches = readFileSync(file, 'utf8').match(COLOR) || [];
-            if (!matches.length) {
+            const count = countColors(readFileSync(file, 'utf8'));
+            if (!count) {
                 continue;
             }
-            total += matches.length;
+            total += count;
             const allowed = baseline.files[relative] ?? 0;
-            if (matches.length > allowed) {
-                violations.push(`${relative}: ${matches.length} hardcoded colors > allowed ${allowed}`);
+            if (count > allowed) {
+                violations.push(`${relative}: ${count} hardcoded colors > allowed ${allowed}`);
             }
         }
 

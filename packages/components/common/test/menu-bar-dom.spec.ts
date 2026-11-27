@@ -117,7 +117,11 @@ export class MenuBarDomTest {
         await Promise.resolve();
         expect(selected).toEqual([]);
         const submenu = root.querySelector('.menu-bar-submenu') as HTMLElement;
+        const theme = root.querySelector('[data-menu-id="theme"]') as HTMLElement;
+        expect(root.getAttribute('aria-label')).toEqual('Menu');
         expect(submenu.getAttribute('data-submenu-id')).toEqual('theme');
+        expect(theme.getAttribute('aria-controls')).toEqual(submenu.id);
+        expect(submenu.getAttribute('aria-labelledby')).toEqual(theme.id);
         expect(root.querySelector('[data-menu-id="theme:dark"]')).toBeTruthy();
 
         // Clicking the parent again collapses the flyout.

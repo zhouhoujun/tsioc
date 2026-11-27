@@ -82,8 +82,9 @@ interface MenuBarEntryView {
     selector: 'menu-bar, ui-menu-bar',
     template: `
     <div #menuRoot class="menu-bar menu-bar-align-{{align}}" data-open="{{openText}}" role="menubar"
+        aria-label="{{ariaLabel || triggerTitle || label}}"
         @keydown="onMenuKeydown($event)">
-        <button class="menu-bar-trigger" type="button"
+        <button class="menu-bar-trigger" type="button" id="{{overlayId}}-trigger"
             aria-haspopup="menu"
             aria-label="{{triggerTitle || label}}"
             aria-expanded="{{openText}}"
@@ -96,7 +97,7 @@ interface MenuBarEntryView {
             <span class="menu-bar-caret" v-if="caret"><icon [name]="caret" [glyph]="caret" size="xs"></icon></span>
         </button>
         <div class="menu-bar-popup" role="menu" v-show="open" [style]="popupStyle"
-            @scroll="onPopupScroll">
+            aria-labelledby="{{overlayId}}-trigger" @scroll="onPopupScroll">
             <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" trackBy="key" data-menu-key="{{entry.key}}"
                 role="none"
                 @mouseleave="leaveSubmenu(entry.id, $event)"
@@ -105,11 +106,12 @@ interface MenuBarEntryView {
                 <div class="menu-bar-group-title" v-if="entry.kind === 'title'">{{entry.label}}</div>
                 <button class="menu-bar-item {{entry.className}}" type="button" role="{{entry.role}}"
                     aria-checked="{{entry.ariaChecked}}" v-if="entry.kind === 'item'"
-                    data-menu-id="{{entry.id}}"
+                    data-menu-id="{{entry.id}}" id="{{itemElementId(entry.id)}}"
                     [disabled]="entry.disabled"
                     aria-disabled="{{entry.disabled}}"
                     aria-haspopup="{{entry.children.length ? 'menu' : 'false'}}"
                     aria-expanded="{{entry.children.length ? submenuOpen(entry.id) : 'false'}}"
+                    aria-controls="{{entry.children.length && submenuOpen(entry.id) ? submenuElementId(entry.id) : ''}}"
                     @click="choose(entry.id, $event)"
                     @mouseenter="previewSubmenu(entry, $event)"
                     @focus="previewSubmenu(entry, $event)">
@@ -122,17 +124,19 @@ interface MenuBarEntryView {
             </div>
         </div>
         <div [class]="'menu-bar-submenu' + (submenuOpen(level.id) ? ' is-open' : '')"
-            [style]="submenuStyle(level.id)" role="menu" data-submenu-id="{{level.id}}"
+            [style]="submenuStyle(level.id)" role="menu" data-submenu-id="{{level.id}}" id="{{submenuElementId(level.id)}}"
+            aria-labelledby="{{itemElementId(level.id)}}"
             v-for="level in submenuLevels" trackBy="id"
             @mouseleave="leaveSubmenu(level.id, $event)">
             <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')"
                 v-for="entry in level.items" trackBy="key" role="none"
                 @mouseleave="leaveSubmenu(entry.id, $event)" @focusout="blurSubmenu(entry.id, $event)">
                 <button class="menu-bar-item {{entry.className}}" type="button" role="{{entry.role}}"
-                    aria-checked="{{entry.ariaChecked}}" data-menu-id="{{entry.id}}"
+                    aria-checked="{{entry.ariaChecked}}" data-menu-id="{{entry.id}}" id="{{itemElementId(entry.id)}}"
                     [disabled]="entry.disabled" aria-disabled="{{entry.disabled}}"
                     aria-haspopup="{{entry.children.length ? 'menu' : 'false'}}"
                     aria-expanded="{{entry.children.length ? submenuOpen(entry.id) : 'false'}}"
+                    aria-controls="{{entry.children.length && submenuOpen(entry.id) ? submenuElementId(entry.id) : ''}}"
                     @click="choose(entry.id, $event)"
                     @mouseenter="previewSubmenu(entry, $event)"
                     @focus="previewSubmenu(entry, $event)">
@@ -149,6 +153,7 @@ interface MenuBarEntryView {
 export class MenuBarComponent implements AfterViewInit, OnDestroy {
     @Attribute() groups: MenuBarGroup[] = [];
     @Attribute() label = 'Menu';
+    @Attribute() ariaLabel = '';
     @Attribute() icon = 'menu';
     @Attribute() caret = '▾';
     @Attribute() align: 'left' | 'right' = 'right';
@@ -451,7 +456,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             void Promise.resolve().then(() => this.focusTrigger());
         }
     }
-
     /**
      * Preview a flyout as soon as the pointer (or keyboard focus) enters its
      * parent row. The popup is a scroll container, so the flyout must switch to
@@ -464,7 +468,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             this.hoverSubmenu(item.id, event);
         }
     }
-
     hoverSubmenu(id: string, event?: Event): void {
         // ArrowLeft closes a flyout and returns focus to its parent; that
         // focus must not immediately preview (and reopen) the same flyout.
@@ -547,7 +550,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             this.submenuLayouts = { ...this.submenuLayouts, [id]: layout };
         }
     }
-
     submenuStyle(id: string): string {
         const layout = this.submenuLayouts[id];
         if (!this.submenuOpen(id) || !layout) {
@@ -562,7 +564,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             : `top: ${layout.top}px; bottom: auto;`;
         return `position: fixed; ${horizontal} ${vertical} max-height: ${maxHeight}px;`;
     }
-
     /**
      * Bound the popup by the space between the trigger and the viewport edge
      * instead of an arbitrary 60vh/480px cap. `max-height` alone never shows a
@@ -587,6 +588,8 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         this.popupAbove = layout.above;
         this.popupMaxHeight = layout.maxHeight;
     }
+    protected itemElementId(id: string): string { return `${this.overlayId}-item-${id}`; }
+    protected submenuElementId(id: string): string { return `${this.overlayId}-submenu-${id}`; }
     protected menuEntryView(item: MenuBarItem, key: string): MenuBarEntryView {
         const children = (item.children || []).filter(child => child && child.id);
         return {
@@ -682,17 +685,14 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             }
         });
     }
-
     protected unbindDocument(): void {
         this.unbindDismiss?.();
         this.unbindDismiss = undefined;
     }
-
     protected ownerDocument(): any {
         return unwrapReactive(this.hostElement)?.ownerDocument
             || (globalThis as { document?: Document }).document;
     }
-
     protected get hostElement(): any {
         return unwrapReactive((this.menuRoot?.nativeElement || this.elementRef?.nativeElement) as any);
     }

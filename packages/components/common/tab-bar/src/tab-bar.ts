@@ -98,7 +98,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
             aria-haspopup="menu" aria-expanded="{{overflowMenuOpen}}" aria-label="{{overflowTitle}}"
             data-hover-group="true" @click="toggleOverflowMenu($event)"
             @keydown="onOverflowKeydown($event)">{{overflowLabel}}</span>
-        <span class="tab-overflow-menu" role="menu" v-if="overflowMenuOpen" [style]="overflowMenuStyle">
+        <span class="tab-overflow-menu" role="menu" aria-label="{{overflowTitle}}" v-if="overflowMenuOpen" [style]="overflowMenuStyle">
             <span class="tab-overflow-item" role="menuitem" tabindex="0" focusable="true"
                 aria-current="{{item.active}}" v-for="item in overflowMenuItems" trackBy="id"
                 @click="pickOverflow(item.id, $event)"
