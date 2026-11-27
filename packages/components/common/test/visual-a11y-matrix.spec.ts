@@ -13,6 +13,16 @@ import { ToastProviderComponent, ToastModule } from '../toast';
 import { SelectComponent, SelectModule } from '../select';
 import { DialogComponent, DialogModule } from '../dialog';
 import { DrawerComponent, DrawerModule } from '../drawer';
+import { SwitchComponent, SwitchModule } from '../switch';
+import { SliderComponent, SliderModule } from '../slider';
+import { ProgressComponent, ProgressModule } from '../progress';
+import { PaginationComponent, PaginationModule } from '../pagination';
+import { RateComponent, RateModule } from '../rate';
+import { SegmentedComponent, SegmentedModule } from '../segmented';
+import { UploadComponent, UploadModule } from '../upload';
+import { BreadcrumbComponent, BreadcrumbModule } from '../breadcrumb';
+import { ChipComponent, ChipModule } from '../chip';
+import { TreeComponent, TreeModule } from '../tree';
 import { auditA11y, formatViolations } from './support/a11y-audit';
 
 const THEMES = ['light', 'dark', 'high-contrast'];
@@ -48,7 +58,7 @@ function makeSource() {
 
 @Component({
     selector: 'a11y-matrix-host',
-    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent, SelectComponent, DialogComponent, DrawerComponent],
+    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent, SelectComponent, DialogComponent, DrawerComponent, SwitchComponent, SliderComponent, ProgressComponent, PaginationComponent, RateComponent, SegmentedComponent, UploadComponent, BreadcrumbComponent, ChipComponent, TreeComponent],
     template: `
     <div class="theme-sample">
         <ui-button label="Save"></ui-button>
@@ -64,6 +74,16 @@ function makeSource() {
             selectable="true" editable="true"></ui-data-table>
         <select-list title="Assignees" :options="selectOptions" :values="assignees"
             multiple searchable clearable></select-list>
+        <ui-switch label="Notifications" checked="true"></ui-switch>
+        <ui-slider label="Volume" value="40"></ui-slider>
+        <ui-progress label="Upload" value="60"></ui-progress>
+        <ui-pagination page="2" total="100" pageSize="10" showSizeChanger showQuickJumper></ui-pagination>
+        <ui-rate value="3" ariaLabel="Rating"></ui-rate>
+        <ui-segmented :options="segmentOptions" value="list" ariaLabel="View mode"></ui-segmented>
+        <ui-upload label="Upload" hint="PNG or SVG" :files="uploadFiles"></ui-upload>
+        <ui-breadcrumb :items="crumbs"></ui-breadcrumb>
+        <ui-chip label="Feature" closable></ui-chip>
+        <ui-tree :items="treeItems" checkable selectedId="child" ariaLabel="Files"></ui-tree>
         <dialog-panel title="Remove file?" ariaLabel="Remove file?"></dialog-panel>
         <ui-drawer title="Settings" ariaLabel="Settings"></ui-drawer>
         <ui-toast-provider></ui-toast-provider>
@@ -85,6 +105,24 @@ class A11yMatrixHostComponent {
         { label: 'Grace Hopper', value: 'grace' }
     ];
     assignees = ['ada'];
+    segmentOptions = [
+        { label: 'List', value: 'list' },
+        { label: 'Grid', value: 'grid' }
+    ];
+    uploadFiles = ['report.pdf', 'diagram.svg'];
+    crumbs = [
+        { label: 'Home', value: 'home' },
+        { label: 'Projects', value: 'projects' },
+        { label: 'Current', value: 'current' }
+    ];
+    treeItems = [
+        {
+            id: 'root', label: 'Workspace', children: [
+                { id: 'child', label: 'src' },
+                { id: 'docs', label: 'docs' }
+            ]
+        }
+    ];
 }
 
 @Suite('common visual/a11y state matrix')
@@ -100,7 +138,10 @@ export class VisualA11yMatrixTest {
         this.win = dom.window;
         this.doc = dom.window.document;
         this.ctx = await Application.run(A11yMatrixHostComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule, ToastModule, SelectModule, DialogModule, DrawerModule],
+            deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule, ToastModule, SelectModule, DialogModule, DrawerModule,
+            SwitchModule, SliderModule, ProgressModule, PaginationModule, RateModule, SegmentedModule,
+            UploadModule, BreadcrumbModule, ChipModule, TreeModule
+        ],
             providers: [{ provide: DOCUMENT, useValue: this.doc }]
         });
     }

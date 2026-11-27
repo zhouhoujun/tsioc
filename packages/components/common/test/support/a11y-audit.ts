@@ -15,10 +15,11 @@ const INTERACTIVE = [
     '[role="button"]', '[role="tab"]', '[role="menuitem"]',
     '[role="menuitemcheckbox"]', '[role="menuitemradio"]',
     '[role="option"]', '[role="checkbox"]', '[role="switch"]',
-    '[role="link"]'
+    '[role="radio"]', '[role="slider"]', '[role="treeitem"]',
+    '[role="combobox"]', '[role="progressbar"]', '[role="link"]'
 ].join(',');
 
-const NAME_FROM_LABEL = 'button, [role="button"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="option"], [role="checkbox"], [role="switch"], [role="link"]';
+const NAME_FROM_LABEL = 'button, [role="button"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="option"], [role="checkbox"], [role="switch"], [role="radio"], [role="slider"], [role="treeitem"], [role="combobox"], [role="progressbar"], [role="link"]';
 
 function textOf(node: any): string {
     return String(node?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -110,7 +111,11 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         ['[role="menuitemcheckbox"]', 'aria-checked'],
         ['[role="menuitemradio"]', 'aria-checked'],
         ['[role="tab"]', 'aria-selected'],
-        ['[role="option"]', 'aria-selected']
+        ['[role="option"]', 'aria-selected'],
+        ['[role="radio"]', 'aria-checked'],
+        ['[role="treeitem"]', 'aria-selected'],
+        ['[role="slider"]', 'aria-valuenow'],
+        ['[role="progressbar"]', 'aria-valuenow']
     ];
     required.forEach(([selector, attribute]) => {
         (Array.from(scope?.querySelectorAll?.(selector) || []) as any[]).forEach(node => {
