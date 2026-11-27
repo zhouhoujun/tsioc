@@ -19,7 +19,8 @@ export interface MarkdownTableCell {
 @Component({
     selector: 'markdown-table, ui-markdown-table',
     template: `
-    <div class="markdown-table" role="table">
+    <div class="markdown-table" role="table" aria-label="{{ariaLabel || null}}"
+        aria-rowcount="{{rows.length + 1}}" aria-colcount="{{header.length}}">
         <div class="markdown-row markdown-head" role="row">
             <div class="markdown-cell align-{{cell.align || 'left'}}" role="columnheader" v-for="cell in header"><span class="markdown-token" data-tone="{{token.tone}}" v-for="token in cell.tokens">{{token.text}}</span></div>
         </div>
@@ -31,6 +32,7 @@ export interface MarkdownTableCell {
 export class MarkdownTableComponent {
     @Attribute() header: MarkdownTableCell[] = [];
     @Attribute() rows: MarkdownTableCell[][] = [];
+    @Attribute() ariaLabel = '';
 }
 
 /** Semantic code shell; hosts own the surrounding language/copy chrome. */
