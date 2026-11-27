@@ -138,6 +138,24 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         }
     });
 
+    (Array.from(scope?.querySelectorAll?.('[aria-expanded]') || []) as any[]).forEach(node => {
+        const value = String(node.getAttribute?.('aria-expanded') || '');
+        if (value !== 'true' && value !== 'false') {
+            violations.push({ rule: 'invalid-aria-expanded', element: describe(node), detail: `aria-expanded="${value}" is not true/false` });
+        }
+    });
+
+    (Array.from(scope?.querySelectorAll?.('[aria-activedescendant]') || []) as any[]).forEach(node => {
+        const id = String(node.getAttribute?.('aria-activedescendant') || '').trim();
+        if (id) {
+            const selector = `[id="${id.replace(/"/g, '\\"')}"]`;
+            const exists = doc?.getElementById?.(id) || (scope?.querySelector ? scope.querySelector(selector) : undefined);
+            if (!exists) {
+                violations.push({ rule: 'missing-activedescendant', element: describe(node), detail: `aria-activedescendant="${id}" does not exist` });
+            }
+        }
+    });
+
     (Array.from(scope?.querySelectorAll?.('[role="dialog"], [role="alertdialog"]') || []) as any[]).forEach(node => {
         const labelled = node.getAttribute?.('aria-label')
             || node.getAttribute?.('aria-labelledby')

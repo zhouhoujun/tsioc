@@ -339,6 +339,11 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     a11y audit 测试，chips 删除按钮具备可访问名称。
   - 新增组件继续使用 `--ui-*` token；P2 的 overlay/placement 仍复用既有
     `overlay-placement`/`overlay-outside`/`OverlayManager`。
+- **质量矩阵扩展（2026-11-27）**
+  - shared a11y audit 新增 `aria-expanded` 取值校验与 `aria-activedescendant`
+    引用存在性校验；command-palette/search-list/tree-select 矩阵保持通过。
+  - TreeSelect 增加 RTL + touch pointer-down 用例：RTL 下 chips 正常渲染，
+    touch pointer 同样触发 selection-panel outside 关闭。
 - **Token 颜色全消费（2026-11-27）**
   - 组件 skin 的裸颜色全部收敛到 `var(--ui-*/--workspace-*/--menu-bar-*/
     --tab-*, fallback)`：dynamic-form、command-palette、drawer、popover、

@@ -119,6 +119,23 @@ export class TreeSelectTest {
         expect(root.getAttribute('aria-expanded')).toBe('false');
     }
 
+    @Test('keeps chips usable in RTL and dismisses on touch pointer-down')
+    async rtlAndTouch() {
+        const { roots } = await this.mount();
+        const root = roots[2];
+        root.setAttribute('dir', 'rtl');
+        expect(root.querySelectorAll('.ui-tree-select-chip').length).toBe(2);
+        (root.querySelector('.ui-tree-select-trigger') as any).click();
+        await Promise.resolve();
+        expect(root.querySelector('.ui-tree-select-panel')).toBeTruthy();
+        const doc = root.ownerDocument;
+        const event = new (doc.defaultView as any).Event('pointerdown', { bubbles: true });
+        Object.defineProperty(event, 'pointerType', { value: 'touch' });
+        doc.body.dispatchEvent(event);
+        await Promise.resolve();
+        expect(root.querySelector('.ui-tree-select-panel')).toBeFalsy();
+    }
+
     @Test('keyboard opens into the tree and restores the trigger after selection')
     async keyboardFlow() {
         const { roots, host } = await this.mount();
