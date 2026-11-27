@@ -23,6 +23,7 @@ import { BreadcrumbComponent, BreadcrumbModule, BreadcrumbItem } from '../breadc
     <ui-button icon="plus" :iconOnly="true" ariaLabel="Add" shape="circle" :action="onAction"></ui-button>
     <ui-badge label="running" tone="success" dot></ui-badge>
     <ui-badge label="filter" :action="onBadge"></ui-badge>
+    <ui-badge dot :action="onBadge" ariaLabel="Notifications"></ui-badge>
     <ui-card title="Card title" subtitle="Sub" meta="v1" divider>
         <ui-button slot="actions" label="Act" :action="onAction"></ui-button>
         <span class="card-body-text">body</span>
@@ -130,6 +131,7 @@ export class BaseUiPrimitivesTest {
         const badges = ref.hostView.queryAll(BadgeComponent) as ComponentRef<BadgeComponent>[];
         const passive = badges[0].hostView.rootNodes[0] as HTMLElement;
         const actionable = badges[1].hostView.rootNodes[0] as HTMLElement;
+        const iconOnly = badges[2].hostView.rootNodes[0] as HTMLElement;
 
         expect(passive.getAttribute('role')).toEqual('status');
         expect(passive.getAttribute('tabindex')).toEqual('-1');
@@ -137,6 +139,7 @@ export class BaseUiPrimitivesTest {
         expect(passive.querySelector('.ui-badge-dot')).toBeTruthy();
         expect(actionable.getAttribute('role')).toEqual('button');
         expect(actionable.getAttribute('tabindex')).toEqual('0');
+        expect(iconOnly.getAttribute('aria-label')).toEqual('Notifications');
         actionable.click();
         expect(host.badges).toEqual(1);
         actionable.dispatchEvent(new (actionable.ownerDocument.defaultView as any).KeyboardEvent('keydown', {

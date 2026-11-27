@@ -14,6 +14,7 @@ export type BadgeVariant = 'solid' | 'subtle' | 'outline';
     <span class="ui-badge {{badgeClass}}"
         data-tone="{{tone}}"
         role="{{role}}"
+        aria-label="{{ariaLabel || label}}"
         aria-pressed="{{active}}"
         aria-disabled="{{disabled}}"
         tabindex="{{tabIndexValue}}"
@@ -28,6 +29,7 @@ export type BadgeVariant = 'solid' | 'subtle' | 'outline';
 })
 export class BadgeComponent {
     @Attribute() label = '';
+    @Attribute() ariaLabel = '';
     @Attribute() icon = '';
     @Attribute() iconGlyph = '';
     @Attribute() variant: BadgeVariant = 'subtle';
