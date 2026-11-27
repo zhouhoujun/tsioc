@@ -1,5 +1,5 @@
 import expect = require('expect');
-import { runSaga, SagaError } from '../src/saga';
+import { MemorySagaJournal, runSaga, SagaError } from '../src/saga';
 
 describe('saga', () => {
     it('executes steps in order and returns completed names', async () => {
@@ -56,5 +56,35 @@ describe('saga', () => {
             { name: 'a', execute: () => undefined }
         ], {}, { onStep: (event, step) => events.push(`${event}:${step.name}`) });
         expect(events).toEqual(['execute:a', 'complete:a']);
+    });
+});
+
+describe('saga journal', () => {
+    it('resumes after persisted completed steps', async () => {
+        const journal = new MemorySagaJournal();
+        await journal.save('order-1', { completed: ['reserve'], updatedAt: Date.now() });
+        const calls: string[] = [];
+        const result = await runSaga([
+            { name: 'reserve', execute: () => { calls.push('reserve'); } },
+            { name: 'charge', execute: () => { calls.push('charge'); } }
+        ], {}, { journal, sagaId: 'order-1' });
+        expect(calls).toEqual(['charge']);
+        expect(result.completed).toEqual(['reserve', 'charge']);
+        expect(await journal.load('order-1')).toBeUndefined();
+    });
+
+    it('clears the journal after successful compensation', async () => {
+        const journal = new MemorySagaJournal();
+        let error: any;
+        try {
+            await runSaga([
+                { name: 'reserve', execute: () => undefined, compensate: () => undefined },
+                { name: 'charge', execute: () => { throw new Error('declined'); } }
+            ], {}, { journal, sagaId: 'order-2' });
+        } catch (err) {
+            error = err;
+        }
+        expect(error).toBeInstanceOf(SagaError);
+        expect(await journal.load('order-2')).toBeUndefined();
     });
 });

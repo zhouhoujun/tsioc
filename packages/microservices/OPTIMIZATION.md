@@ -642,6 +642,11 @@
 - 新增 `.github/workflows/ms-nightly.yml`：Redis/NATS/MQTT/RabbitMQ/Kafka 容器 + `ms-brokers`、`ms-examples-broker`、30 分钟 `ms-soak`、`ms-bench`。
 - 覆盖 30 分钟 soak、真实 broker 与性能回归，不阻塞日常 gate。
 
+第一百一十三批（Saga journal）：
+
+- 新增 `SagaJournal`/`MemorySagaJournal`；`runSaga` 支持 `sagaId` 恢复已完成步骤，成功后清理、补偿成功后清理、补偿失败保留失败记录。
+- 新增 2 个 resume/journal 测试；service 123 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

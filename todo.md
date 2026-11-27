@@ -4955,3 +4955,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百一十二批（2026-11-16）：
   - ms-nightly CI（brokers + 30m soak + bench）。
+
+- 微服务框架第一百一十三批（2026-11-16）：
+  - Saga journal（内存持久化 + resume）。
+  - 回归：service 123。
