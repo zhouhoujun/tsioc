@@ -4966,3 +4966,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百一十五批（2026-11-16）：
   - OTLP live tests（opt-in）+ nightly collector。
+
+- 微服务框架第一百一十六批（2026-11-16）：
+  - Consul live discovery test + nightly Consul service。

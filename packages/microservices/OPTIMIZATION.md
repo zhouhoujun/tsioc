@@ -657,6 +657,11 @@
 - 新增 tracing/metrics `otlp-live.spec.ts`（`TSIO_TEST_OTLP=1` 时启用），真实导出 span/metrics。
 - `ms-nightly` 增加 OTel collector 容器与 live 导出步骤；默认开发/CI 跳过，不依赖 collector。
 
+第一百一十六批（Consul live nightly）：
+
+- 新增 `discovery/test/consul-live.spec.ts`（`TSIO_TEST_CONSUL=1`）：真实注册/发现/query/注销。
+- `ms-nightly` 增加 Consul 容器与 live 步骤；普通套件仍跳过，不依赖 Consul。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

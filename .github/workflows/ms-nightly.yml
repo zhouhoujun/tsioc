@@ -29,6 +29,12 @@ jobs:
       otel:
         image: otel/opentelemetry-collector:latest
         ports: ['4317:4317', '4318:4318']
+      consul:
+        image: hashicorp/consul:1.19
+        ports: ['8500:8500']
+        options: >-
+          --health-cmd "consul members"
+          --health-interval 10s --health-timeout 5s --health-retries 20
       rabbitmq:
         image: rabbitmq:3-management
         ports: ['5672:5672', '15672:15672']
@@ -84,5 +90,9 @@ jobs:
         run: |
           cd packages/microservices/tracing && npm test
           cd ../metrics && npm test
+      - name: Consul live discovery
+        env:
+          TSIO_TEST_CONSUL: '1'
+        run: cd packages/microservices/discovery && npm test
       - name: Performance regression
         run: bash scripts/agents-gate.sh ms-bench
