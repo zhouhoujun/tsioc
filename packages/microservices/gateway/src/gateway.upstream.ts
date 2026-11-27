@@ -14,6 +14,7 @@ import { GatewayResponse } from './gateway.response';
 import { GatewayRateLimiter } from './gateway.rate-limit';
 import { GatewayForwardResult } from './gateway.types';
 import { GatewayWebhook } from './gateway.webhook';
+import { GatewayRetryBudget } from './retry-budget';
 import { getHeaderValue, getRequestHost, normalizeGatewayUrl } from './gateway.http';
 import { resolveRetryBackoff } from './retry-policy';
 
@@ -41,6 +42,7 @@ export class GatewayUpstream {
     private readonly rateLimiter: GatewayRateLimiter;
     private readonly getFetch: () => typeof fetch | undefined;
     private readonly webhook: GatewayWebhook;
+    private readonly retryBudgets = new Map<string, GatewayRetryBudget>();
 
     constructor(
         private readonly options: GatewayOptions,
@@ -252,6 +254,18 @@ export class GatewayUpstream {
             : this.forwardMicroservice(sourceRoute, request, traceHeaders);
     }
 
+    private retryBudget(route: ResolvedGatewayRoute, key: string): GatewayRetryBudget | undefined {
+        if (!route.loadBalance?.retryBudget) {
+            return undefined;
+        }
+        let budget = this.retryBudgets.get(key);
+        if (!budget) {
+            budget = new GatewayRetryBudget(route.loadBalance.retryBudget);
+            this.retryBudgets.set(key, budget);
+        }
+        return budget;
+    }
+
     private async forwardHttp(route: ResolvedGatewayRoute, request: HttpRequestMessage, traceHeaders: Record<string, string>): Promise<GatewayForwardResult> {
         const retries = Math.max(route.loadBalance?.retries ?? 0, 0);
         const canRetry = this.isRetryableMethod(route, request);
@@ -309,6 +323,11 @@ export class GatewayUpstream {
                 if (attempt < attempts - 1 && failed && this.isRetryableStatus(route, result.status)) {
                     await this.recordEndpointFailure(route, routeKey, target.endpoint);
                     lastResult = result;
+                    const budget = this.retryBudget(route, routeKey);
+                    if (budget && !budget.allow()) {
+                        return result;
+                    }
+                    budget?.recordRetry();
                     await this.waitBeforeRetry(route, attempt);
                     continue;
                 }
@@ -317,6 +336,7 @@ export class GatewayUpstream {
                     return result;
                 }
                 await this.recordEndpointSuccess(route, routeKey, target.endpoint);
+                this.retryBudget(route, routeKey)?.recordSuccess();
                 return result;
             } catch (error: any) {
                 await this.recordEndpointFailure(route, routeKey, target.endpoint);
@@ -324,6 +344,11 @@ export class GatewayUpstream {
                 if (attempt >= attempts - 1) {
                     throw error;
                 }
+                const budget = this.retryBudget(route, routeKey);
+                if (budget && !budget.allow()) {
+                    throw error;
+                }
+                budget?.recordRetry();
                 await this.waitBeforeRetry(route, attempt);
             } finally {
                 releaseEndpoint();
@@ -526,6 +551,7 @@ export class GatewayUpstream {
                     timeout: route.timeout ?? 10_000
                 } as any));
                 await this.recordEndpointSuccess(route, routeKey, endpoint ?? undefined);
+                this.retryBudget(route, routeKey)?.recordSuccess();
                 const normalized = response && typeof response === 'object' && 'payload' in response
                     ? response.payload
                     : response;
@@ -544,6 +570,11 @@ export class GatewayUpstream {
                 if (attempt >= retries) {
                     throw error;
                 }
+                const budget = this.retryBudget(route, routeKey);
+                if (budget && !budget.allow()) {
+                    throw error;
+                }
+                budget?.recordRetry();
                 await this.waitBeforeRetry(route, attempt);
             } finally {
                 releaseEndpoint();

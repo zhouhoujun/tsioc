@@ -19,3 +19,4 @@ export * from './gateway.config-adapter';
 export * from './load-balancer';
 export * from './retry-policy';
 export * from './gateway.webhook';
+export * from './retry-budget';

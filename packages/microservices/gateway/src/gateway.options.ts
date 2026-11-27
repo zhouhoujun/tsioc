@@ -2,6 +2,7 @@ import { Provider, token } from '@tsdi/ioc';
 import { ApiRateLimitOptions } from '@tsdi/service';
 import { Pattern, Transport } from '@tsdi/common';
 import { HttpAuthOptions, HmacSignatureOptions } from '@tsdi/security';
+import type { GatewayRetryBudgetOptions } from './retry-budget';
 
 export interface GatewayForwardHeadersOptions {
     /**
@@ -181,6 +182,11 @@ export interface GatewayLoadBalanceOptions {
      * add jitter to retry backoff. Default true when backoff is enabled.
      */
     retryJitter?: boolean;
+    /**
+     * optional client-side retry budget. When set, retries are limited by a
+     * success-relative budget to avoid retry storms during outages.
+     */
+    retryBudget?: GatewayRetryBudgetOptions;
 }
 
 export interface GatewayConfigSyncOptions {

@@ -597,6 +597,12 @@
 - `ConfigOptions.schema` 在 `DefaultConfigurationManager.load()` 合并源后自动 migrate+validate，`getSchemaWarnings()` 暴露迁移记录。
 - 新增 5 个 schema 测试；config 80 passing。
 
+第一百零五批（Gateway retry budget）：
+
+- 新增 `gateway/src/retry-budget.ts`：成功数相对预算 + 每秒最小重试保障，窗口过期重置。
+- `GatewayLoadBalanceOptions.retryBudget` 接入 HTTP/微服务 failover；预算耗尽时直接返回失败响应/抛出最后一次错误。
+- 新增 3 个测试；gateway 160 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
