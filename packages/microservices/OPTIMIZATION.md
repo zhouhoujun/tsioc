@@ -677,6 +677,11 @@
 - 新增 `EtcdServiceDiscovery`（v3 JSON gateway，lease grant/keepalive refresh、prefix range、watch polling、update/health/shutdown）。
 - 新增 fake API 单测 + `TSIO_TEST_ETCD=1` live test；nightly 增加 bitnami/etcd 容器；discovery 89 passing。
 
+第一百二十批（Gateway 实例存活切换）：
+
+- Redis 双 Gateway E2E 新增：一个实例关闭后，存活实例继续使用共享 cache 提供服务（HIT + 相同 payload）。
+- `TSIO_TEST_REDIS=1` 回归 gateway 167 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

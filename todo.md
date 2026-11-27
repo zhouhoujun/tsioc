@@ -4980,3 +4980,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百一十九批（2026-11-16）：
   - etcd discovery adapter + fake/live tests + nightly etcd。
   - 回归：discovery 89。
+
+- 微服务框架第一百二十批（2026-11-16）：
+  - Redis 双 Gateway 存活切换 E2E。
+  - 回归：gateway 167（Redis 模式）。

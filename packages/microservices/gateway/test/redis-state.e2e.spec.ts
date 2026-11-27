@@ -94,6 +94,29 @@ describeRedis('RedisGatewayStateStore (real Redis)', () => {
         }
     });
 
+    it('keeps serving from the surviving gateway after one instance stops', async () => {
+        const upstreamPort = await freePort();
+        const firstPort = await freePort();
+        const secondPort = await freePort();
+        const upstreamCtx = await Application.run(createUpstreamModule(upstreamPort));
+        const first = await Application.run(createGatewayModule(firstPort, upstreamPort, new RedisGatewayStateStore({ client, prefix: `${prefix}survive:` })));
+        const second = await Application.run(createGatewayModule(secondPort, upstreamPort, new RedisGatewayStateStore({ client, prefix: `${prefix}survive:` })));
+        try {
+            const cached = await get(firstPort, '/redis-cache');
+            expect(cached.status).toBe(200);
+
+            await first.close();
+            const surviving = await get(secondPort, '/redis-cache');
+            expect(surviving.status).toBe(200);
+            expect(surviving.headers['x-gateway-cache']).toBe('HIT');
+            expect(JSON.parse(surviving.body).count).toBe(JSON.parse(cached.body).count);
+        } finally {
+            await first.close().catch(() => undefined);
+            await second.close();
+            await upstreamCtx.close();
+        }
+    });
+
     it('drives GatewayRuntime cache/circuit/nonce through Redis', async () => {
         const first = new GatewayRuntime(store);
         const second = new GatewayRuntime(other);
