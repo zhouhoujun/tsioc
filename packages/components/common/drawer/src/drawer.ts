@@ -51,6 +51,12 @@ export class DrawerComponent {
 
     /** Host dirty-check; return false (or reject) to keep the drawer open. */
     @Attribute() beforeCloseAction?: () => boolean | Promise<boolean>;
+    /** Selector for the first focused control; defaults to the first focusable child. */
+    @Attribute() initialFocus = '';
+    /** Restore the previously focused element when this overlay closes. */
+    @Attribute() restoreFocus: boolean | string = true;
+    /** Keep Tab focus inside the panel while it is the top overlay. */
+    @Attribute() trapFocus: boolean | string = true;
 
     /** Opt-in overlay-stack registration (focus/escape/dirty-check ordering). */
     @Attribute()
