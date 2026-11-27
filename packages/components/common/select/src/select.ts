@@ -1,8 +1,14 @@
-import { Attribute, Component, Computed, noReact } from '@tsdi/components';
+import { Attribute, Component, Computed, OnDestroy, noReact } from '@tsdi/components';
 import { clampSelectIndex, resolveSelectWindow } from '../../src/input';
 import { nextUiId, normalizeBoolean } from '../../src/ui';
 import { SelectionCore } from '../../src/selection-core';
 import { getDisplayWidth } from '../../src/display-width';
+import {
+    createSelectPreviewState,
+    transitionSelectPreview,
+    SelectPreviewEvent,
+    SelectPreviewState
+} from './select-preview';
 
 export type SelectSource = (query: string, signal: AbortSignal) => SelectOption[] | Promise<SelectOption[]>;
 
@@ -74,12 +80,39 @@ export interface SelectOption {
         </div>
     </div>`
 })
-export class SelectComponent {
+export class SelectComponent implements OnDestroy {
     readonly listId = nextUiId('ui-select-list');
     private readonly selection = new SelectionCore();
 
     @Attribute() options: SelectOption[] = [];
-    @Attribute() selectedIndex = 0;
+    /** Host preview hook; return an undo function to revert the preview. */
+    @Attribute() highlightAction?: (value: string) => void | (() => void);
+    private _selectedIndex = 0;
+    private _open = true;
+    private preview: SelectPreviewState = createSelectPreviewState(true);
+    private previewUndo?: () => void;
+
+    @Attribute()
+    get selectedIndex(): number { return this._selectedIndex; }
+    set selectedIndex(value: number | string) {
+        const next = Math.floor(Number(value) || 0);
+        const previous = this._selectedIndex;
+        this._selectedIndex = next;
+        if (next !== previous && this.highlightAction) {
+            this.previewAt(next);
+        }
+    }
+
+    @Attribute()
+    get open(): boolean { return this._open; }
+    set open(value: boolean | string) {
+        const next = normalizeBoolean(value, true);
+        if (next === this._open) {
+            return;
+        }
+        this._open = next;
+        this.dispatchPreview({ type: 'open.changed', open: next });
+    }
     @Attribute() visibleCount = 0;
     @Attribute() title = '';
     @Attribute() hint = '';
@@ -366,11 +399,38 @@ export class SelectComponent {
             });
     }
 
+    protected dispatchPreview(event: SelectPreviewEvent): void {
+        const next = transitionSelectPreview(this.preview, event);
+        this.preview = next.state;
+        next.effects.forEach(effect => {
+            if (effect.type === 'preview.revert') {
+                const undo = this.previewUndo;
+                this.previewUndo = undefined;
+                undo?.();
+                return;
+            }
+            const undo = this.highlightAction?.(effect.key);
+            this.previewUndo = typeof undo === 'function' ? undo : undefined;
+        });
+    }
+
+    protected previewAt(index: number): void {
+        const options = this.displayOptions;
+        const resolved = this.selection.resolve(options, index);
+        const option = options[resolved];
+        this.dispatchPreview({
+            type: 'highlight.changed',
+            key: option ? String(option.value) : undefined,
+            previewable: !!this.highlightAction
+        });
+    }
+
     choose(index: number): void {
         const option = this.displayOptions[index];
         if (!option || option.disabled) {
             return;
         }
+        this.dispatchPreview({ type: 'option.selected', key: String(option.value), closing: true });
         if (this._multiple) {
             const value = String(option.value);
             const values = new Set((this.values || []).map(String));
@@ -420,6 +480,12 @@ export class SelectComponent {
     }
 
     close(): void {
+        this._open = false;
+        this.dispatchPreview({ type: 'open.changed', open: false });
         this.closeAction?.();
+    }
+
+    onDestroy(): void {
+        this.dispatchPreview({ type: 'disposed' });
     }
 }
