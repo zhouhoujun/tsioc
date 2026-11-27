@@ -298,12 +298,15 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
   - `ui-field-group` 兼容入口保持不变。
 - **P0-4 Theme 增量**：
   - `ensureContrast()`：按 WCAG 目标把前景色推向黑/白；
-  - `themeTokens()` 对 fg/muted/accentFg 做最终对比度保障；
-  - 对比度测试覆盖 unparseable/低对比输入。
+  - `themeTokens()` 对 fg/muted/accentFg/danger/success/warning 做最终对比度保障；
+  - 新增 `resolveThemeTokens(theme, overrides)`，host 可覆盖单个语义 token；
+  - 对比度测试覆盖 unparseable/低对比/品牌覆盖输入。
+- **P2 bench**：`bench:check` 增加 typeahead machine 与 theme contrast 指标。
 - **P1-1 Motion 增量**：
   - `createFrameLoop()`：host scheduler、read-before-write、dt clamp、无每帧数组分配；
   - `Spring.fromDuration()` + `resting`；
-  - 测试覆盖 frame loop、异常任务、duration/bounce spring。
+  - 测试覆盖 frame loop、异常任务、duration/bounce spring；
+  - `observeReducedMotion` 与 ring-buffer `VelocityTracker2D` 已补。
 
 ### 待办
 
