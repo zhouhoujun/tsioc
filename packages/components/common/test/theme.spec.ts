@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ThemeService, applyThemeToDocument, contrastRatio, ensureContrast, isDarkTheme, resolveThemeTokens, themeTokens } from '../src';
+import { ThemeService, applyThemeToDocument, contrastRatio, ensureContrast, generateThemeTokens, isDarkTheme, resolveThemeTokens, themeTokens } from '../src';
 import { JSDOM } from 'jsdom';
 
 @Suite('common theme service')
@@ -19,6 +19,26 @@ export class ThemeServiceTest {
         expect(service.toggle()).toBe('solarized');
         expect(isDarkTheme('solarized')).toBe(true);
         unsubscribe();
+        service.onDestroy();
+    }
+
+    @Test('brand themes are generated from anchors and derive dark mode')
+    brandThemes() {
+        const tokens = generateThemeTokens({ bg: '#101418', fg: '#d0d7de', accent: '#ffb000' });
+        expect(contrastRatio(tokens.fg, tokens.bg)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(tokens.accentFg, tokens.accent)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(tokens.mutedFg, tokens.bg)).toBeGreaterThanOrEqual(3);
+        expect(tokens.panelBg).not.toEqual(tokens.bg);
+
+        const service = new ThemeService();
+        service.registerTheme('brand', { bg: '#101418', fg: '#d0d7de', accent: '#ffb000' });
+        expect(service.available).toContain('brand');
+        service.setTheme('brand');
+        expect(service.current).toEqual('brand');
+        expect(service.isDark).toEqual(true);
+        expect(service.tokens.accent).toEqual('#ffb000');
+        service.unregisterTheme('brand');
+        expect(service.available).not.toContain('brand');
         service.onDestroy();
     }
 

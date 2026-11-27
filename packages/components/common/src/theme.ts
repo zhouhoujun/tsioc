@@ -1,5 +1,5 @@
 import { Injectable } from '@tsdi/ioc';
-import { applyThemeTokens, themeTokens, ThemeTokens } from './theme-tokens';
+import { applyThemeTokens, generateThemeTokens, parseHexColor, relativeLuminance, themeTokens, ThemeAnchors, ThemeTokens } from './theme-tokens';
 
 export type ThemeName = 'light' | 'dark' | 'solarized' | 'high-contrast' | string;
 
@@ -23,22 +23,42 @@ export function isDarkTheme(theme: ThemeName): boolean {
 export class ThemeService {
     protected theme: ThemeName = 'light';
     protected readonly listeners = new Set<ThemeListener>();
+    protected readonly customThemes = new Map<string, ThemeTokens>();
 
     get current(): ThemeName {
         return this.theme;
     }
 
     get available(): ThemeName[] {
-        return BUILT_IN_THEMES.slice();
+        return [...BUILT_IN_THEMES, ...this.customThemes.keys()];
     }
 
     get isDark(): boolean {
-        return isDarkTheme(this.theme);
+        const bg = parseHexColor(this.tokens.bg);
+        return bg ? relativeLuminance(bg) < 0.5 : isDarkTheme(this.theme);
     }
 
     /** Semantic colors for the current theme (hosts may override via CSS). */
     get tokens(): ThemeTokens {
-        return themeTokens(this.theme);
+        return this.customThemes.get(this.theme) ?? themeTokens(this.theme);
+    }
+
+    /** Register or replace a brand theme generated from a few anchors. */
+    registerTheme(name: ThemeName, anchors: ThemeAnchors): void {
+        const key = isThemeName(name) ? String(name).trim() : '';
+        if (!key) {
+            return;
+        }
+        this.customThemes.set(key, generateThemeTokens(anchors));
+        if (key === this.theme) {
+            this.emit();
+        }
+    }
+
+    unregisterTheme(name: ThemeName): void {
+        if (this.customThemes.delete(String(name || ''))) {
+            this.emit();
+        }
     }
 
     setTheme(theme: ThemeName): void {
@@ -72,6 +92,7 @@ export class ThemeService {
 
     onDestroy(): void {
         this.listeners.clear();
+        this.customThemes.clear();
     }
 
     protected emit(): void {

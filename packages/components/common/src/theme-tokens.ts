@@ -115,6 +115,43 @@ export const UI_THEME_VARIABLES: Record<keyof ThemeTokens, string[]> = {
     overlayBg: ['--ui-alert-bg']
 };
 
+
+export interface ThemeAnchors {
+    bg: string;
+    fg: string;
+    accent: string;
+    danger?: string;
+    success?: string;
+    warning?: string;
+}
+
+/** Build a complete token set from a few brand anchors; contrast is enforced. */
+export function generateThemeTokens(anchors: ThemeAnchors): ThemeTokens {
+    const bg = String(anchors.bg);
+    const fg = ensureContrast(String(anchors.fg), bg, 4.5);
+    const accent = String(anchors.accent);
+    const accentFg = contrastRatio('#ffffff', accent) >= contrastRatio('#000000', accent) ? '#ffffff' : '#000000';
+    const panelBg = mixHex(bg, fg, 0.04);
+    const danger = ensureContrast(String(anchors.danger ?? (contrastRatio('#ffffff', bg) > 4.5 ? '#cf222e' : '#ff7b72')), bg, 3);
+    const success = ensureContrast(String(anchors.success ?? (contrastRatio('#ffffff', bg) > 4.5 ? '#1a7f37' : '#3fb950')), bg, 3);
+    const warning = ensureContrast(String(anchors.warning ?? (contrastRatio('#ffffff', bg) > 4.5 ? '#9a6700' : '#d29922')), bg, 3);
+    return {
+        bg,
+        fg,
+        mutedFg: ensureContrast(mixHex(fg, bg, 0.35), bg, 3),
+        panelBg,
+        inputBg: bg,
+        border: mixHex(bg, fg, 0.18),
+        accent,
+        accentFg: ensureContrast(accentFg, accent, 4.5),
+        danger,
+        success,
+        warning,
+        selectedBg: mixHex(bg, accent, 0.16),
+        overlayBg: panelBg
+    };
+}
+
 export type Rgb = [number, number, number];
 
 /** Parse `#rgb` / `#rrggbb`; returns null for values the skins do not use. */
