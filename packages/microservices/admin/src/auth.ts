@@ -21,6 +21,7 @@ import {
 } from '@tsdi/service';
 import { JWTService } from '@tsdi/security';
 import { HttpRequestMessage } from '@tsdi/http-microservice';
+import { GATEWAY_LOCAL_PATHS } from '@tsdi/gateway';
 
 export const GATEWAY_ADMIN_AUTH_OPTIONS = token<GatewayAdminAuthOptions>('GATEWAY_ADMIN_AUTH_OPTIONS');
 export const GATEWAY_ADMIN_AUTH_USER = token<any>('GATEWAY_ADMIN_AUTH_USER');
@@ -992,6 +993,11 @@ export function useGatewayAdminAuth(
         ServiceFeatureKind.Interceptors,
         [
             { provide: GATEWAY_ADMIN_AUTH_OPTIONS, useValue: options },
+            {
+                provide: GATEWAY_LOCAL_PATHS,
+                useValue: [options.apiPrefix ?? '/api/gateway-admin', options.uiPrefix].filter(Boolean),
+                multi: true
+            } as any,
             JWTService,
             GatewayAdminAuthService,
             GatewayAdminAuthInterceptor,

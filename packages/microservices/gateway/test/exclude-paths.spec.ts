@@ -5,6 +5,7 @@ import { createRequestContext } from '@tsdi/common';
 import { HTTP_RESPONSE, HttpMessageAdapter } from '@tsdi/http-microservice';
 import { GatewayInterceptor } from '../src/gateway.interceptor';
 import { GatewayRuntime } from '../src/gateway.runtime';
+import { GATEWAY_LOCAL_PATHS } from '../src/gateway.options';
 
 describe('Gateway excludePaths', () => {
     function createContext() {
@@ -68,6 +69,20 @@ describe('Gateway excludePaths', () => {
         } finally {
             globalThis.fetch = original;
         }
+    });
+
+    it('also honours paths registered through GATEWAY_LOCAL_PATHS', async () => {
+        const injector = {
+            get: (token: any, fallback: any) => token === GATEWAY_LOCAL_PATHS
+                ? [['/api/gateway-admin'], '/admin']
+                : fallback
+        } as any;
+        const interceptor = new GatewayInterceptor({
+            routes: [{ path: '/api', service: 'api', targetUrl: 'http://api.internal' }]
+        }, null as any, null as any, new GatewayRuntime(), null as any, injector);
+
+        await expect(call(interceptor, '/api/gateway-admin/state')).resolves.toBe('local');
+        await expect(call(interceptor, '/admin/')).resolves.toBe('local');
     });
 
     it('matches excludePaths on path segment boundaries only', async () => {

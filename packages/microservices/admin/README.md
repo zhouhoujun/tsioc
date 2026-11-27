@@ -128,12 +128,12 @@ export class AppModule {}
 `admin-ui` is the output of `npm run build:web` (`web/index.html`,
 `web/main.js`, `web/chunks/**`).
 
-> If a gateway route is a broad prefix (for example `/api`), add the admin API
-> and UI prefixes to `excludePaths` as shown above. Otherwise the gateway
-> forwards `/api/gateway-admin/*` to the upstream service, so a backend `401`
-> or `403` can look like an admin authentication failure even when admin auth
-> is disabled. The standalone `startGatewayAdminServer()` entry does this
-> automatically.
+> If a gateway route is a broad prefix (for example `/api`), the admin features
+> automatically register their API/UI prefixes through `GATEWAY_LOCAL_PATHS`, so
+> `/api/gateway-admin/*` stays local instead of being forwarded upstream. The
+> explicit `excludePaths` above is still supported for hosts that wire the
+> controller/UI without the admin features. The standalone
+> `startGatewayAdminServer()` entry also sets it automatically.
 
 ## Authentication (OIDC)
 

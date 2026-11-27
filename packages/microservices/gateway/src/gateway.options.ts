@@ -1054,3 +1054,12 @@ export interface GatewayOptions {
 }
 
 export const GATEWAY_OPTIONS = token<GatewayOptions>('GATEWAY_OPTIONS');
+
+/**
+ * Co-hosted local paths that must bypass gateway forwarding.
+ *
+ * Admin features register their API/UI prefixes here so `/api`-style gateway
+ * routes cannot swallow gateway-owned endpoints. Multi-provider values may be
+ * strings or arrays of strings.
+ */
+export const GATEWAY_LOCAL_PATHS = token<string | string[]>('GATEWAY_LOCAL_PATHS');

@@ -4884,3 +4884,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第九十三批（2026-11-16）：
   - Gateway excludePaths；admin API/UI 不再被 /api 路由转发（修复假 401/403）。
   - 回归：gateway/admin 通过；ms-tsc 因 amqp 依赖类型漂移失败（非本批改动）。
+
+- 微服务框架第九十四批（2026-11-16）：
+  - GATEWAY_LOCAL_PATHS 自动注册 admin API/UI；嵌入式 admin 保存规则不再被 /api 转发。
+  - 回归：gateway/admin 相关测试通过。

@@ -5,7 +5,7 @@ import { ServiceDiscovery, EndpointResolver } from '@tsdi/discovery';
 import { HttpMessageAdapter, HTTP_AUTH_RESULT, HTTP_RESPONSE, HttpRequestMessage } from '@tsdi/http-microservice';
 import { Incoming, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
 import { Observable, from } from 'rxjs';
-import { GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayRuleConditionOptions, GatewayRuleOptions, GatewayWebhookOptions, ResolvedGatewayRoute } from './gateway.options';
+import { GATEWAY_LOCAL_PATHS, GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayRuleConditionOptions, GatewayRuleOptions, GatewayWebhookOptions, ResolvedGatewayRoute } from './gateway.options';
 import { MetricsCollector } from '@tsdi/metrics';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
@@ -86,6 +86,7 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
     private ruleEngineRevision = -1;
     private ruleEngineRules?: GatewayRuleOptions[];
     private observability: GatewayObservability;
+    private localPathCache?: string[];
     private gatewayAuth: GatewayAuth;
     private responsePipeline: GatewayResponse;
     private rateLimiter: GatewayRateLimiter;
@@ -210,8 +211,9 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
      * gateway route (`/api`) would otherwise prefix-match them.
      */
     private isExcludedPath(request: HttpRequestMessage): boolean {
-        const excluded = this.runtime.getOption('excludePaths', this.options.excludePaths);
-        if (!excluded?.length) {
+        const configured = this.runtime.getOption('excludePaths', this.options.excludePaths) ?? [];
+        const excluded = [...configured, ...this.localPaths()];
+        if (!excluded.length) {
             return false;
         }
         const defaults = this.runtime.getOption('defaults', this.options.defaults);
@@ -223,6 +225,33 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             }
             return path === value || path.startsWith(`${value}/`);
         });
+    }
+
+    /**
+     * Paths registered by first-party features (admin API/UI) through the
+     * `GATEWAY_LOCAL_PATHS` multi-provider token.
+     */
+    private localPaths(): string[] {
+        if (this.localPathCache) {
+            return this.localPathCache;
+        }
+        const flatten = (value: any): string[] => {
+            if (value == null) {
+                return [];
+            }
+            if (Array.isArray(value)) {
+                return value.flatMap(item => flatten(item));
+            }
+            return typeof value === 'string' ? [value] : [];
+        };
+        let raw: any;
+        try {
+            raw = this.injector.get(GATEWAY_LOCAL_PATHS, null);
+        } catch {
+            raw = null;
+        }
+        this.localPathCache = flatten(raw);
+        return this.localPathCache;
     }
 
     private matchRule(request: HttpRequestMessage): GatewayRuleOptions | null {

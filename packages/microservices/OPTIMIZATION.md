@@ -532,6 +532,12 @@
 - standalone `startGatewayAdminServer()` 自动排除 `/api/gateway-admin` 与 UI prefix；README 集成示例补充 excludePaths。
 - 新增 gateway `exclude-paths.spec.ts` 2 个测试、admin `server.spec.ts` 真实上游 401 回归；gateway/admin 套件通过。
 
+第九十四批（Admin 本地路径自动注册）：
+
+- 新增 `GATEWAY_LOCAL_PATHS` multi-provider token；`useGatewayAdminUi` 自动登记 UI prefix 与 `/api/gateway-admin`，`useGatewayAdminAuth` 登记配置的 apiPrefix/uiPrefix。
+- 网关在规则/路由匹配前合并 token 路径与 `excludePaths`，嵌入式 admin 无需手动配置；路径仍按段边界匹配。
+- 新增 gateway token 测试与 admin `ui-paths.spec.ts`；顺带移除 controller.openapi 的重复 throw。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

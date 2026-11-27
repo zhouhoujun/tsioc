@@ -1,7 +1,7 @@
 import { Inject, Injectable, token } from '@tsdi/ioc';
 import { BadRequestException, NotFoundException } from '@tsdi/common';
 import { Controller, Delete, Get, Post, Put, RequestBody, RequestPath, ServiceFeatureFn, ServiceFeatureKind, useStatics, Router, ROUTERS, MESSAGE_ROUTERS } from '@tsdi/service';
-import { GatewayConfigService, GatewayInterceptor, GatewayMatchPreviewRequest, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_OPTIONS } from '@tsdi/gateway';
+import { GatewayConfigService, GatewayInterceptor, GatewayMatchPreviewRequest, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_LOCAL_PATHS, GATEWAY_OPTIONS } from '@tsdi/gateway';
 import {
     InMemoryWorkflowDefinitionStore,
     VisualWorkflowDefinition,
@@ -432,7 +432,7 @@ export interface GatewayAdminUiOptions {
  */
 export function useGatewayAdminUi(options: GatewayAdminUiOptions): ServiceFeatureFn<ServiceFeatureKind.Content> {
     const prefix = (options.prefix ?? '/admin').replace(/^\/+/, '');
-    return useStatics({
+    const feature = useStatics({
         root: options.root,
         prefix,
         // Serve the absolute `root` as-is; inheriting the app baseURL would
@@ -449,4 +449,16 @@ export function useGatewayAdminUi(options: GatewayAdminUiOptions): ServiceFeatur
             }
         }
     });
+    return (config) => {
+        const created = feature(config);
+        const features = Array.isArray(created) ? created : [created];
+        features.forEach(item => {
+            item.providers.push({
+                provide: GATEWAY_LOCAL_PATHS,
+                useValue: [`/${prefix}`, '/api/gateway-admin'],
+                multi: true
+            } as any);
+        });
+        return created;
+    };
 }
