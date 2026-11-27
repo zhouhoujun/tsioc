@@ -355,11 +355,18 @@ run_ms_examples() {
     local log="$LOG_DIR/ms-examples.log"
     if (cd "$ROOT_DIR" && timeout 180 npx ts-node -r tsconfig-paths/register \
         packages/microservices/examples/smoke.ts >"$log" 2>&1); then
-        stage_pass ms-examples 'microservice quickstart smoke'
+        if (cd "$ROOT_DIR" && timeout 180 npx ts-node -r tsconfig-paths/register \
+            packages/microservices/examples/full-stack-smoke.ts >>"$log" 2>&1); then
+            stage_pass ms-examples 'microservice quickstart + full-stack smoke'
+        else
+            echo "--- ms-examples tail (last 30 lines) ---" >&2
+            tail -30 "$log" >&2
+            stage_fail ms-examples 'microservice quickstart + full-stack smoke'
+        fi
     else
         echo "--- ms-examples tail (last 30 lines) ---" >&2
         tail -30 "$log" >&2
-        stage_fail ms-examples 'microservice quickstart smoke'
+        stage_fail ms-examples 'microservice quickstart + full-stack smoke'
     fi
 }
 

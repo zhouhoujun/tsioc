@@ -603,6 +603,12 @@
 - `GatewayLoadBalanceOptions.retryBudget` 接入 HTTP/微服务 failover；预算耗尽时直接返回失败响应/抛出最后一次错误。
 - 新增 3 个测试；gateway 160 passing。
 
+第一百零六批（全链路示例）：
+
+- 新增 `examples/full-stack.ts`：HTTP backend + InMemoryServiceDiscovery + gateway（按服务发现转发）。
+- 新增 `full-stack-smoke.ts`，`ms-examples` 现在同时运行 quickstart 与 full-stack 两次真实启动/关闭。
+- README 补充运行方式；`ms-examples` PASS。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

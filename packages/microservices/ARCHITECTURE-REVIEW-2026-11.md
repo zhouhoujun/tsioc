@@ -128,7 +128,7 @@ S4 复跑后的关键数字：gateway route-match 10k p99 ≈ **0.0023 ms**（32
 
 | 任务 | 交付 | 验收 |
 |---|---|---|
-| 脚手架与 dev 体验 | `create-tsdi-service`、`tsdi dev`、watch/reload、全链路示例 | 新目录一条命令启动 HTTP+gateway+broker 示例 |
+| 脚手架与 dev 体验 | scaffold 已带 dev/watch/health；full-stack（backend+discovery+gateway）示例已接入 ms-examples；broker 示例待补 | 新目录一条命令启动 HTTP+gateway+broker 示例 |
 | OTel 语义与仪表盘 | semconv 字段、log-trace 关联、collector compose、SLO 模板 | 真实 collector 下 trace/metrics 可查；dashboard 可用 |
 | 真实注册中心 CI | Consul/Nacos/Eureka/etcd nightly + zone-aware LB | 容器环境注册/发现/摘除回归通过 |
 | Gateway 边缘增强 | retry budget 已落地；上游 WS/HTTP2、流式背压、canary 配置待补 | 长连接/1MB 流式/故障注入测试通过 |

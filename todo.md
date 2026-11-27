@@ -4930,3 +4930,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百零五批（2026-11-16）：
   - Gateway retry budget（ratio/ttl/minRetriesPerSec）。
   - 回归：gateway 160。
+
+- 微服务框架第一百零六批（2026-11-16）：
+  - full-stack 示例（backend + discovery + gateway）+ gate smoke。

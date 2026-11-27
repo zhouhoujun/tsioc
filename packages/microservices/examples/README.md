@@ -21,6 +21,22 @@ curl http://127.0.0.1:3210/health/readiness
 Set `PORT` to change the listen port; `SIGINT`/`SIGTERM` drain in-flight
 requests before closing the HTTP server.
 
+## Full stack (backend + discovery + gateway)
+
+`full-stack.ts` runs an HTTP backend, registers it in
+`InMemoryServiceDiscovery`, and starts a gateway route that resolves the
+service through discovery:
+
+```bash
+npx ts-node -r tsconfig-paths/register \
+  packages/microservices/examples/full-stack.ts
+
+curl http://127.0.0.1:3220/api/users
+```
+
+`full-stack-smoke.ts` is the gate version (ports `3223/3222`). It verifies the
+backend directly and through the gateway, then closes both applications.
+
 ## Smoke test
 
 `smoke.ts` boots the same module on port `3215`, calls `/hello` and
