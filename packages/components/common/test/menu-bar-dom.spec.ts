@@ -39,7 +39,11 @@ const nestedGroups: MenuBarGroup[] = [
                     {
                         id: 'zoom', label: 'Zoom', children: [
                             { id: 'zoom:in', label: 'Zoom In' },
-                            { id: 'zoom:out', label: 'Zoom Out' }
+                            {
+                                id: 'zoom:out', label: 'Zoom Out', children: [
+                                    { id: 'zoom:reset', label: 'Reset zoom' }
+                                ]
+                            }
                         ]
                     }
                 ]
@@ -72,11 +76,14 @@ export class MenuBarDomTest {
     }
 
     protected async render(selected: string[], source: MenuBarGroup[] = groups): Promise<any> {
+        this.doc.body.replaceChildren();
         const ref = this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>;
         ref.instance.groups = source;
         ref.instance.selectAction = id => selected.push(id);
         await ref.render();
-        await Promise.resolve();
+        for (let index = 0; index < 4; index++) {
+            await Promise.resolve();
+        }
         return ref.hostView.rootNodes[0] as any;
     }
 
@@ -104,26 +111,26 @@ export class MenuBarDomTest {
         root.querySelector('.menu-bar-trigger').click();
         await Promise.resolve();
 
-        const submenu = root.querySelector('.menu-bar-submenu');
-        expect(submenu).toBeTruthy();
-        expect(root.querySelector('[data-menu-id="theme:dark"]')).toBeTruthy();
+        expect(root.querySelector('.menu-bar-submenu')).toBeNull();
 
         root.querySelector('[data-menu-id="theme"]').click();
         await Promise.resolve();
         expect(selected).toEqual([]);
-        expect((submenu as any).className).toContain('is-open');
+        const submenu = root.querySelector('.menu-bar-submenu') as HTMLElement;
+        expect(submenu.getAttribute('data-submenu-id')).toEqual('theme');
+        expect(root.querySelector('[data-menu-id="theme:dark"]')).toBeTruthy();
 
         // Clicking the parent again collapses the flyout.
         root.querySelector('[data-menu-id="theme"]').click();
         await Promise.resolve();
-        expect((submenu as any).className).not.toContain('is-open');
+        expect(root.querySelector('.menu-bar-submenu')).toBeNull();
 
         root.querySelector('[data-menu-id="theme"]').click();
         await Promise.resolve();
         root.querySelector('[data-menu-id="theme:dark"]').click();
         await Promise.resolve();
         expect(selected).toEqual(['theme:dark']);
-        expect((submenu as any).className).not.toContain('is-open');
+        expect(root.querySelector('.menu-bar-submenu')).toBeNull();
     }
 
     @Test('opens a third-level submenu while keeping its ancestors open')
@@ -135,14 +142,12 @@ export class MenuBarDomTest {
 
         root.querySelector('[data-menu-id="view"]').click();
         await Promise.resolve();
-        const outer = root.querySelector('[data-menu-id="view"]')
-            .parentElement.querySelector('.menu-bar-submenu');
+        const outer = root.querySelector('.menu-bar-submenu[data-submenu-id="view"]') as HTMLElement;
         expect(outer.className).toContain('is-open');
 
         root.querySelector('[data-menu-id="zoom"]').click();
         await Promise.resolve();
-        const inner = root.querySelector('[data-menu-id="zoom"]')
-            .parentElement.querySelector('.menu-bar-submenu');
+        const inner = root.querySelector('.menu-bar-submenu[data-submenu-id="zoom"]') as HTMLElement;
         expect(outer.className).toContain('is-open');
         expect(inner.className).toContain('is-open');
         expect(root.querySelector('[data-menu-id="zoom:in"]')).toBeTruthy();
@@ -150,8 +155,28 @@ export class MenuBarDomTest {
         root.querySelector('[data-menu-id="zoom:in"]').click();
         await Promise.resolve();
         expect(selected).toEqual(['zoom:in']);
-        expect(outer.className).not.toContain('is-open');
-        expect(inner.className).not.toContain('is-open');
+        expect(root.querySelector('.menu-bar-submenu')).toBeNull();
+    }
+
+    @Test('supports four submenu levels without a recursive template')
+    async selectsFourthLevelItem() {
+        const selected: string[] = [];
+        const root = await this.render(selected, nestedGroups);
+        root.querySelector('.menu-bar-trigger').click();
+        await Promise.resolve();
+        for (const id of ['view', 'zoom', 'zoom:out']) {
+            root.querySelector(`[data-menu-id="${id}"]`).click();
+            await Promise.resolve();
+        }
+        const openLevels = Array.from(root.querySelectorAll('.menu-bar-submenu.is-open')) as HTMLElement[];
+        expect(openLevels.map(level => level.getAttribute('data-submenu-id')))
+            .toEqual(['view', 'zoom', 'zoom:out']);
+        const reset = root.querySelector('[data-menu-id="zoom:reset"]') as HTMLElement;
+        expect(reset).toBeTruthy();
+        reset.click();
+        await Promise.resolve();
+        expect(selected).toEqual(['zoom:reset']);
+        expect((root.querySelector('.menu-bar-popup') as HTMLElement).hasAttribute('hidden')).toBe(true);
     }
 
     @Test('walks nested submenu levels with ArrowRight and ArrowLeft')
@@ -168,28 +193,27 @@ export class MenuBarDomTest {
         const key = (name: string) => view.dispatchEvent(new (this.doc.defaultView as any).KeyboardEvent('keydown', { key: name, bubbles: true }));
         key('ArrowRight');
         for (let i = 0; i < 6; i++) await Promise.resolve();
+        const activeId = () => (this.doc.activeElement as HTMLElement | null)?.getAttribute?.('data-menu-id');
         const zoom = root.querySelector('[data-menu-id="zoom"]') as HTMLElement;
-        expect(this.doc.activeElement).toBe(zoom);
+        expect(activeId()).toEqual('zoom');
 
         zoom.dispatchEvent(new (this.doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
         for (let i = 0; i < 6; i++) await Promise.resolve();
         const zoomIn = root.querySelector('[data-menu-id="zoom:in"]') as HTMLElement;
-        expect(this.doc.activeElement).toBe(zoomIn);
-        const outer = view.parentElement!.querySelector('.menu-bar-submenu') as HTMLElement;
-        const inner = zoom.parentElement!.querySelector('.menu-bar-submenu') as HTMLElement;
-        expect(outer.className).toContain('is-open');
-        expect(inner.className).toContain('is-open');
+        expect(activeId()).toEqual('zoom:in');
+        expect(root.querySelector('.menu-bar-submenu[data-submenu-id="view"]')).toBeTruthy();
+        expect(root.querySelector('.menu-bar-submenu[data-submenu-id="zoom"]')).toBeTruthy();
 
         key('ArrowLeft');
         for (let i = 0; i < 6; i++) await Promise.resolve();
-        expect(this.doc.activeElement).toBe(zoom);
-        expect(outer.className).toContain('is-open');
-        expect(inner.className).not.toContain('is-open');
+        expect(activeId()).toEqual('zoom');
+        expect(root.querySelector('.menu-bar-submenu[data-submenu-id="view"]')).toBeTruthy();
+        expect(root.querySelector('.menu-bar-submenu[data-submenu-id="zoom"]')).toBeNull();
 
         key('ArrowLeft');
         for (let i = 0; i < 6; i++) await Promise.resolve();
-        expect(this.doc.activeElement).toBe(view);
-        expect(outer.className).not.toContain('is-open');
+        expect(activeId()).toEqual('view');
+        expect(root.querySelector('.menu-bar-submenu')).toBeNull();
         root.remove();
     }
 

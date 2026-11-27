@@ -14,7 +14,7 @@ import {
     openSubmenuElement,
     scheduleDomFocus
 } from './menu-bar.dom';
-import { menuAncestorPath, truncateMenuPath } from './menu-bar.submenu';
+import { menuAncestorPath, submenuBranchKeepsOpen, truncateMenuPath } from './menu-bar.submenu';
 import { MenuTypeahead, menuTypeaheadIndex } from './menu-bar.typeahead';
 
 /** One actionable entry in a {@link MenuBarComponent} dropdown. */
@@ -99,7 +99,7 @@ interface MenuBarEntryView {
             @scroll="onPopupScroll">
             <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')" v-for="entry in entries" trackBy="key" data-menu-key="{{entry.key}}"
                 role="none"
-                @mouseleave="leaveSubmenu(entry.id)"
+                @mouseleave="leaveSubmenu(entry.id, $event)"
                 @focusout="blurSubmenu(entry.id, $event)">
                 <div class="menu-bar-separator" role="separator" v-if="entry.kind === 'separator'"></div>
                 <div class="menu-bar-group-title" v-if="entry.kind === 'title'">{{entry.label}}</div>
@@ -111,49 +111,37 @@ interface MenuBarEntryView {
                     aria-haspopup="{{entry.children.length ? 'menu' : 'false'}}"
                     aria-expanded="{{entry.children.length ? submenuOpen(entry.id) : 'false'}}"
                     @click="choose(entry.id, $event)"
-                    @mouseenter="hoverSubmenu(entry.id, $event)"
-                    @focus="hoverSubmenu(entry.id, $event)">
+                    @mouseenter="previewSubmenu(entry, $event)"
+                    @focus="previewSubmenu(entry, $event)">
                     <span class="menu-bar-item-icon" v-if="entry.icon"><icon [name]="entry.icon" [glyph]="entry.icon" size="sm"></icon></span>
                     <span class="menu-bar-item-label">{{entry.label}}</span>
                     <span class="menu-bar-item-shortcut" v-if="entry.shortcut">{{entry.shortcut}}</span>
                     <span class="menu-bar-item-check" v-if="entry.checked"><icon name="check" size="xs"></icon></span>
                     <span class="menu-bar-item-caret" v-if="entry.children.length"><icon name="caret-right" size="xs"></icon></span>
                 </button>
-                <div [class]="'menu-bar-submenu' + (submenuOpen(entry.id) ? ' is-open' : '')"
-                    [style]="submenuStyle(entry.id)" role="menu" v-if="entry.children.length">
-                    <div [class]="'menu-bar-entry' + (child.children.length ? ' has-submenu' : '')" v-for="child in entry.children" trackBy="id"
-                        role="none" @mouseleave="leaveSubmenu(child.id)" @focusout="blurSubmenu(child.id, $event)">
-                        <button class="menu-bar-item {{child.className}}" type="button" role="{{child.role}}"
-                            aria-checked="{{child.ariaChecked}}"
-                            data-menu-id="{{child.id}}"
-                            [disabled]="child.disabled"
-                            aria-disabled="{{child.disabled}}"
-                            aria-haspopup="{{child.children.length ? 'menu' : 'false'}}"
-                            aria-expanded="{{child.children.length ? submenuOpen(child.id) : 'false'}}"
-                            @click="choose(child.id, $event)"
-                            @mouseenter="hoverSubmenu(child.id, $event)"
-                            @focus="hoverSubmenu(child.id, $event)">
-                            <span class="menu-bar-item-icon" v-if="child.icon"><icon [name]="child.icon" [glyph]="child.icon" size="sm"></icon></span>
-                            <span class="menu-bar-item-label">{{child.label}}</span>
-                            <span class="menu-bar-item-shortcut" v-if="child.shortcut">{{child.shortcut}}</span>
-                            <span class="menu-bar-item-check" v-if="child.checked"><icon name="check" size="xs"></icon></span>
-                            <span class="menu-bar-item-caret" v-if="child.children.length"><icon name="caret-right" size="xs"></icon></span>
-                        </button>
-                        <div [class]="'menu-bar-submenu' + (submenuOpen(child.id) ? ' is-open' : '')"
-                            [style]="submenuStyle(child.id)" role="menu" v-if="child.children.length">
-                            <button class="menu-bar-item {{nested.className}}" type="button" role="{{nested.role}}"
-                                aria-checked="{{nested.ariaChecked}}" v-for="nested in child.children"
-                                trackBy="id" data-menu-id="{{nested.id}}"
-                                [disabled]="nested.disabled" aria-disabled="{{nested.disabled}}"
-                                @click="choose(nested.id, $event)">
-                                <span class="menu-bar-item-icon" v-if="nested.icon"><icon [name]="nested.icon" [glyph]="nested.icon" size="sm"></icon></span>
-                                <span class="menu-bar-item-label">{{nested.label}}</span>
-                                <span class="menu-bar-item-shortcut" v-if="nested.shortcut">{{nested.shortcut}}</span>
-                                <span class="menu-bar-item-check" v-if="nested.checked"><icon name="check" size="xs"></icon></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            </div>
+        </div>
+        <div [class]="'menu-bar-submenu' + (submenuOpen(level.id) ? ' is-open' : '')"
+            [style]="submenuStyle(level.id)" role="menu" data-submenu-id="{{level.id}}"
+            v-for="level in submenuLevels" trackBy="id"
+            @mouseleave="leaveSubmenu(level.id, $event)">
+            <div [class]="'menu-bar-entry' + (entry.children.length ? ' has-submenu' : '')"
+                v-for="entry in level.items" trackBy="key" role="none"
+                @mouseleave="leaveSubmenu(entry.id, $event)" @focusout="blurSubmenu(entry.id, $event)">
+                <button class="menu-bar-item {{entry.className}}" type="button" role="{{entry.role}}"
+                    aria-checked="{{entry.ariaChecked}}" data-menu-id="{{entry.id}}"
+                    [disabled]="entry.disabled" aria-disabled="{{entry.disabled}}"
+                    aria-haspopup="{{entry.children.length ? 'menu' : 'false'}}"
+                    aria-expanded="{{entry.children.length ? submenuOpen(entry.id) : 'false'}}"
+                    @click="choose(entry.id, $event)"
+                    @mouseenter="previewSubmenu(entry, $event)"
+                    @focus="previewSubmenu(entry, $event)">
+                    <span class="menu-bar-item-icon" v-if="entry.icon"><icon [name]="entry.icon" [glyph]="entry.icon" size="sm"></icon></span>
+                    <span class="menu-bar-item-label">{{entry.label}}</span>
+                    <span class="menu-bar-item-shortcut" v-if="entry.shortcut">{{entry.shortcut}}</span>
+                    <span class="menu-bar-item-check" v-if="entry.checked"><icon name="check" size="xs"></icon></span>
+                    <span class="menu-bar-item-caret" v-if="entry.children.length"><icon name="caret-right" size="xs"></icon></span>
+                </button>
             </div>
         </div>
     </div>`
@@ -283,6 +271,20 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         });
         return entries;
     }
+    /** One flyout per open path level; arbitrary nesting needs no recursive template. */
+    @Computed()
+    get submenuLevels(): Array<{ id: string; items: MenuBarEntryView[] }> {
+        const path = this.hoverSubmenuPath.length ? this.hoverSubmenuPath : this.activeSubmenuPath;
+        return path.map(id => {
+            const item = this.findItem(id);
+            return {
+                id,
+                items: (item?.children || [])
+                    .filter(child => child && child.id)
+                    .map((child, index) => this.menuEntryView(child, `${id}-${index}-${child.id}`))
+            };
+        }).filter(level => level.items.length > 0);
+    }
     onInit(): void {
         this.bindDocument();
     }
@@ -372,7 +374,11 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             this.activeSubmenuPath = path;
             this.hoverSubmenuPath = path;
             this.anchorSubmenu(id);
-            scheduleDomFocus(this.ownerDocument(), () => this.openSubmenuItems()[0]);
+            const root = unwrapReactive(this.hostElement);
+            scheduleDomFocus(this.ownerDocument(), () => {
+                const submenu = openSubmenuElement(root, id);
+                return submenu ? menuButtons(submenu)[0] : undefined;
+            });
             return;
         }
         if (key === 'ArrowLeft') {
@@ -381,13 +387,11 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
                 return;
             }
             event?.preventDefault?.();
-            // The flyout's wrapper owns the parent button as its direct child.
-            const entry = submenu.parentElement as HTMLElement | undefined;
-            const parent = Array.from(entry?.children || []).find(node =>
-                String((node as HTMLElement).tagName || '').toLowerCase() === 'button') as HTMLElement | undefined;
-            const parentId = String(parent?.getAttribute?.('data-menu-id') || '');
-            this.activeSubmenuPath = parentId ? menuAncestorPath(this.groups, parentId) : [];
+            const id = String(submenu.getAttribute('data-submenu-id') || '');
+            this.activeSubmenuPath = id ? menuAncestorPath(this.groups, id) : [];
             this.hoverSubmenuPath = this.activeSubmenuPath;
+            const parent = unwrapReactive(this.hostElement)
+                ?.querySelector?.(`[data-menu-id="${id}"]`) as HTMLElement | undefined;
             if (parent) {
                 this.suppressFocusPreview = true;
                 focusDomElement(parent);
@@ -405,12 +409,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
     protected menuLevelItems(): HTMLElement[] {
         return menuLevelButtons(unwrapReactive(this.hostElement), this.ownerDocument());
     }
-    /** Direct child buttons of the currently open flyout. */
-    protected openSubmenuItems(): HTMLElement[] {
-        const path = this.hoverSubmenuPath.length ? this.hoverSubmenuPath : this.activeSubmenuPath;
-        const submenu = openSubmenuElement(unwrapReactive(this.hostElement), path[path.length - 1]);
-        return submenu ? menuButtons(submenu) : [];
-    }
     protected menuItemNode(offset: number): HTMLElement | undefined {
         const items = this.menuLevelItems();
         if (!items.length) {
@@ -422,7 +420,6 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
         const trigger = unwrapReactive(this.hostElement)?.querySelector?.('.menu-bar-trigger') as HTMLElement | undefined;
         focusDomElement(trigger);
     }
-
     choose(id: string, event?: Event): void {
         const item = this.findItem(id);
         if (!item || item.disabled) {
@@ -462,6 +459,12 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
      * the popup's overflow box — which is exactly what happened once long menus
      * gained a scrollbar.
      */
+    previewSubmenu(item: MenuBarEntryView, event?: Event): void {
+        if (item.children?.length) {
+            this.hoverSubmenu(item.id, event);
+        }
+    }
+
     hoverSubmenu(id: string, event?: Event): void {
         // ArrowLeft closes a flyout and returns focus to its parent; that
         // focus must not immediately preview (and reopen) the same flyout.
@@ -470,25 +473,32 @@ export class MenuBarComponent implements AfterViewInit, OnDestroy {
             return;
         }
         const path = menuAncestorPath(this.groups, id).concat(id);
-        if (this.activeSubmenuPath.length && this.activeSubmenuPath[0] !== path[0]) {
-            this.activeSubmenuPath = [];
+        const unchanged = this.hoverSubmenuPath.length === path.length
+            && path.every((value, index) => this.hoverSubmenuPath[index] === value);
+        if (!unchanged) {
+            if (this.activeSubmenuPath.length && this.activeSubmenuPath[0] !== path[0]) {
+                this.activeSubmenuPath = [];
+            }
+            this.hoverSubmenuPath = path;
         }
-        this.hoverSubmenuPath = path;
         this.anchorSubmenu(id, event);
     }
 
-    leaveSubmenu(id: string): void {
+    leaveSubmenu(id: string, event?: Event): void {
+        if (event && submenuBranchKeepsOpen(this.groups, id, (event as any).relatedTarget)) {
+            return;
+        }
         this.hoverSubmenuPath = truncateMenuPath(this.hoverSubmenuPath, id);
     }
 
-    /** Keep the flyout open while keyboard focus moves inside the same entry. */
+    /** Keep the flyout open while keyboard focus moves inside the same branch. */
     blurSubmenu(id: string, event?: Event): void {
         const next = (event as any)?.relatedTarget;
         const root = unwrapReactive((event as any)?.currentTarget);
         if (next && root?.contains?.(next)) {
             return;
         }
-        this.leaveSubmenu(id);
+        this.leaveSubmenu(id, event);
     }
 
     submenuOpen(id: string): boolean {

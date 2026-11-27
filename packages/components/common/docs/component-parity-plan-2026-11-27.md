@@ -271,7 +271,7 @@ contracts、catalog examples、bench。
 - P0-1～P0-6：token 基线、Button loading/ToggleButtonGroup、Field/Form 状态与错误摘要、
   Select/Tree/TreeSelect 组合能力、Overlay backdrop/inert/outside、DataTable 分组/树行/
   编辑校验/列选择器。
-- P1-1～P1-6：Tabs 上下文菜单与键盘重排、Menu 三层子菜单、Toolbar 键盘/脚本重排、
+- P1-1～P1-6：Tabs 上下文菜单与键盘重排、Menu 任意层级子菜单、Toolbar 键盘/脚本重排、
   Accordion headingLevel、Toast 异步 action 与 Provider 容量、Spinner tone。
 - P0-1（颜色 ratchet）：`test/token-color-gate.spec.ts` + `scripts/color-baseline.json`
   锁定现有组件皮肤中的硬编码颜色计数，只允许下降；新增皮肤文件必须使用 `--ui-*`

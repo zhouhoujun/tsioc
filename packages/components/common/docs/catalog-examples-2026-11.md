@@ -161,9 +161,10 @@ viewGroups = [{
 }];
 ```
 
-Ancestor flyouts stay open while a deeper level is pinned. ArrowRight enters a
-level, ArrowLeft closes the current level, Home/End and type-ahead operate on
-the focused level, and Escape closes the whole menu.
+Ancestor flyouts stay open while a deeper level is pinned, and `children` can
+nest to any depth. ArrowRight enters a level, ArrowLeft closes the current
+level, Home/End and type-ahead operate on the focused level, and Escape closes
+the whole menu.
 
 ## DataTable hierarchical rows
 

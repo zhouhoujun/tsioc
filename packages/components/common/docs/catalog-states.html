@@ -1421,6 +1421,8 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
 .state-sample .ui-toast-provider { position: static; inset: auto; display: block; }
 .state-sample .ui-toast-provider .console-toast-stack { position: static; max-width: 100%; }
 .matrix-card [data-matrix-focus="true"] { outline: 2px solid var(--ui-focus-ring); outline-offset: 1px; }
+.matrix-card .menu-bar-popup, .matrix-card .menu-bar-submenu { position: static; max-height: none; }
+.matrix-card .menu-bar-submenu.is-open { display: flex; margin-left: 14px; }
 .matrix-card[data-state="disabled"] .state-sample { opacity: .9; }
 .matrix-card[data-state="loading"] .state-sample { --ui-disabled-opacity: 1; }
 </style>
@@ -1507,7 +1509,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -1518,7 +1519,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -1529,32 +1529,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="light-default-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="light-default-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -1762,7 +1739,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -1773,7 +1749,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -1784,32 +1759,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="light-focus-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="light-focus-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -2017,7 +1969,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -2028,7 +1979,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -2039,32 +1989,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="light-selected-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="light-selected-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -2272,7 +2199,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -2283,7 +2209,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -2294,32 +2219,37 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="light-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu is-open" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="light-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <div role="menu" data-submenu-id="view" trackby="id" class="menu-bar-submenu is-open" style="">
+            <div trackby="key" role="none" class="menu-bar-entry has-submenu">
+                <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="true">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <span class="menu-bar-item-caret"><icon name="light-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
+                </button>
+            </div><v-container></v-container>
+        </div><div role="menu" data-submenu-id="zoom" trackby="id" class="menu-bar-submenu is-open" style="">
+            <div trackby="key" role="none" class="menu-bar-entry">
+                <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" data-menu-id="zoom:in" aria-disabled="false" aria-haspopup="false" aria-expanded="false">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom In</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                </button>
+            </div><div trackby="key" role="none" class="menu-bar-entry">
+                <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" data-menu-id="zoom:out" aria-disabled="false" aria-haspopup="false" aria-expanded="false">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom Out</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                </button>
+            </div><v-container></v-container>
+        </div><v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -2530,7 +2460,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -2541,7 +2470,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -2552,32 +2480,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="light-disabled-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="light-disabled-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -2785,7 +2690,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -2796,7 +2700,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -2807,32 +2710,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="light-loading-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="light-loading-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -3046,7 +2926,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -3057,7 +2936,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -3068,32 +2946,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="dark-default-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="dark-default-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -3301,7 +3156,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -3312,7 +3166,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -3323,32 +3176,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="dark-focus-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="dark-focus-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -3556,7 +3386,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -3567,7 +3396,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -3578,32 +3406,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="dark-selected-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="dark-selected-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -3811,7 +3616,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -3822,7 +3626,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -3833,32 +3636,37 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="dark-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu is-open" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="dark-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <div role="menu" data-submenu-id="view" trackby="id" class="menu-bar-submenu is-open" style="">
+            <div trackby="key" role="none" class="menu-bar-entry has-submenu">
+                <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="true">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <span class="menu-bar-item-caret"><icon name="dark-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
+                </button>
+            </div><v-container></v-container>
+        </div><div role="menu" data-submenu-id="zoom" trackby="id" class="menu-bar-submenu is-open" style="">
+            <div trackby="key" role="none" class="menu-bar-entry">
+                <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" data-menu-id="zoom:in" aria-disabled="false" aria-haspopup="false" aria-expanded="false">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom In</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                </button>
+            </div><div trackby="key" role="none" class="menu-bar-entry">
+                <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" data-menu-id="zoom:out" aria-disabled="false" aria-haspopup="false" aria-expanded="false">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom Out</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                </button>
+            </div><v-container></v-container>
+        </div><v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -4069,7 +3877,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -4080,7 +3887,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -4091,32 +3897,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="dark-disabled-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="dark-disabled-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -4324,7 +4107,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -4335,7 +4117,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -4346,32 +4127,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="dark-loading-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="dark-loading-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -4585,7 +4343,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -4596,7 +4353,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -4607,32 +4363,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="high-contrast-default-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="high-contrast-default-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -4840,7 +4573,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -4851,7 +4583,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -4862,32 +4593,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="high-contrast-focus-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="high-contrast-focus-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -5095,7 +4803,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -5106,7 +4813,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -5117,32 +4823,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="high-contrast-selected-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="high-contrast-selected-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -5350,7 +5033,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -5361,7 +5043,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -5372,32 +5053,37 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="high-contrast-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu is-open" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="high-contrast-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <div role="menu" data-submenu-id="view" trackby="id" class="menu-bar-submenu is-open" style="">
+            <div trackby="key" role="none" class="menu-bar-entry has-submenu">
+                <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="true">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <span class="menu-bar-item-caret"><icon name="high-contrast-open-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
+                </button>
+            </div><v-container></v-container>
+        </div><div role="menu" data-submenu-id="zoom" trackby="id" class="menu-bar-submenu is-open" style="">
+            <div trackby="key" role="none" class="menu-bar-entry">
+                <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" data-menu-id="zoom:in" aria-disabled="false" aria-haspopup="false" aria-expanded="false">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom In</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                </button>
+            </div><div trackby="key" role="none" class="menu-bar-entry">
+                <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" data-menu-id="zoom:out" aria-disabled="false" aria-haspopup="false" aria-expanded="false">
+                    <v-container></v-container>
+                    <span class="menu-bar-item-label">Zoom Out</span>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                    <v-container></v-container>
+                </button>
+            </div><v-container></v-container>
+        </div><v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -5608,7 +5294,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -5619,7 +5304,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -5630,32 +5314,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="high-contrast-disabled-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="high-contrast-disabled-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">
@@ -5863,7 +5524,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-1-stop" role="none" class="menu-bar-entry">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -5874,7 +5534,6 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <v-container></v-container>
                 </button><v-container></v-container>
-                <v-container></v-container>
             </div><div trackby="key" data-menu-key="0-2-view" role="none" class="menu-bar-entry has-submenu">
                 <v-container></v-container>
                 <v-container></v-container>
@@ -5885,32 +5544,9 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
                     <v-container></v-container>
                     <span class="menu-bar-item-caret"><icon name="high-contrast-loading-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
                 </button><v-container></v-container>
-                <div role="menu" class="menu-bar-submenu" style="">
-                    <div trackby="id" role="none" class="menu-bar-entry has-submenu">
-                        <button class="menu-bar-item has-submenu" type="button" role="menuitem" aria-checked="" data-menu-id="zoom" aria-disabled="false" aria-haspopup="menu" aria-expanded="false">
-                            <v-container></v-container>
-                            <span class="menu-bar-item-label">Zoom</span>
-                            <v-container></v-container>
-                            <v-container></v-container>
-                            <span class="menu-bar-item-caret"><icon name="high-contrast-loading-caret-right" size="xs" class="tsdi-icon tsdi-icon-xs" data-icon="caret-right" role="presentation" aria-hidden="true"><svg class="tsdi-icon-svg" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6.4 4.2 10.2 8l-3.8 3.8z" fill="currentColor" stroke="none"></path></svg><span class="tsdi-icon-glyph" aria-hidden="true">▸</span></icon></span><v-container></v-container>
-                        </button>
-                        <div role="menu" class="menu-bar-submenu" style="">
-                            <button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:in" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom In</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><button class="menu-bar-item" type="button" role="menuitem" aria-checked="" trackby="id" data-menu-id="zoom:out" aria-disabled="false">
-                                <v-container></v-container>
-                                <span class="menu-bar-item-label">Zoom Out</span>
-                                <v-container></v-container>
-                                <v-container></v-container>
-                            </button><v-container></v-container>
-                        </div><v-container></v-container>
-                    </div><v-container></v-container>
-                </div><v-container></v-container>
             </div><v-container></v-container>
         </div>
+        <v-container></v-container>
     </div></menu-bar>
         <ui-data-table arialabel="Runs" selectable=""><div class="ui-data-table">
     <div class="ui-data-table-scroll">

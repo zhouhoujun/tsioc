@@ -8,7 +8,7 @@
 export function focusDomElement(node: any): void {
     const view = node?.ownerDocument?.defaultView;
     const ElementCtor = view?.HTMLElement;
-    if (node && ElementCtor && node instanceof ElementCtor) {
+    if (node && node.isConnected !== false && ElementCtor && node instanceof ElementCtor) {
         node.focus();
     }
 }
@@ -72,10 +72,7 @@ export function topLevelMenuButtons(root: any): HTMLElement[] {
 
 /** The flyout owned by the entry with `id`. */
 export function submenuElementFor(root: any, id: string): HTMLElement | undefined {
-    const item = root?.querySelector?.(`[data-menu-id="${id}"]`) as HTMLElement | undefined;
-    const entry = item?.parentElement;
-    return Array.from(entry?.children || []).find(node =>
-        (node as HTMLElement).classList?.contains('menu-bar-submenu')) as HTMLElement | undefined;
+    return root?.querySelector?.(`.menu-bar-submenu[data-submenu-id="${id}"]`) as HTMLElement | undefined;
 }
 
 /** The currently open flyout, preferring the one owned by `id`. */

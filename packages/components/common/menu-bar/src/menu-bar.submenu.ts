@@ -1,3 +1,5 @@
+import { unwrapReactive } from '@tsdi/components';
+
 /**
  * Submenu path helpers. A path is the chain of open submenu parent ids from
  * the outer-most flyout to the inner-most one, so nested menus keep every
@@ -31,6 +33,25 @@ export function menuAncestorPath(groups: any[], id: string): string[] {
         }
     }
     return [];
+}
+
+/**
+ * Whether moving to `target` stays inside the branch owned by `id`. Flyouts are
+ * siblings in the DOM, so pointer/focus transitions must consult the menu data
+ * instead of relying on DOM containment.
+ */
+export function submenuBranchKeepsOpen(groups: any[], id: string, target: any): boolean {
+    const node = unwrapReactive(target);
+    const submenu = node?.closest?.('.menu-bar-submenu') as HTMLElement | undefined;
+    const item = node?.closest?.('[data-menu-id]') as HTMLElement | undefined;
+    const nextId = String(submenu?.getAttribute?.('data-submenu-id')
+        || item?.getAttribute?.('data-menu-id') || '');
+    if (!nextId) {
+        return false;
+    }
+    return nextId === id
+        || menuAncestorPath(groups, nextId).includes(id)
+        || menuAncestorPath(groups, id).includes(nextId);
 }
 
 /** Close `id` and every deeper level while keeping its ancestors open. */

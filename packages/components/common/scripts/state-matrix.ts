@@ -138,6 +138,8 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
 .state-sample .ui-toast-provider { position: static; inset: auto; display: block; }
 .state-sample .ui-toast-provider .console-toast-stack { position: static; max-width: 100%; }
 .matrix-card [data-matrix-focus="true"] { outline: 2px solid var(--ui-focus-ring); outline-offset: 1px; }
+.matrix-card .menu-bar-popup, .matrix-card .menu-bar-submenu { position: static; max-height: none; }
+.matrix-card .menu-bar-submenu.is-open { display: flex; margin-left: 14px; }
 .matrix-card[data-state="disabled"] .state-sample { opacity: .9; }
 .matrix-card[data-state="loading"] .state-sample { --ui-disabled-opacity: 1; }
 `;
@@ -226,7 +228,8 @@ export async function renderStateMatrixHtml(): Promise<string> {
 
         await reset();
         menu.instance.open = true;
-        menu.instance.activeSubmenuPath = ['view'];
+        menu.instance.activeSubmenuPath = ['view', 'zoom'];
+        menu.instance.hoverSubmenuPath = ['view', 'zoom'];
         toast.instance.show('Saved', { durationMs: 0, actionLabel: 'Undo' });
         await capture('open');
 
