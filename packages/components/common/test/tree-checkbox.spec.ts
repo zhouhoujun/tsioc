@@ -76,6 +76,22 @@ export class TreeCheckboxTest {
         expect(host.checkedEvents[host.checkedEvents.length - 1]).toEqual([]);
     }
 
+    @Test('cascades checks and exposes indeterminate parents')
+    async cascadesChecks() {
+        const { root, tree } = await this.mount();
+        const row = (key: string) => tree.viewItems.find(item => item.key === key)!;
+        tree.toggleCheckedKey('root', row('root').item);
+        expect(tree.checkedIds.sort()).toEqual(['child', 'leaf', 'root']);
+        tree.toggleCheckedKey('child', row('child').item);
+        expect(tree.checkedIds).not.toContain('child');
+        expect(tree.rowIndeterminate(row('root'))).toBe(true);
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        const checks = Array.from(((tree as any).elementRef?.nativeElement?.querySelectorAll?.('.ui-tree-check') || []) as any[]);
+        expect(checks[0]?.getAttribute('aria-checked')).toEqual('mixed');
+        tree.toggleCheckedKey('child', row('child').item);
+        expect(tree.rowChecked(row('root'))).toBe(true);
+    }
+
     @Test('loads lazy children through the host callback')
     async lazyLoads() {
         const { root, tree } = await this.mount();

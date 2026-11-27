@@ -92,6 +92,6 @@ export class InteractionContractsTest {
         tree.checkable = true;
         tree.multiple = true;
         tree.toggleCheckedKey('leaf', tree.items[0].children![0]);
-        expect(tree.checkedIds).toEqual(['leaf']);
+        expect(tree.checkedIds.sort()).toEqual(['leaf', 'root']);
     }
 }

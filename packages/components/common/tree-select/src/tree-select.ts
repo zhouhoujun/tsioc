@@ -30,7 +30,7 @@ import { installTreeSelectStyles } from './tree-select.styles';
         <div class="ui-tree-select-panel" v-if="openState">
             <ui-tree :items="items" :expandedIds="expandedKeys" :selectedId="selectedKey"
                 :ariaLabel="ariaLabel" :checkable="checkable" :multiple="multiple"
-                :checkedIds="checkedIds" :checkAction="treeCheckHandler" :loadChildren="loadChildren"
+                :checkedIds="checkedIds" :checkAction="treeCheckHandler" :cascade="cascade" :loadChildren="loadChildren"
                 :selectionFollowsFocus="false" :wrapFocus="true" :selectAction="treeSelectHandler"
                 :toggleAction="treeToggleHandler"></ui-tree>
         </div>
@@ -57,6 +57,7 @@ export class TreeSelectComponent {
     @Attribute() checkAction?: (keys: string[], node: TreeNode) => void;
     @Attribute() loadChildren?: (node: TreeNode) => TreeNode[] | Promise<TreeNode[]>;
     @Attribute() checkedIds: Array<string | number> = [];
+    @Attribute() cascade: boolean | string = true;
 
     private _open = false;
     private _disabled = false;

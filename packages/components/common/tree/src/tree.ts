@@ -32,6 +32,7 @@ interface TreeViewItem {
     expanded: boolean;
     selected: boolean;
     checked: boolean;
+    indeterminate: boolean;
     active: boolean;
     loading: boolean;
     disabled: boolean;
@@ -63,9 +64,9 @@ interface TreeViewItem {
             <span class="ui-tree-row" @click="activate(entry)">
                 <span class="ui-tree-indent" aria-hidden="true">{{entry.indentText}}</span>
                 <span class="ui-tree-check" role="checkbox" tabindex="-1" focusable="true"
-                    aria-checked="{{entry.checked}}" aria-label="{{checkLabel}}"
+                    aria-checked="{{rowIndeterminate(entry) ? 'mixed' : rowChecked(entry)}}" aria-label="{{checkLabel}}"
                     v-if="checkable" @click="toggleCheck(entry, $event)"
-                    @keydown="checkKeydown(entry, $event)">{{entry.checked ? '✓' : ' '}}</span>
+                    @keydown="checkKeydown(entry, $event)">{{rowChecked(entry) ? '✓' : rowIndeterminate(entry) ? '–' : ' '}}</span>
                 <span class="ui-tree-toggle" v-if="entry.hasChildren" @click="toggle(entry, $event)">{{entry.toggled}}</span>
                 <span class="ui-tree-toggle is-leaf" v-if="!entry.hasChildren" aria-hidden="true"> </span>
                 <icon class="ui-tree-icon" v-if="entry.icon" [name]="entry.icon" [glyph]="entry.iconGlyph || entry.icon" [size]="iconSize"></icon>
@@ -89,6 +90,10 @@ export class TreeComponent {
     @Attribute() className = '';
     @Attribute() checkLabel = 'Select node';
     @Attribute() checkedIds: Array<string | number> = [];
+    /** Checking a parent updates descendants and rolls up ancestors. */
+    @Attribute()
+    get cascade(): boolean { return this._cascade; }
+    set cascade(value: boolean | string) { this._cascade = normalizeBoolean(value, true); }
     @Attribute() checkAction?: (keys: string[], node: TreeNode) => void;
     /** Lazy branch loader; return the children for an unloaded node. */
     @Attribute() loadChildren?: (node: TreeNode) => TreeNode[] | Promise<TreeNode[]>;
@@ -116,6 +121,7 @@ export class TreeComponent {
     private _activeKey = '';
     private _checkable = false;
     private _multiple = false;
+    private _cascade = true;
     private _selectionFollowsFocus = true;
     private _wrapFocus = false;
     private loadedChildren = new Map<string, TreeNode[]>();
@@ -163,6 +169,7 @@ export class TreeComponent {
                     expanded: hasChildren && isExpanded,
                     selected,
                     checked,
+                    indeterminate: this.isIndeterminate(key, checked),
                     active: false,
                     loading: this.loadingKeys.includes(key),
                     disabled,
@@ -208,6 +215,66 @@ export class TreeComponent {
 
     rowChecked(entry: TreeViewItem): boolean {
         return !!this.currentRow(entry)?.checked;
+    }
+
+    rowIndeterminate(entry: TreeViewItem): boolean {
+        return !!this.currentRow(entry)?.indeterminate;
+    }
+
+    protected isIndeterminate(key: string, checked: boolean): boolean {
+        if (!this._checkable || checked || !this._cascade) {
+            return false;
+        }
+        const node = this.findNode(key);
+        if (!node) {
+            return false;
+        }
+        const checkedSet = new Set((this.checkedIds || []).map(String));
+        return this.descendantKeys(node).some(child => checkedSet.has(child));
+    }
+
+    protected findNode(key: string): TreeNode | undefined {
+        const visit = (nodes: TreeNode[]): TreeNode | undefined => {
+            for (const node of Array.isArray(nodes) ? nodes : []) {
+                if (!node) { continue; }
+                if (String(node.id ?? '') === String(key)) { return node; }
+                const match = visit(node.children || []);
+                if (match) { return match; }
+            }
+            return undefined;
+        };
+        return visit(this.items || []);
+    }
+
+    protected descendantKeys(node: TreeNode): string[] {
+        const keys: string[] = [];
+        const visit = (children: TreeNode[]) => {
+            for (const child of Array.isArray(children) ? children : []) {
+                if (!child) { continue; }
+                keys.push(String(child.id ?? ''));
+                visit(child.children || []);
+            }
+        };
+        visit(node.children || []);
+        return keys;
+    }
+
+    protected ancestorKeys(key: string): string[] {
+        const path: string[] = [];
+        const visit = (nodes: TreeNode[], trail: string[]): boolean => {
+            for (const node of Array.isArray(nodes) ? nodes : []) {
+                if (!node) { continue; }
+                const nodeKey = String(node.id ?? '');
+                if (nodeKey === String(key)) {
+                    path.push(...trail);
+                    return true;
+                }
+                if (visit(node.children || [], [...trail, nodeKey])) { return true; }
+            }
+            return false;
+        };
+        visit(this.items || [], []);
+        return path;
     }
 
     /** `aria-expanded` is only meaningful for branches. */
@@ -281,7 +348,21 @@ export class TreeComponent {
             return;
         }
         const current = new Set((Array.isArray(this.checkedIds) ? this.checkedIds : []).map(String));
-        current.has(key) ? current.delete(key) : current.add(key);
+        const checking = !current.has(key);
+        checking ? current.add(key) : current.delete(key);
+        if (this._cascade) {
+            const descendants = this.descendantKeys(node);
+            descendants.forEach(child => checking ? current.add(child) : current.delete(child));
+            const ancestors = this.ancestorKeys(key);
+            for (let index = ancestors.length - 1; index >= 0; index--) {
+                const parent = this.findNode(ancestors[index]);
+                const childKeys = (parent?.children || []).map(child => String(child.id ?? ''));
+                if (!childKeys.length) { continue; }
+                childKeys.every(child => current.has(child))
+                    ? current.add(ancestors[index])
+                    : current.delete(ancestors[index]);
+            }
+        }
         this.checkedIds = [...current];
         this.checkAction?.(this.checkedIds.map(String), node);
     }
