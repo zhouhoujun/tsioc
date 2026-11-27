@@ -284,13 +284,14 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
   - 组件保留原有 `source(query, signal)` / `value` / `selectAction` API；
   - `test/typeahead-machine.spec.ts` + 原 typeahead 测试通过。
 - **P0-2 SearchList 增量**：
-  - agent-ui `/` 建议菜单已改用 common search-list（inline row layout + controlled 模式）；
   - controlled 模式 `showInput=false` + `selectedId`；
   - `rowLayout: inline`（TUI label/description 同行，agent-ui palette 已使用）；
   - `open`、`scrollTop`/`scrollAction`、`Ctrl/Alt+↑↓` section 跳转；
   - async `debounce` / `cache` / `requestTimeout`；
   - sticky group header CSS（DOM skin）；
   - DOM + console renderer 测试覆盖 inline/section/open/debounce/cache/timeout。
+  - agent-ui palette/suggestion 迁移仍待做：当前首屏 gzip 已超 500 KiB 目标，需先为
+    SearchList 做 lazy-load 或削减初始包，再迁移。
 - **P0-3 Field 增量**：
   - `labelId`/`tooltipId`/`labelTooltip`，可聚焦 info affordance；
   - 与既有 `pending/valid/status` 语义共存；

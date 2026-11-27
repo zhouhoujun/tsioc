@@ -83,50 +83,6 @@ export class SelectDialogChromeSuite {
         expect(body).toContain('model-1');
     }
 
-    @Test('the command palette renders through the shared search list')
-    async paletteUsesSearchList() {
-        const { lines, state } = await this.renderMenu('Command palette', [
-            { label: '/search', value: '/search', detail: 'query...: string (required)' } as any,
-            { label: '/help', value: '/help' }
-        ], 'type to filter   enter execute');
-        state.selectMenu.kind = 'palette';
-        state.selectMenu.selectedIndex = 1;
-        for (let index = 0; index < 20; index++) await Promise.resolve();
-        const body = lines.join('\n');
-        expect(body).toContain('Command palette');
-        expect(body).toContain('/help');
-        expect(body).toContain('type to filter');
-
-        const ref = this.ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: this.ctx }) as ComponentRef<AgentConsoleComponent>;
-        await ref.render();
-        ref.instance.sessionState.openSelectMenu('Command palette', [
-            { label: '/search', value: '/search' },
-            { label: '/help', value: '/help' }
-        ], 1, 'type to filter', 'palette');
-        for (let index = 0; index < 20; index++) await Promise.resolve();
-        const panel = ref.hostView.query(AgentConsoleSelectPanelComponent) as ComponentRef<AgentConsoleSelectPanelComponent>;
-        expect(panel.instance.paletteSelectedId).toEqual('/help');
-        const list = panel.instance.paletteLists?.first;
-        expect(list?.activeId).toEqual('/help');
-        expect(list?.showInput).toEqual(false);
-    }
-
-    @Test('inline suggestions render through the shared search list')
-    async suggestionsUseSearchList() {
-        const ref = this.ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: this.ctx }) as ComponentRef<AgentConsoleComponent>;
-        await ref.render();
-        ref.instance.sessionState.openSelectMenu('Suggestions', [
-            { label: '/help', value: '/help', description: 'Commands' }
-        ], 0, 'enter execute');
-        for (let index = 0; index < 30; index++) await Promise.resolve();
-        const panel = ref.hostView.query(AgentConsoleSelectPanelComponent) as ComponentRef<AgentConsoleSelectPanelComponent>;
-        expect(panel.instance.menuIsSearchList).toEqual(true);
-        const list = panel.instance.paletteLists?.first;
-        expect(list?.showInput).toEqual(false);
-        expect(list?.rowLayout).toEqual('inline');
-        expect(list?.activeId).toEqual('/help');
-    }
-
     @Test('inline suggestions keep their chrome inline')
     async suggestionMenuStaysInline() {
         const { lines } = await this.renderMenu('Suggestions', [
