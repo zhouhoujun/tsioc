@@ -45,7 +45,7 @@ const DEFAULT_SOURCES: DynamicFormTypedSource[] = [
             [value]="text" [placeholder]="placeholder" [disabled]="disabled"
             @input="inputText($event)"></textarea>
         <input v-else class="workflow-input workflow-typed-input"
-            aria-label="{{label}}" aria-invalid="{{error ? 'true' : 'false'}}"
+            role="combobox" aria-label="{{label}}" aria-invalid="{{error ? 'true' : 'false'}}"
             aria-describedby="{{describedBy}}" [required]="required" autocomplete="off"
             aria-autocomplete="list" aria-expanded="{{completionOpen ? 'true' : 'false'}}"
             type="{{inputType}}" [value]="text" [placeholder]="placeholder"

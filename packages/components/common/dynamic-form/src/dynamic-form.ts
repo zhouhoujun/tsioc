@@ -103,6 +103,8 @@ export class DynamicFormComponent extends DynamicFormEditorMethods implements On
     /** Status copy forwarded to fields/widgets while async checks run. */
     @Attribute() pendingLabel = 'Checking…';
     @Attribute() validLabel = 'Valid';
+    /** Accessible suffix for the typed-source selector. */
+    @Attribute() typedSourceLabel = 'Value source';
     /** Async/sync leave guard; call `canLeave()` before discarding the form. */
     @Attribute() beforeLeaveAction?: () => boolean | Promise<boolean>;
     /** Per-form widgets; schema.widgets wins, then this list, then DI. */

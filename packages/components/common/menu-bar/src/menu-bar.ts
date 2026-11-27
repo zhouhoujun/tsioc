@@ -81,7 +81,7 @@ interface MenuBarEntryView {
 @Component({
     selector: 'menu-bar, ui-menu-bar',
     template: `
-    <div #menuRoot class="menu-bar menu-bar-align-{{align}}" data-open="{{openText}}" role="menubar"
+    <div #menuRoot class="menu-bar menu-bar-align-{{align}}" data-open="{{openText}}" role="group"
         aria-label="{{ariaLabel || triggerTitle || label}}"
         @keydown="onMenuKeydown($event)">
         <button class="menu-bar-trigger" type="button" id="{{overlayId}}-trigger"

@@ -303,11 +303,13 @@ function startDesignerServer(port) {
                 + '.workflow-field[data-field-key="result"] .cm-content .wf-code-string')
             .count() > 0;
         await page.keyboard.press('Control+A');
+        await page.keyboard.press('Backspace');
         await page.keyboard.type('{"approved": true, "approved": false}');
-        await page.waitForTimeout(700);
-        const jsonDuplicate = ((await jsonStatus.textContent()) || '').includes('△')
-            && ((await jsonStatus.textContent()) || '').includes('approved');
+        await page.waitForTimeout(1200);
+        const jsonDuplicateText = (await jsonStatus.textContent()) || '';
+        const jsonDuplicate = jsonDuplicateText.includes('△') && jsonDuplicateText.includes('approved');
         await page.keyboard.press('Control+A');
+        await page.keyboard.press('Backspace');
         await page.keyboard.type('{"approved": }');
         await page.waitForTimeout(700);
         const jsonInvalid = ((await jsonStatus.textContent()) || '').includes('⚠');
@@ -669,6 +671,21 @@ function startDesignerServer(port) {
         });
         await page.waitForTimeout(900);
         await page.screenshot({ path: path.join(DESIGNER_DIR, 'preview.png') });
+        await page.addScriptTag({ path: require.resolve('axe-core') });
+        const axeViolations = await page.evaluate(async () => {
+            const result = await window.axe.run(document.querySelector('.workflow-designer'), {
+                runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] },
+                rules: { 'color-contrast': { enabled: false } }
+            });
+            return result.violations.map(item => ({
+                id: item.id,
+                impact: item.impact,
+                nodes: item.nodes.length,
+                help: item.help,
+                targets: item.nodes.map(node => node.target),
+                html: item.nodes.map(node => String(node.html || '').slice(0, 160))
+            }));
+        });
 
         // The demo persists the chosen theme; a reload restores it.
         const themeStored = await page.evaluate(() => localStorage.getItem('workflow-designer-theme'));
@@ -787,9 +804,10 @@ function startDesignerServer(port) {
 
         await browser.close();
 
-        const result = { before, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, metricsTrend, metricsWindowSwitch, metricsClosed, findOpened, findFiltered, findSelected, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, featurePages, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
+        const result = { before, axeViolations, bottomExpanded, partialClean, enterNewline, tabAccepts, initialJsBytes, menuItemClick, paletteDrop, inspectorTheme, lazyEditorChunk, hintEnv, hintAction, lintStatus, lintMarker, lintLine, lintInvalid, lintCleared, jsHighlighted, cmSearch, semanticUndefined, semanticUnused, semanticConstant, jsonValidDefault, jsonValid, jsonHighlighted, jsonDuplicate, jsonInvalid, shortcutsOpened, shortcutsClosed, autosaveName, autosaveCode, autosaveState, wheelZoom, wheelPan, menuOpen, menuEntries, menuClosed, paletteFiltered, paletteRestored, deleteDisabledBefore, deleteEnabledAfter, localePreserved, credentialDialog, credentialSaved, credentialRowsAfterRemove, credentialClosed, metricsTrend, metricsWindowSwitch, metricsClosed, findOpened, findFiltered, findSelected, fitVisible, optionCount, compareHidden, compareVisible, compareHiddenAgain, actionPlaceholder, groupTitles, retrySet, retryReset, codeEditor, codeText: String(codeText || '').trim().slice(0, 40), codeApplied, formInvalid, formValid, resized, collapsed, restored, connection, edgeSelected, themeMenuItems, checkedTheme, solarizedTheme, lightThemeRestored, inlineThemeToggle, darkTheme, layoutTheme, themeStored, themeAfterReload, pluginInstall, pluginNodeVisible, notFoundPage, notFoundCode, featurePages, tabCount, tabState, restoredTabCount, restoredTabLabel, newTabCount, newTabNodeCount, newTabEmptyHint, newTabState, closedTabCount, inspectorRendered, after, logs, libraryRows, apiWorkflows: apiList.length, errors };
         console.log(JSON.stringify(result, null, 2));
-        if (errors.length || initialJsBytes > INITIAL_JS_BUDGET || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
+        const seriousAxe = (axeViolations || []).filter(item => item.impact === 'serious' || item.impact === 'critical');
+        if (errors.length || seriousAxe.length || initialJsBytes > INITIAL_JS_BUDGET || !lazyEditorChunk || !hintEnv || !hintAction || !lintInvalid || lintMarker < 1 || lintLine < 1 || !lintCleared || !jsHighlighted || !cmSearch || !semanticUndefined || !semanticUnused || !semanticConstant || !jsonValidDefault || !jsonValid || !jsonHighlighted || !jsonDuplicate || !jsonInvalid || !shortcutsOpened || !shortcutsClosed
             || autosaveName !== 'Function Node' || autosaveCode !== 'return 42;' || !wheelZoom || !wheelPan || !before.edgeVisible || !before.panesScrollable || before.portHitSize < 20 || !before.bottomHidden || !before.statusbarOutsideBottom || !before.statusbarVisible || !bottomExpanded || !partialClean || !enterNewline || !tabAccepts
             || !menuOpen || menuEntries < 5 || !menuClosed || !menuItemClick
             || !paletteDrop?.placed || Math.abs(paletteDrop.dx) > 10 || Math.abs(paletteDrop.dy) > 10

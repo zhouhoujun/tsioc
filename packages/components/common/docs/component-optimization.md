@@ -339,6 +339,17 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     a11y audit 测试，chips 删除按钮具备可访问名称。
   - 新增组件继续使用 `--ui-*` token；P2 的 overlay/placement 仍复用既有
     `overlay-placement`/`overlay-outside`/`OverlayManager`。
+- **axe-core 浏览器审计（2026-11-27）**
+  - workflow-admin preview 在截图后注入 axe-core，对真实 designer DOM 运行
+    WCAG 2 A/AA 规则（color-contrast 由 token 对比度测试覆盖，浏览器审计中关闭），
+    serious/critical 违规直接 gate 失败并输出 target/html。
+  - 修复审计发现：typed input 增加 `role=combobox`，dynamic-form typed source
+    select 增加可访问名称，workspace splitter 改为 `role=group`，menu-bar
+    单菜单容器改为 `role=group`（原 menubar 语义不成立）。
+  - preview 的 JSON duplicate 步骤先 Backspace 清空再输入，消除 CodeMirror
+    自动补全导致的偶发语法错误；`npm test` 现在 build → preview → axe → pixel diff。
+  - 根 devDependencies 增加 axe-core 与 jsonata（后者避免 root prune 后
+    activities 表达式测试缺包）。
 - **浏览器截图像素基线（2026-11-27）**
   - workflow-admin 新增 `visual-regression.js`：用 Playwright 内置 PNG 解码器
     比较 `preview.baseline.png` 与本次 `preview.png`，超过 0.5% 像素差异即失败

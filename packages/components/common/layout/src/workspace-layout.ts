@@ -49,7 +49,7 @@ const MAX_BOTTOM_RATIO = 0.7;
                 <div class="workspace-slot" data-workspace-slot="left"><v-content select="workspace-left"></v-content></div>
             </section>
             <div class="workspace-splitter workspace-splitter-left"
-                 role="separator" aria-orientation="vertical" aria-label="Resize left pane"
+                 role="group" aria-label="Resize left pane"
                  @mousedown="beginResize($event, 'left')">
                 <button class="workspace-collapse workspace-collapse-left"
                         type="button"
@@ -61,7 +61,7 @@ const MAX_BOTTOM_RATIO = 0.7;
                 <div class="workspace-slot" data-workspace-slot="center"><v-content select="workspace-center"></v-content><v-content></v-content></div>
             </section>
             <div class="workspace-splitter workspace-splitter-right"
-                 role="separator" aria-orientation="vertical" aria-label="Resize right pane"
+                 role="group" aria-label="Resize right pane"
                  @mousedown="beginResize($event, 'right')">
                 <button class="workspace-collapse workspace-collapse-right"
                         type="button"
@@ -74,7 +74,7 @@ const MAX_BOTTOM_RATIO = 0.7;
             </section>
         </div>
         <div class="workspace-splitter workspace-splitter-bottom"
-             role="separator" aria-orientation="horizontal" aria-label="Resize bottom pane"
+             role="group" aria-label="Resize bottom pane"
              @mousedown="beginResize($event, 'bottom')">
             <button class="workspace-collapse workspace-collapse-bottom"
                     type="button"

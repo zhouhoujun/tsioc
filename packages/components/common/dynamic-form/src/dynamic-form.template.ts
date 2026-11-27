@@ -35,6 +35,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                     </div>
                     <div [class]="classes.typedRow" v-if="isTypedInput(field)">
                         <select [class]="classes.typedType" data-value-type="true"
+                            aria-label="{{fieldLabel(field)}} {{typedSourceLabel}}"
                             [disabled]="field.disabled || field.readonly"
                             @change="changeTypedType(field, $event)">
                             <option v-for="source in typedSourceOptionsFor(field)" [value]="source.value"
@@ -166,6 +167,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                         </div>
                                         <div [class]="classes.typedRow" v-if="isTypedInput(child) && !isWidgetInput(child)">
                                             <select [class]="classes.typedType" data-value-type="true"
+                                                aria-label="{{fieldLabel(child)}} {{typedSourceLabel}}"
                                                 [disabled]="child.disabled || child.readonly"
                                                 @change="changeListItemTypedType(field, listIndex(field, item), child, $event)">
                                                 <option v-for="source in typedSourceOptionsFor(child)" [value]="source.value"
