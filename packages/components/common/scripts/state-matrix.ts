@@ -142,6 +142,18 @@ section.theme-section > h2 { margin: 0 0 10px; font-size: 15px; text-transform: 
 .matrix-card[data-state="loading"] .state-sample { --ui-disabled-opacity: 1; }
 `;
 
+/** Scope ids/labels/radio names so 18 cards can coexist on one static page. */
+export function scopeStateMarkup(markup: string, prefix: string): string {
+    const idRef = /(aria-labelledby|aria-describedby|aria-controls|aria-activedescendant|aria-owns|for)="([^"]*)"/g;
+    let output = markup.replace(/(\sid)="([^"]+)"/g, ` id="${prefix}-$2"`);
+    output = output.replace(/\bname="([^"]*)"/g, `name="${prefix}-$1"`);
+    output = output.replace(idRef, (_match, attribute: string, value: string) => {
+        const ids = value.split(/\s+/).filter(Boolean).map(id => `${prefix}-${id}`).join(' ');
+        return `${attribute}="${ids}"`;
+    });
+    return output;
+}
+
 function tick(): Promise<void> {
     return Promise.resolve().then(() => Promise.resolve());
 }
@@ -231,7 +243,7 @@ export async function renderStateMatrixHtml(): Promise<string> {
             const cards = STATE_MATRIX_STATES.map(state => `
         <article class="matrix-card" data-state="${state}" data-theme="${theme}">
             <h3>${state}</h3>
-            ${states[state] || ''}
+            ${scopeStateMarkup(states[state] || '', `${theme}-${state}`)}
         </article>`).join('');
             return `
     <section class="theme-section" data-theme-section="${theme}">

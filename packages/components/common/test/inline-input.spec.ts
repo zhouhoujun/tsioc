@@ -5,6 +5,7 @@ import { ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/componen
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { InlineInputComponent, InlineInputModule } from '../inline-input';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 async function settle(): Promise<void> {
     for (let index = 0; index < 20; index++) await Promise.resolve();
@@ -40,6 +41,14 @@ export class InlineInputTest {
         const input = ref.instance;
         const root = ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
         return { ref, input, root };
+    }
+
+    @Test('inline input passes the shared accessibility audit')
+    async a11y() {
+        const { input, root } = await this.mount();
+        input.value = 'Draft';
+        await settle();
+        expect(formatViolations(auditA11y(root, this.ctx.get(DOCUMENT)))).toEqual('');
     }
 
     @Test('Enter commits and notifies the host')

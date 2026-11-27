@@ -17,5 +17,8 @@ export class CatalogStateMatrixTest {
         expect(html).toContain('Saved');
         expect(html).not.toContain('undefined');
         expect(html).not.toContain('NaN');
+        const ids = Array.from(html.matchAll(/\sid="([^"]+)"/g)).map(match => match[1]);
+        expect(ids.length).toBeGreaterThan(0);
+        expect(new Set(ids).size).toEqual(ids.length);
     }
 }
