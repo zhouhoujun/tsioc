@@ -5,6 +5,7 @@ import { Component, ComponentFactory, ComponentRef, ComponentsModule } from '@ts
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { TransferComponent, TransferModule } from '../transfer';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'transfer-host',
@@ -61,6 +62,12 @@ export class TransferTest {
         await Promise.resolve();
         const transfer = ref.hostView.query(TransferComponent) as ComponentRef<TransferComponent>;
         return { root: transfer.hostView.rootNodes[0] as HTMLElement, host: ref.instance as TransferHostComponent };
+    }
+
+    @Test('transfer panes pass the shared accessibility audit')
+    async a11y() {
+        const { root } = await this.mount();
+        expect(formatViolations(auditA11y(root, this.ctx.get(DOCUMENT)))).toEqual('');
     }
 
     @Test('moves selected items between panes')

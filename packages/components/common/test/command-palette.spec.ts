@@ -7,6 +7,7 @@ import { HtmlTemplateModule } from '@tsdi/components/html';
 import { CommandPaletteComponent, CommandPaletteModule } from '../command-palette';
 import { SearchListComponent } from '../search-list';
 import { OverlayManager } from '../src/overlay-manager';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 async function settle(): Promise<void> {
     for (let index = 0; index < 40; index++) await Promise.resolve();
@@ -47,6 +48,21 @@ export class CommandPaletteTest {
         const palette = ref.instance;
         const rootNow = () => ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
         return { ref, palette, manager: this.ctx.get(OverlayManager) as OverlayManager, rootNow };
+    }
+
+    @Test('open command palette passes the shared accessibility audit')
+    async a11y() {
+        const { palette, rootNow } = await this.mount();
+        palette.items = [
+            { id: 'deploy', label: 'Deploy', group: 'Run', shortcut: 'Ctrl+D' },
+            { id: 'delete', label: 'Delete session', group: 'Session' }
+        ];
+        palette.title = 'Command palette';
+        palette.open = true;
+        await settle();
+        expect(formatViolations(auditA11y(rootNow(), this.ctx.get(DOCUMENT)))).toEqual('');
+        palette.close();
+        await settle();
     }
 
     @Test('opens as an overlay, filters and selects an item')

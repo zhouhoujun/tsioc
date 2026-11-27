@@ -9,6 +9,7 @@ import { AutoCompleteComponent, AutoCompleteModule } from '../autocomplete';
 import { CascaderComponent, CascaderModule } from '../cascader';
 import { TreeSelectComponent, TreeSelectModule } from '../tree-select';
 import { SelectComponent, SelectModule } from '../select';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'selection-parity-host',
@@ -106,7 +107,7 @@ export class SelectionParityTest {
         await this.ctx.close();
     }
 
-    protected async mount(): Promise<{ host: SelectionParityHostComponent; adapters: SelectionAdapter[] }> {
+    protected async mount(): Promise<{ host: SelectionParityHostComponent; adapters: SelectionAdapter[]; root: HTMLElement }> {
         const ref = this.ctx.get(ComponentFactory).create(SelectionParityHostComponent, {
             injector: this.ctx
         }) as ComponentRef<SelectionParityHostComponent>;
@@ -163,8 +164,15 @@ export class SelectionParityTest {
                     isOpen() { return true; },
                     closedByHost() { return host.selectClosed > 0; }
                 }
-            ]
+            ],
+            root: ref.hostView.rootNodes[0] as HTMLElement
         };
+    }
+
+    @Test('selection widgets pass the shared accessibility audit')
+    async a11y() {
+        const { root } = await this.mount();
+        expect(formatViolations(auditA11y(root, this.ctx.get(DOCUMENT)))).toEqual('');
     }
 
     @Test('select close, chip removal and clear are keyboard operable')

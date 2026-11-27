@@ -29,7 +29,7 @@ import { installCommandPaletteStyles } from './command-palette.styles';
             <div class="ui-command-palette-header" v-if="title || closable">
                 <span class="ui-command-palette-title" v-if="title">{{title}}</span>
                 <button class="ui-command-palette-close ui-plain-button" type="button"
-                    v-if="closable" aria-label="{{closeLabel}}" @click="close">{{closeLabel}}</button>
+                    v-if="closable" aria-label="{{closeTitle || closeLabel}}" @click="close">{{closeLabel}}</button>
             </div>
             <ui-search-list :items="items" :source="source" :recentIds="recentIds"
                 :placeholder="placeholder" :emptyLabel="emptyLabel" :loadingLabel="loadingLabel"
@@ -72,6 +72,8 @@ export class CommandPaletteComponent {
     @Attribute() hint = '';
     @Attribute() ariaLabel = 'Command palette';
     @Attribute() closeLabel = '✕';
+    /** Accessible name for the glyph-only close target. */
+    @Attribute() closeTitle = 'Close';
     @Attribute() className = '';
     @Attribute() placeholder = 'Type a command…';
     @Attribute() emptyLabel = 'No matching commands';
