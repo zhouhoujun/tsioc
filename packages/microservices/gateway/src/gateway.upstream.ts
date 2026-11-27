@@ -726,7 +726,7 @@ export class GatewayUpstream {
         return this.discovery.discover(service);
     }
 
-    private async resolveTarget(route: ResolvedGatewayRoute, request: HttpRequestMessage, excluded?: Set<string>): Promise<{ baseUrl: string; endpoint?: ServiceEndpoint }> {
+    async resolveTarget(route: ResolvedGatewayRoute, request: HttpRequestMessage, excluded?: Set<string>): Promise<{ baseUrl: string; endpoint?: ServiceEndpoint }> {
         if (route.targetUrl) {
             return {
                 baseUrl: route.targetUrl

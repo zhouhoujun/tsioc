@@ -1,4 +1,4 @@
-import { getTypeName, Inject, isNumber, isString, promisify, Injectable } from '@tsdi/ioc';
+import { getTypeName, Inject, isNumber, isString, promisify, Injectable, token } from '@tsdi/ioc';
 import { ApplicationEventMulticaster, EventHandler } from '@tsdi/core';
 import { InjectLog, Logger } from '@tsdi/logger';
 import {
@@ -15,6 +15,16 @@ import * as https from 'node:https';
 import * as http2 from 'node:http2';
 import * as net from 'node:net';
 import { HttpServOptions, HTTP_SERV_OPTIONS, HTTP_BIND_INTERCEPTORS, HTTP_BIND_FILTERS, HTTP_BIND_GUARDS } from './options';
+
+export interface HttpUpgradeHandler {
+    /**
+     * Handle a raw protocol upgrade (WebSocket) before it becomes a normal
+     * request. Return `true` when the socket was taken over.
+     */
+    handle(request: http.IncomingMessage, socket: net.Socket, head: Buffer): boolean | Promise<boolean>;
+}
+
+export const HTTP_UPGRADE_HANDLERS = token<HttpUpgradeHandler[]>('HTTP_UPGRADE_HANDLERS');
 
 type HttpRequestLike = http.IncomingMessage | http2.Http2ServerRequest;
 type HttpResponseLike = http.ServerResponse | http2.Http2ServerResponse;
@@ -70,6 +80,7 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
         @Inject(HTTP_SERV_OPTIONS, { nullable: true }) protected options: HttpServOptions,
+        @Inject(HTTP_UPGRADE_HANDLERS, { nullable: true }) private upgradeHandlers?: HttpUpgradeHandler[] | null,
     ) {
         super();
         this.destroy$ = new Subject();
@@ -134,6 +145,9 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
         server.on(Events.ERROR, (err: Error) => this.logger.error(err));
         server.on(Events.CONNECTION, (socket: net.Socket) => this.trackConnection(socket));
+        (server as http.Server).on?.('upgrade', (request: http.IncomingMessage, socket: net.Socket, head: Buffer) => {
+            void this.handleUpgrade(request, socket, head);
+        });
 
         if (this.options.majorVersion && this.options.majorVersion >= 2) {
             server.on('session', (session: http2.ServerHttp2Session) => this.trackHttp2Session(session));
@@ -163,6 +177,21 @@ export class HttpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
                 this.listen(this.options.listenOpts!);
             });
         }
+    }
+
+    private async handleUpgrade(request: http.IncomingMessage, socket: net.Socket, head: Buffer): Promise<void> {
+        const handlers = this.upgradeHandlers ?? [];
+        for (const handler of handlers) {
+            try {
+                if (await handler.handle(request, socket, head)) {
+                    return;
+                }
+            } catch {
+                socket.destroy();
+                return;
+            }
+        }
+        socket.destroy();
     }
 
     async onShutdown(): Promise<void> {

@@ -2,6 +2,8 @@ import { Provider, isArray } from '@tsdi/ioc';
 import { DISCOVERY_PROVIDERS, DefaultEndpointResolver, EndpointResolver } from '@tsdi/discovery';
 import { ServiceFeatureFn, ServiceFeatureKind, makeServiceFeature, getServiceInterceptorsToken } from '@tsdi/service';
 import { GatewayInterceptor } from './gateway.interceptor';
+import { GatewayWebSocketProxy } from './gateway.websocket';
+import { HTTP_UPGRADE_HANDLERS } from '@tsdi/http-microservice';
 import { GatewayOptions, GATEWAY_OPTIONS } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayLifecycle } from './gateway.lifecycle';
@@ -24,6 +26,12 @@ export function useGateway(options: GatewayOptions): ServiceFeatureFn<ServiceFea
             GatewayLifecycle,
             GatewayConfigService,
             GatewayInterceptor,
+            GatewayWebSocketProxy,
+            {
+                provide: HTTP_UPGRADE_HANDLERS,
+                useExisting: GatewayWebSocketProxy,
+                multi: true
+            } as any,
             {
                 provide: interceptorToken,
                 useExisting: GatewayInterceptor,

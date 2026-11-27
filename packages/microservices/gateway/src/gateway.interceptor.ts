@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import * as zlib from 'zlib';
 import { ServiceDiscovery, EndpointResolver } from '@tsdi/discovery';
 import { HttpMessageAdapter, HTTP_AUTH_RESULT, HTTP_RESPONSE, HttpRequestMessage } from '@tsdi/http-microservice';
-import { Incoming, RequestContext, RequestHandler, RequestInterceptor } from '@tsdi/common';
+import { Incoming, RequestContext, RequestHandler, RequestInterceptor, Transport } from '@tsdi/common';
 import { Observable, from } from 'rxjs';
 import { GATEWAY_LOCAL_PATHS, GATEWAY_OPTIONS, GatewayAccessControlOptions, GatewayCanaryOptions, GatewayCacheOptions, GatewayForwardHeadersOptions, GatewayOptions, GatewayRouteOptions, GatewayRewriteOptions, GatewayRuleConditionOptions, GatewayRuleOptions, GatewayWebhookOptions, ResolvedGatewayRoute } from './gateway.options';
 import { MetricsCollector } from '@tsdi/metrics';
@@ -146,6 +146,23 @@ export class GatewayInterceptor implements RequestInterceptor<any, any, RequestC
             return next.handle(input, context);
         }
         return from(this.upstream.forward(route, request, context));
+    }
+
+    /**
+     * Resolve the upstream base URL for a protocol upgrade (WebSocket). Returns
+     * `null` when no HTTP route matches or no target can be discovered.
+     */
+    async resolveUpgradeTarget(request: HttpRequestMessage): Promise<{ route: ResolvedGatewayRoute; url: string } | null> {
+        const route = this.matchRoute(request);
+        if (!route || (route.transport != null && route.transport !== Transport.HTTP)) {
+            return null;
+        }
+        try {
+            const target = await this.upstream.resolveTarget(route, request);
+            return target?.baseUrl ? { route, url: target.baseUrl } : null;
+        } catch {
+            return null;
+        }
     }
 
     /**

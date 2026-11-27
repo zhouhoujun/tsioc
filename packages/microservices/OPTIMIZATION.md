@@ -692,6 +692,12 @@
 - `EndpointSelection` 支持 `zone`/`zoneFallback`：优先 `metadata.zone` 匹配，缺失时回退全量；`zoneFallback:false` 可严格失败。
 - Gateway `loadBalance.zone/zoneFallback` 透传；discovery 91、gateway 162 passing。
 
+第一百二十一批（Gateway WebSocket 隧道）：
+
+- `@tsdi/http-microservice` 新增 `HTTP_UPGRADE_HANDLERS`；HttpServer 在 upgrade 事件中按顺序交接 socket。
+- 新增 `GatewayWebSocketProxy`：按 gateway 路由/targetUrl 转发 101 + 双向 pipe；useGateway 自动注册。
+- 真实 ws echo 测试通过；gateway 163、http 50 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
