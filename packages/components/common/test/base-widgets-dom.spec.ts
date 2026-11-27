@@ -81,7 +81,8 @@ export class CommonChromeWidgetsDomTest {
         expect(dialogClose.getAttribute('type')).toBe('button');
         expect(dialogClose.getAttribute('data-plain')).toBe('true');
         expect(dialogClose.classList.contains('ui-plain-button')).toBe(true);
-        expect(dialogClose.getAttribute('aria-label')).toBe('✕');
+        expect(dialogClose.getAttribute('aria-label')).toBe('Close');
+        expect(dialogClose.textContent).toBe('✕');
         expect(dialogRoot.textContent).toContain('Dialog title');
         expect(dialogRoot.textContent).toContain('dialog line');
         dialogClose.click();

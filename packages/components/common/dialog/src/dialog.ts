@@ -24,7 +24,7 @@ import { attachOverlayBackdrop } from '../../src/overlay-backdrop';
         aria-labelledby="{{ariaLabelledby}}" aria-describedby="{{ariaDescribedby}}"
         @keydown="handleKeydown($event)">
         <button class="dialog-close ui-plain-button" type="button" data-plain="true" data-cell-width="2"
-            aria-label="{{closeLabel}}" v-if="closable" @click="close">{{closeLabel}}</button>
+            aria-label="{{closeTitle || closeLabel}}" v-if="closable" @click="close">{{closeLabel}}</button>
         <label class="dialog-title" v-show="title">{{title}}</label>
         <div class="dialog-body" [style]="scrollStyle">
             <label class="dialog-line" data-cell-width="0" v-for="(line, index) in lines"
@@ -110,6 +110,8 @@ export class DialogComponent implements OnDestroy {
     @Attribute() hint = '';
     @Attribute() ariaLabel = '';
     @Attribute() closeLabel = '✕';
+    /** Accessible name for the glyph-only close target. */
+    @Attribute() closeTitle = 'Close';
     /** Upper/lower bounds for content-derived width, in terminal cells. */
     @Attribute() maxWidth = 88;
     @Attribute() minWidth = 24;

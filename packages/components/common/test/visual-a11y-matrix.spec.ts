@@ -11,6 +11,8 @@ import { MenuBarComponent, MenuBarModule, MenuBarGroup } from '../menu-bar';
 import { DataTableComponent, DataTableModule } from '../data-table';
 import { ToastProviderComponent, ToastModule } from '../toast';
 import { SelectComponent, SelectModule } from '../select';
+import { DialogComponent, DialogModule } from '../dialog';
+import { DrawerComponent, DrawerModule } from '../drawer';
 import { auditA11y, formatViolations } from './support/a11y-audit';
 
 const THEMES = ['light', 'dark', 'high-contrast'];
@@ -46,7 +48,7 @@ function makeSource() {
 
 @Component({
     selector: 'a11y-matrix-host',
-    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent, SelectComponent],
+    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent, SelectComponent, DialogComponent, DrawerComponent],
     template: `
     <div class="theme-sample">
         <ui-button label="Save"></ui-button>
@@ -62,6 +64,8 @@ function makeSource() {
             selectable="true" editable="true"></ui-data-table>
         <select-list title="Assignees" :options="selectOptions" :values="assignees"
             multiple searchable clearable></select-list>
+        <dialog-panel title="Remove file?" ariaLabel="Remove file?"></dialog-panel>
+        <ui-drawer title="Settings" ariaLabel="Settings"></ui-drawer>
         <ui-toast-provider></ui-toast-provider>
     </div>`
 })
@@ -96,7 +100,7 @@ export class VisualA11yMatrixTest {
         this.win = dom.window;
         this.doc = dom.window.document;
         this.ctx = await Application.run(A11yMatrixHostComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule, ToastModule, SelectModule],
+            deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule, ToastModule, SelectModule, DialogModule, DrawerModule],
             providers: [{ provide: DOCUMENT, useValue: this.doc }]
         });
     }
