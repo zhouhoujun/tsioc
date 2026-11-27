@@ -621,6 +621,12 @@
 - 新增 `broker-stack-smoke.ts` 与 opt-in `ms-examples-broker` gate（`MS_BROKER_PROFILE=1`）。
 - 真实 Redis 验证 `GET /api/orders -> {"id":7,"status":"paid"}`；gate PASS。
 
+第一百零九批（Outbox 原语）：
+
+- 新增 `service/src/outbox.ts`：`OutboxStore`/`MemoryOutboxStore`/`OutboxDispatcher`；ack 后才删除、失败延迟重试、flush 串行化、容量上限。
+- 示例 `examples/outbox.ts` 与 `ms-examples` smoke 使用真实 API；service 117 passing。
+- saga/事务集成仍待后续。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

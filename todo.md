@@ -4940,3 +4940,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百零八批（2026-11-16）：
   - broker-stack 示例（gateway→Redis）+ ms-examples-broker gate。
+
+- 微服务框架第一百零九批（2026-11-16）：
+  - Outbox primitive + example；ms-examples 增加 outbox smoke。
+  - 回归：service 117。

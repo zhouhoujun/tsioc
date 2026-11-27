@@ -49,6 +49,15 @@ npx ts-node -r tsconfig-paths/register \
 
 The `ms-examples` gate stage runs this smoke test.
 
+## Outbox
+
+`outbox.ts` demonstrates the outbox primitive: records are removed only after
+the send callback resolves.
+
+```bash
+npx ts-node -r tsconfig-paths/register packages/microservices/examples/outbox.ts
+```
+
 ## Broker stack (gateway → Redis)
 
 `broker-stack.ts` starts an orders service on Redis and a gateway that forwards
