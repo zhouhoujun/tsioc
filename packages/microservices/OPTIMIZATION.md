@@ -556,6 +556,11 @@
 - `mode:none` 启动显式打印 “Authentication: NONE”，绑定非回环地址时输出安全告警。
 - 新增 `auth-origin.spec.ts` 4 个测试；admin 99 passing。
 
+第九十八批（amqplib 类型漂移修复）：
+
+- `amqplib@0.10.9` 的 `connect()` 返回 `ChannelModel`；AMQP client/server 与 e2e 的类型统一为 `ChannelModel`。
+- `ms-tsc` 恢复 PASS；AMQP 68 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

@@ -22,7 +22,7 @@ const RETRY_HEADER = 'x-tsdi-retry-count';
 @Injectable()
 export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
-    connection: amqp.Connection | null = null;
+    connection: amqp.ChannelModel | null = null;
     channel: amqp.Channel | null = null;
     private starting?: Promise<void>;
     private queueName?: string;
@@ -120,11 +120,11 @@ export class AmqpServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
             }, { noAck: false });
             this.consumerTag = consumed?.consumerTag;
 
-            (this.connection as amqp.Connection).on(Events.CLOSE, () => {
+            (this.connection as amqp.ChannelModel).on(Events.CLOSE, () => {
                 this.logger.info('AMQP connection closed');
             });
 
-            (this.connection as amqp.Connection).on(Events.ERROR, (err: Error) => {
+            (this.connection as amqp.ChannelModel).on(Events.ERROR, (err: Error) => {
                 this.logger.error('AMQP connection error:', err);
             });
 

@@ -14,7 +14,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
     @InjectLog()
     private logger!: Logger;
 
-    private connection?: amqp.Connection;
+    private connection?: amqp.ChannelModel;
     private channel?: amqp.Channel;
 
     constructor(
@@ -95,7 +95,7 @@ export class AmqpClient extends AbstractClient<AmqpRequest<any>, ResponseEvent<a
         }
     }
 
-    protected createConnection(opts: AmqpClientOptions): Promise<amqp.Connection> {
+    protected createConnection(opts: AmqpClientOptions): Promise<amqp.ChannelModel> {
         return amqp.connect(withFrameMax(opts.url || 'amqp://localhost:5672', opts.frameMax));
     }
 }

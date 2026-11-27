@@ -141,7 +141,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:true)', () 
     class AmqpE2eModule { }
 
     let ctx: ApplicationContext;
-    let connection: amqp.Connection;
+    let connection: amqp.ChannelModel;
     let channel: amqp.Channel;
 
     before(async () => {
@@ -215,7 +215,7 @@ describe('AMQP E2E with provideService + provideClient (microservice:false)', ()
     class AmqpE2eHostModule { }
 
     let ctx: ApplicationContext;
-    let connection: amqp.Connection;
+    let connection: amqp.ChannelModel;
     let channel: amqp.Channel;
 
     before(async () => {
@@ -387,7 +387,7 @@ describe('AMQP auth E2E', () => {
     class AmqpAuthModule { }
 
     let ctx: ApplicationContext;
-    let connection: amqp.Connection;
+    let connection: amqp.ChannelModel;
     let channel: amqp.Channel;
 
     before(async () => {
