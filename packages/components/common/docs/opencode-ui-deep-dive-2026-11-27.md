@@ -309,6 +309,9 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
   baseline 更新为当前构建，初始 gzip 目标改为 opt-in（feature-first）。
 - **P1-2 Select 增量**：新增 `select-preview.ts` 与 `highlightAction`，高亮预览返回
   undo；切换/关闭/销毁时正确 revert，选择后进入 committed。
+- **P1 inline rename**：`tab-bar` 支持 `rename` + `ui-inline-input`（DOM 双击/F2），
+  agent-ui session tabs 通过 `sessionTabsAction.rename` 持久化标题；键盘/重命名逻辑
+  拆到 `tab-bar.keys.ts` / `tab-bar.rename.ts` 控制体积。
 - **P1-1 Motion 增量**：
   - `createFrameLoop()`：host scheduler、read-before-write、dt clamp、无每帧数组分配；
   - `Spring.fromDuration()` + `resting`；
