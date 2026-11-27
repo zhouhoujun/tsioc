@@ -1,4 +1,9 @@
-import type { DataTableColumn, DataTableRow, DataTableSort, DataTableSortDirection } from './data-table.types';
+import type { DataTableCell, DataTableColumn, DataTableRow, DataTableSort, DataTableSortDirection } from './data-table.types';
+
+/** Cell class string including the editing hook (single interpolation). */
+export function dataTableCellClass(cell: DataTableCell, editing: boolean): string {
+    return `${cell?.className || ''}${editing ? ' is-editing' : ''}`.trim();
+}
 
 export interface IndexedDataTableRow {
     row: DataTableRow;

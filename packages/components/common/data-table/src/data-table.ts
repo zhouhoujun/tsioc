@@ -29,6 +29,7 @@ import {
     formatDataTableCell,
     hasActiveDataTableFilters,
     hasFilterableDataTableColumns,
+    dataTableCellClass,
     sortDataTableRowsBy
 } from './data-table.view';
 export * from './data-table.types';
@@ -100,7 +101,7 @@ export * from './data-table.types';
                     <span aria-hidden="true">{{rowChecked(row) ? '✓' : ' '}}</span>
                 </span>
             </span>
-            <span class="{{cell.className}} {{isEditing(cell) ? 'is-editing' : ''}}" role="cell"
+            <span class="{{cellClassName(cell)}}" role="cell"
                 data-cell-key="{{cell.key}}" tabindex="{{cellTabIndex(row, cell)}}"
                 focusable="{{cellFocusable(cell)}}" v-for="cell in row.cells" trackBy="key"
                 [style]="cellStyleFor(cell)" @click="focusCellOnly(row, cell, $event)"
@@ -518,6 +519,7 @@ export class DataTableComponent {
         if (target) { this.activeCellKey = target.key; this.focusCellNode(target.rowIndex, target.cellIndex); }
     }
     isEditing(cell: DataTableCell): boolean { return isEditingCell(this, cell); }
+    cellClassName(cell: DataTableCell): string { return dataTableCellClass(cell, this.isEditing(cell)); }
     startEdit(row: DataTableViewRow, cell: DataTableCell): void { startCellEdit(this, row, cell, this.elementRef?.nativeElement); }
     editInput(event: any): void { this.editDraft = String(event?.target?.value ?? ''); }
     commitEdit(row: DataTableViewRow, cell: DataTableCell): void { void commitCellEdit(this, row, cell); }

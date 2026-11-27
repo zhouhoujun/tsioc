@@ -263,3 +263,23 @@ contracts、catalog examples、bench。
 
 目标：完成 Wave 2 P0 后，组件库在“状态完整性、键盘/焦点、复杂数据工作流、
 浮层专业性、DOM/TUI 对齐”上达到可直接对照 MUI/AntD 评审的水平。
+
+## 7. Wave 2 实施记录（2026-11-27）
+
+已落地：
+
+- P0-1～P0-6：token 基线、Button loading/ToggleButtonGroup、Field/Form 状态与错误摘要、
+  Select/Tree/TreeSelect 组合能力、Overlay backdrop/inert/outside、DataTable 分组/树行/
+  编辑校验/列选择器。
+- P1-1～P1-6：Tabs 上下文菜单与键盘重排、Menu 三层子菜单、Toolbar 键盘/脚本重排、
+  Accordion headingLevel、Toast 异步 action 与 Provider 容量、Spinner tone。
+- P2-1：`test/interaction-contracts.spec.ts` 与各组件 DOM/TUI 键盘用例组成统一矩阵。
+- P2-2/P2-3（确定性门禁）：`test/visual-a11y-matrix.spec.ts` 对 6 种状态 × 3 个主题
+  运行真实组件 DOM 审计；`test/support/a11y-audit.ts` 检查可访问名称、ARIA 状态配对、
+  haspopup/expanded、dialog 名称/模态与重复 id。该门禁随 `npm run test` 执行，不依赖
+  位图基线，因此在 CI 与无 GPU 环境可稳定复现。
+
+仍待后续：
+
+- P2-2 的位图截图基线（需要固定字体/视口的 Playwright 快照与差异阈值）。
+- P2-4 的 live demo 状态切换器与 P2-5 的真实 PTY 性能基准。

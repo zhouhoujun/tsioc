@@ -31,6 +31,8 @@ export interface TabBarSource {
     items: TabItem[];
     showCreate?: boolean;
     createLabel?: string;
+    /** Accessible name for the create control (glyph labels need one). */
+    createTitle?: string;
     closeLabel?: string;
     /**
      * Host-windowed strip (terminal): `items` already holds only the visible
@@ -102,7 +104,8 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
                 @click="pickOverflow(item.id, $event)"
                 @keydown="onOverflowItemKeydown($event, item)">{{item.label}}</span>
         </span>
-        <span class="tab-new" role="button" focusable="true" tabindex="0" v-show="showCreate" @click="create" @keydown="onCreateKeydown($event)">{{createLabel}}</span>
+        <span class="tab-new" role="button" focusable="true" tabindex="0" v-show="showCreate" aria-label="{{newTabTitle}}"
+            @click="create" @keydown="onCreateKeydown($event)">{{createLabel}}</span>
         <ui-tab-context-menu :visible="contextMenuOpen" :x="contextX" :y="contextY"
             :tabId="contextTabId" :actionAction="runTabContext" :closeAction="closeTabMenu"></ui-tab-context-menu>
     </p>
@@ -187,6 +190,10 @@ export class TabBarComponent implements AfterViewInit {
     }
     get createLabel(): string {
         return this.activeSource?.createLabel || '+';
+    }
+
+    get newTabTitle(): string {
+        return this.activeSource?.createTitle || 'New tab';
     }
     get closeLabel(): string {
         return this.activeSource?.closeLabel || '✕';
@@ -569,7 +576,6 @@ export class TabBarComponent implements AfterViewInit {
     close(id: string): void {
         this.activeSource?.close?.(id);
     }
-
     /** Scroll back one page of tabs (host-windowed) or one strip page (DOM). */
     scrollBack(event?: Event): void {
         event?.stopPropagation?.();
@@ -581,7 +587,6 @@ export class TabBarComponent implements AfterViewInit {
         }
         this.scrollStrip(-this.domScrollStep());
     }
-
     /** Scroll forward one page of tabs (host-windowed) or one strip page (DOM). */
     scrollForward(event?: Event): void {
         event?.stopPropagation?.();
@@ -593,12 +598,10 @@ export class TabBarComponent implements AfterViewInit {
         }
         this.scrollStrip(this.domScrollStep());
     }
-
     protected domScrollStep(): number {
         const width = Number((this.resolveStripElement() as { clientWidth?: number } | undefined)?.clientWidth) || 0;
         return Math.max(60, Math.floor(width * 0.7));
     }
-
     protected scrollStrip(delta: number): void {
         const el = this.resolveStripElement();
         if (!el) {
@@ -608,7 +611,6 @@ export class TabBarComponent implements AfterViewInit {
         (el as { scrollLeft?: number }).scrollLeft = Math.max(0, current + delta);
         this.syncDomOverflow();
     }
-
     /**
      * Resolve the scrolling strip lazily: the template root node can be
      * replaced by a re-render, and the host element is the stable observation
@@ -624,7 +626,6 @@ export class TabBarComponent implements AfterViewInit {
         }
         return el;
     }
-
     /** Bind DOM overflow measurement; terminal hosts have no scroll metrics. */
     protected bindDomOverflow(): void {
         const host = this.elementRef?.nativeElement as HTMLElement | undefined;
@@ -659,7 +660,6 @@ export class TabBarComponent implements AfterViewInit {
         }
         this.scheduleOverflowSync();
     }
-
     protected scheduleOverflowSync(): void {
         if (this.overflowSyncScheduled) {
             return;
@@ -670,7 +670,6 @@ export class TabBarComponent implements AfterViewInit {
             this.syncDomOverflow();
         });
     }
-
     /**
      * Re-measure the DOM strip. Public so hosts/tests can force a measurement
      * after laying out a strip whose size changed without a resize event.
