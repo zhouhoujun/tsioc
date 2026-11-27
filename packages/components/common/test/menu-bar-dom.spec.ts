@@ -31,6 +31,23 @@ const groups: MenuBarGroup[] = [
     }
 ];
 
+const nestedGroups: MenuBarGroup[] = [
+    {
+        items: [
+            {
+                id: 'view', label: 'View', children: [
+                    {
+                        id: 'zoom', label: 'Zoom', children: [
+                            { id: 'zoom:in', label: 'Zoom In' },
+                            { id: 'zoom:out', label: 'Zoom Out' }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+];
+
 @Suite('common menu bar DOM interactions')
 export class MenuBarDomTest {
     ctx!: ApplicationContext;
@@ -54,9 +71,9 @@ export class MenuBarDomTest {
         this.doc = this.ctx.get(DOCUMENT);
     }
 
-    protected async render(selected: string[]): Promise<any> {
+    protected async render(selected: string[], source: MenuBarGroup[] = groups): Promise<any> {
         const ref = this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>;
-        ref.instance.groups = groups;
+        ref.instance.groups = source;
         ref.instance.selectAction = id => selected.push(id);
         await ref.render();
         await Promise.resolve();
@@ -107,6 +124,73 @@ export class MenuBarDomTest {
         await Promise.resolve();
         expect(selected).toEqual(['theme:dark']);
         expect((submenu as any).className).not.toContain('is-open');
+    }
+
+    @Test('opens a third-level submenu while keeping its ancestors open')
+    async selectsNestedSubmenuItem() {
+        const selected: string[] = [];
+        const root = await this.render(selected, nestedGroups);
+        root.querySelector('.menu-bar-trigger').click();
+        await Promise.resolve();
+
+        root.querySelector('[data-menu-id="view"]').click();
+        await Promise.resolve();
+        const outer = root.querySelector('[data-menu-id="view"]')
+            .parentElement.querySelector('.menu-bar-submenu');
+        expect(outer.className).toContain('is-open');
+
+        root.querySelector('[data-menu-id="zoom"]').click();
+        await Promise.resolve();
+        const inner = root.querySelector('[data-menu-id="zoom"]')
+            .parentElement.querySelector('.menu-bar-submenu');
+        expect(outer.className).toContain('is-open');
+        expect(inner.className).toContain('is-open');
+        expect(root.querySelector('[data-menu-id="zoom:in"]')).toBeTruthy();
+
+        root.querySelector('[data-menu-id="zoom:in"]').click();
+        await Promise.resolve();
+        expect(selected).toEqual(['zoom:in']);
+        expect(outer.className).not.toContain('is-open');
+        expect(inner.className).not.toContain('is-open');
+    }
+
+    @Test('walks nested submenu levels with ArrowRight and ArrowLeft')
+    async nestedKeyboardNavigation() {
+        const selected: string[] = [];
+        const root = await this.render(selected, nestedGroups);
+        this.doc.body.appendChild(root);
+        const menu = (this.ctx.runners.getRef(MenuBarComponent) as ComponentRef<MenuBarComponent>).instance;
+        menu.open = true;
+        await Promise.resolve();
+
+        const view = root.querySelector('[data-menu-id="view"]') as HTMLElement;
+        view.focus();
+        const key = (name: string) => view.dispatchEvent(new (this.doc.defaultView as any).KeyboardEvent('keydown', { key: name, bubbles: true }));
+        key('ArrowRight');
+        for (let i = 0; i < 6; i++) await Promise.resolve();
+        const zoom = root.querySelector('[data-menu-id="zoom"]') as HTMLElement;
+        expect(this.doc.activeElement).toBe(zoom);
+
+        zoom.dispatchEvent(new (this.doc.defaultView as any).KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+        for (let i = 0; i < 6; i++) await Promise.resolve();
+        const zoomIn = root.querySelector('[data-menu-id="zoom:in"]') as HTMLElement;
+        expect(this.doc.activeElement).toBe(zoomIn);
+        const outer = view.parentElement!.querySelector('.menu-bar-submenu') as HTMLElement;
+        const inner = zoom.parentElement!.querySelector('.menu-bar-submenu') as HTMLElement;
+        expect(outer.className).toContain('is-open');
+        expect(inner.className).toContain('is-open');
+
+        key('ArrowLeft');
+        for (let i = 0; i < 6; i++) await Promise.resolve();
+        expect(this.doc.activeElement).toBe(zoom);
+        expect(outer.className).toContain('is-open');
+        expect(inner.className).not.toContain('is-open');
+
+        key('ArrowLeft');
+        for (let i = 0; i < 6; i++) await Promise.resolve();
+        expect(this.doc.activeElement).toBe(view);
+        expect(outer.className).not.toContain('is-open');
+        root.remove();
     }
 
     @Test('disabled entries stay inert')

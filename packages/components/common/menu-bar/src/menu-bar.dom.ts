@@ -34,11 +34,27 @@ export function scheduleDomFocus(doc: any, pick: () => any, attempts = 3): void 
     void Promise.resolve().then(() => step(attempts));
 }
 
-/** Enabled direct child buttons of a menu container. */
+/**
+ * Enabled buttons at the container's own menu level. Entry wrappers are
+ * traversed, nested flyouts are not, so a three-level menu keeps roving focus
+ * inside the level the user is currently in.
+ */
 export function menuButtons(container: any): HTMLElement[] {
-    return Array.from(container?.children || []).filter(node =>
-        (node as HTMLElement).tagName?.toLowerCase() === 'button'
-        && !(node as HTMLButtonElement).disabled) as HTMLElement[];
+    const output: HTMLElement[] = [];
+    const visit = (node: any) => {
+        Array.from(node?.children || []).forEach((child: any) => {
+            const tag = String(child?.tagName || '').toLowerCase();
+            if (tag === 'button') {
+                if (!child.disabled) {
+                    output.push(child);
+                }
+            } else if (tag && !child.classList?.contains('menu-bar-submenu')) {
+                visit(child);
+            }
+        });
+    };
+    visit(container);
+    return output;
 }
 
 /** Accessible label text for a menu button (falls back to textContent). */
@@ -54,8 +70,22 @@ export function topLevelMenuButtons(root: any): HTMLElement[] {
         !node.closest?.('.menu-bar-submenu') && !(node as HTMLButtonElement).disabled);
 }
 
-/** The currently open flyout, if any. */
-export function openSubmenuElement(root: any): HTMLElement | undefined {
+/** The flyout owned by the entry with `id`. */
+export function submenuElementFor(root: any, id: string): HTMLElement | undefined {
+    const item = root?.querySelector?.(`[data-menu-id="${id}"]`) as HTMLElement | undefined;
+    const entry = item?.parentElement;
+    return Array.from(entry?.children || []).find(node =>
+        (node as HTMLElement).classList?.contains('menu-bar-submenu')) as HTMLElement | undefined;
+}
+
+/** The currently open flyout, preferring the one owned by `id`. */
+export function openSubmenuElement(root: any, id?: string): HTMLElement | undefined {
+    if (id) {
+        const scoped = submenuElementFor(root, id);
+        if (scoped?.classList?.contains('is-open')) {
+            return scoped;
+        }
+    }
     return root?.querySelector?.('.menu-bar-submenu.is-open') as HTMLElement | undefined;
 }
 
