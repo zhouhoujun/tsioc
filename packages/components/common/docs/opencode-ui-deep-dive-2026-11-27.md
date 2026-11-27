@@ -307,6 +307,8 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
 - **P2 bench**：`bench:check` 增加 typeahead machine 与 theme contrast 指标，并默认进入 agents gate（`SKIP_COMMON_BENCH=1` 可跳过）。
 - **agent-ui**：command palette / `/` suggestion 已切到 `ui-search-list`；web size
   baseline 更新为当前构建，初始 gzip 目标改为 opt-in（feature-first）。
+- **P1-2 Select 增量**：新增 `select-preview.ts` 与 `highlightAction`，高亮预览返回
+  undo；切换/关闭/销毁时正确 revert，选择后进入 committed。
 - **P1-1 Motion 增量**：
   - `createFrameLoop()`：host scheduler、read-before-write、dt clamp、无每帧数组分配；
   - `Spring.fromDuration()` + `resting`；
