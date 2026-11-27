@@ -217,6 +217,31 @@ tab-bar {
     font-weight: 600;
 }
 
+/* Built-in tab context menu (host renders it from contextAction). */
+.tab-context-menu {
+    display: flex;
+    flex-direction: column;
+    min-width: 14ch;
+    padding: 4px;
+    border: 1px solid var(--tab-border, #e2e8f0);
+    border-radius: 9px;
+    background: var(--tab-surface, #ffffff);
+    box-shadow: 0 8px 24px var(--ui-shadow, rgba(0, 0, 0, 0.16));
+}
+.tab-context-item {
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--tab-muted, #64748b);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.tab-context-item:hover,
+.tab-context-item:focus-visible { background: var(--tab-hover, #f1f5f9); color: var(--tab-text, #0f172a); }
+.tab-context-item.is-danger { color: var(--tab-danger, #dc2626); }
+
 /* Opt-in scroll mode retains the legacy paging arrows. */
 .tab-scroll {
     position: sticky;
