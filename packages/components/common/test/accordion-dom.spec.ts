@@ -4,11 +4,11 @@ import { Application, ApplicationContext } from '@tsdi/core';
 import { Component, ComponentFactory, ComponentRef, ComponentsModule } from '@tsdi/components';
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
-import { AccordionComponent, AccordionItem, installAccordionStyles } from '../accordion';
+import { AccordionComponent, AccordionGroupComponent, AccordionItem, installAccordionStyles } from '../accordion';
 
 @Component({
     selector: 'accordion-dom-host',
-    imports: [AccordionComponent],
+    imports: [AccordionComponent, AccordionGroupComponent],
     template: `
     <div class="accordion-host">
         <ui-accordion title="HTTP" ariaLabel="HTTP group" :count="4"
@@ -17,12 +17,17 @@ import { AccordionComponent, AccordionItem, installAccordionStyles } from '../ac
         </ui-accordion>
         <ui-accordion data-accordion="items" title="Items" :items="rows"
             :selectAction="onItem" :dragStartAction="onDrag" :draggable="true"></ui-accordion>
+        <ui-accordion-group data-accordion="group" :items="groupRows" headingLevel="4"></ui-accordion-group>
     </div>`
 })
 class AccordionDomHostComponent {
     expanded = true;
     states: boolean[] = [];
 
+    groupRows = [
+        { id: 'one', title: 'One', items: [{ id: 'one-a', label: 'A' }] },
+        { id: 'two', title: 'Two' }
+    ];
     rows: AccordionItem[] = [
         { id: 'a', label: 'Alpha', description: 'First', badge: 2, className: 'row-a', attrs: { 'data-row': 'a' }, value: { id: 'a' } },
         { id: 'b', label: 'Beta', disabled: true, value: { id: 'b' } }
@@ -85,6 +90,10 @@ export class AccordionDomTest {
         const heading = root.querySelector('.ui-accordion-heading') as HTMLElement;
         expect(heading.getAttribute('role')).toEqual('heading');
         expect(heading.getAttribute('aria-level')).toEqual('3');
+
+        const group = ref.hostView.query(AccordionGroupComponent) as ComponentRef<AccordionGroupComponent>;
+        const groupHeading = (group.hostView.rootNodes[0] as HTMLElement).querySelector('.ui-accordion-heading') as HTMLElement;
+        expect(groupHeading.getAttribute('aria-level')).toEqual('4');
         expect(header.getAttribute('aria-label')).toEqual('HTTP group');
         expect(header.id).toEqual(body.getAttribute('aria-labelledby'));
         expect(body.id).toEqual(header.getAttribute('aria-controls'));

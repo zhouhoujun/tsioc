@@ -25,7 +25,7 @@ export interface AccordionGroupItem {
     <div class="ui-accordion-group {{className}}" role="group" aria-label="{{ariaLabel}}">
         <ui-accordion v-for="item in items" trackBy="id" :title="item.title" :count="item.count"
             :items="item.items || []" :disabled="item.disabled || false"
-            :size="size" :variant="variant" :expanded="isExpanded(item)"
+            :size="size" :variant="variant" :headingLevel="headingLevel" :expanded="isExpanded(item)"
             :toggleAction="toggleHandler(item)" :selectAction="selectHandler(item)"></ui-accordion>
     </div>`
 })
@@ -37,6 +37,7 @@ export class AccordionGroupComponent {
     @Attribute() className = '';
     @Attribute() size: 'sm' | 'md' = 'md';
     @Attribute() variant: 'default' | 'plain' | 'card' = 'default';
+    @Attribute() headingLevel: number | string = 3;
     @Attribute() toggleAction?: (id: string, expanded: boolean) => void;
     @Attribute() selectAction?: (id: string, item: any) => void;
 
