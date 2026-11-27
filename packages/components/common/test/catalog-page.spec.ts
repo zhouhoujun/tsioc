@@ -32,6 +32,10 @@ export class CatalogPageTest {
         expect(html).toContain('<!DOCTYPE html>');
         expect(html).toContain('2 renderer-neutral widgets');
         expect(html).toContain('href="#widget-dialog"');
+        expect(html).toContain('id="catalog-filter"');
+        expect(html).toContain('id="catalog-theme"');
+        expect(html).toContain('data-name="dialog"');
+        expect(html).toContain('data-theme');
         expect(html).toContain('ui-dialog');
         expect(html).toContain('<code>title</code>');
         expect(html).toContain('Escape: close');

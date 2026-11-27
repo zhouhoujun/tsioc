@@ -19,6 +19,12 @@ const PAGE_CSS = `
   :root { --bg: #0d1117; --fg: #e6edf3; --muted: #9da7b3; --panel: #161b22; --border: #30363d; --accent: #4493f8; }
 }
 * { box-sizing: border-box; }
+:root[data-theme="dark"] { --bg: #0d1117; --fg: #e6edf3; --muted: #9da7b3; --panel: #161b22; --border: #30363d; --accent: #4493f8; }
+:root[data-theme="light"] { --bg: #ffffff; --fg: #1f2328; --muted: #57606a; --panel: #f6f8fa; --border: #d0d7de; --accent: #0969da; }
+.toolbar { display: flex; gap: .6rem; align-items: center; margin-top: .7rem; flex-wrap: wrap; }
+.toolbar input { font: inherit; padding: .25rem .5rem; border: 1px solid var(--border); background: var(--bg); color: var(--fg); min-width: 16rem; }
+.toolbar button { font: inherit; padding: .25rem .7rem; border: 1px solid var(--border); background: var(--panel); color: var(--fg); cursor: pointer; }
+section[hidden], nav a[hidden] { display: none; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.55 ui-sans-serif, system-ui, sans-serif; }
 header { padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--border); }
 header h1 { margin: 0 0 .25rem; font-size: 1.35rem; }
@@ -57,7 +63,7 @@ export function renderCatalogHtml(entries: WidgetCatalogEntry[]): string {
         const examples = entry.examples?.length
             ? `<h3>Examples</h3>${entry.examples.map(example => `<h4>${escapeHtml(example.title)}</h4>${example.description ? `<p>${escapeHtml(example.description)}</p>` : ''}<pre>${escapeHtml(JSON.stringify(example.props ?? {}, null, 2))}</pre>`).join('')}`
             : '';
-        return `<section id="widget-${escapeHtml(slug(entry.name))}">
+        return `<section id="widget-${escapeHtml(slug(entry.name))}" data-name="${escapeHtml(entry.name.toLowerCase())}" data-summary="${escapeHtml(entry.summary.toLowerCase())}">
 <h2>${escapeHtml(entry.name)} <span class="muted">${escapeHtml(entry.selector || '')}</span></h2>
 <p>${escapeHtml(entry.summary)}</p>
 ${attributes}
@@ -78,6 +84,10 @@ ${examples}
 <header>
 <h1>@tsdi/components/common catalog</h1>
 <p>${sorted.length} renderer-neutral widgets · generated from catalog metadata</p>
+<div class="toolbar">
+<input id="catalog-filter" type="search" placeholder="Filter widgets…" aria-label="Filter widgets" />
+<button id="catalog-theme" type="button" aria-label="Toggle catalog theme">Theme</button>
+</div>
 </header>
 <div class="layout">
 <nav>
@@ -87,6 +97,30 @@ ${nav}
 ${sections}
 </main>
 </div>
+<script>
+(function () {
+  var input = document.getElementById('catalog-filter');
+  var button = document.getElementById('catalog-theme');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section[data-name]'));
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  function filter() {
+    var query = String(input && input.value || '').trim().toLowerCase();
+    sections.forEach(function (section, index) {
+      var hit = !query || section.getAttribute('data-name').indexOf(query) >= 0 || section.getAttribute('data-summary').indexOf(query) >= 0;
+      section.hidden = !hit;
+      if (links[index]) links[index].hidden = !hit;
+    });
+  }
+  if (input) input.addEventListener('input', filter);
+  if (button) button.addEventListener('click', function () {
+    var root = document.documentElement;
+    var current = root.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    button.textContent = next === 'dark' ? 'Light' : 'Dark';
+  });
+})();
+</script>
 </body>
 </html>`;
 }
