@@ -8,6 +8,7 @@ import { DialogComponent, DialogModule } from '../dialog';
 import { AlertDialogComponent, AlertDialogModule } from '../alert';
 import { StatusListComponent, StatusListModule } from '../status-list';
 import { KeymapPanelComponent, KeymapPanelModule } from '../keymap';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'common-chrome-host',
@@ -61,6 +62,18 @@ export class CommonChromeWidgetsDomTest {
     @After()
     async clean() {
         await this.ctx.close();
+    }
+
+    @Test('chrome widgets pass the shared accessibility audit')
+    async a11y() {
+        const ref = this.ctx.get(ComponentFactory).create(CommonChromeHostComponent, {
+            injector: this.ctx
+        }) as ComponentRef<CommonChromeHostComponent>;
+        await ref.render();
+        await Promise.resolve();
+        const roots = ref.hostView.rootNodes.filter((node: any) => typeof node.querySelector === 'function') as HTMLElement[];
+        const violations = roots.flatMap(root => auditA11y(root, this.ctx.get(DOCUMENT)));
+        expect(formatViolations(violations)).toEqual('');
     }
 
     @Test('renders dialog chrome and forwards close/accept actions')
@@ -136,6 +149,8 @@ export class CommonChromeWidgetsDomTest {
 
         const keymap = ref.hostView.query(KeymapPanelComponent) as ComponentRef<KeymapPanelComponent>;
         const keymapRoot = keymap.hostView.rootNodes[0] as HTMLElement;
+        expect(keymapRoot.getAttribute('role')).toEqual('region');
+        expect(keymapRoot.getAttribute('aria-label')).toEqual('Keys');
         expect(keymapRoot.textContent).toContain('Ctrl+K');
         expect(keymapRoot.textContent).toContain('palette');
     }

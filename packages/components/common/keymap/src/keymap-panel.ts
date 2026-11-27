@@ -19,7 +19,7 @@ export interface KeymapGroup {
 @Component({
     selector: 'keymap-panel, ui-keymap-panel',
     template: `
-    <div class="console-panel keymap-panel">
+    <div class="console-panel keymap-panel" role="region" aria-label="{{ariaLabel || title}}">
         <label class="keymap-title">{{title}}</label>
         <div class="keymap-body" [style]="scrollStyle">
         <div class="keymap-group-block" v-if="grouped" v-for="group in groups">
@@ -39,6 +39,7 @@ export interface KeymapGroup {
 })
 export class KeymapPanelComponent {
     @Attribute() title = '';
+    @Attribute() ariaLabel = '';
     @Attribute() hint = '';
     @Attribute() grouped = false;
     @Attribute() items: KeymapItem[] = [];
