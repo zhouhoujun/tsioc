@@ -62,7 +62,7 @@ interface SearchListRow {
             <button class="ui-search-list-retry ui-plain-button" type="button"
                 v-if="error && canRetry" @click="retry">{{retryLabel}}</button>
         </div>
-        <div class="ui-search-list-body" role="listbox" id="{{listId}}" aria-label="{{ariaLabel}}">
+        <div class="ui-search-list-body" role="listbox" id="{{listId}}" aria-label="{{ariaLabel}}" v-if="open" @scroll="onScroll($event)">
             <div class="ui-search-list-row" v-for="row in rows" trackBy="key">
                 <div class="ui-search-list-group-title" role="presentation"
                     v-if="row.kind === 'group'">{{row.label}}</div>
@@ -76,8 +76,8 @@ interface SearchListRow {
                     @dragstart="dragStart($event, row.item)"
                     @mousemove="hover(row.item)">
                     <span class="ui-search-list-icon" v-if="row.item.icon">{{row.item.icon}}</span>
-                    <span class="ui-search-list-label">{{row.label}}</span>
-                    <span class="ui-search-list-description" v-if="row.item.description">{{row.item.description}}</span>
+                    <span class="ui-search-list-label">{{row.label}}{{row.item.description && rowLayout === 'inline' ? '  ' + row.item.description : ''}}</span>
+                    <span class="ui-search-list-description" v-if="row.item.description && rowLayout !== 'inline'">{{row.item.description}}</span>
                     <span class="ui-search-list-shortcut" v-if="row.item.shortcut">{{row.item.shortcut}}</span>
                 </div>
             </div>
@@ -112,6 +112,14 @@ export class SearchListComponent {
     @Attribute() className = '';
     @Attribute() minChars = 0;
     @Attribute() maxVisible = 12;
+    /** Whether the result body is visible; the field can stay visible while closed. */
+    @Attribute()
+    get open(): boolean { return this._openList; }
+    set open(value: boolean | string) { this._openList = normalizeBoolean(value, true); }
+    /** `inline` keeps label + description on one row (TUI suggestion menus). */
+    @Attribute() rowLayout: 'stacked' | 'inline' = 'stacked';
+    @Attribute() scrollTop = 0;
+    @Attribute() scrollAction?: (scrollTop: number) => void;
     /** Controlled mode: hide the input and let the host own the query/focus. */
     @Attribute()
     get showInput(): boolean { return this._showInput; }
@@ -130,6 +138,7 @@ export class SearchListComponent {
     private readonly selection = new SelectionCore();
     private _disabled = false;
     private _showInput = true;
+    private _openList = true;
     private _loading = false;
     private _error = '';
     private _asyncItems: SearchListItem[] = [];
@@ -282,10 +291,12 @@ export class SearchListComponent {
         const key = String(event?.key || '');
         if (key === 'ArrowDown') {
             event.preventDefault?.();
-            this.move(1);
+            if (event?.ctrlKey || event?.altKey) this.moveSection(1);
+            else this.move(1);
         } else if (key === 'ArrowUp') {
             event.preventDefault?.();
-            this.move(-1);
+            if (event?.ctrlKey || event?.altKey) this.moveSection(-1);
+            else this.move(-1);
         } else if (key === 'Home') {
             event.preventDefault?.();
             this.activateAt(this.selection.first(this.optionRows));
@@ -308,6 +319,30 @@ export class SearchListComponent {
         const options = this.optionRows;
         const current = options.findIndex(item => String(item.id) === this.activeId);
         this.activateAt(this.selection.move(options, current, delta));
+    }
+
+    moveSection(delta: number): void {
+        const options = this.optionRows.filter(item => !item.disabled);
+        if (!options.length) {
+            return;
+        }
+        const groups = Array.from(new Set(options.map(item => String(item.group || ''))));
+        if (groups.length < 2) {
+            this.move(delta);
+            return;
+        }
+        const current = options.find(item => item.id === this.activeId) || options[0];
+        const currentGroup = groups.indexOf(String(current.group || ''));
+        const nextGroup = Math.max(0, Math.min(groups.length - 1, currentGroup + delta));
+        const target = options.find(item => String(item.group || '') === groups[nextGroup]);
+        if (target) {
+            this.activateAt(this.optionRows.indexOf(target));
+        }
+    }
+
+    onScroll(event: any): void {
+        this.scrollTop = Number(event?.currentTarget?.scrollTop) || 0;
+        this.scrollAction?.(this.scrollTop);
     }
 
     activateAt(index: number): void {

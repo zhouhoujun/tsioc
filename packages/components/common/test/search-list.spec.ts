@@ -19,7 +19,7 @@ async function settle(): Promise<void> {
 })
 class SearchListHostComponent {
     items: SearchListItem[] = [
-        { id: 'deploy', label: 'Deploy', group: 'Run', shortcut: 'Ctrl+D' },
+        { id: 'deploy', label: 'Deploy', group: 'Run', shortcut: 'Ctrl+D', description: 'Run command' },
         { id: 'delete', label: 'Delete session', group: 'Session' },
         { id: 'settings', label: 'Settings', group: 'App', disabled: true }
     ];
@@ -108,6 +108,26 @@ export class SearchListTest {
         expect(list.optionRows.map(item => item.id)).toEqual(['settings']);
         list.onKeydown({ key: 'Enter', preventDefault() { } });
         expect(list.activeId).toEqual('');
+    }
+
+    @Test('inline rows keep the description beside the label and sections jump')
+    async inlineRowsAndSections() {
+        const { list, rootNow } = await this.mount();
+        list.rowLayout = 'inline';
+        await settle();
+        expect(rootNow().textContent).toContain('Deploy  Run command');
+        expect(rootNow().querySelector('.ui-search-list-description')).toBeFalsy();
+
+        list.moveSection(1);
+        expect(list.activeItem?.id).toEqual('delete');
+        list.moveSection(-1);
+        expect(list.activeItem?.id).toEqual('deploy');
+
+        list.open = false;
+        await settle();
+        expect(rootNow().querySelector('.ui-search-list-body')).toBeFalsy();
+        expect(rootNow().querySelector('.ui-search-list-input')).toBeTruthy();
+        list.open = true;
     }
 
     @Test('controlled mode hides the input and follows the host selection')

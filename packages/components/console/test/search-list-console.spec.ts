@@ -16,7 +16,7 @@ import { OverlayManager } from '@tsdi/components/common/src/overlay-manager';
 })
 class SearchListConsoleHostComponent {
     items = [
-        { id: 'deploy', label: 'Deploy', group: 'Run', shortcut: 'Ctrl+D' },
+        { id: 'deploy', label: 'Deploy', group: 'Run', shortcut: 'Ctrl+D', description: 'Run command' },
         { id: 'delete', label: 'Delete session', group: 'Session' }
     ];
     selected = '';
@@ -44,6 +44,11 @@ export class SearchListConsoleTest {
             list.onKeydown({ key: 'ArrowDown', preventDefault() { } });
             list.onKeydown({ key: 'Enter', preventDefault() { } });
             expect(ref.instance.selected).toEqual('delete');
+
+            list.rowLayout = 'inline';
+            await Promise.resolve();
+            const inline = new TuiRenderer().renderToLines(ref.hostView.rootNodes[0] as any).join('\n');
+            expect(inline).toMatch(/Deploy\s{2,}Run command/);
         } finally {
             await ctx.close();
         }

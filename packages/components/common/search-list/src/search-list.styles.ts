@@ -23,7 +23,8 @@ export const SEARCH_LIST_CSS = `
     padding: 0 0.5ch;
     cursor: pointer;
 }
-.ui-search-list-body { display: flex; flex-direction: column; min-width: 0; }
+.ui-search-list-body { display: flex; flex-direction: column; min-width: 0; position: relative; max-height: var(--ui-search-list-max-height, none); overflow-y: auto; }
+.ui-search-list-body .ui-search-list-group-title { position: sticky; top: 0; z-index: 1; background: var(--ui-overlay-bg, var(--ui-bg, inherit)); }
 .ui-search-list-row { min-width: 0; }
 .ui-search-list-group-title {
     padding: 0.25ch 0.5ch;

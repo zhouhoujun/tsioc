@@ -21,7 +21,7 @@ import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
                 <label class="select-title" v-if="menuTitleText">{{menuTitleText}}</label>
                 <label class="select-meta" v-if="paletteMeta">{{paletteMeta}}</label>
                 <ui-search-list :items="paletteItems" :selectedId="paletteSelectedId" :showInput="false"
-                    :ariaLabel="accessibilityLabel" :maxVisible="0"></ui-search-list>
+                    rowLayout="inline" :ariaLabel="accessibilityLabel" :maxVisible="0"></ui-search-list>
                 <label class="select-detail" v-for="line in menuDetailLines">{{line}}</label>
                 <label class="select-hint" v-if="menuHintText">{{menuHintText}}</label>
             </div>
