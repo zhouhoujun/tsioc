@@ -131,25 +131,90 @@ export function generateThemeTokens(anchors: ThemeAnchors): ThemeTokens {
     const fg = ensureContrast(String(anchors.fg), bg, 4.5);
     const accent = String(anchors.accent);
     const accentFg = contrastRatio('#ffffff', accent) >= contrastRatio('#000000', accent) ? '#ffffff' : '#000000';
-    const panelBg = mixHex(bg, fg, 0.04);
+    const panelBg = mixOklch(bg, fg, 0.04);
     const danger = ensureContrast(String(anchors.danger ?? (contrastRatio('#ffffff', bg) > 4.5 ? '#cf222e' : '#ff7b72')), bg, 3);
     const success = ensureContrast(String(anchors.success ?? (contrastRatio('#ffffff', bg) > 4.5 ? '#1a7f37' : '#3fb950')), bg, 3);
     const warning = ensureContrast(String(anchors.warning ?? (contrastRatio('#ffffff', bg) > 4.5 ? '#9a6700' : '#d29922')), bg, 3);
     return {
         bg,
         fg,
-        mutedFg: ensureContrast(mixHex(fg, bg, 0.35), bg, 3),
+        mutedFg: ensureContrast(mixOklch(fg, bg, 0.35), bg, 3),
         panelBg,
         inputBg: bg,
-        border: mixHex(bg, fg, 0.18),
+        border: mixOklch(bg, fg, 0.18),
         accent,
         accentFg: ensureContrast(accentFg, accent, 4.5),
         danger,
         success,
         warning,
-        selectedBg: mixHex(bg, accent, 0.16),
+        selectedBg: mixOklch(bg, accent, 0.16),
         overlayBg: panelBg
     };
+}
+
+
+export interface OklchColor {
+    l: number;
+    c: number;
+    h: number;
+}
+
+function srgbToLinear(value: number): number {
+    return value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+}
+
+function linearToSrgb(value: number): number {
+    return value <= 0.0031308 ? value * 12.92 : 1.055 * Math.pow(value, 1 / 2.4) - 0.055;
+}
+
+/** sRGB hex -> OKLCH (perceptually uniform lightness/chroma/hue). */
+export function hexToOklch(hex: string): OklchColor | null {
+    const rgb = parseHexColor(hex);
+    if (!rgb) {
+        return null;
+    }
+    const [r, g, b] = rgb.map(channel => srgbToLinear(channel / 255));
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+    const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+    const bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+    const c = Math.sqrt(a * a + bb * bb);
+    let h = Math.atan2(bb, a) * (180 / Math.PI);
+    if (h < 0) h += 360;
+    return { l: L, c, h };
+}
+
+export function oklchToHex(color: OklchColor): string {
+    const l = color.l + 0.3963377774 * color.c * Math.cos(color.h * Math.PI / 180) + 0.2158037573 * color.c * Math.sin(color.h * Math.PI / 180);
+    const m = color.l - 0.1055613458 * color.c * Math.cos(color.h * Math.PI / 180) - 0.0638541728 * color.c * Math.sin(color.h * Math.PI / 180);
+    const s = color.l - 0.0894841775 * color.c * Math.cos(color.h * Math.PI / 180) - 1.291485548 * color.c * Math.sin(color.h * Math.PI / 180);
+    const l3 = l * l * l;
+    const m3 = m * m * m;
+    const s3 = s * s * s;
+    const r = linearToSrgb(4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3) * 255;
+    const g = linearToSrgb(-1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3) * 255;
+    const b = linearToSrgb(-0.0041960863 * l3 - 0.7034186147 * m3 + 1.707614701 * s3) * 255;
+    return `#${[r, g, b].map(channel => Math.max(0, Math.min(255, Math.round(channel))).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** Mix two colors in OKLCH so the midpoint stays perceptually balanced. */
+export function mixOklch(from: string, to: string, amount: number): string {
+    const a = hexToOklch(from);
+    const b = hexToOklch(to);
+    if (!a || !b) {
+        return mixHex(from, to, amount);
+    }
+    const t = Math.max(0, Math.min(1, amount));
+    let delta = b.h - a.h;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    return oklchToHex({
+        l: a.l + (b.l - a.l) * t,
+        c: a.c + (b.c - a.c) * t,
+        h: (a.h + delta * t + 360) % 360
+    });
 }
 
 export type Rgb = [number, number, number];

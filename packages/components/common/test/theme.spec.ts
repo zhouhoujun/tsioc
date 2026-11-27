@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ThemeService, applyThemeToDocument, contrastRatio, ensureContrast, generateThemeTokens, isDarkTheme, resolveThemeTokens, themeTokens } from '../src';
+import { ThemeService, applyThemeToDocument, contrastRatio, ensureContrast, generateThemeTokens, hexToOklch, isDarkTheme, mixOklch, oklchToHex, resolveThemeTokens, themeTokens } from '../src';
 import { JSDOM } from 'jsdom';
 
 @Suite('common theme service')
@@ -29,6 +29,11 @@ export class ThemeServiceTest {
         expect(contrastRatio(tokens.accentFg, tokens.accent)).toBeGreaterThanOrEqual(4.5);
         expect(contrastRatio(tokens.mutedFg, tokens.bg)).toBeGreaterThanOrEqual(3);
         expect(tokens.panelBg).not.toEqual(tokens.bg);
+
+        const oklch = hexToOklch('#ffb000');
+        expect(oklch).toBeTruthy();
+        expect(oklchToHex(oklch!)).toEqual('#ffb000');
+        expect(mixOklch('#000000', '#ffffff', 0.5)).toMatch(/^#[0-9a-f]{6}$/);
 
         const service = new ThemeService();
         service.registerTheme('brand', { bg: '#101418', fg: '#d0d7de', accent: '#ffb000' });
