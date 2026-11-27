@@ -68,8 +68,11 @@ export function attachOverlayBackdrop(
     }
 
     const restore: InertState[] = [];
-    Array.from(doc.body.children || []).forEach((node: any) => {
-        if (node === backdrop || node === panel || node?.contains?.(panel) || panel?.contains?.(node)) {
+    const markInert = (node: any) => {
+        if (!node || node === backdrop || node === panel || node?.contains?.(panel) || panel?.contains?.(node)) {
+            return;
+        }
+        if (restore.some(item => item.node === node)) {
             return;
         }
         restore.push({
@@ -80,7 +83,19 @@ export function attachOverlayBackdrop(
         });
         node.setAttribute?.('inert', '');
         node.setAttribute?.('aria-hidden', 'true');
-    });
+    };
+    // Inert every sibling along the panel's ancestor chain, not only body
+    // children; overlays mounted inside app shells must lock their own layer.
+    let current: any = panel;
+    while (current && current !== doc.body) {
+        const parent: any = current.parentElement;
+        if (!parent) { break; }
+        Array.from(parent.children || []).forEach((sibling: any) => {
+            if (sibling !== current) { markInert(sibling); }
+        });
+        current = parent;
+    }
+    Array.from(doc.body.children || []).forEach((sibling: any) => markInert(sibling));
 
     let released = false;
     return () => {

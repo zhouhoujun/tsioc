@@ -8,6 +8,7 @@ import { installPlainButtonStyles } from '../../src/ui.styles';
 import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 import { installPopoverStyles } from './popover.styles';
 import { resolveFlippedPlacement, resolveOverlayShift, resolvePortalStyle, UiPlacement } from '../../src/overlay-placement';
+import { bindOverlayOutside } from '../../src/overlay-outside';
 
 export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -85,6 +86,8 @@ export class PopoverComponent {
     private _visible = false;
     private _closable = true;
     private _flip = true;
+    private releaseOutside?: () => void;
+    private _closeOnOutside = false;
     private _portal = false;
     private portalStyle: Record<string, string> = {};
     private _placement: PopoverPlacement = 'bottom';
@@ -97,6 +100,7 @@ export class PopoverComponent {
     set visible(value: boolean | string) {
         this._visible = normalizeBoolean(value);
         this.resolvedPlacement = '';
+        this.syncOutside(this._visible);
         if (this._visible) {
             void Promise.resolve().then(() => Promise.resolve()).then(() => this.resolvePlacement());
         }
@@ -182,6 +186,17 @@ export class PopoverComponent {
         this.resolvedPlacement = '';
         this.shiftX = 0;
         this.shiftY = 0;
+        this.syncOutside(false);
+    }
+
+    protected syncOutside(active: boolean): void {
+        if (active && this._closeOnOutside && !this.releaseOutside) {
+            const host = this.elementRef?.nativeElement as any;
+            this.releaseOutside = bindOverlayOutside(host?.ownerDocument, host, () => this.close());
+        } else if (!active && this.releaseOutside) {
+            this.releaseOutside();
+            this.releaseOutside = undefined;
+        }
     }
 
     closeKeydown(event: any): void {
@@ -222,5 +237,6 @@ export class PopoverComponent {
 
     onDestroy(): void {
         this.syncScrollLock(false);
+        this.syncOutside(false);
     }
 }
