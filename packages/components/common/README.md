@@ -405,6 +405,12 @@ timing. Compare before/after numbers rather than using them as absolute budgets.
 `npm run bench:check` applies calibration-scaled budgets. The unified gate can
 run it with `RUN_COMMON_BENCH=1 bash scripts/agents-gate.sh components-common-bench`.
 
+`test/token-color-gate.spec.ts` enforces the color ratchet: existing component
+skins are recorded in `scripts/color-baseline.json` and may only decrease; new
+skin files must use `--ui-*` tokens instead of literal hex/rgb/hsl values.
+`src/theme-tokens.ts` and `src/design-tokens.ts` are exempt because they define
+the palettes themselves.
+
 `npm run catalog` writes a static HTML catalog (attributes, keyboard contract,
 surface notes and examples) to `docs/catalog.html`; pass a path as the first
 argument to write it elsewhere.
