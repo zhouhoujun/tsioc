@@ -9,6 +9,7 @@ import { PaginationComponent, PaginationModule } from '../pagination';
 import { DataTableComponent, DataTableModule } from '../data-table';
 import { TreeComponent, TreeModule, TreeNode } from '../tree';
 import { StepsComponent, StepsModule } from '../steps';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'p2-ui-host',
@@ -93,6 +94,13 @@ export class P2UiWidgetsTest {
         await ref.render();
         await Promise.resolve();
         return ref;
+    }
+
+    @Test('P2 widgets pass the shared accessibility audit')
+    async a11y() {
+        const ref = await this.mount();
+        const root = ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
+        expect(formatViolations(auditA11y(root, this.ctx.get(DOCUMENT)))).toEqual('');
     }
 
     @Test('avatar derives initials, shape and status classes')

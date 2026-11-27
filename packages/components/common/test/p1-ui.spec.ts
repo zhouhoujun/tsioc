@@ -9,6 +9,7 @@ import { StepsComponent, StepsModule } from '../steps';
 import { TimelineComponent, TimelineModule } from '../timeline';
 import { SkeletonComponent, SkeletonModule } from '../skeleton';
 import { SearchFieldComponent, SearchFieldModule } from '../search-field';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'p1-ui-host',
@@ -88,6 +89,13 @@ export class P1UiWidgetsTest {
         await ref.render();
         await Promise.resolve();
         return ref;
+    }
+
+    @Test('P1 widgets pass the shared accessibility audit')
+    async a11y() {
+        const ref = await this.mount();
+        const root = ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
+        expect(formatViolations(auditA11y(root, this.ctx.get(DOCUMENT)))).toEqual('');
     }
 
     @Test('toolbar dispatches enabled items and ignores separators/disabled')
