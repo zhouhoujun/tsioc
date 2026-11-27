@@ -90,6 +90,8 @@ export class TreeComponent {
     @Attribute() className = '';
     @Attribute() checkLabel = 'Select node';
     @Attribute() checkedIds: Array<string | number> = [];
+    /** Case-insensitive label/id filter; ancestors of matches stay visible. */
+    @Attribute() filter = '';
     /** Checking a parent updates descendants and rolls up ancestors. */
     @Attribute()
     get cascade(): boolean { return this._cascade; }
@@ -140,6 +142,8 @@ export class TreeComponent {
     @Computed()
     get viewItems(): TreeViewItem[] {
         const expanded = new Set((Array.isArray(this.expandedIds) ? this.expandedIds : []).map(String));
+        const filterText = String(this.filter || '').trim().toLocaleLowerCase();
+        const source = filterText ? this.filterNodes(this.items, filterText) : (Array.isArray(this.items) ? this.items : []);
         const rows: TreeViewItem[] = [];
         const walk = (nodes: TreeNode[], depth: number, prefix: string, parentKey: string): void => {
             (Array.isArray(nodes) ? nodes : []).forEach((node, index) => {
@@ -151,7 +155,7 @@ export class TreeComponent {
                     ? node.children
                     : this.loadedChildren.get(key) || [];
                 const hasChildren = children.length > 0 || node.lazy === true;
-                const isExpanded = node.expanded === true || expanded.has(key);
+                const isExpanded = node.expanded === true || expanded.has(key) || !!filterText;
                 const checked = (Array.isArray(this.checkedIds) ? this.checkedIds : []).some(id => String(id) === key);
                 const selected = this._multiple
                     ? checked
@@ -189,7 +193,7 @@ export class TreeComponent {
                 }
             });
         };
-        walk(this.items, 0, '', '');
+        walk(source, 0, '', '');
         // With selection-follows-focus the selected row is already the active one;
         // a separate roving class is only needed for activate-to-commit pickers.
         const activeKey = this._selectionFollowsFocus
@@ -205,6 +209,19 @@ export class TreeComponent {
             }
         });
         return rows;
+    }
+
+    protected filterNodes(nodes: TreeNode[], query: string): TreeNode[] {
+        const result: TreeNode[] = [];
+        (Array.isArray(nodes) ? nodes : []).forEach(node => {
+            if (!node) { return; }
+            const match = `${node.label ?? ''} ${node.id ?? ''}`.toLocaleLowerCase().includes(query);
+            const children = node.children?.length ? this.filterNodes(node.children, query) : [];
+            if (match || children.length) {
+                result.push(children.length ? { ...node, children } : { ...node, children: [] });
+            }
+        });
+        return result;
     }
 
     nodeClass(entry: TreeViewItem): string {

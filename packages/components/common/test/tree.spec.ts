@@ -65,6 +65,17 @@ export class TreeTest {
         expect(tree.selectedId).toEqual('child');
     }
 
+    @Test('filters rows while keeping ancestor paths visible')
+    async filtersRows() {
+        const { tree } = await this.mount();
+        tree.filter = 'leaf';
+        await Promise.resolve();
+        expect(tree.viewItems.map(row => row.key)).toEqual(['root', 'leaf']);
+        tree.filter = 'missing';
+        await Promise.resolve();
+        expect(tree.viewItems).toEqual([]);
+    }
+
     @Test('selection follows focus by default')
     async followsFocus() {
         const { tree, host } = await this.mount();

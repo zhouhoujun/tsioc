@@ -17,16 +17,16 @@ export type ButtonShape = 'default' | 'round' | 'circle';
     template: `
     <button class="console-button ui-button {{buttonClass}}"
         type="{{type}}"
-        [disabled]="disabled || loading"
+        [disabled]="disabled || busy"
         aria-label="{{ariaLabel || label}}"
-        aria-busy="{{loading}}"
+        aria-busy="{{busy}}"
         aria-pressed="{{pressed}}"
         @click="activate">
-        <span class="ui-button-spinner" v-if="loading && spinner" aria-hidden="true">{{spinnerFrame}}</span>
-        <icon v-if="icon && !(loading && spinner)" [class]="iconClass" [name]="icon" [glyph]="iconGlyph || icon" [size]="iconSize"></icon>
-        <span class="ui-button-labels" v-if="label || (loading && loadingLabel)">
-            <span class="ui-button-label {{loading && loadingLabel ? 'is-loading-ghost' : ''}}" aria-hidden="{{loading && !!loadingLabel}}">{{label}}</span>
-            <span class="ui-button-label" v-if="loading && loadingLabel">{{loadingLabel}}</span>
+        <span class="ui-button-spinner" v-if="busy && spinner" aria-hidden="true">{{spinnerFrame}}</span>
+        <icon v-if="icon && !(busy && spinner)" [class]="iconClass" [name]="icon" [glyph]="iconGlyph || icon" [size]="iconSize"></icon>
+        <span class="ui-button-labels" v-if="label || (busy && loadingLabel)">
+            <span class="ui-button-label {{busy && loadingLabel ? 'is-loading-ghost' : ''}}" aria-hidden="{{busy && !!loadingLabel}}">{{label}}</span>
+            <span class="ui-button-label" v-if="busy && loadingLabel">{{loadingLabel}}</span>
         </span>
         <v-content></v-content>
     </button>`
@@ -59,7 +59,8 @@ export class ButtonComponent implements OnDestroy {
     set spinner(value: boolean | string) { this._spinner = normalizeBoolean(value, true); this.syncSpinner(); }
     @Attribute() spinnerFrames: string[] = ['◐', '◓', '◑', '◒'];
     @Attribute() spinnerInterval = 100;
-    @Attribute() action?: () => void;
+    @Attribute() action?: () => void | Promise<any>;
+    @Attribute() errorAction?: (error: any) => void;
     @Attribute() iconOnly = false;
 
     private _tone: UiTone = 'default';
@@ -70,6 +71,7 @@ export class ButtonComponent implements OnDestroy {
     private _block = false;
     private _shape: ButtonShape = 'default';
     private _spinner = true;
+    private pending = false;
     private spinnerIndex = 0;
     private spinnerTick = 0;
     private spinnerListening = false;
@@ -114,6 +116,10 @@ export class ButtonComponent implements OnDestroy {
         return iconSizeFor(this._size);
     }
 
+    get busy(): boolean {
+        return this._loading || this.pending;
+    }
+
     get spinnerFrame(): string {
         const frames = Array.isArray(this.spinnerFrames) && this.spinnerFrames.length
             ? this.spinnerFrames
@@ -135,14 +141,20 @@ export class ButtonComponent implements OnDestroy {
     }
 
     activate(): void {
-        if (this._disabled || this._loading) {
+        if (this._disabled || this.busy) {
             return;
         }
-        this.action?.();
+        const result = this.action?.();
+        if (result && typeof (result as Promise<any>).then === 'function') {
+            this.pending = true;
+            Promise.resolve(result)
+                .catch(error => this.errorAction?.(error))
+                .finally(() => { this.pending = false; });
+        }
     }
 
     protected syncSpinner(): void {
-        const shouldTick = this.ready && this._loading && this._spinner && !!this.clock;
+        const shouldTick = this.ready && this.busy && this._spinner && !!this.clock;
         if (shouldTick && !this.spinnerListening) {
             this.listener ??= () => this.tickSpinner();
             this.clock?.subscribe(this.listener);
