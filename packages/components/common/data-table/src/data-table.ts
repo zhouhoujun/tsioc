@@ -102,8 +102,9 @@ export * from './data-table.types';
                 [style]="cellStyleFor(cell)" @click="focusCellOnly(row, cell, $event)"
                 @focus="focusCellOnly(row, cell)" @keydown="onCellKeydown($event, row, cell)">
                 <input class="ui-data-table-edit" v-if="isEditing(cell)" [value]="editDraft"
-                    @input="editInput($event)" @keydown="editKeydown($event, row, cell)"
-                    @blur="commitEdit(row, cell)" />
+                    aria-invalid="{{!!editError}}" @input="editInput($event)"
+                    @keydown="editKeydown($event, row, cell)" @blur="commitEdit(row, cell)" />
+                <span class="ui-data-table-edit-error" role="alert" v-if="isEditing(cell) && editError">{{editError}}</span>
                 <span class="ui-data-table-cell-text" v-else>{{cell.text}}</span>
             </span>
         </div>
@@ -146,6 +147,7 @@ export class DataTableComponent {
     get editable(): boolean { return this._editable; }
     set editable(value: boolean | string) { this._editable = normalizeBoolean(value); }
     @Attribute() editAction?: (row: DataTableRow, columnKey: string, value: string) => void;
+    @Attribute() editValidateAction?: (row: DataTableRow, columnKey: string, value: string) => string | undefined | Promise<string | undefined>;
     @Attribute() selectionAction?: (keys: string[], rows: DataTableRow[]) => void;
     @Attribute() sortKey = '';
     @Attribute() sortDirection: DataTableSortDirection | '' = '';
@@ -208,6 +210,7 @@ export class DataTableComponent {
     private _editable = false;
     editKey = '';
     editDraft = '';
+    editError = '';
     private lastClickKey = '';
     private lastClickAt = 0;
     private keyboardController?: DataTableKeyboardController;
@@ -330,7 +333,6 @@ export class DataTableComponent {
     get filteredEntries() {
         return filterDataTableRows(this.tableRows, this.filters);
     }
-
     get columnState(): DataTableColumnState { return dataTableColumnState(this.columns, this.columnOrder, this.hiddenColumns, this.columnWidths); }
 
     /** Restore the declarative column layout and persist the reset. */
@@ -338,16 +340,13 @@ export class DataTableComponent {
         this.columnOrder = []; this.hiddenColumns = []; this.columnWidths = {};
         const state = this.columnState; this.columnChangeAction?.(state); return state;
     }
-
     get activeSorts(): DataTableSort[] {
         return resolveDataTableSorts(this.multiSort, this.sorts, this.sortKey, this.sortDirection);
     }
-
     get sortedEntries() {
         const sorts = this.activeSorts;
         return sorts.length ? sortDataTableRowsBy(this.filteredEntries, sorts) : this.filteredEntries;
     }
-
     get pageEntries() {
         const rows = this.sortedEntries;
         const size = this.pageSizeNumber;
@@ -506,8 +505,8 @@ export class DataTableComponent {
     isEditing(cell: DataTableCell): boolean { return isEditingCell(this, cell); }
     startEdit(row: DataTableViewRow, cell: DataTableCell): void { startCellEdit(this, row, cell, this.elementRef?.nativeElement); }
     editInput(event: any): void { this.editDraft = String(event?.target?.value ?? ''); }
-    commitEdit(row: DataTableViewRow, cell: DataTableCell): void { commitCellEdit(this, row, cell); }
-    cancelEdit(): void { this.editKey = ''; }
+    commitEdit(row: DataTableViewRow, cell: DataTableCell): void { void commitCellEdit(this, row, cell); }
+    cancelEdit(): void { this.editKey = ''; this.editError = ''; }
     editKeydown(event: any, row: DataTableViewRow, cell: DataTableCell): void { editCellKeydown(this, event, row, cell); }
 
     protected focusCellNode(rowIndex: number, cellIndex: number): void {

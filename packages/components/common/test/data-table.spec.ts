@@ -13,7 +13,7 @@ import { DataTableComponent, DataTableModule } from '../data-table';
     <ui-data-table :columns="columns" :rows="rows"
         :sortAction="onSort" :rowAction="onRow" :selectionAction="onSelection"
         rowKey="id" selectedKey="b" caption="Users" selectable editable
-        :editAction="onEdit" stickyHeader dense></ui-data-table>`
+        :editAction="onEdit" :editValidateAction="validateEdit" stickyHeader dense></ui-data-table>`
 })
 class DataTableHostComponent {
     columns = [
@@ -32,6 +32,7 @@ class DataTableHostComponent {
     edited: any[] = [];
     onSelection = (keys: string[]) => { this.selection = keys.slice(); };
     onEdit = (row: any, columnKey: string, value: string) => { this.edited.push([row.id, columnKey, value]); };
+    validateEdit = (_row: any, _columnKey: string, value: string) => value === 'bad' ? 'Invalid value' : undefined;
 }
 
 @Suite('common data table')
@@ -119,6 +120,34 @@ export class DataTableTest {
         expect(host.edited).toEqual([['b', 'name', 'updated']]);
         const committed = root.querySelector('.ui-data-table-row .is-data-cell') as HTMLElement;
         expect(committed.querySelector('.ui-data-table-edit')).toBeFalsy();
+    }
+
+    @Test('keeps the editor open when validation rejects the value')
+    async validatesEdit() {
+        const ref = await this.mount();
+        const host = ref.instance as DataTableHostComponent;
+        const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
+        const root = table.hostView.rootNodes[0] as HTMLElement;
+        const cell = root.querySelector('.ui-data-table-row .is-data-cell') as HTMLElement;
+        cell.click();
+        cell.click();
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        let input = root.querySelector('.ui-data-table-row .is-data-cell .ui-data-table-edit') as HTMLInputElement;
+        input.value = 'bad';
+        input.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.Event('input', { bubbles: true }));
+        input.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        input = root.querySelector('.ui-data-table-row .is-data-cell .ui-data-table-edit') as HTMLInputElement;
+        expect(!!input).toEqual(true);
+        expect(input.getAttribute('aria-invalid')).toEqual('true');
+        expect(root.querySelector('.ui-data-table-edit-error')?.textContent).toContain('Invalid value');
+        expect(host.edited).toEqual([]);
+
+        input.value = 'ok';
+        input.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.Event('input', { bubbles: true }));
+        input.dispatchEvent(new (this.ctx.get(DOCUMENT) as Document).defaultView!.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        expect(host.edited).toEqual([['b', 'name', 'ok']]);
     }
 
     @Test('shows loading state instead of empty state')
