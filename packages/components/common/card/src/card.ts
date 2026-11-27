@@ -21,7 +21,7 @@ import { normalizeBoolean, normalizeTone, UiTone } from '../../src/ui';
         data-tone="{{tone}}">
         <header class="ui-card-header" v-show="hasHeader">
             <div class="ui-card-heading">
-                <h3 class="ui-card-title" v-if="title">{{title}}</h3>
+                <h3 class="ui-card-title" role="heading" aria-level="{{headingLevelNumber}}" v-if="title">{{title}}</h3>
                 <p class="ui-card-subtitle" v-if="subtitle">{{subtitle}}</p>
             </div>
             <span class="ui-card-meta" v-if="meta">{{meta}}</span>
@@ -35,6 +35,7 @@ export class CardComponent {
     @Attribute() subtitle = '';
     @Attribute() meta = '';
     @Attribute() className = '';
+    @Attribute() headingLevel: number | string = 3;
 
     @ContentChild('[slot="actions"]') actionsNode?: ElementRef;
 
@@ -54,6 +55,10 @@ export class CardComponent {
     @Attribute()
     get divider(): boolean { return this._divider; }
     set divider(value: boolean | string) { this._divider = normalizeBoolean(value); }
+
+    get headingLevelNumber(): number {
+        return Math.max(1, Math.min(6, Math.floor(Number(this.headingLevel) || 3)));
+    }
 
     get hasHeader(): boolean {
         return !!(this.title || this.subtitle || this.meta || this.actionsNode);

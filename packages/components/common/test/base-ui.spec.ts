@@ -164,6 +164,8 @@ export class BaseUiPrimitivesTest {
         const root = card.hostView.rootNodes[0] as HTMLElement;
 
         expect(root.textContent).toContain('Card title');
+        expect(root.querySelector('.ui-card-title')?.getAttribute('role')).toEqual('heading');
+        expect(root.querySelector('.ui-card-title')?.getAttribute('aria-level')).toEqual('3');
         expect(root.textContent).toContain('Sub');
         expect(root.textContent).toContain('v1');
         expect(root.textContent).toContain('body');
