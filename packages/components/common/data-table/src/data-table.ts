@@ -79,8 +79,11 @@ export * from './data-table.types';
         </div>
         <div class="ui-data-table-spacer" v-if="virtual && virtualTopHeight" [style]="spacerStyle(virtualTopHeight)"></div>
         <div class="ui-data-table-row-group" v-for="row in viewRows" trackBy="key">
+        <div class="ui-data-table-group-row" role="row" v-if="row.kind === 'group'">
+            <span class="ui-data-table-group-label" role="cell">{{row.groupLabel}}</span>
+        </div>
         <div class="{{row.className}}" role="row" aria-selected="{{row.selected}}"
-            data-row-key="{{row.key}}" @click="pick(row)">
+            v-if="row.kind !== 'group'" data-row-key="{{row.key}}" @click="pick(row)">
             <span class="ui-data-table-cell ui-data-table-expand" role="cell" v-if="expandable">
                 <span class="ui-data-table-expander" role="button" tabindex="0" focusable="true"
                     aria-expanded="{{rowExpanded(row)}}"
@@ -148,6 +151,8 @@ export class DataTableComponent {
     set editable(value: boolean | string) { this._editable = normalizeBoolean(value); }
     @Attribute() editAction?: (row: DataTableRow, columnKey: string, value: string) => void;
     @Attribute() editValidateAction?: (row: DataTableRow, columnKey: string, value: string) => string | undefined | Promise<string | undefined>;
+    /** Optional row grouping label; group headers appear before each run. */
+    @Attribute() groupBy?: (row: DataTableRow) => string;
     @Attribute() selectionAction?: (keys: string[], rows: DataTableRow[]) => void;
     @Attribute() sortKey = '';
     @Attribute() sortDirection: DataTableSortDirection | '' = '';
@@ -354,7 +359,6 @@ export class DataTableComponent {
             ? rows.slice((this.currentPage - 1) * size, this.currentPage * size)
             : rows;
     }
-
     get virtualWindow(): DataTableVirtualWindow {
         return resolveDataTableVirtualWindow({
             enabled: !!this.virtual,
@@ -366,16 +370,13 @@ export class DataTableComponent {
             overscan: Number(this.virtualOverscan) || 0
         });
     }
-
     get windowEntries() {
         const window = this.virtualWindow;
         return this.pageEntries.slice(window.start, window.end);
     }
-
     get virtualTopHeight(): number {
         return this.virtualWindow.topHeight;
     }
-
     get virtualBottomHeight(): number {
         return this.virtualWindow.bottomHeight;
     }
@@ -414,7 +415,6 @@ export class DataTableComponent {
             void this.reload();
         }
     }
-
     get asyncError(): string {
         return this._asyncError;
     }
@@ -501,7 +501,6 @@ export class DataTableComponent {
         const target = this.keyboardNav.onKeydown(event, row, cell);
         if (target) { this.activeCellKey = target.key; this.focusCellNode(target.rowIndex, target.cellIndex); }
     }
-
     isEditing(cell: DataTableCell): boolean { return isEditingCell(this, cell); }
     startEdit(row: DataTableViewRow, cell: DataTableCell): void { startCellEdit(this, row, cell, this.elementRef?.nativeElement); }
     editInput(event: any): void { this.editDraft = String(event?.target?.value ?? ''); }
@@ -685,7 +684,8 @@ export class DataTableComponent {
             this.selectedKeySet(),
             this.selectedKey,
             this.tableRows,
-            (row, index) => this.rowKeyOf(row, index)
+            (row, index) => this.rowKeyOf(row, index),
+            this.groupBy
         );
     }
 

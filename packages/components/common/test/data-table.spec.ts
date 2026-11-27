@@ -13,7 +13,7 @@ import { DataTableComponent, DataTableModule } from '../data-table';
     <ui-data-table :columns="columns" :rows="rows"
         :sortAction="onSort" :rowAction="onRow" :selectionAction="onSelection"
         rowKey="id" selectedKey="b" caption="Users" selectable editable
-        :editAction="onEdit" :editValidateAction="validateEdit" stickyHeader dense></ui-data-table>`
+        :editAction="onEdit" :editValidateAction="validateEdit" :groupBy="groupBy" stickyHeader dense></ui-data-table>`
 })
 class DataTableHostComponent {
     columns = [
@@ -33,6 +33,7 @@ class DataTableHostComponent {
     onSelection = (keys: string[]) => { this.selection = keys.slice(); };
     onEdit = (row: any, columnKey: string, value: string) => { this.edited.push([row.id, columnKey, value]); };
     validateEdit = (_row: any, _columnKey: string, value: string) => value === 'bad' ? 'Invalid value' : undefined;
+    groupBy?: (row: any) => string;
 }
 
 @Suite('common data table')
@@ -120,6 +121,18 @@ export class DataTableTest {
         expect(host.edited).toEqual([['b', 'name', 'updated']]);
         const committed = root.querySelector('.ui-data-table-row .is-data-cell') as HTMLElement;
         expect(committed.querySelector('.ui-data-table-edit')).toBeFalsy();
+    }
+
+    @Test('renders group headers before each grouped row run')
+    async groupsRows() {
+        const ref = await this.mount();
+        const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
+        table.instance.groupBy = row => row.role;
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        const root = ((table.instance as any).elementRef?.nativeElement?.querySelector?.('.ui-data-table') || table.hostView.rootNodes[0]) as HTMLElement;
+        const labels = Array.from(root.querySelectorAll('.ui-data-table-group-label')).map(node => node.textContent?.trim());
+        expect(labels).toEqual(['writer', 'reader']);
+        expect(root.querySelectorAll('.ui-data-table-row').length).toEqual(2);
     }
 
     @Test('keeps the editor open when validation rejects the value')

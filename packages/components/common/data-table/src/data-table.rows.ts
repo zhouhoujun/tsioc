@@ -13,9 +13,10 @@ export function buildDataTableRows(
     selectedKeys: Set<string>,
     selectedKey: string,
     rows: DataTableRow[],
-    rowKeyOf: (row: DataTableRow, index: number) => string
+    rowKeyOf: (row: DataTableRow, index: number) => string,
+    groupBy?: (row: DataTableRow) => string
 ): DataTableViewRow[] {
-    return entries.map(({ row, index }) => {
+    const rendered = entries.map(({ row, index }) => {
         const key = rowKeyOf(rows[index], index);
         const checked = selectedKeys.has(key);
         const selected = (!!selectedKey && String(selectedKey) === key) || checked;
@@ -42,7 +43,31 @@ export function buildDataTableRows(
             cells,
             className: ['ui-data-table-row', selected ? 'is-selected' : ''].filter(Boolean).join(' '),
             selected,
-            checked
+            checked,
+            kind: 'row' as const
         };
     });
+    if (!groupBy) {
+        return rendered;
+    }
+    const grouped: DataTableViewRow[] = [];
+    let previous = '';
+    rendered.forEach(row => {
+        const label = String(groupBy(rows[row.index]) ?? '');
+        if (label !== previous) {
+            grouped.push({
+                key: `group-${row.index}-${label}`,
+                index: -1,
+                cells: [],
+                className: 'ui-data-table-group-row',
+                selected: false,
+                checked: false,
+                kind: 'group',
+                groupLabel: label
+            });
+            previous = label;
+        }
+        grouped.push(row);
+    });
+    return grouped;
 }

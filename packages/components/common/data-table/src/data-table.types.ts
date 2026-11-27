@@ -71,6 +71,8 @@ export interface DataTableViewRow {
     className: string;
     selected: boolean;
     checked: boolean;
+    kind?: 'row' | 'group';
+    groupLabel?: string;
 }
 
 export interface DataTablePageRequest {
