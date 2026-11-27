@@ -7,4 +7,4 @@ export * from './exporters';
 export * from './tracing.module';
 export * from './provider';
 export { TRACE_EXPORTERS, TRACING_OPTIONS } from './tokens';
-export { TraceExporter } from './tracer';
+export { TraceExporter } from './tracer';export * from './semconv';

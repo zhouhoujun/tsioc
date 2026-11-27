@@ -609,6 +609,12 @@
 - 新增 `full-stack-smoke.ts`，`ms-examples` 现在同时运行 quickstart 与 full-stack 两次真实启动/关闭。
 - README 补充运行方式；`ms-examples` PASS。
 
+第一百零七批（OTel semconv 双发）：
+
+- 新增 tracing `semconv.ts`：HTTP span 同时写 legacy (`http.method`/`http.url`/`http.status_code`) 与当前 (`http.request.method`/`url.full`/`url.path`/`http.response.status_code`) 属性。
+- broker span 同时写 `messaging.destination` 与 `messaging.destination.name`；gateway span 增加 method/path/scheme/service.name。
+- 新增 3 个 semconv 测试；tracing 58、gateway 160 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

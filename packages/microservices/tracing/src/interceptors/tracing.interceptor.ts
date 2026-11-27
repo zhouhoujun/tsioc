@@ -5,6 +5,7 @@ import { finalize, tap, catchError } from 'rxjs/operators';
 import { brokerDestination, extractBrokerCarrier, normalizeCarrierHeaders } from '../carrier';
 import { Tracer } from '../tracer';
 import { Span } from '../tracing';
+import { httpSpanAttributes, messagingSpanAttributes } from '../semconv';
 
 /**
  * Tracing interceptor.
@@ -34,11 +35,8 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
             kind: 'SERVER',
             parent: extractedContext ?? undefined,
             attributes: {
-                ...(destination ? { 'messaging.destination': destination } : {}),
-                'http.method': method,
-                'http.url': path,
-                'http.scheme': 'http',
-                'service.name': this.tracer.serviceName
+                ...(destination ? messagingSpanAttributes(destination) : {}),
+                ...httpSpanAttributes(method, path, { scheme: 'http', serviceName: this.tracer.serviceName })
             }
         });
 
@@ -57,6 +55,7 @@ export class TracingInterceptor implements RequestInterceptor<ReadableLike<Incom
                     tap((response: WritableLike<Outgoing>) => {
                         const status = response.statusCode || 200;
                         span.setAttribute('http.status_code', status);
+                        span.setAttribute('http.response.status_code', status);
                         if (status >= 400) {
                             span.setStatus('ERROR');
                         } else {

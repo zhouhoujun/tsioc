@@ -4933,3 +4933,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百零六批（2026-11-16）：
   - full-stack 示例（backend + discovery + gateway）+ gate smoke。
+
+- 微服务框架第一百零七批（2026-11-16）：
+  - HTTP/messaging OTel semconv 双发。
+  - 回归：tracing 58、gateway 160。

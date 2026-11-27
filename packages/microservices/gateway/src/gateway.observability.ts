@@ -2,7 +2,7 @@ import { Transport } from '@tsdi/common';
 import { HttpRequestMessage } from '@tsdi/http-microservice';
 import { Logger } from '@tsdi/logger';
 import { MetricsCollector, recordDuration } from '@tsdi/metrics';
-import { Span, Tracer } from '@tsdi/tracing';
+import { Span, Tracer, httpSpanAttributes } from '@tsdi/tracing';
 import { GatewayOptions, ResolvedGatewayRoute } from './gateway.options';
 import { GatewayRuntime } from './gateway.runtime';
 import { GatewayErrorType, GatewayForwardMeta, classifyGatewayError } from './gateway.types';
@@ -40,9 +40,17 @@ export class GatewayObservability {
         let finish: (error?: any) => void = () => undefined;
         let span: Span | undefined;
         if (this.tracer) {
+            const method = request.method ?? 'GET';
+            const path = this.normalizeRequestUrl(request.url ?? '/');
             const activeSpan = this.tracer.startSpan(
-                `gateway ${request.method ?? 'GET'} ${this.normalizeRequestUrl(request.url ?? '/')}`,
-                { kind: 'SERVER' }
+                `gateway ${method} ${path}`,
+                {
+                    kind: 'SERVER',
+                    attributes: httpSpanAttributes(method, request.url ?? path, {
+                        scheme: getHeaderValue(request, 'x-forwarded-proto') ?? 'http',
+                        serviceName: 'gateway'
+                    })
+                }
             );
             span = activeSpan;
             this.tracer.injectContext(activeSpan.context(), carrier);
