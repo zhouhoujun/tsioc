@@ -8,6 +8,7 @@ import { ServiceHandler, Service, BindServiceEvent, getServiceRouterToken, getSu
 import { Subject, lastValueFrom, race, take, takeUntil } from 'rxjs';
 import { hostname } from 'node:os';
 import Redis from 'ioredis';
+import { RedisIdempotencyStore } from '../idempotency.store';
 import { RedisServOptions, REDIS_SERV_OPTIONS, REDIS_BIND_INTERCEPTORS, REDIS_BIND_FILTERS, REDIS_BIND_GUARDS } from './options';
 
 @Injectable()
@@ -27,6 +28,7 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     private streamLoop?: Promise<void>;
     private streamStopping = false;
     private runtime?: ConsumerRuntime;
+    private redisIdempotency?: RedisIdempotencyStore;
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
@@ -265,10 +267,22 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     }
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime({
+        if (this.runtime) {
+            return this.runtime;
+        }
+        const idempotency = this.options?.idempotency
+            ? {
+                ...this.options.idempotency,
+                store: this.options.idempotency.store
+                    ?? (this.streamClient
+                        ? (this.redisIdempotency ??= new RedisIdempotencyStore(this.streamClient))
+                        : undefined)
+            }
+            : undefined;
+        return this.runtime = new ConsumerRuntime({
             retry: this.options?.retry,
             concurrency: this.options?.concurrency,
-            idempotency: this.options?.idempotency,
+            idempotency,
             metrics: this.consumerMetrics ?? undefined,
             labels: { transport: 'redis', group: this.options?.group }
         });

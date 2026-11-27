@@ -627,6 +627,11 @@
 - 示例 `examples/outbox.ts` 与 `ms-examples` smoke 使用真实 API；service 117 passing。
 - saga/事务集成仍待后续。
 
+第一百一十批（Redis 分布式 Inbox）：
+
+- 新增 `RedisIdempotencyStore`（SET NX PX/DEL），Redis Stream 开启 `idempotency` 且未显式提供 store 时自动使用。
+- 跨副本 dedupe 不再依赖进程内存；新增 expiry/release/prefix 测试；Redis 79 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

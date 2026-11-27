@@ -4944,3 +4944,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百零九批（2026-11-16）：
   - Outbox primitive + example；ms-examples 增加 outbox smoke。
   - 回归：service 117。
+
+- 微服务框架第一百一十批（2026-11-16）：
+  - RedisIdempotencyStore + Stream 自动接入。
+  - 回归：Redis 79。
