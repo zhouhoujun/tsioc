@@ -12,6 +12,7 @@ import { DividerComponent, DividerModule } from '../divider';
 import { StatComponent, StatModule } from '../stat';
 import { ProgressComponent, ProgressModule } from '../progress';
 import { BreadcrumbComponent, BreadcrumbModule, BreadcrumbItem } from '../breadcrumb';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'base-ui-host',
@@ -91,6 +92,13 @@ export class BaseUiPrimitivesTest {
         await ref.render();
         await Promise.resolve();
         return ref;
+    }
+
+    @Test('base primitives pass the shared accessibility audit')
+    async a11y() {
+        const ref = await this.mount();
+        const root = ref.hostView.rootNodes.find((node: any) => typeof node.querySelector === 'function') as HTMLElement;
+        expect(formatViolations(auditA11y(root, this.ctx.get(DOCUMENT)))).toEqual('');
     }
 
     @Test('button exposes tone/size and only fires when enabled')
