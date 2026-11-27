@@ -5,6 +5,7 @@ import { Component, ComponentFactory, ComponentRef, ComponentsModule } from '@ts
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { TreeSelectComponent, TreeSelectModule } from '../tree-select';
+import { auditA11y } from './support/a11y-audit';
 
 @Component({
     selector: 'tree-select-host',
@@ -104,6 +105,20 @@ export class TreeSelectTest {
         expect(live.getAttribute('aria-expanded')).toEqual('false');
     }
 
+    @Test('closes the panel on an outside pointer-down')
+    async outsideClose() {
+        const { roots } = await this.mount();
+        const root = roots[0];
+        (root.querySelector('.ui-tree-select-trigger') as any).click();
+        await Promise.resolve();
+        expect(root.querySelector('.ui-tree-select-panel')).toBeTruthy();
+        const doc = root.ownerDocument;
+        doc.body.dispatchEvent(new (doc.defaultView as any).Event('pointerdown', { bubbles: true }));
+        await Promise.resolve();
+        expect(root.querySelector('.ui-tree-select-panel')).toBeFalsy();
+        expect(root.getAttribute('aria-expanded')).toBe('false');
+    }
+
     @Test('keyboard opens into the tree and restores the trigger after selection')
     async keyboardFlow() {
         const { roots, host } = await this.mount();
@@ -135,6 +150,7 @@ export class TreeSelectTest {
         const chips = root.querySelectorAll('.ui-tree-select-chip');
         expect(chips.length).toBe(2);
         expect(root.textContent).toContain('Child');
+        expect(auditA11y(root, root.ownerDocument)).toEqual([]);
         const remove = root.querySelector('.ui-tree-select-chip-remove') as any;
         expect(remove.getAttribute('aria-label')).toBe('删除');
         remove.click();

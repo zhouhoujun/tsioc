@@ -332,6 +332,13 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
     边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
     等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。
+- **Selection panel policy / P2 质量（2026-11-27）**
+  - 新增 `bindSelectionPanel`：统一非模态选择面板的 outside pointer-down 与
+    Escape 关闭（捕获阶段、支持 portal panel/anchor 包含判断）。
+  - TreeSelect 打开面板时绑定策略，关闭/销毁时释放；新增 outside 关闭与
+    a11y audit 测试，chips 删除按钮具备可访问名称。
+  - 新增组件继续使用 `--ui-*` token；P2 的 overlay/placement 仍复用既有
+    `overlay-placement`/`overlay-outside`/`OverlayManager`。
 - **TreeSelect 多选 chips（2026-11-27）**
   - `multiple` 模式在 trigger 内渲染可删除 chips（含 `removeLabel`），不再把
     多选值拼成逗号字符串；删除会本地更新 `checkedIds` 并回调 `removeAction`/

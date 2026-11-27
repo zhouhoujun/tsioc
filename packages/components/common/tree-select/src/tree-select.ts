@@ -1,10 +1,11 @@
-import { Attribute, Component, ElementRef, ViewChild } from '@tsdi/components';
+import { Attribute, Component, ElementRef, OnDestroy, ViewChild } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
 import { TreeComponent } from '../../tree/src/tree';
 import { TreeNode } from '../../tree/src/tree';
 import { installTreeSelectStyles } from './tree-select.styles';
+import { bindSelectionPanel } from '../../src/selection-panel';
 
 /**
  * Tree-backed single selection field (Ant Design TreeSelect).
@@ -44,13 +45,18 @@ import { installTreeSelectStyles } from './tree-select.styles';
         </div>
     </div>`
 })
-export class TreeSelectComponent {
+export class TreeSelectComponent implements OnDestroy {
     constructor(@Optional() protected elementRef?: ElementRef) {
         markElementRefRaw(elementRef);
     }
 
     onInit(): void {
         installTreeSelectStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
+    }
+
+    onDestroy(): void {
+        this.releasePanel?.();
+        this.releasePanel = undefined;
     }
 
     @ViewChild(TreeComponent) tree?: TreeComponent;
@@ -75,6 +81,7 @@ export class TreeSelectComponent {
     private _multiple = false;
     private _checkable = false;
     private selected = '';
+    private releasePanel?: () => void;
 
     @Attribute()
     get disabled(): boolean { return this._disabled; }
@@ -156,9 +163,28 @@ export class TreeSelectComponent {
             return;
         }
         this._open = true;
+        void Promise.resolve().then(() => this.bindPanel());
+    }
+
+    /** Close on outside pointer-down/Escape through the shared panel policy. */
+    protected bindPanel(): void {
+        if (!this._open || this.releasePanel) {
+            return;
+        }
+        const host = this.elementRef?.nativeElement as any;
+        const panel = host?.matches?.('.ui-tree-select-panel')
+            ? host
+            : host?.querySelector?.('.ui-tree-select-panel');
+        this.releasePanel = bindSelectionPanel(host?.ownerDocument, {
+            anchor: host,
+            panel,
+            close: () => this.close()
+        });
     }
 
     close(): void {
+        this.releasePanel?.();
+        this.releasePanel = undefined;
         if (!this._open) {
             return;
         }
