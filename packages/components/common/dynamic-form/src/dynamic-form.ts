@@ -6,6 +6,7 @@ import {
     DynamicFormChange,
     DynamicFormField,
     DynamicFormFieldAction,
+    DynamicFormFieldStatus,
     DynamicFormIssue,
     DynamicFormOption,
     DynamicFormResult,
@@ -18,6 +19,7 @@ import { buildDynamicValidators, dynamicFormMessage } from './dynamic-form.valid
 import { DYNAMIC_FORM_TEMPLATE } from './dynamic-form.template';
 import { createDynamicFormClasses, DynamicFormClasses } from './dynamic-form.classes';
 import { DynamicFieldWidgetComponent } from './dynamic-field-widget';
+import { DynamicFormEditorMethods } from './dynamic-form.editor-methods';
 import { conditionMatches, normalizeSchema } from './dynamic-form.normalize';
 import { cloneFormValue, formCanLeave, formIsDirty, formTouchedFields } from './dynamic-form.state';
 import { applyFormSchema, formSchemaFields, refreshFormErrors, syncFormValues } from './dynamic-form.projection';
@@ -28,6 +30,10 @@ import {
 } from './dynamic-form.widgets';
 import {
     clearFormIssues,
+    fieldAsyncError,
+    fieldPending,
+    fieldStatus,
+    fieldValid,
     focusFirstFormError,
     focusFormField,
     formErrorSummary,
@@ -57,7 +63,7 @@ let dynamicFormSequence = 0;
     imports: [DynamicFieldWidgetComponent],
     template: DYNAMIC_FORM_TEMPLATE
 })
-export class DynamicFormComponent implements OnDestroy {
+export class DynamicFormComponent extends DynamicFormEditorMethods implements OnDestroy {
     @Attribute() classPrefix = 'df';
 
     @Computed()
@@ -91,6 +97,9 @@ export class DynamicFormComponent implements OnDestroy {
     /** Automatic async validation: none (host-driven), on change, on blur or on submit. */
     @Attribute() validateOn: 'none' | 'change' | 'blur' | 'submit' = 'none';
     @Attribute() validationDelay = 250;
+    /** Status copy forwarded to fields/widgets while async checks run. */
+    @Attribute() pendingLabel = 'Checking…';
+    @Attribute() validLabel = 'Valid';
     /** Async/sync leave guard; call `canLeave()` before discarding the form. */
     @Attribute() beforeLeaveAction?: () => boolean | Promise<boolean>;
     /** Per-form widgets; schema.widgets wins, then this list, then DI. */
@@ -113,6 +122,8 @@ export class DynamicFormComponent implements OnDestroy {
     externalIssues: Record<string, DynamicFormIssue> = {};
     /** Issues produced by the last async validation run. */
     asyncIssues: Record<string, DynamicFormIssue> = {};
+    /** Async validation outcome per field (`pending` while a check runs). */
+    fieldStatuses: Record<string, DynamicFormFieldStatus> = {};
     validating = false;
     validationSequence = 0;
     validationTimer?: any;
@@ -128,7 +139,7 @@ export class DynamicFormComponent implements OnDestroy {
     constructor(
         @Optional() public elementRef?: ElementRef,
         @Optional() @Inject(DYNAMIC_FORM_WIDGETS) protected injectedWidgets?: DynamicFormWidget[]
-    ) { }
+    ) { super(); }
 
     @Attribute()
     set schema(value: DynamicFormSchema | string | any) {
@@ -280,6 +291,18 @@ export class DynamicFormComponent implements OnDestroy {
         control.setValue(this.coerceValue(field, raw));
         control.markAsDirty();
         control.markAsTouched();
+        // A new value invalidates the previous async outcome; the pending state
+        // is re-established when the next validation run starts.
+        if (typeof field.validate === 'function') {
+            if (this.fieldStatuses[field.key]) {
+                this.fieldStatuses = { ...this.fieldStatuses, [field.key]: 'default' };
+            }
+            if (this.asyncIssues[field.key]) {
+                const issues = { ...this.asyncIssues };
+                delete issues[field.key];
+                this.asyncIssues = issues;
+            }
+        }
         this.valueVersion += 1;
         this.validationErrors = { ...this.validationErrors, [field.key]: control.errors };
         const change: DynamicFormChange = {
@@ -313,81 +336,6 @@ export class DynamicFormComponent implements OnDestroy {
         }
         this.jsonRawFields = next;
     }
-
-    isJsonRaw(field: DynamicFormField): boolean { return editor.isJsonRaw(this, field); }
-
-    isJsonObjectValue(field: DynamicFormField): boolean { return editor.isJsonObjectValue(this, field); }
-
-    isJsonObjectEditor(field: DynamicFormField): boolean { return editor.isJsonObjectEditor(this, field); }
-
-    isJsonTextArea(field: DynamicFormField): boolean { return editor.isJsonTextArea(this, field); }
-
-    jsonTextValue(field: DynamicFormField): string { return editor.jsonTextValue(this, field); }
-
-    toggleJsonMode(field: DynamicFormField): void { editor.toggleJsonMode(this, field); }
-
-    jsonEntries(field: DynamicFormField): Array<{ key: string; value: any; display: string }> { return editor.jsonEntries(this, field); }
-
-
-    addJsonEntry(field: DynamicFormField): void { editor.addJsonEntry(this, field); }
-
-    removeJsonEntry(field: DynamicFormField, index: number): void { editor.removeJsonEntry(this, field, index); }
-
-    changeJsonEntryKey(field: DynamicFormField, index: number, event: any): void { editor.changeJsonEntryKey(this, field, index, event); }
-
-    changeJsonEntryValue(field: DynamicFormField, index: number, event: any): void { editor.changeJsonEntryValue(this, field, index, event); }
-
-
-    isKeyValueInput(field: DynamicFormField): boolean { return editor.isKeyValueInput(field); }
-
-    keyValueValueType(field: DynamicFormField): 'text' | 'number' | 'boolean' { return editor.keyValueValueType(field); }
-
-    keyValueEntries(field: DynamicFormField): Array<{ key: string; value: any }> { return editor.keyValueEntries(this, field); }
-
-
-    addKeyValue(field: DynamicFormField): void { editor.addKeyValue(this, field); }
-
-    removeKeyValue(field: DynamicFormField, index: number): void { editor.removeKeyValue(this, field, index); }
-
-    changeKeyValueKey(field: DynamicFormField, index: number, event: any): void { editor.changeKeyValueKey(this, field, index, event); }
-
-    changeKeyValueValue(field: DynamicFormField, index: number, event: any): void { editor.changeKeyValueValue(this, field, index, event); }
-
-
-    isJsonInput(field: DynamicFormField): boolean { return editor.isJsonInput(field); }
-
-    isListInput(field: DynamicFormField): boolean { return editor.isListInput(field); }
-
-    listIndex(field: DynamicFormField, item: any): number { return editor.listIndex(this, field, item); }
-
-    listItems(field: DynamicFormField): any[] { return editor.listItems(this, field); }
-
-    listItemValue(item: any, child: DynamicFormField): any { return editor.listItemValue(this, item, child); }
-    listItemValueAt(field: DynamicFormField, index: number, child: DynamicFormField): any { return editor.listItemValue(this, editor.listItems(this, field)[index] || {}, child); }
-    listItemErrorAt(field: DynamicFormField, index: number, child: DynamicFormField): string { return editor.listItemError(this, child, editor.listItems(this, field)[index] || {}); }
-
-    listItemChecked(item: any, child: DynamicFormField): boolean { return editor.listItemChecked(item, child); }
-
-    isListItemVisible(child: DynamicFormField, item: any): boolean { return editor.isListItemVisible(child, item); }
-
-    listItemError(child: DynamicFormField, item: any): string { return editor.listItemError(this, child, item); }
-
-
-    addListItem(field: DynamicFormField): void { editor.addListItem(this, field); }
-    moveListItem(field: DynamicFormField, index: number, delta: number): void { editor.moveListItem(this, field, index, delta); }
-    listRowSummary(field: DynamicFormField, item: any, index: number): string { return editor.listRowSummary(field, item, index); }
-
-    removeListItem(field: DynamicFormField, index: number): void { editor.removeListItem(this, field, index); }
-
-    changeListItem(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void { editor.changeListItem(this, field, index, child, event); }
-
-    listItemTypedType(item: any, child: DynamicFormField): string { return editor.listItemTypedType(this, item, child); }
-
-    changeListItemTypedType(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void { editor.changeListItemTypedType(this, field, index, child, event); }
-
-    changeListItemOption(field: DynamicFormField, index: number, child: DynamicFormField, value: any): void { editor.changeListItemOption(this, field, index, child, value); }
-
-    changeListItemSelect(field: DynamicFormField, index: number, child: DynamicFormField, event: any): void { editor.changeListItemSelect(this, field, index, child, event); }
 
 
     changeText(field: DynamicFormField, event: any): void {
@@ -589,6 +537,14 @@ export class DynamicFormComponent implements OnDestroy {
     canReset(field: DynamicFormField): boolean { return fields.canReset(field); }
 
     errorFor(field: DynamicFormField): string { return fields.errorFor(this, field); }
+
+    fieldStatus(field: DynamicFormField): DynamicFormFieldStatus { return fieldStatus(this, field); }
+
+    fieldPending(field: DynamicFormField): boolean { return fieldPending(this, field); }
+
+    fieldValid(field: DynamicFormField): boolean { return fieldValid(this, field); }
+
+    fieldAsyncError(field: DynamicFormField): string { return fieldAsyncError(this, field); }
 
     protected safeIdPart(key: unknown): string { return String(key ?? '').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'field'; }
 

@@ -20,6 +20,7 @@ export interface DynamicFormClasses {
     labelRow: string;
     label: string;
     required: string;
+    fieldStatus: string;
     reset: string;
     fieldAction: string;
     inputUnit: string;
@@ -63,6 +64,7 @@ export function createDynamicFormClasses(classPrefix: string | undefined): Dynam
         labelRow: p('field-label-row'),
         label: p('field-label'),
         required: p('field-required'),
+        fieldStatus: p('field-status'),
         reset: p('field-reset'),
         fieldAction: p('field-action'),
         inputUnit: p('input-unit'),

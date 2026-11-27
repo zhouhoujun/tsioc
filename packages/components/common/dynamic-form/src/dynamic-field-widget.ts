@@ -64,6 +64,40 @@ export class DynamicFieldWidgetComponent implements AfterViewInit, OnDestroy {
     get error(): string { return this._error; }
     protected _error = '';
 
+    /** Async validation is running for this field. */
+    @Attribute()
+    set pending(value: boolean | string) {
+        this._pending = value === true || value === 'true';
+    }
+    get pending(): boolean { return this._pending; }
+    protected _pending = false;
+
+    @Attribute()
+    set valid(value: boolean | string) {
+        this._valid = value === true || value === 'true';
+    }
+    get valid(): boolean { return this._valid; }
+    protected _valid = false;
+
+    /** `default | pending | valid | invalid`; forwarded for host styling. */
+    @Attribute()
+    set status(value: string) {
+        this._status = String(value || '') || (this._pending ? 'pending' : this._valid ? 'valid' : 'default');
+    }
+    get status(): string { return this._status; }
+    protected _status = 'default';
+
+    /** Message produced by the async pass (distinct from injected issues). */
+    @Attribute()
+    set asyncError(value: string) {
+        this._asyncError = String(value || '');
+    }
+    get asyncError(): string { return this._asyncError; }
+    protected _asyncError = '';
+
+    @Attribute() pendingLabel = 'Checking…';
+    @Attribute() validLabel = 'Valid';
+
     /** List-row index when hosted inside a repeatable field. */
     @Attribute() itemIndex?: number;
     /** Accessible label/id wiring forwarded to the widget control. */
@@ -101,6 +135,12 @@ export class DynamicFieldWidgetComponent implements AfterViewInit, OnDestroy {
             values: this.values,
             disabled: this.disabled,
             error: this.error,
+            pending: this.pending,
+            valid: this.valid,
+            status: this.status,
+            asyncError: this.asyncError,
+            pendingLabel: this.pendingLabel,
+            validLabel: this.validLabel,
             changeAction: (next: any) => this.changeAction?.(this.field, next, this.itemIndex),
             label: this.label,
             errorId: this.errorId,

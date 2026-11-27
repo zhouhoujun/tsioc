@@ -1,15 +1,18 @@
 import { AfterViewInit, Attribute, Component, NoReactive, OnDestroy, ViewChild } from '@tsdi/components';
 import {
+    createTypedPathCompletion,
     DynamicFormChange,
     DynamicFormComponent,
     DynamicFormField,
     DynamicFormSchema,
     DynamicFormTypedSource,
+    typedPathsFromSuggestions,
 } from '@tsdi/components/common/dynamic-form';
 import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
 import { WORKFLOW_TYPED_CODEC } from '../workflow-typed-value';
+import { workflowTypedPaths } from '../workflow-typed-paths';
 import { WorkflowInspectorFieldView, WorkflowInspectorModel } from '../types';
 import { WorkflowReferenceWidgetComponent } from './workflow-reference-widget';
 import { WorkflowReferenceMultiWidgetComponent } from './workflow-reference-multi-widget';
@@ -123,6 +126,7 @@ function schemaKey(model: WorkflowInspectorModel): string {
             </div>
             <dynamic-form #nodeForm classPrefix="workflow" :schema="formSchema" :value="formValue"
                 :contextKey="model.nodeId" :messages="formMessages" :emptyLabel="noPropertiesLabel"
+                :pendingLabel="fieldCheckingLabel" :validLabel="fieldValidLabel"
                 :resetFieldLabel="resetFieldLabel" :changeAction="formChange" :blurAction="formBlur"
                 :actionAction="formAction" :listItemActionAction="formListAction">
             </dynamic-form>
@@ -162,6 +166,8 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
     @Attribute() actionAction?: (key: string, actionId: string, nodeId?: string) => void;
     @Attribute() restoreAction?: () => void;
     @Attribute() codeSuggestions: string[] = [];
+    /** Run context used to resolve typed-value completion paths. */
+    @Attribute() typedContext: any = {};
 
     @ViewChild('nodeForm', DynamicFormComponent) nodeForm?: DynamicFormComponent;
 
@@ -244,6 +250,8 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
     get restoreLabel(): string { return this.t('restoreDefaults', 'Reset'); }
     get resetFieldLabel(): string { return this.t('resetField', 'Reset to default'); }
     get noPropertiesLabel(): string { return this.t('noProperties', 'This node has no editable properties.'); }
+    get fieldCheckingLabel(): string { return this.t('fieldChecking', 'Checking…'); }
+    get fieldValidLabel(): string { return this.t('fieldValid', 'Valid'); }
     get namePlaceholder(): string { return this.t('namePlaceholder', 'Node name'); }
     get descriptionPlaceholder(): string { return this.t('descriptionPlaceholder', 'Optional note for this node'); }
     get requiredMessage(): string { return this.t('requiredMessage', 'Required'); }
@@ -273,7 +281,7 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
      * runtime identifiers; literal classes are translated.
      */
     protected get typedValueSources(): DynamicFormTypedSource[] {
-        return [
+        const sources: DynamicFormTypedSource[] = [
             { value: 'literal', label: this.t('typedLiteral', 'Literal') },
             { value: 'num', label: this.t('typedNumber', 'Number'), input: 'number' },
             { value: 'bool', label: this.t('typedBoolean', 'Boolean') },
@@ -286,6 +294,27 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
             { value: 'env', label: 'env' },
             { value: 'node', label: 'node' }
         ];
+        const completionScopes = new Set(['msg', 'flow', 'global', 'env', 'node']);
+        return sources.map(source => {
+            if (!completionScopes.has(source.value)) {
+                return source;
+            }
+            return {
+                ...source,
+                completion: source.value as DynamicFormTypedSource['completion'],
+                // Resolve paths per request so a newly completed run enriches
+                // completion without rebuilding the form schema.
+                completionSource: (query: string) =>
+                    createTypedPathCompletion(this.typedSourcePaths(source.value))(query)
+            };
+        });
+    }
+
+    /** Run-context paths plus host code suggestions for one typed scope. */
+    protected typedSourcePaths(source: string): string[] {
+        const paths = new Set<string>(workflowTypedPaths(this.typedContext)?.[source] || []);
+        typedPathsFromSuggestions(this.codeSuggestions, source).forEach(path => paths.add(path));
+        return Array.from(paths);
     }
 
     private buildFormSchema(): DynamicFormSchema {

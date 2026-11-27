@@ -110,7 +110,7 @@ function sameModelKey(previous: any[], next: any[]): boolean {
                 <workflow-inspector #inspector :model="inspectorModel" :locale="locale"
                     :changeAction="inspectorChange" :restoreAction="inspectorRestore"
                     :actionAction="inspectorAction"
-                    :codeSuggestions="codeSuggestions"></workflow-inspector>
+                    :codeSuggestions="codeSuggestions" :typedContext="runContext"></workflow-inspector>
             </workspace-right>
             <workspace-bottom>
                 <workflow-run-history v-if="showRunHistory" :items="runHistory" :locale="locale"

@@ -1,6 +1,7 @@
 import type { FormGroup } from '@tsdi/components/forms';
 import type {
     DynamicFormField,
+    DynamicFormFieldStatus,
     DynamicFormIssue,
     DynamicFormSchema,
     DynamicFormValidateResult
@@ -17,6 +18,8 @@ export interface DynamicFormValidationHost {
     form?: FormGroup;
     externalIssues: Record<string, DynamicFormIssue>;
     asyncIssues: Record<string, DynamicFormIssue>;
+    /** Last validation outcome per field (`pending` while an async check runs). */
+    fieldStatuses?: Record<string, DynamicFormFieldStatus>;
     validating: boolean;
     submitAttempted: boolean;
     validateOn: 'none' | 'change' | 'blur' | 'submit';
@@ -72,6 +75,11 @@ export function setFormIssues(host: DynamicFormValidationHost, issues: DynamicFo
         };
     });
     host.externalIssues = next;
+    // Stored outcomes only cover async checks; host issues are derived live in
+    // `fieldStatus`, so drop stale "valid" markers for the affected fields.
+    const statuses = { ...(host.fieldStatuses || {}) };
+    Object.keys(next).forEach(key => delete statuses[key]);
+    host.fieldStatuses = statuses;
     host.validityAction?.(isFormValid(host), mergedFormErrors(host));
 }
 
@@ -94,6 +102,12 @@ export function clearFormIssues(
     }
     if (source === 'async' || source === 'all') {
         host.asyncIssues = drop(host.asyncIssues);
+    }
+    const affected = keys || Object.keys(host.fieldStatuses || {});
+    if (affected.length) {
+        const statuses = { ...(host.fieldStatuses || {}) };
+        affected.forEach(key => delete statuses[key]);
+        host.fieldStatuses = statuses;
     }
 }
 
@@ -119,6 +133,22 @@ export async function validateFormAsync(host: DynamicFormValidationHost): Promis
     const issues: Record<string, DynamicFormIssue> = {};
     const visible = host.schemaFields().filter(field =>
         !field.hidden && field.type !== 'hidden' && host.isVisible(field));
+    // Drop the previous outcome and surface "checking" while the async run is
+    // in flight. Only fields with a validator get a pending marker; the schema
+    // hook is cross-field and does not own a single control.
+    const pendingKeys = visible
+        .filter(field => typeof field.validate === 'function')
+        .map(field => field.key);
+    if (pendingKeys.length) {
+        const nextIssues = { ...host.asyncIssues };
+        const statuses = { ...(host.fieldStatuses || {}) };
+        pendingKeys.forEach(key => {
+            delete nextIssues[key];
+            statuses[key] = 'pending';
+        });
+        host.asyncIssues = nextIssues;
+        host.fieldStatuses = statuses;
+    }
     for (const field of visible) {
         if (typeof field.validate !== 'function') {
             continue;
@@ -140,6 +170,10 @@ export async function validateFormAsync(host: DynamicFormValidationHost): Promis
         if (message) {
             issues[field.key] = { key: field.key, message, severity: 'error' };
         }
+        host.fieldStatuses = {
+            ...(host.fieldStatuses || {}),
+            [field.key]: message ? 'invalid' : 'valid'
+        };
     }
     if (typeof host._schema.validate === 'function') {
         try {
@@ -245,4 +279,57 @@ export function scheduleFormValidation(host: DynamicFormValidationHost, mode: 'c
 export function issueSeverityFor(host: DynamicFormValidationHost, field: DynamicFormField): string {
     const issue = fieldIssue(host as any, field);
     return issue ? (issue.severity || 'error') : '';
+}
+
+/**
+ * Effective validation state for a field. Injected/host issues and sync errors
+ * win over stored async outcomes, so an earlier "valid" marker can never mask
+ * a newly injected reference error.
+ */
+export function fieldStatus(
+    host: DynamicFormValidationHost,
+    field: DynamicFormField
+): DynamicFormFieldStatus {
+    const injected = fieldIssue(host as any, field);
+    if (injected && (injected.severity || 'error') !== 'warning') {
+        return 'invalid';
+    }
+    const stored = host.fieldStatuses?.[field.key];
+    if (stored === 'pending') {
+        return 'pending';
+    }
+    if (errorFor(host as any, field)) {
+        if (!(injected && injected.severity === 'warning')) {
+            return 'invalid';
+        }
+        // A warning masks the sync message in `errorFor`; still report a real
+        // control/typed error instead of pretending the field is valid.
+        if (typedCodecError(host as any, field)) {
+            return 'invalid';
+        }
+        const control = (host as any).form?.get(field.key);
+        if (control && !control.valid && (control.dirty || control.touched || host.submitAttempted)) {
+            return 'invalid';
+        }
+    }
+    if (stored === 'valid') {
+        return 'valid';
+    }
+    return 'default';
+}
+
+export function fieldPending(host: DynamicFormValidationHost, field: DynamicFormField): boolean {
+    return fieldStatus(host, field) === 'pending';
+}
+
+export function fieldValid(host: DynamicFormValidationHost, field: DynamicFormField): boolean {
+    return fieldStatus(host, field) === 'valid';
+}
+
+/** Message produced by the async validation pass (not host-injected issues). */
+export function fieldAsyncError(
+    host: DynamicFormValidationHost,
+    field: DynamicFormField
+): string {
+    return host.asyncIssues?.[field.key]?.message || '';
 }

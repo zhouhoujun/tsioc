@@ -206,6 +206,63 @@ export const WORKFLOW_DESIGNER_INSPECTOR_CSS = `/* Inspector */
     color: #dc2626;
 }
 
+.workflow-field-status {
+    margin-left: auto;
+    font-size: 10px;
+    line-height: 1.4;
+    color: #64748b;
+    white-space: nowrap;
+}
+
+.workflow-field-status[data-status="pending"] {
+    color: #2563eb;
+}
+
+.workflow-field-status[data-status="valid"] {
+    color: #15803d;
+}
+
+.workflow-typed-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.workflow-typed-suggestions {
+    display: flex;
+    flex-direction: column;
+    max-height: 168px;
+    overflow-y: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.workflow-typed-suggestion {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    border: 0;
+    background: transparent;
+    padding: 3px 8px;
+    color: #0f172a;
+    font-size: 11px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.workflow-typed-suggestion[aria-selected="true"],
+.workflow-typed-suggestion:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.workflow-typed-suggestion-description {
+    color: #64748b;
+    font-size: 10px;
+}
+
 .workflow-field-reset {
     opacity: 0;
     border: 0;

@@ -15,6 +15,7 @@ import {
 import { resolveWorkflowValue } from '../src/visual/workflow-runtime';
 import { validateWorkflowConfigs } from '../src/visual/workflow-config-validation';
 import { VisualWorkflowDefinition } from '../src/visual/types';
+import { WorkflowTypedValueWidgetComponent } from '../src/visual/components/workflow-typed-value-widget';
 
 describe('Workflow typed values', () => {
     const context: any = {
@@ -241,6 +242,54 @@ describe('Workflow typed values', () => {
             expect(issues.some(item => item.fieldKey === 'rules[0].value' && /Invalid JSON literal/.test(item.message))).toBe(true);
             expect(issues.some(item => item.fieldKey === 'rules[1].value' && /Not a number/.test(item.message))).toBe(true);
             expect(issues.some(item => item.fieldKey === 'rules[2].value' && /Invalid regular expression/.test(item.message))).toBe(true);
+        });
+
+        it('completes typed paths and commits the selected path', async () => {
+            const widget = new WorkflowTypedValueWidgetComponent();
+            const changes: any[] = [];
+            widget.field = {
+                key: 'value',
+                type: 'text',
+                typedSources: [
+                    { value: 'literal', label: 'Literal' },
+                    {
+                        value: 'msg',
+                        label: 'msg',
+                        completion: 'msg',
+                        completionSource: (query: string) => [
+                            { label: 'payload.total', value: 'payload.total' },
+                            { label: 'payload.name', value: 'payload.name' }
+                        ].filter(item => !query || item.value.startsWith(query))
+                    }
+                ]
+            } as any;
+            widget.source = 'msg';
+            widget.changeAction = value => changes.push(value);
+
+            widget.inputText({ target: { value: 'payload.' } });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(widget.completionOpen).toBe(true);
+            expect(widget.suggestions.map(item => item.value)).toEqual(['payload.total', 'payload.name']);
+
+            // Arrow keys move the active suggestion; Enter commits it as a
+            // typed reference and closes the panel.
+            widget.completionKeydown({ key: 'ArrowDown', preventDefault() { /* noop */ } });
+            widget.completionKeydown({ key: 'Enter', preventDefault() { /* noop */ } });
+            expect(widget.completionOpen).toBe(false);
+            expect(changes[changes.length - 1]).toEqual({ type: 'msg', path: 'payload.name' });
+
+            // Escape/blur close without changing the typed value.
+            widget.inputText({ target: { value: 'pay' } });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(widget.completionOpen).toBe(true);
+            widget.completionKeydown({ key: 'Escape', preventDefault() { /* noop */ } });
+            expect(widget.completionOpen).toBe(false);
+
+            // Literal sources have no completion hook.
+            widget.source = 'literal';
+            widget.text = 'plain';
+            widget.requestCompletion();
+            expect(widget.completionOpen).toBe(false);
         });
 
         it('accepts references and readable literals', () => {

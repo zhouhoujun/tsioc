@@ -15,6 +15,8 @@ export const DYNAMIC_FORM_TEMPLATE = `
                 <div [class]="fieldClass(field)" v-for="field in group.fields" data-field-key="{{field.key}}">
                     <div [class]="classes.labelRow" v-if="field.type !== 'hidden'">
                         <label [class]="classes.label">{{fieldLabel(field)}}<span [class]="classes.required" v-if="isRequired(field)">*</span></label>
+                        <span [class]="classes.fieldStatus" data-status="{{fieldStatus(field)}}"
+                            aria-live="polite" v-if="fieldStatus(field) === 'pending' || fieldStatus(field) === 'valid'">{{fieldStatus(field) === 'pending' ? pendingLabel : validLabel}}</span>
                         <span class="df-field-actions">
                         <button [class]="classes.fieldAction" v-for="action in field.actions" type="button"
                             data-field-action="{{action.id}}"
@@ -41,6 +43,9 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         :value="fieldValue(field)" :values="formValues"
                         :disabled="field.disabled || field.readonly"
                         :error="errorFor(field)" :changeAction="changeWidgetValue"
+                        :pending="fieldPending(field)" :valid="fieldValid(field)"
+                        :status="fieldStatus(field)" :asyncError="fieldAsyncError(field)"
+                        :pendingLabel="pendingLabel" :validLabel="validLabel"
                         :label="fieldLabel(field)" :errorId="fieldErrorId(field)"
                         :hintId="fieldHintId(field)" :describedBy="describedByFor(field)"
                         :required="isRequired(field)"></dynamic-field-widget>

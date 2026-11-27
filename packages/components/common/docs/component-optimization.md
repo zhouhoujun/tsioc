@@ -332,6 +332,16 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
     边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
     等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。
+- **字段校验状态与 typed 路径补全（2026-11-27）**
+  - `dynamic-form` 异步校验期间向字段/widget 透传 `pending`/`valid`/
+    `status`/`asyncError`，标签行显示“检查中…/有效”；值变化会清除旧结果，
+    host issue 与 warning 优先按严重级别处理。
+  - `DynamicFormTypedSource` 支持 `completion`（msg/flow/global/env/node/
+    jsonata）与 `completionSource(query, signal)`；共享
+    `TypedCompletionController` 负责请求序号/abort，`collectTypedPaths` 按作用域
+    收集运行期路径。
+  - workflow typed widget 提供内联建议列表、方向键/Enter/Escape 键盘契约，
+    并从上次运行的 `msg`/`flow`/`global`/`env`/`node` 上下文补全。
 - **Catalog 产物**
   - `npm run catalog` 现在同时生成 `docs/catalog.html`（可浏览 demo/属性表）
     和 `docs/catalog.md`（Markdown 属性表）；生成器从 `@Attribute` 字段/getter

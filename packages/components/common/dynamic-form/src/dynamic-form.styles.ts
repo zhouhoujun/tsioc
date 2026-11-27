@@ -89,6 +89,22 @@ export const DYNAMIC_FORM_CSS = `
     color: var(--df-danger);
 }
 
+.df-field-status {
+    margin-left: auto;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--df-text-muted);
+    white-space: nowrap;
+}
+
+.df-field-status[data-status="pending"] {
+    color: var(--df-primary);
+}
+
+.df-field-status[data-status="valid"] {
+    color: #15803d;
+}
+
 .df-field-reset {
     opacity: 0;
     border: 0;

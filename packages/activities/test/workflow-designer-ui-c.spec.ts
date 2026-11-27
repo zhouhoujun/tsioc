@@ -8,6 +8,7 @@ import { WorkflowDesignerComponent } from '../src/visual/components/workflow-des
 import { InMemoryWorkflowDefinitionStore } from '../src/visual/workflow-store';
 import { createDefaultWorkflowDefinition } from '../src/visual/workflow-designer';
 import { workflowNodeFrame } from '../src/visual/workflow-geometry';
+import { workflowTypedPaths } from '../src/visual/workflow-typed-paths';
 import { WORKFLOW_ACTION_BUS } from '../src/visual/workflow-action-bus';
 import { VisualWorkflowService } from '../src/visual/VisualWorkflowService';
 /** Minimal host so the shared application boots without rendering a designer. */
@@ -353,6 +354,34 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelector('.workflow-expression-panel')).toBeFalsy();
         const rules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
         expect(rules?.[0]?.value).toEqual({ type: 'expression', value: 'payload.total * 2' });
+    });
+
+    it('completes typed reference paths from the run context', async () => {
+        const preview = ref.instance.preview!;
+        preview.runContext = {
+            msg: { payload: { total: 21, name: 'demo' }, topic: 'orders' },
+            flow: { count: 2 }
+        } as any;
+        const node = ref.instance.designer.addNode('condition', { x: 40, y: 40 })!;
+        ref.instance.designer.updateNodeConfig(node.id, { operator: 'equals' });
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        expect(workflowTypedPaths(preview.runContext).msg).toContain('payload.total');
+        const inspector = (preview as any).inspector;
+        expect(workflowTypedPaths(inspector.typedContext).msg).toContain('payload.total');
+        // The inspector exposes the typed widget and its source completion
+        // hook; the widget's own suggestion/keyboard flow is covered by
+        // workflow-typed-widget.spec.ts.
+        const field = root.querySelector('.workflow-field[data-field-key="value"]') as any;
+        expect(field).toBeTruthy();
+        expect(field.querySelector('.workflow-field-value-type')).toBeTruthy();
+        expect(field.querySelector('.workflow-typed-input')).toBeTruthy();
+        const dynamicField = (ref.instance.preview as any)?.inspector?.nodeForm?.schema?.fields
+            ?.find((item: any) => item.key === 'value');
+        const completion = dynamicField?.typedSources?.find((item: any) => item.value === 'msg')?.completionSource;
+        expect(typeof completion).toBe('function');
+        expect(await completion('payload.')).toContainEqual({ label: 'payload.name', value: 'payload.name' });
     });
 
     it('edits node scope filters with a multi-select', async () => {

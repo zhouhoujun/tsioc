@@ -76,13 +76,46 @@ export interface DynamicFormValidationContext {
     signal?: AbortSignal;
 }
 
+export interface DynamicFormTypedCompletionItem {
+    label: string;
+    value: string;
+    description?: string;
+}
+
+export interface DynamicFormTypedCompletionResult {
+    items: DynamicFormTypedCompletionItem[];
+    total?: number;
+}
+
+/**
+ * Async path completion for a typed source. The host receives the current
+ * text (without the source prefix) and resolves candidates for that scope;
+ * the widget owns request ordering/abort semantics.
+ */
+export type DynamicFormTypedCompletionSource = (
+    query: string,
+    signal?: AbortSignal
+) => DynamicFormTypedCompletionResult
+    | DynamicFormTypedCompletionItem[]
+    | Promise<DynamicFormTypedCompletionResult | DynamicFormTypedCompletionItem[]>;
+
 export interface DynamicFormTypedSource {
     /** Selector value; hosts may add sources (`num`, `json`, `jsonata`, ...). */
     value: string;
     label: string;
     /** Input control used while this source is active (defaults to the field type). */
     input?: 'text' | 'number' | 'password' | 'url';
+    /**
+     * Completion scope for path-like sources. Hosts use it to decide which
+     * runtime values (run context, last message, environment) feed the source.
+     */
+    completion?: 'msg' | 'flow' | 'global' | 'env' | 'node' | 'jsonata';
+    /** Optional async path completion; typing stays possible without candidates. */
+    completionSource?: DynamicFormTypedCompletionSource;
 }
+
+/** Field validation feedback surfaced to widgets and the label row. */
+export type DynamicFormFieldStatus = 'default' | 'pending' | 'valid' | 'invalid';
 
 /** Stored typed value split into the selector source and editable text. */
 export interface DynamicFormTypedDecoded {
