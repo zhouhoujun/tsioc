@@ -15,6 +15,7 @@ ui-accordion {
     min-width: 0;
 }
 
+.ui-accordion-heading { display: contents; }
 .ui-accordion {
     display: flex;
     flex-direction: column;

@@ -45,6 +45,7 @@ interface AccordionViewItem extends AccordionItem {
     selector: 'ui-accordion',
     template: `
     <section class="{{accordionClass}}" data-expanded="{{expandedText}}">
+        <div class="ui-accordion-heading" role="heading" aria-level="{{headingLevelNumber}}">
         <button class="ui-accordion-header" type="button" data-plain="true"
             id="{{headerElementId}}"
             aria-expanded="{{expandedText}}"
@@ -57,6 +58,7 @@ interface AccordionViewItem extends AccordionItem {
             <span class="ui-accordion-title">{{title}}</span>
             <span class="ui-accordion-count" v-if="hasCount">{{count}}</span>
         </button>
+        </div>
         <div class="ui-accordion-body" id="{{bodyElementId}}"
             role="region" aria-labelledby="{{headerElementId}}"
             aria-hidden="{{!expanded}}" v-show="expanded">
@@ -87,6 +89,7 @@ export class AccordionComponent {
     @Attribute() count: number | string = '';
     @Attribute() items: AccordionItem[] = [];
     @Attribute() className = '';
+    @Attribute() headingLevel: number | string = 3;
     @Attribute() selectAction?: (item: any) => void;
     /** Row dragstart; receives `item.value` when provided. */
     @Attribute() dragStartAction?: (event: any, item: any) => void;
@@ -149,6 +152,10 @@ export class AccordionComponent {
 
     get bodyElementId(): string {
         return `${this.uid}-body`;
+    }
+
+    get headingLevelNumber(): number {
+        return Math.max(1, Math.min(6, Math.floor(Number(this.headingLevel) || 3)));
     }
 
     get hasCount(): boolean {

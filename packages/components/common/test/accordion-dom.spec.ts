@@ -82,6 +82,9 @@ export class AccordionDomTest {
         expect(accordion.classList.contains('is-md')).toEqual(true);
         expect(accordion.classList.contains('is-default')).toEqual(true);
         expect(header.getAttribute('aria-expanded')).toEqual('true');
+        const heading = root.querySelector('.ui-accordion-heading') as HTMLElement;
+        expect(heading.getAttribute('role')).toEqual('heading');
+        expect(heading.getAttribute('aria-level')).toEqual('3');
         expect(header.getAttribute('aria-label')).toEqual('HTTP group');
         expect(header.id).toEqual(body.getAttribute('aria-labelledby'));
         expect(body.id).toEqual(header.getAttribute('aria-controls'));
