@@ -66,6 +66,19 @@ export class TreeTest {
         expect(tree.visibleRows.some(row => row.key === tree.activeRow()?.key)).toBe(true);
     }
 
+    @Test('reorders visible tree rows by drag and Alt+Arrow')
+    async reordersRows() {
+        const { tree } = await this.mount();
+        tree.draggable = true;
+        let order: string[] = [];
+        tree.reorderAction = ids => { order = ids; };
+        tree.dragStart(tree.viewItems[0], { dataTransfer: { setData() { } } });
+        tree.dropOn(tree.viewItems[1], { preventDefault() { } });
+        tree.onKeydown(tree.viewItems[1], { key: 'ArrowDown', altKey: true, preventDefault() { } });
+        expect(order.length).toBeGreaterThan(0);
+        expect(order).toContain('root');
+    }
+
     @Test('type-ahead moves selection to the next matching label')
     async typeahead() {
         const { tree } = await this.mount();

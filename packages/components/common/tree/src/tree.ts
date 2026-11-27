@@ -58,7 +58,9 @@ interface TreeViewItem {
             aria-checked="{{checkable ? rowChecked(entry) : null}}"
             aria-disabled="{{entry.disabled}}"
             tabindex="{{tabIndexFor(entry)}}"
-            focusable="{{!entry.disabled}}"
+            focusable="{{!entry.disabled}}" [draggable]="draggable"
+            @dragstart="dragStart(entry, $event)" @dragover="dragOver($event)"
+            @drop="dropOn(entry, $event)" @dragend="dragEnd()"
             @keydown="onKeydown(entry, $event)"
             v-for="entry in visibleRows" trackBy="key">
             <span class="ui-tree-row" @click="activate(entry)">
@@ -102,6 +104,11 @@ export class TreeComponent {
     /** Lazy branch loader; return the children for an unloaded node. */
     @Attribute() loadChildren?: (node: TreeNode) => TreeNode[] | Promise<TreeNode[]>;
     @Attribute() loadErrorAction?: (error: any, node: TreeNode) => void;
+    @Attribute() reorderAction?: (ids: string[], id: string, targetId: string) => void;
+    @Attribute()
+    get draggable(): boolean { return this._draggable; }
+    set draggable(value: boolean | string) { this._draggable = normalizeBoolean(value); }
+
     @Attribute()
     get checkable(): boolean { return this._checkable; }
     set checkable(value: boolean | string) { this._checkable = normalizeBoolean(value); }
@@ -132,6 +139,8 @@ export class TreeComponent {
     private loadingKeys: string[] = [];
     private typeaheadBuffer = '';
     private typeaheadAt = 0;
+    private draggingKey = '';
+    private _draggable = false;
 
     get treeClass(): string {
         return this.className;
@@ -493,6 +502,11 @@ export class TreeComponent {
             return;
         }
         const key = String(event?.key || '');
+        if (event?.altKey && (key === 'ArrowUp' || key === 'ArrowDown')) {
+            event?.preventDefault?.();
+            this.reorderByKeyboard(row, key === 'ArrowDown' ? 1 : -1);
+            return;
+        }
         if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
             event?.preventDefault?.();
             this.activate(row);
@@ -555,6 +569,41 @@ export class TreeComponent {
                 this.select(parent);
             }
         }
+    }
+
+    dragStart(entry: TreeViewItem, event?: any): void {
+        if (!this._draggable || entry?.disabled) { return; }
+        this.draggingKey = entry.key;
+        event?.dataTransfer?.setData?.('text/plain', entry.key);
+    }
+
+    dragOver(event?: any): void { if (this.draggingKey) { event?.preventDefault?.(); } }
+
+    dropOn(entry: TreeViewItem, event?: any): void {
+        event?.preventDefault?.();
+        const source = this.draggingKey;
+        this.draggingKey = '';
+        if (!source || source === entry?.key || !this.reorderAction) { return; }
+        const ids = this.viewItems.map(row => row.key);
+        const from = ids.indexOf(source);
+        const to = ids.indexOf(entry.key);
+        if (from < 0 || to < 0) { return; }
+        const [moved] = ids.splice(from, 1);
+        ids.splice(to, 0, moved);
+        this.reorderAction(ids, source, entry.key);
+    }
+
+    dragEnd(): void { this.draggingKey = ''; }
+
+    protected reorderByKeyboard(row: TreeViewItem, delta: number): void {
+        if (!this.reorderAction) { return; }
+        const ids = this.viewItems.map(item => item.key);
+        const from = ids.indexOf(row.key);
+        const to = from + delta;
+        if (from < 0 || to < 0 || to >= ids.length) { return; }
+        [ids[from], ids[to]] = [ids[to], ids[from]];
+        this.reorderAction(ids, row.key, this.viewItems[to]?.key || '');
+        void Promise.resolve().then(() => this.focusRow(this.viewItems[to]));
     }
 
     protected typeaheadMatch(key: string, current: number): TreeViewItem | undefined {
