@@ -10,7 +10,7 @@ import { DataTableComponent, DataTableModule } from '../data-table';
     selector: 'data-table-columns-host',
     imports: [DataTableComponent],
     template: `
-    <ui-data-table :columns="columns" :rows="rows" rowKey="id" resizableColumns
+    <ui-data-table :columns="columns" :rows="rows" rowKey="id" resizableColumns showColumnChooser
         :columnOrder="columnOrder" :hiddenColumns="hiddenColumns"
         :columnWidths="columnWidths" :columnChangeAction="onColumns"></ui-data-table>`
 })
@@ -55,14 +55,47 @@ export class DataTableColumnsTest {
         await this.ctx.close();
     }
 
-    protected async mount(): Promise<{ root: HTMLElement; ref: ComponentRef<DataTableColumnsHostComponent> }> {
+    protected async mount(): Promise<{
+        root: HTMLElement;
+        ref: ComponentRef<DataTableColumnsHostComponent>;
+        table: ComponentRef<DataTableComponent>;
+    }> {
         const ref = this.ctx.get(ComponentFactory).create(DataTableColumnsHostComponent, {
             injector: this.ctx
         }) as ComponentRef<DataTableColumnsHostComponent>;
         await ref.render();
         await Promise.resolve();
         const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
-        return { root: table.hostView.rootNodes[0] as HTMLElement, ref };
+        return { root: table.hostView.rootNodes[0] as HTMLElement, ref, table };
+    }
+
+    @Test('opens the built-in column chooser and applies a hidden column')
+    async builtInChooser() {
+        const { root, ref, table } = await this.mount();
+        (root.querySelector('.ui-data-table-columns-trigger') as any).click();
+        await Promise.resolve();
+        await Promise.resolve();
+        const panel = root.querySelector('.ui-data-table-columns-panel') as any;
+        expect(panel).toBeTruthy();
+        const rows = panel.querySelectorAll('.ui-data-table-columns-row');
+        const role = Array.from(rows).find((row: any) => row.textContent.includes('Role')) as any;
+        (role.querySelector('.ui-data-table-columns-check') as any).click();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(ref.instance.columnState.hidden).toContain('role');
+        expect(table.instance.hiddenColumns).toContain('role');
+        expect(table.instance.viewColumns.map(column => column.key)).not.toContain('role');
+    }
+
+    @Test('closes the built-in column chooser on an outside pointer-down')
+    async builtInChooserOutside() {
+        const { root } = await this.mount();
+        (root.querySelector('.ui-data-table-columns-trigger') as any).click();
+        await Promise.resolve();
+        expect(root.querySelector('.ui-data-table-columns-panel')).toBeTruthy();
+        root.ownerDocument.body.dispatchEvent(new (root.ownerDocument.defaultView as any).Event('pointerdown', { bubbles: true }));
+        await Promise.resolve();
+        expect(root.querySelector('.ui-data-table-columns-panel')).toBeFalsy();
     }
 
     @Test('marks sticky columns and stacks their offsets')

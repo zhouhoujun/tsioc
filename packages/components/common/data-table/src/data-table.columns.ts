@@ -123,3 +123,21 @@ export function dataTableCellStyle(
     const column = viewColumns.find(entry => entry.key === cell.columnKey);
     return column ? dataTableColumnStyle(columns, widths, column) : cell.style;
 }
+
+export interface DataTableColumnLayoutHost {
+    columnOrder: string[];
+    hiddenColumns: string[];
+    columnWidths: Record<string, number>;
+    columnState: DataTableColumnState;
+    columnChangeAction?: (state: DataTableColumnState) => void;
+}
+
+/** Clear the controlled layout and persist the reset through the host. */
+export function resetDataTableColumnLayout(host: DataTableColumnLayoutHost): DataTableColumnState {
+    host.columnOrder = [];
+    host.hiddenColumns = [];
+    host.columnWidths = {};
+    const state = host.columnState;
+    host.columnChangeAction?.(state);
+    return state;
+}

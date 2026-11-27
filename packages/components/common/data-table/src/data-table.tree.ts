@@ -39,3 +39,22 @@ export function flattenDataTableTree(
     });
     return output;
 }
+
+/** Flattened tree rows for the table projection. */
+export function dataTableTreeEntries(
+    rows: DataTableRow[],
+    treeRows: boolean | undefined,
+    childrenKey: string,
+    keyOf: (row: DataTableRow, index: number) => string
+): DataTableTreeEntry[] {
+    return treeRows ? flattenDataTableTree(rows, childrenKey, keyOf) : [];
+}
+
+/** Source rows after tree flattening (or the plain async/local rows). */
+export function dataTableTreeSourceRows(
+    treeRows: boolean | undefined,
+    entries: DataTableTreeEntry[],
+    tableRows: DataTableRow[]
+): DataTableRow[] {
+    return treeRows ? entries.map(entry => entry.row) : tableRows;
+}

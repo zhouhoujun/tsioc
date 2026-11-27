@@ -339,6 +339,15 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     a11y audit 测试，chips 删除按钮具备可访问名称。
   - 新增组件继续使用 `--ui-*` token；P2 的 overlay/placement 仍复用既有
     `overlay-placement`/`overlay-outside`/`OverlayManager`。
+- **DataTable 内置列选择器（2026-11-27）**
+  - 新增 `ui-data-table-columns-button`：表头工具栏内的列选择器触发器，
+    复用 `ui-data-table-columns`，outside pointer-down/Escape 走共享
+    selection-panel policy。
+  - DataTable 增加 `showColumnChooser`/`columnsLabel`，通过
+    `applyColumnState` 写回 `columnOrder`/`hiddenColumns`/`columnWidths`
+    并回调 `columnChangeAction`。
+  - 新增 DOM 测试覆盖列隐藏与 outside 关闭；DataTable 主体通过拆分
+    tree/column 布局 helper 保持行数预算。
 - **TreeSelect 多选 chips（2026-11-27）**
   - `multiple` 模式在 trigger 内渲染可删除 chips（含 `removeLabel`），不再把
     多选值拼成逗号字符串；删除会本地更新 `checkedIds` 并回调 `removeAction`/

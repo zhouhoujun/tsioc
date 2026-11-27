@@ -3,13 +3,14 @@ import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { DataTableKeyboardController } from './data-table.keyboard';
 import { DataTableResizeController } from './data-table.resize';
-import { buildDataTableColumns, dataTableColumnState, dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
+import { buildDataTableColumns, dataTableColumnState, dataTableColumnStyle, dataTableCellStyle, resetDataTableColumnLayout } from './data-table.columns';
 import { dataTableAriaSort, dataTableSortDirection, dataTableSortPriority, nextDataTableSorts, resolveDataTableSorts } from './data-table.sort';
 import { buildDataTableRows } from './data-table.rows';
-import { filterDataTableTreeEntries, flattenDataTableTree } from './data-table.tree';
+import { dataTableTreeEntries, dataTableTreeSourceRows, filterDataTableTreeEntries } from './data-table.tree';
 import { commitCellEdit, editCellKeydown, isEditingCell, startCellEdit } from './data-table.edit';
 import { normalizeBoolean } from '../../src/ui';
 import { PaginationComponent } from '../../pagination/src/pagination';
+import { DataTableColumnsButtonComponent } from './data-table.columns-button';
 import {
     DataTableCell,
     DataTableColumn,
@@ -41,13 +42,18 @@ export * from './data-table.types';
  */
 @Component({
     selector: 'ui-data-table',
-    imports: [PaginationComponent],
+    imports: [PaginationComponent, DataTableColumnsButtonComponent],
     template: `
     <div class="ui-data-table {{tableClass}}">
     <div class="ui-data-table-scroll" @scroll="onScroll($event)">
     <div class="ui-data-table-content" role="table"
         aria-label="{{ariaLabel}}" aria-busy="{{loading}}" aria-rowcount="{{tableTotal}}">
         <div class="ui-data-table-caption" role="caption" v-if="caption">{{caption}}</div>
+        <div class="ui-data-table-toolbar" v-if="showColumnChooser">
+            <ui-data-table-columns-button :columns="columns" :hiddenColumns="hiddenColumns"
+                :columnOrder="columnOrder" :columnWidths="columnWidths" :label="columnsLabel"
+                :changeAction="applyColumnState"></ui-data-table-columns-button>
+        </div>
         <div class="ui-data-table-head {{headerClass}}" role="row">
             <span class="ui-data-table-cell ui-data-table-expand" role="columnheader" aria-hidden="true" v-if="expandable"></span>
             <span class="ui-data-table-cell ui-data-table-select" role="columnheader" v-if="selectable">
@@ -143,6 +149,11 @@ export class DataTableComponent {
     @Attribute() emptyLabel = '';
     @Attribute() loadingLabel = 'Loading…';
     @Attribute() caption = '';
+    /** Render the column chooser trigger in the table toolbar. */
+    @Attribute() get showColumnChooser(): boolean { return this._showColumnChooser; }
+    set showColumnChooser(value: boolean | string) { this._showColumnChooser = normalizeBoolean(value); }
+    private _showColumnChooser = false;
+    @Attribute() columnsLabel = 'Columns';
     @Attribute() ariaLabel = 'Table';
     @Attribute() className = '';
     @Attribute() sortAction?: (key: string, direction: DataTableSortDirection) => void;
@@ -343,33 +354,22 @@ export class DataTableComponent {
     get tableTotal(): number {
         return this.source && this._asyncTotal > 0 ? this._asyncTotal : this.filteredEntries.length;
     }
-    get treeEntries(): Array<{ row: DataTableRow; index: number; depth: number; parentKey: string }> {
-        return this.treeRows
-            ? flattenDataTableTree(this.rows, this.treeChildren, (row, index) => this.rowKeyOf(row, index))
-            : [];
-    }
-    get sourceRows(): DataTableRow[] {
-        return this.treeRows ? this.treeEntries.map(entry => entry.row) : this.tableRows;
-    }
-    get filteredEntries() {
-        return this.treeRows
-            ? filterDataTableTreeEntries(this.treeEntries, this.filters)
-            : filterDataTableRows(this.tableRows, this.filters);
-    }
+    get treeEntries() { return dataTableTreeEntries(this.rows, this.treeRows, this.treeChildren, (row, index) => this.rowKeyOf(row, index)); }
+    get sourceRows(): DataTableRow[] { return dataTableTreeSourceRows(this.treeRows, this.treeEntries, this.tableRows); }
+    get filteredEntries() { return this.treeRows ? filterDataTableTreeEntries(this.treeEntries, this.filters) : filterDataTableRows(this.tableRows, this.filters); }
     get columnState(): DataTableColumnState { return dataTableColumnState(this.columns, this.columnOrder, this.hiddenColumns, this.columnWidths); }
 
     /** Restore the declarative column layout and persist the reset. */
-    resetColumnLayout(): DataTableColumnState {
-        this.columnOrder = []; this.hiddenColumns = []; this.columnWidths = {};
-        const state = this.columnState; this.columnChangeAction?.(state); return state;
-    }
-    get activeSorts(): DataTableSort[] {
-        return resolveDataTableSorts(this.multiSort, this.sorts, this.sortKey, this.sortDirection);
-    }
-    get sortedEntries() {
-        const sorts = this.activeSorts;
-        return sorts.length ? sortDataTableRowsBy(this.filteredEntries, sorts) : this.filteredEntries;
-    }
+    resetColumnLayout(): DataTableColumnState { return resetDataTableColumnLayout(this); }
+    /** Apply a chooser state and persist it through the host callback. */
+    readonly applyColumnState = (state: DataTableColumnState): void => {
+        this.columnOrder = [...(state.order || [])];
+        this.hiddenColumns = [...(state.hidden || [])];
+        this.columnWidths = { ...(state.widths || {}) };
+        this.columnChangeAction?.(state);
+    };
+    get activeSorts(): DataTableSort[] { return resolveDataTableSorts(this.multiSort, this.sorts, this.sortKey, this.sortDirection); }
+    get sortedEntries() { return this.activeSorts.length ? sortDataTableRowsBy(this.filteredEntries, this.activeSorts) : this.filteredEntries; }
     get pageEntries() {
         const rows = this.sortedEntries;
         const size = this.pageSizeNumber;
