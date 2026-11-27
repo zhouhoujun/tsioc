@@ -1,7 +1,9 @@
 # @tsdi/components/common 对标最新 opencode（2026-11）
 
 > 基线：`packages/components/common`（63 个组件入口，renderer-neutral）
-> 参考：`~/workspace/opencode` @ `8d7477816f`（packages/ui、session-ui、tui、stories）
+> 参考：`~/workspace/opencode` @ `449c128a5b`（packages/ui、session-ui、tui、stories）
+> UI 深度对标（状态机/SearchList/Field/Theme/Motion）见
+> [`opencode-ui-deep-dive-2026-11-27.md`](./opencode-ui-deep-dive-2026-11-27.md)。
 > 目标：保留 IoC + Proxy 响应式 + 单模板跨 DOM/TUI 的架构，补齐 opencode 在
 > 组件工程化、可访问性、动效、表单与共享会话 UI 上的强项。
 
