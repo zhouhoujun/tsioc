@@ -130,7 +130,7 @@ S4 复跑后的关键数字：gateway route-match 10k p99 ≈ **0.0023 ms**（32
 |---|---|---|
 | 脚手架与 dev 体验 | scaffold 已带 dev/watch/health；full-stack（backend+discovery+gateway）与 broker-stack（gateway→Redis）示例已接入 gate | 新目录一条命令启动 HTTP+gateway+broker 示例 |
 | OTel 语义与仪表盘 | semconv 双发 + OTLP live nightly（opt-in）已落地；log-trace、SLO 模板待补 | 真实 collector 下 trace/metrics 可查；dashboard 可用 |
-| 真实注册中心 CI | Consul + Nacos + etcd（HTTP v3，lease）live 已接入；Eureka + zone-aware LB 待补 | 容器环境注册/发现/摘除回归通过 |
+| 真实注册中心 CI | Consul + Nacos + etcd + Eureka live 已接入；zone-aware LB 待补 | 容器环境注册/发现/摘除回归通过 |
 | Gateway 边缘增强 | retry budget + 上游 HTTP/2（allowH2）已落地；上游 WS、流式背压、canary 配置待补 | 长连接/1MB 流式/故障注入测试通过 |
 | Admin 运维 | 持久化规则/配置 store、HA 共享状态、RBAC/审计 | 多副本一致；越权请求可审计 |
 | 契约 registry | 契约版本库 + breaking gate + client 生成漂移检查 | 非兼容变更 CI 失败 |

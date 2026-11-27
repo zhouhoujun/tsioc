@@ -49,6 +49,9 @@ jobs:
         env:
           ALLOW_NONE_AUTHENTICATION: 'yes'
           ETCD_ADVERTISE_CLIENT_URLS: http://localhost:2379
+      eureka:
+        image: springcloud/eureka:latest
+        ports: ['8761:8761']
       rabbitmq:
         image: rabbitmq:3-management
         ports: ['5672:5672', '15672:15672']
@@ -123,6 +126,15 @@ jobs:
         run: |
           for i in $(seq 1 30); do
             curl -fsS http://127.0.0.1:2379/health && break
+            sleep 2
+          done
+          cd packages/microservices/discovery && npm test
+      - name: Eureka live discovery
+        env:
+          TSIO_TEST_EUREKA: '1'
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS -H 'Accept: application/json' http://127.0.0.1:8761/eureka/apps && break
             sleep 2
           done
           cd packages/microservices/discovery && npm test

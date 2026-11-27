@@ -4984,3 +4984,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百二十批（2026-11-16）：
   - Redis 双 Gateway 存活切换 E2E。
   - 回归：gateway 167（Redis 模式）。
+
+- 微服务框架第一百二十一批（2026-11-16）：
+  - Eureka live discovery test + nightly Eureka service。

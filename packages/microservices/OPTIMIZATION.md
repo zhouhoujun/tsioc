@@ -682,6 +682,11 @@
 - Redis 双 Gateway E2E 新增：一个实例关闭后，存活实例继续使用共享 cache 提供服务（HIT + 相同 payload）。
 - `TSIO_TEST_REDIS=1` 回归 gateway 167 passing。
 
+第一百二十一批（Eureka live nightly）：
+
+- 新增 `discovery/test/eureka-live.spec.ts`（`TSIO_TEST_EUREKA=1`）：真实注册/发现/注销。
+- `ms-nightly` 增加 springcloud/eureka 容器与 readiness 等待；普通套件跳过。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
