@@ -4987,3 +4987,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百二十一批（2026-11-16）：
   - Eureka live discovery test + nightly Eureka service。
+
+- 微服务框架第一百二十二批（2026-11-16）：
+  - EndpointSelection + Gateway zone-aware LB。
+  - 回归：discovery 91、gateway 162。

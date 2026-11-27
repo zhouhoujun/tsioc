@@ -37,6 +37,17 @@ describe('GatewayLoadBalancer', () => {
         runtime.endEndpointRequest('b');
     });
 
+    it('prefers endpoints in the configured zone', () => {
+        const lb = new GatewayLoadBalancer(new GatewayRuntime());
+        const pool = [
+            { id: 'a', name: 'svc', address: 'http://a', metadata: { zone: 'a' } },
+            { id: 'b', name: 'svc', address: 'http://b', metadata: { zone: 'b' } }
+        ] as any[];
+        const config = { ...route, loadBalance: { zone: 'b' } } as any;
+        expect(lb.select(config, pool)!.id).toBe('b');
+        expect(lb.select({ ...route, loadBalance: { zone: 'c', zoneFallback: false } } as any, pool)).toBeNull();
+    });
+
     it('keeps consistent hashing stable for the same key', () => {
         const lb = new GatewayLoadBalancer(new GatewayRuntime());
         const pool = endpoints();

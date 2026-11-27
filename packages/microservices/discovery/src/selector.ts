@@ -41,6 +41,16 @@ export interface EndpointSelectOptions {
      * per-service cursor.
      */
     nextIndex?: (key: string, size: number) => number;
+    /**
+     * preferred zone (read from `endpoint.metadata.zone`). When set, local
+     * endpoints are tried first.
+     */
+    zone?: string;
+    /**
+     * fall back to all endpoints when the preferred zone has none. Default true
+     * so a zonal outage does not take the service down.
+     */
+    zoneFallback?: boolean;
 }
 
 /**
@@ -57,6 +67,14 @@ export class EndpointSelection {
     select(endpoints: ServiceEndpoint[], options: EndpointSelectOptions = {}): ServiceEndpoint | null {
         if (!endpoints?.length) {
             return null;
+        }
+        if (options.zone) {
+            const local = endpoints.filter(endpoint => endpoint.metadata?.zone === options.zone);
+            if (local.length) {
+                endpoints = local;
+            } else if (options.zoneFallback === false) {
+                return null;
+            }
         }
         const strategy = options.strategy ?? 'round-robin';
         const key = options.key ?? endpoints[0]?.name ?? '';

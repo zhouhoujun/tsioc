@@ -1,6 +1,7 @@
 import expect = require('expect');
 import { ServiceEndpoint } from '../src/discovery';
 import {
+    EndpointSelection,
     RandomEndpointSelector,
     RoundRobinEndpointSelector,
     WeightedEndpointSelector,
@@ -103,5 +104,27 @@ describe('LeastConnectionsEndpointSelector', () => {
         sel.select(endpoints);
         sel.release(endpoints[0]);
         expect(sel.select(endpoints)!.id).toBe('a');
+    });
+});
+
+
+describe('EndpointSelection zone awareness', () => {
+    const endpoints: ServiceEndpoint[] = [
+        { id: 'a1', name: 'svc', address: '10.0.0.1:1', status: 'UP', metadata: { zone: 'a' } },
+        { id: 'a2', name: 'svc', address: '10.0.0.2:1', status: 'UP', metadata: { zone: 'a' } },
+        { id: 'b1', name: 'svc', address: '10.0.1.1:1', status: 'UP', metadata: { zone: 'b' } }
+    ];
+
+    it('prefers local-zone endpoints', () => {
+        const selection = new EndpointSelection();
+        for (let index = 0; index < 6; index++) {
+            expect(['a1', 'a2']).toContain(selection.select(endpoints, { zone: 'a' })!.id);
+        }
+    });
+
+    it('falls back to all zones or returns null when disabled', () => {
+        const selection = new EndpointSelection();
+        expect(selection.select(endpoints, { zone: 'c' })!.id).toBeDefined();
+        expect(selection.select(endpoints, { zone: 'c', zoneFallback: false })).toBeNull();
     });
 });

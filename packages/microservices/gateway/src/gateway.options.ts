@@ -187,6 +187,10 @@ export interface GatewayLoadBalanceOptions {
      * success-relative budget to avoid retry storms during outages.
      */
     retryBudget?: GatewayRetryBudgetOptions;
+    /** prefer endpoints whose `metadata.zone` matches. */
+    zone?: string;
+    /** fall back to all zones when the preferred zone has no endpoints. Default true. */
+    zoneFallback?: boolean;
 }
 
 export interface GatewayConfigSyncOptions {

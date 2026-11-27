@@ -687,6 +687,11 @@
 - 新增 `discovery/test/eureka-live.spec.ts`（`TSIO_TEST_EUREKA=1`）：真实注册/发现/注销。
 - `ms-nightly` 增加 springcloud/eureka 容器与 readiness 等待；普通套件跳过。
 
+第一百二十二批（Zone-aware LB）：
+
+- `EndpointSelection` 支持 `zone`/`zoneFallback`：优先 `metadata.zone` 匹配，缺失时回退全量；`zoneFallback:false` 可严格失败。
+- Gateway `loadBalance.zone/zoneFallback` 透传；discovery 91、gateway 162 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

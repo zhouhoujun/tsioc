@@ -38,7 +38,9 @@ export class GatewayLoadBalancer {
             hashKey: hashKey || route.path,
             weightOf: endpoint => Math.max(endpoint.weight ?? route.weight ?? 1, 0),
             activeOf: endpoint => this.runtime.getEndpointActiveRequests(endpoint.id),
-            nextIndex: (stateKey, size) => this.runtime.nextRoundIndex(stateKey, size)
+            nextIndex: (stateKey, size) => this.runtime.nextRoundIndex(stateKey, size),
+            zone: route.loadBalance?.zone,
+            zoneFallback: route.loadBalance?.zoneFallback
         });
     }
 
