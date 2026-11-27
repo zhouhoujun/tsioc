@@ -5010,3 +5010,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百二十七批（2026-11-16）：
   - 多进程 gateway chaos + ms-chaos gate + nightly。
+
+- 微服务框架第一百二十八批（2026-11-16）：
+  - broker-throughput probe + ms-broker-bench gate + nightly。

@@ -142,5 +142,9 @@ jobs:
             sleep 2
           done
           cd packages/microservices/discovery && npm test
+      - name: Broker throughput probe
+        env:
+          MS_BROKER_BENCH_PROFILE: '1'
+        run: bash scripts/agents-gate.sh ms-broker-bench
       - name: Performance regression
         run: bash scripts/agents-gate.sh ms-bench

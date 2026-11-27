@@ -718,6 +718,11 @@
 - 新增 `examples/chaos-gateway.ts` 与 `scripts/ms-chaos.mjs`：两个真实进程共享 Redis，SIGKILL 一个后存活进程继续命中共享 cache。
 - gate 新增 opt-in `ms-chaos`（`MS_CHAOS_PROFILE=1`），nightly 已接入；实测 PASS。
 
+第一百二十八批（Broker 吞吐探针）：
+
+- 新增 `benchmarks/broker-throughput.ts`：Redis Stream 发布 N 条、等待全部消费，输出 messages/sec 与 pending。
+- gate 新增 opt-in `ms-broker-bench`（`MS_BROKER_BENCH_PROFILE=1`），nightly 已接入；1k 实测 pending 0。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
