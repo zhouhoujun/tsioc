@@ -10,6 +10,7 @@ import { TabsComponent, TabsModule } from '../tabs';
 import { MenuBarComponent, MenuBarModule, MenuBarGroup } from '../menu-bar';
 import { DataTableComponent, DataTableModule } from '../data-table';
 import { ToastProviderComponent, ToastModule } from '../toast';
+import { SelectComponent, SelectModule } from '../select';
 import { auditA11y, formatViolations } from './support/a11y-audit';
 
 const THEMES = ['light', 'dark', 'high-contrast'];
@@ -45,7 +46,7 @@ function makeSource() {
 
 @Component({
     selector: 'a11y-matrix-host',
-    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent],
+    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent, SelectComponent],
     template: `
     <div class="theme-sample">
         <ui-button label="Save"></ui-button>
@@ -59,6 +60,8 @@ function makeSource() {
         <menu-bar label="Actions" :groups="menuGroups"></menu-bar>
         <ui-data-table ariaLabel="Rows" :columns="columns" :rows="rows"
             selectable="true" editable="true"></ui-data-table>
+        <select-list title="Assignees" :options="selectOptions" :values="assignees"
+            multiple searchable clearable></select-list>
         <ui-toast-provider></ui-toast-provider>
     </div>`
 })
@@ -73,6 +76,11 @@ class A11yMatrixHostComponent {
         { id: 'one', name: 'One', role: 'Owner' },
         { id: 'two', name: 'Two', role: 'Viewer' }
     ];
+    selectOptions = [
+        { label: 'Ada Lovelace', value: 'ada' },
+        { label: 'Grace Hopper', value: 'grace' }
+    ];
+    assignees = ['ada'];
 }
 
 @Suite('common visual/a11y state matrix')
@@ -88,7 +96,7 @@ export class VisualA11yMatrixTest {
         this.win = dom.window;
         this.doc = dom.window.document;
         this.ctx = await Application.run(A11yMatrixHostComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule, ToastModule],
+            deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule, ToastModule, SelectModule],
             providers: [{ provide: DOCUMENT, useValue: this.doc }]
         });
     }

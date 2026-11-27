@@ -167,6 +167,26 @@ export class SelectionParityTest {
         };
     }
 
+    @Test('select close, chip removal and clear are keyboard operable')
+    async selectKeyboardAffordances() {
+        const select = new SelectComponent();
+        const actions: string[] = [];
+        select.values = ['alpha', 'beta'];
+        select.removeAction = value => actions.push(`remove:${value}`);
+        select.valuesAction = values => actions.push(`values:${values.join(',')}`);
+        select.closeAction = () => actions.push('close');
+
+        select.removeValueKeydown('alpha', { key: 'Enter', preventDefault() { } });
+        expect(select.values).toEqual(['beta']);
+        select.clearValuesKeydown({ key: ' ' });
+        expect(select.values).toEqual([]);
+        select.closeKeydown({ key: 'Enter' });
+        expect(actions).toEqual(['remove:alpha', 'values:beta', 'values:', 'close']);
+
+        select.removeValueKeydown('beta', { key: 'Tab', preventDefault() { } });
+        expect(actions.length).toEqual(4);
+    }
+
     @Test('Home/End, wrapped arrows and Enter behave the same across selection widgets')
     async sharedKeyMatrix() {
         const { host, adapters } = await this.mount();

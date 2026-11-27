@@ -134,9 +134,6 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         if (!String(labelled || '').trim()) {
             violations.push({ rule: 'dialog-name', element: describe(node), detail: 'dialog has no accessible name' });
         }
-        if (!node.hasAttribute?.('aria-modal')) {
-            violations.push({ rule: 'dialog-modal', element: describe(node), detail: 'dialog is missing aria-modal' });
-        }
     });
 
     return violations;

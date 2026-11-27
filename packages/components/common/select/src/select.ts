@@ -25,7 +25,8 @@ export interface SelectOption {
     template: `
     <div class="console-panel select-list {{widthClass}}" role="dialog" aria-label="{{ariaLabel}}">
         <div class="select-shell {{suggestion ? 'select-suggestions' : 'select-card'}}">
-            <label class="dialog-close" data-cell-width="2" @click="close">{{closeLabel}}</label>
+            <label class="dialog-close" role="button" tabindex="0" focusable="true"
+                aria-label="{{closeTitle}}" data-cell-width="2" @click="close" @keydown="closeKeydown($event)">{{closeLabel}}</label>
             <select class="select-core"
                 aria-label="{{ariaLabel}}"
                 title="{{title}}" hint="{{hint}}" meta="{{meta}}"
@@ -39,8 +40,11 @@ export interface SelectOption {
                 @select-option="emitSelection($event)"></select>
             <div class="select-values" v-if="multiple && selectedLabels.length">
                 <span class="select-value" v-for="item in selectedLabels" trackBy="value">{{item.label}}<span
-                    class="select-value-remove" role="button" @click="removeValue(item.value)">✕</span></span>
-                <span class="select-clear" role="button" v-if="clearable" @click="clearValues">{{clearLabel}}</span>
+                    class="select-value-remove" role="button" tabindex="0" focusable="true"
+                    aria-label="{{removeValueTitle}} {{item.label}}"
+                    @click="removeValue(item.value)" @keydown="removeValueKeydown(item.value, $event)">✕</span></span>
+                <span class="select-clear" role="button" tabindex="0" focusable="true"
+                    v-if="clearable" @click="clearValues" @keydown="clearValuesKeydown($event)">{{clearLabel}}</span>
             </div>
             <input class="select-search" v-if="searchable" type="text" role="combobox"
                 aria-label="{{ariaLabel}}" aria-autocomplete="list" aria-expanded="true"
@@ -89,6 +93,7 @@ export class SelectComponent {
     get accessibilityLabel(): string { return this.ariaLabel; }
     set accessibilityLabel(value: string) { this.ariaLabel = String(value ?? ''); }
     @Attribute() closeLabel = '✕';
+    @Attribute() closeTitle = 'Close';
     /** Composer-attached suggestion lists keep the opencode rails. */
     @Attribute() suggestion = false;
     /** Content-fit the blocking menu instead of spanning the terminal. */
@@ -105,6 +110,7 @@ export class SelectComponent {
     @Attribute() valuesAction?: (values: string[]) => void;
     @Attribute() removeAction?: (value: string) => void;
     @Attribute() clearLabel = 'Clear';
+    @Attribute() removeValueTitle = 'Remove';
     @Attribute() filterPlaceholder = 'Search…';
     @Attribute() loadingLabel = 'Loading…';
     @Attribute() source?: SelectSource;
@@ -283,6 +289,17 @@ export class SelectComponent {
         this.values = next;
         this.removeAction?.(String(value));
         this.valuesAction?.(next);
+    }
+
+    closeKeydown(event: any): void { this.activateKey(event, () => this.close()); }
+    removeValueKeydown(value: string, event: any): void { this.activateKey(event, () => this.removeValue(value)); }
+    clearValuesKeydown(event: any): void { this.activateKey(event, () => this.clearValues()); }
+    protected activateKey(event: any, run: () => void): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            run();
+        }
     }
 
     clearValues(event?: Event): void {
