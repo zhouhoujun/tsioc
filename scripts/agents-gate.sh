@@ -31,7 +31,7 @@
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
 #            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
-#            ms-brokers ms-tsc ms-bench ms-broker-bench ms-examples ms-examples-broker ms-chaos ms-postgres ms-soak
+#            ms-brokers ms-tsc ms-bench ms-broker-bench ms-kafka-bench ms-examples ms-examples-broker ms-chaos ms-registry-chaos ms-postgres ms-soak
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -331,6 +331,42 @@ run_ms_group() {
     fi
 }
 
+# run_ms_kafka_bench — opt-in Kafka throughput probe.
+run_ms_kafka_bench() {
+    local id="ms-kafka-bench" label="microservice kafka throughput probe"
+    if [ "${MS_KAFKA_BENCH_PROFILE:-0}" != "1" ]; then
+        stage_skip "$id" "$label (opt-in; set MS_KAFKA_BENCH_PROFILE=1 with Kafka running)"
+        return
+    fi
+    local log="$LOG_DIR/ms-kafka-bench.log"
+    if (cd "$ROOT_DIR" && timeout 300 npx ts-node -r tsconfig-paths/register \
+        packages/microservices/benchmarks/kafka-throughput.ts >"$log" 2>&1); then
+        stage_pass "$id" "$label"
+    else
+        echo "--- ms-kafka-bench tail (last 30 lines) ---" >&2
+        tail -30 "$log" >&2
+        stage_fail "$id" "$label"
+    fi
+}
+
+# run_ms_registry_chaos — opt-in process-level registry jitter chaos.
+run_ms_registry_chaos() {
+    local id="ms-registry-chaos" label="microservice registry jitter chaos"
+    if [ "${MS_REGISTRY_CHAOS_PROFILE:-0}" != "1" ]; then
+        stage_skip "$id" "$label (opt-in; set MS_REGISTRY_CHAOS_PROFILE=1)"
+        return
+    fi
+    local log="$LOG_DIR/ms-registry-chaos.log"
+    if (cd "$ROOT_DIR" && timeout 180 npx ts-node -r tsconfig-paths/register \
+        packages/microservices/benchmarks/registry-chaos.ts >"$log" 2>&1); then
+        stage_pass "$id" "$label"
+    else
+        echo "--- ms-registry-chaos tail (last 30 lines) ---" >&2
+        tail -30 "$log" >&2
+        stage_fail "$id" "$label"
+    fi
+}
+
 # run_ms_postgres — opt-in outbox/saga tests bound to a real Postgres transaction.
 run_ms_postgres() {
     local id="ms-postgres" label="microservice postgres outbox/saga live tests"
@@ -584,6 +620,8 @@ run_stage() {
         ms-chaos)         run_ms_chaos ;;
         ms-broker-bench)  run_ms_broker_bench ;;
         ms-postgres)      run_ms_postgres ;;
+        ms-kafka-bench)   run_ms_kafka_bench ;;
+        ms-registry-chaos) run_ms_registry_chaos ;;
         ms-bench)         run_ms_bench ;;
         diff-check)       run_diff_check ;;
         *)

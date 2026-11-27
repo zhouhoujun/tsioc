@@ -52,7 +52,7 @@ S4 复跑后的关键数字：gateway route-match 10k p99 ≈ **0.0023 ms**（32
 ### P2（规模化/维护性）
 
 - **性能覆盖不均衡**：gateway 有基准，broker 吞吐/背压、client 连接复用、流式内存占用缺长期数据。
-- **混沌/soak 仍偏短**：已有 quickstart soak、多进程 SIGKILL gateway chaos、nightly 30 分钟 soak；缺 broker 断连/注册中心抖动混沌。
+- **混沌/soak 仍偏短**：已有 quickstart soak、多进程 SIGKILL gateway chaos、注册中心抖动 chaos、nightly 30 分钟 soak；缺 broker 断连混沌。
 - **包分发形态**：源码 package 无 `main/types/exports`，依赖 `prepare-package-publish` 生成 dist；ESM/CJS、版本兼容矩阵未显式化。
 - **大文件/单一职责**：`admin/src/auth.ts` ~1016 行、`gateway.options.ts` ~1065 行、`service/src/router/router.optimize.ts` ~900 行，后续改动需继续按职责拆分。
 
@@ -140,8 +140,8 @@ S4 复跑后的关键数字：gateway route-match 10k p99 ≈ **0.0023 ms**（32
 
 - Outbox/inbox + saga/workflow 集成；幂等 producer/consumer 统一接口。
 - 多区域/多集群拓扑、gateway/admin HA、配置灰度/回滚。
-- broker 吞吐/背压/内存长测；连接池与编解码按基准调默认值。
-- 30 分钟 soak + 多进程 kill/注册中心抖动混沌；nightly 报告。
+- broker 吞吐/背压/内存长测（Redis/Kafka 吞吐探针已接入 nightly）；连接池与编解码按基准调默认值。
+- 30 分钟 soak + 多进程 kill/注册中心抖动混沌已落地；broker 断连混沌待补。
 - 包 ESM/CJS/`exports`/版本兼容矩阵；大文件继续拆分。
 
 ## 7. 可度量目标

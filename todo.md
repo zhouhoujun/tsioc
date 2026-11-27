@@ -5016,3 +5016,8 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百二十九批（2026-11-16）：
   - Postgres 事务绑定 outbox/saga journal + ms-postgres gate + nightly。
+
+- 微服务框架第一百三十批（2026-11-16）：
+  - Kafka 吞吐探针 + ms-kafka-bench gate + nightly。
+- 微服务框架第一百三十一批（2026-11-16）：
+  - 注册中心抖动进程级 chaos + ms-registry-chaos gate + nightly。

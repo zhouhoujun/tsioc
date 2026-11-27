@@ -730,6 +730,18 @@
 - 新增 `TSIO_TEST_POSTGRES=1` 门控测试：add/claim/fail/retry/ack/size、事务提交/回滚、并发 claim、saga save/upsert/load/clear。
 - gate 新增 opt-in `ms-postgres`，`ms-nightly` 增加 Postgres 服务与步骤；真实库 129 passing。
 
+第一百三十批（Kafka 吞吐探针）：
+
+- 新增 `benchmarks/kafka-throughput.ts`：框架 `useKafkaTransport` + `@Subscribe` 消费，kafkajs producer 分批发布，按唯一 index 统计直到全部处理。
+- 固定条数模式输出 messages/sec；`BROKER_BENCH_KAFKA_DURATION_MS` 切换到持续压测（可选 `BROKER_BENCH_KAFKA_RATE` 限速），排空后输出 produced/backlog/RSS。
+- gate 新增 opt-in `ms-kafka-bench`（`MS_KAFKA_BENCH_PROFILE=1`），nightly 复用 Kafka 容器并追加 3 分钟限速持续负载；本地 1k 实测 ~4790 msg/s，6s@1000/s backlog=0。
+
+第一百三十一批（注册中心抖动进程级 chaos）：
+
+- 新增 `benchmarks/registry-chaos.ts` 与 `fixtures/fake-consul.mjs`：真实 Consul HTTP API 子进程，`SIGKILL` 后由 `DefaultEndpointResolver` 继续提供 stale endpoint，并验证 backoff 不重复打挂掉的注册中心。
+- 注册中心同端口重启后恢复新 endpoint，并重复第二次 kill/restart 抖动。
+- gate 新增 opt-in `ms-registry-chaos`（`MS_REGISTRY_CHAOS_PROFILE=1`），nightly 已接入；实测 2 flaps PASS。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

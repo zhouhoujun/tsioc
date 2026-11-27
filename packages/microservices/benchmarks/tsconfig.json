@@ -1,5 +1,5 @@
 {
   "extends": "../../../tsconfig.json",
-  "include": ["run.ts"],
+  "include": ["run.ts", "kafka-throughput.ts", "registry-chaos.ts"],
   "exclude": ["node_modules", "results"]
 }

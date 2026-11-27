@@ -59,3 +59,22 @@ changes, never absolute numbers across machine classes.
 1. Add a function to `run.ts` that returns `BenchmarkResult`.
 2. Register it in `scenarios`.
 3. Keep it deterministic and free of network/container dependencies.
+
+## Opt-in broker and registry probes
+
+These need real infrastructure and run from the nightly workflow instead of the
+default gate:
+
+```bash
+# Kafka publish → framework consumer throughput
+MS_KAFKA_BENCH_PROFILE=1 bash scripts/agents-gate.sh ms-kafka-bench
+
+# registry kill/restart chaos (fake Consul child process, no container needed)
+MS_REGISTRY_CHAOS_PROFILE=1 bash scripts/agents-gate.sh ms-registry-chaos
+```
+
+| Probe | What it verifies |
+|---|---|
+| `broker-throughput.ts` | Redis Stream publish → consume throughput and pending count. |
+| `kafka-throughput.ts` | Kafka publish → `useKafkaTransport` consumer throughput; `BROKER_BENCH_KAFKA_DURATION_MS` enables a sustained rate-limited load with backlog/RSS reporting. |
+| `registry-chaos.ts` | Stale endpoints, resolver backoff, and recovery across two registry SIGKILL flaps. |

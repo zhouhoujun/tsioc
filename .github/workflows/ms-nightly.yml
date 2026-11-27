@@ -115,6 +115,10 @@ jobs:
         env:
           MS_CHAOS_PROFILE: '1'
         run: bash scripts/agents-gate.sh ms-chaos
+      - name: Registry jitter chaos
+        env:
+          MS_REGISTRY_CHAOS_PROFILE: '1'
+        run: bash scripts/agents-gate.sh ms-registry-chaos
       - name: 30 minute soak
         env:
           MS_SOAK_PROFILE: '1'
@@ -161,5 +165,17 @@ jobs:
         env:
           MS_BROKER_BENCH_PROFILE: '1'
         run: bash scripts/agents-gate.sh ms-broker-bench
+      - name: Kafka throughput probe
+        env:
+          MS_KAFKA_BENCH_PROFILE: '1'
+          BROKER_BENCH_KAFKA_BROKERS: localhost:9092
+        run: bash scripts/agents-gate.sh ms-kafka-bench
+      - name: Kafka sustained broker load
+        env:
+          MS_KAFKA_BENCH_PROFILE: '1'
+          BROKER_BENCH_KAFKA_BROKERS: localhost:9092
+          BROKER_BENCH_KAFKA_DURATION_MS: '180000'
+          BROKER_BENCH_KAFKA_RATE: '1000'
+        run: bash scripts/agents-gate.sh ms-kafka-bench
       - name: Performance regression
         run: bash scripts/agents-gate.sh ms-bench
