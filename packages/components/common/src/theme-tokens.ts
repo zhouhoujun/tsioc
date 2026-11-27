@@ -81,7 +81,13 @@ export const THEME_TOKENS: Record<string, ThemeTokens> = {
 };
 
 export function themeTokens(theme: ThemeName): ThemeTokens {
-    return THEME_TOKENS[theme] ?? THEME_TOKENS.light;
+    const tokens = THEME_TOKENS[theme] ?? THEME_TOKENS.light;
+    return {
+        ...tokens,
+        fg: ensureContrast(tokens.fg, tokens.bg, 4.5),
+        mutedFg: ensureContrast(tokens.mutedFg, tokens.bg, 3),
+        accentFg: ensureContrast(tokens.accentFg, tokens.accent, 4.5)
+    };
 }
 
 /** Theme token fields projected onto the stable `--ui-*` widget variables. */
@@ -126,6 +132,39 @@ export function relativeLuminance(color: Rgb): number {
         return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
     });
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function channelHex(value: number): string {
+    return Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0');
+}
+
+function mixHex(foreground: string, background: string, amount: number): string {
+    const fg = parseHexColor(foreground);
+    const bg = parseHexColor(background);
+    if (!fg || !bg) {
+        return foreground;
+    }
+    const t = Math.max(0, Math.min(1, amount));
+    return `#${channelHex(fg[0] * (1 - t) + bg[0] * t)}${channelHex(fg[1] * (1 - t) + bg[1] * t)}${channelHex(fg[2] * (1 - t) + bg[2] * t)}`;
+}
+
+/**
+ * Push a foreground toward black/white until it meets the target contrast.
+ * Returns the original color when it already passes or cannot be parsed.
+ */
+export function ensureContrast(foreground: string, background: string, target = 4.5): string {
+    const bg = parseHexColor(background);
+    if (!bg || !parseHexColor(foreground) || contrastRatio(foreground, background) >= target) {
+        return foreground;
+    }
+    const towards = relativeLuminance(bg) > 0.5 ? '#000000' : '#ffffff';
+    for (let step = 1; step <= 20; step++) {
+        const candidate = mixHex(foreground, towards, step / 20);
+        if (contrastRatio(candidate, background) >= target) {
+            return candidate;
+        }
+    }
+    return towards;
 }
 
 /** WCAG contrast ratio; returns 1 for unparseable input. */

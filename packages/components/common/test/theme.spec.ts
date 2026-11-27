@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ThemeService, applyThemeToDocument, contrastRatio, isDarkTheme, themeTokens } from '../src';
+import { ThemeService, applyThemeToDocument, contrastRatio, ensureContrast, isDarkTheme, themeTokens } from '../src';
 import { JSDOM } from 'jsdom';
 
 @Suite('common theme service')
@@ -33,6 +33,10 @@ export class ThemeServiceTest {
         }
         expect(contrastRatio('#ffffff', '#000000')).toBeCloseTo(21, 0);
         expect(contrastRatio('not-a-color', '#000000')).toBe(1);
+        expect(contrastRatio(ensureContrast('#777777', '#ffffff'), '#ffffff')).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(ensureContrast('#888888', '#000000'), '#000000')).toBeGreaterThanOrEqual(4.5);
+        expect(ensureContrast('#000000', '#ffffff')).toEqual('#000000');
+        expect(ensureContrast('bad', '#ffffff')).toEqual('bad');
     }
 
     @Test('applies optional token variables without changing the default contract')
