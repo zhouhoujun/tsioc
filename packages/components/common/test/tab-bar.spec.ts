@@ -62,6 +62,24 @@ export class TabBarComponentTest {
         expect(contextId).toEqual('b');
     }
 
+    @Test('built-in context menu closes tabs without a host callback')
+    async builtInContextMenu() {
+        const bar = new TabBarComponent();
+        const closed: string[] = [];
+        bar.source = {
+            visible: true,
+            items: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }],
+            close: id => closed.push(id)
+        };
+        bar.contextMenu(bar.items[1], { clientX: 30, clientY: 40, preventDefault() { } });
+        expect(bar.contextMenuOpen).toEqual(true);
+        expect(bar.contextX).toEqual(30);
+        expect(bar.contextY).toEqual(40);
+        bar.runTabContext('closeRight', 'b');
+        expect(closed).toEqual(['c']);
+        expect(bar.contextMenuOpen).toEqual(false);
+    }
+
     @Test('host-windowed strips default to one more menu')
     overflowsWindowedSource() {
         const bar = new TabBarComponent();

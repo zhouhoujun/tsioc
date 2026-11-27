@@ -3,6 +3,7 @@ import { Inject, Optional, token } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId } from '../../src/ui';
 import { installTabBarStyles } from './tab-bar.styles';
+import { TabContextMenuComponent } from './tab-context-menu';
 import { positionTabOverflowMenu } from './tab-bar.overflow';
 import { contextTab, dropTab, startTabDrag } from './tab-bar.reorder';
 
@@ -76,6 +77,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
  */
 @Component({
     selector: 'tab-bar, ui-tab-bar',
+    imports: [TabContextMenuComponent],
     template: `
     <p class="tab-bar" role="tablist" aria-orientation="horizontal" v-show="visible" #strip>
         <span class="tab-scroll tab-scroll-back" role="button" focusable="true" tabindex="0" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollBack($event)" @keydown="onScrollKeydown($event, 'back')">{{scrollBackLabel}}</span>
@@ -101,6 +103,8 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
                 @keydown="onOverflowItemKeydown($event, item)">{{item.label}}</span>
         </span>
         <span class="tab-new" role="button" focusable="true" tabindex="0" v-show="showCreate" @click="create" @keydown="onCreateKeydown($event)">{{createLabel}}</span>
+        <ui-tab-context-menu :visible="contextMenuOpen" :x="contextX" :y="contextY"
+            :tabId="contextTabId" :actionAction="runTabContext" :closeAction="closeTabMenu"></ui-tab-context-menu>
     </p>
     `
 })
@@ -131,6 +135,10 @@ export class TabBarComponent implements AfterViewInit {
     protected overflowMenuStyle: Record<string, string> = {};
     protected overflowDismiss?: () => void;
     draggingId = '';
+    contextMenuOpen = false;
+    contextTabId = '';
+    contextX = 0;
+    contextY = 0;
     constructor(
         @Optional() protected elementRef?: ElementRef,
         @Optional() @Inject(TAB_BAR_SOURCE) private injectedSource?: TabBarSource
@@ -165,7 +173,6 @@ export class TabBarComponent implements AfterViewInit {
         this.stripResizeObserver = null;
         this.windowResizeListener = undefined;
     }
-
     protected get activeSource(): TabBarSource | undefined {
         return this.source || this.injectedSource;
     }
@@ -196,43 +203,34 @@ export class TabBarComponent implements AfterViewInit {
     closeTabLabel(tab: TabItem): string {
         return `${this.closeTabTitle} ${tab?.label || ''}`.trim();
     }
-
     /** Hidden hover-only close affordances stay out of the Tab order. */
     closeTabIndex(tab: TabItem): number {
         return tab?.showClose === 'hover' && !tab.active ? -1 : 0;
     }
-
     focusOnly(tab: TabItem): void {
         if (tab && !tab.disabled) {
             this.focusedKey = tab.id;
         }
     }
-
     /** Terminal hosts window `items` themselves; DOM hosts scroll the strip. */
     get hostWindowed(): boolean {
         return !!this.activeSource?.windowed;
     }
-
     get scrollBackLabel(): string {
         return this.activeSource?.scrollBackLabel || ' ‹ ';
     }
-
     get scrollForwardLabel(): string {
         return this.activeSource?.scrollForwardLabel || ' › ';
     }
-
     get scrollBackTitle(): string {
         return this.activeSource?.scrollBackTitle || 'Previous tabs';
     }
-
     get scrollForwardTitle(): string {
         return this.activeSource?.scrollForwardTitle || 'Next tabs';
     }
-
     get overflowMode(): 'menu' | 'scroll' {
         return this.activeSource?.overflowMode === 'scroll' ? 'scroll' : 'menu';
     }
-
     get overflowMenuItems(): TabItem[] {
         const explicit = this.activeSource?.overflowItems;
         if (Array.isArray(explicit) && explicit.length) {
@@ -240,7 +238,6 @@ export class TabBarComponent implements AfterViewInit {
         }
         return this.hostWindowed ? [] : this.items;
     }
-
     get overflowMenuVisible(): boolean {
         if (this.overflowMode !== 'menu' || !this.overflowMenuItems.length) {
             return false;
@@ -249,38 +246,30 @@ export class TabBarComponent implements AfterViewInit {
             ? this.scrollBackEnabled || this.scrollForwardEnabled
             : this.domOverflow;
     }
-
     get overflowLabel(): string {
         return this.activeSource?.overflowLabel || ' … ';
     }
-
     get overflowTitle(): string {
         return this.activeSource?.overflowTitle || 'More tabs';
     }
-
     get arrowsVisible(): boolean {
         if (this.overflowMode !== 'scroll') {
             return false;
         }
         return this.hostWindowed ? this.scrollBackEnabled || this.scrollForwardEnabled : this.domOverflow;
     }
-
     get scrollBackDisabled(): boolean {
         return this.hostWindowed ? !this.scrollBackEnabled : !this.domBack;
     }
-
     get scrollForwardDisabled(): boolean {
         return this.hostWindowed ? !this.scrollForwardEnabled : !this.domForward;
     }
-
     protected get scrollBackEnabled(): boolean {
         return !!this.activeSource?.canScrollBack;
     }
-
     protected get scrollForwardEnabled(): boolean {
         return !!this.activeSource?.canScrollForward;
     }
-
     select(id: string, event?: Event): void {
         if (!id) {
             return;
@@ -300,19 +289,16 @@ export class TabBarComponent implements AfterViewInit {
         this.focusedKey = id;
         this.activeSource?.select?.(id);
     }
-
     closeTab(id: string, event?: Event): void {
         event?.stopPropagation?.();
         this.close(id);
         this.focusAfterClose();
     }
-
     /** Keyboard activation for the nested close affordance. */
     onCloseKeydown(event: any, id: string): void {
         if (!this.isActivationKey(event)) { return; }
         event.preventDefault?.(); event.stopPropagation?.(); this.closeTab(id, event);
     }
-
     /** Keep keyboard focus inside the strip after a tab disappears. */
     protected focusAfterClose(): void {
         void Promise.resolve().then(() => Promise.resolve()).then(() => {
@@ -322,7 +308,6 @@ export class TabBarComponent implements AfterViewInit {
             if (target) { this.focusTab(items.indexOf(target)); }
         });
     }
-
     /**
      * Roving tabindex: exactly one enabled tab is in the tab order. The active
      * tab wins; when no item is active the first enabled tab holds focus.
@@ -343,7 +328,6 @@ export class TabBarComponent implements AfterViewInit {
         }
         return items.findIndex(item => item && !item.disabled) === index ? 0 : -1;
     }
-
     /** Arrow/Home/End navigation, Enter/Space activation and Delete-to-close. */
     onTabKeydown(event: any, tab: TabItem, index: number): void {
         if (!tab) {
@@ -388,7 +372,6 @@ export class TabBarComponent implements AfterViewInit {
             focus();
         }
     }
-
     protected nextEnabledTab(from: number, step: 1 | -1): number {
         const items = this.items;
         if (!items.length) {
@@ -402,7 +385,6 @@ export class TabBarComponent implements AfterViewInit {
         }
         return -1;
     }
-
     protected focusTab(index: number): void {
         const strip = this.strip?.nativeElement as { querySelectorAll?: (selector: string) => ArrayLike<HTMLElement> } | undefined;
         const tabs = strip?.querySelectorAll?.('.tab');
@@ -414,11 +396,9 @@ export class TabBarComponent implements AfterViewInit {
             // Terminal renderers do not implement scrollIntoView.
         }
     }
-
     toggleOverflowMenu(event?: Event): void {
         event?.stopPropagation?.(); this.overflowMenuOpen ? this.closeOverflowMenu() : this.openOverflowMenu();
     }
-
     openOverflowMenu(): void {
         if (!this.overflowMenuVisible || this.overflowMenuOpen) {
             return;
@@ -431,7 +411,6 @@ export class TabBarComponent implements AfterViewInit {
             this.focusOverflowItem(0);
         });
     }
-
     closeOverflowMenu(restoreFocus = true): void {
         if (!this.overflowMenuOpen) {
             return;
@@ -443,7 +422,6 @@ export class TabBarComponent implements AfterViewInit {
             void Promise.resolve().then(() => this.focusOverflowTrigger());
         }
     }
-
     /** Anchor the menu outside the scrolling strip (see the helper module). */
     protected placeOverflowMenu(measure = false): void {
         const style = positionTabOverflowMenu(this.resolveStripElement(), measure);
@@ -451,7 +429,6 @@ export class TabBarComponent implements AfterViewInit {
             this.overflowMenuStyle = style;
         }
     }
-
     protected focusOverflowTrigger(): void {
         (this.resolveStripElement()?.querySelector?.('.tab-overflow') as HTMLElement | null | undefined)?.focus?.();
     }
@@ -545,7 +522,30 @@ export class TabBarComponent implements AfterViewInit {
     dragOver(event?: any): void { if (this.draggingId) { event?.preventDefault?.(); } }
     dropOn(tab: TabItem, event?: any): void { dropTab(this, tab, event); }
     dragEnd(): void { this.draggingId = ''; }
-    contextMenu(tab: TabItem, event?: any): void { contextTab(this, tab, event); }
+    contextMenu(tab: TabItem, event?: any): void {
+        if (this.contextAction) { contextTab(this, tab, event); return; }
+        event?.preventDefault?.();
+        this.contextTabId = tab?.id || '';
+        this.contextX = Number(event?.clientX ?? 0) || 8;
+        this.contextY = Number(event?.clientY ?? 0) || 8;
+        this.contextMenuOpen = true;
+    }
+
+    closeTabMenu(): void { this.contextMenuOpen = false; }
+
+    runTabContext(action: string, id: string): void {
+        const target = id || this.contextTabId;
+        const ids = this.items.map(item => item.id);
+        const index = ids.indexOf(target);
+        if (action === 'close') {
+            this.close(target);
+        } else if (action === 'closeOthers') {
+            ids.filter(item => item !== target).forEach(item => this.close(item));
+        } else if (action === 'closeRight') {
+            ids.slice(index + 1).forEach(item => this.close(item));
+        }
+        this.closeTabMenu();
+    }
 
     create(): void {
         this.closeOverflowMenu(false);
