@@ -5,6 +5,7 @@ import { Component, ComponentFactory, ComponentRef, ComponentsModule } from '@ts
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { TooltipComponent, TooltipModule } from '../tooltip';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'tooltip-host',
@@ -51,6 +52,14 @@ export class TooltipTest {
             roots: components.map(component => component.hostView.rootNodes[0] as HTMLElement),
             components
         };
+    }
+
+    @Test('open tooltip passes the shared accessibility audit')
+    async a11y() {
+        const { roots } = await this.mount();
+        const doc = this.ctx.get(DOCUMENT) as Document;
+        roots[0].dispatchEvent(new (doc.defaultView as any).MouseEvent('mouseenter'));
+        expect(formatViolations(auditA11y(roots[0], doc))).toEqual('');
     }
 
     @Test('opens on hover/focus and links the tooltip through aria-describedby')

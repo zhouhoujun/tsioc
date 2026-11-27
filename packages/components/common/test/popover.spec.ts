@@ -5,6 +5,7 @@ import { Component, ComponentFactory, ComponentRef, ComponentsModule } from '@ts
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { PopoverComponent, PopoverModule } from '../popover';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'popover-host',
@@ -57,6 +58,15 @@ export class PopoverTest {
             host: ref.instance as PopoverHostComponent,
             popovers: components
         };
+    }
+
+    @Test('open popover passes the shared accessibility audit')
+    async a11y() {
+        const { roots, host } = await this.mount();
+        host.shown = true;
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(formatViolations(auditA11y(roots[0], this.ctx.get(DOCUMENT)))).toEqual('');
     }
 
     @Test('renders the panel chrome and closes through the plain button')
