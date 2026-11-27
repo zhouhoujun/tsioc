@@ -1,9 +1,18 @@
-import { Attribute, Component, ElementRef, noReact } from '@tsdi/components';
+import { Attribute, Component, ElementRef, OnDestroy, noReact } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { installTypeaheadStyles } from './typeahead.styles';
 import { AutoCompleteComponent, AutoCompleteOption } from '../../autocomplete/src/autocomplete';
-import { normalizeBoolean } from '../../src/ui';
+import {
+    createTypeaheadMachineState,
+    transitionTypeaheadMachine,
+    TYPEAHEAD_REQUEST_TIMEOUT_MS,
+    typeaheadMachineError,
+    typeaheadMachineItems,
+    typeaheadMachinePending,
+    TypeaheadMachineEvent,
+    TypeaheadMachineState
+} from './typeahead.machine';
 
 export interface TypeaheadResult {
     items: AutoCompleteOption[];
@@ -15,8 +24,8 @@ export type TypeaheadSource = (query: string, signal: AbortSignal) => Promise<Ty
 
 /**
  * Async typeahead built on the shared autocomplete input. The host supplies a
- * `source(query, signal)`; stale requests are aborted/ignored, and loading,
- * empty, error and retry states are renderer-neutral.
+ * `source(query, signal)`; debounce, cache, stale rows, timeout, retry and
+ * abortable requests are driven by a pure state machine.
  */
 @Component({
     selector: 'ui-typeahead',
@@ -33,13 +42,20 @@ export type TypeaheadSource = (query: string, signal: AbortSignal) => Promise<Ty
         </div>
     </div>`
 })
-export class TypeaheadComponent {
+export class TypeaheadComponent implements OnDestroy {
     constructor(@Optional() protected elementRef?: ElementRef) {
         markElementRefRaw(elementRef);
     }
 
     onInit(): void {
         installTypeaheadStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
+        if (this.source && this.minQueryLength === 0) {
+            this.dispatch({ type: 'input.changed', query: '', delayMs: 0, minChars: 0 });
+        }
+    }
+
+    onDestroy(): void {
+        this.dispatch({ type: 'disposed' });
     }
 
     @Attribute() value = '';
@@ -51,19 +67,21 @@ export class TypeaheadComponent {
     @Attribute() ariaLabel = 'Search';
     @Attribute() className = '';
     @Attribute() minChars = 1;
+    /** Milliseconds to wait after typing before calling the source. */
+    @Attribute() debounce = 0;
+    /** Abort a request that stalls; the list becomes retryable instead of loading forever. */
+    @Attribute() requestTimeout = TYPEAHEAD_REQUEST_TIMEOUT_MS;
     @Attribute() changeAction?: (value: string) => void;
     @Attribute() selectAction?: (value: string) => void;
 
-    private _options: AutoCompleteOption[] = [];
-    private _open = false;
-    private _loading = false;
-    private _error = '';
-    private lastQuery = '';
-    private requestId = 0;
+    private machine: TypeaheadMachineState<AutoCompleteOption> = createTypeaheadMachineState<AutoCompleteOption>();
+    private timer?: ReturnType<typeof setTimeout>;
     private aborter?: AbortController;
+    private _open = false;
+    private destroyed = false;
 
     get options(): AutoCompleteOption[] {
-        return this._options;
+        return typeaheadMachineItems(this.machine);
     }
 
     get openState(): boolean {
@@ -71,11 +89,15 @@ export class TypeaheadComponent {
     }
 
     get loadingState(): boolean {
-        return this._loading;
+        return typeaheadMachinePending(this.machine);
     }
 
     get error(): string {
-        return this._error;
+        return typeaheadMachineError(this.machine);
+    }
+
+    get stale(): boolean {
+        return this.machine.status !== 'disposed' && this.machine.stale;
     }
 
     get minQueryLength(): number {
@@ -83,14 +105,25 @@ export class TypeaheadComponent {
         return Number.isFinite(value) && value >= 0 ? value : 1;
     }
 
+    get debounceMs(): number {
+        const value = Math.floor(Number(this.debounce));
+        return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
     onInput(text: string): void {
         this.value = String(text ?? '');
-        this.lastQuery = this.value;
         this.changeAction?.(this.value);
         if (!this.source) {
             return;
         }
-        void this.load(this.value);
+        const query = this.value;
+        if (query.trim().length < this.minQueryLength) {
+            this._open = false;
+            this.dispatch({ type: 'input.changed', query, delayMs: 0, minChars: this.minQueryLength });
+            return;
+        }
+        this._open = true;
+        this.dispatch({ type: 'input.changed', query, delayMs: this.debounceMs, minChars: this.minQueryLength });
     }
 
     onSelect(value: string): void {
@@ -100,21 +133,62 @@ export class TypeaheadComponent {
     }
 
     retry(): void {
-        void this.load(this.lastQuery || this.value);
+        this._open = true;
+        this.dispatch({ type: 'retry.requested' });
     }
 
-    async load(query: string): Promise<void> {
-        const source = this.source;
-        if (!source) {
+    /** Clear cached responses (for example after the host invalidates its data). */
+    clearCache(): void {
+        if (this.machine.status === 'disposed') {
             return;
         }
-        const text = String(query ?? '');
-        this.lastQuery = text;
-        if (text.trim().length < this.minQueryLength) {
-            this._options = [];
-            this._open = false;
-            this._error = '';
-            this._loading = false;
+        this.machine = {
+            ...this.machine,
+            cache: new Map<string, AutoCompleteOption[]>()
+        };
+    }
+
+    /** Kept for hosts that drive the component directly; honors the configured debounce. */
+    load(query: string): void {
+        this.onInput(query);
+    }
+
+    protected dispatch(event: TypeaheadMachineEvent<AutoCompleteOption>): void {
+        if (this.destroyed) {
+            return;
+        }
+        const previous = this.machine;
+        const next = transitionTypeaheadMachine(previous, event);
+        if (next.state !== previous) {
+            this.machine = next.state;
+        }
+        next.effects.forEach(effect => this.runEffect(effect));
+    }
+
+    protected runEffect(effect: { type: string; attempt?: number; delayMs?: number; query?: string }): void {
+        if (this.timer !== undefined) {
+            clearTimeout(this.timer);
+            this.timer = undefined;
+        }
+        if (effect.type === 'cancel') {
+            this.aborter?.abort();
+            this.aborter = undefined;
+            return;
+        }
+        if (effect.type === 'debounce') {
+            this.timer = setTimeout(() => {
+                this.timer = undefined;
+                this.dispatch({ type: 'debounce.elapsed', attempt: effect.attempt as number });
+            }, Math.max(0, effect.delayMs as number));
+            return;
+        }
+        if (effect.type !== 'request') {
+            return;
+        }
+        const attempt = effect.attempt as number;
+        const query = String(effect.query ?? '');
+        const source = this.source;
+        if (!source) {
             return;
         }
         this.aborter?.abort();
@@ -123,28 +197,31 @@ export class TypeaheadComponent {
         (aborter as any)[noReact] = true;
         (aborter.signal as any)[noReact] = true;
         this.aborter = aborter;
-        const request = ++this.requestId;
-        this._loading = true;
-        this._error = '';
-        try {
-            const result = await source(text, aborter.signal);
-            if (request !== this.requestId) {
-                return;
+        this._open = true;
+        const timeout = Math.max(1, Number(this.requestTimeout) || TYPEAHEAD_REQUEST_TIMEOUT_MS);
+        this.timer = setTimeout(() => {
+            this.timer = undefined;
+            this.dispatch({ type: 'request.timed-out', attempt });
+        }, timeout);
+        source(query, aborter.signal).then(
+            result => {
+                if (this.destroyed || aborter.signal.aborted) {
+                    return;
+                }
+                this.dispatch({ type: 'request.succeeded', attempt, result });
+                this._open = true;
+            },
+            error => {
+                if (this.destroyed || aborter.signal.aborted) {
+                    return;
+                }
+                this.dispatch({
+                    type: 'request.failed',
+                    attempt,
+                    message: error instanceof Error ? error.message : String(error)
+                });
+                this._open = true;
             }
-            this._options = Array.isArray(result?.items) ? result.items : [];
-            this._error = String(result?.error ?? '');
-            this._open = true;
-        } catch (error) {
-            if (request !== this.requestId) {
-                return;
-            }
-            this._options = [];
-            this._error = error instanceof Error ? error.message : String(error);
-            this._open = true;
-        } finally {
-            if (request === this.requestId) {
-                this._loading = false;
-            }
-        }
+        );
     }
 }
