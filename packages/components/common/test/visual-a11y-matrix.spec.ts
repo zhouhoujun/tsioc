@@ -23,6 +23,7 @@ import { UploadComponent, UploadModule } from '../upload';
 import { BreadcrumbComponent, BreadcrumbModule } from '../breadcrumb';
 import { ChipComponent, ChipModule } from '../chip';
 import { TreeComponent, TreeModule } from '../tree';
+import { AlertDialogComponent, AlertModule } from '../alert';
 import { auditA11y, formatViolations } from './support/a11y-audit';
 
 const THEMES = ['light', 'dark', 'high-contrast'];
@@ -58,7 +59,7 @@ function makeSource() {
 
 @Component({
     selector: 'a11y-matrix-host',
-    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent, SelectComponent, DialogComponent, DrawerComponent, SwitchComponent, SliderComponent, ProgressComponent, PaginationComponent, RateComponent, SegmentedComponent, UploadComponent, BreadcrumbComponent, ChipComponent, TreeComponent],
+    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent, SelectComponent, DialogComponent, DrawerComponent, SwitchComponent, SliderComponent, ProgressComponent, PaginationComponent, RateComponent, SegmentedComponent, UploadComponent, BreadcrumbComponent, ChipComponent, TreeComponent, AlertDialogComponent],
     template: `
     <div class="theme-sample">
         <ui-button label="Save"></ui-button>
@@ -85,6 +86,7 @@ function makeSource() {
         <ui-chip label="Feature" closable></ui-chip>
         <ui-tree :items="treeItems" checkable selectedId="child" ariaLabel="Files"></ui-tree>
         <dialog-panel title="Remove file?" ariaLabel="Remove file?"></dialog-panel>
+        <alert-dialog title="Delete?" ariaLabel="Delete?" actionLabel="Delete"></alert-dialog>
         <ui-drawer title="Settings" ariaLabel="Settings"></ui-drawer>
         <ui-toast-provider></ui-toast-provider>
     </div>`
@@ -140,7 +142,7 @@ export class VisualA11yMatrixTest {
         this.ctx = await Application.run(A11yMatrixHostComponent, {
             deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule, ToastModule, SelectModule, DialogModule, DrawerModule,
             SwitchModule, SliderModule, ProgressModule, PaginationModule, RateModule, SegmentedModule,
-            UploadModule, BreadcrumbModule, ChipModule, TreeModule
+            UploadModule, BreadcrumbModule, ChipModule, TreeModule, AlertModule
         ],
             providers: [{ provide: DOCUMENT, useValue: this.doc }]
         });

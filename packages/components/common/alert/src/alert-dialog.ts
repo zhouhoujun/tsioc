@@ -18,7 +18,7 @@ import { installPlainButtonStyles } from '../../src/ui.styles';
         aria-labelledby="{{ariaLabelledby}}" aria-describedby="{{ariaDescribedby}}"
         @keydown="handleKeydown($event)">
         <button class="dialog-close ui-plain-button" type="button" data-plain="true" data-cell-width="2"
-            aria-label="{{closeLabel}}" v-if="closable" @click="close">{{closeLabel}}</button>
+            aria-label="{{closeTitle || closeLabel}}" v-if="closable" @click="close">{{closeLabel}}</button>
         <label class="dialog-title" v-if="title">{{title}}</label>
         <div class="dialog-body" [style]="scrollStyle">
             <label class="dialog-line" v-for="line in lines">{{line}}</label>
@@ -43,6 +43,8 @@ export class AlertDialogComponent {
     @Attribute() tone: 'info' | 'success' | 'warning' | 'error' = 'info';
     @Attribute() ariaLabel = '';
     @Attribute() closeLabel = '✕';
+    /** Accessible name for the glyph-only close target. */
+    @Attribute() closeTitle = 'Close';
     @Attribute() actionLabel = 'OK';
     @Attribute() maxWidth = 88;
     @Attribute() minWidth = 24;

@@ -132,7 +132,7 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         }
     });
 
-    (Array.from(scope?.querySelectorAll?.('[role="dialog"]') || []) as any[]).forEach(node => {
+    (Array.from(scope?.querySelectorAll?.('[role="dialog"], [role="alertdialog"]') || []) as any[]).forEach(node => {
         const labelled = node.getAttribute?.('aria-label')
             || node.getAttribute?.('aria-labelledby')
             || textOf(node);
