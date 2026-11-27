@@ -39,16 +39,6 @@ export class VelocityTracker {
     }
 }
 
-/** Host-provided reduced-motion preference; absent hosts keep motion on. */
-export function prefersReducedMotion(host?: { matchMedia?: (query: string) => { matches?: boolean } } | null): boolean {
-    try {
-        return !!host?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    } catch {
-        return false;
-    }
-}
-
-
 /** Two-dimensional pointer velocity with a fixed ring buffer (no per-sample allocation). */
 export class VelocityTracker2D {
     private xs = new Float64Array(128);
