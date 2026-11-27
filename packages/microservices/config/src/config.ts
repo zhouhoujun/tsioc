@@ -1,3 +1,5 @@
+import type { ConfigSchema } from './schema';
+
 /**
  * Config source type.
  */
@@ -105,6 +107,10 @@ export interface ConfigOptions {
      * enable env config.
      */
     enableEnv?: boolean;
+    /**
+     * optional typed schema; applied after sources are merged.
+     */
+    schema?: ConfigSchema;
 }
 
 /**

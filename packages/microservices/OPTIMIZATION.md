@@ -591,6 +591,12 @@
 - 新增 `GET /api/gateway-admin/audit`（最新在前，最多 200 条）；同时写结构化 logger `gateway.admin.audit`。
 - controller/doctor 定向测试通过。
 
+第一百零四批（通用 Config schema）：
+
+- 新增 `config/src/schema.ts`：版本化字段定义、类型/required/enum/default 校验、vN→vN+1 迁移、`ConfigSchemaError`。
+- `ConfigOptions.schema` 在 `DefaultConfigurationManager.load()` 合并源后自动 migrate+validate，`getSchemaWarnings()` 暴露迁移记录。
+- 新增 5 个 schema 测试；config 80 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

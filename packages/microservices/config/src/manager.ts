@@ -1,6 +1,7 @@
 import { Abstract, Inject, Injectable, OnDestroy, Optional } from '@tsdi/ioc';
 import { ConfigSource, ConfigOptions, ConfigChange, ConfigChangeCallback, ConfigValueOptions } from './config';
 import { CONFIG_OPTIONS, CONFIG_SOURCES } from './tokens';
+import { applyConfigSchema, ConfigSchema } from './schema';
 
 /**
  * Configuration manager abstract interface.
@@ -100,6 +101,8 @@ export class DefaultConfigurationManager extends ConfigurationManager {
     private watchers: Map<string, Set<ConfigChangeCallback>> = new Map();
     private refreshTimer?: ReturnType<typeof setInterval>;
     private watchedSources = new Set<ConfigSource>();
+    private schema?: ConfigSchema;
+    private schemaWarnings: string[] = [];
 
     constructor(
         @Optional() @Inject(CONFIG_OPTIONS) options: ConfigOptions = {},
@@ -110,6 +113,7 @@ export class DefaultConfigurationManager extends ConfigurationManager {
             this.defaults = { ...options.defaults };
             this.config = { ...options.defaults };
         }
+        this.schema = options.schema;
         const sources = [...(options.sources ?? []), ...(extraSources ?? [])];
         sources.forEach(source => this.addSource(source));
         if (options.refreshInterval) {
@@ -144,6 +148,11 @@ export class DefaultConfigurationManager extends ConfigurationManager {
 
     getAll(): Record<string, any> {
         return { ...this.config };
+    }
+
+    /** Migration notes produced by the configured schema (if any). */
+    getSchemaWarnings(): string[] {
+        return [...this.schemaWarnings];
     }
 
     addSource(source: ConfigSource): void {
@@ -209,6 +218,9 @@ export class DefaultConfigurationManager extends ConfigurationManager {
         for (const config of loadedConfigs.reverse()) {
             this.config = this.mergeDeep(this.config, config);
         }
+        const applied = applyConfigSchema(this.config, this.schema);
+        this.config = applied.config;
+        this.schemaWarnings = applied.warnings;
     }
 
     clear(): void {
@@ -226,6 +238,7 @@ export class DefaultConfigurationManager extends ConfigurationManager {
         this.watchedSources.clear();
         this.config = {};
         this.watchers.clear();
+        this.schemaWarnings = [];
     }
 
     private getValueByKey(key: string): any {
