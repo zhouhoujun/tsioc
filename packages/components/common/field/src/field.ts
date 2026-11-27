@@ -1,8 +1,9 @@
 import { Attribute, Component, ContentChild, ElementRef } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { installFieldStyles } from './field.styles';
 import { resolveFieldAria } from './field-semantics';
+import { UI_I18N, UiI18n, uiText } from '../../src/ui-i18n';
 
 /**
  * Renderer-neutral form field wrapper: label, optional hint/error, required
@@ -23,13 +24,16 @@ import { resolveFieldAria } from './field-semantics';
             <div class="ui-field-group-control"><v-content></v-content></div>
             <span class="ui-field-group-suffix" id="{{resolvedSuffixId}}"><v-content slot="suffix"></v-content></span>
         </div>
-        <label class="ui-field-group-pending" v-show="pending && !error" role="status">{{pendingLabel}}</label>
+        <label class="ui-field-group-pending" v-show="pending && !error" role="status">{{pendingText}}</label>
         <label class="ui-field-group-hint" id="{{hintId}}" v-show="hint && !error && !pending">{{hint}}</label>
         <label class="ui-field-group-error" id="{{errorId}}" role="alert" v-show="error">{{error}}</label>
     </div>`
 })
 export class FieldComponent {
-    constructor(@Optional() protected elementRef?: ElementRef) {
+    constructor(
+        @Optional() protected elementRef?: ElementRef,
+        @Optional() @Inject(UI_I18N) protected i18n?: UiI18n | null
+    ) {
         markElementRefRaw(elementRef);
     }
 
@@ -44,7 +48,7 @@ export class FieldComponent {
     @Attribute() invalid = false;
     @Attribute() pending = false;
     @Attribute() valid = false;
-    @Attribute() pendingLabel = 'Checking…';
+    @Attribute() pendingLabel = '';
     @Attribute() controlId = '';
     @Attribute() hintId = '';
     @Attribute() errorId = '';
@@ -74,6 +78,10 @@ export class FieldComponent {
 
     @ContentChild('[slot="prefix"]') prefixNode?: ElementRef;
     @ContentChild('[slot="suffix"]') suffixNode?: ElementRef;
+
+    get pendingText(): string {
+        return uiText(this.i18n, 'ui.common.checking', this.pendingLabel || 'Checking…');
+    }
 
     get status(): 'default' | 'pending' | 'valid' | 'invalid' {
         if (this.error || this.invalid) { return 'invalid'; }

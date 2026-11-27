@@ -1,8 +1,9 @@
 import { Attribute, Component, ElementRef } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
 import { installInlineInputStyles } from './inline-input.styles';
+import { UI_I18N, UiI18n, uiText } from '../../src/ui-i18n';
 
 /**
  * Click-to-edit value used by tab/session/task titles. Enter and blur commit,
@@ -21,11 +22,14 @@ import { installInlineInputStyles } from './inline-input.styles';
             aria-label="{{ariaLabel || label || value}}" @click="beginEdit"
             @keydown="onValueKeydown($event)">{{value || placeholder}}</span>
         <button class="ui-inline-input-edit ui-plain-button" type="button" v-if="!editingState"
-            [disabled]="disabled" aria-label="{{editLabel}}" @click="beginEdit">{{editGlyph}}</button>
+            [disabled]="disabled" aria-label="{{editText}}" @click="beginEdit">{{editGlyph}}</button>
     </div>`
 })
 export class InlineInputComponent {
-    constructor(@Optional() protected elementRef?: ElementRef) {
+    constructor(
+        @Optional() protected elementRef?: ElementRef,
+        @Optional() @Inject(UI_I18N) protected i18n?: UiI18n | null
+    ) {
         markElementRefRaw(elementRef);
     }
 
@@ -38,7 +42,7 @@ export class InlineInputComponent {
     @Attribute() ariaLabel = '';
     @Attribute() placeholder = '';
     @Attribute() maxLength = 200;
-    @Attribute() editLabel = 'Edit';
+    @Attribute() editLabel = '';
     @Attribute() editGlyph = '✎';
     @Attribute() className = '';
     @Attribute() changeAction?: (value: string) => void;
@@ -77,6 +81,10 @@ export class InlineInputComponent {
     @Attribute()
     get selectOnFocus(): boolean { return this._selectOnFocus; }
     set selectOnFocus(value: boolean | string) { this._selectOnFocus = normalizeBoolean(value, true); }
+
+    get editText(): string {
+        return uiText(this.i18n, 'ui.common.edit', this.editLabel || 'Edit');
+    }
 
     get editingState(): boolean {
         return this._editing;

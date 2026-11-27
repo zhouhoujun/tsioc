@@ -22,7 +22,9 @@ export const agentUiChinese: TranslationBundle = {
                 palette: '命令面板',
                 typeCommand: '输入命令…',
                 noCommands: '没有匹配的命令',
-                loading: '加载中…'
+                loading: '加载中…',
+                checking: '检查中…',
+                edit: '编辑'
             }
         },
         agent: {
