@@ -57,7 +57,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [readOnly]="field.readonly" [disabled]="field.disabled"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        aria-describedby="{{describedByFor(field)}}"
+                        aria-describedby="{{describedByFor(field)}}" aria-label="{{fieldLabel(field)}}"
                         @input="changeText(field, $event)" @blur="blurField(field)" />
                     <div [class]="inputWrapClass(field)" v-if="isTextInput(field) || isNumberInput(field)">
                         <input v-if="isTextInput(field)" [class]="inputClass(field)" type="{{field.typed ? typedHtmlType(field) : htmlType(field)}}"
@@ -66,7 +66,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                             [min]="field.min" [max]="field.max" [step]="field.step"
                             aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                             aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                            aria-describedby="{{describedByFor(field)}}"
+                            aria-describedby="{{describedByFor(field)}}" aria-label="{{fieldLabel(field)}}"
                             @input="changeText(field, $event)" @blur="blurField(field)" />
                         <input v-if="isNumberInput(field)" [class]="inputClass(field)" type="{{field.typed ? typedHtmlType(field) : htmlType(field)}}"
                             [value]="field.typed ? typedText(field) : fieldValue(field)" [placeholder]="field.placeholder || ''"
@@ -74,13 +74,14 @@ export const DYNAMIC_FORM_TEMPLATE = `
                             [min]="field.min" [max]="field.max" [step]="field.step || 1"
                             aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                             aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                            aria-describedby="{{describedByFor(field)}}"
+                            aria-describedby="{{describedByFor(field)}}" aria-label="{{fieldLabel(field)}}"
                             @input="changeText(field, $event)" @blur="blurField(field)" />
                         <span [class]="classes.inputUnit" v-if="field.unit">{{field.unit}}</span>
                     </div>
                     <label v-if="isBooleanInput(field)" [class]="classes.checkboxRow">
                         <input type="checkbox" [checked]="fieldChecked(field)"
                             [disabled]="field.disabled || field.readonly"
+                            aria-label="{{fieldLabel(field)}}"
                             @change="changeBoolean(field, $event)" />
                         <span v-if="field.description">{{field.description}}</span>
                     </label>
@@ -89,7 +90,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [disabled]="field.disabled || field.readonly"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        aria-describedby="{{describedByFor(field)}}"
+                        aria-describedby="{{describedByFor(field)}}" aria-label="{{fieldLabel(field)}}"
                         @change="changeSelect(field, $event)">
                         <option v-for="option in field.options" [value]="option.value"
                             [selected]="optionSelected(field, option.value)"
@@ -98,7 +99,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                     <div v-if="isRadioInput(field)" [class]="classes.options" role="radiogroup"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        aria-describedby="{{describedByFor(field)}}">
+                        aria-describedby="{{describedByFor(field)}}" aria-label="{{fieldLabel(field)}}">
                         <label v-for="option in field.options" data-option-value="{{option.value}}"
                             [class]="optionClass(field, option)">
                             <input type="radio" name="{{formId}}-{{field.key}}"
@@ -115,15 +116,17 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [placeholder]="field.placeholder || ''" [readOnly]="field.readonly" [disabled]="field.disabled"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        aria-describedby="{{describedByFor(field)}}"
+                        aria-describedby="{{describedByFor(field)}}" aria-label="{{fieldLabel(field)}}"
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
                     <div v-if="isJsonObjectEditor(field)" [class]="classes.keyValue">
                         <div [class]="classes.keyValueRow" v-for="(entry, index) in jsonEntries(field)">
                             <input [class]="classes.keyValueKey" type="text" [value]="entry.key"
                                 [placeholder]="field.keyPlaceholder || 'Key'"
+                                aria-label="{{field.keyPlaceholder || 'Key'}}"
                                 @input="changeJsonEntryKey(field, index, $event)" />
                             <input [class]="classes.keyValueValue" type="text" [value]="entry.display"
                                 [placeholder]="field.valuePlaceholder || 'Value'"
+                                aria-label="{{field.valuePlaceholder || 'Value'}}"
                                 @input="changeJsonEntryValue(field, index, $event)" />
                             <button [class]="classes.listRemove" type="button" @click="removeJsonEntry(field, index)">{{field.removeLabel || '✕'}}</button>
                         </div>
@@ -134,7 +137,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [placeholder]="field.placeholder || ''" [readOnly]="field.readonly" [disabled]="field.disabled"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        aria-describedby="{{describedByFor(field)}}"
+                        aria-describedby="{{describedByFor(field)}}" aria-label="{{fieldLabel(field)}}"
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
                     <textarea v-if="isCodeInput(field)" [class]="codeClass(field)"
                         data-dynamic-code="{{field.language || 'javascript'}}"
@@ -144,7 +147,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         [readOnly]="field.readonly" [disabled]="field.disabled"
                         aria-required="{{isRequired(field) ? 'true' : 'false'}}"
                         aria-invalid="{{errorFor(field) ? 'true' : 'false'}}"
-                        aria-describedby="{{describedByFor(field)}}"
+                        aria-describedby="{{describedByFor(field)}}" aria-label="{{fieldLabel(field)}}"
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
                     <div v-if="isListInput(field)" [class]="classes.list">
                         <div [class]="classes.listRow" v-for="(item, rowIndex) in listItems(field)">
@@ -180,31 +183,36 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                         <input v-if="isWidgetInput(child) && !fieldWidgetComponent(child)" [class]="inputClass(child)"
                                             type="text" [value]="listItemValueAt(field, rowIndex, child)"
                                             [placeholder]="child.placeholder || ''"
+                                            aria-label="{{fieldLabel(child)}}"
                                             @input="changeListItem(field, rowIndex, child, $event)" />
                                         <input v-if="isTextInput(child) || isNumberInput(child)" [class]="inputClass(child)"
                                             type="{{htmlType(child)}}"
                                             [value]="listItemValue(item, child)"
                                             [placeholder]="child.placeholder || ''"
                                             [min]="child.min" [max]="child.max" [step]="child.step"
+                                            aria-label="{{fieldLabel(child)}}"
                                             @input="changeListItem(field, listIndex(field, item), child, $event)" />
                                         <textarea v-if="isTextareaInput(child) || isJsonInput(child)" [class]="textareaClass(child)"
                                             [value]="listItemValue(item, child)"
                                             [rows]="child.rows || (isJsonInput(child) ? 3 : 2)"
                                             [placeholder]="child.placeholder || ''"
+                                            aria-label="{{fieldLabel(child)}}"
                                             @input="changeListItem(field, listIndex(field, item), child, $event)"></textarea>
                                         <label v-if="isBooleanInput(child)" [class]="classes.checkboxRow">
                                             <input type="checkbox" [checked]="listItemChecked(item, child)"
+                                                aria-label="{{fieldLabel(child)}}"
                                                 @change="changeListItem(field, listIndex(field, item), child, $event)" />
                                         </label>
                                         <select v-if="isSelectInput(child)" [class]="selectClass(child)"
                                             [value]="listItemValue(item, child)"
                                             [disabled]="child.disabled || child.readonly"
+                                            aria-label="{{fieldLabel(child)}}"
                                             @change="changeListItemSelect(field, listIndex(field, item), child, $event)">
                                             <option v-for="option in child.options" [value]="option.value"
                                                 [selected]="sameOptionValue(option.value, listItemValue(item, child))"
                                                 [disabled]="option.disabled">{{option.label}}</option>
                                         </select>
-                                        <div v-if="isRadioInput(child)" [class]="classes.options">
+                                        <div v-if="isRadioInput(child)" [class]="classes.options" role="radiogroup" aria-label="{{fieldLabel(child)}}">
                                             <label v-for="option in child.options" data-option-value="{{option.value}}"
                                                 [class]="optionClass(child, listItemValue(item, child))">
                                                 <input type="radio" name="{{formId}}-{{field.key}}-{{rowIndex}}-{{child.key}}"

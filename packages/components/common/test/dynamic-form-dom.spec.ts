@@ -5,6 +5,7 @@ import { Attribute, Component, ComponentFactory, ComponentRef, ComponentsModule 
 import { DOCUMENT } from '@tsdi/common';
 import { HtmlTemplateModule } from '@tsdi/components/html';
 import { DYNAMIC_FORM_WIDGETS, DynamicFormComponent, DynamicFormModule } from '../dynamic-form';
+import { auditA11y, formatViolations } from './support/a11y-audit';
 
 @Component({
     selector: 'dynamic-form-test-widget',
@@ -63,6 +64,35 @@ export class DynamicFormDomTest {
     @After()
     async clean() {
         await this.ctx.close();
+    }
+
+    @Test('rendered form fields pass the shared accessibility audit')
+    async a11y() {
+        const ref = this.ctx.get(ComponentFactory).create(DynamicFormDomHostComponent, {
+            injector: this.ctx
+        }) as ComponentRef<DynamicFormDomHostComponent>;
+        await ref.render();
+        for (let index = 0; index < 8; index++) {
+            await Promise.resolve();
+        }
+        const form = ref.hostView.query(DynamicFormComponent) as ComponentRef<DynamicFormComponent>;
+        form.instance.schema = {
+            fields: [
+                { key: 'email', type: 'text', label: 'Email', required: true },
+                { key: 'retries', type: 'number', label: 'Retries', defaultValue: 0 },
+                { key: 'enabled', type: 'checkbox', label: 'Enabled', defaultValue: false },
+                { key: 'mode', type: 'select', label: 'Mode', options: [
+                    { label: 'Fast', value: 'fast' },
+                    { label: 'Safe', value: 'safe' }
+                ] }
+            ]
+        };
+        form.instance.value = { email: '', retries: 0, enabled: false, mode: 'fast' };
+        for (let index = 0; index < 10; index++) {
+            await Promise.resolve();
+        }
+        const root = form.hostView.rootNodes[0] as HTMLElement;
+        expect(formatViolations(auditA11y(root, this.ctx.get(DOCUMENT)))).toEqual('');
     }
 
     @Test('renders a registered field widget and falls back for unknown types')
