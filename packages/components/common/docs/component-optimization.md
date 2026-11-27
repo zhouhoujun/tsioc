@@ -339,6 +339,11 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     a11y audit 测试，chips 删除按钮具备可访问名称。
   - 新增组件继续使用 `--ui-*` token；P2 的 overlay/placement 仍复用既有
     `overlay-placement`/`overlay-outside`/`OverlayManager`。
+- **浏览器截图像素基线（2026-11-27）**
+  - workflow-admin 新增 `visual-regression.js`：用 Playwright 内置 PNG 解码器
+    比较 `preview.baseline.png` 与本次 `preview.png`，超过 0.5% 像素差异即失败
+    并写出 `preview.diff.png`；`--update` 用于有意的基线刷新。
+  - `npm test` 现在串联 build → preview → pixel diff；1440×900 固定视口。
 - **TUI 关键帧基线（2026-11-27）**
   - agent-ui storybook 帧测试从“包含文本”升级为固定 plain-row 基线：
     `test/fixtures/tui-storybook-basic.txt`，仅归一化时间、模型名与状态行，

@@ -6,8 +6,9 @@
     "build": "ts-node -r tsconfig-paths/register build.ts",
     "start": "npm run build && ts-node -r tsconfig-paths/register serve.ts",
     "serve": "ts-node -r tsconfig-paths/register serve.ts",
-    "test": "npm run build && node preview-test.js",
-    "test:unit": "ts-node -r tsconfig-paths/register unit.ts"
+    "test": "npm run build && node preview-test.js && node visual-regression.js",
+    "test:unit": "ts-node -r tsconfig-paths/register unit.ts",
+    "test:visual": "node visual-regression.js"
   },
   "keywords": [
     "tsdi",

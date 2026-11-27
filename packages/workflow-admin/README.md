@@ -182,3 +182,8 @@ the product shell in headless Chromium and checks:
 - no browser console errors.
 
 It writes the screenshot to `preview.png`.
+
+`node visual-regression.js` compares it with the committed
+`preview.baseline.png` (1440×900), writes `preview.diff.png` on failure and
+allows up to 0.5% changed pixels for caret/anti-aliasing noise. Refresh the
+baseline intentionally with `node visual-regression.js --update`.
