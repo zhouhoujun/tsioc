@@ -1,22 +1,17 @@
 import { AfterViewInit, Attribute, Component, NoReactive, OnDestroy, ViewChild } from '@tsdi/components';
 import {
-    createTypedPathCompletion,
     DynamicFormChange,
     DynamicFormComponent,
     DynamicFormField,
-    DynamicFormSchema,
-    DynamicFormTypedSource,
-    typedPathsFromSuggestions,
+    DynamicFormSchema
 } from '@tsdi/components/common/dynamic-form';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { translateWorkflow } from '../i18n';
-import { WORKFLOW_TYPED_CODEC } from '../workflow-typed-value';
-import { workflowTypedPaths } from '../workflow-typed-paths';
-import { WorkflowInspectorFieldView, WorkflowInspectorModel } from '../types';
-import { WorkflowReferenceWidgetComponent } from './workflow-reference-widget';
-import { WorkflowReferenceMultiWidgetComponent } from './workflow-reference-multi-widget';
-import { WorkflowTypedValueWidgetComponent } from './workflow-typed-value-widget';
+import { IVisualWorkflowNode, WorkflowInspectorFieldView, WorkflowInspectorModel } from '../types';
+import { WorkflowNodeEditorSectionsComponent } from './workflow-node-editor-sections';
+import { buildWorkflowInspectorSchema } from './workflow-inspector-schema';
+import { WORKFLOW_NODE_EDITORS, WorkflowNodeEditorContribution } from '../workflow-node-editors';
 
 const EMPTY_INSPECTOR: WorkflowInspectorModel = {
     hasSelection: false,
@@ -104,6 +99,7 @@ function schemaKey(model: WorkflowInspectorModel): string {
  */
 @Component({
     selector: 'workflow-inspector',
+    imports: [WorkflowNodeEditorSectionsComponent],
     template: `
     <div class="workflow-inspector">
         <div class="workflow-inspector-title">{{titleLabel}}</div>
@@ -130,12 +126,27 @@ function schemaKey(model: WorkflowInspectorModel): string {
                 :resetFieldLabel="resetFieldLabel" :changeAction="formChange" :blurAction="formBlur"
                 :actionAction="formAction" :listItemActionAction="formListAction">
             </dynamic-form>
+            <workflow-node-editor-sections :node="node" :values="formValue" :locale="locale"
+                :contributions="nodeEditors || []" :setConfigAction="applySectionConfig"></workflow-node-editor-sections>
             <div class="workflow-no-fields" v-if="!model.fields.length">{{noPropertiesLabel}}</div>
-            <div class="workflow-inspector-issues" v-if="visibleIssues.length">
-                <div class="workflow-inspector-issue" v-for="issue in visibleIssues"
-                    data-severity="{{issue.severity}}" title="{{issue.message}}">
-                    <span class="workflow-inspector-issue-field">{{issue.label}}</span>
-                    <span class="workflow-inspector-issue-message">{{issue.message}}</span>
+            <div class="workflow-inspector-issues" v-if="issueGroups.length">
+                <div class="workflow-inspector-issue-group" v-for="group in issueGroups"
+                    data-severity="{{group.severity}}">
+                    <button class="workflow-inspector-issue-group-title" type="button"
+                        aria-expanded="{{!collapsedIssueGroups[group.key]}}"
+                        @click="toggleIssueGroup(group.key)">
+                        <span class="workflow-inspector-issue-group-label">{{group.label}}</span>
+                        <span class="workflow-inspector-issue-count">{{group.items.length}}</span>
+                        <span class="workflow-inspector-issue-chevron" aria-hidden="true">{{collapsedIssueGroups[group.key] ? '▸' : '▾'}}</span>
+                    </button>
+                    <div v-if="!collapsedIssueGroups[group.key]">
+                        <button class="workflow-inspector-issue" type="button"
+                            v-for="issue in group.items" data-severity="{{issue.severity}}"
+                            title="{{issue.message}}" @click="focusIssue(issue.fieldKey)">
+                            <span class="workflow-inspector-issue-field">{{issue.label}}</span>
+                            <span class="workflow-inspector-issue-message">{{issue.message}}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="workflow-result" v-if="model.resultText">
@@ -148,6 +159,8 @@ function schemaKey(model: WorkflowInspectorModel): string {
 })
 export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
     @Attribute() locale = 'zh-CN';
+    /** Selected node for contributed editor sections. */
+    @Attribute() node?: IVisualWorkflowNode;
     /**
      * Code edits are committed after this quiet period. Pushing every CodeMirror
      * keystroke into the designer would rebuild the full workflow snapshot and
@@ -170,6 +183,7 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
     @Attribute() typedContext: any = {};
 
     @ViewChild('nodeForm', DynamicFormComponent) nodeForm?: DynamicFormComponent;
+    collapsedIssueGroups: Record<string, boolean> = {};
 
     protected _model: WorkflowInspectorModel = EMPTY_INSPECTOR;
     protected modelSignature = '';
@@ -197,7 +211,10 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
     @NoReactive() private formValueCache?: { model: WorkflowInspectorModel; value: Record<string, any> };
     @NoReactive() private formMessagesCache?: { locale: string; messages: Record<string, string> };
 
-    constructor(@Optional() private translator?: Translator) { }
+    constructor(
+        @Optional() private translator?: Translator,
+        @Optional() @Inject(WORKFLOW_NODE_EDITORS) protected nodeEditors?: WorkflowNodeEditorContribution[]
+    ) { }
 
     @Attribute()
     get model(): WorkflowInspectorModel {
@@ -276,172 +293,27 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
         return schema;
     }
 
-    /**
-     * Sources offered by typed value fields. `msg`/`flow`/`global`/`env` are
-     * runtime identifiers; literal classes are translated.
-     */
-    protected get typedValueSources(): DynamicFormTypedSource[] {
-        const sources: DynamicFormTypedSource[] = [
-            { value: 'literal', label: this.t('typedLiteral', 'Literal') },
-            { value: 'num', label: this.t('typedNumber', 'Number'), input: 'number' },
-            { value: 'bool', label: this.t('typedBoolean', 'Boolean') },
-            { value: 'json', label: this.t('typedJson', 'JSON') },
-            { value: 're', label: this.t('typedRegex', 'Regex') },
-            { value: 'expression', label: this.t('typedExpression', 'Expression') },
-            { value: 'msg', label: 'msg' },
-            { value: 'flow', label: 'flow' },
-            { value: 'global', label: 'global' },
-            { value: 'env', label: 'env' },
-            { value: 'node', label: 'node' }
-        ];
-        const completionScopes = new Set(['msg', 'flow', 'global', 'env', 'node']);
-        return sources.map(source => {
-            if (!completionScopes.has(source.value)) {
-                return source;
-            }
-            return {
-                ...source,
-                completion: source.value as DynamicFormTypedSource['completion'],
-                // Resolve paths per request so a newly completed run enriches
-                // completion without rebuilding the form schema.
-                completionSource: (query: string) =>
-                    createTypedPathCompletion(this.typedSourcePaths(source.value))(query)
-            };
-        });
-    }
-
-    /** Run-context paths plus host code suggestions for one typed scope. */
-    protected typedSourcePaths(source: string): string[] {
-        const paths = new Set<string>(workflowTypedPaths(this.typedContext)?.[source] || []);
-        typedPathsFromSuggestions(this.codeSuggestions, source).forEach(path => paths.add(path));
-        return Array.from(paths);
-    }
-
     private buildFormSchema(): DynamicFormSchema {
-        const fields: DynamicFormField[] = [];
-        if (!this._model.hasSelection) {
-            return { fields };
-        }
-        const defaultGroupLabel = this.t('properties', 'Properties');
-        fields.push({
-            key: 'name',
-            type: 'text',
-            label: this.nameLabel,
-            placeholder: this.namePlaceholder,
-            required: true,
-            inputClass: 'workflow-inspector-name'
+        return buildWorkflowInspectorSchema({
+            model: this._model,
+            codeSuggestions: this.codeSuggestions,
+            typedContext: this.typedContext,
+            t: (key, fallback) => this.t(key, fallback)
         });
-        fields.push({
-            key: 'description',
-            type: 'text',
-            label: this.descriptionLabel,
-            placeholder: this.descriptionPlaceholder,
-            inputClass: 'workflow-inspector-description'
-        });
-        fields.push({
-            key: 'enabled',
-            type: 'checkbox',
-            label: this.enabledLabel,
-            defaultValue: true
-        });
-        fields.push({
-            key: 'icon',
-            type: 'text',
-            label: this.iconLabel,
-            group: this.appearanceLabel,
-            maxLength: 4,
-            defaultValue: '◆',
-            placeholder: '◆',
-            inputClass: 'workflow-inspector-icon'
-        });
-        fields.push({
-            key: 'color',
-            type: 'color',
-            label: this.colorLabel,
-            group: this.appearanceLabel,
-            defaultValue: '#64748b',
-            inputClass: 'workflow-inspector-color'
-        });
-        this._model.fields.forEach(field => {
-            fields.push(this.toDynamicField(field));
-        });
-        return {
-            fields,
-            widgets: [
-                { type: 'workflow-reference', component: WorkflowReferenceWidgetComponent },
-                { type: 'workflow-reference-multi', component: WorkflowReferenceMultiWidgetComponent },
-                { type: 'workflow-typed-value', component: WorkflowTypedValueWidgetComponent }
-            ],
-            defaultGroupLabel,
-            jsonFieldsLabel: this.t('fields', 'Fields'),
-            jsonTextLabel: this.t('json', 'JSON'),
-            // `msg`/`flow`/`global`/`env` are runtime identifiers; only the
-            // literal source needs translating.
-            typedSources: [
-                { value: 'literal', label: this.t('typedLiteral', 'Literal') },
-                { value: 'msg', label: 'msg' },
-                { value: 'flow', label: 'flow' },
-                { value: 'global', label: 'global' },
-                { value: 'env', label: 'env' }
-            ]
-        };
     }
 
-    protected toDynamicField(field: WorkflowInspectorFieldView): DynamicFormField {
-        const typed = field.typed === true;
-        const typedValueWidget = typed && field.typedValue === true;
-        const multiReference = !typedValueWidget && field.reference?.multiple === true;
-        const searchableReference = !typedValueWidget && !multiReference && !!field.reference;
-        return {
-            key: field.key,
-            type: typedValueWidget || multiReference || searchableReference ? 'widget' : this.dynamicType(field),
-            widget: typedValueWidget ? 'workflow-typed-value'
-                : multiReference ? 'workflow-reference-multi'
-                    : searchableReference ? 'workflow-reference' : undefined,
-            typed,
-            // Value fields store references and literal classes explicitly so
-            // text that looks like a reference is never misread; path fields
-            // keep the `msg.`-prefixed string form.
-            typedCodec: typed && field.typedValue === true ? WORKFLOW_TYPED_CODEC : undefined,
-            typedSources: typed && field.typedValue === true ? this.typedValueSources : undefined,
-            label: field.label,
-            placeholder: field.placeholder,
-            description: field.description,
-            group: field.group,
-            options: field.options.map(option => ({ label: option.label, value: option.value })),
-            multiple: field.reference?.multiple === true,
-            defaultValue: field.hasDefault ? field.resetValue : undefined,
-            rows: field.rows,
-            min: field.min,
-            max: field.max,
-            step: field.step,
-            unit: field.unit,
-            span: field.span,
-            minLength: field.minLength,
-            maxLength: field.maxLength,
-            required: field.required,
-            readonly: field.readonly,
-            disabled: field.disabled,
-            pattern: field.pattern,
-            rules: field.rules,
-            errorMessages: field.errorMessages,
-            itemFields: field.itemFields?.map(child => this.toDynamicField(child)),
-            addLabel: field.addLabel,
-            removeLabel: field.removeLabel,
-            minItems: field.minItems,
-            maxItems: field.maxItems,
-            visibleWhen: field.visibleWhen,
-            inputClass: field.inputClass,
-            fieldClass: field.fieldClass,
-            language: field.language,
-            suggestions: this.codeSuggestions,
-            actions: field.typedValue === true
-                // Value fields can be authored as a JSONata expression in the
-                // expanded editor even when the stored source is a literal.
-                ? [{ id: 'expression', label: 'ƒ', title: this.t('editExpression', 'Edit as expression') }]
-                : field.actions,
-            hidden: field.visible === false
-        };
+    /** Apply a contributed section's config patch through the host change path. */
+    applySectionConfig(patch: Record<string, any>): void {
+        if (!patch) {
+            return;
+        }
+        Object.entries(patch).forEach(([key, value]) => {
+            const type = Array.isArray(value) ? 'list'
+                : value && typeof value === 'object' ? 'json'
+                    : typeof value === 'number' ? 'number'
+                        : typeof value === 'boolean' ? 'boolean' : 'text';
+            this.changeAction?.(key, value, type, this._model.nodeId);
+        });
     }
 
     /**
@@ -501,6 +373,55 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
             }
             return !this.nodeForm.errorFor(field);
         });
+    }
+
+    /** Issues grouped by severity then field group, errors first. */
+    get issueGroups(): Array<{
+        key: string;
+        label: string;
+        severity: 'error' | 'warning';
+        items: WorkflowInspectorModel['issues'];
+    }> {
+        const groups = new Map<string, {
+            key: string;
+            label: string;
+            severity: 'error' | 'warning';
+            items: WorkflowInspectorModel['issues'];
+        }>();
+        const fields = this.nodeForm?.schema?.fields || [];
+        this.visibleIssues.forEach(issue => {
+            const key = String(issue.fieldKey || '').split(/[.[\]]/)[0];
+            const group = fields.find(field => field.key === key)?.group || this.t('properties', 'Properties');
+            const severity = issue.severity === 'warning' ? 'warning' : 'error';
+            const groupKey = `${severity}:${group}`;
+            const label = `${this.t(severity === 'warning' ? 'warnings' : 'errors', severity === 'warning' ? 'Warnings' : 'Errors')} · ${group}`;
+            const existing = groups.get(groupKey);
+            if (existing) {
+                existing.items.push(issue);
+                return;
+            }
+            groups.set(groupKey, { key: groupKey, label, severity, items: [issue] });
+        });
+        return Array.from(groups.values()).sort((left, right) => {
+            if (left.severity !== right.severity) {
+                return left.severity === 'error' ? -1 : 1;
+            }
+            return left.label.localeCompare(right.label);
+        });
+    }
+
+    toggleIssueGroup(key: string): void {
+        this.collapsedIssueGroups = {
+            ...this.collapsedIssueGroups,
+            [key]: !this.collapsedIssueGroups[key]
+        };
+    }
+
+    focusIssue(fieldKey: string): void {
+        if (!fieldKey) {
+            return;
+        }
+        this.nodeForm?.focusError(fieldKey);
     }
 
     get formValue(): Record<string, any> {
@@ -607,15 +528,6 @@ export class WorkflowInspectorComponent implements AfterViewInit, OnDestroy {
         this.restoreAction?.();
     }
 
-    protected dynamicType(field: WorkflowInspectorFieldView): DynamicFormField['type'] {
-        // Most node field types are already shared dynamic-form types; only
-        // the boolean alias needs mapping. Choice fields render as a native
-        // `<select>` instead of a radio group.
-        if (field.type === 'boolean') {
-            return 'checkbox';
-        }
-        return field.type as DynamicFormField['type'];
-    }
 
     protected changeType(field: DynamicFormField): string {
         switch (field.type) {

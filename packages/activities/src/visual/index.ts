@@ -6,6 +6,8 @@ export * from './workflow-canvas-focus';
 export * from './workflow-runtime';
 export * from './runtime/workflow-node-handlers';
 export * from './workflow-typed-value';
+export * from './workflow-typed-paths';
+export * from './workflow-node-editors';
 export * from './workflow-expression';
 export * from './workflow-secrets';
 export * from './workflow-config-validation';

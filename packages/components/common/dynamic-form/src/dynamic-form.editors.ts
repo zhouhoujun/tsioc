@@ -16,6 +16,8 @@ export interface DynamicFormEditorHost {
     setEditorValue(field: DynamicFormField, value: any): void;
     isJsonRawField(field: DynamicFormField): boolean;
     setJsonRawField(field: DynamicFormField, raw: boolean): void;
+    /** Host hook for non-built-in row actions. */
+    listRowActionAction?(field: DynamicFormField, index: number, actionId: string): void;
 }
 
 /**
@@ -318,7 +320,7 @@ function updateList(host: DynamicFormEditorHost, field: DynamicFormField, items:
 }
 
 export function addListItem(host: DynamicFormEditorHost, field: DynamicFormField): void {
-    const items = listItems(host, field).map(item => ({ ...item }));
+    const items = listItems(host, field).map(cloneListItem);
     const next: Record<string, any> = {};
     (field.itemFields || []).forEach(child => {
         next[child.key] = child.defaultValue !== undefined
@@ -330,7 +332,7 @@ export function addListItem(host: DynamicFormEditorHost, field: DynamicFormField
 }
 
 export function moveListItem(host: DynamicFormEditorHost, field: DynamicFormField, index: number, delta: number): void {
-    const items = listItems(host, field).map(item => ({ ...item }));
+    const items = listItems(host, field).map(cloneListItem);
     const target = index + delta;
     if (index < 0 || index >= items.length || target < 0 || target >= items.length) {
         return;
@@ -352,9 +354,66 @@ export function listRowSummary(field: DynamicFormField, item: any, index: number
 }
 
 export function removeListItem(host: DynamicFormEditorHost, field: DynamicFormField, index: number): void {
-    const items = listItems(host, field).map(item => ({ ...item }));
+    const items = listItems(host, field).map(cloneListItem);
     items.splice(index, 1);
     updateList(host, field, items);
+}
+
+export function changeListRowValue(
+    host: DynamicFormEditorHost,
+    field: DynamicFormField,
+    index: number,
+    value: any
+): void {
+    const items = listItems(host, field).map(cloneListItem);
+    if (index < 0 || index >= items.length) {
+        return;
+    }
+    items[index] = value && typeof value === 'object' ? { ...value } : value;
+    updateList(host, field, items);
+}
+
+function cloneListItem(item: any): any {
+    return item && typeof item === 'object' ? { ...item } : item;
+}
+
+function cloneListRow(item: any): any {
+    if (!item || typeof item !== 'object') {
+        return item;
+    }
+    try {
+        return JSON.parse(JSON.stringify(item));
+    } catch {
+        return { ...item };
+    }
+}
+
+export function copyListItem(host: DynamicFormEditorHost, field: DynamicFormField, index: number): void {
+    const items = listItems(host, field).map(cloneListItem);
+    if (index < 0 || index >= items.length) {
+        return;
+    }
+    items.splice(index + 1, 0, cloneListRow(items[index]));
+    updateList(host, field, items);
+}
+
+/** Built-in `copy`/`remove` row actions plus a host callback for custom ones. */
+export function runListRowAction(
+    host: DynamicFormEditorHost,
+    field: DynamicFormField,
+    index: number,
+    actionId: string
+): void {
+    const id = String(actionId || '');
+    if (id === 'copy') {
+        copyListItem(host, field, index);
+        return;
+    }
+    if (id === 'remove') {
+        removeListItem(host, field, index);
+        return;
+    }
+    host.listRowActionAction?.(field, index, id);
 }
 
 export function changeListItemValue(
@@ -364,7 +423,7 @@ export function changeListItemValue(
     child: DynamicFormField,
     value: any
 ): void {
-    const items = listItems(host, field).map(item => ({ ...item }));
+    const items = listItems(host, field).map(cloneListItem);
     if (!items[index]) {
         return;
     }
@@ -379,7 +438,7 @@ export function changeListItem(
     child: DynamicFormField,
     event: any
 ): void {
-    const items = listItems(host, field).map(item => ({ ...item }));
+    const items = listItems(host, field).map(cloneListItem);
     let raw = child.type === 'checkbox' || child.type === 'switch'
         ? !!event?.target?.checked
         : event?.target?.value;
@@ -415,7 +474,7 @@ export function changeListItemOption(
     child: DynamicFormField,
     value: any
 ): void {
-    const items = listItems(host, field).map(item => ({ ...item }));
+    const items = listItems(host, field).map(cloneListItem);
     items[index] = { ...(items[index] || {}), [child.key]: value };
     updateList(host, field, items);
 }

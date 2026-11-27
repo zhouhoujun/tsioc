@@ -10,6 +10,8 @@ import { DYNAMIC_FORM_WIDGETS, DynamicFormModule } from '@tsdi/components/common
 import { WorkflowReferenceWidgetComponent } from './visual/components/workflow-reference-widget';
 import { WorkflowReferenceMultiWidgetComponent } from './visual/components/workflow-reference-multi-widget';
 import { WorkflowTypedValueWidgetComponent } from './visual/components/workflow-typed-value-widget';
+import { DEFAULT_WORKFLOW_NODE_EDITORS } from './visual/components/workflow-node-editor-sections-default';
+import { WORKFLOW_NODE_EDITORS } from './visual/workflow-node-editors';
 import { WorkspaceLayoutModule } from '@tsdi/components/common/layout';
 import { EmptyStateModule } from '@tsdi/components/common/empty-state';
 import { StatModule } from '@tsdi/components/common/stat';
@@ -111,7 +113,8 @@ import {
             { type: 'workflow-reference', component: WorkflowReferenceWidgetComponent },
             { type: 'workflow-reference-multi', component: WorkflowReferenceMultiWidgetComponent },
             { type: 'workflow-typed-value', component: WorkflowTypedValueWidgetComponent }
-        ] }
+        ] },
+        { provide: WORKFLOW_NODE_EDITORS, useValue: DEFAULT_WORKFLOW_NODE_EDITORS }
     ],
     declarations: [
         StartActivity,

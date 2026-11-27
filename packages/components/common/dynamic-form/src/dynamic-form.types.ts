@@ -60,6 +60,13 @@ export interface DynamicFormFieldAction {
  * locale; the value is what gets prefixed onto the stored string.
  */
 /** Validation issue from field/schema hooks or the host (server/reference checks). */
+export interface DynamicFormRowAction {
+    id: string;
+    label: string;
+    title?: string;
+    icon?: string;
+}
+
 export interface DynamicFormIssue {
     key: string;
     message: string;
@@ -207,6 +214,14 @@ export interface DynamicFormField {
     maxItems?: number;
     /** Allow moving list rows up/down (TUI-safe alternative to drag/drop). */
     reorder?: boolean;
+    /**
+     * Registered widget that edits the whole list row (instead of rendering
+     * `itemFields` one by one). Receives the parent field, the row item and a
+     * change callback that writes the edited row back immutably.
+     */
+    rowEditor?: string;
+    /** Extra per-row actions forwarded to the host (`copy`/`remove` built in). */
+    rowActions?: DynamicFormRowAction[];
     /** Summary shown on each list row (for example `field = value`). */
     rowSummary?(item: any, index: number): string;
     /** Registered widget type (see {@link DynamicFormWidget}); uses `type: 'widget'`. */

@@ -313,6 +313,40 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-error-summary { display: flex; flex-direction: column; gap: 2px; margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--ui-danger-border, #cf9893); border-radius: 8px; background: var(--ui-danger-bg, transparent); }
+.df-error-group {
+    margin-top: 4px;
+}
+
+.df-error-group-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--df-text-muted);
+}
+
+.df-error-group[data-severity="warning"] .df-error-group-title {
+    color: #b45309;
+}
+
+.df-error-group-count {
+    min-width: 1.4em;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--df-danger-soft);
+    color: var(--df-danger);
+    text-align: center;
+    font-size: 9px;
+}
+
+.df-error-group[data-severity="warning"] .df-error-group-count {
+    background: #fffbeb;
+    color: #b45309;
+}
+
 .df-error-summary-title { color: var(--ui-danger-fg, #cf9893); font-weight: 600; }
 .df-error-summary-item { padding: 0; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
 .df-error-summary-item:hover { text-decoration: underline; }

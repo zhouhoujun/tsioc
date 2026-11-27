@@ -23,4 +23,7 @@ export * from './workflow-group-settings.component';
 export * from './workflow-designer.component';
 export * from './workflow-reference-widget';
 export * from './workflow-typed-value-widget';
+export * from './workflow-node-editor-sections';
+export * from './workflow-node-editor-sections-default';
+export * from './workflow-inspector-schema';
 export * from './workflow-reference-multi-widget';

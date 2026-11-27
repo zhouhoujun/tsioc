@@ -192,9 +192,9 @@ export class DynamicFormTest {
         const focused: string[] = [];
         const form = createForm({
             fields: [
-                { key: 'name', type: 'text', label: 'Name', required: true },
-                { key: 'note', type: 'text', label: 'Note' },
-                { key: 'url', type: 'url', label: 'URL' }
+                { key: 'name', type: 'text', label: 'Name', required: true, group: 'Identity' },
+                { key: 'note', type: 'text', label: 'Note', group: 'Identity' },
+                { key: 'url', type: 'url', label: 'URL', group: 'Link' }
             ]
         }, { name: '', note: '', url: 'bad' });
         form.showErrorSummary = true;
@@ -206,6 +206,13 @@ export class DynamicFormTest {
         expect(form.errorSummary.map(item => item.key)).toEqual(['name', 'url']);
         expect(form.errorSummary[0].label).toEqual('Name');
         expect(form.errorSummary[0].message).toBeTruthy();
+        expect(form.errorSummaryGroups.map(group => `${group.severity}:${group.label}`))
+            .toEqual(['error:Identity', 'error:Link']);
+
+        form.setIssues([{ key: 'note', message: 'Note warning', severity: 'warning' }]);
+        expect(form.errorSummaryGroups.map(group => `${group.severity}:${group.label}`))
+            .toEqual(['error:Identity', 'error:Link', 'warning:Identity']);
+        form.clearIssues(['note']);
         focused.length = 0;
         form.focusError('url');
         expect(focused).toEqual(['url']);

@@ -216,18 +216,63 @@ export interface DynamicFormErrorSummaryItem {
     key: string;
     label: string;
     message: string;
+    /** Section the field belongs to (`field.group` or the schema default). */
+    group: string;
+    severity: 'error' | 'warning';
+}
+
+export interface DynamicFormErrorSummaryGroup {
+    key: string;
+    label: string;
+    severity: 'error' | 'warning';
+    items: DynamicFormErrorSummaryItem[];
 }
 
 /** Visible errors in schema order for an opt-in form-level summary. */
 export function formErrorSummary(host: DynamicFormValidationHost): DynamicFormErrorSummaryItem[] {
+    const defaultGroup = host._schema?.defaultGroupLabel || 'Properties';
     return host.schemaFields()
         .filter(field => !field.hidden && field.type !== 'hidden' && host.isVisible(field))
-        .map(field => ({
-            key: field.key,
-            label: String(field.label || field.key),
-            message: errorFor(host as any, field)
-        }))
-        .filter(item => !!item.message);
+        .map(field => {
+            const message = errorFor(host as any, field);
+            if (!message) {
+                return undefined;
+            }
+            const issue = fieldIssue(host as any, field);
+            return {
+                key: field.key,
+                label: String(field.label || field.key),
+                message,
+                group: String(field.group || defaultGroup),
+                severity: issue?.severity === 'warning' ? 'warning' as const : 'error' as const
+            };
+        })
+        .filter((item): item is DynamicFormErrorSummaryItem => !!item);
+}
+
+/** Summary grouped by severity then field group (errors before warnings). */
+export function formErrorSummaryGroups(host: DynamicFormValidationHost): DynamicFormErrorSummaryGroup[] {
+    const groups = new Map<string, DynamicFormErrorSummaryGroup>();
+    formErrorSummary(host).forEach(item => {
+        const key = `${item.severity}:${item.group}`;
+        const group = groups.get(key);
+        if (group) {
+            group.items.push(item);
+            return;
+        }
+        groups.set(key, {
+            key,
+            label: item.group,
+            severity: item.severity,
+            items: [item]
+        });
+    });
+    return Array.from(groups.values()).sort((left, right) => {
+        if (left.severity !== right.severity) {
+            return left.severity === 'error' ? -1 : 1;
+        }
+        return left.label.localeCompare(right.label);
+    });
 }
 
 /** Focus one field and its first control; used by the summary and submit flow. */

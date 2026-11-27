@@ -5,8 +5,11 @@ export const DYNAMIC_FORM_TEMPLATE = `
         <div v-else>
             <div [class]="classes.errorSummary" role="alert" v-if="showErrorSummary && errorSummary.length">
                 <div [class]="classes.errorSummaryTitle">{{errorSummaryLabel}}</div>
-                <button [class]="classes.errorSummaryItem" type="button" v-for="item in errorSummary"
-                    @click="focusError(item.key)">{{item.label}}: {{item.message}}</button>
+                <div [class]="classes.errorGroup" v-for="group in errorSummaryGroups" data-severity="{{group.severity}}">
+                    <div [class]="classes.errorGroupTitle">{{group.label}}<span [class]="classes.errorGroupCount">{{group.items.length}}</span></div>
+                    <button [class]="classes.errorSummaryItem" type="button" v-for="item in group.items"
+                        data-severity="{{item.severity}}" @click="focusError(item.key)">{{item.label}}: {{item.message}}</button>
+                </div>
             </div>
             <div [class]="classes.noFields" v-if="!visibleGroups.length">{{emptyLabel}}</div>
             <div [class]="classes.group" v-for="group in visibleGroups">
@@ -145,7 +148,7 @@ export const DYNAMIC_FORM_TEMPLATE = `
                         @input="changeText(field, $event)" @blur="blurField(field)"></textarea>
                     <div v-if="isListInput(field)" [class]="classes.list">
                         <div [class]="classes.listRow" v-for="(item, rowIndex) in listItems(field)">
-                            <div [class]="classes.listFields">
+                            <div [class]="classes.listFields" v-if="!rowEditorComponent(field)">
                                 <div v-for="child in field.itemFields" v-if="isListItemVisible(child, item)">
                                     <div [class]="classes.listField" data-field-key="{{child.key}}">
                                         <div [class]="classes.labelRow">
@@ -215,12 +218,21 @@ export const DYNAMIC_FORM_TEMPLATE = `
                                     </div>
                                 </div>
                             </div>
+                            <dynamic-field-widget v-if="rowEditorComponent(field)"
+                                :component="rowEditorComponent(field)" :field="field"
+                                :value="item" :values="item" :itemIndex="rowIndex"
+                                :changeAction="listRowWidgetChange(field, rowIndex)"
+                                :label="fieldLabel(field)" :describedBy="describedByFor(field)"></dynamic-field-widget>
                             <span [class]="classes.listSummary" v-if="listRowSummary(field, item, rowIndex)">{{listRowSummary(field, item, rowIndex)}}</span>
-                            <span class="df-list-actions" v-if="field.reorder">
-                                <button [class]="classes.listMove" type="button" data-list-move="up"
+                            <span class="df-list-actions">
+                                <button [class]="classes.fieldAction" v-for="action in field.rowActions" type="button"
+                                    data-list-action="{{action.id}}"
+                                    title="{{action.title || action.label}}" aria-label="{{action.title || action.label}}"
+                                    @click="runListRowAction(field, rowIndex, action.id)">{{action.label}}</button>
+                                <button [class]="classes.listMove" type="button" data-list-move="up" v-if="field.reorder"
                                     aria-label="Move up" [disabled]="rowIndex === 0"
                                     @click="moveListItem(field, rowIndex, -1)">↑</button>
-                                <button [class]="classes.listMove" type="button" data-list-move="down"
+                                <button [class]="classes.listMove" type="button" data-list-move="down" v-if="field.reorder"
                                     aria-label="Move down" [disabled]="rowIndex >= listItems(field).length - 1"
                                     @click="moveListItem(field, rowIndex, 1)">↓</button>
                             </span>

@@ -638,7 +638,7 @@ export function buildWorkflowInspectorModel(
             maxItems: field.maxItems,
             visibleWhen: field.visibleWhen,
             reference,
-            actions: reference?.actions,
+            actions: reference?.actions, rowEditor: field.rowEditor, rowActions: field.rowActions,
             hasDefault: field.defaultValue !== undefined,
             resetValue: fieldResetValue(field)
         };

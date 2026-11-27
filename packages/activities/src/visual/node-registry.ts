@@ -402,6 +402,7 @@ export const BUILT_IN_WORKFLOW_NODES: WorkflowNodeDefinition[] = [
                 label: 'Rules',
                 type: 'list',
                 addLabel: '+ Add rule',
+                rowActions: [{ id: 'copy', label: '⧉', title: 'Duplicate rule' }],
                 itemFields: [
                     configField({
                         key: 'operator',

@@ -384,6 +384,47 @@ describe('Workflow Designer UI', () => {
         expect(await completion('payload.')).toContainEqual({ label: 'payload.name', value: 'payload.name' });
     });
 
+    it('copies a switch rule through the list row action', async () => {
+        const node = ref.instance.designer.addNode('switch', { x: 40, y: 40 })!;
+        ref.instance.designer.updateNodeConfig(node.id, {
+            field: 'payload.value',
+            rules: [{ operator: 'equals', value: { type: 'literal', value: 'keep' } }]
+        });
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const copy = root.querySelector(
+            '.workflow-field[data-field-key="rules"] [data-list-action="copy"]'
+        ) as any;
+        expect(copy).toBeTruthy();
+        copy.click();
+        await waitFor(() => (ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules?.length || 0) === 2);
+        const rules = ref.instance.designer.nodes.find(item => item.id === node.id)?.config?.rules;
+        expect(rules?.[1]).toEqual(rules?.[0]);
+    });
+
+    it('renders contributed node editor sections', async () => {
+        const node = ref.instance.designer.addNode('http-request', { x: 40, y: 40 })!;
+        ref.instance.designer.updateNodeConfig(node.id, {
+            method: 'POST',
+            url: 'https://api.example.com/orders',
+            headers: { 'x-trace': '1' },
+            body: '{"total":1}'
+        });
+        ref.instance.designer.selectNode(node.id);
+        await flush();
+
+        const section = root.querySelector(
+            '.workflow-node-editor-section[data-section="request-preview"]'
+        ) as any;
+        expect(section).toBeTruthy();
+        expect(section.querySelector('.workflow-node-editor-section-title')?.textContent).toBe('请求预览');
+        expect(section.querySelector('[data-preview="method"]')?.textContent).toBe('POST');
+        expect(section.querySelector('[data-preview="url"]')?.textContent).toContain('api.example.com');
+        expect(section.querySelector('[data-preview="headers"]')?.textContent).toBe('1');
+        expect(section.querySelector('[data-preview="body"]')?.textContent).toContain('chars');
+    });
+
     it('edits node scope filters with a multi-select', async () => {
         const node = ref.instance.designer.addNode('catch', { x: 60, y: 60 })!;
         ref.instance.designer.selectNode(node.id);
@@ -488,6 +529,14 @@ describe('Workflow Designer UI', () => {
         const issue = root.querySelector('.workflow-inspector-issue') as any;
         expect(issue).toBeTruthy();
         expect(issue.textContent).toContain('Required');
+        const groupTitle = root.querySelector('.workflow-inspector-issue-group-title') as any;
+        expect(groupTitle.textContent).toContain('错误');
+        groupTitle.click();
+        await flush();
+        expect(root.querySelector('.workflow-inspector-issue')).toBeFalsy();
+        (root.querySelector('.workflow-inspector-issue-group-title') as any).click();
+        await flush();
+        expect(root.querySelector('.workflow-inspector-issue')).toBeTruthy();
 
         // A host reference issue is mirrored under the owning field.
         ref.instance.designer.workflowLibrary.set([

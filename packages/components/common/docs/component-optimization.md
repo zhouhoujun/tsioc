@@ -332,6 +332,15 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
     边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
     等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。
+- **节点编辑器 sections / 分组错误摘要 / 整行列表（2026-11-27）**
+  - `WORKFLOW_NODE_EDITORS` contribution registry：按节点类型注册
+    `{ id, labelKey, component, order, visible, inputs }` sections，inspector 在
+    dynamic-form 后渲染；默认包含 HTTP 请求预览、loop 迭代预览、子流程预览。
+  - `dynamic-form` 错误摘要按 severity + field.group 分组，errors 优先于
+    warnings；inspector issue 面板同样分组、可折叠并点击定位字段。
+  - 列表字段支持 `rowEditor`（整行 widget）与 `rowActions`（内置 `copy`/
+    `remove` + host 回调）；`changeListRowValue` 按不可变方式回写整行，
+    `copyListItem` 复制行并保留原始值类型。
 - **字段校验状态与 typed 路径补全（2026-11-27）**
   - `dynamic-form` 异步校验期间向字段/widget 透传 `pending`/`valid`/
     `status`/`asyncError`，标签行显示“检查中…/有效”；值变化会清除旧结果，

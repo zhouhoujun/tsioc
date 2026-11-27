@@ -26,7 +26,8 @@ import { applyFormSchema, formSchemaFields, refreshFormErrors, syncFormValues } 
 import {
     DYNAMIC_FORM_WIDGETS,
     fieldWidget,
-    fieldWidgetComponent as resolveFieldWidgetComponent
+    fieldWidgetComponent as resolveFieldWidgetComponent,
+    rowEditorComponent
 } from './dynamic-form.widgets';
 import {
     clearFormIssues,
@@ -37,6 +38,7 @@ import {
     focusFirstFormError,
     focusFormField,
     formErrorSummary,
+    formErrorSummaryGroups,
     formValidationResult,
     isFormValid,
     issueSeverityFor,
@@ -45,6 +47,7 @@ import {
     setFormIssues,
     validateFormAsync
 } from './dynamic-form.validation-state';
+import type { DynamicFormErrorSummaryGroup } from './dynamic-form.validation-state';
 import * as editor from './dynamic-form.editors';
 import * as fields from './dynamic-form.fields';
 
@@ -234,6 +237,7 @@ export class DynamicFormComponent extends DynamicFormEditorMethods implements On
     get isTouched(): boolean { return !!this.form?.touched || this.touchedFields.length > 0; }
     get touchedFields(): string[] { return formTouchedFields(this.form); }
     get errorSummary(): Array<{ key: string; label: string; message: string }> { return formErrorSummary(this); }
+    get errorSummaryGroups(): DynamicFormErrorSummaryGroup[] { return formErrorSummaryGroups(this); }
     captureInitial(value: Record<string, any> = this.getValue()): void { this.initialSnapshot = cloneFormValue(value || {}); }
     async canLeave(): Promise<boolean> { return formCanLeave(this); }
 
@@ -580,6 +584,15 @@ export class DynamicFormComponent extends DynamicFormEditorMethods implements On
     @Computed()
     get formValues(): Record<string, any> { return this.getValue(); }
     changeWidgetValue = (field: DynamicFormField, value: any): void => { this.updateValue(field, value); };
+    rowEditorComponent(field: DynamicFormField): any {
+        return rowEditorComponent(this._schema, field, this.extraWidgets());
+    }
+    listRowWidgetChange(field: DynamicFormField, index: number): (fieldArg: DynamicFormField, value: any) => void {
+        return (_fieldArg, value) => editor.changeListRowValue(this, field, index, value);
+    }
+    runListRowAction(field: DynamicFormField, index: number, actionId: string): void {
+        editor.runListRowAction(this, field, index, actionId);
+    }
     listWidgetChange(field: DynamicFormField, index: number): (child: DynamicFormField, value: any) => void {
         return (child, value) => editor.changeListItemValue(this, field, index, child, value);
     }

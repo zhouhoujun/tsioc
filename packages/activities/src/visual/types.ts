@@ -1066,6 +1066,10 @@ export interface WorkflowInspectorFieldView {
     reference?: WorkflowInspectorReferenceView;
     /** Trailing field actions forwarded to the shared dynamic form. */
     actions?: Array<{ id: string; label: string; title?: string }>;
+    /** Registered widget used to edit a whole list row. */
+    rowEditor?: string;
+    /** Extra per-row actions forwarded to the shared dynamic form. */
+    rowActions?: Array<{ id: string; label: string; title?: string }>;
     hasDefault: boolean;
     /** Value written back when the field is reset (already formatted for the control). */
     resetValue: any;

@@ -24,3 +24,16 @@ export function fieldWidgetComponent(
 ): any {
     return fieldWidget(schema, field, extra)?.component;
 }
+
+/** Registered widget used for a whole list row (`field.rowEditor`). */
+export function rowEditorComponent(
+    schema: DynamicFormSchema | undefined,
+    field: DynamicFormField,
+    extra: DynamicFormWidget[] = []
+): any {
+    const type = String(field?.rowEditor || '').trim();
+    if (!type) {
+        return undefined;
+    }
+    return [...(schema?.widgets || []), ...(extra || [])].find(widget => widget?.type === type)?.component;
+}
