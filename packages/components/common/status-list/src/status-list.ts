@@ -18,9 +18,9 @@ export interface StatusListItem {
 @Component({
     selector: 'status-list, ui-status-list',
     template: `
-    <div class="console-panel status-list">
+    <div class="console-panel status-list" role="list" aria-label="{{ariaLabel || title}}">
         <label class="status-list-title">{{title}}</label>
-        <label class="status-list-row" data-status="{{item.status}}" v-for="item in items">
+        <label class="status-list-row" role="listitem" data-status="{{item.status}}" v-for="item in items">
             <span class="status-list-status">{{item.statusLabel || item.status}}</span>
             <span class="status-list-label"> {{item.label}}</span>
             <span class="status-list-detail"> {{item.detail}}</span>
@@ -30,6 +30,7 @@ export interface StatusListItem {
 })
 export class StatusListComponent {
     @Attribute() title = '';
+    @Attribute() ariaLabel = '';
     @Attribute() hint = '';
     @Attribute() items: StatusListItem[] = [];
 }

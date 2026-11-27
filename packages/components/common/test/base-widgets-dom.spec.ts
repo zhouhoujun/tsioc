@@ -128,6 +128,9 @@ export class CommonChromeWidgetsDomTest {
 
         const status = ref.hostView.query(StatusListComponent) as ComponentRef<StatusListComponent>;
         const statusRoot = status.hostView.rootNodes[0] as HTMLElement;
+        expect(statusRoot.getAttribute('role')).toEqual('list');
+        expect(statusRoot.getAttribute('aria-label')).toEqual('Status');
+        expect(statusRoot.querySelector('[data-status="ok"]')?.getAttribute('role')).toEqual('listitem');
         expect(statusRoot.querySelector('[data-status="ok"]')?.textContent).toContain('Service');
         expect(statusRoot.textContent).toContain('ready');
 
