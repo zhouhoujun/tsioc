@@ -561,6 +561,12 @@
 - `amqplib@0.10.9` 的 `connect()` 返回 `ChannelModel`；AMQP client/server 与 e2e 的类型统一为 `ChannelModel`。
 - `ms-tsc` 恢复 PASS；AMQP 68 passing。
 
+第九十九批（Admin config schema v1）：
+
+- 新增 `GATEWAY_ADMIN_CONFIG_VERSION = 1`、`migrateGatewayAdminConfig`、`validateGatewayAdminConfig` 与 `GatewayAdminConfigError`。
+- v0 自动迁移（含 `auth: 'oidc'` → `{ mode: 'oidc' }`）；更高版本给出升级错误；port/prefix/routes/auth/oidcService 启动期校验并输出可操作错误。
+- README 补充 version/迁移说明；admin 103 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

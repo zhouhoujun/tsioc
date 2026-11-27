@@ -4903,3 +4903,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第九十八批（2026-11-16）：
   - amqplib ChannelModel 类型适配；ms-tsc PASS；AMQP 68。
+
+- 微服务框架第九十九批（2026-11-16）：
+  - Admin config schema v1 + migration + actionable validation。
+  - 回归：admin 103。

@@ -59,6 +59,10 @@ Environment variables:
 
 Routes file format: a route array, or `{ "routes": [...] }`.
 
+JSON config files may include `"version": 1`. Missing/`0` versions are migrated
+automatically (including legacy `auth: "oidc"` → `auth: { "mode": "oidc" }`);
+newer schema versions fail with an actionable error.
+
 Programmatic startup:
 
 ```ts
