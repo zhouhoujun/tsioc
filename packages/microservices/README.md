@@ -6,6 +6,9 @@
 
 > 基于当前代码逐文件核对的优化设计（正确性缺口、性能/稳定性/健壮性方案、分阶段路线图与验收标准）见
 > [`OPTIMIZATION.md`](./OPTIMIZATION.md)。
+>
+> 2026-11 架构复核、与 NestJS/Spring Cloud/Moleculer/Dapr 的能力对比及 P0/P1/P2 优化方案见
+> [`ARCHITECTURE-REVIEW-2026-11.md`](./ARCHITECTURE-REVIEW-2026-11.md)。
 
 ---
 
