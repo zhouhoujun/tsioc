@@ -17,6 +17,8 @@ export interface SearchListItem {
     /** Extra searchable text when the label is not enough. */
     keywords?: string;
     disabled?: boolean;
+    /** Allow native drag even without a host drag handler. */
+    draggable?: boolean;
 }
 
 export interface SearchListResult {
@@ -67,9 +69,11 @@ interface SearchListRow {
                 <div class="ui-search-list-option {{row.className}}" role="option" v-else
                     id="{{listId}}-{{row.item.id}}"
                     data-item-id="{{row.item.id}}"
+                    draggable="{{itemDraggable(row.item)}}"
                     aria-selected="{{row.active}}"
                     aria-disabled="{{row.item.disabled ? 'true' : 'false'}}"
                     @click="choose(row.item)"
+                    @dragstart="dragStart($event, row.item)"
                     @mousemove="hover(row.item)">
                     <span class="ui-search-list-icon" v-if="row.item.icon">{{row.item.icon}}</span>
                     <span class="ui-search-list-label">{{row.label}}</span>
@@ -119,6 +123,7 @@ export class SearchListComponent {
     @Attribute() changeAction?: (query: string) => void;
     @Attribute() selectAction?: (item: SearchListItem) => void;
     @Attribute() activeChangeAction?: (item: SearchListItem | null) => void;
+    @Attribute() dragStartAction?: (event: any, item: SearchListItem) => void;
     @Attribute() closeAction?: () => void;
 
     readonly listId: string;
@@ -312,6 +317,17 @@ export class SearchListComponent {
         }
         this._activeId = row.id;
         this.activeChangeAction?.(row);
+    }
+
+    itemDraggable(item: SearchListItem): string {
+        return item?.draggable || this.dragStartAction ? 'true' : 'false';
+    }
+
+    dragStart(event: any, item: SearchListItem): void {
+        if (!item || item.disabled) {
+            return;
+        }
+        this.dragStartAction?.(event, item);
     }
 
     hover(item: SearchListItem): void {

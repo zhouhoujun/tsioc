@@ -94,7 +94,7 @@ function sameModelKey(previous: any[], next: any[]): boolean {
         <workspace-layout #workspaceLayout class="workflow-workspace" [bottomCollapsed]="true">
             <workspace-left>
                 <workflow-palette :groups="paletteGroups" :locale="locale"
-                    :addAction="addFromPalette" :dragStartAction="paletteDragStart"></workflow-palette>
+                    :addAction="addFromPalette" :dragStartAction="paletteDragStart" :recentScope="designer.definition.id"></workflow-palette>
             </workspace-left>
             <workspace-center>
                 <div class="workflow-align-bar" v-if="alignBarVisible">
@@ -119,7 +119,7 @@ function sameModelKey(previous: any[], next: any[]): boolean {
                     :visible="showLogs" :locale="locale" :closeAction="closeLogs"
                     :clearStateAction="clearRuntimeState"></workflow-run-log>
             </workspace-bottom>
-        </workspace-layout>
+        </workspace-layout><workflow-quick-add :groups="paletteGroups" :locale="locale" :definitionId="designer.definition.id" :addAction="addFromPalette"></workflow-quick-add>
         <div class="workflow-statusbar" v-if="showStatusbar">
             <span class="workflow-status-message">{{statusModel.message}}</span>
             <span class="workflow-status-error" v-if="statusModel.error">{{statusModel.error}}</span>

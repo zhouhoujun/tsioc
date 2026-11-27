@@ -22,6 +22,7 @@ import { ToastModule } from '@tsdi/components/common/toast';
 import { ProgressModule } from '@tsdi/components/common/progress';
 import { DataTableModule } from '@tsdi/components/common/data-table';
 import { BreadcrumbModule } from '@tsdi/components/common/breadcrumb';
+import { CommandPaletteModule } from '@tsdi/components/common/command-palette';
 import { FormsModule } from '@tsdi/components/forms';
 import { RunAspect } from './aop/RunAspect';
 import { ActivityInterceptorService, ActivityLogAspect, ActivityDebugService } from './aop';
@@ -45,6 +46,7 @@ import {
     WorkflowDesignerI18nModule,
     WorkflowToolbarComponent,
     WorkflowPaletteComponent,
+    WorkflowQuickAddComponent,
     WorkflowCanvasComponent,
     WorkflowInspectorComponent,
     WorkflowRunHistoryComponent,
@@ -94,6 +96,7 @@ import {
         ProgressModule,
         DataTableModule,
         BreadcrumbModule,
+        CommandPaletteModule,
         FormsModule,
         WorkflowDesignerI18nModule
     ],
@@ -151,6 +154,7 @@ import {
         HttpRequestActivity,
         WorkflowToolbarComponent,
         WorkflowPaletteComponent,
+        WorkflowQuickAddComponent,
         WorkflowCanvasComponent,
         WorkflowInspectorComponent,
         WorkflowRunHistoryComponent,
@@ -223,6 +227,7 @@ import {
         WorkflowPluginRegistry,
         WorkflowToolbarComponent,
         WorkflowPaletteComponent,
+        WorkflowQuickAddComponent,
         WorkflowCanvasComponent,
         WorkflowInspectorComponent,
         WorkflowRunHistoryComponent,

@@ -138,6 +138,36 @@ describe('Workflow Designer UI', () => {
         expect(root.querySelectorAll('.workflow-node').length).toBe(7);
     });
 
+    it('opens quick add, searches and remembers the added node', async () => {
+        (root.querySelector('[data-palette-quick-add]') as any).click();
+        await flush();
+        const panel = root.querySelector('.ui-command-palette-panel') as any;
+        expect(panel).toBeTruthy();
+        const input = panel.querySelector('.ui-search-list-input') as any;
+        expect(input).toBeTruthy();
+
+        input.value = 'log';
+        input.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        const option = panel.querySelector('[data-item-id="log"]') as any;
+        expect(option).toBeTruthy();
+        option.click();
+        await flush();
+        expect(ref.instance.designer.nodes.length).toBe(7);
+        await waitFor(() => !root.querySelector('.ui-command-palette-panel'));
+        expect(root.querySelector('.ui-command-palette-panel')).toBeFalsy();
+
+        // The quick-add catalog reuses the shared recent-items group.
+        (root.querySelector('[data-palette-quick-add]') as any).click();
+        await flush();
+        await waitFor(() => (root.querySelector('.ui-search-list-group-title')?.textContent || '').includes('最近使用'));
+        expect(root.querySelector('.ui-search-list-group-title')?.textContent).toContain('最近使用');
+        expect(root.querySelector('[data-item-id="log"]')).toBeTruthy();
+        (root.querySelector('.ui-command-palette-close') as any).click();
+        await waitFor(() => !root.querySelector('.ui-command-palette-panel'));
+        expect(root.querySelector('.ui-command-palette-panel')).toBeFalsy();
+    });
+
     it('shows conditional fields based on the current operator', async () => {
         ref.instance.designer.selectNode('condition_1');
         await flush();

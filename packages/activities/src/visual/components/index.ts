@@ -1,6 +1,7 @@
 export * from './workflow-toolbar';
 export * from './workflow-management-menu';
 export * from './workflow-palette';
+export * from './workflow-quick-add';
 export * from './workflow-canvas';
 export * from './workflow-inspector';
 export * from './workflow-run-history';

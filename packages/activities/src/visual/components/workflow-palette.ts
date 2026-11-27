@@ -2,6 +2,7 @@ import { Attribute, Component } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { Translator } from '@tsdi/i18n';
 import { AccordionItem } from '@tsdi/components/common/accordion';
+import { workflowQuickAdd } from './workflow-quick-add';
 import { translateWorkflow } from '../i18n';
 import { WorkflowPaletteGroup, WorkflowPaletteItem } from '../types';
 
@@ -24,6 +25,9 @@ import { WorkflowPaletteGroup, WorkflowPaletteItem } from '../types';
                 [value]="query"
                 @input="search($event)"
                 @keydown="searchKeydown($event)" />
+            <button class="workflow-palette-quick-add" type="button"
+                data-palette-quick-add title="{{quickAddTitle}}" aria-label="{{quickAddTitle}}"
+                @click="openQuickAdd()">⌘</button>
         </div>
         <div class="workflow-palette-empty" v-if="query && !visibleGroups.length">{{noMatchesLabel}}</div>
         <div class="{{groupClass(group)}}" v-for="group in visibleGroups"
@@ -46,6 +50,8 @@ export class WorkflowPaletteComponent {
     @Attribute() locale = 'zh-CN';
     @Attribute() addAction?: (item: WorkflowPaletteItem) => void;
     @Attribute() dragStartAction?: (event: any, item: WorkflowPaletteItem) => void;
+    /** Recents bucket (the designer passes the workflow/document id). */
+    @Attribute() recentScope = 'default';
 
     query = '';
 
@@ -152,13 +158,24 @@ export class WorkflowPaletteComponent {
     }
 
     searchKeydown(event: any): void {
-        if (event?.key === 'Escape' && this.query) {
+        const key = String(event?.key || '');
+        if ((event?.ctrlKey || event?.metaKey) && key.toLowerCase() === 'k') {
+            event.preventDefault?.();
+            this.openQuickAdd();
+            return;
+        }
+        if (key === 'Escape' && this.query) {
             event.preventDefault?.();
             this.query = '';
         }
     }
 
+    openQuickAdd(): void {
+        workflowQuickAdd.open();
+    }
+
     add(item: WorkflowPaletteItem): void {
+        workflowQuickAdd.remember(this.recentScope, item.type);
         this.addAction?.(item);
     }
 

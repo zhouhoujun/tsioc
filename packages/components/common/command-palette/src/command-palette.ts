@@ -34,7 +34,7 @@ import { installCommandPaletteStyles } from './command-palette.styles';
             <ui-search-list :items="items" :source="source" :recentIds="recentIds"
                 :placeholder="placeholder" :emptyLabel="emptyLabel" :loadingLabel="loadingLabel"
                 :retryLabel="retryLabel" :ariaLabel="ariaLabel" :minChars="minChars"
-                :maxVisible="maxVisible"></ui-search-list>
+                :maxVisible="maxVisible" :recentLabel="recentLabel"></ui-search-list>
             <div class="ui-command-palette-hint" v-if="hint">{{hint}}</div>
         </div>
     </div>`
@@ -83,6 +83,7 @@ export class CommandPaletteComponent {
     @Attribute() maxVisible = 12;
     @Attribute() items: SearchListItem[] = [];
     @Attribute() recentIds: string[] = [];
+    @Attribute() recentLabel = 'Recent';
     @Attribute() source: SearchListSource | undefined = undefined;
     @Attribute() changeAction: ((query: string) => void) | undefined = undefined;
     @Attribute() selectAction: ((item: SearchListItem) => void) | undefined = undefined;
@@ -92,6 +93,7 @@ export class CommandPaletteComponent {
 
     private _open = false;
     private _closable = true;
+    private _closeOnSelect = true;
     private _overlayEnabled = true;
 
     @Attribute()
@@ -116,6 +118,11 @@ export class CommandPaletteComponent {
     @Attribute()
     get closable(): boolean { return this._closable; }
     set closable(value: boolean | string) { this._closable = normalizeBoolean(value, true); }
+
+    /** Close the palette after a row is selected (standard palette behavior). */
+    @Attribute()
+    get closeOnSelect(): boolean { return this._closeOnSelect; }
+    set closeOnSelect(value: boolean | string) { this._closeOnSelect = normalizeBoolean(value, true); }
 
     /** Default on: a palette is an overlay; registration is a no-op without a manager. */
     @Attribute()
@@ -207,7 +214,12 @@ export class CommandPaletteComponent {
         if (!list) {
             return;
         }
-        list.selectAction = item => this.selectAction?.(item);
+        list.selectAction = item => {
+            this.selectAction?.(item);
+            if (this._closeOnSelect) {
+                this.close();
+            }
+        };
         list.closeAction = () => this.close();
         list.changeAction = query => this.changeAction?.(query);
     }

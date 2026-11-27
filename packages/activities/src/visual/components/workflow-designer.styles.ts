@@ -7,6 +7,7 @@ import { WORKFLOW_DESIGNER_INSPECTOR_CSS } from './workflow-designer.styles.insp
 import { WORKFLOW_DESIGNER_STATUS_CSS } from './workflow-designer.styles.status';
 import { WORKFLOW_DESIGNER_THEME_CSS } from './workflow-designer.styles.theme';
 import { WORKFLOW_DESIGNER_INTERACTION_CSS } from './workflow-designer.styles.interaction';
+import { WORKFLOW_DESIGNER_NODE_EDITOR_CSS } from './workflow-designer.styles.node-editor';
 import { installAccordionStyles } from '@tsdi/components/common/accordion';
 
 export const WORKFLOW_DESIGNER_STYLE_ID = 'tsdi-workflow-designer-styles';
@@ -23,7 +24,8 @@ export const WORKFLOW_DESIGNER_CSS = [
     WORKFLOW_DESIGNER_INSPECTOR_CSS,
     WORKFLOW_DESIGNER_STATUS_CSS,
     WORKFLOW_DESIGNER_THEME_CSS,
-    WORKFLOW_DESIGNER_INTERACTION_CSS
+    WORKFLOW_DESIGNER_INTERACTION_CSS,
+    WORKFLOW_DESIGNER_NODE_EDITOR_CSS
 ].join('\n');
 
 /**

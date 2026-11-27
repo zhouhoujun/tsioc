@@ -332,6 +332,13 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
     边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
     等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。
+- **Palette quick-add / search-list 复用（2026-11-27）**
+  - `ui-search-list` 支持行 dragstart（`dragStartAction`/`draggable`），
+    palette 的数据源可直接作为可拖拽列表行。
+  - workflow palette 保留分组折叠浏览，并新增 command-palette 快速添加
+    浮层：搜索、分组、最近使用、错误/空态、关闭与选择关闭均复用共享实现。
+  - quick-add 挂在 workspace 之外的稳定层，避免 designer 重绘销毁浮层；
+    `Ctrl/Cmd+K` 与按钮均可打开，最近节点按 workflow 文档隔离。
 - **节点编辑器 sections / 分组错误摘要 / 整行列表（2026-11-27）**
   - `WORKFLOW_NODE_EDITORS` contribution registry：按节点类型注册
     `{ id, labelKey, component, order, visible, inputs }` sections，inspector 在

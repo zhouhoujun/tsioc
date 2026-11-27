@@ -14,11 +14,16 @@ export const WORKFLOW_DESIGNER_CANVAS_CSS = `/* Palette */
     position: sticky;
     top: -10px;
     z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     padding: 2px 0 8px;
     background: #f8fafc;
 }
 
 .workflow-palette-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
     width: 100%;
     box-sizing: border-box;
     padding: 7px 9px;
@@ -33,6 +38,26 @@ export const WORKFLOW_DESIGNER_CANVAS_CSS = `/* Palette */
 .workflow-palette-search-input:focus {
     border-color: #93c5fd;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.workflow-palette-quick-add {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--wf-theme-border, #cbd5e1);
+    border-radius: 8px;
+    background: var(--wf-theme-surface-alt, #ffffff);
+    color: var(--wf-theme-muted, #475569);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.workflow-palette-quick-add:hover,
+.workflow-palette-quick-add:focus-visible {
+    border-color: var(--wf-theme-primary, #2563eb);
+    color: var(--wf-theme-primary, #2563eb);
+    outline: none;
 }
 
 .workflow-palette-empty {

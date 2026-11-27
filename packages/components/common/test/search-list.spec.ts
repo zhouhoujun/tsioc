@@ -14,7 +14,8 @@ async function settle(): Promise<void> {
     selector: 'search-list-host',
     imports: [SearchListComponent],
     template: `<ui-search-list :items="items" :recentIds="recentIds"
-        :selectAction="onSelect" :closeAction="onClose" :changeAction="onChange"></ui-search-list>`
+        :selectAction="onSelect" :closeAction="onClose" :changeAction="onChange"
+        :dragStartAction="onDragStart"></ui-search-list>`
 })
 class SearchListHostComponent {
     items: SearchListItem[] = [
@@ -26,10 +27,15 @@ class SearchListHostComponent {
     selected = '';
     closed = 0;
     changed = '';
+    dragged = '';
     source?: (query: string, signal: AbortSignal) => Promise<any>;
     onSelect = (item: SearchListItem) => { this.selected = item.id; };
     onClose = () => { this.closed += 1; };
     onChange = (query: string) => { this.changed = query; };
+    onDragStart = (event: any, item: SearchListItem) => {
+        this.dragged = item.id;
+        event.dataTransfer = { setData() { } };
+    };
 }
 
 @Suite('common search-list')
@@ -80,6 +86,15 @@ export class SearchListTest {
         expect(root.querySelector('.ui-search-list-input')).toBeTruthy();
         expect(root.querySelector('[data-item-id="deploy"]')).toBeTruthy();
         expect(root.textContent).toContain('Ctrl+D');
+    }
+
+    @Test('marks rows draggable and routes dragstart to the host')
+    async draggableRows() {
+        const { host, root } = await this.mount();
+        const row = root.querySelector('[data-item-id="deploy"]') as any;
+        expect(row.getAttribute('draggable')).toBe('true');
+        row.dispatchEvent(new (root.ownerDocument.defaultView as any).Event('dragstart', { bubbles: true }));
+        expect(host.dragged).toEqual('deploy');
     }
 
     @Test('Home and End land on enabled rows')
