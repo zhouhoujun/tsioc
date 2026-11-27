@@ -411,9 +411,13 @@ node scripts/scaffold-microservice.mjs edge --kind gateway --port 8080
 
 ```bash
 cd packages/microservices/orders
-npm run build
-node ../../dist/orders/main.js
+npm run dev     # ts-node watch，无需先 build
+npm run start   # 不 watch 直接运行
+npm run build && node ../../dist/orders/main.js
 ```
+
+生成的 service/gateway 默认带 `/health`、`/health/liveness`、`/health/readiness`
+和 graceful shutdown；读 readiness 返回 503 期间不要接流量。
 
 ## 11. 契约生成
 
