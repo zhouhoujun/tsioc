@@ -585,6 +585,12 @@
 - 接入 `ConsumerRuntime` 的 idempotency；QoS0 无 packet id 时明确不 dedupe。
 - capability matrix 更新 MQTT 幂等（含 QoS0 限制说明）；service 112、MQTT 92 passing。
 
+第一百零三批（Admin 审计记录）：
+
+- Controller 记录 routes.update/reset、config.apply/rollback、rule.save/apply/remove 的 timestamp/action/target/details。
+- 新增 `GET /api/gateway-admin/audit`（最新在前，最多 200 条）；同时写结构化 logger `gateway.admin.audit`。
+- controller/doctor 定向测试通过。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

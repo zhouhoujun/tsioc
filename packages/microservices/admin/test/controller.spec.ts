@@ -65,6 +65,7 @@ describe('GatewayAdminController', () => {
 
         controller.resetRoutes();
         expect(runtime.getDynamicOptions().routes).toBeUndefined();
+        expect(controller.getAudit().map(entry => entry.action)).toEqual(['routes.reset', 'routes.update']);
     });
 
     it('saves and applies a visual rule workflow', async () => {
@@ -75,6 +76,7 @@ describe('GatewayAdminController', () => {
         expect(saved.rules.length).toBe(2);
         expect(runtime.getRules([]).length).toBe(2);
         expect((await controller.listRules()).length).toBe(1);
+        expect(controller.getAudit()[0]).toMatchObject({ action: 'rule.save', target: definition.id });
     });
 
     it('rejects invalid rule workflows without touching the runtime', async () => {

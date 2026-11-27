@@ -1,5 +1,6 @@
 import { Inject, Injectable, token } from '@tsdi/ioc';
 import { BadRequestException, NotFoundException } from '@tsdi/common';
+import { Logger } from '@tsdi/logger';
 import { Controller, Delete, Get, Post, Put, RequestBody, RequestPath, ServiceFeatureFn, ServiceFeatureKind, useStatics, Router, ROUTERS, MESSAGE_ROUTERS, SERVICE_CAPABILITIES, TransportCapabilityReport } from '@tsdi/service';
 import { GatewayConfigService, GatewayInterceptor, GatewayMatchPreviewRequest, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_LOCAL_PATHS, GATEWAY_OPTIONS } from '@tsdi/gateway';
 import {
@@ -23,6 +24,13 @@ export interface GatewayDoctorCheck {
     id: string;
     status: GatewayDoctorCheckStatus;
     message: string;
+}
+
+export interface GatewayAdminAuditEntry {
+    timestamp: string;
+    action: string;
+    target?: string;
+    details?: Record<string, any>;
 }
 
 export interface GatewayDoctorCapability {
@@ -90,9 +98,26 @@ export class GatewayAdminController {
         @Inject(GatewayConfigService, { nullable: true }) private configService?: GatewayConfigService,
         @Inject(ROUTERS, { nullable: true }) private routers?: Router[],
         @Inject(MESSAGE_ROUTERS, { nullable: true }) private messageRouters?: Router[],
-        @Inject(SERVICE_CAPABILITIES, { nullable: true }) private serviceCapabilities?: TransportCapabilityReport[]
+        @Inject(SERVICE_CAPABILITIES, { nullable: true }) private serviceCapabilities?: TransportCapabilityReport[],
+        @Inject(Logger, { nullable: true }) private logger?: Logger | null
     ) {
         this.store = store ?? new InMemoryWorkflowDefinitionStore();
+    }
+
+    private auditEntries: GatewayAdminAuditEntry[] = [];
+
+    private audit(action: string, target?: string, details?: Record<string, any>): void {
+        const entry: GatewayAdminAuditEntry = {
+            timestamp: new Date().toISOString(),
+            action,
+            target,
+            details
+        };
+        this.auditEntries.push(entry);
+        if (this.auditEntries.length > 200) {
+            this.auditEntries.splice(0, this.auditEntries.length - 200);
+        }
+        this.logger?.info?.('gateway.admin.audit', entry);
     }
 
     @Get('/')
@@ -103,6 +128,12 @@ export class GatewayAdminController {
     @Get('/state')
     getState(): GatewayAdminState {
         return this.snapshot();
+    }
+
+    /** Recent admin mutations (newest first) for operations/audit. */
+    @Get('/audit')
+    getAudit(): GatewayAdminAuditEntry[] {
+        return this.auditEntries.slice().reverse();
     }
 
     /** Discovered services and their endpoints for the admin overview. */
@@ -238,6 +269,7 @@ export class GatewayAdminController {
                 routes
             });
         }
+        this.audit('routes.update', `${routes.length} route(s)`, { source: 'admin' });
         return this.snapshot();
     }
 
@@ -272,12 +304,16 @@ export class GatewayAdminController {
             throw new BadRequestException('Transactional gateway config is unavailable in this process');
         }
         const { expectedVersion, dryRun, mergeRoutes, ...patch } = body;
-        return this.configService.apply(patch, {
+        const result = this.configService.apply(patch, {
             expectedVersion,
             dryRun,
             mergeRoutes,
             source: 'admin'
         });
+        if (!dryRun) {
+            this.audit('config.apply', `v${result.version}`, { source: 'admin', mergeRoutes: mergeRoutes === true });
+        }
+        return result;
     }
 
     /** Roll back to a historical version as a new version. */
@@ -289,10 +325,12 @@ export class GatewayAdminController {
         if (!this.configService) {
             throw new BadRequestException('Transactional gateway config is unavailable in this process');
         }
-        return this.configService.rollback(body.version, {
+        const result = this.configService.rollback(body.version, {
             expectedVersion: body.expectedVersion,
             source: 'admin'
         });
+        this.audit('config.rollback', `v${body.version}`, { source: 'admin', version: result.version });
+        return result;
     }
 
     /** Preview which rule/route matches a request (does not forward it). */
@@ -328,6 +366,7 @@ export class GatewayAdminController {
             delete dynamic.routes;
             this.runtime.setDynamicOptions(dynamic);
         }
+        this.audit('routes.reset');
         return this.snapshot();
     }
 
@@ -357,6 +396,7 @@ export class GatewayAdminController {
         }
         const summary = await this.store!.save(definition);
         this.applyRules(compiled.rules);
+        this.audit('rule.save', id, { rules: compiled.rules.length });
         return { summary, definition, rules: compiled.rules };
     }
 
@@ -387,6 +427,7 @@ export class GatewayAdminController {
         if (!removed) {
             throw new NotFoundException(`Gateway rule workflow not found: ${id}`);
         }
+        this.audit('rule.remove', id);
         return { removed: true };
     }
 
@@ -396,6 +437,7 @@ export class GatewayAdminController {
             throw new BadRequestException(compiled.errors.join('; '));
         }
         this.applyRules(compiled.rules);
+        this.audit('rule.apply', definition.id, { rules: compiled.rules.length });
         return { definition, rules: compiled.rules };
     }
 
