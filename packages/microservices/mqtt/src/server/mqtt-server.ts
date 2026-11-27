@@ -6,6 +6,7 @@ import {
 } from '@tsdi/common'
 import { ServiceHandler, Service, BindServiceEvent, getSubscribePatterns, mergeSubscribePatterns, watchSubscribePatterns, ConsumerRuntime, CONSUMER_METRICS, ConsumerMetricsSink } from '@tsdi/service';
 import { Subject, race, take, takeUntil, lastValueFrom } from 'rxjs';
+import * as crypto from 'node:crypto';
 import * as mqtt from 'mqtt';
 import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_FILTERS, MQTT_BIND_GUARDS } from './options';
 
@@ -13,6 +14,16 @@ import { MqttServOptions, MQTT_SERV_OPTIONS, MQTT_BIND_INTERCEPTORS, MQTT_BIND_F
  * MQTT server for microservices.
  * Connects to MQTT broker and subscribes to topics for message handling.
  */
+/** Stable-enough idempotency key for QoS1/2 redeliveries. */
+export function resolveMqttMessageId(topic: string, payload: Buffer, packet?: any): string | undefined {
+    const messageId = packet?.messageId;
+    if (messageId == null) {
+        return undefined;
+    }
+    const hash = crypto.createHash('sha1').update(payload).digest('hex');
+    return `${topic}:${messageId}:${hash}`;
+}
+
 @Injectable()
 export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, RequestContext> {
 
@@ -26,9 +37,12 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
     private subscribedTopics = new Set<string>();
 
     private get consumerRuntime(): ConsumerRuntime {
-        return this.runtime ??= new ConsumerRuntime({ metrics: this.consumerMetrics ?? undefined, labels: { transport: 'mqtt' },
+        return this.runtime ??= new ConsumerRuntime({
+            metrics: this.consumerMetrics ?? undefined,
+            labels: { transport: 'mqtt' },
             retry: this.options?.retry,
-            concurrency: this.options?.concurrency
+            concurrency: this.options?.concurrency,
+            idempotency: this.options?.idempotency
         });
     }
 
@@ -220,6 +234,7 @@ export class MqttServer<TReq = any, TRes = any> extends Service<TReq, TRes, Requ
 
     private async handleMessage(topic: string, payload: Buffer, packet?: any): Promise<void> {
         await this.consumerRuntime.handle({
+            id: resolveMqttMessageId(topic, payload, packet),
             labels: { topic },
             payload: { topic, payload, packet },
             fail: (err) => {

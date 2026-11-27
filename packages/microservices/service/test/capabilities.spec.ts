@@ -36,7 +36,7 @@ describe('transport capabilities', () => {
         });
         expect(getTransportCapabilities(Transport.MQTT)).toMatchObject({
             delivery: 'at-least-once',
-            consumerIdempotency: false
+            consumerIdempotency: true
         });
         expect(getTransportCapabilities(Transport.Redis)).toMatchObject({
             delivery: 'both',
@@ -54,7 +54,7 @@ describe('transport capabilities', () => {
             transportConfig(Transport.HTTP),
             transportConfig(Transport.HTTP, false)
         ]);
-        expect(reports[0].warnings.join(' ')).toContain('consumer idempotency is not supported');
+        expect(reports[0].warnings.join(' ')).not.toContain('consumer idempotency is not supported');
         expect(reports[1].warnings.join(' ')).toContain('at-most-once delivery');
         expect(reports[2].warnings).toEqual([]);
     });

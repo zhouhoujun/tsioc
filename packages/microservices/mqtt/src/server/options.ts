@@ -1,6 +1,6 @@
 import { token, Provider } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
-import { ServiceOptions, ConsumerRetryOptions } from '@tsdi/service';
+import { ServiceOptions, ConsumerRetryOptions, ConsumerIdempotencyOptions } from '@tsdi/service';
 import * as mqtt from 'mqtt';
 
 /**
@@ -36,6 +36,11 @@ export interface MqttServOptions extends ServiceOptions {
      * concurrency is preserved).
      */
     concurrency?: number;
+    /**
+     * opt-in deduplication. Uses QoS1/2 packet.messageId + payload hash;
+     * QoS0 deliveries have no stable id and are not deduplicated.
+     */
+    idempotency?: ConsumerIdempotencyOptions;
 }
 
 export const MQTT_SERV_OPTIONS = token<MqttServOptions>('MQTT_SERV_OPTIONS');

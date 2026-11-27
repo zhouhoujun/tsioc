@@ -116,9 +116,9 @@ const MATRIX: Record<number, TransportCapabilities> = {
         publishSubscribe: true,
         streaming: false,
         delivery: 'at-least-once',
-        consumerIdempotency: false,
+        consumerIdempotency: true,
         ordering: 'topic',
-        notes: 'QoS1/2 redelivery is at-least-once; no stable message id for idempotency yet.'
+        notes: 'QoS1/2 redelivery is at-least-once; opt-in idempotency uses packet.messageId + payload hash (QoS0 has no id).'
     },
     [Transport.Kafka]: {
         transport: Transport.Kafka,

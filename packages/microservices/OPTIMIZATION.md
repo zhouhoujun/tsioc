@@ -579,6 +579,12 @@
 - 静态 `publicKey` 仍优先；HMAC/算法限制不变；新增 `clearHttpAuthJwksCache`。
 - 新增 security JWKS 3 个测试；security 48、gateway 157 passing。
 
+第一百零二批（MQTT QoS 幂等）：
+
+- MQTT 新增 `idempotency` 选项；`resolveMqttMessageId(topic, payload, packet)` 使用 QoS1/2 `packet.messageId` + payload hash。
+- 接入 `ConsumerRuntime` 的 idempotency；QoS0 无 packet id 时明确不 dedupe。
+- capability matrix 更新 MQTT 幂等（含 QoS0 限制说明）；service 112、MQTT 92 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
