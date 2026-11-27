@@ -21,7 +21,9 @@ describe('admin gateway local paths', () => {
     it('registers the UI prefix and admin API as local gateway paths', () => {
         const feature = useGatewayAdminUi({ root: '/tmp/admin-ui', prefix: '/admin' })(config) as any;
         expect(feature.providers.some((provider: any) => provider.provide === GATEWAY_LOCAL_PATHS && provider.multi === true)).toBe(true);
-        expect(tokenValues(feature)).toContainEqual(['/admin', '/api/gateway-admin']);
+        const values = tokenValues(feature).flat();
+        expect(values).toContain('/admin');
+        expect(values).toContain('/api/gateway-admin');
     });
 
     it('registers custom auth API/UI prefixes as local gateway paths', () => {

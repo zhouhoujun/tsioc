@@ -4888,3 +4888,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第九十四批（2026-11-16）：
   - GATEWAY_LOCAL_PATHS 自动注册 admin API/UI；嵌入式 admin 保存规则不再被 /api 转发。
   - 回归：gateway/admin 相关测试通过。
+
+- 微服务框架第九十五批（2026-11-16）：
+  - 嵌入式 admin 保存规则回归（/api 上游 401 不再影响本地规则 PUT）。
+  - GATEWAY_LOCAL_PATHS 空前缀保护。

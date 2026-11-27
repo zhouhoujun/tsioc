@@ -452,10 +452,14 @@ export function useGatewayAdminUi(options: GatewayAdminUiOptions): ServiceFeatur
     return (config) => {
         const created = feature(config);
         const features = Array.isArray(created) ? created : [created];
+        const localPaths = ['/api/gateway-admin'];
+        if (prefix) {
+            localPaths.push(`/${prefix}`);
+        }
         features.forEach(item => {
             item.providers.push({
                 provide: GATEWAY_LOCAL_PATHS,
-                useValue: [`/${prefix}`, '/api/gateway-admin'],
+                useValue: localPaths,
                 multi: true
             } as any);
         });

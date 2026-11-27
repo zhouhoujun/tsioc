@@ -995,7 +995,10 @@ export function useGatewayAdminAuth(
             { provide: GATEWAY_ADMIN_AUTH_OPTIONS, useValue: options },
             {
                 provide: GATEWAY_LOCAL_PATHS,
-                useValue: [options.apiPrefix ?? '/api/gateway-admin', options.uiPrefix].filter(Boolean),
+                useValue: [
+                    options.apiPrefix ?? '/api/gateway-admin',
+                    ...(options.uiPrefix && options.uiPrefix !== '/' ? [options.uiPrefix] : [])
+                ],
                 multi: true
             } as any,
             JWTService,

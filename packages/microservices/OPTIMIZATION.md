@@ -538,6 +538,11 @@
 - 网关在规则/路由匹配前合并 token 路径与 `excludePaths`，嵌入式 admin 无需手动配置；路径仍按段边界匹配。
 - 新增 gateway token 测试与 admin `ui-paths.spec.ts`；顺带移除 controller.openapi 的重复 throw。
 
+第九十五批（嵌入式 admin 规则保存回归）：
+
+- 新增 `embedded-admin.spec.ts`：真实 gateway + admin features + `/api` 上游 401，验证 `/api/gateway-admin/state` 与 `PUT /rules/:id` 均保持本地并可保存规则。
+- `useGatewayAdminUi` 不再把空前缀注册为 `/`（避免误排除整个网关）；auth 的 `uiPrefix:'/'` 同样跳过。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
