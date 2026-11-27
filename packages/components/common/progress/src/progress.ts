@@ -17,12 +17,7 @@ import { normalizeBoolean, normalizeTone, UiTone } from '../../src/ui';
         data-percent="{{percent}}"
         data-indeterminate="{{indeterminate}}"
         role="progressbar"
-        aria-valuemin="0"
-        aria-valuemax="{{max}}"
-        aria-valuenow="{{indeterminate ? '' : value}}"
-        aria-valuetext="{{indeterminate ? indeterminateLabel : percentText}}"
-        aria-busy="{{indeterminate}}"
-        aria-label="{{ariaLabel || label}}">
+        v-bind="progressAttrs">
         <span class="ui-progress-label" v-if="label">{{label}}</span>
         <span class="ui-progress-bar" aria-hidden="true">{{bar}}</span>
         <span class="ui-progress-value" v-if="showValue">{{indeterminate ? '…' : percentText}}</span>
@@ -126,6 +121,20 @@ export class ProgressComponent implements OnDestroy {
 
     get percentText(): string {
         return `${this.percent}%`;
+    }
+
+    get progressAttrs(): Record<string, string> {
+        const attrs: Record<string, string> = {
+            'aria-valuemin': '0',
+            'aria-valuemax': String(this.max),
+            'aria-valuetext': this.indeterminate ? this.indeterminateLabel : this.percentText,
+            'aria-busy': String(this.indeterminate),
+            'aria-label': this.ariaLabel || this.label
+        };
+        if (!this.indeterminate) {
+            attrs['aria-valuenow'] = String(this.value);
+        }
+        return attrs;
     }
 
     get progressClass(): string {

@@ -205,6 +205,13 @@ export class BaseUiPrimitivesTest {
         expect(root.textContent).toContain('███░░░░░░░');
         expect(root.getAttribute('role')).toEqual('progressbar');
         expect(root.getAttribute('aria-valuenow')).toEqual('25');
+        progress.instance.indeterminate = true;
+        for (let index = 0; index < 6; index++) {
+            await Promise.resolve();
+        }
+        expect(root.hasAttribute('aria-valuenow')).toBe(false);
+        expect(root.getAttribute('aria-valuetext')).toEqual('Loading');
+        progress.instance.indeterminate = false;
     }
 
     @Test('breadcrumb collapses the middle and dispatches the original item')

@@ -216,6 +216,13 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         }
     });
 
+    (Array.from(scope?.querySelectorAll?.('[aria-valuenow]') || []) as any[]).forEach(node => {
+        const value = String(node.getAttribute?.('aria-valuenow') || '');
+        if (!/^-?\d+(?:\.\d+)?$/.test(value)) {
+            violations.push({ rule: 'invalid-aria-valuenow', element: describe(node), detail: `aria-valuenow="${value}" is not numeric` });
+        }
+    });
+
     (Array.from(scope?.querySelectorAll?.('[aria-level]') || []) as any[]).forEach(node => {
         const level = Number(node.getAttribute?.('aria-level'));
         if (!Number.isInteger(level) || level < 1) {
