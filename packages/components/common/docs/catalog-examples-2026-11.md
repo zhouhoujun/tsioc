@@ -143,3 +143,82 @@ this.toasts.show('Saved', { tone: 'success', actionLabel: 'Undo', action: undo }
 
 `portal` switches the popup to fixed viewport coordinates so scrolling/clipping
 containers cannot cut it off; terminal hosts keep the inline tooltip.
+
+## MenuBar nested flyouts
+
+```html
+<menu-bar label="View" :groups="viewGroups" :selectAction="runCommand"></menu-bar>
+```
+
+```ts
+viewGroups = [{
+  items: [{
+    id: 'zoom', label: 'Zoom', children: [
+      { id: 'zoom:in', label: 'Zoom In' },
+      { id: 'zoom:out', label: 'Zoom Out' }
+    ]
+  }]
+}];
+```
+
+Ancestor flyouts stay open while a deeper level is pinned. ArrowRight enters a
+level, ArrowLeft closes the current level, Home/End and type-ahead operate on
+the focused level, and Escape closes the whole menu.
+
+## DataTable hierarchical rows
+
+```html
+<ui-data-table :columns="columns" :rows="folders" treeRows treeChildren="children"
+  :rowAction="openFolder"></ui-data-table>
+```
+
+`treeRows` flattens `children` below each parent and indents the first column by
+depth. Selection, filtering, sorting, paging, keyboard focus and row actions use
+the same flattened source, so a child row reports its real payload.
+
+## Select keyboard affordances
+
+```html
+<select-list :options="people" multiple :values="assignees" searchable
+  clearable title="Assignees" closeTitle="Close"
+  removeValueTitle="Remove" :removeAction="unassign"></select-list>
+```
+
+The close control, each chip's remove button and the clear action are focusable
+buttons; Enter/Space activates them. `closeTitle` and `removeValueTitle` supply
+accessible names for glyph-only controls.
+
+## Toast async actions and capacity
+
+```html
+<ui-toast-provider maxVisible="3" pauseOnHover></ui-toast-provider>
+```
+
+```ts
+toast.show('Deploy failed', {
+  durationMs: 0,
+  actionLabel: 'Retry',
+  action: () => deploy()
+});
+```
+
+While an async action runs the action shows a pending glyph and ignores repeat
+presses; failures render as an alert. `maxVisible` caps the painted queue and
+shows `+N` for hidden entries while the service keeps the full priority queue.
+
+## Toolbar keyboard reorder
+
+```html
+<ui-toolbar :items="commands" draggable reorderAction="reorder"></ui-toolbar>
+```
+
+Alt+Left/Right moves the roving command through the same `reorderAction` used by
+drag-and-drop; host TUI keymaps can call `toolbar.moveItem(id, delta)` directly.
+
+## Accessibility/state gate contract
+
+`npm run test` in `packages/components/common` renders Button, Checkbox, Tabs,
+MenuBar, DataTable, Select, Dialog, Drawer and Toast in six states (default,
+focus, selected, open, disabled, loading) under light/dark/high-contrast theme
+attributes and audits accessible names, ARIA state pairs, haspopup/expanded and
+duplicate ids. Theme switching is asserted to be CSS-only.
