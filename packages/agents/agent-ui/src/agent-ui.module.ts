@@ -1,6 +1,6 @@
 import { Module } from '@tsdi/ioc';
 import { TransformModule } from '@tsdi/core';import { ComponentsModule } from '@tsdi/components';
-import { BaseComponentsModule } from '@tsdi/components/common';
+import { BaseComponentsModule, UI_I18N } from '@tsdi/components/common';
 import { ToastModule, ToastService } from '@tsdi/components/common/toast';
 import { TAB_BAR_SOURCE, TabBarModule } from '@tsdi/components/common/tab-bar';
 import { TabsModule } from '@tsdi/components/common/tabs';
@@ -13,9 +13,9 @@ import { StatusListModule } from '@tsdi/components/common/status-list';
 import { MarkdownModule } from '@tsdi/components/common/markdown';
 
 import { AgentModule } from '@tsdi/agent';
-import { I18nModule, I18N_PROVIDERS } from '@tsdi/i18n';
+import { I18nModule, I18N_PROVIDERS, TranslatorService } from '@tsdi/i18n';
 import { getGlobalProcess } from './global-process';
-import { agentUiChinese, agentUiEnglish } from './agent-ui.i18n';
+import { agentUiChinese, agentUiEnglish, formatAgentUiLabel } from './agent-ui.i18n';
 import { AgentConsoleEventBridge } from './AgentConsoleEventBridge';
 import { AgentConsolePathProvider } from './AgentConsolePathProvider';
 
@@ -182,6 +182,14 @@ import { AGENT_CONSOLE_MARKDOWN_COMPONENT } from './AgentConsoleMessageComponent
     ],
     providers: [
         ...I18N_PROVIDERS,
+        {
+            provide: UI_I18N,
+            useFactory: (translator: TranslatorService) => ({
+                translate: (key: string, params?: Record<string, any>) =>
+                    formatAgentUiLabel(translator, key, key, params)
+            }),
+            deps: [TranslatorService]
+        },
         AgentConsoleSessionState,
         AgentConsoleSessionService,
         AgentConsoleSessionTabsSource,

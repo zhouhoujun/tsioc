@@ -12,6 +12,19 @@ import { AGENT_UI_ZH_CN_FOLLOW_UP_ONLY_TERMS, AGENT_UI_SESSION_CLOSING_MESSAGES 
 export const agentUiChinese: TranslationBundle = {
     locale: 'zh-CN',
     messages: {
+        ui: {
+            common: {
+                search: '搜索',
+                searching: '搜索中…',
+                noMatches: '无匹配结果',
+                retry: '重试',
+                recent: '最近',
+                palette: '命令面板',
+                typeCommand: '输入命令…',
+                noCommands: '没有匹配的命令',
+                loading: '加载中…'
+            }
+        },
         agent: {
             turn: {
                 understanding: '正在理解需求',

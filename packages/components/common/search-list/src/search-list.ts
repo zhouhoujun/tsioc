@@ -1,9 +1,10 @@
 import { Attribute, Component, ElementRef, OnDestroy, noReact } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
 import { SelectionCore } from '../../src/selection-core';
 import { installSearchListStyles } from './search-list.styles';
+import { UI_I18N, UiI18n, uiText } from '../../src/ui-i18n';
 
 /** One selectable row in a {@link SearchListComponent}. */
 export interface SearchListItem {
@@ -51,16 +52,16 @@ interface SearchListRow {
     template: `
     <div class="ui-search-list {{className}}">
         <input class="ui-search-list-input" type="text" role="combobox" v-if="showInput"
-            aria-label="{{ariaLabel}}" aria-autocomplete="list"
+            aria-label="{{ariaText}}" aria-autocomplete="list"
             aria-expanded="{{rows.length ? 'true' : 'false'}}"
             aria-controls="{{listId}}" aria-activedescendant="{{activeDescendant}}"
-            [value]="query" [placeholder]="placeholder" [disabled]="disabled"
+            [value]="query" [placeholder]="placeholderText" [disabled]="disabled"
             @input="onInput($event)" @keydown="onKeydown($event)" />
         <div class="ui-search-list-status" v-if="loadingState || error">
-            <span class="ui-search-list-loading" v-if="loadingState">{{loadingLabel}}</span>
+            <span class="ui-search-list-loading" v-if="loadingState">{{loadingText}}</span>
             <span class="ui-search-list-error" role="alert" v-if="error">{{error}}</span>
             <button class="ui-search-list-retry ui-plain-button" type="button"
-                v-if="error && canRetry" @click="retry">{{retryLabel}}</button>
+                v-if="error && canRetry" @click="retry">{{retryText}}</button>
         </div>
         <div class="ui-search-list-body" role="listbox" id="{{listId}}" aria-label="{{ariaLabel}}" v-if="open" @scroll="onScroll($event)">
             <div class="ui-search-list-row" v-for="row in rows" trackBy="key">
@@ -82,12 +83,15 @@ interface SearchListRow {
                 </div>
             </div>
             <div class="ui-search-list-empty" role="presentation"
-                v-if="!loadingState && !error && !optionCount">{{emptyLabel}}</div>
+                v-if="!loadingState && !error && !optionCount">{{emptyText}}</div>
         </div>
     </div>`
 })
 export class SearchListComponent implements OnDestroy {
-    constructor(@Optional() protected elementRef?: ElementRef) {
+    constructor(
+        @Optional() protected elementRef?: ElementRef,
+        @Optional() @Inject(UI_I18N) protected i18n?: UiI18n | null
+    ) {
         markElementRefRaw(elementRef);
         this.listId = `ui-search-list-${SearchListComponent.sequence++}`;
     }
@@ -108,11 +112,11 @@ export class SearchListComponent implements OnDestroy {
     /** Abort a source request that stalls; the list becomes retryable. */
     @Attribute() requestTimeout = 15_000;
     @Attribute() query = '';
-    @Attribute() placeholder = 'Search…';
-    @Attribute() emptyLabel = 'No matches';
-    @Attribute() loadingLabel = 'Searching…';
-    @Attribute() retryLabel = 'Retry';
-    @Attribute() ariaLabel = 'Search';
+    @Attribute() placeholder = '';
+    @Attribute() emptyLabel = '';
+    @Attribute() loadingLabel = '';
+    @Attribute() retryLabel = '';
+    @Attribute() ariaLabel = '';
     @Attribute() className = '';
     @Attribute() minChars = 0;
     @Attribute() maxVisible = 12;
@@ -131,7 +135,7 @@ export class SearchListComponent implements OnDestroy {
     /** Controlled active row; ignored when it no longer exists. */
     @Attribute() selectedId = '';
     @Attribute() recentIds: string[] = [];
-    @Attribute() recentLabel = 'Recent';
+    @Attribute() recentLabel = '';
     @Attribute() changeAction?: (query: string) => void;
     @Attribute() selectAction?: (item: SearchListItem) => void;
     @Attribute() activeChangeAction?: (item: SearchListItem | null) => void;
@@ -156,6 +160,13 @@ export class SearchListComponent implements OnDestroy {
     @Attribute()
     get disabled(): boolean { return this._disabled; }
     set disabled(value: boolean | string) { this._disabled = normalizeBoolean(value); }
+
+    get placeholderText(): string { return uiText(this.i18n, 'ui.common.search', this.placeholder || 'Search…'); }
+    get emptyText(): string { return uiText(this.i18n, 'ui.common.noMatches', this.emptyLabel || 'No matches'); }
+    get loadingText(): string { return uiText(this.i18n, 'ui.common.searching', this.loadingLabel || 'Searching…'); }
+    get retryText(): string { return uiText(this.i18n, 'ui.common.retry', this.retryLabel || 'Retry'); }
+    get recentText(): string { return uiText(this.i18n, 'ui.common.recent', this.recentLabel || 'Recent'); }
+    get ariaText(): string { return uiText(this.i18n, 'ui.common.search', this.ariaLabel || 'Search'); }
 
     get minQueryLength(): number {
         const value = Math.floor(Number(this.minChars));
@@ -217,7 +228,7 @@ export class SearchListComponent implements OnDestroy {
         });
         const recentItems = showRecent ? items.filter(item => recent.has(String(item.id))) : [];
         if (recentItems.length) {
-            pushGroup(this.recentLabel);
+            pushGroup(this.recentText);
             recentItems.forEach(pushOption);
         }
         const rest = recentItems.length

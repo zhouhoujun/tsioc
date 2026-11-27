@@ -10,3 +10,4 @@ export * from './theme-tokens';
 export * from './ui';
 export * from './ui.styles';
 export * from './selection-panel';
+export * from './ui-i18n';

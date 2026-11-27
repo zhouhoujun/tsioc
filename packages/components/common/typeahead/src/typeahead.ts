@@ -1,7 +1,8 @@
 import { Attribute, Component, ElementRef, OnDestroy, noReact } from '@tsdi/components';
-import { Optional } from '@tsdi/ioc';
+import { Inject, Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { installTypeaheadStyles } from './typeahead.styles';
+import { UI_I18N, UiI18n, uiText } from '../../src/ui-i18n';
 import { AutoCompleteComponent, AutoCompleteOption } from '../../autocomplete/src/autocomplete';
 import {
     createTypeaheadMachineState,
@@ -33,17 +34,20 @@ export type TypeaheadSource = (query: string, signal: AbortSignal) => Promise<Ty
     template: `
     <div class="ui-typeahead {{className}}">
         <ui-autocomplete :value="value" :options="options" :open="openState" :loading="loadingState"
-            :placeholder="placeholder" :emptyLabel="emptyLabel" :ariaLabel="ariaLabel"
+            :placeholder="placeholderText" :emptyLabel="emptyText" :ariaLabel="ariaText"
             :changeAction="onInput" :selectAction="onSelect"></ui-autocomplete>
         <div class="ui-typeahead-status">
-            <span class="ui-typeahead-loading" v-if="loadingState">{{loadingLabel}}</span>
+            <span class="ui-typeahead-loading" v-if="loadingState">{{loadingText}}</span>
             <span class="ui-typeahead-error" role="alert" v-if="error">{{error}}</span>
-            <button class="ui-typeahead-retry ui-plain-button" type="button" v-if="error" @click="retry">{{retryLabel}}</button>
+            <button class="ui-typeahead-retry ui-plain-button" type="button" v-if="error" @click="retry">{{retryText}}</button>
         </div>
     </div>`
 })
 export class TypeaheadComponent implements OnDestroy {
-    constructor(@Optional() protected elementRef?: ElementRef) {
+    constructor(
+        @Optional() protected elementRef?: ElementRef,
+        @Optional() @Inject(UI_I18N) protected i18n?: UiI18n | null
+    ) {
         markElementRefRaw(elementRef);
     }
 
@@ -61,10 +65,10 @@ export class TypeaheadComponent implements OnDestroy {
     @Attribute() value = '';
     @Attribute() source?: TypeaheadSource;
     @Attribute() placeholder = '';
-    @Attribute() emptyLabel = 'No matches';
-    @Attribute() loadingLabel = 'Loading…';
-    @Attribute() retryLabel = 'Retry';
-    @Attribute() ariaLabel = 'Search';
+    @Attribute() emptyLabel = '';
+    @Attribute() loadingLabel = '';
+    @Attribute() retryLabel = '';
+    @Attribute() ariaLabel = '';
     @Attribute() className = '';
     @Attribute() minChars = 1;
     /** Milliseconds to wait after typing before calling the source. */
@@ -99,6 +103,12 @@ export class TypeaheadComponent implements OnDestroy {
     get stale(): boolean {
         return this.machine.status !== 'disposed' && this.machine.stale;
     }
+
+    get placeholderText(): string { return uiText(this.i18n, 'ui.common.search', this.placeholder || 'Search…'); }
+    get emptyText(): string { return uiText(this.i18n, 'ui.common.noMatches', this.emptyLabel || 'No matches'); }
+    get loadingText(): string { return uiText(this.i18n, 'ui.common.loading', this.loadingLabel || 'Loading…'); }
+    get retryText(): string { return uiText(this.i18n, 'ui.common.retry', this.retryLabel || 'Retry'); }
+    get ariaText(): string { return uiText(this.i18n, 'ui.common.search', this.ariaLabel || 'Search'); }
 
     get minQueryLength(): number {
         const value = Math.floor(Number(this.minChars));

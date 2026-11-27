@@ -10,6 +10,7 @@ import {
     SearchListSource
 } from '../../search-list/src/search-list';
 import { installCommandPaletteStyles } from './command-palette.styles';
+import { UI_I18N, UiI18n, uiText } from '../../src/ui-i18n';
 
 /**
  * Command palette overlay composed from `ui-search-list` + `OverlayManager`.
@@ -25,15 +26,15 @@ import { installCommandPaletteStyles } from './command-palette.styles';
     <div class="ui-command-palette {{className}}" v-show="openState">
         <div class="ui-command-palette-backdrop" @click="backdropClose"></div>
         <div class="ui-command-palette-panel" v-if="openState" role="dialog" aria-modal="true"
-            aria-label="{{ariaLabel}}" @keydown="onKeydown($event)">
+            aria-label="{{ariaText}}" @keydown="onKeydown($event)">
             <div class="ui-command-palette-header" v-if="title || closable">
                 <span class="ui-command-palette-title" v-if="title">{{title}}</span>
                 <button class="ui-command-palette-close ui-plain-button" type="button"
                     v-if="closable" aria-label="{{closeTitle || closeLabel}}" @click="close">{{closeLabel}}</button>
             </div>
             <ui-search-list :items="items" :source="source" :recentIds="recentIds"
-                :placeholder="placeholder" :emptyLabel="emptyLabel" :loadingLabel="loadingLabel"
-                :retryLabel="retryLabel" :ariaLabel="ariaLabel" :minChars="minChars"
+                :placeholder="placeholderText" :emptyLabel="emptyText" :loadingLabel="loadingText"
+                :retryLabel="retryText" :ariaLabel="ariaText" :minChars="minChars"
                 :maxVisible="maxVisible" :recentLabel="recentLabel"></ui-search-list>
             <div class="ui-command-palette-hint" v-if="hint">{{hint}}</div>
         </div>
@@ -42,7 +43,8 @@ import { installCommandPaletteStyles } from './command-palette.styles';
 export class CommandPaletteComponent {
     constructor(
         @Optional() protected elementRef?: ElementRef,
-        @Optional() @Inject(OverlayManager) private overlays?: OverlayManager | null
+        @Optional() @Inject(OverlayManager) private overlays?: OverlayManager | null,
+        @Optional() @Inject(UI_I18N) protected i18n?: UiI18n | null
     ) {
         markElementRefRaw(elementRef);
     }
@@ -110,6 +112,12 @@ export class CommandPaletteComponent {
         }
         this.openChange.emit(next);
     }
+
+    get ariaText(): string { return uiText(this.i18n, 'ui.common.palette', this.ariaLabel || 'Command palette'); }
+    get placeholderText(): string { return uiText(this.i18n, 'ui.common.typeCommand', this.placeholder || 'Type a command…'); }
+    get emptyText(): string { return uiText(this.i18n, 'ui.common.noCommands', this.emptyLabel || 'No matching commands'); }
+    get loadingText(): string { return uiText(this.i18n, 'ui.common.searching', this.loadingLabel || 'Searching…'); }
+    get retryText(): string { return uiText(this.i18n, 'ui.common.retry', this.retryLabel || 'Retry'); }
 
     get openState(): boolean {
         return this._open;
