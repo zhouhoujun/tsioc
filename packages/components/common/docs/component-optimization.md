@@ -352,8 +352,9 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
 - **质量矩阵扩展（2026-11-27）**
   - shared a11y audit 新增 `aria-expanded/checked/selected` 取值校验、
     `aria-activedescendant` 与 `aria-controls/labelledby/describedby` 引用
-    存在性校验、`aria-level` 正整数校验；command-palette/search-list/
-    tree-select 与 a11y 相关 16 个 spec（64 cases）保持通过。
+    存在性校验、`aria-level` 正整数、`img` alt、`role=img` 名称与
+    正 `tabindex` 校验；command-palette/search-list/tree-select 与 a11y
+    相关 16 个 spec（64 cases）保持通过。
   - TreeSelect 增加 RTL + touch pointer-down 用例：RTL 下 chips 正常渲染，
     touch pointer 同样触发 selection-panel outside 关闭。
 - **Token 颜色全消费（2026-11-27）**

@@ -198,6 +198,24 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         });
     });
 
+    (Array.from(scope?.querySelectorAll?.('img') || []) as any[]).forEach(node => {
+        if (!node.hasAttribute?.('alt') && String(node.getAttribute?.('aria-hidden') || '') !== 'true') {
+            violations.push({ rule: 'image-alt', element: describe(node), detail: 'img is missing alt text' });
+        }
+    });
+
+    (Array.from(scope?.querySelectorAll?.('[role="img"]') || []) as any[]).forEach(node => {
+        if (!accessibleName(doc, node).trim()) {
+            violations.push({ rule: 'image-role-name', element: describe(node), detail: 'role=img has no accessible name' });
+        }
+    });
+
+    (Array.from(scope?.querySelectorAll?.('[tabindex]') || []) as any[]).forEach(node => {
+        if (Number(node.getAttribute?.('tabindex')) > 0) {
+            violations.push({ rule: 'positive-tabindex', element: describe(node), detail: 'avoid tabindex > 0' });
+        }
+    });
+
     (Array.from(scope?.querySelectorAll?.('[aria-level]') || []) as any[]).forEach(node => {
         const level = Number(node.getAttribute?.('aria-level'));
         if (!Number.isInteger(level) || level < 1) {
