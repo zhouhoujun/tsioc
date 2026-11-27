@@ -4959,3 +4959,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百一十三批（2026-11-16）：
   - Saga journal（内存持久化 + resume）。
   - 回归：service 123。
+
+- 微服务框架第一百一十四批（2026-11-16）：
+  - RedisSagaJournal（持久化 + TTL）。
+  - 回归：Redis 81。
