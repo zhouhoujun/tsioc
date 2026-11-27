@@ -302,6 +302,7 @@ opencode UI 的领先点不在“组件数量”，而在**交互状态模型、
   - `themeTokens()` 对 fg/muted/accentFg/danger/success/warning 做最终对比度保障；
   - 新增 `resolveThemeTokens(theme, overrides)`，host 可覆盖单个语义 token；
   - 新增 `generateThemeTokens(anchors)` 与 `ThemeService.registerTheme()`，支持运行时品牌主题；
+  - 新增 OKLCH `hexToOklch/oklchToHex/mixOklch`，品牌 ramps 使用感知均匀插值；
   - 对比度测试覆盖 unparseable/低对比/品牌覆盖输入。
 - **P2 bench**：`bench:check` 增加 typeahead machine 与 theme contrast 指标，并默认进入 agents gate（`SKIP_COMMON_BENCH=1` 可跳过）。
 - **agent-ui**：command palette / `/` suggestion 已切到 `ui-search-list`；web size
