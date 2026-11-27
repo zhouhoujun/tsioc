@@ -155,7 +155,9 @@ export class ListPager<T extends { id: string } = ListItem> {
     selector: 'list, ui-list',
     template: `
     <div class="console-panel list-panel {{panelClass}}" role="dialog" aria-label="{{ariaLabel}}" aria-activedescendant="{{activeOptionId}}">
-        <label class="dialog-close" data-cell-width="2" v-show="showClose" @click="close">{{closeLabel}}</label>
+        <label class="dialog-close" role="button" tabindex="0" focusable="true"
+            aria-label="{{closeTitle}}" data-cell-width="2" v-show="showClose"
+            @click="close" @keydown="closeKeydown($event)">{{closeLabel}}</label>
         <label class="list-panel-header" v-show="header">{{header}}</label>
         <label class="list-panel-title" v-show="title">{{title}}</label>
         <label class="list-panel-meta" v-show="context">{{context}}</label>
@@ -164,7 +166,9 @@ export class ListPager<T extends { id: string } = ListItem> {
         <div class="list" role="listbox" aria-label="{{listLabel || ariaLabel}}"
             aria-busy="{{loading}}" aria-activedescendant="{{activeOptionId}}"
             [style]="scrollStyle">
-            <label class="list-more list-previous" v-show="hasPrevious || windowStart > 0" @click="onReachStart">{{olderLabel}}</label>
+            <label class="list-more list-previous" role="button" tabindex="0" focusable="true"
+                v-show="hasPrevious || windowStart > 0" @click="onReachStart"
+                @keydown="olderKeydown($event)">{{olderLabel}}</label>
             <div id="{{item.id}}" class="list-row {{item.className}}" role="option" aria-selected="{{item.selected}}" v-for="item in renderedItems" trackBy="id" @click="selectItem(item)">
                 <span class="list-label">{{item.label}}</span>
                 <span class="list-description" v-if="item.description"> {{item.description}}</span>
@@ -205,6 +209,7 @@ export class ListComponent {
     @Attribute() selectValueAction?: (value: string) => void;
     @Attribute() closeAction?: () => void;
     @Attribute() closeLabel = '✕';
+    @Attribute() closeTitle = 'Close';
     @Attribute() showClose = false;
     /** Panel chrome shared with inspector/list surfaces. */
     @Attribute() panelClass = '';
@@ -365,6 +370,16 @@ export class ListComponent {
         }
         this.selectAction?.(item);
         this.selectValueAction?.(item.value ?? item.id);
+    }
+
+    closeKeydown(event: any): void { this.activateKey(event, () => this.close()); }
+    olderKeydown(event: any): void { this.activateKey(event, () => this.onReachStart()); }
+    protected activateKey(event: any, run: () => void): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            run();
+        }
     }
 
     close(): void {
