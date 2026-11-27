@@ -105,7 +105,7 @@ interface MenuBarEntryView {
                 <div class="menu-bar-separator" role="separator" v-if="entry.kind === 'separator'"></div>
                 <div class="menu-bar-group-title" v-if="entry.kind === 'title'">{{entry.label}}</div>
                 <button class="menu-bar-item {{entry.className}}" type="button" role="{{entry.role}}"
-                    aria-checked="{{entry.ariaChecked}}" v-if="entry.kind === 'item'"
+                    aria-checked="{{entry.role === 'menuitem' ? null : entry.ariaChecked}}" v-if="entry.kind === 'item'"
                     data-menu-id="{{entry.id}}" id="{{itemElementId(entry.id)}}"
                     [disabled]="entry.disabled"
                     aria-disabled="{{entry.disabled}}"
@@ -132,7 +132,7 @@ interface MenuBarEntryView {
                 v-for="entry in level.items" trackBy="key" role="none"
                 @mouseleave="leaveSubmenu(entry.id, $event)" @focusout="blurSubmenu(entry.id, $event)">
                 <button class="menu-bar-item {{entry.className}}" type="button" role="{{entry.role}}"
-                    aria-checked="{{entry.ariaChecked}}" data-menu-id="{{entry.id}}" id="{{itemElementId(entry.id)}}"
+                    aria-checked="{{entry.role === 'menuitem' ? null : entry.ariaChecked}}" data-menu-id="{{entry.id}}" id="{{itemElementId(entry.id)}}"
                     [disabled]="entry.disabled" aria-disabled="{{entry.disabled}}"
                     aria-haspopup="{{entry.children.length ? 'menu' : 'false'}}"
                     aria-expanded="{{entry.children.length ? submenuOpen(entry.id) : 'false'}}"

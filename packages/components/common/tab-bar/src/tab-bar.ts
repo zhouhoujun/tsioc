@@ -83,7 +83,7 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
     template: `
     <p class="tab-bar" role="tablist" aria-orientation="horizontal" v-show="visible" #strip>
         <span class="tab-scroll tab-scroll-back" role="button" focusable="true" tabindex="0" aria-label="{{scrollBackTitle}}" aria-disabled="{{scrollBackDisabled}}" data-disabled="{{scrollBackDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollBack($event)" @keydown="onScrollKeydown($event, 'back')">{{scrollBackLabel}}</span>
-        <span class="tab" role="tab" id="{{tabElementId(tab)}}" aria-selected="{{tab.active}}"
+        <span class="tab" role="tab" id="{{tabElementId(tab)}}" aria-selected="{{tab.active === true ? 'true' : 'false'}}"
             aria-controls="{{tab.controls || ''}}" tabindex="{{tabIndexFor(tab, index)}}"
             focusable="{{!tab.disabled}}" data-disabled="{{tab.disabled}}" data-hover-group="true"
             v-for="(tab, index) in items" trackBy="id"

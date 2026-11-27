@@ -169,7 +169,7 @@ export class ListPager<T extends { id: string } = ListItem> {
             <label class="list-more list-previous" role="button" tabindex="0" focusable="true"
                 v-show="hasPrevious || windowStart > 0" @click="onReachStart"
                 @keydown="olderKeydown($event)">{{olderLabel}}</label>
-            <div id="{{item.id}}" class="list-row {{item.className}}" role="option" aria-selected="{{item.selected}}" v-for="item in renderedItems" trackBy="id" @click="selectItem(item)">
+            <div id="{{item.id}}" class="list-row {{item.className}}" role="option" aria-selected="{{item.selected === true || item.selected === 'true' ? 'true' : 'false'}}" v-for="item in renderedItems" trackBy="id" @click="selectItem(item)">
                 <span class="list-label">{{item.label}}</span>
                 <span class="list-description" v-if="item.description"> {{item.description}}</span>
             </div>
