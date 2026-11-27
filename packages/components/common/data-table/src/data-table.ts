@@ -6,6 +6,7 @@ import { DataTableResizeController } from './data-table.resize';
 import { buildDataTableColumns, dataTableColumnState, dataTableColumnStyle, dataTableCellStyle } from './data-table.columns';
 import { dataTableAriaSort, dataTableSortDirection, dataTableSortPriority, nextDataTableSorts, resolveDataTableSorts } from './data-table.sort';
 import { buildDataTableRows } from './data-table.rows';
+import { filterDataTableTreeEntries, flattenDataTableTree } from './data-table.tree';
 import { commitCellEdit, editCellKeydown, isEditingCell, startCellEdit } from './data-table.edit';
 import { normalizeBoolean } from '../../src/ui';
 import { PaginationComponent } from '../../pagination/src/pagination';
@@ -153,6 +154,11 @@ export class DataTableComponent {
     @Attribute() editValidateAction?: (row: DataTableRow, columnKey: string, value: string) => string | undefined | Promise<string | undefined>;
     /** Optional row grouping label; group headers appear before each run. */
     @Attribute() groupBy?: (row: DataTableRow) => string;
+    /** Render `rows` as a hierarchy; children are flattened below their parent. */
+    @Attribute()
+    get treeRows(): boolean { return this._treeRows; }
+    set treeRows(value: boolean | string) { this._treeRows = normalizeBoolean(value); }
+    @Attribute() treeChildren = 'children';
     @Attribute() selectionAction?: (keys: string[], rows: DataTableRow[]) => void;
     @Attribute() sortKey = '';
     @Attribute() sortDirection: DataTableSortDirection | '' = '';
@@ -212,6 +218,7 @@ export class DataTableComponent {
     private _resizableColumns = false;
     private _keyboardNavigation = false;
     private _multiSort = false;
+    private _treeRows = false;
     private _editable = false;
     editKey = '';
     editDraft = '';
@@ -335,8 +342,18 @@ export class DataTableComponent {
     get tableTotal(): number {
         return this.source && this._asyncTotal > 0 ? this._asyncTotal : this.filteredEntries.length;
     }
+    get treeEntries(): Array<{ row: DataTableRow; index: number; depth: number; parentKey: string }> {
+        return this.treeRows
+            ? flattenDataTableTree(this.rows, this.treeChildren, (row, index) => this.rowKeyOf(row, index))
+            : [];
+    }
+    get sourceRows(): DataTableRow[] {
+        return this.treeRows ? this.treeEntries.map(entry => entry.row) : this.tableRows;
+    }
     get filteredEntries() {
-        return filterDataTableRows(this.tableRows, this.filters);
+        return this.treeRows
+            ? filterDataTableTreeEntries(this.treeEntries, this.filters)
+            : filterDataTableRows(this.tableRows, this.filters);
     }
     get columnState(): DataTableColumnState { return dataTableColumnState(this.columns, this.columnOrder, this.hiddenColumns, this.columnWidths); }
 
@@ -392,7 +409,6 @@ export class DataTableComponent {
         const window = this.virtualWindow;
         this.windowAction?.(window.start, window.end, this.pageEntries.length);
     }
-
     filterColumn(column: DataTableViewColumn, event: any): void { this.setFilter(column.key, event?.target?.value); }
 
     setFilter(key: string, value: any): void {
@@ -507,13 +523,11 @@ export class DataTableComponent {
     commitEdit(row: DataTableViewRow, cell: DataTableCell): void { void commitCellEdit(this, row, cell); }
     cancelEdit(): void { this.editKey = ''; this.editError = ''; }
     editKeydown(event: any, row: DataTableViewRow, cell: DataTableCell): void { editCellKeydown(this, event, row, cell); }
-
     protected focusCellNode(rowIndex: number, cellIndex: number): void {
         const rows = this.elementRef?.nativeElement?.querySelectorAll?.('.ui-data-table-row');
         const cells = rows?.[rowIndex]?.querySelectorAll?.('.is-data-cell');
         cells?.[cellIndex]?.focus?.();
     }
-
     sort(column: DataTableViewColumn): void {
         if (!column.sortable) {
             return;
@@ -561,7 +575,6 @@ export class DataTableComponent {
         const lines = this.detailLines(this.tableRows[row.index], row.index);
         return Array.isArray(lines) ? lines.map(line => String(line ?? '')) : [];
     }
-
     toggleExpand(row: DataTableViewRow, event?: Event): void {
         event?.stopPropagation?.();
         if (!this._expandable) {
@@ -578,7 +591,6 @@ export class DataTableComponent {
         this.expandedKeys = keys;
         this.expandAction?.(row.key, expanded, this.tableRows[row.index]);
     }
-
     expandKeydown(event: any, row: DataTableViewRow): void {
         if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
             event.preventDefault?.();
@@ -586,21 +598,17 @@ export class DataTableComponent {
             this.toggleExpand(row, event);
         }
     }
-
     private rowKeys(): string[] {
         return this.tableRows.map((row, index) => this.rowKeyOf(row, index));
     }
-
     private rowKeyOf(row: DataTableRow, index: number): string {
         return String(typeof this.rowKey === 'function'
             ? this.rowKey(row, index)
             : ((row && row[this.rowKey as string]) ?? index));
     }
-
     private selectedKeySet(): Set<string> {
         return new Set((Array.isArray(this.selectedKeys) ? this.selectedKeys : []).map(key => String(key)));
     }
-
     /** Tri-state header checkbox state for the current row set. */
     get selectionState(): 'true' | 'false' | 'mixed' {
         const keys = this.rowKeys();
@@ -614,16 +622,13 @@ export class DataTableComponent {
         }
         return count === keys.length ? 'true' : 'mixed';
     }
-
     get selectionGlyph(): string {
         const state = this.selectionState;
         return state === 'true' ? '✓' : state === 'mixed' ? '-' : ' ';
     }
-
     rowChecked(row: DataTableViewRow): boolean {
         return this.selectedKeySet().has(row.key);
     }
-
     toggleRow(row: DataTableViewRow, event?: Event): void {
         event?.stopPropagation?.();
         if (!this._selectable) {
@@ -638,7 +643,6 @@ export class DataTableComponent {
         }
         this.commitSelection(keys);
     }
-
     toggleAll(event?: Event): void {
         event?.stopPropagation?.();
         if (!this._selectable) {
@@ -652,7 +656,6 @@ export class DataTableComponent {
             : Array.from(new Set([...keys, ...allKeys]));
         this.commitSelection(next);
     }
-
     rowKeydown(event: any, row: DataTableViewRow): void {
         if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
             event.preventDefault?.();
@@ -660,7 +663,6 @@ export class DataTableComponent {
             this.toggleRow(row, event);
         }
     }
-
     selectAllKeydown(event: any): void {
         if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
             event.preventDefault?.();
@@ -668,7 +670,6 @@ export class DataTableComponent {
             this.toggleAll(event);
         }
     }
-
     private commitSelection(keys: string[]): void {
         this.selectedKeys = keys;
         const selected = new Set(keys);
@@ -676,23 +677,21 @@ export class DataTableComponent {
             .filter((row, index) => selected.has(this.rowKeyOf(row, index)));
         this.selectionAction?.(keys.slice(), rows);
     }
-
     get viewRows(): DataTableViewRow[] {
         return buildDataTableRows(
             this.windowEntries,
             this.viewColumns,
             this.selectedKeySet(),
             this.selectedKey,
-            this.tableRows,
+            this.sourceRows,
             (row, index) => this.rowKeyOf(row, index),
             this.groupBy
         );
     }
-
     pick(row: DataTableViewRow): void {
         if (!this.rowAction) {
             return;
         }
-        this.rowAction(this.tableRows[row.index], row.index);
+        this.rowAction(this.sourceRows[row.index], row.index);
     }
 }

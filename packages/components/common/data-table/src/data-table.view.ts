@@ -4,6 +4,8 @@ export interface IndexedDataTableRow {
     row: DataTableRow;
     /** Original index in the host-provided row set. */
     index: number;
+    /** Optional flattened tree depth for the first data cell. */
+    depth?: number;
 }
 
 /** Case-insensitive text/array match used by host-driven column filters. */

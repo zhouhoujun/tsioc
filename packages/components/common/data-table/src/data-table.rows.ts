@@ -16,16 +16,17 @@ export function buildDataTableRows(
     rowKeyOf: (row: DataTableRow, index: number) => string,
     groupBy?: (row: DataTableRow) => string
 ): DataTableViewRow[] {
-    const rendered = entries.map(({ row, index }) => {
+    const rendered = entries.map(({ row, index, depth }) => {
         const key = rowKeyOf(rows[index], index);
         const checked = selectedKeys.has(key);
         const selected = (!!selectedKey && String(selectedKey) === key) || checked;
         const cells: DataTableCell[] = [];
         columns.forEach((column, columnIndex) => {
+            const text = formatDataTableCell(column, row, index);
             cells.push({
                 key: `${key}-${column.key}`,
                 columnKey: column.key,
-                text: formatDataTableCell(column, row, index),
+                text: columnIndex === 0 && depth ? `${'  '.repeat(depth)}${text}` : text,
                 className: `${column.cellClass} is-data-cell`,
                 style: column.cellStyle
             });
@@ -44,7 +45,8 @@ export function buildDataTableRows(
             className: ['ui-data-table-row', selected ? 'is-selected' : ''].filter(Boolean).join(' '),
             selected,
             checked,
-            kind: 'row' as const
+            kind: 'row' as const,
+            treeDepth: depth
         };
     });
     if (!groupBy) {

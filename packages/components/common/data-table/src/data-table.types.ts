@@ -73,6 +73,7 @@ export interface DataTableViewRow {
     checked: boolean;
     kind?: 'row' | 'group';
     groupLabel?: string;
+    treeDepth?: number;
 }
 
 export interface DataTablePageRequest {

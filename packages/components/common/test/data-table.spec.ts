@@ -123,6 +123,27 @@ export class DataTableTest {
         expect(committed.querySelector('.ui-data-table-edit')).toBeFalsy();
     }
 
+    @Test('renders hierarchical tree rows with indentation and row actions')
+    async treeRows() {
+        const ref = await this.mount();
+        const host = ref.instance as DataTableHostComponent;
+        const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
+        table.instance.rows = [
+            { id: 'parent', name: 'Parent', role: 'group', children: [
+                { id: 'child', name: 'Child', role: 'leaf' }
+            ] }
+        ];
+        table.instance.treeRows = true;
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        const root = ((table.instance as any).elementRef?.nativeElement?.querySelector?.('.ui-data-table') || table.hostView.rootNodes[0]) as HTMLElement;
+        const rows = Array.from(root.querySelectorAll('.ui-data-table-row')) as HTMLElement[];
+        expect(rows.length).toEqual(2);
+        expect(rows[1].textContent).toContain('Child');
+        expect(rows[1].textContent).toContain('  Child');
+        rows[1].click();
+        expect(host.picked).toEqual('child');
+    }
+
     @Test('renders group headers before each grouped row run')
     async groupsRows() {
         const ref = await this.mount();
