@@ -243,6 +243,11 @@ export class ToolbarComponent implements OnDestroy {
             return;
         }
         const key = String(event?.key || '');
+        if (event?.altKey && (key === 'ArrowLeft' || key === 'ArrowRight')) {
+            event.preventDefault?.();
+            this.moveItem(entry.key, key === 'ArrowRight' ? 1 : -1);
+            return;
+        }
         if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
             event.preventDefault?.();
             this.pick(entry);
@@ -372,6 +377,23 @@ export class ToolbarComponent implements OnDestroy {
         this.rovingKey = this.overflowKey;
     }
 
+
+    /** Move a command by one position; terminal hosts bind this to shortcuts. */
+    moveItem(key: string, delta: number): void {
+        if (!this.reorderAction) { return; }
+        const items = this.commandItems.slice();
+        const from = items.findIndex(item => item.key === key);
+        const to = from + delta;
+        if (from < 0 || to < 0 || to >= items.length) { return; }
+        const targetKey = items[to].key;
+        [items[from], items[to]] = [items[to], items[from]];
+        const ordered = items.map(item => this.items[item.index]);
+        let cursor = 0;
+        const next = this.items.map(item => item?.kind === 'separator' ? item : ordered[cursor++] || item);
+        this.reorderAction(next, key, targetKey);
+        this.rovingKey = key;
+        void Promise.resolve().then(() => this.focusKey(key));
+    }
 
     dragStart(entry: ToolbarViewItem, event?: any): void {
         this.draggingKey = entry.key;

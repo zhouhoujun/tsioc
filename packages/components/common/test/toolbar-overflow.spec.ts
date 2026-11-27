@@ -101,6 +101,17 @@ export class ToolbarOverflowTest {
         root.remove();
     }
 
+    @Test('moves commands by keyboard position without losing separators')
+    async keyboardMove() {
+        const { toolbar } = await this.mount();
+        let received: any[] = [];
+        toolbar.reorderAction = (items, id, targetId) => { received = [items.map(item => item.id), id, targetId]; };
+        toolbar.moveItem('run', 1);
+        expect(received[0].filter(Boolean)).toEqual(['stop', 'run', 'theme', 'copy']);
+        expect(received[1]).toEqual('run');
+        expect(received[2]).toEqual('stop');
+    }
+
     @Test('reorders dragged command items through the host callback')
     async reorderDrag() {
         const { toolbar } = await this.mount();
