@@ -54,6 +54,17 @@ export class TreeTest {
         return { tree, host: ref.instance as TreeHostComponent };
     }
 
+    @Test('type-ahead moves selection to the next matching label')
+    async typeahead() {
+        const { tree } = await this.mount();
+        tree.onKeydown(tree.viewItems[0], { key: 'l', preventDefault() { } });
+        await Promise.resolve();
+        expect(tree.selectedId).toEqual('leaf');
+        tree.onKeydown(tree.viewItems[2], { key: 'c', preventDefault() { } });
+        await Promise.resolve();
+        expect(tree.selectedId).toEqual('child');
+    }
+
     @Test('selection follows focus by default')
     async followsFocus() {
         const { tree, host } = await this.mount();

@@ -126,6 +126,8 @@ export class TreeComponent {
     private _wrapFocus = false;
     private loadedChildren = new Map<string, TreeNode[]>();
     private loadingKeys: string[] = [];
+    private typeaheadBuffer = '';
+    private typeaheadAt = 0;
 
     get treeClass(): string {
         return this.className;
@@ -455,6 +457,14 @@ export class TreeComponent {
             this.activate(row);
             return;
         }
+        if (key.length === 1 && !/\s/.test(key) && !event?.ctrlKey && !event?.metaKey && !event?.altKey) {
+            const match = this.typeaheadMatch(key, row.index);
+            if (match) {
+                event?.preventDefault?.();
+                this.select(match);
+            }
+            return;
+        }
         if (key === 'ArrowDown') {
             event?.preventDefault?.();
             this.move(row.index, 1);
@@ -504,6 +514,33 @@ export class TreeComponent {
                 this.select(parent);
             }
         }
+    }
+
+    protected typeaheadMatch(key: string, current: number): TreeViewItem | undefined {
+        const now = Date.now();
+        if (now - this.typeaheadAt > 700) { this.typeaheadBuffer = ''; }
+        this.typeaheadAt = now;
+        const lower = key.toLocaleLowerCase();
+        this.typeaheadBuffer = this.typeaheadBuffer && [...this.typeaheadBuffer].every(ch => ch === lower)
+            ? lower
+            : `${this.typeaheadBuffer}${lower}`;
+        const rows = this.viewItems;
+        const find = (query: string): TreeViewItem | undefined => {
+            for (let offset = 1; offset <= rows.length; offset++) {
+                const index = ((current + offset) % rows.length + rows.length) % rows.length;
+                const candidate = rows[index];
+                if (candidate && !candidate.disabled && candidate.label.toLocaleLowerCase().startsWith(query)) {
+                    return candidate;
+                }
+            }
+            return undefined;
+        };
+        const match = find(this.typeaheadBuffer);
+        if (match || this.typeaheadBuffer === lower) {
+            return match;
+        }
+        this.typeaheadBuffer = lower;
+        return find(lower);
     }
 
     protected currentRow(entry: TreeViewItem): TreeViewItem | undefined {
