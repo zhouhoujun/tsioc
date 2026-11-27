@@ -17,6 +17,11 @@ import { FieldComponent, FieldModule } from '../field';
     <ui-field-group label="Token" error="Required" controlId="token-input"
         hintId="token-hint" errorId="token-error" :invalid="true">
         <input id="token-input" class="control" />
+    </ui-field-group>
+    <ui-field-group label="Domain" controlId="domain-input">
+        <span slot="prefix">https://</span>
+        <input id="domain-input" class="control" />
+        <span slot="suffix">.com</span>
     </ui-field-group>`
 })
 class FieldHostComponent {}
@@ -64,5 +69,10 @@ export class FieldTest {
         expect(second.querySelector('.ui-field-group-error')?.textContent).toContain('Required');
         expect(second.getAttribute('aria-describedby')).toEqual('token-error');
         expect(second.getAttribute('data-invalid')).toEqual('true');
+
+        const third = (fields[2].elementRef.nativeElement as HTMLElement).querySelector('.ui-field-group') as HTMLElement;
+        expect(third.querySelector('.ui-field-group-prefix')?.textContent).toContain('https://');
+        expect(third.querySelector('.ui-field-group-suffix')?.textContent).toContain('.com');
+        expect(third.getAttribute('aria-describedby')).toEqual('domain-input-prefix domain-input-suffix');
     }
 }

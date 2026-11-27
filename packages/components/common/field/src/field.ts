@@ -1,4 +1,4 @@
-import { Attribute, Component, ElementRef } from '@tsdi/components';
+import { Attribute, Component, ContentChild, ElementRef } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { installFieldStyles } from './field.styles';
@@ -18,7 +18,11 @@ import { resolveFieldAria } from './field-semantics';
             <span class="ui-field-group-info" id="{{resolvedTooltipId}}" role="note" tabindex="0"
                 title="{{labelTooltip}}" v-if="labelTooltip">ⓘ</span>
         </label>
-        <div class="ui-field-group-control"><v-content></v-content></div>
+        <div class="ui-field-group-row">
+            <span class="ui-field-group-prefix" id="{{resolvedPrefixId}}"><v-content slot="prefix"></v-content></span>
+            <div class="ui-field-group-control"><v-content></v-content></div>
+            <span class="ui-field-group-suffix" id="{{resolvedSuffixId}}"><v-content slot="suffix"></v-content></span>
+        </div>
         <label class="ui-field-group-pending" v-show="pending && !error" role="status">{{pendingLabel}}</label>
         <label class="ui-field-group-hint" id="{{hintId}}" v-show="hint && !error && !pending">{{hint}}</label>
         <label class="ui-field-group-error" id="{{errorId}}" role="alert" v-show="error">{{error}}</label>
@@ -46,6 +50,8 @@ export class FieldComponent {
     @Attribute() errorId = '';
     @Attribute() labelId = '';
     @Attribute() tooltipId = '';
+    @Attribute() prefixId = '';
+    @Attribute() suffixId = '';
     @Attribute() className = '';
     /** Short explanation rendered as a focusable info affordance beside the label. */
     @Attribute() labelTooltip = '';
@@ -58,6 +64,17 @@ export class FieldComponent {
         return this.tooltipId || (this.controlId ? `${this.controlId}-tooltip` : '');
     }
 
+    get resolvedPrefixId(): string {
+        return this.prefixId || (this.controlId ? `${this.controlId}-prefix` : '');
+    }
+
+    get resolvedSuffixId(): string {
+        return this.suffixId || (this.controlId ? `${this.controlId}-suffix` : '');
+    }
+
+    @ContentChild('[slot="prefix"]') prefixNode?: ElementRef;
+    @ContentChild('[slot="suffix"]') suffixNode?: ElementRef;
+
     get status(): 'default' | 'pending' | 'valid' | 'invalid' {
         if (this.error || this.invalid) { return 'invalid'; }
         if (this.pending) { return 'pending'; }
@@ -65,12 +82,17 @@ export class FieldComponent {
     }
 
     get describedBy(): string {
-        return resolveFieldAria({
+        const base = resolveFieldAria({
             controlId: this.controlId,
             hint: this.hint,
             error: this.error,
             hintId: this.hintId,
             errorId: this.errorId
         }).describedBy;
+        return [
+            this.prefixNode ? this.resolvedPrefixId : '',
+            base,
+            this.suffixNode ? this.resolvedSuffixId : ''
+        ].filter(Boolean).join(' ');
     }
 }
