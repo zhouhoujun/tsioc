@@ -33,8 +33,11 @@ export interface ToastRow {
             @mouseenter="hoverStart(item.id)" @mouseleave="hoverEnd(item.id)">
             <span class="toast-message">{{item.text}}</span><span class="toast-action" role="button" tabindex="0"
                 focusable="true" v-if="item.actionLabel" aria-disabled="{{item.actionPending}}"
-                @click="invoke(item.id, $event)" @keydown="actionKeydown(item.id, $event)">{{item.actionPending ? ' …' : item.actionText}}</span>
-            <span class="toast-action-error" role="alert" v-if="item.actionError">{{item.actionError}}</span><span class="toast-close" role="button" data-cell-width="3" @click="dismiss(item.id, $event)">{{closeAffordance}}</span>
+                aria-label="{{item.actionLabel}}" @click="invoke(item.id, $event)"
+                @keydown="actionKeydown(item.id, $event)">{{item.actionPending ? ' …' : item.actionText}}</span>
+            <span class="toast-action-error" role="alert" v-if="item.actionError">{{item.actionError}}</span><span class="toast-close" role="button"
+                tabindex="0" focusable="true" aria-label="{{closeTitle}}" data-cell-width="3"
+                @click="dismiss(item.id, $event)" @keydown="closeKeydown(item.id, $event)">{{closeAffordance}}</span>
         </label>
         </div>
     </div>`
@@ -42,6 +45,7 @@ export interface ToastRow {
 export class ToastStackComponent {
     @Attribute() items: readonly ToastEntry[] = [];
     @Attribute() closeLabel = '✕';
+    @Attribute() closeTitle = 'Dismiss notification';
     @Attribute() closeAction?: (id: string) => void;
     /** Host runs the entry action (for example `ToastService.invoke`). */
     @Attribute() actionAction?: (id: string) => void;
@@ -156,5 +160,13 @@ export class ToastStackComponent {
         // that bubble (DOM) from treating it as a body click.
         event?.stopPropagation?.();
         this.closeAction?.(id);
+    }
+
+    closeKeydown(id: string, event: any): void {
+        if (event?.key === 'Enter' || event?.key === ' ' || event?.key === 'Spacebar') {
+            event.preventDefault?.();
+            event.stopPropagation?.();
+            this.dismiss(id, event);
+        }
     }
 }

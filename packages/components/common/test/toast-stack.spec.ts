@@ -23,9 +23,12 @@ export class ToastStackComponentTest {
         expect(stack.visible).toEqual(true);
         expect(stack.rows.map(item => item.text)).toEqual(['Copied', 'Saved']);
         expect(stack.closeLabel).toEqual('✕');
+        expect(stack.closeTitle).toEqual('Dismiss notification');
 
         stack.dismiss('toast-2');
-        expect(dismissed).toEqual(['toast-2']);
+        stack.closeKeydown('toast-1', { key: 'Enter', preventDefault() { } });
+        stack.closeKeydown('toast-1', { key: 'Tab', preventDefault() { } });
+        expect(dismissed).toEqual(['toast-2', 'toast-1']);
     }
 
     @Test('paints and invokes inline toast actions')

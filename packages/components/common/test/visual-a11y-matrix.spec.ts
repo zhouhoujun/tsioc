@@ -9,6 +9,7 @@ import { CheckboxComponent, CheckboxModule } from '../checkbox';
 import { TabsComponent, TabsModule } from '../tabs';
 import { MenuBarComponent, MenuBarModule, MenuBarGroup } from '../menu-bar';
 import { DataTableComponent, DataTableModule } from '../data-table';
+import { ToastProviderComponent, ToastModule } from '../toast';
 import { auditA11y, formatViolations } from './support/a11y-audit';
 
 const THEMES = ['light', 'dark', 'high-contrast'];
@@ -44,7 +45,7 @@ function makeSource() {
 
 @Component({
     selector: 'a11y-matrix-host',
-    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent],
+    imports: [ButtonComponent, CheckboxComponent, TabsComponent, MenuBarComponent, DataTableComponent, ToastProviderComponent],
     template: `
     <div class="theme-sample">
         <ui-button label="Save"></ui-button>
@@ -58,6 +59,7 @@ function makeSource() {
         <menu-bar label="Actions" :groups="menuGroups"></menu-bar>
         <ui-data-table ariaLabel="Rows" :columns="columns" :rows="rows"
             selectable="true" editable="true"></ui-data-table>
+        <ui-toast-provider></ui-toast-provider>
     </div>`
 })
 class A11yMatrixHostComponent {
@@ -86,7 +88,7 @@ export class VisualA11yMatrixTest {
         this.win = dom.window;
         this.doc = dom.window.document;
         this.ctx = await Application.run(A11yMatrixHostComponent, {
-            deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule],
+            deps: [HtmlTemplateModule, ComponentsModule, ButtonModule, CheckboxModule, TabsModule, MenuBarModule, DataTableModule, ToastModule],
             providers: [{ provide: DOCUMENT, useValue: this.doc }]
         });
     }
@@ -123,6 +125,9 @@ export class VisualA11yMatrixTest {
         const tabs = ref.hostView.query(TabsComponent) as ComponentRef<TabsComponent>;
         const menu = ref.hostView.query(MenuBarComponent) as ComponentRef<MenuBarComponent>;
         const table = ref.hostView.query(DataTableComponent) as ComponentRef<DataTableComponent>;
+        const toast = ref.hostView.query(ToastProviderComponent) as ComponentRef<ToastProviderComponent>;
+        toast.instance.show('Saved', { durationMs: 0, actionLabel: 'Undo', action: () => undefined });
+        await Promise.resolve();
         try {
             for (const theme of THEMES) {
                 this.doc.documentElement.setAttribute('data-theme', theme);

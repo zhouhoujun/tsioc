@@ -14,6 +14,7 @@ export class TabBarComponentTest {
             visible: true,
             items: [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }],
             createLabel: ' + ',
+            createTitle: 'New session',
             select: id => selected.push(id),
             create: () => { created += 1; },
             close: id => closed.push(id)
@@ -22,6 +23,7 @@ export class TabBarComponentTest {
         expect(bar.visible).toEqual(true);
         expect(bar.items.map(item => item.label)).toEqual(['Alpha', 'Beta']);
         expect(bar.createLabel).toEqual(' + ');
+        expect(bar.newTabTitle).toEqual('New session');
         expect(bar.closeLabel).toEqual('✕');
         bar.select('b');
         bar.create();
@@ -41,6 +43,7 @@ export class TabBarComponentTest {
         expect(bar.items).toEqual([]);
         expect(bar.showCreate).toEqual(true);
         expect(bar.createLabel).toEqual('+');
+        expect(bar.newTabTitle).toEqual('New tab');
         expect(bar.closeLabel).toEqual('✕');
     }
 
