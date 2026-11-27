@@ -14,9 +14,9 @@ import { isAgentConsoleSuggestionMenu } from './AgentConsoleSuggestions';
     imports: [SelectComponent, SearchListComponent],
     template: `
         <div class="select-panel-root">
-        <div v-if="menuIsPalette" class="console-panel select-list select-palette"
+        <div v-if="menuIsSearchList" class="console-panel select-list select-palette"
             role="dialog" aria-label="{{accessibilityLabel}}">
-            <div class="select-shell select-card">
+            <div class="select-shell {{menuIsSuggestion ? 'select-suggestions' : 'select-card'}}">
                 <label class="dialog-close" data-cell-width="2" @click="closeMenu">✕</label>
                 <label class="select-title" v-if="menuTitleText">{{menuTitleText}}</label>
                 <label class="select-meta" v-if="paletteMeta">{{paletteMeta}}</label>
@@ -89,6 +89,11 @@ export class AgentConsoleSelectPanelComponent implements AfterViewInit, OnDestro
 
     get menuIsPalette(): boolean {
         return this.menu?.kind === 'palette';
+    }
+
+    /** Palette and inline slash/mention suggestions share the search-list rows. */
+    get menuIsSearchList(): boolean {
+        return this.menuIsPalette || this.menuIsSuggestion;
     }
 
     get paletteItems(): SearchListItem[] {

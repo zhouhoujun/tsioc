@@ -111,6 +111,22 @@ export class SelectDialogChromeSuite {
         expect(list?.showInput).toEqual(false);
     }
 
+    @Test('inline suggestions render through the shared search list')
+    async suggestionsUseSearchList() {
+        const ref = this.ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: this.ctx }) as ComponentRef<AgentConsoleComponent>;
+        await ref.render();
+        ref.instance.sessionState.openSelectMenu('Suggestions', [
+            { label: '/help', value: '/help', description: 'Commands' }
+        ], 0, 'enter execute');
+        for (let index = 0; index < 30; index++) await Promise.resolve();
+        const panel = ref.hostView.query(AgentConsoleSelectPanelComponent) as ComponentRef<AgentConsoleSelectPanelComponent>;
+        expect(panel.instance.menuIsSearchList).toEqual(true);
+        const list = panel.instance.paletteLists?.first;
+        expect(list?.showInput).toEqual(false);
+        expect(list?.rowLayout).toEqual('inline');
+        expect(list?.activeId).toEqual('/help');
+    }
+
     @Test('inline suggestions keep their chrome inline')
     async suggestionMenuStaysInline() {
         const { lines } = await this.renderMenu('Suggestions', [
