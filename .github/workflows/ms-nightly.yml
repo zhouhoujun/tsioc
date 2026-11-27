@@ -26,6 +26,9 @@ jobs:
       mqtt:
         image: eclipse-mosquitto:2
         ports: ['1883:1883']
+      otel:
+        image: otel/opentelemetry-collector:latest
+        ports: ['4317:4317', '4318:4318']
       rabbitmq:
         image: rabbitmq:3-management
         ports: ['5672:5672', '15672:15672']
@@ -75,5 +78,11 @@ jobs:
           MS_SOAK_PROFILE: '1'
           MS_SOAK_MS: '1800000'
         run: bash scripts/agents-gate.sh ms-soak
+      - name: OTLP collector live export
+        env:
+          TSIO_TEST_OTLP: '1'
+        run: |
+          cd packages/microservices/tracing && npm test
+          cd ../metrics && npm test
       - name: Performance regression
         run: bash scripts/agents-gate.sh ms-bench
