@@ -62,6 +62,22 @@ export class TabBarComponentTest {
         expect(contextId).toEqual('b');
     }
 
+    @Test('Alt+Arrow reorders tabs through the same callback')
+    async keyboardReorder() {
+        const bar = new TabBarComponent();
+        let order: string[] = [];
+        bar.source = {
+            visible: true,
+            items: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }],
+            select() { }
+        };
+        bar.reorderAction = ids => { order = ids; };
+        bar.onTabKeydown({ key: 'ArrowRight', altKey: true, preventDefault() { } }, bar.items[0], 0);
+        expect(order).toEqual(['b', 'a', 'c']);
+        bar.onTabKeydown({ key: 'ArrowLeft', altKey: true, preventDefault() { } }, bar.items[2], 2);
+        expect(order).toEqual(['a', 'c', 'b']);
+    }
+
     @Test('built-in context menu closes tabs without a host callback')
     async builtInContextMenu() {
         const bar = new TabBarComponent();

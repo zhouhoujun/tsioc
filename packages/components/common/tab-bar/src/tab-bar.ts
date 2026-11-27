@@ -344,6 +344,19 @@ export class TabBarComponent implements AfterViewInit {
             this.closeTab(tab.id, event);
             return;
         }
+        if (event?.altKey && (key === 'ArrowLeft' || key === 'ArrowRight')) {
+            const ids = this.items.map(item => item.id);
+            const from = ids.indexOf(tab.id);
+            const to = from + (key === 'ArrowRight' ? 1 : -1);
+            if (from >= 0 && to >= 0 && to < ids.length) {
+                event.preventDefault?.();
+                [ids[from], ids[to]] = [ids[to], ids[from]];
+                this.focusedKey = tab.id;
+                this.reorderAction?.(ids, tab.id, this.items[to]?.id || '');
+                void Promise.resolve().then(() => this.focusTab(to));
+            }
+            return;
+        }
         let targetIndex = -1;
         if (key === 'ArrowRight' || key === 'ArrowDown') {
             targetIndex = this.nextEnabledTab(index, 1);
@@ -432,12 +445,10 @@ export class TabBarComponent implements AfterViewInit {
     protected focusOverflowTrigger(): void {
         (this.resolveStripElement()?.querySelector?.('.tab-overflow') as HTMLElement | null | undefined)?.focus?.();
     }
-
     protected focusOverflowItem(index: number): void {
         const items = this.resolveStripElement()?.querySelectorAll?.('.tab-overflow-item') as ArrayLike<HTMLElement> | undefined;
         items?.[Math.max(0, index)]?.focus?.();
     }
-
     onOverflowKeydown(event: any): void {
         const key = String(event?.key || '');
         if (key === 'Escape') {
@@ -449,7 +460,6 @@ export class TabBarComponent implements AfterViewInit {
             this.openOverflowMenu();
         }
     }
-
     onOverflowItemKeydown(event: any, item: TabItem): void {
         const key = String(event?.key || '');
         if (key === 'Escape') {
@@ -476,7 +486,6 @@ export class TabBarComponent implements AfterViewInit {
                 : ((current < 0 ? 0 : current) + (key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
         this.focusOverflowItem(this.overflowMenuItems.findIndex(entry => entry.id === items[index].id));
     }
-
     pickOverflow(id: string, event?: Event): void {
         event?.stopPropagation?.();
         const target = String(id || '');
@@ -494,7 +503,6 @@ export class TabBarComponent implements AfterViewInit {
             }
         });
     }
-
     protected bindOverflowDismiss(): void {
         this.unbindOverflowDismiss();
         const host = this.elementRef?.nativeElement as HTMLElement | undefined;
@@ -512,12 +520,10 @@ export class TabBarComponent implements AfterViewInit {
         doc.addEventListener('mousedown', pointer, true);
         this.overflowDismiss = () => doc.removeEventListener?.('mousedown', pointer, true);
     }
-
     protected unbindOverflowDismiss(): void {
         this.overflowDismiss?.();
         this.overflowDismiss = undefined;
     }
-
     dragStart(tab: TabItem, event?: any): void { startTabDrag(this, tab, event); }
     dragOver(event?: any): void { if (this.draggingId) { event?.preventDefault?.(); } }
     dropOn(tab: TabItem, event?: any): void { dropTab(this, tab, event); }
@@ -530,9 +536,7 @@ export class TabBarComponent implements AfterViewInit {
         this.contextY = Number(event?.clientY ?? 0) || 8;
         this.contextMenuOpen = true;
     }
-
     closeTabMenu(): void { this.contextMenuOpen = false; }
-
     runTabContext(action: string, id: string): void {
         const target = id || this.contextTabId;
         const ids = this.items.map(item => item.id);
@@ -546,22 +550,18 @@ export class TabBarComponent implements AfterViewInit {
         }
         this.closeTabMenu();
     }
-
     create(): void {
         this.closeOverflowMenu(false);
         this.activeSource?.create?.();
     }
-
     onCreateKeydown(event: any): void {
         if (!this.isActivationKey(event)) { return; }
         event.preventDefault?.(); this.create();
     }
-
     onScrollKeydown(event: any, direction: 'back' | 'forward'): void {
         if (!this.isActivationKey(event)) { return; }
         event.preventDefault?.(); direction === 'back' ? this.scrollBack(event) : this.scrollForward(event);
     }
-
     protected isActivationKey(event: any): boolean {
         return ['Enter', ' ', 'Spacebar'].includes(String(event?.key || ''));
     }
