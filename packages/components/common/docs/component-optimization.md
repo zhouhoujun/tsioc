@@ -349,8 +349,10 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     `test/fixtures/tui-storybook-basic.txt`，仅归一化时间、模型名与状态行，
     其余布局/空白/行序逐字符比较，真实 TUI 视觉回归可复现。
 - **质量矩阵扩展（2026-11-27）**
-  - shared a11y audit 新增 `aria-expanded` 取值校验与 `aria-activedescendant`
-    引用存在性校验；command-palette/search-list/tree-select 矩阵保持通过。
+  - shared a11y audit 新增 `aria-expanded/checked/selected` 取值校验、
+    `aria-activedescendant` 与 `aria-controls/labelledby/describedby` 引用
+    存在性校验、`aria-level` 正整数校验；command-palette/search-list/
+    tree-select 与 a11y 相关 16 个 spec（64 cases）保持通过。
   - TreeSelect 增加 RTL + touch pointer-down 用例：RTL 下 chips 正常渲染，
     touch pointer 同样触发 selection-panel outside 关闭。
 - **Token 颜色全消费（2026-11-27）**

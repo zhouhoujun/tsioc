@@ -132,6 +132,13 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         }
     });
 
+    (Array.from(scope?.querySelectorAll?.('[role="button"]') || []) as any[]).forEach(node => {
+        const disabled = node.hasAttribute?.('disabled') || node.getAttribute?.('aria-disabled') === 'true';
+        if (!disabled && node.getAttribute?.('aria-hidden') !== 'true' && !node.hasAttribute?.('tabindex')) {
+            violations.push({ rule: 'button-focus', element: describe(node), detail: 'role="button" is missing tabindex' });
+        }
+    });
+
     (Array.from(scope?.querySelectorAll?.('[role="region"]') || []) as any[]).forEach(node => {
         if (!node.hasAttribute?.('aria-label') && !node.hasAttribute?.('aria-labelledby')) {
             violations.push({ rule: 'region-name', element: describe(node), detail: 'region has no accessible name' });
@@ -144,21 +151,57 @@ export function auditA11y(root: any, doc: any): A11yViolation[] {
         }
     });
 
-    (Array.from(scope?.querySelectorAll?.('[aria-expanded]') || []) as any[]).forEach(node => {
-        const value = String(node.getAttribute?.('aria-expanded') || '');
-        if (value !== 'true' && value !== 'false') {
-            violations.push({ rule: 'invalid-aria-expanded', element: describe(node), detail: `aria-expanded="${value}" is not true/false` });
+    const hasId = (id: string): boolean => {
+        if (!id) {
+            return false;
         }
+        const selector = `[id="${id.replace(/"/g, '\\"')}"]`;
+        return !!doc?.getElementById?.(id) || !!(scope?.querySelector?.(selector));
+    };
+    const states: Array<[string, string[]]> = [
+        ['aria-expanded', ['true', 'false']],
+        ['aria-checked', ['true', 'false', 'mixed']],
+        ['aria-selected', ['true', 'false']]
+    ];
+    states.forEach(([attribute, allowed]) => {
+        (Array.from(scope?.querySelectorAll?.(`[${attribute}]`) || []) as any[]).forEach(node => {
+            const value = String(node.getAttribute?.(attribute) || '');
+            if (value && !allowed.includes(value)) {
+                violations.push({
+                    rule: `invalid-${attribute}`,
+                    element: describe(node),
+                    detail: `${attribute}="${value}" is not ${allowed.join('/')}`
+                });
+            }
+        });
     });
 
     (Array.from(scope?.querySelectorAll?.('[aria-activedescendant]') || []) as any[]).forEach(node => {
         const id = String(node.getAttribute?.('aria-activedescendant') || '').trim();
-        if (id) {
-            const selector = `[id="${id.replace(/"/g, '\\"')}"]`;
-            const exists = doc?.getElementById?.(id) || (scope?.querySelector ? scope.querySelector(selector) : undefined);
-            if (!exists) {
-                violations.push({ rule: 'missing-activedescendant', element: describe(node), detail: `aria-activedescendant="${id}" does not exist` });
-            }
+        if (id && !hasId(id)) {
+            violations.push({ rule: 'missing-activedescendant', element: describe(node), detail: `aria-activedescendant="${id}" does not exist` });
+        }
+    });
+
+    ['aria-controls', 'aria-labelledby', 'aria-describedby'].forEach(attribute => {
+        (Array.from(scope?.querySelectorAll?.(`[${attribute}]`) || []) as any[]).forEach(node => {
+            const ids = String(node.getAttribute?.(attribute) || '').split(/\s+/).filter(Boolean);
+            ids.forEach(id => {
+                if (!hasId(id)) {
+                    violations.push({
+                        rule: 'missing-aria-reference',
+                        element: describe(node),
+                        detail: `${attribute}="${id}" does not exist`
+                    });
+                }
+            });
+        });
+    });
+
+    (Array.from(scope?.querySelectorAll?.('[aria-level]') || []) as any[]).forEach(node => {
+        const level = Number(node.getAttribute?.('aria-level'));
+        if (!Number.isInteger(level) || level < 1) {
+            violations.push({ rule: 'invalid-aria-level', element: describe(node), detail: `aria-level="${node.getAttribute?.('aria-level')}" is not a positive integer` });
         }
     });
 
