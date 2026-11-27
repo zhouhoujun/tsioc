@@ -12,7 +12,7 @@ import { normalizeTone, UiTone } from '../../src/ui';
 @Component({
     selector: 'ui-empty',
     template: `
-    <div class="ui-empty {{emptyClass}}" data-tone="{{tone}}" role="status">
+    <div class="ui-empty {{emptyClass}}" data-tone="{{tone}}" role="status" aria-label="{{ariaLabel || title}}">
         <icon class="ui-empty-icon" v-if="icon" [name]="icon" [glyph]="iconGlyph || icon" size="lg"></icon>
         <p class="ui-empty-title" v-if="title">{{title}}</p>
         <p class="ui-empty-hint" v-if="hint">{{hint}}</p>
@@ -24,6 +24,7 @@ import { normalizeTone, UiTone } from '../../src/ui';
 })
 export class EmptyStateComponent {
     @Attribute() title = '';
+    @Attribute() ariaLabel = '';
     @Attribute() hint = '';
     @Attribute() icon = '';
     @Attribute() iconGlyph = '';

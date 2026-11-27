@@ -108,5 +108,13 @@ export class A11yDisplayWidgetsTest {
         const roots = ref.hostView.rootNodes.filter((node: any) => typeof node.querySelector === 'function') as HTMLElement[];
         const violations = roots.flatMap(root => auditA11y(root, this.ctx.get(DOCUMENT)));
         expect(formatViolations(violations)).toEqual('');
+
+        const pick = (selector: string) => roots
+            .map(root => root.matches?.(selector) ? root : root.querySelector?.(selector))
+            .find(Boolean) as HTMLElement;
+        expect(pick('.ui-divider').getAttribute('aria-label')).toEqual('Section');
+        expect(pick('.ui-stat').getAttribute('role')).toEqual('group');
+        expect(pick('.ui-stat').getAttribute('aria-label')).toEqual('Routes');
+        expect(pick('.ui-empty').getAttribute('aria-label')).toEqual('No rows');
     }
 }

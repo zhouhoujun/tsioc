@@ -10,7 +10,7 @@ export type StatTrend = 'up' | 'down' | 'flat';
 @Component({
     selector: 'ui-stat',
     template: `
-    <div class="console-panel ui-stat {{statClass}}" data-tone="{{tone}}">
+    <div class="console-panel ui-stat {{statClass}}" data-tone="{{tone}}" role="group" aria-label="{{ariaLabel || label}}">
         <span class="ui-stat-label" v-if="label">{{label}}</span>
         <span class="ui-stat-value">{{value}}</span>
         <span class="ui-stat-hint" v-if="hint">{{hint}}</span>
@@ -19,6 +19,7 @@ export type StatTrend = 'up' | 'down' | 'flat';
 })
 export class StatComponent {
     @Attribute() label = '';
+    @Attribute() ariaLabel = '';
     @Attribute() value: string | number = '';
     @Attribute() hint = '';
     @Attribute() trend: StatTrend = 'flat';

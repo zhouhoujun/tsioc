@@ -12,7 +12,7 @@ export type DividerOrientation = 'horizontal' | 'vertical';
     selector: 'ui-divider',
     template: `
     <div class="ui-divider {{dividerClass}}"
-        role="separator" aria-orientation="{{orientation}}">
+        role="separator" aria-orientation="{{orientation}}" aria-label="{{label || null}}">
         <span class="ui-divider-rule" v-if="fill && orientation === 'horizontal'">{{rule}}</span>
         <span class="ui-divider-label" v-if="label">{{label}}</span>
     </div>`
