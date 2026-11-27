@@ -5003,3 +5003,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百二十五批（2026-11-16）：
   - 1MB 流式响应 E2E。
   - 回归：gateway 165。
+
+- 微服务框架第一百二十六批（2026-11-16）：
+  - Redis Stream 500 条 burst/backpressure E2E。
+  - 回归：Redis 82。

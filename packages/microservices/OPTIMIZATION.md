@@ -708,6 +708,11 @@
 - Gateway E2E 新增 1MB 分块流式响应测试：首块在结束前到达、16 个 64KB chunk、总字节精确 1MB。
 - 验证现有 `stream:true` 路径未缓冲整个响应；gateway 165 passing。
 
+第一百二十六批（Redis Stream burst/backpressure）：
+
+- 新增 500 条消息突发 E2E：concurrency 16、全部消费、最终 pending=0。
+- 验证流式消费在突发下不丢消息；Redis 82 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
