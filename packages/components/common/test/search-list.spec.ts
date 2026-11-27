@@ -10,6 +10,10 @@ async function settle(): Promise<void> {
     for (let index = 0; index < 40; index++) await Promise.resolve();
 }
 
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 @Component({
     selector: 'search-list-host',
     imports: [SearchListComponent],
@@ -153,6 +157,38 @@ export class SearchListTest {
         expect(list.activeItem?.id).toEqual('delete');
         list.onKeydown({ key: 'Escape', preventDefault() { } });
         expect(host.closed).toEqual(1);
+    }
+
+    @Test('async sources debounce, cache and time out')
+    async asyncPolicy() {
+        const { list } = await this.mount();
+        let calls = 0;
+        list.debounce = 10;
+        list.source = async (query: string) => {
+            calls += 1;
+            return { items: [{ id: query, label: query }] };
+        };
+        list.setQuery('a');
+        expect(calls).toEqual(0);
+        await sleep(25);
+        expect(calls).toEqual(1);
+        expect(list.optionRows.map(item => item.id)).toEqual(['a']);
+
+        list.setQuery('b');
+        await sleep(25);
+        expect(calls).toEqual(2);
+        list.setQuery('a');
+        expect(calls).toEqual(2);
+        expect(list.optionRows.map(item => item.id)).toEqual(['a']);
+
+        list.clearCache();
+        list.debounce = 0;
+        list.requestTimeout = 10;
+        list.source = () => new Promise(() => { /* never settles */ });
+        list.setQuery('slow');
+        await sleep(25);
+        expect(list.loadingState).toEqual(false);
+        expect(list.error).toContain('timed out');
     }
 
     @Test('async sources abort stale requests, surface errors and retry')

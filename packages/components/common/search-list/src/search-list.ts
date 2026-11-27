@@ -1,4 +1,4 @@
-import { Attribute, Component, ElementRef, noReact } from '@tsdi/components';
+import { Attribute, Component, ElementRef, OnDestroy, noReact } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
@@ -86,7 +86,7 @@ interface SearchListRow {
         </div>
     </div>`
 })
-export class SearchListComponent {
+export class SearchListComponent implements OnDestroy {
     constructor(@Optional() protected elementRef?: ElementRef) {
         markElementRefRaw(elementRef);
         this.listId = `ui-search-list-${SearchListComponent.sequence++}`;
@@ -103,6 +103,10 @@ export class SearchListComponent {
 
     @Attribute() items: SearchListItem[] = [];
     @Attribute() source?: SearchListSource;
+    /** Milliseconds to wait after typing before calling the async source. */
+    @Attribute() debounce = 0;
+    /** Abort a source request that stalls; the list becomes retryable. */
+    @Attribute() requestTimeout = 15_000;
     @Attribute() query = '';
     @Attribute() placeholder = 'Search…';
     @Attribute() emptyLabel = 'No matches';
@@ -145,6 +149,9 @@ export class SearchListComponent {
     private _activeId = '';
     private requestId = 0;
     private aborter?: AbortController;
+    private debounceTimer?: ReturnType<typeof setTimeout>;
+    private timeoutTimer?: ReturnType<typeof setTimeout>;
+    private cache = new Map<string, SearchListItem[]>();
 
     @Attribute()
     get disabled(): boolean { return this._disabled; }
@@ -276,15 +283,54 @@ export class SearchListComponent {
         this.query = next;
         this._activeId = '';
         this.changeAction?.(next);
-        if (this.source) {
-            if (next.trim().length < this.minQueryLength) {
-                this._asyncItems = [];
-                this._error = '';
-                this._loading = false;
-                return;
-            }
-            void this.load(next);
+        if (!this.source) {
+            return;
         }
+        this.clearDebounce();
+        if (next.trim().length < this.minQueryLength) {
+            this.aborter?.abort();
+            this._asyncItems = [];
+            this._error = '';
+            this._loading = false;
+            return;
+        }
+        const cached = this.cache.get(next);
+        if (cached) {
+            this._asyncItems = cached;
+            this._error = '';
+            this._loading = false;
+            return;
+        }
+        const delay = Math.max(0, Number(this.debounce) || 0);
+        if (delay > 0) {
+            this.debounceTimer = setTimeout(() => {
+                this.debounceTimer = undefined;
+                void this.load(next);
+            }, delay);
+            return;
+        }
+        void this.load(next);
+    }
+
+    clearCache(): void {
+        this.cache.clear();
+    }
+
+    protected clearDebounce(): void {
+        if (this.debounceTimer !== undefined) {
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = undefined;
+        }
+    }
+
+    onDestroy(): void {
+        this.clearDebounce();
+        if (this.timeoutTimer !== undefined) {
+            clearTimeout(this.timeoutTimer);
+            this.timeoutTimer = undefined;
+        }
+        this.aborter?.abort();
+        this.aborter = undefined;
     }
 
     onKeydown(event: any): void {
@@ -392,6 +438,7 @@ export class SearchListComponent {
         if (!source) {
             return;
         }
+        this.clearDebounce();
         this.aborter?.abort();
         const aborter = new AbortController();
         // AbortController/AbortSignal use private fields; proxying them breaks abort().
@@ -401,13 +448,32 @@ export class SearchListComponent {
         const request = ++this.requestId;
         this._loading = true;
         this._error = '';
+        if (this.timeoutTimer !== undefined) {
+            clearTimeout(this.timeoutTimer);
+        }
+        const timeout = Math.max(1, Number(this.requestTimeout) || 15_000);
+        this.timeoutTimer = setTimeout(() => {
+            this.timeoutTimer = undefined;
+            if (request !== this.requestId) {
+                return;
+            }
+            this.aborter?.abort();
+            this._asyncItems = [];
+            this._error = 'Request timed out';
+            this._loading = false;
+        }, timeout);
         try {
             const result = await source(String(query ?? ''), aborter.signal);
             if (request !== this.requestId) {
                 return;
             }
-            this._asyncItems = Array.isArray(result?.items) ? result.items : [];
-            this._error = String(result?.error ?? '');
+            const items = Array.isArray(result?.items) ? result.items : [];
+            const error = String(result?.error ?? '');
+            this._asyncItems = items;
+            this._error = error;
+            if (!error) {
+                this.cache.set(String(query ?? ''), items);
+            }
         } catch (error) {
             if (request !== this.requestId) {
                 return;
