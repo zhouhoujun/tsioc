@@ -54,6 +54,18 @@ export class TreeTest {
         return { tree, host: ref.instance as TreeHostComponent };
     }
 
+    @Test('windows very large trees around the active row')
+    async windowsRows() {
+        const { tree } = await this.mount();
+        tree.maxVisible = 2;
+        await Promise.resolve();
+        expect(tree.visibleRows.length).toEqual(2);
+        tree.onKeydown(tree.viewItems[0], { key: 'End', preventDefault() { } });
+        await Promise.resolve();
+        expect(tree.visibleRows.length).toEqual(2);
+        expect(tree.visibleRows.some(row => row.key === tree.activeRow()?.key)).toBe(true);
+    }
+
     @Test('type-ahead moves selection to the next matching label')
     async typeahead() {
         const { tree } = await this.mount();

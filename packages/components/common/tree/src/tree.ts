@@ -60,7 +60,7 @@ interface TreeViewItem {
             tabindex="{{tabIndexFor(entry)}}"
             focusable="{{!entry.disabled}}"
             @keydown="onKeydown(entry, $event)"
-            v-for="entry in viewItems" trackBy="key">
+            v-for="entry in visibleRows" trackBy="key">
             <span class="ui-tree-row" @click="activate(entry)">
                 <span class="ui-tree-indent" aria-hidden="true">{{entry.indentText}}</span>
                 <span class="ui-tree-check" role="checkbox" tabindex="-1" focusable="true"
@@ -92,6 +92,8 @@ export class TreeComponent {
     @Attribute() checkedIds: Array<string | number> = [];
     /** Case-insensitive label/id filter; ancestors of matches stay visible. */
     @Attribute() filter = '';
+    /** Optional row window; 0 keeps every visible row. */
+    @Attribute() maxVisible: number | string = 0;
     /** Checking a parent updates descendants and rolls up ancestors. */
     @Attribute()
     get cascade(): boolean { return this._cascade; }
@@ -224,6 +226,28 @@ export class TreeComponent {
         return result;
     }
 
+    get maxVisibleCount(): number { return Math.max(0, Math.floor(Number(this.maxVisible) || 0)); }
+
+    get windowStart(): number {
+        const limit = this.maxVisibleCount;
+        const rows = this.viewItems;
+        if (!limit || rows.length <= limit) { return 0; }
+        const active = this.activeRow();
+        const index = active ? rows.findIndex(row => row.key === active.key) : 0;
+        return Math.max(0, Math.min(rows.length - limit, index - Math.floor(limit / 2)));
+    }
+
+    get visibleRows(): TreeViewItem[] {
+        const limit = this.maxVisibleCount;
+        const rows = this.viewItems;
+        return limit && rows.length > limit ? rows.slice(this.windowStart, this.windowStart + limit) : rows;
+    }
+
+    protected focusRow(row: TreeViewItem): void {
+        const local = row.index - this.windowStart;
+        if (local >= 0) { focusNth(this.elementRef?.nativeElement, '.ui-tree-node', local); }
+    }
+
     nodeClass(entry: TreeViewItem): string {
         return this.currentRow(entry)?.className || entry.className;
     }
@@ -349,7 +373,7 @@ export class TreeComponent {
         }
         if (this._multiple) {
             this._activeKey = row.key;
-            focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+            this.focusRow(row);
             return;
         }
         if (this._selectionFollowsFocus) {
@@ -358,7 +382,7 @@ export class TreeComponent {
         } else {
             this._activeKey = row.key;
         }
-        focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+        this.focusRow(row);
     }
 
     toggleCheckedKey(key: string, node: TreeNode, event?: Event): void {
@@ -411,11 +435,11 @@ export class TreeComponent {
         this._activeKey = row.key;
         if (this._multiple) {
             this.toggleCheckedKey(row.key, row.item);
-            focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+            this.focusRow(row);
             return;
         }
         this.selectedId = row.key;
-        focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+        this.focusRow(row);
         this.selectAction?.(row.item);
     }
 
@@ -438,7 +462,7 @@ export class TreeComponent {
             ids.delete(row.key);
         }
         this.expandedIds = [...ids];
-        focusNth(this.elementRef?.nativeElement, '.ui-tree-node', row.index);
+        this.focusRow(row);
         this.toggleAction?.(row.item, next);
     }
 
