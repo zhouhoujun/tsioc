@@ -410,8 +410,9 @@ argument to write it elsewhere.
 ## Design plans
 
 - `docs/component-optimization.md` — Node-RED parity for dynamic-form/config.
-- `docs/component-parity-plan-2026-11-26.md` — current-state audit against
-  MUI/Ant Design, DOM/TUI parity rules and the phased P0/P1/P2 improvement plan.
+- `docs/component-parity-plan-2026-11-26.md` — original gap audit and P0/P1/P2 plan.
+- `docs/component-parity-plan-2026-11-27.md` — post-implementation audit:
+  completed baseline, remaining professional gaps and Wave 2 roadmap.
 - `docs/catalog-examples-2026-11.md` — copy-ready examples for the new
   selection/table/form/overlay/progress capabilities.
 - `docs/opencode-alignment-plan-2026-11.md` — quality alignment with latest
