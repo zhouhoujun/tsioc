@@ -78,7 +78,7 @@ export class ProgressTest {
             const { roots } = await this.mount();
             const root = roots[1];
             const bar = root.querySelector('.ui-progress-bar') as HTMLElement;
-            expect(root.getAttribute('aria-valuenow')).toEqual('');
+            expect(root.getAttribute('aria-valuenow')).toBeNull();
             expect(root.getAttribute('aria-valuetext')).toEqual('Loading');
             expect(root.getAttribute('aria-busy')).toEqual('true');
             expect(bar.textContent).toContain('█');
