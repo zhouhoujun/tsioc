@@ -24,12 +24,25 @@ import { WorkflowDebugItem, WorkflowExecutionLogEntry } from '../types';
                 v-if="mode === 'messages'" @click="clearState">{{clearStateLabel}}</button>
             <button class="workflow-btn" @click="close">{{closeLabel}}</button>
         </div>
-        <div class="workflow-debug-search-row" v-if="mode === 'messages'">
+        <div class="workflow-debug-search-row">
+            <select class="workflow-debug-filter" v-if="mode === 'messages'"
+                data-filter="node" aria-label="{{nodeFilterLabel}}"
+                [value]="nodeFilter" @change="nodeFilterInput">
+                <option value="">{{allNodesLabel}}</option>
+                <option v-for="option in nodeOptions" [value]="option.id">{{option.name}}</option>
+            </select>
+            <select class="workflow-debug-filter" v-else
+                data-filter="level" aria-label="{{levelFilterLabel}}"
+                [value]="levelFilter" @change="levelFilterInput">
+                <option value="">{{allLevelsLabel}}</option>
+                <option v-for="option in levelOptions" [value]="option.value">{{option.label}}</option>
+            </select>
             <input class="workflow-debug-search" type="search"
                 placeholder="{{searchPlaceholder}}" [value]="search" @input="searchInput" />
         </div>
         <div class="workflow-run-log-body" v-if="mode === 'logs'">
-            <div class="workflow-run-log-row" v-for="item in items" [class]="rowClass(item)">
+            <div class="workflow-debug-empty" v-if="!filteredLogItems.length">{{noLogsLabel}}</div>
+            <div class="workflow-run-log-row" v-for="item in filteredLogItems" data-level="{{item.level}}" [class]="rowClass(item)">
                 <span class="workflow-run-log-time">{{formatTime(item.timestamp)}}</span>
                 <span class="workflow-run-log-level">{{levelLabel(item.level)}}</span>
                 <span class="workflow-run-log-message">{{item.message}}</span>
@@ -65,6 +78,8 @@ export class WorkflowRunLogComponent {
 
     mode: 'logs' | 'messages' = 'logs';
     search = '';
+    nodeFilter = '';
+    levelFilter = '';
     expanded: Record<string, boolean> = {};
 
     constructor(@Optional() private translator?: Translator) { }
@@ -118,15 +133,65 @@ export class WorkflowRunLogComponent {
         this.clearStateAction?.();
     }
 
+    get allNodesLabel(): string {
+        return this.t('allNodes', 'All nodes');
+    }
+
+    get allLevelsLabel(): string {
+        return this.t('allLevels', 'All levels');
+    }
+
+    get nodeFilterLabel(): string {
+        return this.t('filterNode', 'Filter by node');
+    }
+
+    get levelFilterLabel(): string {
+        return this.t('filterLevel', 'Filter by level');
+    }
+
+    get noLogsLabel(): string {
+        return this.t('noLogs', 'No log entries match the filters.');
+    }
+
+    get nodeOptions(): Array<{ id: string; name: string }> {
+        const seen = new Set<string>();
+        return (this.debugItems || [])
+            .filter(item => item?.nodeId && !seen.has(item.nodeId) && (seen.add(item.nodeId), true))
+            .map(item => ({ id: item.nodeId, name: item.name || item.nodeId }))
+            .sort((left, right) => left.name.localeCompare(right.name));
+    }
+
+    get levelOptions(): Array<{ value: string; label: string }> {
+        const levels = ['info', 'success', 'warning', 'error'];
+        return levels.map(level => ({ value: level, label: this.levelLabel(level as any) }));
+    }
+
+    get filteredLogItems(): WorkflowExecutionLogEntry[] {
+        const query = String(this.search || '').trim().toLowerCase();
+        return (this.items || []).filter(item => {
+            if (this.levelFilter && item.level !== this.levelFilter) {
+                return false;
+            }
+            if (!query) {
+                return true;
+            }
+            return [item.message, item.level, this.levelLabel(item.level)]
+                .some(value => String(value || '').toLowerCase().includes(query));
+        });
+    }
+
     get filteredDebugItems(): WorkflowDebugItem[] {
         const query = String(this.search || '').trim().toLowerCase();
-        if (!query) {
-            return this.debugItems;
-        }
-        return this.debugItems.filter(item =>
-            [item.name, item.typeLabel, item.resultText, item.errorText]
-                .some(value => String(value || '').toLowerCase().includes(query))
-        );
+        return (this.debugItems || []).filter(item => {
+            if (this.nodeFilter && item.nodeId !== this.nodeFilter) {
+                return false;
+            }
+            if (!query) {
+                return true;
+            }
+            return [item.name, item.typeLabel, item.resultText, item.errorText]
+                .some(value => String(value || '').toLowerCase().includes(query));
+        });
     }
 
     levelLabel(level: WorkflowExecutionLogEntry['level']): string {
@@ -177,6 +242,14 @@ export class WorkflowRunLogComponent {
 
     searchInput(event: any): void {
         this.search = String(event?.target?.value ?? '');
+    }
+
+    nodeFilterInput(event: any): void {
+        this.nodeFilter = String(event?.target?.value ?? '');
+    }
+
+    levelFilterInput(event: any): void {
+        this.levelFilter = String(event?.target?.value ?? '');
     }
 
     toggleItem(nodeId: string): void {

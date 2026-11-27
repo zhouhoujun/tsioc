@@ -121,11 +121,26 @@ export const WORKFLOW_DESIGNER_STATUS_CSS = `/* Status and JSON panels */
 }
 
 .workflow-debug-search-row {
+    display: flex;
+    gap: 6px;
     padding: 4px 10px;
     border-bottom: 1px solid #e2e8f0;
 }
 
+.workflow-debug-filter {
+    flex: 0 0 auto;
+    max-width: 34%;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 11px;
+    color: #0f172a;
+    background: #ffffff;
+}
+
 .workflow-debug-search {
+    flex: 1 1 auto;
+    min-width: 0;
     width: 100%;
     box-sizing: border-box;
     border: 1px solid #e2e8f0;
@@ -215,9 +230,18 @@ export const WORKFLOW_DESIGNER_STATUS_CSS = `/* Status and JSON panels */
     font-size: 11px;
 }
 
+.workflow-designer[data-theme="dark"] .workflow-debug-search-row,
+.workflow-designer[data-theme="solarized"] .workflow-debug-search-row,
+.workflow-designer[data-theme="high-contrast"] .workflow-debug-search-row {
+    border-bottom-color: var(--wf-theme-border, #1e293b);
+}
+
 .workflow-designer[data-theme="dark"] .workflow-debug-search,
 .workflow-designer[data-theme="solarized"] .workflow-debug-search,
-.workflow-designer[data-theme="high-contrast"] .workflow-debug-search {
+.workflow-designer[data-theme="high-contrast"] .workflow-debug-search,
+.workflow-designer[data-theme="dark"] .workflow-debug-filter,
+.workflow-designer[data-theme="solarized"] .workflow-debug-filter,
+.workflow-designer[data-theme="high-contrast"] .workflow-debug-filter {
     background: var(--wf-theme-surface, #0b1220);
     border-color: var(--wf-theme-border, #1e293b);
     color: var(--wf-theme-text, #e2e8f0);

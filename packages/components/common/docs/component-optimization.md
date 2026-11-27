@@ -332,6 +332,11 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - workflow 设计器把 `--wf-theme-*` 映射到 common `--ui-*`（背景、卡片、输入、
     边框、按钮、链接/焦点、危险色、表头），嵌入的 autocomplete/dynamic-form
     等通用 widget 自动跟随 light/dark/solarized/high-contrast 主题。
+- **运行日志过滤（2026-11-27）**
+  - Logs 模式支持按级别 + 关键字过滤；Messages 模式支持按节点 + 关键字过滤。
+  - 过滤状态与空态、行 `data-level`/节点 identity 保持稳定，TUI 与 DOM 共用同一
+    模板；日志/消息详情继续在统一展开区展示。
+  - 过滤行使用主题 token，dark/solarized/high-contrast 下无浅色边框残留。
 - **Palette quick-add / search-list 复用（2026-11-27）**
   - `ui-search-list` 支持行 dragstart（`dragStartAction`/`draggable`），
     palette 的数据源可直接作为可拖拽列表行。

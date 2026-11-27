@@ -527,6 +527,14 @@ describe('Workflow Designer UI', () => {
         const rows = root.querySelectorAll('.workflow-run-log-row');
         expect(rows.length).toBeGreaterThan(0);
         expect(root.querySelector('.workflow-run-log').textContent).toContain('task_1');
+        const levelFilter = root.querySelector('.workflow-debug-filter[data-filter="level"]') as any;
+        const level = Array.from(levelFilter.options as any).map((option: any) => option.value).find((value: string) => !!value);
+        levelFilter.value = level;
+        levelFilter.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        const filteredRows = Array.from(root.querySelectorAll('.workflow-run-log-row')) as any[];
+        expect(filteredRows.length).toBeGreaterThan(0);
+        expect(filteredRows.every(row => row.getAttribute('data-level') === level)).toBe(true);
         expect(root.querySelector('.workflow-run-log').textContent).toContain('执行日志');
         ref.instance.toolbarAction('toggle-logs');
         await flush();

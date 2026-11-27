@@ -741,6 +741,18 @@ describe('Workflow Designer UI', () => {
         await flush();
         expect(root.querySelectorAll('.workflow-debug-item').length).toBe(1);
         expect(root.querySelector('.workflow-debug-item')?.textContent).toContain('读取输入');
+
+        search.value = '';
+        search.dispatchEvent(new (doc.defaultView as any).Event('input', { bubbles: true }));
+        await flush();
+        const nodeFilter = root.querySelector('.workflow-debug-filter[data-filter="node"]') as any;
+        const nodeId = (root.querySelector('.workflow-debug-item') as any).getAttribute('data-node-id');
+        nodeFilter.value = nodeId;
+        nodeFilter.dispatchEvent(new (doc.defaultView as any).Event('change', { bubbles: true }));
+        await flush();
+        const filtered = Array.from(root.querySelectorAll('.workflow-debug-item')) as any[];
+        expect(filtered.length).toBeGreaterThan(0);
+        expect(filtered.every(item => item.getAttribute('data-node-id') === nodeId)).toBe(true);
     });
 
     it('opens a referenced sub-workflow from the node menu', async () => {
