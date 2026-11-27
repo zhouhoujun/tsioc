@@ -6,6 +6,8 @@ import { installTabBarStyles } from './tab-bar.styles';
 import { InlineInputComponent } from '../../inline-input/src/inline-input';
 import { TabContextMenuComponent } from './tab-context-menu';
 import { positionTabOverflowMenu } from './tab-bar.overflow';
+import { beginTabRename, canRenameTab, cancelTabRename, commitTabRename, renameTabTitle } from './tab-bar.rename';
+import { focusAfterClose as focusAfterCloseHelper, onTabKeydown as onTabKeydownHelper, tabIndexFor as tabIndexForHelper } from './tab-bar.keys';
 import { contextTab, dropTab, startTabDrag } from './tab-bar.reorder';
 
 /** A renderer-neutral tab entry: the host owns meaning, the tab bar only paints it. */
@@ -143,7 +145,7 @@ export class TabBarComponent implements AfterViewInit {
     protected windowResizeListener?: () => void;
     protected overflowSyncScheduled = false;
     protected readonly uid = nextUiId('ui-tab-bar');
-    private focusedKey = '';
+    focusedKey = '';
     protected overflowMenuOpen = false;
     protected overflowMenuStyle: Record<string, string> = {};
     protected overflowDismiss?: () => void;
@@ -288,34 +290,23 @@ export class TabBarComponent implements AfterViewInit {
         return !!this.activeSource?.canScrollForward;
     }
     canRename(tab: TabItem): boolean {
-        return !!this.activeSource?.rename && tab?.renamable !== false && !this.hostWindowed;
+        return canRenameTab(this, tab);
     }
 
     renameTitle(tab: TabItem): string {
-        return this.activeSource?.renameLabel || `Rename ${String(tab?.label || '').trim()}`.trim();
+        return renameTabTitle(this, tab);
     }
 
     beginRename(id: string, event?: Event): void {
-        const tab = this.items.find(item => item.id === id);
-        if (!tab || !this.canRename(tab)) {
-            return;
-        }
-        event?.preventDefault?.();
-        event?.stopPropagation?.();
-        this.renamingId = id;
+        beginTabRename(this, id, event);
     }
 
     commitRename(id: string, title: string): void {
-        const next = String(title ?? '').trim();
-        this.renamingId = '';
-        if (!next) {
-            return;
-        }
-        void this.activeSource?.rename?.(id, next);
+        commitTabRename(this, id, title);
     }
 
     cancelRename(): void {
-        this.renamingId = '';
+        cancelTabRename(this);
     }
 
     select(id: string, event?: Event): void {
@@ -349,109 +340,22 @@ export class TabBarComponent implements AfterViewInit {
     }
     /** Keep keyboard focus inside the strip after a tab disappears. */
     protected focusAfterClose(): void {
-        void Promise.resolve().then(() => Promise.resolve()).then(() => {
-            const items = this.items;
-            const target = items.find(item => item.active && !item.disabled) ?? items.find(item => !item.disabled);
-            this.focusedKey = target?.id || '';
-            if (target) { this.focusTab(items.indexOf(target)); }
-        });
+        focusAfterCloseHelper(this);
     }
+
     /**
      * Roving tabindex: exactly one enabled tab is in the tab order. The active
      * tab wins; when no item is active the first enabled tab holds focus.
      */
     tabIndexFor(tab: TabItem, index: number): number {
-        if (!tab || tab.disabled) {
-            return -1;
-        }
-        const items = this.items;
-        if (this.focusedKey && items.some(item => item?.id === this.focusedKey && !item.disabled)) {
-            return tab.id === this.focusedKey ? 0 : -1;
-        }
-        if (tab.active) {
-            return 0;
-        }
-        if (items.some(item => item?.active && !item.disabled)) {
-            return -1;
-        }
-        return items.findIndex(item => item && !item.disabled) === index ? 0 : -1;
+        return tabIndexForHelper(this, tab, index);
     }
+
     /** Arrow/Home/End navigation, Enter/Space activation and Delete-to-close. */
     onTabKeydown(event: any, tab: TabItem, index: number): void {
-        if (!tab) {
-            return;
-        }
-        const key = String(event?.key || '');
-        if (key === 'F2') {
-            event?.preventDefault?.();
-            event?.stopPropagation?.();
-            this.beginRename(tab.id, event);
-            return;
-        }
-        if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
-            event?.preventDefault?.();
-            this.select(tab.id, event);
-            return;
-        }
-        if ((key === 'Delete' || key === 'Backspace') && tab.showClose !== false) {
-            event?.preventDefault?.();
-            this.closeTab(tab.id, event);
-            return;
-        }
-        if (event?.altKey && (key === 'ArrowLeft' || key === 'ArrowRight')) {
-            const ids = this.items.map(item => item.id);
-            const from = ids.indexOf(tab.id);
-            const to = from + (key === 'ArrowRight' ? 1 : -1);
-            if (from >= 0 && to >= 0 && to < ids.length) {
-                event.preventDefault?.();
-                [ids[from], ids[to]] = [ids[to], ids[from]];
-                this.focusedKey = tab.id;
-                this.reorderAction?.(ids, tab.id, this.items[to]?.id || '');
-                void Promise.resolve().then(() => this.focusTab(to));
-            }
-            return;
-        }
-        let targetIndex = -1;
-        if (key === 'ArrowRight' || key === 'ArrowDown') {
-            targetIndex = this.nextEnabledTab(index, 1);
-        } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
-            targetIndex = this.nextEnabledTab(index, -1);
-        } else if (key === 'Home') {
-            targetIndex = this.nextEnabledTab(-1, 1);
-        } else if (key === 'End') {
-            targetIndex = this.nextEnabledTab(this.items.length, -1);
-        }
-        if (targetIndex < 0) {
-            return;
-        }
-        event?.preventDefault?.();
-        const target = this.items[targetIndex];
-        this.focusedKey = target.id;
-        if (this.mode === 'automatic') {
-            this.select(target.id, event);
-        }
-        // The host may replace the strip data on select; move focus after the
-        // reactive DOM update so the new node (not the stale one) is focused.
-        const focus = () => this.focusTab(targetIndex);
-        if (typeof queueMicrotask === 'function') {
-            queueMicrotask(focus);
-        } else {
-            focus();
-        }
+        onTabKeydownHelper(this, event, tab, index);
     }
-    protected nextEnabledTab(from: number, step: 1 | -1): number {
-        const items = this.items;
-        if (!items.length) {
-            return -1;
-        }
-        for (let offset = 1; offset <= items.length; offset++) {
-            const index = ((from + step * offset) % items.length + items.length) % items.length;
-            if (items[index] && !items[index].disabled) {
-                return index;
-            }
-        }
-        return -1;
-    }
+
     protected focusTab(index: number): void {
         const strip = this.strip?.nativeElement as { querySelectorAll?: (selector: string) => ArrayLike<HTMLElement> } | undefined;
         const tabs = strip?.querySelectorAll?.('.tab');
