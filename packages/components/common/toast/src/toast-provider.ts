@@ -1,7 +1,8 @@
-import { Attribute, Component, OnDestroy } from '@tsdi/components';
+import { Attribute, Component, ElementRef, OnDestroy } from '@tsdi/components';
 import { Optional } from '@tsdi/ioc';
 import { ToastEntry, ToastOptions, ToastService } from './toast';
 import { ToastStackComponent } from './toast-stack';
+import { installToastProviderStyles } from './toast-provider.styles';
 
 /**
  * Root-level toast provider: owns/uses a ToastService and renders the shared
@@ -21,7 +22,7 @@ import { ToastStackComponent } from './toast-stack';
     </div>`
 })
 export class ToastProviderComponent implements OnDestroy {
-    constructor(@Optional() protected injectedService?: ToastService) {
+    constructor(@Optional() protected injectedService?: ToastService, @Optional() protected elementRef?: ElementRef) {
         this.service = injectedService || new ToastService();
     }
 
@@ -35,6 +36,7 @@ export class ToastProviderComponent implements OnDestroy {
     @Attribute() pauseAllOnHover = false;
 
     onInit(): void {
+        installToastProviderStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
         this.entries = this.service.current;
         this.unsubscribe = this.service.subscribe(entries => { this.entries = entries; });
     }

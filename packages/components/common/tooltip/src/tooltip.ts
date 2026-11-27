@@ -3,7 +3,7 @@ import { Optional } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId, normalizeBoolean } from '../../src/ui';
 import { installTooltipStyles } from './tooltip.styles';
-import { resolveFlippedPlacement, resolveOverlayShift, UiPlacement } from '../../src/overlay-placement';
+import { resolveFlippedPlacement, resolveOverlayShift, resolvePortalStyle, UiPlacement } from '../../src/overlay-placement';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -140,32 +140,7 @@ export class TooltipComponent {
             this.portalStyle = {};
             return;
         }
-        const view = (anchor?.ownerDocument as { defaultView?: Window } | undefined)?.defaultView;
-        const rect = anchor?.getBoundingClientRect?.();
-        const popupRect = popup?.getBoundingClientRect?.();
-        if (!view || !rect || !popupRect || (!popupRect.width && !popupRect.height)) {
-            this.portalStyle = {};
-            return;
-        }
-        let left = rect.left + (rect.width - popupRect.width) / 2 + this.shiftX;
-        let top = rect.top - popupRect.height - 6;
-        if (placement === 'bottom') {
-            top = rect.bottom + 6;
-        } else if (placement === 'left' || placement === 'right') {
-            left = placement === 'left' ? rect.left - popupRect.width - 6 : rect.right + 6;
-            top = rect.top + (rect.height - popupRect.height) / 2 + this.shiftY;
-        }
-        const width = Number(view.innerWidth) || 0;
-        const height = Number(view.innerHeight) || 0;
-        left = Math.max(8, Math.min(left, width - popupRect.width - 8));
-        top = Math.max(8, Math.min(top, height - popupRect.height - 8));
-        this.portalStyle = {
-            position: 'fixed',
-            left: `${Math.round(left)}px`,
-            top: `${Math.round(top)}px`,
-            transform: 'none',
-            'z-index': '40'
-        };
+        this.portalStyle = resolvePortalStyle(anchor, popup, placement as UiPlacement, this.shiftX, this.shiftY) || {};
     }
 
     get tooltipId(): string {

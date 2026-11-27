@@ -7,7 +7,7 @@ import { normalizeBoolean } from '../../src/ui';
 import { installPlainButtonStyles } from '../../src/ui.styles';
 import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 import { installPopoverStyles } from './popover.styles';
-import { resolveFlippedPlacement, resolveOverlayShift, UiPlacement } from '../../src/overlay-placement';
+import { resolveFlippedPlacement, resolveOverlayShift, resolvePortalStyle, UiPlacement } from '../../src/overlay-placement';
 
 export type PopoverPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -85,6 +85,8 @@ export class PopoverComponent {
     private _visible = false;
     private _closable = true;
     private _flip = true;
+    private _portal = false;
+    private portalStyle: Record<string, string> = {};
     private _placement: PopoverPlacement = 'bottom';
     private resolvedPlacement: PopoverPlacement | '' = '';
     private shiftX = 0;
@@ -128,7 +130,8 @@ export class PopoverComponent {
     get popupStyle(): Record<string, string> {
         return {
             '--ui-overlay-shift-x': `${this.shiftX}px`,
-            '--ui-overlay-shift-y': `${this.shiftY}px`
+            '--ui-overlay-shift-y': `${this.shiftY}px`,
+            ...this.portalStyle
         };
     }
 
@@ -149,6 +152,9 @@ export class PopoverComponent {
         const shift = resolveOverlayShift(anchor, popup, next as UiPlacement, 6, false);
         this.shiftX = shift.x;
         this.shiftY = shift.y;
+        this.portalStyle = this._portal
+            ? resolvePortalStyle(anchor, popup, next as UiPlacement, this.shiftX, this.shiftY) || {}
+            : {};
     }
 
     get closeGlyph(): string {

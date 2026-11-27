@@ -48,6 +48,42 @@ export function resolveFlippedPlacement(
     return fits[opposite] ? opposite : preferred;
 }
 
+/** Fixed viewport coordinates for a portaled overlay. */
+export function resolvePortalStyle(
+    anchor: any,
+    popup: any,
+    placement: UiPlacement,
+    shiftX = 0,
+    shiftY = 0,
+    margin = 8
+): Record<string, string> | undefined {
+    const view = (anchor?.ownerDocument as { defaultView?: Window } | undefined)?.defaultView;
+    const rect = anchor?.getBoundingClientRect?.();
+    const popupRect = popup?.getBoundingClientRect?.();
+    if (!view || !rect || !popupRect || (!popupRect.width && !popupRect.height)) {
+        return undefined;
+    }
+    let left = rect.left + (rect.width - popupRect.width) / 2 + shiftX;
+    let top = rect.top - popupRect.height - 6;
+    if (placement === 'bottom') {
+        top = rect.bottom + 6;
+    } else if (placement === 'left' || placement === 'right') {
+        left = placement === 'left' ? rect.left - popupRect.width - 6 : rect.right + 6;
+        top = rect.top + (rect.height - popupRect.height) / 2 + shiftY;
+    }
+    const width = Number(view.innerWidth) || 0;
+    const height = Number(view.innerHeight) || 0;
+    left = Math.max(margin, Math.min(left, width - popupRect.width - margin));
+    top = Math.max(margin, Math.min(top, height - popupRect.height - margin));
+    return {
+        position: 'fixed',
+        left: `${Math.round(left)}px`,
+        top: `${Math.round(top)}px`,
+        transform: 'none',
+        'z-index': '40'
+    };
+}
+
 /**
  * Shift an overlay along its cross axis so it stays inside the viewport.
  * `centered` matches tooltip-style centering; popover-style edge alignment
