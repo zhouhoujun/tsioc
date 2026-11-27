@@ -246,6 +246,29 @@ export class GatewayConfigService {
             if (route.targetPath && !String(route.targetPath).startsWith('/')) {
                 errors.push(`${at}.targetPath must start with /`);
             }
+            if (route.canary) {
+                const canary: any = route.canary;
+                if (canary.percentage != null) {
+                    const percentage = Number(canary.percentage);
+                    if (!Number.isFinite(percentage) || percentage < 0 || percentage > 100) {
+                        errors.push(`${at}.canary.percentage must be between 0 and 100`);
+                    }
+                }
+                if (canary.header) {
+                    if (!canary.header.name || typeof canary.header.name !== 'string') {
+                        errors.push(`${at}.canary.header.name is required`);
+                    }
+                    if (canary.header.value != null && typeof canary.header.value !== 'string') {
+                        errors.push(`${at}.canary.header.value must be a string`);
+                    }
+                }
+                if (canary.version != null && typeof canary.version !== 'string') {
+                    errors.push(`${at}.canary.version must be a string`);
+                }
+                if (canary.tags != null && !Array.isArray(canary.tags)) {
+                    errors.push(`${at}.canary.tags must be an array`);
+                }
+            }
             if (route.timeout != null) {
                 const timeout = Number(route.timeout);
                 if (!Number.isFinite(timeout) || timeout < 0 || timeout > 600_000) {

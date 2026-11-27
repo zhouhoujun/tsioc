@@ -4995,3 +4995,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百二十三批（2026-11-16）：
   - HTTP upgrade handlers + GatewayWebSocketProxy + ws echo test。
   - 回归：gateway 163、http 50。
+
+- 微服务框架第一百二十四批（2026-11-16）：
+  - Gateway canary 配置校验。
+  - 回归：gateway 164。

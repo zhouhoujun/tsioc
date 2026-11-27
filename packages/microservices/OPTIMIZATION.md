@@ -698,6 +698,11 @@
 - 新增 `GatewayWebSocketProxy`：按 gateway 路由/targetUrl 转发 101 + 双向 pipe；useGateway 自动注册。
 - 真实 ws echo 测试通过；gateway 163、http 50 passing。
 
+第一百二十四批（Canary 配置校验）：
+
+- `GatewayConfigService` 校验 canary.percentage（0–100）、header.name/value、version、tags 类型；无效配置在 apply 前失败。
+- 新增 canary 配置测试；gateway 164 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

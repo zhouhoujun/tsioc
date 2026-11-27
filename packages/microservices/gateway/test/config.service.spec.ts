@@ -65,6 +65,44 @@ describe('GatewayConfigService', () => {
         expect(runtime.getRoutes([])).toEqual(before);
     });
 
+    it('validates canary routing configuration', () => {
+        const { service } = create();
+        expect(() => service.apply({
+            routes: [{
+                path: '/api/canary',
+                service: 'users',
+                canary: { percentage: 120 }
+            } as any]
+        })).toThrow(/canary.percentage/);
+        expect(() => service.apply({
+            routes: [{
+                path: '/api/canary',
+                service: 'users',
+                canary: { header: {} }
+            } as any]
+        })).toThrow(/canary.header.name/);
+        expect(() => service.apply({
+            routes: [{
+                path: '/api/canary',
+                service: 'users',
+                canary: { tags: 'blue' }
+            } as any]
+        })).toThrow(/canary.tags/);
+
+        expect(service.apply({
+            routes: [{
+                path: '/api/canary',
+                service: 'users',
+                canary: {
+                    header: { name: 'x-canary', value: 'yes' },
+                    percentage: 25,
+                    version: 'v2',
+                    tags: ['blue']
+                }
+            } as any]
+        }).applied).toBe(true);
+    });
+
     it('detects duplicate path and method combinations', () => {
         const { service } = create();
         expect(() => service.apply({
