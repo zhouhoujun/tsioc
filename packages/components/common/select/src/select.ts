@@ -1,8 +1,10 @@
-import { Attribute, Component, Computed } from '@tsdi/components';
+import { Attribute, Component, Computed, noReact } from '@tsdi/components';
 import { clampSelectIndex, resolveSelectWindow } from '../../src/input';
 import { nextUiId, normalizeBoolean } from '../../src/ui';
 import { SelectionCore } from '../../src/selection-core';
 import { getDisplayWidth } from '../../src/display-width';
+
+export type SelectSource = (query: string, signal: AbortSignal) => SelectOption[] | Promise<SelectOption[]>;
 
 export interface SelectOption {
     label: string;
@@ -40,11 +42,17 @@ export interface SelectOption {
                     class="select-value-remove" role="button" @click="removeValue(item.value)">✕</span></span>
                 <span class="select-clear" role="button" v-if="clearable" @click="clearValues">{{clearLabel}}</span>
             </div>
+            <input class="select-search" v-if="searchable" type="text" role="combobox"
+                aria-label="{{ariaLabel}}" aria-autocomplete="list" aria-expanded="true"
+                aria-controls="{{listId}}" aria-activedescendant="{{activeDescendant}}"
+                [value]="query" placeholder="{{filterPlaceholder}}"
+                @input="setQuery($event?.target?.value)" @keydown="onListboxKeydown($event)" />
             <label class="select-title" v-if="title">{{title}}</label>
             <label class="select-meta" v-if="meta">{{meta}}</label>
             <div class="select-rows" role="listbox" id="{{listId}}" aria-label="{{ariaLabel}}"
                 aria-multiselectable="{{multiple}}" aria-activedescendant="{{activeDescendant}}"
-                tabindex="0" focusable="true" [style]="scrollStyle" @keydown="onListboxKeydown($event)">
+                tabindex="{{searchable ? -1 : 0}}" focusable="{{!searchable}}"
+                [style]="scrollStyle" @keydown="onListboxKeydown($event)">
                 <div class="select-row" v-for="option in visibleOptions" trackBy="index">
                     <span class="select-group" role="presentation" v-if="option.showGroup">{{option.group}}</span>
                     <label class="{{option.className}}" role="option" id="{{optionId(option.index)}}"
@@ -53,7 +61,9 @@ export interface SelectOption {
                         <span class="select-option-label">{{option.label}}</span><span class="select-option-description" v-if="option.description">{{option.description}}</span>
                     </label>
                 </div>
-                <label class="select-empty" v-if="emptyText && !visibleOptions.length">{{emptyText}}</label>
+                <label class="select-loading" role="status" v-if="loading">{{loadingLabel}}</label>
+                <label class="select-error" role="alert" v-if="error">{{error}}</label>
+                <label class="select-empty" v-if="emptyText && !visibleOptions.length && !loading">{{emptyText}}</label>
                 <label class="select-detail" v-for="line in detailLines" v-if="detailLines && detailLines.length">{{line}}</label>
             </div>
             <label class="select-hint" v-if="hint">{{hint}}</label>
@@ -95,11 +105,22 @@ export class SelectComponent {
     @Attribute() valuesAction?: (values: string[]) => void;
     @Attribute() removeAction?: (value: string) => void;
     @Attribute() clearLabel = 'Clear';
+    @Attribute() filterPlaceholder = 'Search…';
+    @Attribute() loadingLabel = 'Loading…';
+    @Attribute() source?: SelectSource;
     @Attribute() closeAction?: () => void;
     @Attribute() keydownAction?: (event: KeyboardEvent) => void;
 
     private _multiple = false;
     private _clearable = false;
+    private _searchable = false;
+    private _tags = false;
+    query = '';
+    loading = false;
+    error = '';
+    private sourceItems: SelectOption[] = [];
+    private sourceAbort?: AbortController;
+    private sourceRequest = 0;
     private typeaheadBuffer = '';
     private typeaheadAt = 0;
 
@@ -112,6 +133,14 @@ export class SelectComponent {
     set clearable(value: boolean | string) { this._clearable = normalizeBoolean(value); }
 
     @Attribute() values: string[] = [];
+
+    @Attribute()
+    get searchable(): boolean { return this._searchable; }
+    set searchable(value: boolean | string) { this._searchable = normalizeBoolean(value); }
+
+    @Attribute()
+    get tags(): boolean { return this._tags; }
+    set tags(value: boolean | string) { this._tags = normalizeBoolean(value); }
 
     @Computed()
     get scrollStyle(): Record<string, string> {
@@ -126,13 +155,64 @@ export class SelectComponent {
 
     get selectedLabels(): Array<{ value: string; label: string }> {
         const selected = new Set((this.values || []).map(String));
-        return (this.options || [])
+        const source = [...(this.options || []), ...(this.sourceItems || [])]
+            .filter((option, index, list) => list.findIndex(item => String(item.value) === String(option?.value)) === index);
+        return source
             .filter(option => selected.has(String(option?.value)))
             .map(option => ({ value: String(option.value), label: String(option.label ?? option.value) }));
     }
 
+    get displayOptions(): SelectOption[] {
+        const base = this.source ? this.sourceItems : (this.options || []);
+        const query = String(this.query || '').trim().toLocaleLowerCase();
+        const filtered = query
+            ? base.filter(option => `${option.label} ${option.value}`.toLocaleLowerCase().includes(query))
+            : base.slice();
+        if (this._tags && query && !filtered.some(option => String(option.value) === String(this.query).trim())) {
+            filtered.push({ label: `Add "${String(this.query).trim()}"`, value: String(this.query).trim() });
+        }
+        return filtered;
+    }
+
     get activeIndex(): number {
-        return clampSelectIndex(Array.isArray(this.options) ? this.options.length : 0, Number(this.selectedIndex));
+        return clampSelectIndex(this.displayOptions.length, Number(this.selectedIndex));
+    }
+
+    setQuery(value: string): void {
+        const next = String(value ?? '');
+        if (next === this.query) { return; }
+        this.query = next;
+        this.selectedIndex = 0;
+        this.error = '';
+        void this.loadSource(next);
+    }
+
+    async loadSource(query: string): Promise<void> {
+        const source = this.source;
+        if (!source) {
+            this.sourceItems = [];
+            return;
+        }
+        this.sourceAbort?.abort();
+        const abort = new AbortController();
+        (abort as any)[noReact] = true;
+        (abort.signal as any)[noReact] = true;
+        this.sourceAbort = abort;
+        const request = ++this.sourceRequest;
+        this.loading = true;
+        try {
+            const result = await source(query, abort.signal);
+            if (request !== this.sourceRequest) { return; }
+            this.sourceItems = Array.isArray(result) ? result : [];
+        } catch (error) {
+            if (request !== this.sourceRequest) { return; }
+            this.sourceItems = [];
+            this.error = error instanceof Error ? error.message : String(error);
+        } finally {
+            if (request === this.sourceRequest) {
+                this.loading = false;
+            }
+        }
     }
 
     optionId(index: number): string {
@@ -152,7 +232,7 @@ export class SelectComponent {
         }
         if (key === 'ArrowDown' || key === 'ArrowUp') {
             event.preventDefault?.();
-            const next = this.selection.move(this.options || [], this.activeIndex, key === 'ArrowDown' ? 1 : -1);
+            const next = this.selection.move(this.displayOptions, this.activeIndex, key === 'ArrowDown' ? 1 : -1);
             if (next >= 0) {
                 this.selectedIndex = next;
             }
@@ -161,8 +241,8 @@ export class SelectComponent {
         if (key === 'Home' || key === 'End') {
             event.preventDefault?.();
             const next = key === 'Home'
-                ? this.selection.first(this.options || [])
-                : this.selection.last(this.options || []);
+                ? this.selection.first(this.displayOptions)
+                : this.selection.last(this.displayOptions);
             if (next >= 0) {
                 this.selectedIndex = next;
             }
@@ -173,7 +253,7 @@ export class SelectComponent {
             this.choose(this.activeIndex);
             return;
         }
-        if (key.length === 1 && !event?.ctrlKey && !event?.metaKey && !event?.altKey) {
+        if (!this._searchable && key.length === 1 && !event?.ctrlKey && !event?.metaKey && !event?.altKey) {
             this.typeahead(key);
         }
     }
@@ -184,7 +264,7 @@ export class SelectComponent {
         this.typeaheadAt = now;
         this.typeaheadBuffer += key.toLocaleLowerCase();
         const query = this.typeaheadBuffer;
-        const options = this.options || [];
+        const options = this.displayOptions;
         for (let offset = 1; offset <= options.length; offset++) {
             const index = ((this.activeIndex + offset) % options.length + options.length) % options.length;
             const option = options[index];
@@ -237,7 +317,7 @@ export class SelectComponent {
     /** Windowed rows for renderers that paint real elements (browser). */
     @Computed()
     get visibleOptions(): Array<{ index: number; label: string; value: string; description: string; group: string; showGroup: boolean; selected: boolean; disabled: boolean; className: string }> {
-        const options = Array.isArray(this.options) ? this.options : [];
+        const options = this.displayOptions;
         const active = clampSelectIndex(options.length, Number(this.selectedIndex));
         const window = resolveSelectWindow(options.length, active, Number(this.visibleCount) || options.length || 1);
         const selectedValues = new Set((this.values || []).map(String));
@@ -270,7 +350,7 @@ export class SelectComponent {
     }
 
     choose(index: number): void {
-        const option = (this.options || [])[index];
+        const option = this.displayOptions[index];
         if (!option || option.disabled) {
             return;
         }
@@ -290,7 +370,7 @@ export class SelectComponent {
 
     @Computed()
     get optionsJson(): string {
-        return JSON.stringify(this.options || []);
+        return JSON.stringify(this.displayOptions);
     }
 
     @Computed()

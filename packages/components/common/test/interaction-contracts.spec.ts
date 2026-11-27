@@ -74,6 +74,23 @@ export class InteractionContractsTest {
         expect(menu.entries.map(entry => entry.ariaChecked)).toEqual(['', 'true', 'false']);
     }
 
+    @Test('select async source and tags build the displayed options')
+    async selectSource() {
+        const select = new SelectComponent();
+        select.searchable = true;
+        select.tags = true;
+        select.source = async (query: string) => query === 'a'
+            ? [{ label: 'Alpha', value: 'a' }]
+            : [];
+        select.setQuery('a');
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        expect(select.displayOptions).toEqual([{ label: 'Alpha', value: 'a' }]);
+
+        select.setQuery('new');
+        for (let index = 0; index < 4; index++) await Promise.resolve();
+        expect(select.displayOptions[0]).toEqual({ label: 'Add "new"', value: 'new' });
+    }
+
     @Test('select multi mode toggles values and tree checkboxes update checked ids')
     async selectionContracts() {
         const select = new SelectComponent();

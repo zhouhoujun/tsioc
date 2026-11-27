@@ -1209,6 +1209,9 @@
 
 .select-row { display: block; }
 .select-group { color: var(--console-meta, #6e7681); font-weight: bold; padding: 0 1ch; }
+.select-search { color: var(--console-text, #c9d1d9); padding: 0 1ch; }
+.select-loading { color: var(--console-meta, #6e7681); }
+.select-error { color: var(--console-error, #cf9893); }
 .select-values { color: var(--console-text, #c9d1d9); padding: 0 1ch; }
 .select-value { color: var(--console-selected, #7fa6d4); padding-right: 1ch; }
 .select-value-remove,
