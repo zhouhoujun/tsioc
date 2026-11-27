@@ -1,6 +1,6 @@
 import { token, Provider } from '@tsdi/ioc';
 import { Transport } from '@tsdi/common';
-import { ServiceOptions } from '@tsdi/service';
+import { ConsumerIdempotencyOptions, ConsumerRetryOptions, ServiceOptions } from '@tsdi/service';
 import { RedisOptions } from 'ioredis';
 
 export interface RedisServOptions extends ServiceOptions {
@@ -28,6 +28,12 @@ export interface RedisServOptions extends ServiceOptions {
     blockMs?: number;
     /** idle time before reclaiming pending entries. Default 60000. */
     claimIdleMs?: number;
+    /** in-process retry policy for stream deliveries. */
+    retry?: ConsumerRetryOptions;
+    /** concurrent stream handlers. Default unlimited. */
+    concurrency?: number;
+    /** opt-in deduplication for reclaimed/duplicate stream ids. */
+    idempotency?: ConsumerIdempotencyOptions;
 }
 
 export const REDIS_SERV_OPTIONS = token<RedisServOptions>('REDIS_SERV_OPTIONS');

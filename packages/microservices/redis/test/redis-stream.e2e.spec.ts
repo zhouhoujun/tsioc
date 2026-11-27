@@ -84,6 +84,79 @@ describe('Redis Streams delivery', () => {
         });
     });
 
+    describe('stream retry policy', () => {
+        const STREAM = `tsdi:test:stream:${Date.now()}:retry`;
+        const GROUP = 'retry-group';
+        let attempts = 0;
+        let resolveMessage: ((value: any) => void) | undefined;
+
+        class RetryStreamService {
+            @Subscribe('stream.retry', Transport.Redis)
+            onEvent(@Payload() payload: any) {
+                attempts += 1;
+                if (attempts === 1) {
+                    throw new Error('transient stream failure');
+                }
+                resolveMessage?.(payload);
+                resolveMessage = undefined;
+                return { ok: true };
+            }
+        }
+
+        @Module({
+            imports: [LoggerModule],
+            declarations: [RetryStreamService],
+            providers: [
+                provideService(
+                    useRouter(),
+                    useRedisTransport({
+                        url: REDIS_URL,
+                        delivery: 'stream',
+                        streamKey: STREAM,
+                        group: GROUP,
+                        retry: { maxAttempts: 1 },
+                        blockMs: 200,
+                        asDefault: true
+                    })
+                )
+            ]
+        })
+        class RetryStreamModule { }
+
+        let ctx: ApplicationContext;
+        let producer: Redis;
+
+        before(async () => {
+            ctx = await Application.run(RetryStreamModule);
+            producer = new Redis(REDIS_URL);
+        });
+        after(async () => {
+            await producer?.quit();
+            await ctx?.close();
+        });
+
+        it('retries in-process before acking a stream entry', async () => {
+            attempts = 0;
+            const wait = new Promise<any>(resolve => { resolveMessage = resolve; });
+            await producer.xadd(
+                STREAM,
+                '*',
+                'channel',
+                'stream.retry',
+                'message',
+                JSON.stringify({ payload: { retried: true } })
+            );
+            const result = await Promise.race([
+                wait,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+            ]);
+            expect(result).toEqual({ retried: true });
+            expect(attempts).toBe(2);
+            const pending: any = await producer.xpending(STREAM, GROUP);
+            expect(Number(pending?.[0] ?? 0)).toBe(0);
+        });
+    });
+
     describe('client publishing', () => {
         const STREAM = `tsdi:test:stream:${Date.now()}:client`;
 

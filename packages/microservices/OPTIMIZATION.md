@@ -567,6 +567,12 @@
 - v0 自动迁移（含 `auth: 'oidc'` → `{ mode: 'oidc' }`）；更高版本给出升级错误；port/prefix/routes/auth/oidcService 启动期校验并输出可操作错误。
 - README 补充 version/迁移说明；admin 103 passing。
 
+第一百批（Redis Stream 统一消费语义）：
+
+- Redis `delivery:'stream'` 接入 `ConsumerRuntime`：retry/concurrency/idempotency/metrics/drain 与 Kafka/AMQP/NATS 一致。
+- stream entry id 作为幂等键；失败保留 pending 交给 XAUTOCLAIM；关闭时先 close/drain runtime。
+- 新增 stream retry E2E（首次失败、进程内重试后 ack）；Redis 77 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

@@ -4907,3 +4907,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第九十九批（2026-11-16）：
   - Admin config schema v1 + migration + actionable validation。
   - 回归：admin 103。
+
+- 微服务框架第一百批（2026-11-16）：
+  - Redis Stream 接 ConsumerRuntime（retry/idempotency/metrics/drain）。
+  - 回归：Redis 77。

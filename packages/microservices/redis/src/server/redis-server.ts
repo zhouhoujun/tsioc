@@ -4,7 +4,7 @@ import { InjectLog, Logger } from '@tsdi/logger';
 import {
     Events, createRequestContext, RequestContext, Transport, REQUEST
 } from '@tsdi/common'
-import { ServiceHandler, Service, BindServiceEvent, getServiceRouterToken, getSubscribePatterns, mergeSubscribePatterns, watchSubscribePatterns } from '@tsdi/service';
+import { ServiceHandler, Service, BindServiceEvent, getServiceRouterToken, getSubscribePatterns, mergeSubscribePatterns, watchSubscribePatterns, ConsumerRuntime, ConsumerMetricsSink, CONSUMER_METRICS } from '@tsdi/service';
 import { Subject, lastValueFrom, race, take, takeUntil } from 'rxjs';
 import { hostname } from 'node:os';
 import Redis from 'ioredis';
@@ -26,10 +26,12 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
     private streamClient?: Redis;
     private streamLoop?: Promise<void>;
     private streamStopping = false;
+    private runtime?: ConsumerRuntime;
 
     constructor(
         readonly handler: ServiceHandler<TReq, TRes, RequestContext>,
         @Inject(REDIS_SERV_OPTIONS, { nullable: true }) protected options: RedisServOptions,
+        @Inject(CONSUMER_METRICS, { nullable: true }) protected consumerMetrics?: ConsumerMetricsSink | null,
     ) {
         super();
         this.destroy$ = new Subject();
@@ -262,6 +264,16 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
         }
     }
 
+    private get consumerRuntime(): ConsumerRuntime {
+        return this.runtime ??= new ConsumerRuntime({
+            retry: this.options?.retry,
+            concurrency: this.options?.concurrency,
+            idempotency: this.options?.idempotency,
+            metrics: this.consumerMetrics ?? undefined,
+            labels: { transport: 'redis', group: this.options?.group }
+        });
+    }
+
     private async handleStreamEntry(client: Redis, streamKey: string, group: string, entry: any): Promise<void> {
         const id = String(entry?.[0] ?? '');
         if (!id) {
@@ -281,18 +293,31 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
             await this.ackStreamEntry(client, streamKey, group, id);
             return;
         }
-        const context = createRequestContext(this.injector, [
-            [REQUEST, { channel, message }],
-        ]);
-        try {
-            await lastValueFrom(
-                this.handler.handle({ channel, message } as TReq, context)
-                    .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
-            );
-            await this.ackStreamEntry(client, streamKey, group, id);
-        } catch (err) {
-            // Leave pending; XAUTOCLAIM retries after claimIdleMs.
-            this.logger.error('Redis stream handling error:', err);
+        let lastError: unknown;
+        const handled = await this.consumerRuntime.handle({
+            id,
+            payload: { channel, message },
+            labels: { topic: streamKey },
+            ack: () => this.ackStreamEntry(client, streamKey, group, id),
+            // Leave the entry pending so XAUTOCLAIM can retry after the idle
+            // window when the in-process retry budget is exhausted.
+            fail: () => undefined
+        }, async () => {
+            const context = createRequestContext(this.injector, [
+                [REQUEST, { channel, message }],
+            ]);
+            try {
+                await lastValueFrom(
+                    this.handler.handle({ channel, message } as TReq, context)
+                        .pipe(takeUntil(race(this.destroy$).pipe(take(1))))
+                );
+            } catch (err) {
+                lastError = err;
+                throw err;
+            }
+        });
+        if (!handled && !this.streamStopping) {
+            this.logger.error('Redis stream handling error:', lastError);
         }
     }
 
@@ -308,6 +333,7 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
 
     private async stopStreamConsumer(): Promise<void> {
         this.streamStopping = true;
+        this.runtime?.close();
         const client = this.streamClient;
         const loop = this.streamLoop;
         this.streamClient = undefined;
@@ -326,6 +352,7 @@ export class RedisServer<TReq = any, TRes = any> extends Service<TReq, TRes, Req
                 })
             ]);
         }
+        await this.runtime?.drain(5000);
     }
 
     private streamDelay(ms: number): Promise<void> {
