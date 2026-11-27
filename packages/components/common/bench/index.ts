@@ -1,4 +1,6 @@
 import { Spring } from '../motion/src';
+import { createTypeaheadMachineState, transitionTypeaheadMachine } from '../typeahead/src/typeahead.machine';
+import { contrastRatio, themeTokens } from '../src/theme-tokens';
 import { DataTableColumn, DataTableRow } from '../data-table/src/data-table.types';
 import {
     filterDataTableRows,
@@ -115,6 +117,35 @@ measure('menu ancestor path 2k', () => {
     let total = 0;
     for (let round = 0; round < 2_000; round++) {
         total += menuAncestorPath(menuGroups, 'g15-5-3').length;
+    }
+    return total;
+});
+
+measure('typeahead machine 50k transitions', () => {
+    let state = createTypeaheadMachineState<string>();
+    for (let index = 0; index < 50_000; index++) {
+        const query = `q-${index % 32}`;
+        const input = transitionTypeaheadMachine(state, { type: 'input.changed', query, delayMs: 0, minChars: 0 });
+        state = input.state;
+        const request = input.effects.find(effect => effect.type === 'request');
+        if (request && request.type === 'request') {
+            state = transitionTypeaheadMachine(state, {
+                type: 'request.succeeded',
+                attempt: request.attempt,
+                result: { items: [query] }
+            }).state;
+        }
+    }
+    return state.status === 'disposed' ? 0 : 1;
+});
+
+measure('theme contrast 50k', () => {
+    let total = 0;
+    for (let round = 0; round < 10_000; round++) {
+        for (const name of ['light', 'dark', 'solarized', 'high-contrast']) {
+            const tokens = themeTokens(name);
+            total += Math.round(contrastRatio(tokens.fg, tokens.bg) * 100);
+        }
     }
     return total;
 });
