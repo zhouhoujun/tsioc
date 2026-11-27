@@ -1,12 +1,16 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { renderStateMatrixHtml } from '../scripts/state-matrix';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { normalizeStateMarkup, renderStateMatrix } from '../scripts/state-matrix';
 
 @Suite('common catalog state matrix')
 export class CatalogStateMatrixTest {
     @Test('renders every state under every theme from the real components')
     async renders() {
-        const html = await renderStateMatrixHtml();
+        const report = await renderStateMatrix();
+        const html = report.html;
 
         expect(html.match(/class="matrix-card"/g)?.length).toEqual(18);
         expect(html).toContain('data-theme-section="light"');
@@ -30,5 +34,12 @@ export class CatalogStateMatrixTest {
             }
         }
         expect(missing).toEqual([]);
+
+        const baseline = JSON.parse(readFileSync(join(__dirname, '..', 'scripts', 'catalog-states-baseline.json'), 'utf8')) as Record<string, string>;
+        expect(Object.keys(report.states).sort()).toEqual(Object.keys(baseline).sort());
+        for (const [state, markup] of Object.entries(report.states)) {
+            const hash = createHash('sha1').update(normalizeStateMarkup(markup)).digest('hex');
+            expect(`${state}:${hash}`).toEqual(`${state}:${baseline[state]}`);
+        }
     }
 }

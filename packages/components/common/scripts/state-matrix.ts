@@ -20,7 +20,7 @@ export const STATE_MATRIX_STATES = ['default', 'focus', 'selected', 'open', 'dis
 
 export interface StateMatrixReport {
     html: string;
-    states: string[];
+    states: Record<string, string>;
     themes: string[];
 }
 
@@ -160,7 +160,7 @@ function tick(): Promise<void> {
     return Promise.resolve().then(() => Promise.resolve());
 }
 
-export async function renderStateMatrixHtml(): Promise<string> {
+export async function renderStateMatrix(): Promise<StateMatrixReport> {
     const { JSDOM } = require('jsdom');
     const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
     const doc = dom.window.document;
@@ -275,8 +275,24 @@ export async function renderStateMatrixHtml(): Promise<string> {
 </html>`;
         // Serialized renderer output keeps template indentation; generated docs
         // should stay whitespace-clean for `git diff --check`.
-        return html.replace(/[ \t]+$/gm, '');
+        return {
+            html: html.replace(/[ \t]+$/gm, ''),
+            states,
+            themes: [...STATE_MATRIX_THEMES]
+        };
     } finally {
         await ctx.close();
     }
+}
+
+/** Strip per-process id counters so visual signatures are reproducible. */
+export function normalizeStateMarkup(markup: string): string {
+    return markup.replace(
+        /\b(id|aria-labelledby|aria-controls|aria-describedby|aria-activedescendant|for|name)="([^"]*)"/g,
+        (_match, attribute: string, value: string) => `${attribute}="${value.replace(/-\d+/g, '-N')}"`
+    );
+}
+
+export async function renderStateMatrixHtml(): Promise<string> {
+    return (await renderStateMatrix()).html;
 }

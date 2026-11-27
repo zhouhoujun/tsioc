@@ -418,8 +418,10 @@ argument to write it elsewhere.
 
 `npm run catalog:states` renders the real Button/Checkbox/Tabs/MenuBar/DataTable/
 Accordion/Toast components in six states under light, dark and high-contrast
-themes, then writes the pre-rendered matrix to `docs/catalog-states.html`. The
-page is static (no runtime bundle) and doubles as the visual acceptance baseline.
+themes, then writes the pre-rendered matrix to `docs/catalog-states.html` and
+per-state structural hashes to `scripts/catalog-states-baseline.json`. The page
+is static (no runtime bundle) and doubles as the visual acceptance baseline;
+`test/catalog-states.spec.ts` fails when a state signature drifts.
 
 ## Design plans
 
