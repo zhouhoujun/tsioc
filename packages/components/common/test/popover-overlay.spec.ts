@@ -39,10 +39,14 @@ export class PopoverOverlayTest {
         popover.title = 'Help';
         popover.closeAction = () => { closes += 1; };
         popover.beforeCloseAction = () => allow;
+        popover.initialFocus = 'button';
+        popover.restoreFocus = false;
         popover.overlayOpen = true;
         const doc = this.ctx.get(DOCUMENT) as Document;
         expect(doc.body.style.overflow).toEqual('hidden');
         expect(manager.size).toEqual(1);
+        expect(manager.active?.initialFocus).toEqual('button');
+        expect(manager.active?.restoreFocus).toEqual(false);
         allow = false;
         expect(await manager.escape()).toEqual('blocked');
         expect(closes).toEqual(0);

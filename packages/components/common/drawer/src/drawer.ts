@@ -4,6 +4,7 @@ import { nextUiId } from '../../src/ui';
 import { OverlayManager } from '../../src/overlay-manager';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
+import { trapFocusTab } from '../../src/focus';
 import { installPlainButtonStyles } from '../../src/ui.styles';
 import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 import { attachOverlayBackdrop } from '../../src/overlay-backdrop';
@@ -67,6 +68,8 @@ export class DrawerComponent {
                 id: this.overlayId,
                 kind: 'drawer',
                 element: this.elementRef?.nativeElement,
+                initialFocus: this.initialFocus,
+                restoreFocus: this.restoreFocus,
                 beforeClose: () => this.beforeCloseAction?.() ?? true,
                 close: () => { this._overlayOpen = false; this.syncScrollLock(false); this.syncBackdrop(false); this.closeAction?.(); }
             });
@@ -155,7 +158,19 @@ export class DrawerComponent {
             event.preventDefault?.();
             event.stopPropagation?.();
             this.close();
+            return;
         }
+        if (event?.key === 'Tab' && this._overlayOpen && normalizeBoolean(this.trapFocus as any, true)) {
+            trapFocusTab(this.panelElement(), event);
+        }
+    }
+
+    protected panelElement(): any {
+        const element = this.elementRef?.nativeElement as any;
+        if (!element) {
+            return undefined;
+        }
+        return element.matches?.('.ui-drawer') ? element : element.querySelector?.('.ui-drawer') || element;
     }
 
     /** Lock document scrolling while this overlay is registered and open. */

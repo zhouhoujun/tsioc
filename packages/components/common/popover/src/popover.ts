@@ -4,6 +4,7 @@ import { nextUiId } from '../../src/ui';
 import { OverlayManager } from '../../src/overlay-manager';
 import { markElementRefRaw } from '../../src/raw-element';
 import { normalizeBoolean } from '../../src/ui';
+import { trapFocusTab } from '../../src/focus';
 import { installPlainButtonStyles } from '../../src/ui.styles';
 import { lockDocumentScroll } from '../../src/overlay-scroll-lock';
 import { installPopoverStyles } from './popover.styles';
@@ -62,6 +63,8 @@ export class PopoverComponent {
                 id: this.overlayId,
                 kind: 'popover',
                 element: this.elementRef?.nativeElement,
+                initialFocus: this.initialFocus,
+                restoreFocus: this.restoreFocus,
                 beforeClose: () => this.beforeCloseAction?.() ?? true,
                 close: () => { this._overlayOpen = false; this.syncScrollLock(false); this.closeAction?.(); }
             });
@@ -212,7 +215,19 @@ export class PopoverComponent {
             event.preventDefault?.();
             event.stopPropagation?.();
             this.close();
+            return;
         }
+        if (event?.key === 'Tab' && this._overlayOpen && normalizeBoolean(this.trapFocus as any, true)) {
+            trapFocusTab(this.panelElement(), event);
+        }
+    }
+
+    protected panelElement(): any {
+        const element = this.elementRef?.nativeElement as any;
+        if (!element) {
+            return undefined;
+        }
+        return element.matches?.('.ui-popover') ? element : element.querySelector?.('.ui-popover') || element;
     }
 
     /** Lock document scrolling while this overlay is registered and open. */
