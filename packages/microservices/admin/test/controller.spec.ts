@@ -138,6 +138,42 @@ describe('GatewayAdminController doctor', () => {
         expect(report.checks.find(check => check.id === 'discovery')?.status).toBe('ok');
     });
 
+    it('reports transport capabilities from the service runtime', async () => {
+        const runtime = new GatewayRuntime();
+        const controller = new GatewayAdminController(
+            runtime,
+            { routes: [] },
+            new InMemoryWorkflowDefinitionStore(),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            [{
+                capabilities: {
+                    transport: 3 as any,
+                    name: 'HTTP',
+                    requestResponse: true,
+                    publishSubscribe: false,
+                    streaming: true,
+                    delivery: 'at-most-once',
+                    consumerIdempotency: false,
+                    ordering: 'none'
+                },
+                warnings: ['HTTP: at-most-once delivery']
+            }]
+        );
+        const report = await controller.doctor();
+        expect(report.capabilities).toEqual([{
+            name: 'HTTP',
+            delivery: 'at-most-once',
+            consumerIdempotency: false,
+            ordering: 'none',
+            warnings: ['HTTP: at-most-once delivery']
+        }]);
+    });
+
     it('warns about open circuits', async () => {
         const { controller, runtime } = createController({ routes: [{ path: '/api/users', service: 'users-service' }] });
         await runtime.recordFailure('users-service:/api/users:2', {

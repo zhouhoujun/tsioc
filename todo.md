@@ -4892,3 +4892,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第九十五批（2026-11-16）：
   - 嵌入式 admin 保存规则回归（/api 上游 401 不再影响本地规则 PUT）。
   - GATEWAY_LOCAL_PATHS 空前缀保护。
+
+- 微服务框架第九十六批（2026-11-16）：
+  - TransportCapabilityMatrix + SERVICE_CAPABILITIES + doctor 展示。
+  - 回归：service 112、admin 95。

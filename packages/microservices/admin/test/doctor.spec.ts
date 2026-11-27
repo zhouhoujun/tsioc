@@ -14,7 +14,14 @@ describe('admin doctor cli', () => {
         checks: [
             { id: 'routes', status: 'ok', message: '2 route(s) configured' },
             { id: 'circuits', status: 'warn', message: '1 circuit(s) open' }
-        ]
+        ],
+        capabilities: [{
+            name: 'HTTP',
+            delivery: 'at-most-once',
+            consumerIdempotency: false,
+            ordering: 'none',
+            warnings: ['HTTP: at-most-once delivery']
+        }]
     };
 
     function response(status: number, body?: any) {
@@ -66,5 +73,6 @@ describe('admin doctor cli', () => {
         expect(text).toContain('version: 3  routes: 2  services: 1  open circuits: 1  alerts: 0');
         expect(text).toContain('[ok] routes: 2 route(s) configured');
         expect(text).toContain('[warn] circuits: 1 circuit(s) open');
+        expect(text).toContain('[capability] HTTP: delivery=at-most-once idempotent=false ordering=none warnings=1');
     });
 });

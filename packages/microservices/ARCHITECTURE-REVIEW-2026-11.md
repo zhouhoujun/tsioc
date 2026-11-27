@@ -117,7 +117,7 @@ S4 复跑后的关键数字：gateway route-match 10k p99 ≈ **0.0023 ms**（32
 
 | 任务 | 交付 | 验收 |
 |---|---|---|
-| Transport capability matrix | `TransportCapabilities` + `describeService` 扩展 + 启动自检 | 不支持的 idempotency/stream 配置启动即可诊断 |
+| Transport capability matrix | `TransportCapabilities` + `describeService` 扩展 + 启动自检（矩阵/报告已落地，strict 启动失败待接入） | 不支持的 idempotency/stream 配置启动即可诊断 |
 | Admin CSRF/安全默认 | cookie 会话 CSRF token 或 origin 校验；`mode:none` 启动提示；审计日志 | 跨站写请求被拒；本地开发可显式关闭 |
 | Gateway JWKS | issuer/JWKS 缓存 + 轮换，静态 key 兼容 | 过期/轮换 key 自动刷新；gateway 回归不变 |
 | Config schema v1 | schema + migration + doctor 校验 | 旧配置可启动并给出迁移报告 |

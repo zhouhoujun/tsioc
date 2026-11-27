@@ -24,6 +24,7 @@ import { composeMiddleware, convertToInterceptor, MiddlewareLike } from './middl
 import { SetupServices } from './SetupMicroServices';
 import { ReadinessStateService } from './readiness';
 import { ServiceMessageValueReader } from './message-value-reader';
+import { inspectTransportCapabilities, SERVICE_CAPABILITIES } from './capabilities';
 import { DiscoveryHealthCheckStrategy } from './strategies/discovery-health.strategy';
 import { DiscoveryRegistrationStrategy } from './strategies/discovery-registration.strategy';
 import { DefaultGracefulShutdownStrategy } from './strategies/default-graceful-shutdown.strategy';
@@ -46,6 +47,7 @@ export function provideService(...features: ServiceFeatureLike<ServiceFeatureKin
     }
 
     const providers: Provider[] = [
+        { provide: SERVICE_CAPABILITIES, useValue: inspectTransportCapabilities(transports.map(transport => transport.config)) },
         SetupServices,
         ReadinessStateService,
         LoggerInterceptor,

@@ -51,6 +51,10 @@ export function formatDoctorReport(report: GatewayDoctorReport): string {
     report.checks.forEach(check => {
         lines.push(`[${check.status}] ${check.id}: ${check.message}`);
     });
+    (report.capabilities ?? []).forEach(capability => {
+        const warning = capability.warnings.length ? ` warnings=${capability.warnings.length}` : '';
+        lines.push(`[capability] ${capability.name}: delivery=${capability.delivery} idempotent=${capability.consumerIdempotency} ordering=${capability.ordering}${warning}`);
+    });
     return lines.join('\n');
 }
 

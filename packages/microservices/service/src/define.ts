@@ -1,6 +1,7 @@
 import { AbstractType, ArgumentException, Module, Provider } from '@tsdi/ioc';
 import { provideService, useFeatures } from './provider';
 import { ServiceFeatureOptions, ServiceTransportFeature } from './options';
+import { inspectTransportCapabilities, TransportCapabilities } from './capabilities';
 
 /**
  * Declarative microservice definition.
@@ -32,6 +33,11 @@ export interface ServiceCapabilities {
     health: boolean;
     registration: boolean;
     gracefulShutdown: boolean;
+    /** Declared transport semantics and semantic warnings. */
+    capabilities: Array<{
+        capabilities: TransportCapabilities;
+        warnings: string[];
+    }>;
 }
 
 /**
@@ -46,7 +52,8 @@ export function describeService(options: DefineServiceOptions): ServiceCapabilit
         router: options.router !== false,
         health: options.health !== false,
         registration: options.registration !== false,
-        gracefulShutdown: options.gracefulShutdown !== false
+        gracefulShutdown: options.gracefulShutdown !== false,
+        capabilities: inspectTransportCapabilities(transports.map(item => item.config))
     };
 }
 

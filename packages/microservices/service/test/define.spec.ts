@@ -22,7 +22,8 @@ describe('defineService', () => {
     class UsersController { }
 
     it('summarizes declared capabilities', () => {
-        expect(describeService({ transport: transportFeature(), controllers: [UsersController] })).toEqual({
+        const single = describeService({ transport: transportFeature(), controllers: [UsersController] });
+        expect(single).toMatchObject({
             transports: 1,
             controllers: 1,
             router: true,
@@ -30,14 +31,17 @@ describe('defineService', () => {
             registration: true,
             gracefulShutdown: true
         });
+        expect(single.capabilities).toHaveLength(1);
+        expect(single.capabilities[0].capabilities.name).toBe('HTTP');
 
-        expect(describeService({
+        const multiple = describeService({
             transport: [transportFeature(), transportFeature()],
             health: false,
             router: false,
             registration: false,
             gracefulShutdown: false
-        })).toEqual({
+        });
+        expect(multiple).toMatchObject({
             transports: 2,
             controllers: 0,
             router: false,
@@ -45,6 +49,7 @@ describe('defineService', () => {
             registration: false,
             gracefulShutdown: false
         });
+        expect(multiple.capabilities).toHaveLength(2);
     });
 
     it('builds a module with declarations and service providers', () => {

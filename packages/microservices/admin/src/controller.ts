@@ -1,6 +1,6 @@
 import { Inject, Injectable, token } from '@tsdi/ioc';
 import { BadRequestException, NotFoundException } from '@tsdi/common';
-import { Controller, Delete, Get, Post, Put, RequestBody, RequestPath, ServiceFeatureFn, ServiceFeatureKind, useStatics, Router, ROUTERS, MESSAGE_ROUTERS } from '@tsdi/service';
+import { Controller, Delete, Get, Post, Put, RequestBody, RequestPath, ServiceFeatureFn, ServiceFeatureKind, useStatics, Router, ROUTERS, MESSAGE_ROUTERS, SERVICE_CAPABILITIES, TransportCapabilityReport } from '@tsdi/service';
 import { GatewayConfigService, GatewayInterceptor, GatewayMatchPreviewRequest, GatewayOptions, GatewayRouteOptions, GatewayRuleOptions, GatewayRuntime, GATEWAY_LOCAL_PATHS, GATEWAY_OPTIONS } from '@tsdi/gateway';
 import {
     InMemoryWorkflowDefinitionStore,
@@ -25,6 +25,14 @@ export interface GatewayDoctorCheck {
     message: string;
 }
 
+export interface GatewayDoctorCapability {
+    name: string;
+    delivery: string;
+    consumerIdempotency: boolean;
+    ordering: string;
+    warnings: string[];
+}
+
 export interface GatewayDoctorReport {
     status: GatewayDoctorCheckStatus;
     version: number;
@@ -34,6 +42,7 @@ export interface GatewayDoctorReport {
     openCircuits: number;
     alerts: number;
     checks: GatewayDoctorCheck[];
+    capabilities: GatewayDoctorCapability[];
 }
 
 export interface AdminServiceRouteTable {
@@ -80,7 +89,8 @@ export class GatewayAdminController {
         @Inject(ServiceDiscovery, { nullable: true }) private discovery?: ServiceDiscovery,
         @Inject(GatewayConfigService, { nullable: true }) private configService?: GatewayConfigService,
         @Inject(ROUTERS, { nullable: true }) private routers?: Router[],
-        @Inject(MESSAGE_ROUTERS, { nullable: true }) private messageRouters?: Router[]
+        @Inject(MESSAGE_ROUTERS, { nullable: true }) private messageRouters?: Router[],
+        @Inject(SERVICE_CAPABILITIES, { nullable: true }) private serviceCapabilities?: TransportCapabilityReport[]
     ) {
         this.store = store ?? new InMemoryWorkflowDefinitionStore();
     }
@@ -194,6 +204,13 @@ export class GatewayAdminController {
         return {
             status: checks.some(check => check.status === 'warn') ? 'warn' : 'ok',
             version: this.configService?.getVersion() ?? this.runtime.configRevision,
+            capabilities: (this.serviceCapabilities ?? []).map(report => ({
+                name: report.capabilities.name,
+                delivery: report.capabilities.delivery,
+                consumerIdempotency: report.capabilities.consumerIdempotency,
+                ordering: report.capabilities.ordering,
+                warnings: report.warnings
+            })),
             generatedAt: new Date().toISOString(),
             routes: routes.length,
             services,

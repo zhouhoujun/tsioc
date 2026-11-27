@@ -1,4 +1,5 @@
 export * from './options';
+export * from './capabilities';
 export * from './features';
 export * from './strategies';
 export * from './tokens';

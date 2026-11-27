@@ -543,6 +543,13 @@
 - 新增 `embedded-admin.spec.ts`：真实 gateway + admin features + `/api` 上游 401，验证 `/api/gateway-admin/state` 与 `PUT /rules/:id` 均保持本地并可保存规则。
 - `useGatewayAdminUi` 不再把空前缀注册为 `/`（避免误排除整个网关）；auth 的 `uiPrefix:'/'` 同样跳过。
 
+第九十六批（transport capability matrix）：
+
+- 新增 `service/src/capabilities.ts`：声明 HTTP/gRPC/TCP/UDP/WS/Redis/NATS/MQTT/Kafka/CoAP/AMQP/MCP 的请求响应、pub/sub、streaming、delivery、幂等、ordering、payload 说明。
+- `provideService` 暴露 `SERVICE_CAPABILITIES`；`describeService().capabilities` 输出每 transport 的报告与语义告警（at-most-once、无幂等等）。
+- admin doctor / CLI 展示 capability 报告；新增 service/admin 测试。
+- 回归：service 112、admin 95 passing；service/admin tsc 通过。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
