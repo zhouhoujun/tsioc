@@ -26,6 +26,16 @@ jobs:
       mqtt:
         image: eclipse-mosquitto:2
         ports: ['1883:1883']
+      postgres:
+        image: postgres:16
+        ports: ['5432:5432']
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
       otel:
         image: otel/opentelemetry-collector:latest
         ports: ['4317:4317', '4318:4318']
@@ -96,6 +106,11 @@ jobs:
         env:
           MS_BROKER_PROFILE: '1'
         run: bash scripts/agents-gate.sh ms-examples-broker
+      - name: Postgres outbox/saga transaction binding
+        env:
+          TSIO_TEST_POSTGRES: '1'
+          TSIO_TEST_POSTGRES_URL: postgres://postgres:postgres@127.0.0.1:5432/testdb
+        run: bash scripts/agents-gate.sh ms-postgres
       - name: Multi-process gateway chaos
         env:
           MS_CHAOS_PROFILE: '1'

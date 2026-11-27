@@ -21,4 +21,5 @@ export * from './transport';
 export * from './RedirectResult';
 export * from './define';
 export * from './outbox';
+export * from './outbox-postgres';
 export * from './saga';

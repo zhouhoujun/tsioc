@@ -5013,3 +5013,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 
 - 微服务框架第一百二十八批（2026-11-16）：
   - broker-throughput probe + ms-broker-bench gate + nightly。
+
+- 微服务框架第一百二十九批（2026-11-16）：
+  - Postgres 事务绑定 outbox/saga journal + ms-postgres gate + nightly。

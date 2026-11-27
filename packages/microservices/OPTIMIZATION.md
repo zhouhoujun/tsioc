@@ -723,6 +723,13 @@
 - 新增 `benchmarks/broker-throughput.ts`：Redis Stream 发布 N 条、等待全部消费，输出 messages/sec 与 pending。
 - gate 新增 opt-in `ms-broker-bench`（`MS_BROKER_BENCH_PROFILE=1`），nightly 已接入；1k 实测 pending 0。
 
+第一百二十九批（Postgres 事务绑定 outbox/saga journal）：
+
+- 新增 `service/src/outbox-postgres.ts`：`PostgresOutboxStore`（`FOR UPDATE SKIP LOCKED` 并发 claim）与 `PostgresSagaJournal`（upsert）。
+- 只依赖 `SqlQueryClient`（`query(text, values)`），接受事务内 `PoolClient`，业务写入与 outbox/journal 同一事务提交或回滚。
+- 新增 `TSIO_TEST_POSTGRES=1` 门控测试：add/claim/fail/retry/ack/size、事务提交/回滚、并发 claim、saga save/upsert/load/clear。
+- gate 新增 opt-in `ms-postgres`，`ms-nightly` 增加 Postgres 服务与步骤；真实库 129 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
