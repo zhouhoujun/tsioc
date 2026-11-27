@@ -13,8 +13,10 @@ import { resolveFieldAria } from './field-semantics';
     template: `
     <div class="ui-field-group {{className}}" data-invalid="{{invalid}}" data-status="{{status}}"
         aria-busy="{{pending}}" role="group" aria-describedby="{{describedBy}}">
-        <label class="ui-field-group-label" for="{{controlId}}" v-show="label">
+        <label class="ui-field-group-label" id="{{resolvedLabelId}}" for="{{controlId}}" v-show="label">
             {{label}}<span class="ui-field-group-required" v-if="required" aria-hidden="true"> *</span>
+            <span class="ui-field-group-info" id="{{resolvedTooltipId}}" role="note" tabindex="0"
+                title="{{labelTooltip}}" v-if="labelTooltip">ⓘ</span>
         </label>
         <div class="ui-field-group-control"><v-content></v-content></div>
         <label class="ui-field-group-pending" v-show="pending && !error" role="status">{{pendingLabel}}</label>
@@ -42,7 +44,19 @@ export class FieldComponent {
     @Attribute() controlId = '';
     @Attribute() hintId = '';
     @Attribute() errorId = '';
+    @Attribute() labelId = '';
+    @Attribute() tooltipId = '';
     @Attribute() className = '';
+    /** Short explanation rendered as a focusable info affordance beside the label. */
+    @Attribute() labelTooltip = '';
+
+    get resolvedLabelId(): string {
+        return this.labelId || (this.controlId ? `${this.controlId}-label` : '');
+    }
+
+    get resolvedTooltipId(): string {
+        return this.tooltipId || (this.controlId ? `${this.controlId}-tooltip` : '');
+    }
 
     get status(): 'default' | 'pending' | 'valid' | 'invalid' {
         if (this.error || this.invalid) { return 'invalid'; }

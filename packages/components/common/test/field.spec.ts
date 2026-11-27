@@ -11,7 +11,7 @@ import { FieldComponent, FieldModule } from '../field';
     imports: [FieldComponent],
     template: `
     <ui-field-group label="Name" hint="Shown to teammates" controlId="name-input"
-        hintId="name-hint" errorId="name-error" :required="true">
+        hintId="name-hint" errorId="name-error" labelTooltip="Visible to collaborators" :required="true">
         <input id="name-input" class="control" />
     </ui-field-group>
     <ui-field-group label="Token" error="Required" controlId="token-input"
@@ -53,6 +53,9 @@ export class FieldTest {
         const first = (fields[0].elementRef.nativeElement as HTMLElement).querySelector('.ui-field-group') as HTMLElement;
         expect(first.querySelector('.ui-field-group-label')?.textContent).toContain('Name');
         expect(first.querySelector('.ui-field-group-required')?.textContent).toContain('*');
+        expect(first.querySelector('.ui-field-group-label')?.getAttribute('id')).toEqual('name-input-label');
+        expect(first.querySelector('.ui-field-group-info')?.getAttribute('title')).toContain('Visible to collaborators');
+        expect(first.querySelector('.ui-field-group-info')?.getAttribute('id')).toEqual('name-input-tooltip');
         expect(first.querySelector('.ui-field-group-hint')?.textContent).toContain('Shown to teammates');
         expect(first.getAttribute('aria-describedby')).toEqual('name-hint');
         expect(first.getAttribute('data-invalid')).toEqual('false');
