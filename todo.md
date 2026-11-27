@@ -4911,3 +4911,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百批（2026-11-16）：
   - Redis Stream 接 ConsumerRuntime（retry/idempotency/metrics/drain）。
   - 回归：Redis 77。
+
+- 微服务框架第一百零一批（2026-11-16）：
+  - Gateway JWT JWKS 缓存/轮换；静态 key 兼容。
+  - 回归：security 48、gateway 157。

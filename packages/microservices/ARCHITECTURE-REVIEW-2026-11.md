@@ -119,7 +119,7 @@ S4 复跑后的关键数字：gateway route-match 10k p99 ≈ **0.0023 ms**（32
 |---|---|---|
 | Transport capability matrix | `TransportCapabilities` + `describeService` 扩展 + 启动自检（矩阵/报告已落地，strict 启动失败待接入） | 不支持的 idempotency/stream 配置启动即可诊断 |
 | Admin CSRF/安全默认 | origin 校验 + `allowedOrigins`、`mode:none` 启动提示已落地；CSRF token/审计日志待补 | 跨站写请求被拒；本地开发可显式关闭 |
-| Gateway JWKS | issuer/JWKS 缓存 + 轮换，静态 key 兼容 | 过期/轮换 key 自动刷新；gateway 回归不变 |
+| Gateway JWKS | `jwksURI` 缓存 + kid 轮换刷新已落地；issuer discovery 待补 | 过期/轮换 key 自动刷新；gateway 回归不变 |
 | Config schema v1 | Admin config schema v1 + v0 迁移 + 启动期校验已落地；gateway/service 通用 schema 待补 | 旧配置可启动并给出迁移报告 |
 | 依赖/类型矩阵 | amqplib 类型已适配（`ChannelModel`），`ms-tsc` 绿；锁版本/升级矩阵待补 | `ms-tsc` 在支持版本范围全绿 |
 | Redis/MQTT 语义补齐 | Redis Stream 已接 ConsumerRuntime（retry/幂等/metrics/drain）；MQTT 仍无稳定 id，capability 报告明确告警 | 重复投递副作用为 0 或明确告警 |

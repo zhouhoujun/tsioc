@@ -573,6 +573,12 @@
 - stream entry id 作为幂等键；失败保留 pending 交给 XAUTOCLAIM；关闭时先 close/drain runtime。
 - 新增 stream retry E2E（首次失败、进程内重试后 ack）；Redis 77 passing。
 
+第一百零一批（Gateway JWKS 轮换）：
+
+- `HttpJwtAuthOptions` 新增 `jwksURI`/`jwksCacheTtlMs`；`HttpAuthService` 按 kid 解析 JWKS，缓存 5 分钟，kid 未命中强制刷新一次。
+- 静态 `publicKey` 仍优先；HMAC/算法限制不变；新增 `clearHttpAuthJwksCache`。
+- 新增 security JWKS 3 个测试；security 48、gateway 157 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。
