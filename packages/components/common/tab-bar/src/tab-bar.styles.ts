@@ -186,7 +186,7 @@ tab-bar {
     border: 1px solid var(--tab-border, #e2e8f0);
     border-radius: 9px;
     background: var(--tab-surface, #ffffff);
-    box-shadow: 0 8px 24px var(--ui-shadow, rgba(0, 0, 0, 0.16));
+    box-shadow: 0 8px 24px var(--ui-shadow, #00000029);
 }
 
 .tab-overflow-item {
@@ -226,7 +226,7 @@ tab-bar {
     border: 1px solid var(--tab-border, #e2e8f0);
     border-radius: 9px;
     background: var(--tab-surface, #ffffff);
-    box-shadow: 0 8px 24px var(--ui-shadow, rgba(0, 0, 0, 0.16));
+    box-shadow: 0 8px 24px var(--ui-shadow, #00000029);
 }
 .tab-context-item {
     padding: 6px 8px;

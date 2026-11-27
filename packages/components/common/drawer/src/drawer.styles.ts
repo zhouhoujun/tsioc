@@ -12,7 +12,7 @@ export const DRAWER_CSS = `
     max-height: 100vh;
     background: var(--ui-drawer-bg, var(--ui-dialog-bg, var(--ui-bg, inherit)));
     color: inherit;
-    box-shadow: 0 0 18px var(--ui-shadow, rgba(0, 0, 0, 0.24));
+    box-shadow: 0 0 18px var(--ui-shadow, #0000003d);
 }
 .ui-drawer.is-right { top: 0; right: 0; bottom: 0; border-left: 1px solid var(--ui-border, currentColor); }
 .ui-drawer.is-left { top: 0; left: 0; bottom: 0; border-right: 1px solid var(--ui-border, currentColor); }

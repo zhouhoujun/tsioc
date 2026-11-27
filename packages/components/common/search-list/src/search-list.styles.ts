@@ -39,7 +39,7 @@ export const SEARCH_LIST_CSS = `
     padding: 0.15ch 0.5ch;
     cursor: pointer;
 }
-.ui-search-list-option.is-active { background: var(--ui-selected-bg, rgba(127, 127, 127, 0.18)); }
+.ui-search-list-option.is-active { background: var(--ui-selected-bg, #7f7f7f2e); }
 .ui-search-list-option.is-disabled { opacity: 0.5; cursor: default; }
 .ui-search-list-empty { padding: 0.5ch; color: var(--ui-muted-fg, inherit); }
 `;

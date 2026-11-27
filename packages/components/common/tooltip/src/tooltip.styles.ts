@@ -22,7 +22,7 @@ export const TOOLTIP_CSS = `
     border-radius: var(--ui-radius, 4px);
     background: var(--ui-tooltip-bg, var(--ui-dialog-bg, var(--ui-bg, inherit)));
     color: var(--ui-tooltip-fg, inherit);
-    box-shadow: 0 2px 8px var(--ui-shadow, rgba(0, 0, 0, 0.18));
+    box-shadow: 0 2px 8px var(--ui-shadow, #0000002e);
     white-space: nowrap;
 }
 .ui-tooltip-popup.is-top { bottom: calc(100% + 4px); left: 50%; transform: translateX(calc(-50% + var(--ui-overlay-shift-x, 0px))); }

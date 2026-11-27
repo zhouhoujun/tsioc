@@ -22,7 +22,7 @@ export const DEFAULT_DYNAMIC_FORM_MESSAGES: Record<string, string> = {
     json: 'Invalid JSON',
     number: 'Must be a number',
     integer: 'Must be an integer',
-    color: 'Use a hex color such as #2563eb',
+    color: 'Use a hex color such as #RRGGBB',
     regex: 'Invalid regular expression',
     minItems: 'Too few items',
     maxItems: 'Too many items'

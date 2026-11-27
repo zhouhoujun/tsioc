@@ -1,16 +1,4 @@
 {
-  "total": 37,
-  "files": {
-    "command-palette/src/command-palette.styles.ts": 2,
-    "drawer/src/drawer.styles.ts": 1,
-    "dynamic-form/src/dynamic-form.styles.ts": 24,
-    "dynamic-form/src/dynamic-form.validation.ts": 1,
-    "layout/src/workspace-layout.styles.ts": 1,
-    "menu-bar/src/menu-bar.styles.ts": 2,
-    "popover/src/popover.styles.ts": 1,
-    "search-list/src/search-list.styles.ts": 1,
-    "src/overlay-backdrop.ts": 1,
-    "tab-bar/src/tab-bar.styles.ts": 2,
-    "tooltip/src/tooltip.styles.ts": 1
-  }
+  "total": 0,
+  "files": {}
 }

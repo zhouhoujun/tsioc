@@ -14,7 +14,7 @@ export const POPOVER_CSS = `
     border-radius: var(--ui-radius, 4px);
     background: var(--ui-popover-bg, var(--ui-dialog-bg, var(--ui-bg, inherit)));
     color: var(--ui-popover-fg, inherit);
-    box-shadow: 0 4px 14px var(--ui-shadow, rgba(0, 0, 0, 0.2));
+    box-shadow: 0 4px 14px var(--ui-shadow, #00000033);
 }
 .ui-popover-popup.is-top { bottom: calc(100% + 4px); left: var(--ui-overlay-shift-x, 0px); }
 .ui-popover-popup.is-bottom { top: calc(100% + 4px); left: var(--ui-overlay-shift-x, 0px); }

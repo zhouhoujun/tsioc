@@ -6,7 +6,7 @@ const BACKDROP_CSS = `
     position: fixed;
     inset: 0;
     z-index: 99;
-    background: var(--ui-overlay-backdrop, rgba(15, 23, 42, 0.42));
+    background: var(--ui-overlay-backdrop, #0f172a6b);
     animation: ui-overlay-backdrop-in var(--ui-motion-fast, 140ms) var(--ui-ease, ease);
 }
 .dialog-panel,

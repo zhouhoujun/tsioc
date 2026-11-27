@@ -72,7 +72,7 @@ menu-bar {
     background: var(--menu-bar-surface, #ffffff);
     border: 1px solid var(--menu-bar-border, #cbd5e1);
     border-radius: 10px;
-    box-shadow: 0 18px 42px var(--menu-bar-shadow, rgba(15, 23, 42, 0.18));
+    box-shadow: 0 18px 42px var(--menu-bar-shadow, #0f172a2e);
 }
 
 .menu-bar-align-left .menu-bar-popup {
@@ -111,7 +111,7 @@ menu-bar {
     background: var(--menu-bar-surface, #ffffff);
     border: 1px solid var(--menu-bar-border, #cbd5e1);
     border-radius: 10px;
-    box-shadow: 0 18px 42px var(--menu-bar-shadow, rgba(15, 23, 42, 0.18));
+    box-shadow: 0 18px 42px var(--menu-bar-shadow, #0f172a2e);
 }
 
 .menu-bar-align-right .menu-bar-submenu {

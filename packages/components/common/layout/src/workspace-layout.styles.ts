@@ -186,7 +186,7 @@ workspace-layout {
     font-size: 10px;
     line-height: 1;
     cursor: pointer;
-    box-shadow: var(--workspace-collapse-shadow, 0 1px 3px rgba(15, 23, 42, 0.12));
+    box-shadow: var(--workspace-collapse-shadow, 0 1px 3px #0f172a1f);
 }
 
 .workspace-collapse:hover {

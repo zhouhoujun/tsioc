@@ -11,17 +11,17 @@ export const DYNAMIC_FORM_STYLE_ID = 'tsdi-dynamic-form-styles';
 
 export const DYNAMIC_FORM_CSS = `
 .df-form {
-    --df-border: #cbd5e1;
-    --df-border-strong: #93c5fd;
-    --df-bg: #ffffff;
-    --df-bg-alt: #f8fafc;
-    --df-text: #0f172a;
-    --df-text-muted: #64748b;
-    --df-text-hint: #94a3b8;
-    --df-primary: #2563eb;
-    --df-primary-soft: #eff6ff;
-    --df-danger: #dc2626;
-    --df-danger-soft: #fef2f2;
+    --df-border: var(--ui-border, #cbd5e1);
+    --df-border-strong: var(--ui-focus-ring, #93c5fd);
+    --df-bg: var(--ui-bg, #ffffff);
+    --df-bg-alt: var(--ui-bg-alt, #f8fafc);
+    --df-text: var(--ui-fg, #0f172a);
+    --df-text-muted: var(--ui-muted-fg, #64748b);
+    --df-text-hint: var(--ui-muted-fg, #94a3b8);
+    --df-primary: var(--ui-primary, #2563eb);
+    --df-primary-soft: var(--ui-primary-soft, #eff6ff);
+    --df-danger: var(--ui-danger-fg, #dc2626);
+    --df-danger-soft: var(--ui-danger-bg, #fef2f2);
     --df-radius: 6px;
     display: flex;
     flex-direction: column;
@@ -47,7 +47,7 @@ export const DYNAMIC_FORM_CSS = `
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #475569;
+    color: var(--ui-label-fg, #475569);
 }
 
 
@@ -80,7 +80,7 @@ export const DYNAMIC_FORM_CSS = `
     display: block;
     font-size: 11px;
     font-weight: 600;
-    color: #475569;
+    color: var(--ui-label-fg, #475569);
     margin: 0;
 }
 
@@ -102,7 +102,7 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-field-status[data-status="valid"] {
-    color: #15803d;
+    color: var(--ui-success-fg, #15803d);
 }
 
 .df-field-reset {
@@ -230,7 +230,7 @@ export const DYNAMIC_FORM_CSS = `
 .df-select:focus,
 .df-textarea:focus {
     border-color: var(--df-border-strong);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.14);
+    box-shadow: 0 0 0 2px var(--ui-focus-shadow, #2563eb24);
 }
 
 .df-textarea {
@@ -243,7 +243,7 @@ export const DYNAMIC_FORM_CSS = `
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #334155;
+    color: var(--ui-label-fg-strong, #334155);
     font-size: 12px;
 }
 
@@ -261,7 +261,7 @@ export const DYNAMIC_FORM_CSS = `
     border: 1px solid var(--df-border);
     border-radius: 999px;
     background: var(--df-bg);
-    color: #334155;
+    color: var(--ui-label-fg-strong, #334155);
     font-size: 11px;
     cursor: pointer;
     user-select: none;
@@ -270,7 +270,7 @@ export const DYNAMIC_FORM_CSS = `
 .df-option.is-selected {
     border-color: var(--df-primary);
     background: var(--df-primary-soft);
-    color: #1d4ed8;
+    color: var(--ui-primary-strong, #1d4ed8);
 }
 
 .df-option.is-disabled {
@@ -329,7 +329,7 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-error-group[data-severity="warning"] .df-error-group-title {
-    color: #b45309;
+    color: var(--df-warning, #b45309);
 }
 
 .df-error-group-count {
@@ -343,8 +343,8 @@ export const DYNAMIC_FORM_CSS = `
 }
 
 .df-error-group[data-severity="warning"] .df-error-group-count {
-    background: #fffbeb;
-    color: #b45309;
+    background: var(--ui-warning-soft, #fffbeb);
+    color: var(--df-warning, #b45309);
 }
 
 .df-error-summary-title { color: var(--ui-danger-fg, #cf9893); font-weight: 600; }
@@ -362,7 +362,7 @@ export const DYNAMIC_FORM_CSS = `
     border: 1px solid var(--df-border);
     border-radius: var(--df-radius);
     background: var(--df-bg);
-    color: #334155;
+    color: var(--ui-label-fg-strong, #334155);
     padding: 6px 10px;
     font-size: 12px;
     cursor: pointer;
@@ -375,11 +375,11 @@ export const DYNAMIC_FORM_CSS = `
 .df-btn-primary {
     border-color: transparent;
     background: var(--df-primary);
-    color: #ffffff;
+    color: var(--ui-primary-fg, #ffffff);
 }
 
 .df-btn-primary:hover {
-    background: #1d4ed8;
+    background: var(--ui-primary-strong, #1d4ed8);
 }
 
 .df-list {

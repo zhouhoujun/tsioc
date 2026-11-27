@@ -4,7 +4,7 @@ export const COMMAND_PALETTE_STYLE_ID = 'tsdi-command-palette-styles';
 
 export const COMMAND_PALETTE_CSS = `
 .ui-command-palette { position: fixed; inset: 0; z-index: var(--ui-z-overlay, 1000); display: flex; align-items: flex-start; justify-content: center; }
-.ui-command-palette-backdrop { position: absolute; inset: 0; background: var(--ui-backdrop, rgba(0, 0, 0, 0.35)); }
+.ui-command-palette-backdrop { position: absolute; inset: 0; background: var(--ui-backdrop, #00000059); }
 .ui-command-palette-panel {
     position: relative;
     display: flex;
@@ -15,7 +15,7 @@ export const COMMAND_PALETTE_CSS = `
     padding: 0.75ch;
     background: var(--ui-overlay-bg, var(--ui-bg, inherit));
     border: 1px solid var(--ui-border, currentColor);
-    box-shadow: var(--ui-overlay-shadow, 0 12px 32px rgba(0, 0, 0, 0.25));
+    box-shadow: var(--ui-overlay-shadow, 0 12px 32px #00000040);
 }
 .ui-command-palette-header { display: flex; align-items: center; justify-content: space-between; gap: 1ch; }
 .ui-command-palette-title { font-weight: 600; }

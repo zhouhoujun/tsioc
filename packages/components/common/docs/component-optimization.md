@@ -339,6 +339,13 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
     a11y audit 测试，chips 删除按钮具备可访问名称。
   - 新增组件继续使用 `--ui-*` token；P2 的 overlay/placement 仍复用既有
     `overlay-placement`/`overlay-outside`/`OverlayManager`。
+- **Token 颜色全消费（2026-11-27）**
+  - 组件 skin 的裸颜色全部收敛到 `var(--ui-*/--workspace-*/--menu-bar-*/
+    --tab-*, fallback)`：dynamic-form、command-palette、drawer、popover、
+    tooltip、search-list、overlay-backdrop、layout、menu-bar、tab-bar。
+  - `rgba(...)` fallback 改为等值 8 位 hex，避免 CSS 变量 fallback 嵌套括号；
+    `color-baseline.json` 的硬编码颜色基线降为 **0**，token-color-gate 保持通过。
+  - 视觉值保持不变，宿主仍可通过同一组语义变量覆盖主题。
 - **DataTable 内置列选择器（2026-11-27）**
   - 新增 `ui-data-table-columns-button`：表头工具栏内的列选择器触发器，
     复用 `ui-data-table-columns`，outside pointer-down/Escape 走共享
