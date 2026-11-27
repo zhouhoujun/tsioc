@@ -287,6 +287,11 @@ async function main(): Promise<void> {
     }
     if (options.auth && options.auth.mode !== 'none') {
         console.log(`Authentication:   ${(options.auth.mode || 'service').toUpperCase()}`);
+    } else {
+        console.log('Authentication:   NONE (admin API/UI is open)');
+        if (options.host && options.host !== '127.0.0.1' && options.host !== 'localhost') {
+            console.warn(`[security] admin is listening on ${options.host} without authentication; use --auth oidc/service for shared networks`);
+        }
     }
 }
 

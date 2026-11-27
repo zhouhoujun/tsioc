@@ -128,6 +128,8 @@ export interface GatewayAdminAuthOptions {
     logoutPath?: string;
     /** Protected API prefix. Default `/api/gateway-admin`. */
     apiPrefix?: string;
+    /** Additional origins allowed to call state-changing admin APIs. */
+    allowedOrigins?: string[];
     /** Email allowlist. */
     allowedEmails?: string[];
     /** Email domain allowlist (example.com). */
@@ -838,6 +840,30 @@ export class GatewayAdminAuthService {
         return String(groups || '').split(/[\s,]+/).filter(Boolean);
     }
 
+    /**
+     * Reject cross-origin state-changing API calls when the browser supplies an
+     * `Origin` header. Requests without Origin (CLI/curl/tests) are allowed;
+     * `allowedOrigins` covers reverse-proxy/alternate-host deployments.
+     */
+    isSameOrigin(request: HttpRequestMessage): boolean {
+        const origin = this.header(request, 'origin');
+        if (!origin) {
+            return true;
+        }
+        const allowed = this.options.allowedOrigins ?? [];
+        if (allowed.includes(origin)) {
+            return true;
+        }
+        try {
+            const parsed = new URL(origin);
+            const host = this.header(request, 'x-forwarded-host') || this.header(request, 'host');
+            const proto = this.header(request, 'x-forwarded-proto') || (this.secure(request) ? 'https' : 'http');
+            return !!host && parsed.host === host && parsed.protocol === `${proto.split(',')[0].trim()}:`;
+        } catch {
+            return false;
+        }
+    }
+
     private resolveRedirectUri(request: HttpRequestMessage): string {
         if (this.options.redirectUri) {
             return this.options.redirectUri;
@@ -924,6 +950,9 @@ export class GatewayAdminAuthInterceptor implements RequestInterceptor<HttpReque
         }
         if (!path.startsWith(this.auth.apiPrefix)) {
             return next.handle(input, context);
+        }
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && !this.auth.isSameOrigin(input)) {
+            throw new ForbiddenException('Cross-origin admin mutation is not allowed');
         }
         return from(this.auth.authenticate(context)).pipe(
             mergeMap(user => {

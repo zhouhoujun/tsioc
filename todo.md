@@ -4896,3 +4896,7 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第九十六批（2026-11-16）：
   - TransportCapabilityMatrix + SERVICE_CAPABILITIES + doctor 展示。
   - 回归：service 112、admin 95。
+
+- 微服务框架第九十七批（2026-11-16）：
+  - Admin CSRF origin 校验 + allowedOrigins；无认证启动提示。
+  - 回归：admin 99。

@@ -550,6 +550,12 @@
 - admin doctor / CLI 展示 capability 报告；新增 service/admin 测试。
 - 回归：service 112、admin 95 passing；service/admin tsc 通过。
 
+第九十七批（Admin CSRF/Origin 防线）：
+
+- 认证开启时，admin API 的 POST/PUT/PATCH/DELETE 校验浏览器 `Origin`：同源放行，`allowedOrigins` 支持反代/备用域名，无 Origin 的 CLI/curl 保持兼容。
+- `mode:none` 启动显式打印 “Authentication: NONE”，绑定非回环地址时输出安全告警。
+- 新增 `auth-origin.spec.ts` 4 个测试；admin 99 passing。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

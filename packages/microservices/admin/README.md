@@ -163,6 +163,9 @@ What is protected:
 
 - `/api/gateway-admin/*` requires a valid signed session cookie and returns
   `401` without one.
+- State-changing API calls (`POST`/`PUT`/`PATCH`/`DELETE`) reject browser
+  `Origin` values that do not match the request host. Reverse proxies with a
+  public origin can allowlist it via `auth.allowedOrigins`.
 - `/admin/*` stays loadable so the browser can render the sign-in page.
 - `/admin/auth/login`, `/admin/oidc/callback` and `/admin/auth/logout` implement
   authorization-code + PKCE with state/nonce validation.
