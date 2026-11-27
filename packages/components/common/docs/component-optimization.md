@@ -346,8 +346,9 @@ Tab/Esc 行为一致；关闭时焦点回到触发元素。
   - `npm test` 现在串联 build → preview → pixel diff；1440×900 固定视口。
 - **TUI 关键帧基线（2026-11-27）**
   - agent-ui storybook 帧测试从“包含文本”升级为固定 plain-row 基线：
-    `test/fixtures/tui-storybook-basic.txt`，仅归一化时间、模型名与状态行，
-    其余布局/空白/行序逐字符比较，真实 TUI 视觉回归可复现。
+    `test/fixtures/tui-storybook-basic.txt` 与
+    `tui-storybook-question.txt`（transcript + pending-question overlay 两种状态），
+    仅归一化时间、模型名与状态行，其余布局/空白/行序逐字符比较。
 - **质量矩阵扩展（2026-11-27）**
   - shared a11y audit 新增 `aria-expanded/checked/selected` 取值校验、
     `aria-activedescendant` 与 `aria-controls/labelledby/describedby` 引用

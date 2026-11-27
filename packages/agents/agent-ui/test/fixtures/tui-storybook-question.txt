@@ -1,0 +1,24 @@
+› storybook-question-prompt
+
+╭──────────────────────────────────────────────────────────╮
+│                                                          │
+│                                                      ✕   │
+│  Awaiting your answer                                    │
+│  [high] ? Which database should we use?                  │
+│  affects schema migrations                               │
+│  1. postgres                                             │
+│  2. sqlite                                               │
+│  selected 1/2 · ↑↓ move · 1-9 pick · Enter confirm · Es  │
+│  c dismiss                                               │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+
+model: <model>
+tokens: 0
+session: storybook-question
+workspace: none
+agent: tsdi-agent
+│
+│ >  Ask code or files
+│
+status: <model> · 0 tokens · agent build · ! 1

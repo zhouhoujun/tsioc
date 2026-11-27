@@ -20,6 +20,56 @@ async function settle(ref?: ComponentRef<unknown>): Promise<void> {
  */
 @Suite('tui storybook frame capture')
 export class TuiStorybookTest {
+    @Test('captures the pending-question overlay as a keyframe')
+    async capturesQuestionFrame() {
+        const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
+        let surface: TuiTerminalSurface | undefined;
+        try {
+            const consoleRef = ctx.get(ComponentFactory).create(AgentConsoleComponent, { injector: ctx });
+            await consoleRef.render();
+            const state = consoleRef.instance.sessionState;
+            state.sessionId = 'storybook-question';
+            state.setMessages([
+                { id: 'u1', role: 'user', content: 'storybook-question-prompt', createdAt: 1 }
+            ] as any);
+            state.setPendingQuestion({
+                questionId: 'storybook-q1',
+                sessionId: 'storybook-question',
+                question: 'Which database should we use?',
+                options: ['postgres', 'sqlite'],
+                context: 'affects schema migrations',
+                severity: 'high',
+                createdAt: 2,
+                status: 'pending',
+                updatedAt: 2
+            });
+            await settle(consoleRef);
+            const renderer = ctx.get(TuiRenderer);
+            surface = new TuiTerminalSurface({
+                renderer,
+                root: consoleRef.elementRef.nativeElement,
+                width: 60,
+                output: { write() {} }
+            });
+            await settle(consoleRef);
+            const buffer = createAnsiScreenBuffer(24, 60);
+            feedAnsiScreen(buffer, surface.lastRenderedLines.join('\n'));
+            const rows = ansiScreenLines(buffer);
+            const frame = rows
+                .map(row => row.replace(/\s+$/, ''))
+                .join('\n')
+                .replace(/^model: .+$/m, 'model: <model>')
+                .replace(/^.*· 0 tokens · agent build · ! 1$/m, 'status: <model> · 0 tokens · agent build · ! 1')
+                .trimEnd();
+            const expected = readFileSync(join(__dirname, 'fixtures', 'tui-storybook-question.txt'), 'utf8').trimEnd();
+            expect(frame).toEqual(expected);
+            expect(rows.every(row => row.length <= 60)).toEqual(true);
+        } finally {
+            surface?.destroy();
+            await (ctx as ApplicationContext).close();
+        }
+    }
+
     @Test('captures a transcript screen as fixed-width plain rows')
     async capturesTranscriptFrame() {
         const ctx = await Application.run(AgentModule, { deps: [AgentUiModule, TuiTemplateModule, ComponentsModule] });
