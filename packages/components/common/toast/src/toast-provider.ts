@@ -14,11 +14,12 @@ import { installToastProviderStyles } from './toast-provider.styles';
     imports: [ToastStackComponent],
     template: `
     <div class="ui-toast-provider is-{{position}}">
-        <toast-stack :items="entries" :closeAction="dismiss" :actionAction="invoke"
+        <toast-stack :items="visibleEntries" :closeAction="dismiss" :actionAction="invoke"
             :pauseOnHover="pauseOnHover" :pauseAllOnHover="pauseAllOnHover"
             :pauseAction="pause" :resumeAction="resume"
             :pauseAllAction="pauseAll" :resumeAllAction="resumeAll"
             :messageWidth="messageWidth"></toast-stack>
+        <span class="ui-toast-provider-more" role="status" v-if="hiddenCount">+{{hiddenCount}}</span>
     </div>`
 })
 export class ToastProviderComponent implements OnDestroy {
@@ -32,6 +33,7 @@ export class ToastProviderComponent implements OnDestroy {
 
     @Attribute() position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' = 'bottom-right';
     @Attribute() messageWidth = 0;
+    @Attribute() maxVisible: number | string = 0;
     @Attribute() pauseOnHover = false;
     @Attribute() pauseAllOnHover = false;
 
@@ -39,6 +41,16 @@ export class ToastProviderComponent implements OnDestroy {
         installToastProviderStyles((this.elementRef?.nativeElement as { ownerDocument?: Document } | undefined)?.ownerDocument);
         this.entries = this.service.current;
         this.unsubscribe = this.service.subscribe(entries => { this.entries = entries; });
+    }
+
+    get maxVisibleCount(): number { return Math.max(0, Math.floor(Number(this.maxVisible) || 0)); }
+
+    get visibleEntries(): readonly ToastEntry[] {
+        return this.maxVisibleCount ? this.entries.slice(0, this.maxVisibleCount) : this.entries;
+    }
+
+    get hiddenCount(): number {
+        return Math.max(0, this.entries.length - this.visibleEntries.length);
     }
 
     show(message: string, options?: ToastOptions): string { return this.service.show(message, options); }

@@ -14,7 +14,11 @@ export class ToastProviderTest {
         provider.invoke(id);
         provider.dismiss(id);
         expect(provider.entries).toEqual([]);
+        provider.maxVisible = 1;
         provider.show('Again', { durationMs: 0 });
+        provider.show('Third', { durationMs: 0 });
+        expect(provider.visibleEntries.length).toEqual(1);
+        expect(provider.hiddenCount).toBeGreaterThanOrEqual(1);
         provider.clear();
         expect(provider.entries).toEqual([]);
         provider.onDestroy();
