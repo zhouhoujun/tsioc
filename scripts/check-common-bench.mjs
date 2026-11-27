@@ -17,6 +17,8 @@ const budgets = {
     'data-table filter 5k rows': 300,
     'data-table sort 5k rows': 200,
     'data-table format 100k cells': 1500,
+    'data-table tree flatten 6k rows': 1200,
+    'menu ancestor path 2k': 800,
     'spring 200k steps': 800
 };
 

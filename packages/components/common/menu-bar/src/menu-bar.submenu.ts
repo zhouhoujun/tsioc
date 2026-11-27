@@ -6,23 +6,26 @@
 
 /** Ancestor ids of `id` (outer-most first); empty for a top-level item. */
 export function menuAncestorPath(groups: any[], id: string): string[] {
-    const walk = (items: any[], trail: string[]): string[] | null => {
+    const trail: string[] = [];
+    const walk = (items: any[]): string[] | null => {
         for (const item of items || []) {
             if (!item) {
                 continue;
             }
             if (item.id === id) {
-                return trail;
+                return trail.slice();
             }
-            const found = walk(item.children || [], [...trail, item.id]);
+            trail.push(item.id);
+            const found = walk(item.children || []);
             if (found) {
                 return found;
             }
+            trail.pop();
         }
         return null;
     };
     for (const group of groups || []) {
-        const found = walk(group?.items || [], []);
+        const found = walk(group?.items || []);
         if (found) {
             return found;
         }

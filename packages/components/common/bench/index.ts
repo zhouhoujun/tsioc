@@ -5,6 +5,8 @@ import {
     formatDataTableCell,
     sortDataTableRows
 } from '../data-table/src/data-table.view';
+import { flattenDataTableTree } from '../data-table/src/data-table.tree';
+import { menuAncestorPath } from '../menu-bar/src/menu-bar.submenu';
 
 /**
  * Common widget hot-path harness.
@@ -73,6 +75,46 @@ measure('data-table format 100k cells', () => {
                 total += formatDataTableCell(column, row, round).length;
             }
         }
+    }
+    return total;
+});
+
+const treeRows: DataTableRow[] = Array.from({ length: 1000 }, (_value, index) => ({
+    id: `p${index}`,
+    name: `parent-${index}`,
+    children: Array.from({ length: 5 }, (_child, childIndex) => ({
+        id: `p${index}-${childIndex}`,
+        name: `child-${index}-${childIndex}`
+    }))
+}));
+
+measure('data-table tree flatten 6k rows', () => {
+    let total = 0;
+    for (let round = 0; round < 100; round++) {
+        total += flattenDataTableTree(treeRows, 'children', (row, index) => String(row.id ?? index)).length;
+    }
+    return total;
+});
+
+const menuGroups = [{
+    items: Array.from({ length: 30 }, (_value, index) => ({
+        id: `g${index}`,
+        label: `Group ${index}`,
+        children: Array.from({ length: 10 }, (_child, childIndex) => ({
+            id: `g${index}-${childIndex}`,
+            label: `Item ${childIndex}`,
+            children: Array.from({ length: 5 }, (_leaf, leafIndex) => ({
+                id: `g${index}-${childIndex}-${leafIndex}`,
+                label: `Leaf ${leafIndex}`
+            }))
+        }))
+    }))
+}];
+
+measure('menu ancestor path 2k', () => {
+    let total = 0;
+    for (let round = 0; round < 2_000; round++) {
+        total += menuAncestorPath(menuGroups, 'g15-5-3').length;
     }
     return total;
 });
