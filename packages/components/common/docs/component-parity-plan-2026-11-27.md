@@ -279,7 +279,15 @@ contracts、catalog examples、bench。
   haspopup/expanded、dialog 名称/模态与重复 id。该门禁随 `npm run test` 执行，不依赖
   位图基线，因此在 CI 与无 GPU 环境可稳定复现。
 
+- P2-4（静态状态矩阵）：`npm run catalog:states` 使用真实组件渲染 6 状态 × 3 主题的
+  预渲染页面 `docs/catalog-states.html`，并提供 `test/catalog-states.spec.ts` 防止
+  生成器回归。页面无需浏览器运行时，可直接作为视觉验收基准。
+- P2-5（部分）：`npm run bench` 新增 DataTable 树形展平与 Menu 祖先路径查找，
+  纳入校准预算；真实 TUI 流式 turn 的 CPU 预算仍需在 agent-ui/PTY 环境补充。
+
 仍待后续：
 
-- P2-2 的位图截图基线（需要固定字体/视口的 Playwright 快照与差异阈值）。
-- P2-4 的 live demo 状态切换器与 P2-5 的真实 PTY 性能基准。
+- P2-2 的位图截图基线（当前环境缺少 Chromium 系统库，需在固定字体/视口的 CI 中
+  补 Playwright 快照与差异阈值）。
+- P2-4 的交互式 live demo（当前为预渲染状态矩阵）。
+- P2-5 的真实 PTY/流式性能基准。

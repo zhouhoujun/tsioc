@@ -398,9 +398,9 @@ spec that mounts them with a real renderer instead of only calling methods.
 
 ## Bench and catalog
 
-`npm run bench` exercises the data-table filter/sort/format hot paths and the
-spring integration loop with CPU timing. Compare before/after numbers rather
-than using them as absolute budgets.
+`npm run bench` exercises the data-table filter/sort/format/tree-flatten hot
+paths, menu ancestor-path lookup and the spring integration loop with CPU
+timing. Compare before/after numbers rather than using them as absolute budgets.
 
 `npm run bench:check` applies calibration-scaled budgets. The unified gate can
 run it with `RUN_COMMON_BENCH=1 bash scripts/agents-gate.sh components-common-bench`.
@@ -408,6 +408,11 @@ run it with `RUN_COMMON_BENCH=1 bash scripts/agents-gate.sh components-common-be
 `npm run catalog` writes a static HTML catalog (attributes, keyboard contract,
 surface notes and examples) to `docs/catalog.html`; pass a path as the first
 argument to write it elsewhere.
+
+`npm run catalog:states` renders the real Button/Checkbox/Tabs/MenuBar/DataTable/
+Accordion/Toast components in six states under light, dark and high-contrast
+themes, then writes the pre-rendered matrix to `docs/catalog-states.html`. The
+page is static (no runtime bundle) and doubles as the visual acceptance baseline.
 
 ## Design plans
 
@@ -417,5 +422,7 @@ argument to write it elsewhere.
   completed baseline, remaining professional gaps and Wave 2 roadmap.
 - `docs/catalog-examples-2026-11.md` — copy-ready examples for the new
   selection/table/form/overlay/progress capabilities.
+- `docs/catalog-states.html` — generated six-state × three-theme visual matrix
+  for the shared widgets.
 - `docs/opencode-alignment-plan-2026-11.md` — quality alignment with latest
   opencode (catalog, a11y, overlays, motion, theme, bench).
