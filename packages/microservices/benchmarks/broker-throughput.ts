@@ -1,7 +1,7 @@
 /**
  * Broker throughput probe (Redis Streams).
  *
- *   MS_BROKER_BENCH_PROFILE=1 node scripts/... 
+ *   MS_BROKER_BENCH_PROFILE=1 bash scripts/agents-gate.sh ms-broker-bench
  *
  * Opt-in because it needs a real Redis. Publishes N messages, waits for all to
  * be consumed, and reports messages/sec plus pending count.
