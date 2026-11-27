@@ -4937,3 +4937,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
 - 微服务框架第一百零七批（2026-11-16）：
   - HTTP/messaging OTel semconv 双发。
   - 回归：tracing 58、gateway 160。
+
+- 微服务框架第一百零八批（2026-11-16）：
+  - broker-stack 示例（gateway→Redis）+ ms-examples-broker gate。

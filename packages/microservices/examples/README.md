@@ -49,6 +49,22 @@ npx ts-node -r tsconfig-paths/register \
 
 The `ms-examples` gate stage runs this smoke test.
 
+## Broker stack (gateway → Redis)
+
+`broker-stack.ts` starts an orders service on Redis and a gateway that forwards
+`/api/orders` over Redis (no HTTP backend hop):
+
+```bash
+# requires Redis on redis://127.0.0.1:6379
+npx ts-node -r tsconfig-paths/register \
+  packages/microservices/examples/broker-stack.ts
+
+curl http://127.0.0.1:3224/api/orders
+```
+
+The opt-in `ms-examples-broker` gate stage runs `broker-stack-smoke.ts` when
+`MS_BROKER_PROFILE=1`.
+
 ## Soak smoke
 
 `soak.ts` keeps 8 concurrent callers busy (configurable), then checks that

@@ -615,6 +615,12 @@
 - broker span 同时写 `messaging.destination` 与 `messaging.destination.name`；gateway span 增加 method/path/scheme/service.name。
 - 新增 3 个 semconv 测试；tracing 58、gateway 160 passing。
 
+第一百零八批（broker 全链路示例）：
+
+- 新增 `examples/broker-stack.ts`：HTTP edge → gateway → Redis broker → orders service，无 HTTP backend hop。
+- 新增 `broker-stack-smoke.ts` 与 opt-in `ms-examples-broker` gate（`MS_BROKER_PROFILE=1`）。
+- 真实 Redis 验证 `GET /api/orders -> {"id":7,"status":"paid"}`；gate PASS。
+
 第五十一批（可选 feature 组合）：
 
 - `ServiceFeatureOptions.extraFeatures` / `ClientFeatureOptions.extraFeatures`。

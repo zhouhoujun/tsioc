@@ -31,7 +31,7 @@
 #            build-agent-ui-web dom-gate tui-gate gate-regression
 #            pty-acceptance diff-check production-db-integrity
 #            ms-core ms-observe ms-discovery ms-protocols ms-gateway ms-admin ms-http
-#            ms-brokers ms-tsc ms-bench ms-examples ms-soak ms-soak
+#            ms-brokers ms-tsc ms-bench ms-examples ms-examples-broker ms-soak ms-soak
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -331,6 +331,24 @@ run_ms_group() {
     fi
 }
 
+# run_ms_examples_broker — opt-in gateway→Redis full-stack smoke.
+run_ms_examples_broker() {
+    local id="ms-examples-broker" label="microservice gateway→broker smoke"
+    if [ "${MS_BROKER_PROFILE:-0}" != "1" ]; then
+        stage_skip "$id" "$label (opt-in; set MS_BROKER_PROFILE=1 with Redis running)"
+        return
+    fi
+    local log="$LOG_DIR/ms-examples-broker.log"
+    if (cd "$ROOT_DIR" && timeout 240 npx ts-node -r tsconfig-paths/register \
+        packages/microservices/examples/broker-stack-smoke.ts >"$log" 2>&1); then
+        stage_pass "$id" "$label"
+    else
+        echo "--- ms-examples-broker tail (last 30 lines) ---" >&2
+        tail -30 "$log" >&2
+        stage_fail "$id" "$label"
+    fi
+}
+
 # run_ms_soak — opt-in soak smoke (heap/handle stability under HTTP load).
 run_ms_soak() {
     local id="ms-soak" label="microservice soak (heap/handle stability)"
@@ -508,6 +526,7 @@ run_stage() {
         ms-tsc)           run_ms_tsc ;;
         ms-examples)      run_ms_examples ;;
         ms-soak)          run_ms_soak ;;
+        ms-examples-broker) run_ms_examples_broker ;;
         ms-bench)         run_ms_bench ;;
         diff-check)       run_diff_check ;;
         *)
