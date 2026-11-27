@@ -354,7 +354,7 @@ export class AgentConsoleSessionData {
     /** Approve the request and auto-approve the rest of the session (`A`). */
     approvalAlwaysAllowAction?: (requestId: string) => void | Promise<void>;
     approvalAllowProjectAction?: (requestId: string) => void | Promise<void>;
-    sessionTabsAction?: { select?: (id: string) => void; create?: () => void; close?: (id: string) => void };
+    sessionTabsAction?: { select?: (id: string) => void; create?: () => void; close?: (id: string) => void; rename?: (id: string, title: string) => void };
     /** Most-recently closed session tabs, for Ctrl+Shift+T. */
     closedSessionTabIds: string[] = [];
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;

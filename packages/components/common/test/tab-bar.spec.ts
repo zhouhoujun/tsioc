@@ -65,6 +65,27 @@ export class TabBarComponentTest {
         expect(contextId).toEqual('b');
     }
 
+    @Test('inline rename commits through the source and F2 starts it')
+    async inlineRename() {
+        const bar = new TabBarComponent();
+        const renames: string[] = [];
+        bar.source = {
+            visible: true,
+            items: [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }],
+            rename: (id, title) => { renames.push(`${id}:${title}`); }
+        };
+        expect(bar.canRename(bar.items[0])).toEqual(true);
+        bar.onTabKeydown({ key: 'F2', preventDefault() { } }, bar.items[1], 1);
+        expect(bar.renamingId).toEqual('b');
+        bar.commitRename('b', ' Renamed ');
+        expect(renames).toEqual(['b:Renamed']);
+        expect(bar.renamingId).toEqual('');
+        bar.beginRename('a');
+        bar.cancelRename();
+        expect(bar.renamingId).toEqual('');
+        expect(bar.renameTitle(bar.items[0])).toContain('Alpha');
+    }
+
     @Test('Alt+Arrow reorders tabs through the same callback')
     async keyboardReorder() {
         const bar = new TabBarComponent();

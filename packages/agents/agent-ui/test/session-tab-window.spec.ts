@@ -34,6 +34,20 @@ export class SessionTabWindowTest {
         expect(source.canScrollForward).toEqual(false);
     }
 
+    @Test('forwards inline tab rename through the session action')
+    renamesTab() {
+        const state = new AgentConsoleSessionState(new InMemoryCommandExecutionControl());
+        state.sessions = [{ id: 'session-1', title: 'Old', workspace: '/tmp/ws', createdAt: 1, updatedAt: 1, current: true } as any];
+        state.openSessionIds = ['session-1'];
+        state.sessionId = 'session-1';
+        const renames: Array<[string, string]> = [];
+        state.sessionTabsAction = { rename: (id, title) => renames.push([id, title]) };
+        const source = new AgentConsoleSessionTabsSource(state);
+        expect(source.renameLabel).toEqual('Rename tab');
+        source.rename('session-1', 'New title');
+        expect(renames).toEqual([['session-1', 'New title']]);
+    }
+
     @Test('windows a long strip around the active tab without inert markers')
     windowsLongStrip() {
         // Active tab at the end: the page ends on it.

@@ -185,6 +185,10 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
         return ' + ';
     }
 
+    get renameLabel(): string {
+        return formatAgentPanelLabel(this.translator, 'sessions', 'rename', 'Rename tab');
+    }
+
     get closeLabel(): string {
         return '✕';
     }
@@ -199,6 +203,10 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
 
     close(id: string): void {
         this.state.sessionTabsAction?.close?.(id);
+    }
+
+    rename(id: string, title: string): void {
+        this.state.sessionTabsAction?.rename?.(id, title);
     }
 
     /** Tab names use the session topic/title, never the raw session id. */

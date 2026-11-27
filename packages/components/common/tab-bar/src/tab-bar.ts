@@ -3,6 +3,7 @@ import { Inject, Optional, token } from '@tsdi/ioc';
 import { markElementRefRaw } from '../../src/raw-element';
 import { nextUiId } from '../../src/ui';
 import { installTabBarStyles } from './tab-bar.styles';
+import { InlineInputComponent } from '../../inline-input/src/inline-input';
 import { TabContextMenuComponent } from './tab-context-menu';
 import { positionTabOverflowMenu } from './tab-bar.overflow';
 import { contextTab, dropTab, startTabDrag } from './tab-bar.reorder';
@@ -19,6 +20,8 @@ export interface TabItem {
     showClose?: boolean | 'hover';
     /** Non-interactive marker (e.g. the `…` overflow indicator). */
     disabled?: boolean;
+    /** Opt out of inline rename when the host provides `rename`. */
+    renamable?: boolean;
     /** Stable tab element id (Tabs sets this for aria-controls/labelledby). */
     elementId?: string;
     /** Controlled tabpanel id. */
@@ -63,6 +66,9 @@ export interface TabBarSource {
     select?(id: string): void;
     create?(): void;
     close?(id: string): void;
+    /** Persist a renamed tab (DOM hosts get double-click / F2 inline editing). */
+    rename?(id: string, title: string): void | Promise<void>;
+    renameLabel?: string;
 }
 
 /** Domain-provided tab source (agent-ui supplies its session tabs through this token). */
@@ -91,7 +97,9 @@ export const TAB_BAR_SOURCE = token<TabBarSource>('TAB_BAR_SOURCE');
             @drop="dropOn(tab, $event)" @dragend="dragEnd()" @contextmenu="contextMenu(tab, $event)"
             @click="select(tab.id, $event)" @focus="focusOnly(tab)"
             @keydown="onTabKeydown($event, tab, index)">
-            <span class="tab-label" @click="select(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" tabindex="{{closeTabIndex(tab)}}" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)" @keydown="onCloseKeydown($event, tab.id)">{{closeLabel}}</span>
+            <ui-inline-input v-if="renamingId === tab.id" :value="tab.label.trim()" :editing="true"
+                :ariaLabel="renameTitle(tab)" :submitAction="value => commitRename(tab.id, value)"
+                :cancelAction="cancelRename"></ui-inline-input><span v-else class="tab-label" @click="select(tab.id, $event)" @dblclick="beginRename(tab.id, $event)">{{tab.label}}</span><span class="tab-close" role="button" tabindex="{{closeTabIndex(tab)}}" focusable="true" aria-label="{{closeTabLabel(tab)}}" v-if="tab.showClose !== false" data-close-mode="{{tab.showClose === 'hover' ? 'hover' : 'always'}}" data-hover-reveal="{{tab.showClose === 'hover'}}" data-cell-width="2" @click="closeTab(tab.id, $event)" @keydown="onCloseKeydown($event, tab.id)">{{closeLabel}}</span>
         </span>
         <span class="tab-scroll tab-scroll-forward" role="button" focusable="true" tabindex="0" aria-label="{{scrollForwardTitle}}" aria-disabled="{{scrollForwardDisabled}}" data-disabled="{{scrollForwardDisabled}}" v-if="overflowMode === 'scroll'" v-show="arrowsVisible" @click="scrollForward($event)" @keydown="onScrollKeydown($event, 'forward')">{{scrollForwardLabel}}</span>
         <span class="tab-overflow" role="button" focusable="true" tabindex="0" v-if="overflowMenuVisible"
@@ -121,6 +129,8 @@ export class TabBarComponent implements AfterViewInit {
     @Attribute() reorderAction?: (ids: string[], id: string, targetId: string) => void;
     /** Host-defined tab context menu (right-click/long-press); use a Popover/Menu. */
     @Attribute() contextAction?: (id: string, event: Event) => void;
+    renamingId = '';
+
     /** DOM strips report their own overflow (terminal strips leave these false). */
     protected domOverflow = false;
     protected domBack = false;
@@ -277,6 +287,37 @@ export class TabBarComponent implements AfterViewInit {
     protected get scrollForwardEnabled(): boolean {
         return !!this.activeSource?.canScrollForward;
     }
+    canRename(tab: TabItem): boolean {
+        return !!this.activeSource?.rename && tab?.renamable !== false && !this.hostWindowed;
+    }
+
+    renameTitle(tab: TabItem): string {
+        return this.activeSource?.renameLabel || `Rename ${String(tab?.label || '').trim()}`.trim();
+    }
+
+    beginRename(id: string, event?: Event): void {
+        const tab = this.items.find(item => item.id === id);
+        if (!tab || !this.canRename(tab)) {
+            return;
+        }
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        this.renamingId = id;
+    }
+
+    commitRename(id: string, title: string): void {
+        const next = String(title ?? '').trim();
+        this.renamingId = '';
+        if (!next) {
+            return;
+        }
+        void this.activeSource?.rename?.(id, next);
+    }
+
+    cancelRename(): void {
+        this.renamingId = '';
+    }
+
     select(id: string, event?: Event): void {
         if (!id) {
             return;
@@ -341,6 +382,12 @@ export class TabBarComponent implements AfterViewInit {
             return;
         }
         const key = String(event?.key || '');
+        if (key === 'F2') {
+            event?.preventDefault?.();
+            event?.stopPropagation?.();
+            this.beginRename(tab.id, event);
+            return;
+        }
         if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
             event?.preventDefault?.();
             this.select(tab.id, event);
