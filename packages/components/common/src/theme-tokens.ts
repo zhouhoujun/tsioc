@@ -80,14 +80,22 @@ export const THEME_TOKENS: Record<string, ThemeTokens> = {
     }
 };
 
-export function themeTokens(theme: ThemeName): ThemeTokens {
-    const tokens = THEME_TOKENS[theme] ?? THEME_TOKENS.light;
+/** Resolve a theme, allowing hosts to override individual semantic tokens. */
+export function resolveThemeTokens(theme: ThemeName, overrides: Partial<ThemeTokens> = {}): ThemeTokens {
+    const tokens = { ...(THEME_TOKENS[theme] ?? THEME_TOKENS.light), ...(overrides || {}) };
     return {
         ...tokens,
         fg: ensureContrast(tokens.fg, tokens.bg, 4.5),
         mutedFg: ensureContrast(tokens.mutedFg, tokens.bg, 3),
-        accentFg: ensureContrast(tokens.accentFg, tokens.accent, 4.5)
+        accentFg: ensureContrast(tokens.accentFg, tokens.accent, 4.5),
+        danger: ensureContrast(tokens.danger, tokens.bg, 3),
+        success: ensureContrast(tokens.success, tokens.bg, 3),
+        warning: ensureContrast(tokens.warning, tokens.bg, 3)
     };
+}
+
+export function themeTokens(theme: ThemeName): ThemeTokens {
+    return resolveThemeTokens(theme);
 }
 
 /** Theme token fields projected onto the stable `--ui-*` widget variables. */

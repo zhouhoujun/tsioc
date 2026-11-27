@@ -1,6 +1,6 @@
 import expect = require('expect');
 import { Suite, Test } from '@tsdi/unit';
-import { ThemeService, applyThemeToDocument, contrastRatio, ensureContrast, isDarkTheme, themeTokens } from '../src';
+import { ThemeService, applyThemeToDocument, contrastRatio, ensureContrast, isDarkTheme, resolveThemeTokens, themeTokens } from '../src';
 import { JSDOM } from 'jsdom';
 
 @Suite('common theme service')
@@ -37,6 +37,11 @@ export class ThemeServiceTest {
         expect(contrastRatio(ensureContrast('#888888', '#000000'), '#000000')).toBeGreaterThanOrEqual(4.5);
         expect(ensureContrast('#000000', '#ffffff')).toEqual('#000000');
         expect(ensureContrast('bad', '#ffffff')).toEqual('bad');
+        const branded = resolveThemeTokens('light', { accent: '#ffcc00', bg: '#101010', fg: '#111111' });
+        expect(contrastRatio(branded.fg, branded.bg)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(branded.accentFg, branded.accent)).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(branded.danger, branded.bg)).toBeGreaterThanOrEqual(3);
+        expect(branded.bg).toEqual('#101010');
     }
 
     @Test('applies optional token variables without changing the default contract')
