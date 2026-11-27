@@ -4992,6 +4992,6 @@ agent-cli 90 / agent-tools 531 passing、2× `tsc --noEmit` EXIT 0、`source-siz
   - EndpointSelection + Gateway zone-aware LB。
   - 回归：discovery 91、gateway 162。
 
-- 微服务框架第一百二十一批（2026-11-16）：
+- 微服务框架第一百二十三批（2026-11-16）：
   - HTTP upgrade handlers + GatewayWebSocketProxy + ws echo test。
   - 回归：gateway 163、http 50。
