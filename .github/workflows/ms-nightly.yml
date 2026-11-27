@@ -35,6 +35,14 @@ jobs:
         options: >-
           --health-cmd "consul members"
           --health-interval 10s --health-timeout 5s --health-retries 20
+      nacos:
+        image: nacos/nacos-server:v2.3.2
+        ports: ['8848:8848']
+        env:
+          MODE: standalone
+          NACOS_AUTH_ENABLE: 'false'
+          JVM_XMS: 256m
+          JVM_XMX: 512m
       rabbitmq:
         image: rabbitmq:3-management
         ports: ['5672:5672', '15672:15672']
@@ -94,5 +102,14 @@ jobs:
         env:
           TSIO_TEST_CONSUL: '1'
         run: cd packages/microservices/discovery && npm test
+      - name: Nacos live discovery
+        env:
+          TSIO_TEST_NACOS: '1'
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8848/nacos/v1/console/health/readiness && break
+            sleep 2
+          done
+          cd packages/microservices/discovery && npm test
       - name: Performance regression
         run: bash scripts/agents-gate.sh ms-bench
