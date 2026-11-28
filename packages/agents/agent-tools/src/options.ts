@@ -343,6 +343,7 @@ export type AgentToolItem =
     | 'location'
     | 'weather'
     | 'session_search'
+    | 'session_admin'
     | 'send_message'
     | 'audio_transcribe'
     | 'text_to_speech'

@@ -1653,7 +1653,7 @@ export class AgentToolsPackageTest {
         expect(AGENT_TOOL_GROUPS.utility).toEqual(['calculator', 'location', 'weather']);
         expect(AGENT_TOOL_GROUPS.browser).toEqual(['browser_open', 'text_browser', 'playwright_browser']);
         expect(AGENT_TOOL_GROUPS.media).toEqual(['image_info', 'pdf_read', 'vision_analyze', 'image_generate']);
-        expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history', 'session_search']);
+        expect(AGENT_TOOL_GROUPS.sessions).toEqual(['sessions_current', 'sessions_list', 'sessions_history', 'session_search', 'session_admin']);
         expect(AGENT_TOOL_GROUPS.memory).toEqual(['memory.list', 'memory.put', 'memory.search', 'memory.recall', 'memory.export', 'memory.forget', 'memory.purge', 'memory.delete']);
         expect(AGENT_TOOL_GROUPS.planning).toEqual(['todo', 'ask_user', 'escalate']);
         expect(AGENT_TOOL_GROUPS.process).toEqual(['process.start', 'process.poll', 'process.kill']);
@@ -1728,7 +1728,7 @@ export class AgentToolsPackageTest {
         expect(browser?.defaultEnabled).toEqual(false);
         expect(browser?.enabled).toEqual(false);
         expect(browser?.activation).toEqual({ kind: 'deferred', scope: 'session' });
-        expect(sessions?.tools).toEqual(['sessions_current', 'sessions_list', 'sessions_history', 'session_search']);
+        expect(sessions?.tools).toEqual(['sessions_current', 'sessions_list', 'sessions_history', 'session_search', 'session_admin']);
         expect(sessions?.defaultEnabled).toEqual(false);
         expect(sessions?.enabled).toEqual(false);
         expect(sessions?.activation).toEqual({ kind: 'deferred', scope: 'session' });

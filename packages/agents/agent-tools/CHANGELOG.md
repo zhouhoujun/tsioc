@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `session_admin`: rename, pin/unpin and archive/unarchive a session (current by default, other owned sessions by id), mirroring opencode's session self-management namespace.
 - v6 gap analysis (G79–G84) identified 2026-08-17 (auto-approve, half-page scroll, which-key enhancements, PDF attachments, JSON export)
 - Performance baseline: 2135 tests, 62K LOC, 3.3MB web bundle
 

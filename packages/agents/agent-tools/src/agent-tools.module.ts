@@ -84,6 +84,7 @@ import { GitOperationsTool } from '../git/git-operations.tool';
 import { ReviewDiffTool } from '../review/review-diff.tool';
 import { WeatherTool } from '../utility/weather.tool';
 import { SessionSearchTool } from '../sessions/session-search.tool';
+import { SessionAdminTool } from '../sessions/session-admin.tool';
 import { SendMessageTool } from '../communication/send-message.tool';
 import { AudioTranscribeTool } from '../audio/audio-transcribe.tool';
 import { TextToSpeechTool } from '../audio/text-to-speech.tool';
@@ -154,6 +155,7 @@ function provideCodingTaskToolFactory() {
         SessionsCurrentTool,
         SessionsListTool,
         SessionsHistoryTool,
+        SessionAdminTool,
         TodoStore,
         TodoTool,
         AskUserTool,
@@ -302,6 +304,7 @@ function provideCodingTaskToolFactory() {
         SessionsCurrentTool,
         SessionsListTool,
         SessionsHistoryTool,
+        SessionAdminTool,
         TodoTool,
         AskUserTool,
         EscalateTool,

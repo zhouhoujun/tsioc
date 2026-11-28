@@ -62,7 +62,7 @@ import { KnowledgeStoreTool } from '../knowledge/knowledge-store.tool';
 import { GitOperationsTool } from '../git/git-operations.tool';
 import { ReviewDiffTool } from '../review/review-diff.tool';
 import { WeatherTool } from '../utility/weather.tool';
-import { SessionSearchTool } from '../sessions/session-search.tool';
+import { SessionSearchTool, SessionAdminTool } from '../sessions';
 import { SendMessageTool } from '../communication/send-message.tool';
 import { AudioTranscribeTool } from '../audio/audio-transcribe.tool';
 import { TextToSpeechTool } from '../audio/text-to-speech.tool';
@@ -191,7 +191,7 @@ const toolItems = {
     git_operations: GitOperationsTool,
     review_diff: ReviewDiffTool,
     weather: WeatherTool,
-    session_search: SessionSearchTool,
+    session_search: SessionSearchTool, session_admin: SessionAdminTool,
     send_message: SendMessageTool,
     audio_transcribe: AudioTranscribeTool,
     text_to_speech: TextToSpeechTool,
@@ -223,7 +223,7 @@ const toolGroups = {
     utility: ['calculator', 'location', 'weather'],
     web: ['web_search', 'web_extract'],
     browser: ['browser_open', 'text_browser', 'playwright_browser'],
-    sessions: ['sessions_current', 'sessions_list', 'sessions_history', 'session_search'],
+    sessions: ['sessions_current', 'sessions_list', 'sessions_history', 'session_search', 'session_admin'],
     planning: ['todo', 'ask_user', 'escalate'],
     process: ['process.start', 'process.poll', 'process.kill'],
     scheduling: ['schedule'],
@@ -558,7 +558,7 @@ export function provideTools(options?: AgentToolsOptions, ...extraTools: Provdie
         SessionsCurrentTool,
         SessionsListTool,
         SessionsHistoryTool,
-        SessionSearchTool,
+        SessionSearchTool, SessionAdminTool,
         TodoTool,
         AskUserTool,
         EscalateTool,
