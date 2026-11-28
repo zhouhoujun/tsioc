@@ -1,5 +1,5 @@
 import { Application } from '@tsdi/core';
-import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AGENT_WORKSPACE_TRUST, AgentHookCommandExecutor, AgentTurnMessageInput, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage, TrustedProjectStore } from '@tsdi/agent';
+import { AgentRuntime, AGENT_OPTIONS, AGENT_SANDBOX_RUNTIME, AGENT_WORKSPACE_TRUST, AgentHookCommandExecutor, AgentTurnMessageInput, ModelAdapter, RoutedModelAdapter, mergeAgentOptions, AgentModule, provideAgentOrmStorage, TrustedProjectStore, SessionStore } from '@tsdi/agent';
 import { AgentUiConfigService, AgentUiResolvedConfig } from '@tsdi/agent-ui';
 import { provideSkills, provideTools } from '@tsdi/agent-tools';
 import { AgentAppServerModule, AppRpcServer, StdioAppRpcServer } from '@tsdi/agent-gateway';
@@ -30,8 +30,37 @@ const IMAGE_MIME_TYPES: Record<string, string> = {
     '.svg': 'image/svg+xml'
 };
 
-function resolveImagePaths(options: AgentCliOptions = {}): string[] {
-    const value = options.image;
+const FILE_MIME_TYPES: Record<string, string> = {
+    '.txt': 'text/plain',
+    '.md': 'text/markdown',
+    '.json': 'application/json',
+    '.jsonl': 'application/x-ndjson',
+    '.js': 'text/javascript',
+    '.mjs': 'text/javascript',
+    '.cjs': 'text/javascript',
+    '.ts': 'text/typescript',
+    '.tsx': 'text/typescript',
+    '.jsx': 'text/javascript',
+    '.css': 'text/css',
+    '.html': 'text/html',
+    '.csv': 'text/csv',
+    '.xml': 'application/xml',
+    '.yaml': 'text/yaml',
+    '.yml': 'text/yaml',
+    '.py': 'text/x-python',
+    '.go': 'text/x-go',
+    '.rs': 'text/x-rust',
+    '.java': 'text/x-java',
+    '.c': 'text/x-c',
+    '.h': 'text/x-c',
+    '.cpp': 'text/x-c++',
+    '.sql': 'text/plain',
+    '.sh': 'text/x-shellscript',
+    '.pdf': 'application/pdf'
+};
+const MAX_FILE_PART_BYTES = 20 * 1024 * 1024;
+
+function resolvePathOption(value: string | string[] | undefined): string[] {
     if (Array.isArray(value)) {
         return value.map(item => String(item || '').trim()).filter(Boolean);
     }
@@ -39,17 +68,42 @@ function resolveImagePaths(options: AgentCliOptions = {}): string[] {
     return text ? [text] : [];
 }
 
+function resolveImagePaths(options: AgentCliOptions = {}): string[] {
+    return resolvePathOption(options.image);
+}
+
 async function buildTurnMessage(prompt: string, options: AgentCliOptions = {}): Promise<AgentTurnMessageInput | undefined> {
     const images = await Promise.all(resolveImagePaths(options).map(loadImagePart));
-    if (!images.length) {
+    const files = await Promise.all(resolvePathOption(options.file).map(loadFilePart));
+    if (!images.length && !files.length) {
         return undefined;
     }
     return {
         content: prompt,
         parts: [
             ...(prompt ? [{ type: 'text', text: prompt } as const] : []),
-            ...images
+            ...images,
+            ...files
         ]
+    };
+}
+
+async function loadFilePart(filePath: string): Promise<NonNullable<AgentTurnMessageInput['parts']>[number]> {
+    const absolutePath = path.resolve(filePath);
+    const stat = await fs.stat(absolutePath);
+    if (!stat.isFile()) {
+        throw new Error(`Cannot attach '${filePath}': expected a regular file.`);
+    }
+    if (stat.size > MAX_FILE_PART_BYTES) {
+        throw new Error(`Cannot attach '${filePath}': ${(stat.size / 1024 / 1024).toFixed(1)} MiB exceeds the 20 MiB limit.`);
+    }
+    const bytes = await fs.readFile(absolutePath);
+    const ext = path.extname(absolutePath).toLowerCase();
+    return {
+        type: 'file',
+        dataUrl: `data:${FILE_MIME_TYPES[ext] || 'application/octet-stream'};base64,${bytes.toString('base64')}`,
+        mediaType: FILE_MIME_TYPES[ext] || 'application/octet-stream',
+        name: path.basename(absolutePath)
     };
 }
 
@@ -71,6 +125,18 @@ async function loadImagePart(filePath: string): Promise<NonNullable<AgentTurnMes
 
 function createConfigService(options: AgentCliOptions): AgentUiConfigService {
     return new AgentUiConfigService(new CliAgentUiConfigReader(), options);
+}
+
+/** `--archived` keeps scripted/CI runs out of session lists after they finish. */
+async function applyArchivedRunFlag(ctx: any, sessionId: string, options: AgentCliOptions): Promise<void> {
+    if (!options.archived) {
+        return;
+    }
+    try {
+        await ctx.get(SessionStore).setArchived(sessionId, true);
+    } catch {
+        // Archiving is bookkeeping; it must not turn a successful run into a failure.
+    }
 }
 
 /**
@@ -268,8 +334,11 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
         format: resolved.tools.format,
         workspace: resolved.workspace,
         instructionDocs: resolveCliInstructionDocs(resolved.root),
-        // Non-interactive single-shot runs: no UI can answer an approval.
-        tools: { approvalAutoDeny: true },
+        // Non-interactive single-shot runs: no UI can answer an approval. `--auto`
+        // asks the unattended ruleset to approve instead of denying.
+        ...(options.agent ? { defaultArchetype: options.agent } : {}),
+        tools: { approvalAutoDeny: options.auto !== true },
+        ...(options.auto ? { approval: { unattended: 'allow' as const } } : {}),
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -290,6 +359,7 @@ export async function runAgentPrompt(prompt: string, options: AgentCliOptions = 
     try {
         await ctx.get(AgentRuntime).start();
         const result = await ctx.get(AgentRuntime).runTurn(resolved.sessionId, prompt, 'local-system', message);
+        await applyArchivedRunFlag(ctx, resolved.sessionId, options);
         return result.message.content || '';
     } finally {
         await ctx.close();
@@ -307,8 +377,11 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
         format: resolved.tools.format,
         workspace: resolved.workspace,
         instructionDocs: resolveCliInstructionDocs(resolved.root),
-        // Non-interactive single-shot runs: no UI can answer an approval.
-        tools: { approvalAutoDeny: true },
+        // Non-interactive single-shot runs: no UI can answer an approval. `--auto`
+        // asks the unattended ruleset to approve instead of denying.
+        ...(options.agent ? { defaultArchetype: options.agent } : {}),
+        tools: { approvalAutoDeny: options.auto !== true },
+        ...(options.auto ? { approval: { unattended: 'allow' as const } } : {}),
         model: {
             provider: modelConfig.provider,
             model: modelConfig.model,
@@ -339,6 +412,7 @@ export async function runAgentStreaming(prompt: string, options: AgentCliOptions
                 process.stdout.write('\n');
             }
         }
+        await applyArchivedRunFlag(ctx, resolved.sessionId, options);
     } finally {
         await ctx.close();
     }
@@ -354,7 +428,15 @@ export async function runAgentJsonStream(
     const message = await buildTurnMessage(prompt, options);
     const output = streams?.output ?? process.stdout;
     const principalId = streams?.principalId ?? 'local-system';
-    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({ hooks: resolved.hooks, format: resolved.tools.format, workspace: resolved.workspace, instructionDocs: resolveCliInstructionDocs(resolved.root), tools: { approvalAutoDeny: true } }));
+    const ctx = await runAgentRpcApplication(options, mergeAgentOptions({
+        hooks: resolved.hooks,
+        format: resolved.tools.format,
+        workspace: resolved.workspace,
+        instructionDocs: resolveCliInstructionDocs(resolved.root),
+        ...(options.agent ? { defaultArchetype: options.agent } : {}),
+        tools: { approvalAutoDeny: options.auto !== true },
+        ...(options.auto ? { approval: { unattended: 'allow' as const } } : {})
+    }));
     const rpc = ctx.get(AppRpcServer);
     const sessionId = resolved.sessionId;
     let lastMessage: any = null;
@@ -479,6 +561,7 @@ export async function runAgentJsonStream(
             timestamp: Date.now(),
             sessionId
         });
+        await applyArchivedRunFlag(ctx, sessionId, options);
     } finally {
         await ctx.close();
     }

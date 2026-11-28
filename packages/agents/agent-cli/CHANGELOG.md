@@ -7,6 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `run` now supports `--continue`, `--auto`, `--archived`, `--agent` and repeatable `--file` attachments; run parsing moved to `run-cli.ts` so the main CLI entry stays within its source-size budget.
 - v6 gap analysis (G79–G84) identified 2026-08-17 (auto-approve, half-page scroll, which-key enhancements, PDF attachments, JSON export)
 - Performance baseline: 2135 tests, 62K LOC, 3.3MB web bundle
 

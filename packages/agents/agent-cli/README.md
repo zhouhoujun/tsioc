@@ -353,7 +353,7 @@ Behavior of this example:
 
 ## Common commands
 
-- `tsdi-agent run "your prompt"`: execute a single prompt
+- `tsdi-agent run "your prompt"`: execute a single prompt; `--continue` resumes the workspace's last session, `--file <path>` attaches files (repeatable), `--auto` approves non-denied tools, `--archived` keeps CI runs out of session lists, and `--agent <name>` selects the archetype
 - `tsdi-agent chat`: start Agent UI in TUI mode
 - `tsdi-agent serve [--host <host>] [--port <port>] [--token <token>] [--mdns]`: run the headless gateway + web console
 - `tsdi-agent attach <url> --token <token> [--mdns]`: join a remote gateway from the terminal

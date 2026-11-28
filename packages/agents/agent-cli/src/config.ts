@@ -7,6 +7,7 @@ import { AGENT_TOOL_GROUPS, AgentRootSettings, AgentToolsOptions, parseAgentSett
 import { SshOptions } from '@tsdi/agent-ssh';
 import { cliCredentialId, cliCredentialStore, collectApiKeys, restoreStoredApiKeys } from './credential-keys';
 import { applyExplicitModelSelection, hasInvalidConfigSentinel, sanitizeModelProfile } from './model-config-sanitize';
+import { resolveLastSessionId } from './last-session';
 
 export interface AgentCliModelRoute {
     name?: string;
@@ -68,7 +69,7 @@ export interface AgentCliProviderProfile {
 }
 
 export interface AgentCliOptions {
-    session?: string;
+    session?: string; continue?: boolean; auto?: boolean; archived?: boolean; agent?: string; file?: string | string[];
     root?: string;
     tools?: string | string[];
     image?: string | string[];
@@ -543,7 +544,7 @@ export function resolveCliConfig(options: AgentCliOptions): AgentCliResolvedConf
     });
 
     return {
-        sessionId: options.session || `session-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        sessionId: options.session || (options.continue ? resolveLastSessionId(workspace) : undefined) || `session-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
         root: resolved.root,
         settingsPath: resolved.settingsPath,
         workspace,

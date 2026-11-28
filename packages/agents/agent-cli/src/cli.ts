@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { runAgentApplication, runAgentJsonStream, runAgentPrompt, runAgentRpcStdio, runAgentStreaming } from './run-command';
+import { runAgentApplication, runAgentRpcStdio } from './run-command';
 import { runAgentAttach } from './run-console';
+import { registerRunCli } from './run-cli';
 import { registerChatCli } from './chat-cli';
 import { registerServeCli } from './serve-cli';
 import { runMcpAdd, runMcpAuth, runMcpList, runMcpLogout, runMcpRemove } from './mcp-command';
@@ -28,6 +29,8 @@ const TOP_LEVEL_COMMANDS = new Set(['run', 'chat', 'attach', 'serve', 'desktop',
 const TOP_LEVEL_HELP_FLAGS = new Set(['-h', '--help', '-V', '--version']);
 const OPTION_FLAGS_WITH_VALUES = new Set([
     '--session',
+    '--agent',
+    '--file',
     '--root',
     '--workspace',
     '--tools',
@@ -98,37 +101,7 @@ function createAgentCli(): Command {
     program.name('tsdi-agent');
     program.version(CLI_VERSION);
 
-    program
-        .command('run [prompt]')
-        .description('Run a single prompt and return the response.')
-        .option('--session <id>', 'Session ID.')
-        .option('--root <dir>', 'Agent config root. Defaults to ~/.tsdi-agent.')
-        .option('--workspace <dir>', 'Workspace directory for file tools.')
-        .option('--tools <items>', 'Comma-separated tool names or groups to enable.')
-        .option('--no-default-tools', 'Disable default tool groups.')
-        .option('--provider <name>', 'Model provider (deepseek, openai, etc.)')
-        .option('--model <name>', 'Model name.')
-        .option('--base-url <url>', 'API base URL.')
-        .option('--api-key <key>', 'API key.')
-        .option('--api-key-env <name>', 'Env var name for API key.')
-        .option('--timeout <ms>', 'Request timeout in ms.')
-        .option('-i, --image <path>', 'Attach an input image (repeatable).', collectValues, [])
-        .option('--stream', 'Stream the response.')
-        .option('--json', 'Output JSONL event stream.')
-        .option('--output-last-message', 'Append a final JSONL compatibility event containing the last assistant message.')
-        .action(async (prompt: string, options: any) => {
-            if (options.json) {
-                await runAgentJsonStream(prompt || '', options);
-                return;
-            }
-            if (options.stream) {
-                await runAgentStreaming(prompt || '', options);
-                return;
-            }
-            const output = await runAgentPrompt(prompt || '', options);
-            process.stdout.write(output + '\n');
-        });
-
+    registerRunCli(program);
     registerChatCli(program);
     registerServeCli(program);
 

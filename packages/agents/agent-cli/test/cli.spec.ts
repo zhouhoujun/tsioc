@@ -1582,6 +1582,88 @@ export class AgentCliTest {
         });
     }
 
+    @Test('run --file attaches a structured file part')
+    async runPromptWithFileAttachment() {
+        const root = await this.createRoot();
+        const workspace = path.join(root, 'workspace');
+        await fs.promises.mkdir(workspace, { recursive: true });
+        const filePath = path.join(workspace, 'notes.txt');
+        await fs.promises.writeFile(filePath, 'attached notes\n');
+        await this.withHome(root, async () => {
+            const output = await runAgentPrompt('summarize the file', {
+                root,
+                session: 'echo-file',
+                workspace,
+                provider: 'echo',
+                model: 'echo',
+                file: [filePath]
+            });
+            expect(output).toContain('Echo: summarize the file');
+
+            const ctx = await runAgentRpcApplication({ root, workspace }, {});
+            try {
+                const session = await ctx.get(SessionStore).get('echo-file');
+                const filePart: any = session.messages[0].parts?.find((part: any) => part.type === 'file');
+                expect(filePart?.name).toEqual('notes.txt');
+                expect(filePart?.mediaType).toEqual('text/plain');
+                expect(String(filePart?.dataUrl || '')).toContain('data:text/plain;base64,');
+            } finally {
+                await ctx.close();
+            }
+        });
+    }
+
+    @Test('run --archived keeps the finished session out of lists')
+    async runPromptArchived() {
+        const root = await this.createRoot();
+        await this.withHome(root, async () => {
+            await runAgentPrompt('archive me', {
+                root,
+                session: 'echo-archived',
+                provider: 'echo',
+                model: 'echo',
+                archived: true
+            });
+
+            const ctx = await runAgentRpcApplication({ root }, {});
+            try {
+                const session = await ctx.get(SessionStore).get('echo-archived');
+                expect(session.archived).toEqual(true);
+            } finally {
+                await ctx.close();
+            }
+        });
+    }
+
+    @Test('run --continue restores the workspace last session')
+    async runPromptContinue() {
+        const root = await this.createRoot();
+        const workspace = path.join(root, 'workspace');
+        await fs.promises.mkdir(path.join(workspace, '.tsdi-agent'), { recursive: true });
+        await fs.promises.writeFile(
+            path.join(workspace, '.tsdi-agent', 'settings.json'),
+            JSON.stringify({ lastSessionId: 'echo-continue', openSessionIds: ['echo-continue'] })
+        );
+        await this.withHome(root, async () => {
+            const output = await runAgentPrompt('continue here', {
+                root,
+                workspace,
+                provider: 'echo',
+                model: 'echo',
+                continue: true
+            });
+            expect(output).toContain('Echo: continue here');
+
+            const ctx = await runAgentRpcApplication({ root, workspace }, {});
+            try {
+                const session = await ctx.get(SessionStore).get('echo-continue');
+                expect(session.messages[0].content).toEqual('continue here');
+            } finally {
+                await ctx.close();
+            }
+        });
+    }
+
     @Test('runs a prompt with json event stream output')
     async runsPromptWithJsonEventStream() {
         const root = await this.createRoot();

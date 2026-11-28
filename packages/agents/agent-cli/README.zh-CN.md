@@ -297,7 +297,7 @@ CLI 在执行命令前会读取默认工作区配置：
 
 ## 常用命令
 
-- `tsdi-agent run "your prompt"`：执行单次 prompt
+- `tsdi-agent run "your prompt"`：执行单次 prompt；`--continue` 续接 workspace 上次会话，`--file <path>` 附加文件（可重复），`--auto` 自动批准未被拒绝的工具，`--archived` 让 CI 运行不进入会话列表，`--agent <name>` 选择 archetype
 - `tsdi-agent chat`：以 TUI 模式启动 Agent UI
 - `tsdi-agent serve [--host <host>] [--port <port>] [--token <token>] [--mdns]`：运行 headless gateway 与 web 控制台
 - `tsdi-agent attach <url> --token <token> [--mdns]`：从终端加入远程 gateway
