@@ -12,11 +12,15 @@ export function normalizeAgentConsoleBrowserKey(
     const altKey = !!modifiers.altKey;
     const shiftKey = !!modifiers.shiftKey;
     const rawKey = String(key || '').toLowerCase();
+    // Modifier combinations name arrows without the `arrow` prefix so they can
+    // resolve keymap entries such as `ctrl+alt+left`; bare arrows keep the
+    // prefix for the navigation fallback in the global key controller.
+    const namedKey = rawKey.startsWith('arrow') ? rawKey.slice(5) : rawKey;
     if (ctrlKey) {
-        return altKey ? `ctrl+alt+${rawKey}` : shiftKey ? `ctrl+shift+${rawKey}` : `ctrl+${rawKey}`;
+        return altKey ? `ctrl+alt+${namedKey}` : shiftKey ? `ctrl+shift+${namedKey}` : `ctrl+${namedKey}`;
     }
     if (altKey) {
-        return shiftKey ? `alt+shift+${rawKey}` : `alt+${rawKey}`;
+        return shiftKey ? `alt+shift+${namedKey}` : `alt+${namedKey}`;
     }
     if (shiftKey && rawKey === 'tab') {
         return 'shift+tab';

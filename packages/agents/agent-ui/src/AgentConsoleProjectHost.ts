@@ -21,7 +21,12 @@ import {
     resolveFocusedCodingTask as resolveFocusedCodingTaskFn
 } from './AgentConsoleCodingTaskHandlers';
 import { refreshSessionsView } from './AgentConsoleSessionRefresh';
-import { cycleAgentConsoleSessionTab, reopenClosedAgentConsoleSessionTab } from './AgentConsoleSessionTabNavigation';
+import {
+    cycleAgentConsoleSessionTab,
+    navigateAgentConsoleSessionTabHistory,
+    reopenClosedAgentConsoleSessionTab,
+    selectAgentConsoleSessionTabByIndex
+} from './AgentConsoleSessionTabNavigation';
 import { AgentConsolePanelVisibilityHost } from './AgentConsolePanelVisibility';
 
 /** Project/session scope projections shared by the console facade. */
@@ -33,6 +38,16 @@ export abstract class AgentConsoleProjectHost extends AgentConsolePanelVisibilit
     /** Ctrl+Tab / Ctrl+Shift+Tab: cycle the visible session tabs. */
     cycleSessionTab(delta: 1 | -1): boolean {
         return cycleAgentConsoleSessionTab(this as any, delta);
+    }
+
+    /** Alt+1 … Alt+9: jump to a visible session tab by strip position. */
+    selectSessionTabIndex(index: number): boolean {
+        return selectAgentConsoleSessionTabByIndex(this as any, index);
+    }
+
+    /** Ctrl+Alt+Left/Right: walk the session-tab visit history. */
+    navigateSessionTabHistory(delta: 1 | -1): boolean {
+        return navigateAgentConsoleSessionTabHistory(this as any, delta);
     }
 
     /** Ctrl+Shift+T: reopen the most recently closed session tab. */

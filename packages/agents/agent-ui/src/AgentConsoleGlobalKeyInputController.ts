@@ -78,6 +78,7 @@ export interface AgentConsoleGlobalKeyInputHost {
     /** Ctrl+X Enter: put the draft at the front of the running turn's queue. */
     queuePriorityDraft(): boolean;
     cycleSessionTab(delta: 1 | -1): boolean;
+    selectSessionTabIndex(index: number): boolean; navigateSessionTabHistory(delta: 1 | -1): boolean;
     reopenClosedSessionTab(): Promise<boolean>;
 }
 

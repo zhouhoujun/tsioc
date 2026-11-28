@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Session tabs: `alt+1` … `alt+9` jump to the matching visible tab, and `ctrl+alt+left` / `ctrl+alt+right` walk the bounded tab visit history (back truncates the forward branch, matching browser/editor history).
 - Added `/check` (read-only LSP diagnostics) and `/format` (LSP `textDocument/formatting`, write or `--check` preview).
 - Added `/highlights` release-notes overlay with `highlightsSeenVersion` and a settings opt-out.
 - Added `/agents default [name]` and persisted `defaultArchetype` for new sessions.

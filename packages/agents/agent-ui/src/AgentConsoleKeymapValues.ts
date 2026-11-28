@@ -65,7 +65,18 @@ export type AgentConsoleGlobalAction =
     | 'tab-next'
     | 'tab-prev'
     | 'tab-reopen'
-    | 'tab-close';
+    | 'tab-close'
+    | 'tab-history-back'
+    | 'tab-history-forward'
+    | 'tab-select-1'
+    | 'tab-select-2'
+    | 'tab-select-3'
+    | 'tab-select-4'
+    | 'tab-select-5'
+    | 'tab-select-6'
+    | 'tab-select-7'
+    | 'tab-select-8'
+    | 'tab-select-9';
 
 export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'new-session', 'compact', 'export', 'undo', 'redo', 'sessions',
@@ -74,5 +85,8 @@ export const AGENT_CONSOLE_GLOBAL_ACTIONS: AgentConsoleGlobalAction[] = [
     'message-page-up', 'message-page-down', 'message-half-page-up', 'message-half-page-down', 'message-line-up', 'message-line-down', 'message-first', 'message-last', 'message-last-user', 'message-prev-user', 'message-next-user',
     'model-favorite-toggle', 'model-cycle-recent', 'model-cycle-recent-back', 'model-variant-cycle',
     'which-key-toggle', 'which-key-layout-toggle', 'which-key-pending-toggle', 'status-health', 'timeline-mode', 'command-outputs', 'queue-follow-up', 'queue-priority', 'clear-scrollback', 'clear-input', 'stash-draft',
-    'tab-next', 'tab-prev', 'tab-reopen', 'tab-close'
+    'tab-next', 'tab-prev', 'tab-reopen', 'tab-close',
+    'tab-history-back', 'tab-history-forward',
+    'tab-select-1', 'tab-select-2', 'tab-select-3', 'tab-select-4', 'tab-select-5',
+    'tab-select-6', 'tab-select-7', 'tab-select-8', 'tab-select-9'
 ];

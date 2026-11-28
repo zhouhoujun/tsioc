@@ -6,6 +6,7 @@ import { AgentConsoleSessionState, AgentConsoleSessionItem } from './AgentConsol
 import { resolveAgentConsoleSessionTabs } from './AgentConsoleSessionTabList';
 export { resolveAgentConsoleSessionTabs } from './AgentConsoleSessionTabList';
 import { resolveAgentConsoleStripWindow } from './AgentConsoleStripWindow';
+import { rememberAgentConsoleSessionTabVisit } from './AgentConsoleSessionTabNavigation';
 import { formatAgentPanelLabel, formatAgentUiLabel } from './agent-ui.i18n';
 
 interface AgentConsoleTabWindow {
@@ -194,6 +195,8 @@ export class AgentConsoleSessionTabsSource implements TabBarSource {
     }
 
     select(id: string): void {
+        rememberAgentConsoleSessionTabVisit(this.state, this.state.sessionId);
+        rememberAgentConsoleSessionTabVisit(this.state, id);
         this.state.sessionTabsAction?.select?.(id);
     }
 

@@ -357,6 +357,12 @@ export class AgentConsoleSessionData {
     sessionTabsAction?: { select?: (id: string) => void; create?: () => void; close?: (id: string) => void; rename?: (id: string, title: string) => void };
     /** Most-recently closed session tabs, for Ctrl+Shift+T. */
     closedSessionTabIds: string[] = [];
+    /** Visit order of session tabs, for Ctrl+Alt+Left/Right. */
+    sessionTabHistory: string[] = [];
+    /** Cursor into `sessionTabHistory`; -1 before the first tab switch. */
+    sessionTabHistoryIndex = -1;
+    /** Guard so history navigation does not append itself as a new visit. */
+    sessionTabHistoryNavigating = false;
     globalKeyInputAction?: (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean; altKey?: boolean }) => boolean | Promise<boolean>;
     injectedCommandHints: string[] = [];
 

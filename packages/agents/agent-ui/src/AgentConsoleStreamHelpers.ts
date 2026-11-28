@@ -20,7 +20,11 @@ export function decodeGlobalKey(raw: string): string {
         '\u001b[A': 'up',
         '\u001b[B': 'down',
         '\u001b[C': 'right',
-        '\u001b[D': 'left'
+        '\u001b[D': 'left',
+        '\u001b[1;3D': 'alt+left',
+        '\u001b[1;3C': 'alt+right',
+        '\u001b[1;7D': 'ctrl+alt+left',
+        '\u001b[1;7C': 'ctrl+alt+right'
     };
     const arrow = arrows[raw];
     if (arrow) return arrow;
@@ -49,6 +53,10 @@ export function decodeGlobalKey(raw: string): string {
     };
     const modifiedKey = modifiedKeys[raw];
     if (modifiedKey) return modifiedKey;
+    // Alt+digit is the quick-switch tab alias (ESC followed by the digit).
+    if (raw.length === 2 && raw.charCodeAt(0) === 27 && /^[1-9]$/.test(raw[1])) {
+        return `alt+${raw[1]}`;
+    }
     if (raw.length === 1) {
         const code = raw.charCodeAt(0);
         if (code >= 1 && code <= 26) return `ctrl+${String.fromCharCode(96 + code)}`;

@@ -79,7 +79,20 @@ export const AGENT_CONSOLE_DEFAULT_KEYMAP: Record<string, AgentConsoleGlobalActi
     // actions reachable from the web console.
     'alt+]': 'tab-next',
     'alt+[': 'tab-prev',
-    'alt+shift+t': 'tab-reopen'
+    'alt+shift+t': 'tab-reopen',
+    /** opencode-style quick switch: the first nine tabs by strip order. */
+    'alt+1': 'tab-select-1',
+    'alt+2': 'tab-select-2',
+    'alt+3': 'tab-select-3',
+    'alt+4': 'tab-select-4',
+    'alt+5': 'tab-select-5',
+    'alt+6': 'tab-select-6',
+    'alt+7': 'tab-select-7',
+    'alt+8': 'tab-select-8',
+    'alt+9': 'tab-select-9',
+    /** Visit history for tabs; browsers do not reserve this combination. */
+    'ctrl+alt+left': 'tab-history-back',
+    'ctrl+alt+right': 'tab-history-forward'
 };
 export function normalizeAgentConsoleKeySequence(value: string): string {
     return String(value || '').trim().toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ');
